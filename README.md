@@ -39,6 +39,6 @@ Some cool programs:
 * DR Logo 2.0 (1983): Ported from Amstrad, runs on CP/M 2.2 with GSX standard driver
 * TeleDraw (1983): An early version of Dr Draw bundled with Televideo 803, runs on CP/M 2.2 with GSX standard driver
 * Sargon Chess 1.0 (1978): Original program using WaveMate Jupiter III Terminal-125 for board graphics
-* SubLOGIC Flight Simulator FS1 (1975): Ported from TRS-80. Runs on CP/M 2.2 with simulated Terminal-125 (has same blocky semigraphics as TRS-80). Also available a very cool fictional vector graphics HiRes version
+* SubLOGIC Flight Simulator FS1 (1979): Ported from TRS-80. Runs on CP/M 2.2 with simulated Terminal-125 (has same blocky semigraphics as TRS-80). Also available a very cool fictional vector graphics HiRes version
 
 Enjoy
