@@ -32,13 +32,14 @@ the `00_RUN.SUB` (or `00_TEST.SUB` or `00_DEMO.SUB`) file on the simulator's mai
 
 All the collection can be found in [sw](https://github.com/rsanchovilla/CPM_Player/blob/master/sw) folder.
 
-Some cool programs:
+Some cool programs to try out:
 
-* BLS Pascal 1.0 (1981): The ancestor of Turbo Pascal, ported from NASCOM
+* BLS Pascal 1.0 (1981): The ancestor of Turbo Pascal, ported to CP/M from NASCOM
 * GrafTalk 1.1 (1982): Configured to run on RG512 Retrographics
 * DR Logo 2.0 (1983): Ported from Amstrad, runs on CP/M 2.2 with GSX standard driver
 * TeleDraw (1983): An early version of Dr Draw bundled with Televideo 803, runs on CP/M 2.2 with GSX standard driver
 * Sargon Chess 1.0 (1978): Original program using WaveMate Jupiter III Terminal-125 for board graphics
 * SubLOGIC Flight Simulator FS1 (1979): Ported from TRS-80. Runs on CP/M 2.2 with simulated Terminal-125 (has same blocky semigraphics as TRS-80). Also available a very cool fictional vector graphics HiRes version
+* Micro-Soft Altair BASIC 3.2 (1975): Ported to CP/M 
 
 Enjoy
