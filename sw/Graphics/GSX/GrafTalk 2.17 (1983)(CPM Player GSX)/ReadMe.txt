@@ -46,6 +46,7 @@ have beed done
 	- GTLOAD includes embebbed the program GTPLTGSX. GTLOAD relocates 
 	  GTPLTGSX on top of TPA
 	- Then calls GTPLTGSX to hook BDOS call 5 (send to printer port)
+        - loads regular GRAFTALK.COM program
         
    GTPLTGSX receives the HP 74XX HP-GL plotter commands sent by GrafTalk
    via the BDOS func 5 hook. Then translates these commands to GSX calls 
@@ -60,11 +61,9 @@ is started:
 	ASSIGN.SYS	<- should state the DD*.PRL driver to be used
 	DD*.PRL		<- The GSX driver to use
 
-To start GrafTalk, just execute the following commands (can be placed
-in a submit file)
+To start GrafTalk, just execute:
 
 	GTLOAD
-	GRAFTALK
 
 GrafTalk can run on DDCPMPLY.PRL, the driver for CPM Player simulator
 but should run on any other GSX driver

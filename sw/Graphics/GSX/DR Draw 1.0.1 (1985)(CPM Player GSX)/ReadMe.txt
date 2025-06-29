@@ -5,10 +5,11 @@ DrDraw is a CP/M-80 3.0 application, and needs a GSX driver that supports
 
 	- XOR mode/Erase mode drawing
 	- Bar Generalized Draw Primitive support (=Fill rectagular Area)
-	- Graphic Input in Request mode
+	- Graphic Input (GIN) in Request mode
 
 DDXTEK and DDVRET drivers does not support Bar drawing, thus
 it is hard to use DrDraw with them.
+
 DDCPMPLY driver supports all needed primitives plus color, so 
 it is possible to use DrDraw with CPM Player emulator
 
