@@ -1,0 +1,417 @@
+.PO 14
+.PC 26
+                WIZARD'S CASTLE GAME
+                --------------------
+
+From Jul/Aug 1980 issue of "Recreational Computing".
+Original Exidy Sorcerer  version by Joseph R. Power.
+Modified Microsoft  BASIC  version  by  J.F.Stetson.
+Instructions formatted  in  lower case for 52-column
+          Osborne 1 by Alan T. Chattaway.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+     Wizard's  Castle is a fantasy game about  equal 
+in complexity to the several versions of "Adventure" 
+which are now available for microcomputers and is  a 
+very large "BASIC" program in its own right.  Unlike 
+adventure,  the  castle is randomly stocked for each 
+game,  which means that winning one does not detract 
+from playing future games.   At present,  there  are 
+verisons  of Wizard's Castle for the Exidy Sorcerer, 
+TRS-80,   HP-2000,  Heath  H-8/H-89  and  Osborne  1 
+computers.
+
+Background History 
+------------------
+
+     Many cycles ago,  in the Kingdom of N'dic,  the 
+gnomic  wizard  Zot forged his great Orb  of  Power.  
+Soon after doing this,  he vanished,  leaving behind 
+his  vast subterranean castle filled  with  esurient 
+monsters, fabulous treasures, and the incredible ORB
+OF ZOT.                                             
+
+     From  that  time hence,  many a bold youth  has 
+ventured into the wizard's castle.  As yet, none has 
+ever emerged victorious.
+
+Introduction 
+------------
+
+     Wizard's Castle is a computerized simulation of 
+one  of the most common and popular fantasy motifs - 
+the lone adventurer's quest within an immense under- 
+ground labyrinth.   Each game is different from  all 
+others,  so  the game is a challenge even after  you 
+have won several times.   Each game will result in a 
+win  or  a loss,  depending on a player's skill  and 
+luck.   The  instructions which follow  explain  the 
+rules  and  options of the game.   If at  any  time, 
+however,   you   are  not  sure  of  what  to  do  - 
+experiment.   The  program  is designed  to  prevent 
+invalid inputs.  
+
+Character Creation 
+------------------
+
+      At the start of each game, you will be asked a 
+number of questions about what type of character you 
+will  have.    You  must  make  choices  about   the 
+following : 
+
+Race:
+
+     You may be an elf, dwarf, man, or hobbit.  Each 
+race  starts  with  a total  of  32  points  (except 
+hobbits,  who only get 28), but they are distributed 
+differently for each race. 
+
+Sex:
+
+     You  may be male or female.   Both are equal in 
+ability  and in the number of points.   Be  creative 
+with your response. 
+
+Points:
+
+     Each  character starts with a number of  points 
+for  the attributes of Strength  (ST),  Intelligence 
+(IQ),  and Dexterity (DX).   In addition,  there are 
+some  other points which you may distribute  between 
+these three attributes as you wish.  
+
+     Your ST, IQ, and DX may be any number from 1 to 
+18.   If  any of the three drops below 1,  you  have 
+died.   For  all three attributes,  the  larger  the 
+numerical  value,  the better.   Each character also 
+starts  the  game with 60 gold  pieces  (GP's)  with 
+which  to  purchase  some,   none,  or  all  of  the 
+following items : 
+
+Armor:
+
+     You may buy plate armor for 30 GP's,  chainmail 
+for 20 GP's,  or leather for 10 GP's.   You can wear 
+only  one  suit  of  armor  at  a  time.   The  more 
+expensive the armor, the more damage it will absorb.  
+
+Weapon:
+
+     You may buy a sword for 30 GP's,  a mace for 20 
+GP's, or a dagger for 10 GP's.  You can only carry a 
+single  weapon  at a time.   The more expensive  the 
+weapon,  the  more  damage it does  to  the  various 
+monsters.  
+
+Lamp:
+
+     If,  after  selecting armor and a  weapon,  you 
+have 20 GP's or more left, you may buy a lamp for 20 
+GP's.   Having  the lamp will allow you to look into 
+an adjacent room without having to enter it. 
+
+Flares:
+
+     If,  after  all other purchases,  you have  any 
+money  left,  you  may  buy flares for  1  GP  each.  
+Lighting  a  flare reveals the contents of  all  the 
+rooms surrounding your current location. 
+
+     Once you have created and equipped a character, 
+you  are  ready to enter the castle and  begin  your 
+adventures.
+
+The Castle
+----------
+
+     The  Castle is arranged as an 8 x 8 x  8  three 
+dimensional  matrix.   This  means that there are  8 
+levels  with  64 rooms on each  level.   The  castle 
+levels are numbered from 1 (the top level) to 8 (the 
+bottom  level).   Each castle level  is  constructed 
+like  a doughnut in that the north edge is connected 
+to the south edge and the east edge is connected  to 
+the west edge.   In a similar fashion, the sinkholes 
+(explained later) on level 8 will "drop" you down to 
+level 1.  The only room which does not function like 
+this is the entrance / exit room of the castle which 
+is always located at location (1,4) level 1.   Going 
+north from this room takes you out of the castle and 
+ends the game. 
+
+     Each  room of the castle will have as  contents 
+one of the following :
+
+E  the Entrance / Exit room:  an empty room contain-
+     ing nothing
+U  stairs:  going Up to the level above
+D  stairs:  going Down to the level below 
+P  a magic Pool from which you may drink 
+C  a Chest which you may open 
+B  a Book which you may open 
+G  from 1 to 10 Gold Pieces 
+F  from 1 to 3 Flares 
+W  a Warp to another random location 
+M  a Monster (one of 12 different types) 
+V  a Vendor  which you may attack,  ignore or  trade 
+     with 
+O  a crystal Orb (this is not the ORB OF ZOT)
+S  a Sinkhole (a room with no floor) 
+T  a Treasure (one of the 8 in the castle) 
+
+     The  single  letters are the abbreviations  for 
+the  room contents which are displayed whenever  you 
+look at your map or light a flare.  When you look at 
+your map,  the room you are currently located in  is 
+bracketed by < >.  
+
+ 
+Player Commands 
+---------------
+
+     Whenever  the program asks for a  command,  you 
+must  decide  what action you wish to  perform.   If 
+your choice is not valid in your current  situation, 
+the  program  will inform you and allow you  to  try 
+again.   The  following  is a list of  the  commands 
+which the program understands, with a description of 
+their effects and restrictions : 
+
+NORTH:   moves you to the room north of your present 
+position.   When  you  go north from the entrance  / 
+exit room, the game terminates.  In all other cases, 
+the north edge wraps around to the south.  
+
+SOUTH:   moves you to the room south of your present 
+position.  In all cases, the south edge wraps around 
+to the north edge.  
+
+EAST:    moves you to the room east of your  present 
+position.   In all cases, the east edge wraps around 
+to the west edge.  
+
+WEST:    moves  you to the room west of your present 
+position.   In all cases, the west edge wraps around 
+to the east edge.
+
+UP:     causes you to ascend stairs going up.  You 
+must be in a room containing stairs going up.
+
+DOWN:    causes  you to descend stairs  going  down.  
+you  must be in a room containing stairs going down.  
+
+DRINK:   causes  you  to take a drink from  a  magic 
+pool.   You may repeat this command as often as  you 
+wish,  but  you must be in a room containing a magic 
+pool. 
+
+MAP:     causes a map of the level you are currently 
+on  to  be  printed.    All  unexplored  rooms   are 
+displayed as "?".   All other rooms are displayed as 
+their one character abbreviations.   You may look at 
+your  map at any time unless you are either blind or 
+retreating from a monster.
+
+FLARE:   causes  one  of  your  flares  to  be  lit, 
+revealing the contents of all rooms surrounding your 
+current  position.   Because each edge is joined  to 
+the  opposite edge,  you will always see nine  rooms 
+with your location in the center.   Each flare burns 
+away  to nothing.   You may light flares as long  as 
+you  have some and you are not blind  or  retreating 
+from a monster.  For those who are familiar with any 
+of the common "Star Trek" games,  a flare works much 
+like  a long range sensor scan with the addition  of 
+wraparound.
+
+LAMP:    allows  you to shine your lamp into any one 
+of the rooms north,  south,  east,  or west of  your 
+current  position,  revealing  the room's  contents.  
+Unlike flares, the lamp may be used repeatedly.  You 
+may use your lamp at any time unless you don't  have 
+a lamp, are blind, or are retreating from a monster.  
+
+OPEN:  causes you to open a book or a chest which is 
+in the room with you.  
+
+GAZE:   causes you to gaze into a crystal orb.  When 
+you  see yourself in a bloody heap,  you lose 1 or 2 
+points  of strength.   When you see the location  of 
+the ORB OF ZOT ,  there is only a 50% chance that it     
+is correct.   You cannot gaze when you are blind  or 
+when you are not in a room containing a crystal orb.  
+
+TELE-:    allows  you  to teleport directly  into  a 
+specific  room anywhere in the castle.   This is the 
+only  way  to enter the room containing the  ORB  OF 
+ZOT.                                         
+
+You must have the Runestaff in order to teleport.  
+
+QUIT:    allows  you to end the game while  you  are 
+still  in  the  castle.   You will be asked  if  you 
+really want to quit,  in case you made a mistake  or 
+want  to change your mind.   If you quit,  you  will 
+lose the game. 
+
+HELP:    causes a summary of the available commands, 
+abbreviations  used  in describing the  contents  of 
+rooms,  and  the benefits of possessing each of  the 
+treasures  to  be displayed at any time  during  the 
+game. 
+
+     All  of  the commands,  except  DRINK,  can  be 
+abbreviated to their first letter (M for MAP,  Q for 
+QUIT, etc.).  The abbreviation for DRINK is "DR" (to 
+distinguish it from "D" for the DOWN command). 
+
+Magic Spells 
+------------
+
+     Whenever  your Intelligence (IQ) becomes 15  or 
+higher, you gain the option to cast a magic spell on 
+a  monster if you have the very first combat option.  
+The three spells and their effects are as follows : 
+
+WEB:  traps  the monster in a sticky web so that  it 
+      can't fight back as you attack it.  This spell 
+      lasts  from  2 to 9 turns and  costs  you  one 
+      strength (st) point. 
+
+FIRE- hits  the  monster with a ball of  flame  that 
+      causes between 2 and 14 points worth of damage 
+      instantly.   It  costs one strength point  and 
+      one intelligence point. 
+ 
+DEATH-is  a contest of wills between the monster and 
+      yourself.    Whoever's  spell  has  the  lower 
+      intelligence dies at once.   It costs  nothing 
+      to use, but it is very risky.  Even with an IQ 
+      of 18 (the highest possible), you still have a 
+      25% chance of being killed.
+
+Treasures, Curses, Blindness, and such
+--------------------------------------
+
+In the castle are eight randomly placed treasures : 
+
+The RUBY RED - wards off the curse of lethargy.
+The PALE PEARL - wards off the curse of the leech.
+The OPAL EYE - cures blindness. 
+The GREEN  GEM  - wards off the curse of  forgetful-
+      ness.
+The BLUE  FLAME  - dissolves  books  stuck  to  your 
+      hands.
+The NORN STONE - has no special power.  
+The PALANTIR - has no special power.
+The SILMARIL - has no special power.  
+
+There are three curses : 
+
+LETHARGY - this gives the monsters the first  attack 
+      which   prevents  you  from  bribing  them  or 
+      casting spells on them. 
+
+LEECH - this  takes from 1 to 5 GP's from  you  each 
+      turn until you have no gold pieces left.  
+
+FORGETFULNESS  - this causes you to forget what  you 
+      know  about the castle.   Your map will slowly 
+      return to all question  marks.   However,  the 
+      contents  of  the rooms in the castle are  the 
+      same.  
+
+      In  addition to nullifying the effects of  the 
+curses,  the treasures also provide protection  from 
+two  undesirable  things which can happen  when  you 
+open a book.   These are going blind, which prevents 
+you  from seeing your maps,  lighting flares,  using 
+your lamp,  gazing into orbs,  and being informed of 
+your present location, and secondly, having the book 
+stick to your hands,  which prevents you from  using 
+your  weapon  to fight monsters (you can still  cast 
+spells at them if you are smart enough, however).
+
+Vendors 
+-------
+
+      On  every  level  in  the  castle,  there  are 
+vendors  who  are  more than  willing  to  sell  you 
+various items at grossly inflated prices.  Normally, 
+the  vendors  will  make  you  an  offer  for  every 
+treasure you have, and then, depending on the amount 
+of  gold you have,  will sell you new armor,  a  new 
+weapon,   potions  of  strength,   intelligence  and 
+dexterity  (no matter how many potions you buy,  the 
+maximum  amount of these attributes you can have  is 
+18), and a lamp, if you don't already have one.
+
+      If  you choose to attack a  vendor,  you  will 
+then antagonize every vendor in the castle, and they 
+will  all react like monsters.   You will also  lose 
+the  ability to trade with them.   Killing a vendor, 
+however, will give you new plate armor, a sword, one 
+of  each kind of potion,  and a lamp (if  you  don't 
+have one), in addition to his hoard of between 1 and 
+1000   gold   pieces.    To  end   hostilities   and 
+reestablish  trading privileges,  you must bribe any 
+vendor  in  the  castle with  the  treasure  of  his 
+choice. 
+
+Monsters and the Runestaff 
+--------------------------
+
+There are 12 types of monsters in the castle : 
+
+     Kobold,  Orc,  Wolf, Goblin, Ogre, Troll, Bear, 
+Minotaur, Gargoyle*, Chimera, Balrog, Dragon* 
+
+     *Please  note  that  each  time  you  strike  a 
+gargoyle  or a dragon,  there is a possibility  that 
+your weapon will be shattered.  
+
+     Each  monster  possesses a hoard of from  1  to 
+1000  gp's  which  you  obtain  when  you  kill  the 
+monster.   In  addition,  one  of  the  monsters  is 
+carrying  the  Runestaff (you won't know  which  one 
+until you kill it).   You must have the Runestaff to 
+teleport, but when you teleport into the castle room 
+which  contains the ORB OF ZOT,  the Runestaff  will                    
+vanish  (you must find your way to the  castle  exit 
+without it).  
+
+Warps and the ORB OF ZOT
+------------------------
+
+     All  but one of the rooms denoted as "W" really 
+are warps, and walking, falling, or teleporting into 
+them  will  cause  you to move to any  room  in  the 
+castle  at random.   The exception is the ORB OF ZOT 
+which  is  disguised as a Warp - walking  into  this 
+room  always causes you to move one room further  in 
+the  same direction.   To actually enter this  room, 
+you must use the Runestaff to teleport in.   At this 
+point,  you will acquire the great ORB OF ZOT,  and                           
+the  Runestaff will vanish.   To win the  game,  you 
+must leave the castle with the ORB OF ZOT.  Remember
+that crystal orbs are not the ORB OF ZOT and  cannot 
+be picked up.  
+
+Error Messages
+--------------
+
+     Any  time  you receive a message starting  with 
+"**",  it  means that the last thing you  typed  was 
+unacceptable  to  the  program at  that  time.   For 
+instance,  if  you get the message  "** IT'S HARD TO 
+GAZE WITHOUT AN ORB.",  this means that you tried to 
+gaze  from  a room which did not contain  a  crystal 
+orb.   You  are  always required to redo  your  last 
+response when you receive an "**" type message.  
+
+     Good luck, and beware! 
+
+
+****************************************************
+
