@@ -1,0 +1,2007 @@
+	title	REPAIR disk utility 
+; Program:  REPAIR
+; Author:   Malcom Kemp
+; Date:     December 27, 1987
+; Version:  1.0
+;
+
+.xlist
+
+vers	equ	1		; Version number 
+
+ctrl_a	equ	1
+ctrl_c	equ	3
+ctrl_f	equ	6
+bs	equ	8
+tab	equ	9
+lf	equ	10
+crtl_k	equ	11
+cr	equ	13
+ctrl_n	equ	14
+ctrl_q	equ	17
+ctrl_r	equ	18
+ctrl_w	equ	23
+ctrl_z	equ	26
+del	equ	7Fh		; Delete characer
+no	equ	0
+yes	equ	not no
+
+wboot	equ	0		; Warm boot
+bdos	equ	5		; BDOS entry 
+dfcb	equ	5Ch		; Default FCB
+dfcb2	equ	6Ch		; Second file
+dbuf	equ	80h		; Default buffer
+llrec	    equ	128		; Length of logical record
+ldir	    equ	32		; Length of directory entry
+wind_len    equ	10		; Length of window
+
+classify_fc equ	0		; Classify function code
+create_fc   equ	1		; Create function code
+
+
+	public	$memry
+	extrn	print,pstr,pa2hc,padc,phl4hc,phldc,cout,pafdc,phlfdc
+	extrn	lout,lafdc
+	extrn	retud,logud
+	extrn	z3vinit,tinit
+	extrn	cin,caps
+	extrn	cls,ereol,gxymsg,at,gotoxy,vprint
+	extrn	crc2clr,crc2upd,crc2done
+	extrn	bbline,zfname,eval10
+	extrn	initfcb,fxo$open,fx$put,fxo$close
+	extrn	fxi$open,fx$get,fxi$close
+	extrn	f$open,f$mopen,f$write,f$close,setdma
+
+	maclib	xcpm
+	maclib	xsys
+
+test	equ	no
+
+
+
+; Start of routine
+;
+; Environment Definition
+;
+z3env 	equ	0FE00h		; Environment descriptor
+;
+; External ZCPR3 Environment Descriptor
+;
+	jp	start
+	db	'Z3ENV'		; This is a zcpr3 utility
+	db	1		; External environment descriptor
+z3eadr:
+	dw	z3env
+
+start:
+	ld	hl,(z3eadr)	; Hl -> zcpr3 environment
+
+	call	z3vinit
+	call	tinit
+
+; Get our home user/disk
+
+	call	retud
+	ld	(home_ud),bc
+
+; Initialize window control
+
+	ld	a,no
+	ld	(stru_flag),a		; Show we have no structure
+
+	ld	iy,window1
+	ld	(iy+wc_df),0		; ASCII
+	ld	(iy+wc_fl),4
+	ld	(iy+wc_ll),13
+	ld	(iy+wc_afl),15
+
+	ld	iy,window2
+	ld	(iy+wc_df),0		; ASCII
+	ld	(iy+wc_fl),15
+	ld	(iy+wc_ll),24
+	ld	(iy+wc_afl),4
+
+	ld	hl,3*256+35		; Row 3, column 35
+	ld	(currest),hl
+
+	ld	hl,(bdos+1)	; Get protect address
+	ld	l,0		; Make page aligned
+	dec	h		; Leave room for stack
+	ld	(top),hl	; And save for memory allocator
+	ld	sp,(bdos+1)	; Set stack
+	ld	hl,($memry)
+	ld	(bottom),hl	; Set bottom of memory
+
+	ld	a,(dfcb)	; Get input disk
+
+	or	a,a		; See if we have one
+	jp	z,baddisk
+	dec	a
+	cp	a,'P'-'A'+1
+	jp	nc,baddisk
+	ld	(curdsk),a	; save
+
+	 if	test
+ 	 call	print
+	 db	cr,lf,'REPAIR drive ',0
+	 push	af
+	 add	a,'A'
+	 call	cout
+	 pop	af
+	 endif
+
+	ld	a,(dfcb2)	; Get output disk
+	or	a,a		; See if we have one
+	jp	z,baddisk
+	dec	a
+	cp	a,'P'-'A'+1
+	jp	nc,baddisk
+	ld	(tardsk),a	; Save for i/o
+	call	getdpb		; Initialize DPB structure
+
+; Initialize group buffers
+	ld	iy,window1	; Pointer to window control
+	ld	bc,(grp_len)	; Get length we need
+	call	allocp		; Get page oriented allocation
+	ld	(gr1buf),hl	; Save upper limit for init
+	ld	(iy+wc_buf+1),h
+	ld	(iy+wc_buf),l	; Save our buffer address
+	ld	bc,(grp_len)	; Get length
+	add	hl,bc		; Get upper page
+	dec	h		; Last page
+	ld	(iy+wc_bpl),h	; And save
+
+	ld	iy,window2	; Pointer to window control
+	ld	bc,(grp_len)	; Get length we need
+	call	allocp		; Get page oriented allocation
+	ld	(iy+wc_buf+1),h
+	ld	(iy+wc_buf),l	; Save our buffer address
+	ld	bc,(grp_len)	; Get length
+	add	hl,bc		; Get upper page
+	dec	h		; Last page
+	ld	(iy+wc_bpl),h	; And save
+
+; Allocate file name buffer
+
+	ld	bc,256*fs_length	; One extra to allow for move
+	call	alloc			; Get space
+	ld	(fs_list),hl		; Save pointer
+
+; Main menu
+
+menu1:
+	.new
+	call	cls
+	call	gxymsg
+	db	1,1
+	db	'REPAIR Disk ',0
+	ld	a,(curdsk)
+	add	a,'A'
+	call	cout
+	call	gxymsg
+	db	1,30
+	db	'Groups ',0
+	ld	a,(fir_grp)		; Get first group
+	call	pafdc
+	call	print
+	db	'-',0
+	ld	hl,(dpb+dpb_maxb)
+	call	phlfdc
+	call	gxymsg
+	db	1,65
+	db	'Target ',0
+	ld	a,(tardsk)
+	add	a,'A'
+	call	cout
+
+	call	gxymsg
+	db	6,25
+	db	1,'I',2,'nitialize Data Structure',0
+	call	gxymsg
+	db	7,25
+	db	1,'C',2,'lassify',0
+	call	gxymsg
+	db	8,18
+	db	'Create ',1,'F',2,'iles',0
+	call	gxymsg
+	db	9,25
+	db	1,'R',2,'ead Data Structure',0
+	call	gxymsg
+	db	10,25
+	db	1,'W',2,'rite Data Structure',0
+	call	gxymsg
+	db	11,25
+	db	1,'P',2,'rint file directory',0
+	call	gxymsg
+	db	12,24
+	db	'e',1,'X',2,'it',0
+1$:
+	call	gxymsg
+	db	4,20
+	db	'Function ?',0
+	call	cin_cc
+	cp	a,'I'
+	jr	z,init_ds
+	cp	a,'C'
+	jp	z,classify
+	cp	a,'F'
+	jp	z,create
+	cp	a,'R'
+	jp	z,read
+	cp	a,'W'
+	jp	z,write
+	cp	a,'P'
+	jp	z,print_fs
+	cp	a,'X'
+	jp	z,exit
+	cp	a,'D'
+	jp	z,dump_gs
+menu1_err:
+	call	gxymsg
+	db	24,10
+	db	'Illegal input, try again.',0
+menu1_err2:
+	jp	1$
+
+init_ds: .new	
+	ld	ix,(gs_list)		; IX -> entry
+	ld	a,(fir_grp)
+	ld	c,a
+	ld	b,0			; BC = group number counter
+	ld	iy,window1		; IY -> window control
+
+	call	cls
+	call	gxymsg
+	db	1,1
+	db	'Initializing Data Structure',0
+1$:
+	ld	(ix),0			; Erase end sentinal
+	call	print
+	db	cr,lf,'Group ',0
+	push	bc
+	pop	hl
+	call	phlfdc
+
+	ld	(ix+gs_gn+1),b
+	ld	(ix+gs_gn),c		; Set up group number
+	push	bc			; Save group counter
+	call	readgr
+	or	a,a
+	jr	z,2$
+	call	print
+	db	cr,lf,'Error in readgr',0
+	jp	exit
+2$:
+	call	crc2clr			; Clear CRC accumulator
+	ld	h,(iy+wc_buf+1)
+	ld	l,(iy+wc_buf)		; Get buffer pointer
+	ld	bc,(grp_len)		; And length
+3$:
+	ld	a,(hl)			; Get byte
+	call	crc2upd			; Put in CRC
+	inc	hl			; Bump pointer
+	dec	bc			; Decrement counter
+	ld	a,b
+	or	a,c			; Check for counter zero
+	jr	nz,3$			; Loop to calculate CRC	
+	call	crc2done		; Get CRC
+	ld	(ix+gs_crc+1),h
+	ld	(ix+gs_crc),l		; Put CRC away
+	call	print
+	db	' CRC ',0
+	call	phl4hc
+
+	 if	test
+	 push	ix
+	 pop	hl
+	 call	print
+	 db	' [',0
+	 call	phl4hc
+	 call	print
+	 db	']',0
+	 endif
+
+	push	ix
+	pop	hl			; Get pointer in HL
+	ld	(ix+gs_length),0FFh	; End sentinal (for sort)
+	call	ins_ent			; Insert this one in proper order
+
+	 if	test
+	ld	hl,(gs_list)
+	ld	b,17
+xxx:
+	call	print
+	db	cr,lf,'[',0
+	call	phl4hc
+	call	print
+	db	'] ',0
+	ld	a,(hl)
+	call	pa2hc
+	call	print
+	db	' ',0
+	ex	de,hl
+	ld	hl,gs_crc
+	add	hl,de
+	ld	a,(hl)
+	inc	hl
+	ld	h,(hl)
+	ld	l,a
+	call	phl4hc
+	ld	hl,gs_length
+	add	hl,de
+	djnz	xxx
+	call	cin_cc
+	 endif
+
+	pop	bc			; Recover group counter
+	inc	bc			; Bump group number
+	ld	de,gs_length		; DE = entry length
+	add	ix,de			; Bump pointer
+	ld	hl,(dpb+dpb_maxb)	; Get max block
+
+	or	a,a			; Clear carry
+	sbc	hl,bc
+	jp	nc,1$			; Do next group
+
+	ld	a,yes
+	ld	(stru_flag),a		; Show we have valid structure
+
+	ld	iy,window1		; Set to use window 1 buffer
+	ld	bc,0			; Start with block zero
+	ld	ix,(bottom)		; Our directory buffer
+	ld	(dirend),ix		; Set our upper (points to last byte)
+	or	a,0FFh
+	ld	(ix),a			; Set end of structure
+4$:
+	ld	a,(fir_grp)		; Get first group
+	ld	l,a
+	ld	h,0			; Into HL
+	or	a,a			; Reset carry
+	sbc	hl,bc
+	jr	z,6$			; All done
+	jr	c,6$			; All done
+	push	bc			; Save BC
+	call	readgr			; Read the group
+	ld	hl,(gr1buf)		; Beginning of buffer
+	ld	bc,(dir_grp)		; And number to do
+5$:
+	call	proc_de			; Process this entry
+	dec	bc
+	ld	a,b
+	or	a,c
+	jr	nz,5$			; Do next one
+	pop	bc			; Get group number
+	inc	bc			; Bump up
+	jr	4$			; And do next group
+6$:
+	call	gna_init		; Initialize for search
+	ld	hl,(fs_list)		; Initialize file name table
+	ld	bc,256*fs_length-1
+	ld	de,(fs_list)
+	inc	de
+	ld	a,0FFh
+	ld	(hl),a
+	ldir				; Clear buffer
+
+	ld	hl,fileskel
+	ld	de,(fs_list)
+	ld	bc,fileskel_l
+	ldir				; Fill in the known ones
+	ld	a,2
+	ld	(fs_num),a		; Set initial count
+	ld	hl,(fs_list)
+	ld	de,fs_length
+	add	hl,de			; Initialize HL -> current fs_ slot - 1
+7$:
+	call	get_nxt_all		; Get the next one
+	ld	a,b
+	or	a,c
+	jp	z,menu1			; All done
+	call	cp_file
+	jr	z,8$			; Same one, go on
+	push	bc
+	push	de			; Save registers
+
+	ld	bc,fs_length
+	add	hl,bc			; Bump HL
+	push	hl			; Save all registers
+	ld	bc,fs_length
+	ex	de,hl			; DE -> fs_, HL -> directory
+	ldir				; Put this one in table
+
+	pop	hl			; Recover pointer
+	push	hl			; And save
+	call	print
+	db	cr,lf,0
+	call	pfsfname		; Print file name
+
+	pop	hl
+	pop	de
+	pop	bc			; And recover registers
+
+	ld	a,(fs_num)
+	inc	a
+	ld	(fs_num),a		; Bump count
+8$:
+	push	hl
+	push	bc
+	pop	hl
+	call	print
+	db	' ',0
+	call	phlfdc
+	pop	hl
+
+	ld	ix,(gs_list)
+	ld	de,gs_length	
+9$:
+	ld	a,(ix)
+	inc	a
+	jr	z,12$			; Not end
+10$:
+	push	hl
+	ld	h,(ix+gs_gn+1)
+	ld	l,(ix+gs_gn)
+	or	a,a
+	sbc	hl,bc
+	pop	hl
+	jr	z,11$
+	add	ix,de			; Bump
+	jr	10$			; And try next
+11$:
+	ld	a,(fs_num)
+	dec	a			; Get file index
+	ld	(ix+gs_fi),a		; Set file index
+	push	hl			; Save file pointer
+	push	ix
+	pop	hl			; Get this entry in HL
+	ld	de,(gs_last)		; Point to end
+	call	move_ent		; Move it
+	pop	hl			; Restore file pointer
+	jr	7$			; Do next one
+12$:
+	call	print
+	db	cr,lf,'Error: bad group number ',0
+	push	hl
+	push	bc
+	pop	hl
+	call	phlfdc
+	pop	hl
+	jp	7$
+
+proc_de: .new
+	push	bc
+	push	de
+	push	hl			; Save registers
+
+	ld	a,(hl)			; Get user
+	cp	a,0E5h			; Is it valid
+	jr	z,4$			; No, just get out
+	ld	b,11
+	inc	hl
+0$:
+	ld	a,(hl)
+	and	a,7Fh
+	ld	(hl),a			; Strip upper bit
+	inc	hl
+	djnz	0$			; On file name, type
+
+	ld	de,(bottom)		; Get the beginning
+1$:
+	ld	a,(de)			; Get our user
+	inc	a
+	jr	z,2$			; This is end, put it here
+	pop	hl
+	push	hl			; Get our candidate back in HL
+	call	cp_dirent
+	jr	nc,2$			; Put in place here
+	ld	hl,ldir
+	add	hl,de
+	ex	de,hl			; Bump up to next entry
+	jr	1$			; And try another
+2$:
+; DE -> entry position,
+	ld	hl,(dirend)
+	inc	hl			; Bump up for "count"
+	or	a,a			; Reset carry
+	sbc	hl,de			; Get difference
+	push	hl
+	pop	bc			; Count of length to move
+	ld	de,(dirend)		; Get end
+	ld	hl,ldir			; And space we need
+	add	hl,de			; HL -> end+32, DE -> end
+	ex	de,hl			; DE -> end+32, HL -> end
+	lddr				; And move it up
+
+	ex	de,hl
+	inc	de			; DE -> open entry
+	pop	hl
+	push	hl			; Get our candidae
+	ld	bc,ldir			; And length to move
+	ldir				; And put into place
+	ld	hl,(dirend)
+	ld	de,ldir
+	add	hl,de			; Bump up
+	ld	(dirend),hl	
+
+4$:
+	pop	hl
+	ld	de,ldir
+	add	hl,de			; Bump up to next one
+	pop	de
+	pop	bc			; Restore registers
+	ret				; And go back
+
+cp_dirent: .new
+	push	bc
+	push	de
+	push	hl
+	ld	b,13			; Number of bytes to compare	
+1$:
+	ld	a,(de)
+	cp	a,(hl)
+	jr	nz,2$			; No match, return with flags
+	inc	hl
+	inc	de
+	djnz	1$
+2$:
+	pop	hl
+	pop	de
+	pop	bc
+	ret
+;
+; get next allocation block (before first call, call must be made to gna_init)
+;  return:
+;	DE -> user/file/type string (uffffffffttt)
+;	BC = allocation block number
+;	     if BC = zero, no more entries in list
+;
+gna_init:
+	push	de
+	push	hl
+; test
+	ld	a,(dpb)
+
+	ld	hl,(bottom)
+	ld	(gna_cdp),hl
+	ld	de,16
+	add	hl,de
+	ld	(gna_cgp),hl
+
+	ld	a,(dpb+dpb_maxb+1)	; Get max block (high byte)
+	or	a,a			; Set flags
+	ld	a,gna_mgc16
+	jr	z,0$
+	ld	a,gna_mgc8
+0$:
+	ld	(gna_mgc),a		; Save count
+	ld	(gna_cgc),a		; Initilize counter
+
+	pop	hl
+	pop	de
+	ret
+
+get_nxt_all: .new
+	push	hl			; Save register
+	ld	de,(gna_cdp)		; Get current directory pointer
+	ld	hl,(gna_cgp)		; Get current group pointer
+	ld	a,(gna_cgc)
+	ld	b,a			; Get current group count
+	dec	b
+	jr	nz,2$
+1$:
+	ld	hl,ldir
+	add	hl,de			; Bump up to next directory
+	ex	de,hl			; Directory pointer in DE
+	ld	(gna_cdp),de		; And save
+	ld	bc,0			; Get set for return on end of list
+	ld	a,(de)			; Get user area
+	inc	a
+	jr	z,4$			; End of list, return
+	ld	hl,16
+	add	hl,de			; HL -> group numbers
+	ld	a,(gna_mgc)
+	ld	b,a			; Set maximum (-1) group count in b
+2$:
+	ld	a,b
+	ld	(gna_cgc),a		; Reset group count
+	ld	a,(gna_mgc)		; Get maximum group count
+	cp	a,gna_mgc16		; See if we have single byte groups
+	ld	b,0			; For 1 byte directories
+	ld	c,(hl)
+	inc	hl
+	jr	z,3$			; Only need one byte
+	ld	b,(hl)			; Get high order byte
+	inc	hl
+3$:
+	ld	(gna_cgp),hl		; Save group pointer
+	ld	a,b
+	or	a,c
+	jr	z,1$			; End of file, try next
+4$:
+	pop	hl
+	ret
+
+no_stru_err:
+	call	gxymsg
+	db	24,10
+	db	'No valid data structure',0
+	jp	menu1_err2
+
+classify: .new
+	ld	a,classify_fc
+	ld	(function),a		; Set our function code
+
+	ld	a,(stru_flag)		; See if we have valid structure
+	or	a,a
+	jr	z,no_stru_err		; Show error
+	call	set_wind
+
+	ld	iy,window1
+	ld	(iy+wcf_ff),0		; Set initial file floor
+	call	disp_fl_wind
+
+	ld	iy,window2
+	ld	hl,(gs_list)		; Get first entry
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l		; Set in window control
+	ld	a,(iy+wc_buf+1)		; Get beginning of current group
+	ld	(iy+wcg_ptr+1),a
+	ld	a,(iy+wc_buf)
+	ld	(iy+wcg_ptr),a		; Set in current ptr
+	ld	de,gs_gn		; And group number offset
+	add	hl,de
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)			; Put group number in BC
+	call	readgr			; Read it in
+	
+	call	disp_wind		; Fill it in
+1$:
+	ld	iy,window2
+	call	wind_cont		; Set final control
+	call	mg_window		; Manage the window
+	or	a,a			; Return status
+	jp	z,menu1			; Exit
+	dec	a
+	jr	z,2$			; 1 = switch screens
+	jp	menu1
+2$:
+	ld	iy,window1
+	call	wind_cont		; Set final control
+	call	mg_fwindow		; 1 = switch windows
+	or	a,a			; Return status
+	jp	z,menu1			; Exit
+	dec	a
+	jr	z,1$			; 1 = switch screens
+	jp	menu1
+
+create:	.new
+	ld	a,create_fc
+	ld	(function),a		; Set our function code
+
+	ld	a,(stru_flag)		; See if we have valid structure
+	or	a,a
+	jp	z,no_stru_err		; Show error
+
+	call	set_wind
+	ld	iy,window1
+	ld	hl,(gs_list)		; Get first entry
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l		; Set in window control
+	ld	a,(iy+wc_buf+1)		; Get beginning of current group
+	ld	(iy+wcg_ptr+1),a
+	ld	a,(iy+wc_buf)
+	ld	(iy+wcg_ptr),a		; Set in current ptr
+	ld	de,gs_gn		; And group number offset
+	add	hl,de
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)			; Put group number in BC
+	call	readgr			; Read it in
+	
+	call	disp_wind		; Fill it in
+
+	ld	iy,window2
+	ld	hl,(gs_list)		; Get first entry
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l		; Set in window control
+	ld	a,(iy+wc_buf+1)		; Get beginning of current group
+	ld	(iy+wcg_ptr+1),a
+	ld	a,(iy+wc_buf)
+	ld	(iy+wcg_ptr),a		; Set in current ptr
+	ld	de,gs_gn		; And group number offset
+	add	hl,de
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)			; Put group number in BC
+	call	readgr			; Read it in
+	
+	call	disp_wind		; Fill it in
+1$:
+	ld	iy,window2
+	call	wind_cont		; Set final control
+	call	mg_window		; Manage the window
+	or	a,a			; Return status
+	jp	z,menu1			; Exit
+	dec	a
+	jr	z,2$			; 1 = switch screens
+	jp	menu1
+2$:
+	ld	iy,window1
+	call	wind_cont		; Set final control
+	call	mg_window		; 1 = switch windows
+	or	a,a			; Return status
+	jp	z,menu1			; Exit
+	dec	a
+	jr	z,1$			; 1 = switch screens
+	jp	menu1
+
+
+read:	.new
+	ld	hl,dbuf
+	call	setdma			; Set dma to default buffer
+	call	get_ds_fname		; Get data structure file name
+	jp	nz,menu1		; Error, go back
+
+	ld	de,iocb			; Get our control block
+	call	fxi$open		; Open file for output
+
+; Read header
+	ld	de,iocb
+
+	call	fx$get
+
+	 if	test
+	call	print
+	db	cr,lf,'vers ',0
+	call	pa2hc
+	 endif
+
+	cp	a,vers
+	jp	nz,head_err
+
+	ld	a,(fir_grp)
+	ld	b,a
+	call	fx$get
+
+	 if	test
+	call	print
+	db	cr,lf,'fir_grp ',0
+	push	af
+	ld	a,b
+	call	pa2hc
+	pop	af
+	call	print
+	db	'|',0
+	call	pa2hc
+	 endif
+
+	cp	a,b
+	jp	nz,head_err
+	ld	a,(sec_grp)
+	ld	b,a
+	call	fx$get
+
+	 if	test
+	call	print
+	db	cr,lf,'sec_grp ',0
+	push	af
+	ld	a,b
+	call	pa2hc
+	pop	af
+	call	print
+	db	'|',0
+	call	pa2hc
+	 endif
+
+	cp	a,b
+	jp	nz,head_err
+	ld	a,(grp_len)
+	ld	b,a
+	call	fx$get
+
+	 if	test
+	call	print
+	db	cr,lf,'grp_len ',0
+	push	af
+	ld	a,b
+	call	pa2hc
+	pop	af
+	call	print
+	db	'|',0
+	call	pa2hc
+	 endif
+
+	cp	a,b
+	jp	nz,head_err
+	ld	a,(grp_len+1)
+	ld	b,a
+	call	fx$get
+
+	 if	test
+	call	print
+	db	cr,lf,'grp_len+1 ',0
+	push	af
+	ld	a,b
+	call	pa2hc
+	pop	af
+	call	print
+	db	'|',0
+	call	pa2hc
+	 endif
+
+	cp	a,b
+	jp	nz,head_err
+; DPB
+;	ld	hl,dpb
+;	ld	b,dpb_length
+;1$:
+;	ld	a,(hl)
+;	inc	hl
+;	call	fx$get
+;	djnz	1$
+
+	ld	a,(gs_num)
+	ld	b,a
+	call	fx$get
+
+	 if	test
+	call	print
+	db	cr,lf,'gs_num ',0
+	push	af
+	ld	a,b
+	call	pa2hc
+	pop	af
+	call	print
+	db	'|',0
+	call	pa2hc
+	 endif
+
+	cp	a,b
+	jp	nz,head_err
+	ld	a,(gs_num+1)
+	ld	b,a
+	call	fx$get
+
+	 if	test
+	call	print
+	db	cr,lf,'gs_num+1 ',0
+	push	af
+	ld	a,b
+	call	pa2hc
+	pop	af
+	call	print
+	db	'|',0
+	call	pa2hc
+	push	af
+	call	cin
+	pop	af
+	 endif
+
+	cp	a,b
+	jp	nz,head_err
+
+	call	fx$get
+	ld	(fs_num),a
+; GS_
+	ld	e,gs_length
+	ld	hl,(gs_num)
+	call	mlt16x8
+	inc	hl			; Add one for end of structure
+	ld	de,iocb
+	push	hl
+	pop	bc			; Count into bc
+	ld	hl,(gs_list)		; Get pointer
+2$:
+	call	fx$get
+	ld	(hl),a
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	a,c
+	jr	nz,2$
+; FS_
+	ld	a,(fs_num)
+	ld	b,a
+	ld	c,fs_length
+	mlt	bc
+	inc	bc			; BC = length of move
+	ld	hl,(fs_list)
+3$:
+	call	fx$get
+	ld	(hl),a
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	a,c
+	jr	nz,3$
+; Close file
+	ld	de,iocb			; Get our control block
+	call	fxi$close		; Close file
+	ld	a,yes
+	ld	(stru_flag),a		; Show we have valid structure
+	jp	menu1
+
+head_err:
+	 if	test
+	call	print
+	 else
+	call	gxymsg
+	db	24,10
+	 endif
+	db	'Error in header',0
+	jp	menu1_err2
+
+write:	.new
+	ld	a,(stru_flag)		; See if we have valid structure
+	or	a,a
+	jp	z,no_stru_err		; Show error
+	ld	hl,dbuf
+	call	setdma			; Set dma to default buffer
+	call	get_ds_fname		; Get data structure file name
+	jp	nz,menu1		; Error, go back
+
+	ld	de,iocb			; Get our control block
+	call	fxo$open		; Open file for output
+
+; Write header
+	ld	de,iocb
+
+	ld	a,vers
+	call	fx$put
+	ld	a,(fir_grp)
+	call	fx$put
+	ld	a,(sec_grp)
+	call	fx$put
+	ld	a,(grp_len)
+	call	fx$put
+	ld	a,(grp_len+1)
+	call	fx$put
+; DPB
+;	ld	hl,dpb
+;	ld	b,dpb_length
+;1$:
+;	ld	a,(hl)
+;	inc	hl
+;	call	fx$put
+;	djnz	1$
+
+	ld	a,(gs_num)
+	call	fx$put
+	ld	a,(gs_num+1)
+	call	fx$put
+	ld	a,(fs_num)
+	call	fx$put
+; GS_
+	ld	e,gs_length
+	ld	hl,(gs_num)
+	call	mlt16x8
+	ld	de,iocb
+	inc	hl			; Add one for end of structure
+	push	hl
+	pop	bc			; Count into bc
+	ld	hl,(gs_list)		; Get pointer
+2$:
+	ld	a,(hl)
+	call	fx$put
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	a,c
+	jr	nz,2$
+; FS_
+	ld	a,(fs_num)
+	ld	b,a
+	ld	c,fs_length
+	mlt	bc
+	inc	bc			; BC = length of move
+	ld	hl,(fs_list)
+3$:
+	ld	a,(hl)
+	call	fx$put
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	a,c
+	jr	nz,3$
+; Close file
+	ld	de,iocb			; Get our control block
+	call	fxo$close		; Close file
+	jp	menu1
+
+;
+; Get file control block set for data structure file 
+;
+get_ds_fname: .new
+	ld	de,iofcb
+	call	initfcb			; Initialize FCB
+	call	gxymsg
+	db	23,10
+	db	'Enter name of Data Structure file ([du:]name[.typ]) ',0
+	or	a,0FFh			; Capitalize
+	call	bbline
+	call	zfname			; Get file name, etc
+	jr	nz,1$			; Error
+	ld	bc,(home_ud)		; Get default
+	ld	a,(iofcb+13)		; Get user
+
+	 if	test
+	call	print
+	db	cr,lf,'gdsfn u:',0
+	call	pa2hc
+	 endif
+
+	ld	c,a			; And set
+	ld	a,(iofcb)		; Get disk
+
+	 if	test
+	call	print
+	db	' d:',0
+	call	pa2hc
+	push	af
+	call	cin
+	pop	af
+	 endif
+
+	or	a,a
+	jr	z,0$			; Use default
+	dec	a			; Make into disk number
+	ld	b,a
+0$:
+	xor	a,a
+	ld	(iofcb),a		; Set to default disk
+	ld	(dos_ud),bc		; Set user/disk
+	call	log_default		; And log in
+	call	at
+	db	23,1
+	call	ereol
+	xor	a,a			; Show no error
+	ret
+1$:
+	call	gxymsg
+	db	24,10
+	db	'Error: File cannot be AFN',0
+	or	a,0FFh			; Set error flag
+	ret
+print_fs: .new
+	ld	a,(stru_flag)		; See if we have valid structure
+	or	a,a
+	jp	z,no_stru_err		; Show error
+	ld	hl,(fs_list)		; Pointer to start of list
+	ld	de,fs_length		; Length of entry
+1$:
+	ld	a,(hl)			; See if end
+	inc	a
+	jp	z,menu1			; All done, go back
+	push	hl			; Save pointer
+	ld	a,(hl)
+	call	lafdc
+	ld	a,':'
+	call	lout
+	inc	hl
+	ld	b,8
+2$:
+	ld	a,(hl)
+	call	lout
+	inc	hl
+	djnz	2$
+	ld	a,(hl)
+	cp	a,' '		; Do we have a type
+	jr	z,4$		; No, all done
+	ld	a,'.'
+	call	lout
+	ld	b,3
+3$:
+	ld	a,(hl)
+	call	lout
+	inc	hl
+	djnz	3$
+4$:
+	ld	a,cr
+	call	lout
+	ld	a,lf
+	call	lout
+	pop	hl		; Get our pointer back
+	add	hl,de		; bump
+	jr	1$		; And do next one
+
+dump_gs: .new
+	ld	a,(stru_flag)		; See if we have valid structure
+	or	a,a
+	jp	z,no_stru_err		; Show error
+	call	cls
+	ld	ix,(gs_list)	; Get beginning
+1$:
+	push	ix
+	pop	hl
+	call	pr_ent
+	ld	de,gs_length
+	add	ix,de
+	ld	a,(ix)
+	inc	a
+	jr	nz,1$
+	call	sak
+	jp	menu1
+pr_ent:
+	call	print
+	db	cr,lf,'[',0
+	call	phl4hc
+	call	print
+	db	'] ',0
+	call	pgsfname
+	ld	h,(ix+gs_crc+1)
+	ld	l,(ix+gs_crc)
+	call	print
+	db	' CRC ',0
+	call	phl4hc
+
+	ld	h,(ix+gs_gn+1)
+	ld	l,(ix+gs_gn)
+	call	print
+	db	' Group ',0
+	call	phlfdc
+	ret
+
+	include	repair.wdw
+
+; Insert entry (resort list)
+;  Call:
+;	HL -> entry that has been modified
+;  Return:
+;	HL -> entry that was moved
+;  All registers destroyed
+;
+ins_ent: .new
+	ld	(old_ptr),hl		; Save pointer
+	ld	hl,(gs_list)		; First entry
+1$:
+	ld	a,(hl)			; Get first byte
+	inc	a
+	jr	z,2$			; End of list, insert ahead of this
+	push	hl			; Save pointer
+	push	hl			; And again
+	ld	de,(old_ptr)		; Get our candidate
+	or	a,a			; Clear carry
+	sbc	hl,de
+	pop	hl			; Recover pointer
+	call	nz,cplng		; Compare if it is not same
+	pop	hl			; Recover our pointer
+	jr	c,2$			; We are past, so use this one
+	ld	de,gs_length
+	add	hl,de			; Bump up pointerr
+	jr	1$			; And try again
+2$:
+	ld	de,(old_ptr)
+	ex	de,hl			; HL -> candidate, DE -> one beyond
+	call	move_ent		; Move into place
+	ret
+;
+; Compare long -- compare file index and crc
+;  Call:
+;	DE = pointer gs 1
+;	HL = pointer gs 2
+;  Return:
+;	Flags reflect compare
+;  Destroys all registers
+;
+cplng:	.new
+	ld	c,a		; Save indicator
+	ld	a,(de)		; Get string 1 byte
+	cp	a,(hl)		; And compare
+	ret	nz		; No match
+	inc	hl
+	inc	de		; Bump pointer
+	inc	hl
+	inc	de		; Get to second byte for word compare
+	ld	a,(de)
+	cp	a,(hl)
+	ret	nz
+	dec	hl
+	dec	de
+	ld	a,(de)
+	cp	a,(hl)
+	ret			; Results of compare
+;
+; Move entry in table (no resort)
+;  Call:
+;	HL -> entry to be moved
+;	DE -> entry that new entry will be place in front of
+;  Return:
+;	HL -> moved entry
+;  Destroys all registers
+move_ent: .new
+	ld	(old_ptr),hl
+	ld	(new_ptr),de	; Save registers
+
+	 if	test
+	call	print
+	db	cr,lf,'move, old ',0
+	call	phl4hc
+	ex	de,hl
+	call	print
+	db	' to new ',0
+	call	phl4hc
+	ex	de,hl
+	 endif
+
+	ex	de,hl
+	or	a,a		; Clear carry
+	sbc	hl,de		; New-old
+	ex	de,hl		; Set HL -> on return
+	ret	z		; Same,  set return ptr
+	jr	c,1$		; New < old
+				; New > old
+	ex	de,hl		; Get HL back
+	ld	de,gs_length
+	sbc	hl,de		; See if already in place
+	jr	nz,0$		; No, go ahead with calulations
+	ld	hl,(old_ptr)
+	ret
+0$:
+	push	hl		; Save length of move
+	call	mov_temp	; And save our entry to temp
+	pop	bc		; Length of block to move in BC
+
+	 if	test
+	call	print
+	db	' move block up ',0
+	push	bc
+	pop	hl
+	call	phl4hc
+	call	cin
+	 endif
+
+	ld	de,(old_ptr)
+	ld	hl,gs_length
+	add	hl,de		; HL -> old+length, DE -> old
+	ldir			; Move block "up"
+	ld	hl,(new_ptr)
+	ld	de,gs_length
+	or	a,a
+	sbc	hl,de
+	ex	de,hl		; DE -> new hole
+	ld	hl,temp_ent
+	ld	bc,gs_length
+	ldir			; Place entry in hole
+	ld	hl,(new_ptr)	; Set HL for return
+	ld	de,gs_length
+	or	a,a		; Reset carry
+	sbc	hl,de		; HL -> new location
+	ret
+1$:				; New < old
+	call	mov_temp	; Save our entry
+	ld	hl,(old_ptr)
+	ld	de,(new_ptr)
+	or	a,a
+	sbc	hl,de		; Distance between entries
+
+	 if	test
+	call	print
+	db	' move block down ',0
+	call	phl4hc
+	 endif
+
+	push	hl
+	pop	bc		; Into BC
+	ld	hl,(old_ptr)
+	ld	de,gs_length-1
+	add	hl,de		; DE -> old +length-1 (last byte in old)
+	ex	de,hl
+	ld	hl,(old_ptr)
+	dec	hl		; HL -> old - 1 (last byte in one in front of old)
+	lddr			; Move block down
+
+	ld	de,(new_ptr)
+	ld	hl,temp_ent
+	ld	bc,gs_length
+	ldir			; Place entry in hole
+	ld	hl,(new_ptr)
+	ret
+;
+; Move entry to temporary
+;  Call:
+;	old_ptr -> entry to be saved
+;  All registers destroyed
+;
+mov_temp:
+	ld	de,temp_ent
+	ld	hl,(old_ptr)
+	ld	bc,gs_length
+	ldir
+	ret
+
+
+;
+; Search for name
+;  Call:
+;	namestring (name,tag,user) is in temp_ent
+;  Return:
+;	A = 0, HL -> entry if found.  A <> 0 if not
+;  All regesters destroyed
+;	
+name_s:	.new
+	ld	hl,(gs_list)		; Point to first entry
+1$:
+	ld	a,(hl)			; Get first character
+	inc	a
+	jr	z,2$			; 0FFh = end of list
+	ld	a,(de)
+	cp	a,(hl)
+	jr	z,3$			; Match, report
+	jr	c,2$			; Beyond match, report error
+	ld	de,gs_length
+	add	hl,de			; Bump up
+	jr	1$			; And try again
+2$:
+	or	a,0FFh			; Set error
+	ret				; And return
+3$:
+	xor	a,a			; Show no error
+	ret				; And return
+;
+; Read group
+;  Input:
+;	IY -> Window control
+;	BC = group number
+;
+readgr:	.new
+	ld	h,(iy+wc_buf+1)
+	ld	l,(iy+wc_buf)		; Get buffer address
+	ld	(curdma),hl		; And save
+
+	ld	hl,(dpb+dpb_maxb)	; Get maximum block
+	inc	hl			; +1
+	or	a,0FFh			; Clear carry, set return error status
+	sbc	hl,bc
+	ret	c			; Bad block number
+	ld	(iy+wc_gnm+1),b
+	ld	(iy+wc_gnm),c		; Save group number
+
+	push	bc
+	pop	hl			; Get Group number in HL
+
+	 if	test
+	 call	print
+	 db	cr,lf,' grp:',0
+	 call	phl4hc
+	 endif
+
+	ld	a,(sec_grp)		; Sectors/group
+	ld	e,a			; Into E
+	call	mlt16x8			; Find sector number
+	ld	a,(dpb+dpb_spt)		; Sectors per track
+	ld	e,a			; Into E
+	call	div16x8			; Assume sectors < 16 bits
+					; HL = track, E = Sector
+	ld	a,e
+	ld	(cursec),a		; Save sector
+	ld	de,(dpb+dpb_tbfdir)	; Add in tracks before directory
+	add	hl,de
+	ld	(curtrk),hl		; Save track
+	ld	a,(curdsk)		; Get our target disk
+	ld	c,a
+	ld	b,0			; Load BC with disk
+	ld	e,1			; Show no new mount
+	ld	hl,(wboot+1)
+	ld	l,b_seldsk		; Get bios entry
+	call	callhl			; And go there
+
+	ld	a,(sec_grp)		; Get number of sectors to be read
+	ld	b,a			; Into counter
+1$:
+
+	 if	test
+	 call	print
+	 db	' trk:',0
+	 ld	hl,(curtrk)
+	 call	phl4hc
+	 call	print
+	 db	' sec:',0
+	 ld	a,(cursec)
+	 call	pa2hc
+	 endif
+
+	push	bc			; Save counter
+	ld	bc,(curtrk)
+	ld	hl,(wboot+1)
+	ld	l,b_settrk
+	call	callhl			; Set track
+
+	ld	bc,(cursec)		; Get logical sector
+	ld	b,0			; Sector is only one byte
+	ld	de,(skew)		; Get skew
+	ld	hl,(wboot+1)
+	ld	l,b_sectran		; Get entry
+	call	callhl			; Get our physical sector
+
+	 if	test
+	 call	print
+	 db	' physec ',0
+	 call	phl4hc
+	 endif
+
+	ld	b,h
+	ld	c,l			; Put physical sector in BC
+	ld	hl,(wboot+1)
+	ld	l,b_setsec		; Get entry
+	call	callhl			; And set sector
+
+	ld	bc,(curdma)		; Get DMA
+	ld	hl,(wboot+1)
+	ld	l,b_setdma		; Get entry
+	call	callhl			; And set DMA
+
+
+	ld	hl,(wboot+1)
+	ld	l,b_read		; Get entry
+	call	callhl			; And read record
+	or	a,a			; Check status
+	ret	nz			; Had a problem
+
+	ld	hl,(curdma)
+	ld	de,llrec
+	add	hl,de
+	ld	(curdma),hl		; Bump up DMA
+
+	ld	a,(dpb+dpb_spt)		; Get sectors per track
+	ld	b,a			; Into B
+	ld	a,(cursec)
+	inc	a			; Bump up sector
+	ld	(cursec),a
+	cp	a,b
+	jr	c,2$			; O.K., go on
+
+	xor	a,a			; Get zero
+	ld	(cursec),a		; And set sector to zero
+	ld	hl,(curtrk)
+	inc	hl
+	ld	(curtrk),hl		; Bump track
+
+2$:
+	pop	bc			; Get our counter
+
+	 if	test
+	dec	b
+	jp	nz,1$
+	 else
+	djnz	1$			; Loop through again
+	 endif
+
+; Test for end of file (^Z)
+	ld	h,(iy+wc_buf+1)
+	ld	l,(iy+wc_buf)		; Get buffer address
+	ld	bc,(grp_len)		; And length of group
+	ld	a,ctrl_z
+	cpir				; And search for existance in buffer
+	ld	a,yes			; Prime for yes
+	jr	z,3$			; We have one
+	xor	a,a			; Show none
+3$:
+	ld	(iy+wc_eof),a		; And set indicator
+	xor	a,a			; Set good status
+	ret
+;
+; Write group
+;  Input:
+;	IY -> Window index
+;	dfcb is set to file and opened
+;	dos_ud is set to output UD
+;
+writegr:	.new
+	call	log_default		; Insure DOS, BIOS sync
+	ld	h,(iy+wc_buf+1)
+	ld	l,(iy+wc_buf)		; Get buffer address
+	ld	(curdma),hl		; And save
+
+	ld	a,(sec_grp)		; Get number of sectors to be read
+	ld	b,a			; Into counter
+1$:
+	push	bc			; Save counter
+	ld	hl,(curdma)
+	call	setdma
+	ld	de,dfcb
+	call	f$write
+	ret	nz			; Error, return it to caller
+	ld	hl,(curdma)
+	ld	de,llrec
+	add	hl,de
+	ld	(curdma),hl		; Bump up DMA
+	pop	bc			; Get our counter
+	djnz	1$			; Loop through again
+
+	xor	a,a			; Set good status
+	ret
+
+;
+; Get disk parameter block--fill in skew, dpb structure
+;	from curdsk
+;  Destroys all registers
+;
+getdpb:	.new
+	ld	a,(curdsk)		; Get disk
+	ld	c,a
+	ld	b,0			; Into BC
+	ld	hl,(wboot+1)
+	ld	l,b_seldsk		; Get entry
+	call	callhl			; And do select
+	ld	a,h
+	or	a,l
+	jp	z,getdpberr		; Disk not legal
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)			; Get skew
+	ld	(skew),bc		; And save
+	ld	de,dhb_dpbp-1		; Offset to dpb pointer
+	add	hl,de
+	ld	e,(hl)
+	inc	hl
+	ld	d,(hl)			; Get pointer to bios structure
+	ex	de,hl			; In HL
+	ld	de,dpb			; Set our destination
+	ld	bc,dpb_length		; And length
+	ldir				; Move into place
+
+	 if	test
+	 call	print
+	 db	cr,lf,'DPB ',0
+	 ld	hl,dpb
+	 ld	b,15
+xxxx:
+	 ld	a,(hl)
+	 call	pa2hc
+	 call	print
+	 db	' ',0
+	 inc	hl
+	 djnz	xxxx
+	 endif
+
+
+	ld	a,(dpb+dpb_bs)	; Get block shift factor
+	ld	b,a		; Into B
+	ld	a,1		; Base (2^0)
+1$:
+	add	a,a		; * 2
+	djnz	1$		; Loop
+	ld	(sec_grp),a	; Save sectors per group
+
+	 if	test
+	 call	print
+	 db	' sec/grp ',0
+	 call	pa2hc
+	 endif
+
+	ld	b,a
+	ld	c,llrec
+	mlt	bc		; Get length of group
+	ld	(grp_len),bc	; And save
+	ld	b,a
+	ld	c,llrec/ldir	; Number of directories/logical record
+	mlt	bc		; Get number of directories per group
+	ld	(dir_grp),bc	; And save
+	ld	hl,(dpb+dpb_allblk) ; Get initial allocation vector
+	ld	b,0		; Zero accumulator
+2$:
+	ld	a,h
+	or	a,l
+	jr	z,3$		; All done
+	sla	h
+	rl	l		; 16 bit shift, bytes in wrong order
+	inc	b		; Count up
+	jr	2$
+3$:
+	ld	a,b
+	ld	(fir_grp),a	; Save first group number
+	ld	c,a
+	ld	b,0			; BC = first group
+	ld	hl,(dpb+dpb_maxb)	; Maximum group
+	or	a,a			; Clear carry
+	sbc	hl,bc
+	inc	hl			; HL = number of entries
+
+	 if	test
+	call	print
+	db	cr,lf,'Entries ',0
+	call	phlfdc
+	call	cin_cc
+	 endif
+
+	ld	(gs_num),hl		; Save number of entries
+	ld	e,gs_length		; Length of each entry
+	call	mlt16x8			; Get total space required
+	or	a,a			; Test for 16 bit overflow
+	jp	nz,overflow
+	inc	hl			; Add one for end of list
+	push	hl			; Save space needed to zero memory
+	push	hl
+	pop	bc			; get space needed in BC
+	call	alloc			; Get space
+; one still on stack
+	or	a,a
+	jp	nz,ds_alloc_err		; Report error
+
+	 call	print
+	db	cr,lf,'list ',0
+	 call	phl4hc
+
+	ld	(gs_list),hl		; Save pointer
+	pop	bc
+	push	bc			; Get length
+	push	hl
+	add	hl,bc
+	dec	hl
+	ld	(gs_last),hl		; Save poionter to end
+	pop	hl
+	pop	bc			; Recover ptr, length
+	push	hl
+	pop	de
+	inc	de			; Set to clear area
+	dec	bc
+	or	a,0FFh
+	ld	(hl),a
+	ldir				; Clear the memory block
+
+	ret			; Return
+
+getdpberr:
+	call	print
+	db	cr,lf,'Illegal drive in select.',0
+	jp	exit
+	
+;
+; Adjust file reference
+;  Call:
+;	B = offset (1 or -1)
+;	C = Target file number (offset applied to file >=)
+;  Uses IX,DE
+;
+adj_file: .new
+	ld	ix,(gs_list)
+	ld	de,gs_length
+1$:
+	ld	a,(ix)		; Get indicator
+	inc	a
+	ret	z		; All done
+	ld	a,(ix+gs_fi)	; Get file index
+	cp	a,c		; Does it need adjusting
+	jr	c,2$		; No, go on
+	add	a,b		; Yes, adjust
+	ld	(ix+gs_fi),a
+2$:
+	add	ix,de		; Bump up
+	jr	1$		; And do it again
+
+;
+; Routine to multiply HL by E (16bit X 8bit)
+;	Return:
+;	    A = MSB
+;	    HL = lower two bytes
+; Destroys DE
+;
+mlt16x8:
+	ld	d,h		; Save upper byte
+	ld	h,e		; Get multiplier
+	mlt	hl		; First product
+	mlt	de		; And second
+	ld	a,d		; High byte of product
+	ld	d,e		; Move middle byte into position for add
+	ld	e,0		; This product has zero lower byte
+	add	hl,de		; Add for middle and lower byte
+	adc	a,0		; Adjust high byte
+	ret
+;
+; Routine to divide HL by E (16bit / 8bit)
+;	Return:
+;	    HL = Integer quotient
+;	    E = Remainder
+; Destroys D
+;
+div16x8:
+	push	af
+	push	bc		; Save registers
+
+	push	hl
+	pop	bc		; Get dividend in BC
+	ld	a,e		; Check divisor
+	or	a,a
+	jr	nz,dv16x8	; O. K., go on
+	ld	c,0		; Simulate divide by 1
+	jr	dv16x8r	
+dv16x8:
+	ld	hl,0		; Clear quotient
+dv16x8l:
+	inc	hl		; Count in dividend
+	ld	a,c		; Lower byte
+	sub	a,e		; Subtract divisor
+	ld	c,a		; Back to byte
+	ld	a,b		; Get upper byte
+	sbc	a,0		; Get the whole thing
+	ld	b,a
+	jr	nc,dv16x8l	; Do next one
+	ld	a,c		; One too many, get it back
+	add	a,e
+	ld	c,a
+	ld	a,b
+	adc	a,0
+	ld	b,a
+	dec	hl		; And take off count
+dv16x8r:
+	push	bc
+	pop	de		; Get remainder
+
+	pop	bc
+	pop	af		; Restore registers
+	ret
+;
+; Call service to simulate call (hl)
+;
+callhl:
+	jp	(hl)
+
+;
+; Allocate memory -- normal
+;  Call:
+;	BC = requested length
+;  Return:
+;	HL -> beginning of block (HL = 0 means no allocation made)
+;  All registers destroyed
+;
+alloc:
+	call	alloc_t		; Test
+	ret	c		; No room
+	ld	hl,(bottom)	; Get current bottom
+	push	hl		; Save for return
+	add	hl,bc		; Add requested
+	ld	(bottom),hl	; Bump up
+	pop	hl		; Get pointer
+	ret
+;
+; Allocate memory -- page
+;  Call:
+;	BC = requested length
+;  Return:
+;	HL -> beginning of block (HL = 0 means no allocation made)
+;  All registers destroyed
+;
+allocp:	.new
+	ld	a,c		; Get lower
+	or	a,a
+	jr	z,1$		; O.K., go on
+	inc	b
+	ld	c,0		; Make page
+1$:
+	call	alloc_t		; Test
+	ret	c		; No room
+	ld	hl,(top)
+	sbc	hl,bc		; Carry clear from above
+	ld	(top),hl	; reset top
+	ret
+
+alloc_t:
+	ld	hl,(top)
+	ld	de,(bottom)
+	or	a,a		; Clear carry
+	sbc	hl,de		; Get available memory
+	sbc	hl,bc		; And see if we have enough
+	ld	hl,0		; Get error ready
+	ret
+
+; Print byte in A, restore all registers
+prbyte:	.new
+	push	bc		; Save register
+
+	ld	b,a		; Save character
+	bit	7,b
+	jr	z,1$
+	ld	a,''''		; Show high bit
+	call	cout
+1$:
+	ld	a,b
+	and	a,07Fh		; Mask off high bit
+	cp	a,del		; Is it 'del'
+	jr	nz,3$		; No, go on
+	call	print
+	db	'DL',0
+	jr	prbyter
+2$:
+	call	print
+	db	'SP',0
+	jr	prbyter
+3$:
+	cp	a,' '		; Is it printable
+	jr	z,2$		; Show space
+	jr	nc,4$		; Yes, print it
+	ld	a,'^'
+	call	cout
+	ld	a,b
+	and	a,7Fh		; Mask off high bit
+	or	a,40h		; Make printable
+4$:
+	call	cout
+prbyter:
+	ld	a,b
+	pop	bc
+	ret
+
+; Edited cin with ctrl_c check
+cin_cc:
+	call	cin_e
+	cp	a,ctrl_c
+	jp	z,exit
+	ret
+; Edited cin
+cin_e:
+	call	cin
+	call	caps
+	ret
+sak:
+	call	print
+	db	cr,lf,'Strike any key to continue.',0
+	jr	cin_cc
+; Error reporting
+ds_alloc_err:
+overflow:
+
+baddisk:
+help:
+	call	print
+	db	cr,lf,'Usage:'
+	db	cr,lf,'  REPAIR <source>: <target>:'
+
+	db	0
+
+	jp	exit
+exit:
+	ld	hl,(home_ud)
+	ld	(dos_ud),hl		; Set to return home
+	call	log_default		; Sync DOS, BIOS-- log in default
+	jp	wboot
+;
+; Force sync of DOS, BIOS selected disk. Log in default DU
+;  Destroys all registers
+;
+log_default:
+
+	 if	test
+	call	print
+	db	'LD ',0
+	ld	a,(dos_ud+1)		; Get disk
+	add	a,'A'
+	call	cout
+	ld	a,(dos_ud)
+	call	pafdc
+	ld	a,':'
+	call	cout
+	 endif
+
+	ld	a,(dos_ud+1)		; Get DOS current disk
+	ld	c,a
+	ld	b,0			; Into BC
+	ld	e,1			; Show no new mount
+	ld	hl,(wboot+1)
+	ld	l,b_seldsk
+	call	callhl			; And Select at BIOS
+	ld	bc,(dos_ud)
+	call	logud
+	ret
+
+; File skeleton
+
+fileskel:
+	db	0,' Unnamed   '
+	db	0,' Junk      '
+fileskel_l equ	$-fileskel
+
+; For DOS i/o
+
+iocb:
+	db	1			; Use 128 byte buffer
+	ds	1			; End of file flag
+	ds	2			; Byte counter
+	ds	2			; Next byte pointer
+	dw	iobuf			; Buffer pointer
+iofcb:
+	ds	36			; File control block
+iobuf:
+	ds	llrec			; And buffer
+
+; Control parameters
+
+function  ds	1		; Function (classify or create)
+stru_flag ds	1		; Valid structure indicator
+
+; Memory management
+;  Map:
+;	$memry       - bottom       -- structure allocations (gs_ and fs_)
+;	bottom       - top          -- empty
+;	top          - gr1buf       -- window2 group buffer
+;	gr1buf       - protect-106h -- window1 group buffer
+;	protect-106h - protect      -- stack
+;
+;	bottom      - gr1buf        -- Used by initialize for directory buffer
+;
+$memry	ds	2
+bottom	ds	2			; Bottom of unallocated memory
+dirend	ds	2			; Last byte of directory buffer
+top	ds	2			; Top of unallocated memory
+gr1buf	ds	2			; Start of window 1 buffer
+
+; Line print control
+
+sksw	ds	1			; Skip switch
+
+; Group structure
+
+gs_fi	  equ	0		; File name index
+gs_crc	  equ	1		; CRC of block
+gs_gn	  equ	3		; Group number
+gs_length equ	5		; Length of entry
+
+gs_num	  ds	2		; Number of entries in structure
+gs_list	  ds	2		; Pointer to structure
+gs_last	  ds	2		; Pointer to end (0FFh) entry
+; File name list
+
+fs_num	ds	1		; Number of files in table
+fs_list	ds	2		; Pointer to structure
+fs_length equ	12		; Length of file name entries
+
+; Group manipulation routine variables
+
+old_ptr	ds	2		; Pointer to current entry
+new_ptr	ds	2		; Pointer to entry that should follow above
+temp_ent ds	gs_length	; Safe store for entry during move
+
+; Read and Write group working storage
+
+home_ud	ds	2			; Home user/disk
+dos_ud	ds	2			; Current BDOS user, disk
+curdsk	ds	1			; Current target disk
+curdma	ds	2			; Current DMA address
+curtrk	ds	2			; Current track
+cursec	ds	1			; Current sector
+curfi	ds	1			; Current file index
+tardsk	ds	1			; Target disk
+
+; Get next allocation group routine working storage
+
+gna_cdp ds	2			; Current directory pointer
+gna_cgp ds	2			; Current group pointer
+gna_cgc ds	1			; Current group count
+gna_mgc ds	1			; Refresh for cgc (high byte)
+gna_mgc8  equ	8			; Parameter for > 256 blocks
+gna_mgc16 equ	16			; Parameter for < 256 blocks
+
+; Disk parameters
+
+skew	ds	2			; Skew pointer/value for dph
+fir_grp	ds	1			; First group number
+sec_grp	ds	1			; Number of sectors per group
+dir_grp	ds	2			; Directory entries per group
+grp_len ds	2			; Length of group in bytes
+dpb	ds	dpb_length		; Disk parameter block
+
+; Window control
+
+wc_fl	  equ	0			; First line
+wc_ll	  equ	1			; Last line
+wc_afl	  equ	2			; First line of alternate buffer
+; For group window
+wc_df	  equ	3			; Display format 0 = Ascii
+wc_eof	  equ	4			; End of file (^Z) in buffer
+wc_gs	  equ	5			; Group entry
+wc_gnm	  equ	7			; Group number
+wc_buf	  equ	9			; Buffer pointer
+wc_bpl	  equ	11			; Page limit (page beyond buffer)
+wcg_ptr  equ	13			; Ptr to first line in buffer
+wcg_cptr  equ	15			; Pointer to next line
+; For file window
+wcf_ff	  equ	17			; First file number (byte)
+
+wc_length equ	18			; Length
+
+currest	ds	2			; Cursor rest position
+window1	ds	wc_length		; Middle window
+window2	ds	wc_length		; Lower window
+
+	end
+

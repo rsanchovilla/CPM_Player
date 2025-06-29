@@ -1,0 +1,661 @@
+
+
+
+
+				Chapter	5 - Files
+
+
+	Differences  between  referencing  files  under	 ConIX	and  CP/M,
+	improvements  to  user area manipulation, how to use the ExpanDisk
+	feature,  and  procedures  for	recovering  from  a  `Disk   Full'
+	condition.
+
+
+				   - CONTENTS -
+	__________________________________________________________________
+
+
+	  5.  Files..................................................  5-1
+
+	    5.1	 User Areas..........................................  5-1
+
+	    5.2	 Standard CP/M Filenames.............................  5-1
+
+	    5.3	 Standard ConIX	Filenames............................  5-2
+
+	    5.4	 Automatic Searching.................................  5-2
+
+	      5.4.1  The Search	Path.................................  5-2
+
+	      5.4.2  Automatic Command Searching.....................  5-3
+
+	      5.4.3  Automatic File Searching........................  5-4
+
+		5.4.3.1	 Searching on the Command Line...............  5-4
+
+		5.4.3.2	 Using File Searching With CP/M
+				 Software............................  5-4
+
+		5.4.3.3	 Automatic Extension (Overlay)
+				 Searching...........................  5-5
+
+	    5.5	 Drive Management....................................  5-7
+
+	      5.5.1  Recovering	from Disk Full.......................  5-8
+
+	    5.6	 Notes...............................................  5-9
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				      -	i -
+
+
+
+
+
+	ConIX Operating	System					     Files
+
+	5.  Files
+
+	In this	section	we will	describe how programs and files	are
+	treated	differently under the control of the ConIX system as
+	opposed	to CP/M.  ConIX	presents some major improvements over the
+	standard methods of handling files in order to facilitate their
+	storage	in a more logical and space-efficient manner.
+
+
+	5.1  User Areas
+
+	It can be rather time consuming	to sift	through	a large	directory
+	listing	to find	a particular file, especially when their contents
+	span many different areas.  For	example, you always have your
+	``standard set'' of .COM files along with whatever it is they work
+	on.  You may also have a favorite set of utilities (like PIP,
+	STAT, etc.) as well as a set of	files related to the others, and
+	some totally unrelated.	 You could get pretty sore eyes	trying to
+	find a file in the listing of such a large directory.
+
+	One of the more	significant innovations	Digital	Research recently
+	added to CP/M is called	the User Area, which is	an attempt to
+	solve this storage problem.  Disk files	could be stored	in
+	separate directories within a physical disk, thereby eliminating
+	much of	the clutter.  You could	think of each user area	as being a
+	totally	separate disk with its own private directory.  CP/M
+	provides 32 such user areas which are numbered from 0 to 31.  The
+	CCP, however, only allows the user to access the first 16 (0 to
+	15), where you are automatically placed	in user	area 0 each time
+	you cold boot CP/M into	the system.
+
+	One of the biggest setbacks with this implementation is	that files
+	which are stored in one	user area cannot be referenced,	on the
+	command	line, from another.  In	order for this concept to work at
+	all, you would have to make copies of the .COM files you would
+	need in	each user area so as to	be able	to run them.  This can be
+	extremely storage inefficient, especially for programs such as
+	WordStar which require approximately 60K of storage.  It is for
+	this reason that most people end up not	using this feature at all
+	with regular CP/M.
+
+	ConIX, on the other hand, removes much of the inconveniences and
+	drawbacks which	were normally involved in working with user areas.
+	On the whole, ConIX creates an excellent environment for managing
+	your entire disk system.
+
+
+	5.2  Standard CP/M Filenames
+
+	A filename is a	means by which the user	can reference a	particular
+	set of data stored on disk.  The syntax	of the standard	CP/M
+	filename is:
+
+		(D:)<FILENAME>(.EXT)
+
+
+
+
+				       5-1
+
+
+
+
+
+	Files					    ConIX Operating System
+
+	where D	is a single letter corresponding to the	disk (A-P) on
+	which the file is stored, FILENAME is the name of the file (as ED,
+	STAT, or PIP - maximum 8 characters), and EXT is an optional
+	extension which	is usually used	as an indication of the	type of
+	data stored within the file (as	COM, ASM, or BAS - maximum 3
+	characters).  If the disk code is omitted, then	the default or
+	current	directory (as indicated	in the command line prompt) will
+	be assumed.
+
+
+	5.3  Standard ConIX Filenames
+
+	The standard ConIX filename is similar in most respects	to that	of
+	CP/M.  It's format is:
+
+		(D:)(#/)<FILENAME>(.EXT)
+
+	where #	is the user area (0-31)	on which the file is stored.  If
+	the user code is omitted, then the default or current user area
+	(as indicated in the system prompt) will be assumed.
+
+	Programs written for CP/M will only understand the syntax of the
+	CP/M filename.	Using the ConIX	format will yield erroneous
+	results.  The reason why is simple:  CP/M did not provide any
+	means of associating a user area number	with a filename.  That's
+	because	older versions of CP/M did not have user area capability,
+	and incompatibility would have resulted	from changing the internal
+	mechanisms for accessing files.	 Although we were able to kludge
+	our way	around this limitation in many instances, in general,
+	specifying user	areas with filenames is	not always possible.
+
+	The majority of	programs written for ConIX, in this and	future
+	packages, will accept the new form of the filename.  It	is a very
+	useful means for accessing files on disks and user areas other
+	than the one you're currently using.
+
+
+	5.4  Automatic Searching
+
+	In an attempt to improve upon the way the CCP manipulates user
+	areas, we have added an	innovative feature to ConIX called
+	Automatic Searching.  This allows commands or files to be loaded
+	automatically from a drive or user area	other than the one being
+	used.  In this way, files or commands which are	accessed quite
+	often may be kept in areas common to all disks and user	areas,
+	thereby	eliminating the	need for multiple copies.
+
+
+	5.4.1  The Search Path
+
+	ConIX implements a concept called Path Searching which allows you
+	to declare the files within certain directories	as being common
+	with all other directories.  This is done by using the OPT +/-SP
+	command	as described in	detail in the commands section.	 For the
+	purpose	of instruction,	we will	explain	its use	briefly	here.
+
+
+
+				       5-2
+
+
+
+
+
+	ConIX Operating	System					     Files
+
+	The syntax of the command to set the Search Path is:
+
+		<A:00> opt +/-sp <path>
+
+	where path is a	list of	disk and user areas which are to be
+	considered common to all other directories.  For example:
+
+		<A:00> opt +sp a0a15
+
+	will set drive A user 0	and 15 to be common directories.  Up to	16
+	such drive and user area combinations may be entered into the path
+	list.  Whenever	a search feature is invoked (we'll outline them
+	soon), the directories specified in the	Search Path will be
+	automatically searched for the requested file in the order in
+	which they were	specified.
+
+	Note that ConIX	will only search those path disks which	are on-
+	line or	logged-in.  Therefore, you may have more than one drive	in
+	the path, although it might not	necessarily be in use at any one
+	given time.
+
+
+	5.4.2  Automatic Command Searching
+
+	In standard CP/M, if you are using drive A user	0, and issue a
+	command, such as ED, then the file ED.COM is searched for on the
+	same drive and user area (the default directory) and loaded if
+	found.	Otherwise, an error message is printed,	as:
+
+		A>ed foo.asm
+		ed?
+		A>
+
+	The same holds true if you were	on drive A-P and user area 0-15.
+	Only the current user area directory is	searched.  But remember,
+	that was regular CP/M.	ConIX, on the other hand, is much more
+	flexible.
+
+	Automatic Command Searching allows you to store	commands in any
+	Search Path directory to make them commonly available to all other
+	disks and user areas.  Therefore, if you typed:
+
+		<A:02> ed foo.asm
+
+	ConIX will search A:2/ for ED.COM and, if not found there, it will
+	search the directories that were specified in the Search Path.
+
+	If you know on what drive and user area	a command lies,	you can
+	specify	it on the command line and ConIX will look only	there.	If
+	the file is not	found there, no	searching will take place and an
+	error message will be printed.	For example, if	you were using
+	A:10/ and you wanted to	load a command on A:15/, you can type:
+
+		<A:10> a:15/cmd	 (arg(s))
+
+
+
+
+				       5-3
+
+
+
+
+
+	Files					    ConIX Operating System
+
+	ConIX will go directly to the specified	directory without
+	performing any searching.
+
+
+	5.4.3  Automatic File Searching
+
+	In the previous	section, we discussed the operation of Automatic
+	Command	Searching whereby ConIX	will search all	Search Path
+	directories for	the requested command until it is found.
+	Automatic File Searching works in exactly the same way,	except we
+	are dealing with ordinary files	and not	commands.  The syntax for
+	accessing files	in this	manner is:
+
+		:FILENAME.EXT
+
+	which is the same as the regular CP/M format, with the exception
+	that the single	letter drive code is omitted.
+
+	NOTE:  It is highly recommended	that searching only be used when
+	performing a read operation on the file.  Using	such a syntax when
+	writing	to the file may	cause different	results, depending upon
+	whether	or not the file	is found and where.  If	you intended on
+	writing	to a file in a certain directory and it	was not	there,
+	then you could end up writing to another file with the same name
+	in a different place, thereby destroying the data within it.  It
+	is for this reason that	ConIX does not permit this syntax to be
+	used with Output File Redirection (to be described later).
+
+
+	5.4.3.1	 Searching on the Command Line
+
+	The most common	usage of Automatic File	Searching occurs on the
+	command	line when filename arguments are specified.  For example,
+	assuming the Search Path to be A0A15, you can type:
+
+		<A:10> type :foo.asm
+
+	ConIX will search the directories A:10/, A:0/, and A:15/ for the
+	file FOO.ASM and, if found, its	contents will be printed on the
+	console	screen.
+
+	Note that this syntax works with all commands built into ConIX,
+	but will not work with standard	CP/M compatible	programs.  There
+	exists another method for utilizing ConIX File Searching with such
+	software.
+
+
+	5.4.3.2	 Using File Searching With CP/M	Software
+
+	Using a	special	command	line option, you can reference a file
+	within the Search Path when using existing CP/M	software.  The
+	syntax for this	feature	is:
+
+		<A:00> [f(=#type)] <command> (arg(s))
+
+
+
+
+				       5-4
+
+
+
+
+
+	ConIX Operating	System					     Files
+
+	where type is an optional number that determines whether a path-
+	login will take	place when ConIX is searching for a file.  If type
+	is 0, ConIX will search	only on	those disks which have been
+	logged-in, as per standard path	searching procedure.  If type is 1
+	or omitted, ConIX will search through all disks	present	within the
+	search path, whether they are logged-in	or not,	until either the
+	file is	found, or the end of the path is reached.
+
+	When path-login	is used, be sure each drive in the path	is on-line
+	(powered-up with a disk	loaded), otherwise the system may print	an
+	error message or just hang (depending upon how your BIOS handles a
+	drive-not-ready	situation).
+
+	Let's say you were using a BASIC interpreter which was invoked
+	from A:0/ and wanted to	load a file from a different user area.
+	Under standard CP/M this would be impossible.  ConIX, however,
+	allows you to utilize Path Searching to	access this file.  To
+	enable this feature for	BASIC, as in our example, type:
+
+		<A:00> [f=0] basic
+
+	Within BASIC you can now type:
+
+		Ok
+		load ":test1"
+		Ok
+
+	The colon will act as a	signal to ConIX	that the specified file	is
+	to be loaded from the Search Path if not found in the current
+	directory.  Internally,	the colon will be stripped from	the
+	filename and ConIX will	record the corresponding user area for
+	future disk references to this file.  Since the	colon occupied one
+	space within the 8-character filename segment, you are limited to
+	using 7-character filenames (excluding the extension) when taking
+	advantage of this feature.
+
+
+	5.4.3.3	 Automatic Extension (Overlay) Searching
+
+	There exits a few problems with	setting	up user	areas as we have
+	described them thus far.  Firstly, you can't specify a ConIX-type
+	filename with standard CP/M software.  This is annoying, but it
+	can be circumvented in many cases.  The	easiest	way, if	you have
+	the source code	to the software, is to modify the program to use
+	some of	the added ConIX	SysCalls (described in the Programming
+	Manual)	when accessing files.  Unfortunately, that is the only way
+	to do it.  If you can't	modify the program, you'll probably have
+	to live	with the limitation.
+
+	Secondly, programs which use overlays tend to bomb when	the
+	program	is invoked from	any user area other than the one you're
+	currently working in.  That may	not be so bad, especially if you
+	plan to	use the	software from only that	user area.  In such a
+	case, just store the overlay files there.
+
+
+
+
+				       5-5
+
+
+
+
+
+	Files					    ConIX Operating System
+
+	However, editing programs (such	as WordStar) tend to be	used from
+	any directory.	Duplicating the	overlays in each user area brings
+	back the problems which	we had with user areas in the first place.
+
+	To effectively get around this,	we have	implemented Automatic
+	Extension Searching which would	allow overlays to be stored in any
+	one user area and accessed from	within all system directories.	In
+	order to use this feature, you must first specify a list of
+	filename extensions (.EXT's) for which auto-searching is to take
+	place.	This is	done with the OPT +/-XS	internal command but,
+	briefly, the syntax is:
+
+		<A:00> opt +/-xs <.EXT>	. . .
+
+	where EXT represents the extension(s) for which	searching will
+	take place.  For example, the command line:
+
+		<A:00> opt +xs .ovr .ovl
+
+	will set Extension Searching for files which have .OVR and .OVL
+	extensions.  The extension list	contains no entries on start-up.
+
+	Once a valid list of extensions	has been set, Extension	Searching
+	can be enabled by using	the [F]	command	line option, as:
+
+		<A:00> [f(=#type)] <command> (arg(s))
+
+	If the specified command should	access any files with extensions
+	matching those in the Extension	List, ConIX will search	for the
+	file in	the current directory and, if not found	there, along the
+	Search Path as well.
+
+	For example, let's say WordStar	and its	overlay	files are stored
+	on A:15/ and the Search	Path is	set to A0A15.  If you were to
+	issue the command:
+
+		<A:10> [f] ws
+
+	the file WS.COM	and the	.OVR overlays will be loaded from the Path
+	directory A:15/.  You can specify [F=0]	if ConIX should	search
+	only on	those path disks which are currently activated or logged
+	in.  Otherwise,	all disks in the path will be searched,	regardless
+	of their current state.
+
+	The way	Extension Searching works internally is	that ConIX checks
+	the FCB's passed to the	disk I/O file-open SysCalls to see if the
+	file extension within it matches one in	the user-specified
+	Extension List.	 If so,	Automatic Searching is invoked and, if the
+	file is	not found, an error code is returned.  If found, an entry
+	is made	into an	internal table which contains the address of the
+	FCB as well as the associated user area.  Future I/O SysCalls will
+	check this table for the given FCB address and,	if found, will set
+	the user area accordingly.
+
+
+
+
+
+				       5-6
+
+
+
+
+
+	ConIX Operating	System					     Files
+
+	Note that Command Searching using .COM extensions is independent
+	of this	feature.  Extension Searching for .COM files which are
+	referenced within programs (such as dBase II) must be explicitly
+	specified within the Extension List.
+
+
+	5.5  Drive Management
+
+	How many disk drives do	you have on your system?  One, or two,
+	maybe more?  Well, CP/M	has the	capability of referencing up to	16
+	different disk drives, coded A:	to P:.	It is most unlikely that
+	any computer will use all sixteen.   If	that is	true for your
+	system,	then you can make this unused capacity work for	you.
+
+	The ExpanDisk feature can make your computer seem like it has 16
+	different drives, even if it really has	only one or two.  This is
+	done by	redefining the disk code, D:, corresponding to one of your
+	drives,	in effect, mounting the	new disk on that drive.	 The
+	ExpanDisk drives and the actual	drive to be used for the mount
+	disk are set by	using the OPT +/-XD command.  By default, they are
+	set to I:, J:, and K:, with the	mount disk being drive A:.
+
+	To utilize an ExpanDisk	drive, simply reference	it as any other
+	drive on your system.  For example, you	can change the default
+	directory to one of ExpanDisk drives as:
+
+		<A:00> i:
+		A: disk	in A: drive - load I: disk
+		<I:00>
+
+	This message indicates that the	drive A: disk is currently loaded
+	in the A: drive	(the mount disk).  Remove that disk and	load the
+	disk which will	now be referred	to as drive I:.	 The system will
+	be waiting for you to type a character.	 If you	hit a <RETURN>,
+	the disk will be selected.
+
+	Hitting	CTRL-A at the ExpanDisk	prompt will cause the disk system
+	to be reset entirely.  A CTRL-B	will reset only	the requested
+	drive.	Hitting	CTRL-C will abort the request via a warm boot
+	causing	no ``mount'' action.  This is useful for aborting an
+	unintentional ExpanDisk	drive reference.
+
+	Once the new drive is mounted, it can be used just as any other.
+	The only difference is that its	name was changed to I:.	 You may
+	return to disk A:, as:
+
+		<I:00> a:
+		I: disk	in A: drive - load A: disk
+		<A:00>
+
+	The only ill effect this feature has, is that all previous disks
+	mounted	on drive A:, the mount drive, will be changed to the R/O
+	state when a new ExpanDisk drive is logged in.	Only this last
+	logged drive will remain R/W.  This is because the ExpanDisk
+	drives share the same memory used to store the directory
+
+
+
+				       5-7
+
+
+
+
+
+	Files					    ConIX Operating System
+
+	information of the mount disk.	Whenever another disk is placed	in
+	that drive, it is set to R/O just as if	you had	changed	disks in a
+	regular	drive.
+
+	Therefore, in our example here,	drive A: would be R/O if you had
+	swapped	a different disk into I:.  To get the prompt to	reflect
+	this, run the DIR command.  Your prompt	will now be:
+
+		<A!00>
+
+	If we return to	drive I: and execute DIR, the prompt will still
+	indicate that the drive	is not write protected.	 This is because
+	the last update	to the directory information vector was	done by
+	this drive, when it was	first logged in.  You can notice this
+	``login'' the first time you accessed I:, when the disk	clicked
+	before you got the new prompt.	The second time	it did not click.
+	That means it had already been logged in.
+
+	If you were now	to access another ExpanDisk drive, such	as J:,
+	you'd hear the click because this drive	had never been previously
+	accessed, and therefore, must be logged	in.  This drive	will now
+	become the ``writable''	drive, and I: will join	A: as being read-
+	only.  All disks loaded	into the mount drive will now be compared
+	to the directory information obtained from the J: disk,	and if
+	they do	not match, that	drive will also	be set to R/O.
+
+
+	5.5.1  Recovering from Disk Full
+
+	Did you	ever run out of	disk space or get a bad	sector message
+	while you were running a program?  This	is a rather common
+	occurrence and can often cause the loss	of valuable data, and
+	maybe hours worth of work.  You	can't swap disks while the program
+	is still running because CP/M detects the change and doesn't allow
+	you to write to	that disk.  What do you	do if you have only one
+	drive, or your second drive also doesn't have enough space?
+
+	The solution is	simple and effective.  All you have to do is tell
+	the program to save your file on one of	the ExpanDisk drives, and
+	load a fresh diskette.	The new	disk will appear to be in a
+	functional drive, and CP/M will	allow you to write to it.  Your
+	data will be saved, and	so will	your time.
+
+	To illustrate, let's say you were writing a program in BASIC, as:
+
+		<A:00> basic
+		Welcome	to BASIC Version X.XX
+		Ok
+		10 print "hello, world"
+		20 end
+		run
+		hello, world
+		Ok
+
+
+
+
+
+				       5-8
+
+
+
+
+
+	ConIX Operating	System					     Files
+
+	If you wanted to save your program on disk, you'd type:
+
+		Ok
+		save "FIRST"
+		Disk Full!
+		Ok
+
+	BASIC would then attempt to save your program in the file
+	A:0/FIRST.BAS.	The Disk Full! message indicates that there is no
+	space available	on drive A.  In	that case, just	type:
+
+		Ok
+		save "I:FIRST"
+		A: disk	in A: drive - load I: disk
+		Ok
+
+	ConIX detected that you	referenced an ExpanDisk	drive, and printed
+	the ``load'' message, allowing you to swap in a	new diskette and
+	save the file.
+
+	When you return	to ConIX, you will be greeted with another load
+	message	since your default directory was A:, and that disk is not
+	currently in the mount drive.
+
+
+	5.6  Notes
+
+	1) When	using File or Extension	Searching, it is recommended that
+	   the path-login feature be enabled for commands that use the
+	   CP/M	Disk-Reset SysCall.  For example, WordStar, before opening
+	   any files, will first reset the disk	system,	thereby	disabling
+	   all drives except the one being used.  Therefore, if	the
+	   overlay files are in	the path on B: and you are editing from
+	   A:, B: would	be unlogged, and not searched if [F=0] was used.
+	   Since this scenario tends to	occur quite often, we recommend
+	   using [F=1],	or just	[F] in the options list	for programs such
+	   as WordStar that reset all disks during the course of their
+	   execution.  Of course, you must be sure that	all disks to be
+	   searched in the path	are on-line, or	else a system error may
+	   occur.
+
+	2) Some	programs do not	properly handle	the `Disk Full'	condition
+	   in order to allow you to retry the save on another drive.  This
+	   is a	limitation of the particular program, and not of ConIX.
+	   Consult the manuals for your	software to determine if this
+	   capability is available.
+
+
+
+
+
+
+
+
+
+
+
+
+				       5-9
+
+
+
+
+     ÂHAPTER5DOC               *  Y  ÂHAPTER6DOC               6 Ä8  

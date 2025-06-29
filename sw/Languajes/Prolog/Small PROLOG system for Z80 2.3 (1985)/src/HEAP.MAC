@@ -1,0 +1,454 @@
+
+; ===========================================================
+; HEAP.Z80
+;	heap management for E-Prolog
+;	June 22, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+FROZEN	EQU	-3
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+;release(p)
+;  NODE * p;
+;  {
+;  hfree = p;
+;  }
+RLS::
+	LD	(HFREE##),HL
+	RET
+
+;brls(bptr)
+;    /* release the stack above bptr; cancel all unifications
+;	at this level. */
+;  BETASTATE * bptr;
+;  {
+;  SUBST * x;
+	DSEG
+X:	DW	0
+	CSEG
+;
+BRLS::
+;  for (x = bptr->subst ; x < (SUBST *)hfree ; x++)
+	CALL	YSUBST##
+	LD	(X),HL
+BR1:	LD	DE,(HFREE##)
+	CALL	CPHL##
+	JR	NC,BR2
+;    if (x->back.val != UNDEF && x->back.val != FROZEN)
+	CALL	@BACK##
+	LD	DE,FROZEN
+	CALL	CPHL##
+	JR	Z,BR3
+	LD	DE,UNDEF
+	CALL	CPHL##
+	JR	Z,BR3
+;      x->back.val->forw.val = (SUBST *)UNDEF;
+	CALL	@LFORW##
+BR3:	LD	HL,(X)
+	LD	DE,6
+	ADD	HL,DE
+	LD	(X),HL
+	JR	BR1
+BR2:
+;  hfree = (char *)bptr;
+	LD	(HFREE##),IY
+;  }
+	RET
+
+;/* freeze this beta-state */
+;freeze(bptr)
+;  BETASTATE * bptr;		passed in IY
+FREEZE::
+;  {
+;  SUBST * x;
+;  for (x = bptr->subst ; x < (SUBST *)hfree ; x++)
+	CALL	YSUBST##
+	LD	(X),HL
+FR1:	LD	DE,(HFREE##)
+	CALL	CPHL##
+	RET	NC
+;    if (x->back == UNDEF)
+	CALL	@BACK##
+	LD	DE,UNDEF
+	CALL	CPHL##
+	JR	NZ,FR2
+;      x->back == FROZEN;
+	LD	HL,(X)
+	LD	DE,FROZEN
+	CALL	@LBACK##
+FR2:
+	LD	HL,(X)
+	LD	DE,6
+	ADD	HL,DE
+	LD	(X),HL
+	JR	FR1
+;  }
+
+;#define	cksp()	if (hfree > htop) space()
+CKSP:
+	LD	HL,(HFREE##)
+	LD	DE,(HTOP##)
+	CALL	CPHL##
+	RET	C
+;
+;space()
+;  {
+;  if (settop(100))
+	LD	HL,100
+	CALL	SETTOP##
+	LD	A,H
+	OR	L
+	JR	Z,SP1
+;    htop += 100;
+	LD	HL,(HTOP##)
+	LD	DE,100
+	ADD	HL,DE
+	LD	(HTOP##),HL
+	RET
+;  else
+SP1:
+;    fatal("\r\nOut of heap space.");
+	LD	HL,SP1MSG
+	JP	FATAL##
+	DSEG
+SP1MSG:	DB	CR,LF,'Out of heap space.',0
+	CSEG
+;  }
+
+;PAIR
+;makepair(x1,x2)
+;  /* EXPR */ int x1,x2;
+;  {
+;  PAIR temp;
+	DSEG
+X1:	DW	0
+X2:	DW	0
+TEMP:	DW	0
+	CSEG
+;
+MKPAIR::
+	LD	(X1),HL
+	LD	(X2),DE
+;  temp = hfree;
+	LD	HL,(HFREE##)
+	LD	(TEMP),HL
+;  hfree += 4;
+	INC	HL
+	INC	HL
+	INC	HL
+	INC	HL
+	LD	(HFREE##),HL
+;  cksp();
+	CALL	CKSP
+;  temp->left = x1;
+	LD	HL,(TEMP)
+	LD	DE,(X1)
+	CALL	@LLEFT##
+;  temp->right = x2;
+	LD	DE,(X2)
+	CALL	@LRIGHT##
+;  return temp;
+	RET
+;  }
+
+;ALPHASTATE *		in IX
+;makealpha(bptr,x,bback)
+;  BETASTATE * bptr;	in IY
+;  EXPR x;		in HL
+;  char * bback;	in DE
+;  {
+;  ALPHASTATE * aptr;	in IX
+;  static SUBVAL sv;
+;  static LSUBST ls;
+;  static EXPR ex;
+	DSEG
+BBACK:	DW	0
+SV:	DW	0
+LS:	DW	0
+EEX:	DW	0
+	CSEG
+;
+MKALPHA::
+	LD	(EEX),HL
+	LD	(BBACK),DE
+;  aptr = (ALPHASTATE *)hfree;
+	LD	HL,(HFREE##)
+	PUSH	HL
+	POP	IX
+;  hfree += 8;
+	LD	DE,8
+	ADD	HL,DE
+	LD	(HFREE##),HL
+;  cksp();
+	CALL	CKSP
+;  aptr->pred = bptr;
+	PUSH	IY
+	POP	HL
+	CALL	XLPRED##
+;  aptr->goal = x;
+	LD	HL,(EEX)
+	CALL	XLGOAL##
+;  aptr->back = bback;
+	LD	HL,(BBACK)
+	CALL	XLBACK##
+;  ls = bptr->subst;
+	CALL	YSUBST##
+	LD	(LS),HL
+;  if (varp(ex.list = x->left.list))
+	LD	HL,(EEX)
+	CALL	@LEFT##
+	LD	(EEX),HL
+	CALL	VARP##
+	JR	Z,MKA1
+;    {
+;    sv.val = value(vf(ex.list,ls));
+	LD	DE,(LS)
+	CALL	VF##
+	CALL	VALUE##
+	LD	(SV),HL
+;    if (substp(sv.val))
+	CALL	SUBSTP##
+	JR	Z,MKA2
+;      {
+;      aptr->datb = alldb;
+	LD	HL,(ALLDB##)
+	CALL	XLDATB##
+;      return aptr;
+	RET
+;      }
+MKA2:
+;    else
+;      {
+;      ex.list = sv.assgn->sexp.list;
+	PUSH	HL
+	CALL	@EXPR##
+	LD	(EEX),HL
+;      ls = sv.assgn->slist;
+	POP	HL
+	CALL	@SLIST##
+	LD	(LS),HL
+;      }
+;    }
+MKA1:
+;  if (varp(ex.list = ex.list->left.list))
+	LD	HL,(EEX)
+	CALL	@LEFT##
+	LD	(EEX),HL
+	CALL	VARP##
+	JR	Z,MKA3
+;    {
+;    sv.val = value(vf(ex.list,ls));
+	LD	DE,(LS)
+	CALL	VF##
+	CALL	VALUE##
+	LD	(SV),HL
+;    if (substp(sv.val))
+	CALL	SUBSTP##
+	JR	Z,MKA4
+;      {
+;      aptr->datb = alldb;
+	LD	HL,(ALLDB##)
+	CALL	XLDATB##
+;      return aptr;
+	RET
+;      }
+MKA4:
+;    else
+;      {
+;      ex.list = sv.assgn->sexp.list;
+	PUSH	HL
+	CALL	@EXPR##
+	LD	(EEX),HL
+;      ls = sv.assgn->slist;
+	POP	HL
+	CALL	@SLIST##
+	LD	(LS),HL
+;      }
+;    }
+MKA3:
+;  aptr->datb = (PAIR)(ex.symbol->addr);
+	LD	HL,(EEX)
+	CALL	@ADDR##
+	CALL	XLDATB##
+;  return aptr;
+	RET
+;  }
+
+;BETASTATE *		in IY
+;mkb(aptr,lst)
+;  ALPHASTATE * aptr;	in IX
+;  PAIR lst;		in HL
+;  {
+;  BETASTATE * bptr;	in IY
+;
+	DSEG
+LST:	DW	0
+	CSEG
+MKBETA::
+	LD	(LST),HL
+;  bptr = hfree;
+	LD	HL,(HFREE##)
+	PUSH	HL
+	POP	IY
+;  hfree += 4;
+	INC	HL
+	INC	HL
+	INC	HL
+	INC	HL
+	LD	(HFREE##),HL
+;  bptr->pred = aptr;
+	PUSH	IX
+	POP	HL
+	CALL	YLPRED##
+;  bptr->assertion.list = lst;
+	LD	HL,(LST)
+	CALL	YLASS##
+;  makelsubst(lst,hfree);
+	LD	DE,(HFREE##)
+	CALL	MKLSUBST
+;  cksp();
+	CALL	CKSP
+;  return bptr;
+	RET
+;  }
+
+;makelsubst(lst,st)	/* recursive */
+;  EXPR lst;
+;  SUBST * st;
+;  {
+;  EXPR lstx;
+;  SUBST * x;
+	DSEG
+LSTX:	DW	0
+STX:	DW	0	
+	CSEG
+;
+MKLSUBST::
+	LD	(STX),DE
+MKLR:	LD	(LSTX),HL
+;  lstx.number = lst;	/* synonym */
+;  if (varp(lst))
+	CALL	VARP##
+	JR	Z,MKL1
+;    {
+;    for (x = st ; x < (SUBST *)hfree; x++ )
+	LD	HL,(STX)
+MKL2:	LD	DE,(HFREE##)
+	CALL	CPHL##
+	JR	NC,MKL3
+;      if (lstx.symbol == x->vname)
+;        return;
+	PUSH	HL
+	CALL	@VNAME##
+	LD	DE,(LSTX)
+	CALL	CPHL##
+	POP	HL
+	RET	Z
+	LD	DE,6
+	ADD	HL,DE
+	JR	MKL2
+MKL3:
+;    makesubst(lst);
+	LD	HL,(LSTX)
+	JP	MKSUBST
+;    }
+MKL1:
+;  else if (nelistp(lst))
+	CALL	NELP##
+	RET	Z
+;    {
+;    makelsubst(lstx.list->left.list,st);
+	LD	HL,(LSTX)
+	PUSH	HL
+	CALL	@LEFT##
+	CALL	MKLR		; recursion
+;    makelsubst(lstx.list->right.list,st);
+	POP	HL
+	CALL	@RIGHT##
+	JP	MKLR		; tail recursion
+;    }
+;  }
+
+;SUBST *
+;makesubst(var)
+;  VARIABLE var;
+;  {
+;  SUBST * ptr;
+	DSEG
+PTR:	DW	0
+	CSEG
+MKSUBST::
+	PUSH	HL
+;
+;  ptr = (SUBST *)hfree;
+	LD	HL,(HFREE##)
+	LD	(PTR),HL
+;  hfree += 6;
+	LD	DE,6
+	ADD	HL,DE
+	LD	(HFREE##),HL
+;  ptr->vname = var;
+	LD	HL,(PTR)
+	POP	DE
+	CALL	@LVNAME##
+;  ptr->back.val = (SUBST *)UNDEF;
+	LD	DE,UNDEF
+	CALL	@LBACK##
+;  ptr->forw.val = (SUBST *)UNDEF;
+	LD	DE,UNDEF
+	CALL	@LFORW##
+;  return ptr;
+	RET
+;  }
+
+;SEXPR *
+;makesexpr(se,ba,sl)
+;  EXPR se;
+;  SUBST * ba;
+;  LSUBST sl;
+;  {
+;  SEXPR * temp;
+;
+MKSEXPR::
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+;  temp = (SEXPR *)hfree;
+	LD	HL,(HFREE##)
+	PUSH	HL
+;  hfree += 6;
+	LD	DE,6
+	ADD	HL,DE
+	LD	(HFREE##),HL
+;  cksp();
+	CALL	CKSP
+;  temp->sexp.list = se;
+	POP	HL
+	POP	DE
+	CALL	@LEXPR##
+;  temp->back.val = ba;
+	POP	DE
+	CALL	@LBACK##
+;  temp->slist = sl;
+	POP	DE
+	CALL	@LSLIST##
+;  return temp;
+	RET
+;  }
+
+	END
+

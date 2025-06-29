@@ -1,0 +1,50 @@
+  program echo
+#
+# This program reads up to 80 characters from the
+# terminal, converts all lower case letters to upper
+# case, and writes them back to the terminal.
+#
+define(BIGA, 65)
+define(BLANK,32)
+define(CHARACTER,logical)
+define(CRT,3)
+define(CRTLINE,80)
+define(DIG0,48)
+define(LETA, 97)
+define(LETZ, 122)
+define(MINUS,45)
+define(PERIOD,46)
+define(PLUS,43)
+#
+  CHARACTER outmap
+  CHARACTER line (80)
+  integer i, bcount
+#
+  repeat                               #until nothing
+                                       #is entered
+     {
+     call remark ('Enter line to be echoed:.')
+     call remark (' .')
+     for (i = 1; i <= 80; i = i + 1)   #blank fill line
+        line(i) = BLANK
+     read (CRT, 1) (line(i), i = 1, 80)
+     bcount = 0
+     for (i = 1; i <= 80; i = i + 1)   #convert all letters
+        {                              #to upper case
+        if (line(i) == BLANK)
+           bcount = bcount + 1
+        else
+           line(i) = outmap (line(i))
+        }
+     if (bcount == 80)
+        break
+     write (CRT, 2) (line(i), i = 1, 80)
+     call remark (' .')
+     }
+  call remark ('End of demonstration.')
+1 format (CRTLINE a1)
+2 format (1x, CRTLINE a1)
+  end
+include outmap.rfr
+include remark.rfr
+

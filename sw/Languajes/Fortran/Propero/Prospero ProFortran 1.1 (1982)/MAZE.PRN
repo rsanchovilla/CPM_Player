@@ -1,0 +1,235 @@
+Pro Fortran Compiler - Version zz 1.1
+
+Compilation listing of: maze.for
+
+Options:    LMCNOIAHS
+
+    1   0000            PROGRAM MAZE
+    2   0000    C     
+    3   0000    C  PROGRAM TO GENERATE RANDOM MAZES (WITH UNIQUE SOLUTIONS)
+    4   0000    C     
+    5   0000    C  ORIGINAL (BASIC): JACK HAUBER, LOOMIS SCHOOL, WINDSOR, CONNECTICUT
+    6   0000    C  MODIFIED (BASIC): D J LEIGH - DECEMBER 1976
+    7   0000    C  REWRITTEN (FORTRAN): M S OAKES - AUGUST 1982
+    8   0000    C     
+    9   0000            INTEGER*1  I,ILIM,J,JLIM,JSTART
+   10   0000            INTEGER*1  CASE,CHOICE,WAYS
+   11   0000            INTEGER*1  WALLS(25,25)
+   12   0000    C     
+   13   0000            INTEGER*2  COUNT,SIZE
+   14   0000    C     
+   15   0000            LOGICAL*1  LEFT,RIGHT,UP,DOWN,EXIT
+   16   0000            LOGICAL*1  OK
+   17   0000            LOGICAL*1  BEENTO(25,25)
+   18   0000    C     
+   19   0000            DIMENSION  ROW(25)
+   20   0000    C     
+   21   0000    C  PATTERNS FOR PRINTING MAZE
+   22   0000    C     
+   23   0000            DATA  PATRN1,PATRN2/'--:','  :'/
+   24   0003            DATA  PATRN3,PATRN4/'   ','  I'/
+   25   0003    C     
+   26   0003    C  STATEMENT FUNCTIONS
+   27   0003    C     
+   28   0003    C  INPUT VALIDATION
+   29   0003            OK(WAYS) = (1.LE.WAYS) .AND. (WAYS.LE.25)
+   30   0027    C  RANDOM MULTI-WAY BRANCH GENERATOR
+   31   0027            CHOICE(WAYS) = 1 + INT(WAYS * RANDOM(0))
+   32   0059    C     
+   33   0059    C  START OF EXECUTION
+   34   0059    C     
+   35   0059      150   WRITE(1,9050)
+   36   007D    9050    FORMAT( /
+   37   01BF         1  ' THIS PROGRAM WILL PRINT OUT A DIFFERENT MAZE EVERY TIME IT'/
+   38   01BF         1  ' IS RUN AND GUARANTEES ONLY ONE PATH THROUGH.  YOU CAN'/
+   39   01BF         1  ' CHOOSE THE DIMENSIONS OF THE MAZE, I.E. THE NUMBER OF'/
+   40   01BF         1  ' SQUARES LONG AND THE NUMBER OF SQUARES WIDE. '/
+   41   01BF         1  ' A 25 BY 25 MAZE IS THE MAXIMUM, AND ANY DIMENSIONS UP TO'/
+   42   01BF         1  ' THESE LIMITS ARE O.K.'/)
+   43   01BF            WRITE(1,9060)
+   44   01D0    9060    FORMAT(' LENGTH: ')
+   45   01E5            READ(1,8000) ILIM
+   46   01F9    8000    FORMAT(I2)
+   47   0209            WRITE(1,9070)
+   48   021A    9070    FORMAT(' WIDTH: ')
+   49   022E            READ(1,8000) JLIM
+   50   0242            IF (OK(ILIM) .AND. OK(JLIM))  GOTO 250
+   51   0263            WRITE(1,9080)
+   52   0276    9080    FORMAT(' MEANINGLESS DIMENSIONS  -  TRY AGAIN')
+   53   02A7            GOTO 150
+   54   02AA      250   WRITE(1,9090)
+   55   02BE    9090    FORMAT ( )
+   56   02C8    C     
+   57   02C8    C  INITIALIZATION
+   58   02C8    C     
+   59   02C8            SIZE = ILIM * JLIM
+   60   02CB            EXIT = .FALSE.
+   61   02DB            DO 340 I = 1,ILIM
+   62   02E3            DO 330 J = 1,JLIM
+   63   02EB            BEENTO(I,J) = .FALSE.
+   64   031A            WALLS(I,J) = 0
+   65   0346      330   CONTINUE
+   66   034B      340   CONTINUE
+   67   036A    C  PICK THE STARTING SQUARE
+   68   036A            JSTART = CHOICE(JLIM)
+   69   038D            DO 420 J = 1,JLIM
+   70   0396            IF (J.EQ.JSTART) GOTO 410
+   71   03A7            ROW(J) = PATRN1
+   72   03BC            GOTO 420
+   73   03C5      410   ROW(J) = PATRN2
+   74   03DA      420   CONTINUE
+   75   03E3            WRITE(1,9100) PATRN2,(ROW(J),J=1,JLIM)
+   76   0455    9100    FORMAT(A3,25A3)
+   77   0463    C     
+   78   0463            I = 1
+   79   0466            J = JSTART
+   80   046E            BEENTO(I,J) = .TRUE.
+   81   049E            COUNT = 1
+   82   04A3    C     
+   83   04A3    C  START OF MAIN PROCESSING LOOP
+   84   04A3    C     
+   85   04A3      660   IF (COUNT.GE.SIZE) GOTO 2020
+   86   04BC            LEFT = (J.GT.1) .AND. .NOT.BEENTO(I,J-1)
+   87   04FB            RIGHT = (J.LT.JLIM) .AND. .NOT.BEENTO(I,J+1)
+   88   053D            UP = (I.GT.1) .AND. .NOT.BEENTO(I-1,J)
+   89   0583            DOWN = (I.LT.ILIM) .AND. .NOT.BEENTO(I+1,J) .OR.
+   90   05CD         -         (I.EQ.ILIM) .AND. .NOT.EXIT
+   91   05D5    C     
+   92   05D5            IF (.NOT.LEFT) GOTO 1090
+   93   05F0            IF (.NOT.UP) GOTO 860
+   94   05FE            IF (.NOT.RIGHT) GOTO 750
+   95   060C    C  GO LEFT OR UP OR RIGHT
+   96   060C            CASE = CHOICE(3)
+   97   0618            GOTO (1560,1630,1700), CASE
+   98   0621    C  MUSN'T GO RIGHT
+   99   0621      750   IF (DOWN) GOTO 800
+  100   0639    C  GO LEFT OR UP
+  101   0639            CASE = CHOICE(2)
+  102   0645            GOTO (1560,1630), CASE
+  103   064E    C  GO LEFT OR UP OR DOWN
+  104   064E      800   CASE = CHOICE(3)
+  105   0665            GOTO (1560,1630,1800), CASE
+  106   066E    C  MUSN'T GO UP
+  107   066E      860   IF (.NOT.RIGHT) GOTO 990
+  108   0688            IF (DOWN) GOTO 930
+  109   0693    C  GO LEFT OR RIGHT
+  110   0693            CASE = CHOICE(2)
+  111   069F            GOTO (1560,1700), CASE
+  112   06A8    C  GO LEFT OR RIGHT OR DOWN
+  113   06A8      930   CASE = CHOICE(3)
+  114   06BF            GOTO (1560,1700,1800), CASE
+  115   06C8    C  MUSN'T GO UP OR RIGHT
+  116   06C8      990   IF (.NOT.DOWN) GOTO 1560
+  117   06E2    C  GO LEFT OR DOWN
+  118   06E2            CASE = CHOICE(2)
+  119   06EF            GOTO (1560,1800), CASE
+  120   06F8    C  MUSN'T GO LEFT
+  121   06F8     1090   IF (.NOT.UP) GOTO 1340
+  122   0710            IF (.NOT.RIGHT) GOTO 1240
+  123   071E            IF (DOWN) GOTO 1180
+  124   0729    C  GO UP OR RIGHT
+  125   0729            CASE = CHOICE(2)
+  126   0735            GOTO (1630,1700), CASE
+  127   073E    C  GO UP OR RIGHT OR DOWN
+  128   073E     1180   CASE = CHOICE(3)
+  129   0755            GOTO (1630,1700,1800), CASE
+  130   075E    C  MUSN'T GO LEFT OR RIGHT
+  131   075E     1240   IF (.NOT.DOWN) GOTO 1630
+  132   0778    C  GO UP OR DOWN
+  133   0778            CASE = CHOICE(2)
+  134   0785            GOTO (1630,1800), CASE
+  135   078E    C  MUSN'T GO LEFT OR UP
+  136   078E     1340   IF (.NOT.RIGHT) GOTO 1460
+  137   07A6            IF (.NOT.DOWN) GOTO 1700
+  138   07B3    C  GO RIGHT OR DOWN
+  139   07B3            CASE = CHOICE(2)
+  140   07C0            GOTO (1700,1800), CASE
+  141   07C9    C  MUSN'T GO LEFT OR UP OR RIGHT
+  142   07C9     1460   IF (DOWN) GOTO 1800
+  143   07DF    C  CAN'T GO ANYWHERE, SO GROW A NEW BRANCH
+  144   07DF            GOTO 1950
+  145   07E5    C     
+  146   07E5    C  GO LEFT
+  147   07E5    C     
+  148   07E5     1560   J = J - 1
+  149   07EB            WALLS(I,J) = 2
+  150   0825            GOTO 1900
+  151   082A    C     
+  152   082A    C  GO UP
+  153   082A    C     
+  154   082A     1630   I = I - 1
+  155   0830            WALLS(I,J) = 1
+  156   0869            GOTO 1900
+  157   086E    C     
+  158   086E    C  GO RIGHT
+  159   086E    C     
+  160   086E     1700   IF (WALLS(I,J).EQ.0) GOTO 1750
+  161   089F            WALLS(I,J) = 3
+  162   08CB            GOTO 1760
+  163   08D0     1750   WALLS(I,J) = 2
+  164   08FC     1760   J = J + 1
+  165   0901            GOTO 1900
+  166   0914    C     
+  167   0914    C  GO DOWN
+  168   0914    C     
+  169   0914     1800   IF (WALLS(I,J).EQ.0) GOTO 1850
+  170   0945            WALLS(I,J) = 3
+  171   0971            GOTO 1860
+  172   0976     1850   WALLS(I,J) = 1
+  173   09A2     1860   IF (I.EQ.ILIM) GOTO 1920
+  174   09B0            I = I + 1
+  175   09B5    C  MARK THE LOCATION AS "VISITED"
+  176   09B5     1900   COUNT = COUNT + 1
+  177   09C8            BEENTO(I,J) = .TRUE.
+  178   09FB            GOTO 660
+  179   0A00    C  CREATE AN EXIT, THEN START SCANNING IN TOP-LEFT CORNER
+  180   0A00     1920   EXIT = .TRUE.
+  181   0A06            I = ILIM
+  182   0A0E            J = JLIM
+  183   0A17    C  GROW A NEW BRANCH
+  184   0A17     1950   IF (J.EQ.JLIM) GOTO 1960
+  185   0A29            J = J + 1
+  186   0A2E            GOTO 1990
+  187   0A41     1960   IF (I.EQ.ILIM) GOTO 1970
+  188   0A4F            I = I + 1
+  189   0A54            GOTO 1980
+  190   0A67     1970   I = 1
+  191   0A6C     1980   J = 1
+  192   0A74     1990   IF (BEENTO(I,J)) GOTO 660
+  193   0AA7            GOTO 1950
+  194   0AAD    C     
+  195   0AAD    C  CHECK THAT AN EXIT HAS BEEN MADE
+  196   0AAD    C     
+  197   0AAD     2020   IF (EXIT) GOTO 2050
+  198   0AB9            J = CHOICE(JLIM)
+  199   0AC2            WALLS(ILIM,J) = WALLS(ILIM,J) + 1
+  200   0B1A    C     
+  201   0B1A    C  PRINT OUT THE MAZE
+  202   0B1A    C     
+  203   0B1A     2050   DO 2190 I = 1,ILIM
+  204   0B2A            DO 2090 J = 1,JLIM
+  205   0B32            IF (WALLS(I,J).LT.2) GOTO 2080
+  206   0B6A            ROW(J) = PATRN3
+  207   0B7F            GOTO 2090
+  208   0B88     2080   ROW(J) = PATRN4
+  209   0B9D     2090   CONTINUE
+  210   0BA6            WRITE(1,9100) PATRN4,(ROW(J),J=1,JLIM)
+  211   0C18    C     
+  212   0C18            DO 2170 J = 1,JLIM
+  213   0C1E            IF ((WALLS(I,J).EQ.0).OR.(WALLS(I,J).EQ.2)) GOTO 2160
+  214   0C85            ROW(J) = PATRN2
+  215   0C9A            GOTO 2170
+  216   0CA3     2160   ROW(J) = PATRN1
+  217   0CB8     2170   CONTINUE
+  218   0CC1            WRITE(1,9100) PATRN2,(ROW(J),J=1,JLIM)
+  219   0D33     2190   CONTINUE
+  220   0D39            WRITE(1,9090)
+  221   0D66    C     
+  222   0D66    C  RETURN FOR ANOTHER GO
+  223   0D66    C     
+  224   0D66            GOTO 150
+  225   0D6F    C     
+  226   0D6F            END
+
+R ANOTHER GO
+  223   0000   

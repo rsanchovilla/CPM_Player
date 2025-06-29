@@ -1,0 +1,79 @@
+
+; ===========================================================
+; ASSEM.Z80
+;	assembly-language portions of E-Prolog
+;	May 11, 1985
+
+; (for Macro-80)
+; This module should be loaded last (except for initialization
+; code), since anything following it will be overwritten by
+; the symbol table.
+
+	.Z80
+
+EMPT	EQU	-1
+
+?STNG	MACRO	?TXT,?ADDR,?LP,?RP
+	DW	?ADDR
+	DW	?LP
+	DW	?RP
+	DB	?TXT
+	DB	0
+	ENDM
+
+; char * sbot = ASBOT;
+SBOT::	DW	ASBOT
+; char * sfree = ASFREE;
+SFREE::	DW	ASFREE
+
+$MEMRY:: DS	2
+	CSEG
+
+SETTOP::
+	LD	DE,($MEMRY)
+	PUSH	DE
+	ADD	HL,DE
+	PUSH	HL
+	LD	DE,128
+	ADD	HL,DE
+	SBC	HL,SP
+	JR	C,SET1
+	POP	DE
+	POP	DE
+	JP	RETF##
+SET1:	POP	HL
+	LD	($MEMRY),HL
+	POP	HL
+	RET
+
+	EXTRN	_APPEN,_CLOSE,_CREA,_LESS,_LIST,_LOAD
+	EXTRN	_OPEN,_READ,_READC,_READL,_SAVE
+	EXTRN	_WRITE,_WRCH,_CUT,_FAIL
+
+
+; symbol table
+
+ASBOT:
+ADOT::	?STNG	<'.'>,EMPT,EMPT,A10
+A2:	?STNG	<'/'>,_CUT,EMPT,EMPT
+ACOLON:: ?STNG	<':'>,EMPT,A2,A4
+A4:	?STNG	<'APPEND'>,_APPEN,EMPT,EMPT
+A5:	?STNG	<'CLOSE'>,_CLOSE,ACOLON,A6
+ACON::	?STNG	<'CON'>,EMPT,EMPT,EMPT
+A6:	?STNG	<'CREATE'>,_CREA,ACON,A8
+A7:	?STNG	<'FAIL'>,_FAIL,EMPT,EMPT
+A8:	?STNG	<'LESS'>,_LESS,A7,A9
+A9:	?STNG	<'LIST'>,_LIST,EMPT,EMPT
+A10:	?STNG	<'LOAD'>,_LOAD,A5,A15
+ANULL::	?STNG	<'NULL'>,EMPT,EMPT,EMPT
+A12:	?STNG	<'OPEN'>,_OPEN,ANULL,A14
+APRO::	?STNG	<'PRO'>,EMPT,EMPT,EMPT
+A14:	?STNG	<'READ'>,_READ,APRO,EMPT
+A15:	?STNG	<'READCHAR'>,_READC,A12,A17
+A16:	?STNG	<'READLIST'>,_READL,EMPT,EMPT
+A17:	?STNG	<'SAVE'>,_SAVE,A16,A19
+A18:	?STNG	<'WRITE'>,_WRITE,EMPT,EMPT
+A19:	?STNG	<'WRITECHAR'>,_WRCH,A18,EMPT
+ASFREE:
+	END
+

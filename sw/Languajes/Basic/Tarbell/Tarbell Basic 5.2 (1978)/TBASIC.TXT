@@ -1,0 +1,56 @@
+SPECIAL INSTRUCTIONS FOR USE OF CP/M VERSION OF TARBELL CASSETTE BASIC
+
+The CP/M version of TARBELL CASSETTE BASIC is not only set up to run
+on CP/M, but also has some CP/M disk I/O capability.  This includes
+writing and reading TARBELL BASIC programs to and from CP/M disk,
+and writing and reading string and numeric data to and from CP/M disk.
+It does not include, however, the capability of accessing random files,
+or of having more than one disk file open at a time.  Of course if you
+bought the source, you are encouraged to try implementing these features
+and sharing your experience with others.
+
+The normal sequence to access CP/M files is as follows:
+
+1.  To open a CP/M file from TARBELL CASSETTE BASIC, type
+	?USR(LOC("filename"))
+    where filename is the name of the file you wish to open.
+    This filename can be any string expression, including a
+    string variable name.  If you use the leading question mark,
+    a number will be typed which has no meaning.  If you are
+    within a program, and don't want the number typed, you
+    can use LET <variable name> = USR(LOC("filename")) instead.
+
+2.  To close the current CP/M file, use  ?USR(0) .  Again, the
+    LET statement may be used instead of the PRINT statement (?).
+
+3.  To open the current CP/M file without changing the name in
+    the file control block, for example after naming the file
+    after the TBASIC in CP/M, use  ?USR(1).  This will open
+    the file without putting a name into the file control block.
+
+4.  To write the BASIC program from main memory onto disk, first
+    open the file as shown in 1 or 3 above, then type
+	CSAVE x
+    where x is a one-letter code which gets put at the top of the
+    program, and which must be used in any later CLOAD.
+
+5.  To read a BASIC program from disk into main memory, first open
+    the file as shown in 1 or 3 above, then type
+	CLOAD x
+    where x is the same one-letter code which was used in the CSAVE.
+
+6.  Be sure to remember to close the file as shown in 2 above, after
+    either saving or loading a program.
+
+7.  To write data from main memory onto disk (only during a program),
+    first open the file as shown in 1 or 3 above, then use CSAVE x,
+    where x is the name of the variable you want saved.  More than
+    one variable may be saved onto one file, but be sure to close
+    the file after saving all the variables required.
+
+8.  To read data from disk into main memory (only during a program),
+    first open the file as shown in 1 or 3 above, then use CLOAD x,
+    where x is the name of the variable you want to read.  More than
+    one variable may be loaded from the file, but be sure to load
+    them in the same order they were saved, and close the file after
+    all variables have been loaded.

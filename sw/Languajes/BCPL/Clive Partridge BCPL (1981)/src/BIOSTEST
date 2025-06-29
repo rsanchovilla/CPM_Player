@@ -1,0 +1,66 @@
+/*   bios functions for BCPL  -  test program.
+     you can write a disk editor like this.
+     alter for your drive system.
+     this should be linked with %xtra, %strg, %text, %bios1, %bios2
+     use MAKESUB.COM to write the submit file.
+ */
+
+GET "LIBHDR"
+
+GLOBAL  $( showsector:firstfreeglobal  $)
+
+MANIFEST $( SELECT = 14 $)   // bdos function
+
+LET start() BE
+$( LET X,drive = ?,0
+   LET sector = VEC 1+128/bytesperword
+   writes("*nThis will read Track Two of The Disk you specify ")
+   writes(" - i.e. the directory track*n*n")
+   newline()
+  $( drive := 0
+     writes("Drive? ")
+     drive := getkey(1)       
+     wrch(drive)
+     drive -:= 'A'
+     TEST   0<=drive<=3  THEN BREAK
+     ELSE writes(" - Illegal *n")   
+   $) REPEAT
+
+bdos(SELECT,drive)
+
+$( FOR I = 0 TO 127 DO
+       sector%I := 0
+   writes("*nSector? ")
+   X := val(reads(),10)     
+   IF X < 0  THEN FINISH
+   newline()
+   writef("Show sector %i2  - or press ESC to finish*n",X)
+   IF getkey(1) = 27 THEN FINISH
+   bios(SELDSK,drive)
+   bios(SETDMA,z80(sector))
+   bios(SETTRK,2)
+   bios(SETSEC,X)
+   bios(READ,1)
+   showsector(sector)
+ $) REPEAT
+
+ bios(SETDMA,#x80)
+ bios(WARM,0)
+$)
+
+LET showsector(S) BE
+$( LET C = ?
+   FOR J = 0 TO 3 DO
+   $( newline()
+      FOR I = 0 TO 31 DO
+     $( C := S%(I+32*J)
+       IF I = 16 THEN newline()
+       TEST I > 0 & I < 13 THEN
+       $( TEST (C > 31  & C < 'a') THEN
+               wrch(C)
+          ELSE writef("[%x2]",C)
+       $)
+      ELSE writef("[%x2]",C)
+    $)
+  $)
+$)

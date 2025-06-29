@@ -1,0 +1,62 @@
+h03750
+s 00050/00000/00000
+d D 1.1 83/03/15 21:18:25 tes 1 0
+c date and time created 83/03/15 21:18:25 by tes
+e
+u
+4
+U
+t
+T
+I 1
+; PROGRAM MNGN2C
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                      ;
+;          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        ;
+;          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           ;
+;          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          ;
+;          WITH THE TERMS OF THAT AGREEMENT.                           ;
+;                                                                      ;
+;          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            ;
+;          ALL RIGHTS RESERVED.                                        ;
+;                                                                      ;
+;     Function: Interface between GSX and GEN2 Televideo 910 device    ;
+;               driver                                                 ;
+;                                                                      ;
+;     Input Parameters:                                                ;
+;            DE register - points to parameter block of  addresses     ;
+;               DE       - address of contrl                           ;
+;               DE + 2   - address of intin                            ;
+;               DE + 4   - address of ptsin                            ;
+;               DE + 6   - address of intout                           ;
+;               DE + 8   - address of ptsout                           ;
+;                                                                      ;
+;     Output Parameters:                                               ;
+;            none                                                      ;
+;                                                                      ;
+;     Routines Called:                                                 ;
+;             none                                                     ;
+;                                                                      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	.8080
+	EXTRN	DDGN2C
+	XCHG			; PUT ADDRESS OF PARAMETER BLOCK IN HL
+	MOV	E,M		; GET ADDRESS OF CONTRL INTO DE
+	INX	H
+	MOV	D,M
+	INX	H
+	XCHG			; ADDRESS OF CONTRL IS IN HL
+	SHLD	CONTRL		; SAVE ADDRESS OF CONTRL
+	XCHG			; ADDRESS OF PARAMETER BLOCK + 2 BYTES IN HL
+	MOV	E,M		; GET ADDRESS OF INTIN INTO DE
+	INX	H
+	MOV	D,M
+	INX 	H		; HL NOW POINTS TO PTSIN PARAMETER 
+	MOV	B,H		; BC <- HL ; BC POINTS TO REST OF PARAMETERS
+	MOV	C,L
+	LHLD	CONTRL		; GET ADDRESS OF CONTRL BACK IN HL
+	JMP	DDGN2C
+CONTRL: DS      2
+	END
+
+E 1

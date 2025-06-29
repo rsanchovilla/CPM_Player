@@ -1,0 +1,71 @@
+	MACRO-80 3.31	29-Jun-79	PAGE	1
+
+
+  0000'                         	aseg
+                                	org	100h
+                                	.Z80
+                                ; TEST I-O PORTS FOR MODEM COMMUNICATION.
+                                ; ROUTINE WILL DUMP TEXT STARTING AT -MESS- TO A PORT
+                                ;    UNTIL AN -FF- IS ENCOUNTERED.
+                                ; PORT 03 - NORMAL CONSOLE  (STATUS CHECK - 01H)
+                                ;  -   80 - TUART -A-       (   -     -   - 80H)
+                                ;  -   50 -   -   -B-       (   -     -   - 80H)
+                                ;
+  0100    CD 011E               	CALL	INIT		;INITIALIZE TU-ART
+  0103    21 0132               	LD	HL,MESS		;POINT TO MESSAGE
+  0106    7E                    LOOP:	LD	A,(HL)		;GET NEXT CHAR
+  0107    FE FF                 	CP	0FFH		;DONE IF =FF
+  0109    28 08                 	JR	Z,DONE		
+  010B    4F                    	LD	C,A		;LOAD TO -C-
+  010C    CD 0114               	CALL	OUT		;AND OUTPUT IT.
+  010F    23                    	INC	HL		;POINT TO NEXT CHAR
+  0110    C3 0106               	JP	LOOP		; AND LOOP BACK
+  0113    C9                    DONE:	RET			;IT'S OVER!
+  0114    DB 03                 OUT:	IN	A,(03H)		;CONSOLE OUTPUT
+  0116    E6 01                 	AND	01H		;CHECK STATUS
+  0118    28 FA                 	JR	Z,OUT		;LOOP TILL READY
+  011A    79                    	LD	A,C		;READY CHAR
+  011B    D3 02                 	OUT	(02H),A		;SEND IT
+  011D    C9                    	RET			;AND RETURN
+  011E    3E 09                 INIT:	LD	A,9H		;TU-ART INITIALIZATION
+  0120    D3 82                 	OUT	(82H),A		;RESET/INTA ON - PORT A
+  0122    D3 52                 	OUT	(52H),A		;  -    -   -  - PORT B
+  0124    3E 00                 	LD 	A,0H		;NO INTERRUPTS
+  0126    D3 83                 	OUT	(83H),A		;  PORT A
+  0128    D3 53                 	OUT  	(53H),A		;  PORT B
+  012A    3A 00C0               	LD	A,(0C0H)	;9600 BAUD; 1 STOP BIT
+  012D    D3 80                 	OUT	(80H),A		;  PORT A
+  012F    D3 50                 	OUT	(50H),A		;  PORT B
+  0131    C9                    	RET
+  0132    41 42 43 44           MESS:	DB	'ABCDEFGHIJKLMNOPQRSTUVWXYZ************END'
+  0136    45 46 47 48           
+  013A    49 4A 4B 4C           
+  013E    4D 4E 4F 50           
+  0142    51 52 53 54           
+  0146    55 56 57 58           
+  014A    59 5A 2A 2A           
+  014E    2A 2A 2A 2A           
+  0152    2A 2A 2A 2A           
+  0156    2A 2A 45 4E           
+	MACRO-80 3.31	29-Jun-79	PAGE	1-1
+
+
+  015A    44                    
+                                
+	MACRO-80 3.31	29-Jun-79	PAGE	S
+
+
+Macros:
+
+Symbols:
+DONE	0113 	INIT	011E 	LOOP	0106 	MESS	0132 
+OUT	0114 	
+
+
+
+No  Fatal error(s)
+
+
+ 4B 4C           
+  013E    4D 4E 4F 50           
+  0142    51 52 53 54          

@@ -1,0 +1,43 @@
+;;pascprep          ,    nul,            ,         ,  z
+;    sourcefile^^ listfile^^    ^^>errlisting   ^^options ^^assylist
+; Creates a COM file from Pascal source, leaving relocatable file
+; --- You will want to strip most of the following comment lines ---
+; --- Edit this job stream file to suit your own preferances     ---
+; --- (each 8 lines requires 1k of disk space for $$$$$$.SUB)    ---
+; --- Assumes use of JOB.COM (see JOB15.LBR and IFSKIP21.LBR)    ---
+; --- Modify "kill" below (or create kill.com) if not using DOS+. --
+;
+; set assylist = dskletter, x, y, or z for disk, con, lst, none
+; set options = 128 for commented assembly listing (source.lst)
+; (use sum)      64 for Z80 mnemnonics (change SLRMAC to Z80ASM)
+;                       & change "mac" to "z80" below)
+;                 8 for cross-compile (to word machines). no ASSM
+;                 4 to continue if compilation errors
+;                 2 for procedure tracing information at runtime
+; This requires all files except listfiles on default disk
+; Typical time ratios 10:2:1:0.5  pascalp:assmap:slrmac:slrnk
+; Assume you need about 5 to 10 times source size disk space available
+; Put PASCALP.PCD on the fastest available drive. Swaps segments.
+;
+; EX1: "job pascprep filename"       (uses all default parameters)
+; EX2: "job pascprep filename lst"   (for Pascal listing on printer)
+; EX3: "job pascprep filename, , >errors, 128, b"
+;         (creates intermixed Pascal/assy listing on b:filename.lst.
+;          saves any compilation errors on "errors")
+;
+; source is always "filename.PAS" for this job stream.  
+;
+//if $1 :2
+//skip 1; All well, no source extension specified
+kill (the job) (on DOS+) (or era a0:$$$$$$.sub) (else SELF ERASES)
+runpcdi pascalp ($1.pas, $2, $1.tic) [$4] $3
+assmap ($1.tic, $1.mac) [$4]
+era $1.tic
+; Note - 2 pass assembly takes longer, but requires less memory.
+slrmac $1.@@$5/fr
+era $1.mac
+era extrnls
+; Note: Use SLRNK+ if insufficient memory available.
+; Note: Can specify drives for CPMLINK and PASCLIB
+slrnk /a:100,cpmlink,$1,pasclib/s,$1/n,/e
+c+

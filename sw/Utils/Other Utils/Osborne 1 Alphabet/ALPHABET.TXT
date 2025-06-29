@@ -1,0 +1,331 @@
+..mb 5
+                     GRAPHICS ON THE OSBORNE
+                        P Jeffrey Palermo
+                        Kitchen Software
+              325 James St, Falls Church VA  22046
+
+     At Kitchen Software much has been learned about the graphics 
+capability of the O-1 in developing our OZPAINT program. It is 
+shared in the hope it will save you time and effort and spark 
+your interest in trying your hand at O-1 graphics.
+
+ALPHABET PROGRAM 
+
+     A program is included on this disk to demonstrate some of 
+the graphic capabilities of the O-1 and have some fun too! The 
+program draws a screen each time you press a letter. Each screen 
+is based on some common computer trademark. Most children will 
+enjoy it though they might relate to a zebra a bit more than the 
+Zenith. The screens were all developed using our OZPAINT program. 
+There are many other variations you might want to develop your-
+self. The program may be started automatically by pressing RESET 
+and<CR> with the disk in drive a, or by typing "alphabet." In 
+either case, you ought to use SYSGEN to place the CP/M systemon 
+this disk. The program is already compiled (ALPHABET.COM), but we 
+have also included a listing of the BASIC program (ALPHABET.BAS) 
+it was compiled from. You can see how the program works by exam-
+ining this BASIC file.
+
+CAPABILITIES OF THE O-1
+
+     The O-1 has a 52 column by 24 row screen which may be used 
+to show any portion of the display memory. The display memory is 
+128 columns by 32 rows! There is a description and figure of this 
+on pgs 17-18 of the O-1 Manual. Some of you may have already 
+noticed that this is 4k of memory. (128 x 32 = 4096 = 4k) This 4k 
+is at the very top of the O-1's 64k of memory, thus we only have 
+60k CP/M. The screen may be thought of as a sort of window that 
+we can view a 24 by 52 portion of the screen memory. We will 
+discuss how to move this viewing window later, just remember that 
+it can be done.
+
+     There are a total of 256 characters that can be shown on the 
+screen, but this a bit of an exaggeration. There are really only 
+128 characters, the other 128 are just the first group with 
+"underlines." The characters are the 96 ASCII (American Standard 
+Code for Information Interchange) plus 32 Osborne graphic 
+characters. All these characters are shown in the ASCII table 
+beginning eight pages from the back of the O-1 manual. While the 
+characters appear to have no logical order here, we will show 
+their logic to you soon enough.
+
+ASCII Characters
+
+     The 96 ASCII characters can all be made from the keyboard. 
+Most are obvious. These are characters 32 through 127 as shown in 
+the ASCII table. The manual does not give a very good  explana-
+tion of how to make five of the 96 ASCII characters from the 
+keyboard. Try these to see what happens: "^="; "^,"; "^."; "^/"; 
+and "^[SHIFT]/". The screen should show ` , { , } , ~ , and a 
+half shaded box respectively. Each of these five is made using a 
+control code. This is done by pressing the "CTRL" key and the 
+other key at the same time. The last character is made by pres-
+sing three keys at the same time "CTRL" + "SHIFT" + "/". 
+
+Control and Graphics Characters
+
+     The first 32 characters (0 through 31) serve dual purposes. 
+Normally these are the various ASCII control codes. They do 
+things like carriage returns (13) and line feeds (10), and send 
+special codes such as escape (27). Each of these codes has a 
+standard meaning as defined by ASCII.
+
+     So where are the graphics? These same 32 codes may also be 
+used by the O-1 to make graphics characters. The trick is telling 
+the computer to start thinking graphics. This is done by sending 
+a special sequence of codes to the screen.
+
+The Magical "Escape"
+
+     Nearly all the special screen commands begin by using escape 
+(ESC), ASCII character 27. This escape is sent to tell the 
+screen: "Hey, pay attention ! Here comes something unusual !" The 
+code or codes that follow the escape tell the screen what to do. 
+(A list of these are shown on page 273 of the O-1 manual.) One of 
+these codes tells the screen to shift to graphics (ESC + g). 
+
+     There are several screen codes that should be of interest. 
+We have summarized the more common of these below:
+
+     Screen Code           Turn ON         Turn OFF
+     ------------------        ----------        --------
+     Graphics mode          ESC + g        ESC + G
+     Half intensity         ESC + )        ESC + (
+     Underlining             ESC+ l        ESC + m
+
+Here are some ideas to make these easier to remember. Graphics 
+goes on/off with "g/G" for graphics. Full intensity will be 
+inside the parentheses. Underlining begins with "l" for line and 
+ends with the next letter in the alphabet, "m". Note that 
+lower/upper case is very important and must be correct.
+
+Graphics Characters
+
+     To begin graphics you send ESC and "g" to the screen. In 
+BASIC this would be done PRINT CHR$(27)+"g". You will now have 
+told the screen to shift to graphics thinking. (PRINT ESC+"G" 
+turns graphics off) About 10 pages from the back of O-1 manual 
+(sorry there aren't page #s back there) you will find a "picture" 
+of the keyboard. The keys show the graphic symbols as half-shaded 
+symbols on the keyboard. 
+
+     The graphics symbols make sense when you look at this pic-
+ture (unlike the ASCII table a few pages before). They are 
+grouped in clusters based on their physical position on the key-
+board. For example, notice how the four triangles on the "y-u-j-
+h" keys correspond to the upper left and right, and lower left 
+and right by the position of the keys. 
+
+     This "position rule" applies to most of the groups of 
+graphics characters. The "q-w-e-d-c-x-z-a" group makes an "out-
+side box." The "r-t-g-f" makes small boxes in the corners. (Note 
+that the f and g are shown reversed on the diagram. But the 
+position rule still holds: f is lower left; g is lower right. The 
+triangles are "y-u-j-h." A full solid box is made by "v." Diago-
+nal boxes by "b-n" right next to "v." A small circle is "m."
+
+     All that are left are the "problem characters", they don't 
+quite conform to the position rule. The "open box" shown on the 
+"2" key can be made by pressing ^= . All that remains then are 
+the "centered box" characters. The top and the center aren't too 
+bad they are the "i-o-p-k-l" keys as shown. The "dash" shown on 
+the "ESC" key, which is also part of the center of this group, is 
+made by pressing ^, . The bottom is made by pressing "|", "^/" 
+and "^-". You may be able to see this better by running the BASIC 
+program on this disk (GRAFTEST.BAS) which is discussed below.
+
+     We at Kitchen Software don't generally use these problem 
+characters too much. The most common for us are the full box (v), 
+the triangles (y-u-j-h) and the sides of the outside box (w-d-x-
+a). You can make most anything that is not too curved from these. 
+
+     If you want to think in really detailed terms the O-1 has a 
+resolution of 104 by 48. This is because each of the 52 by 24 
+lines may be split in half; top/bottom and left/right. This 
+resolution may be achieved using only the keys on the left of the 
+keyboard (q-w-e-r-t, a-d-f-g, z-x-c-v-b-n). If you get into this, 
+be careful in using the other characters, especially the tri-
+angles. If you really get into graphics though, you might want to 
+consider an Osborne graphics package such as our OZPAINT ($25).
+
+Showing Graphics on the Screen
+
+     Taking advantage of this logical layout is not really too 
+hard. You may turn graphics on (ESC+"g") and then use PRINT to 
+print the letters to make the symbols. Ah, but there are a few 
+catches! 
+
+     1. You must use lower case letters to get graphics.
+     2. The centered upper left corner made by "i" may print as 
+an ASCII-9 (TAB) unless you use a POKE from MBASIC. Use 
+POKE 16750,195 to turn ASCII-9 off and POKE 16750,194 
+to turn ASCII-9 back on. (This actually changes MBASIC 
+and then changes it back !)
+     3. Some of the other characters aren't so easy either. You 
+really have to print something different from what's 
+shown on the keyboard picture for a few characters. 
+
+     Shown on   You Should
+     Picture     Press       Description
+     --------   ----------  ---------------------------
+     ESC          ^,        Centered thick "dash"
+     2            ^=        Box with hole in center
+     \            ^\        Centered lower left corner
+     .            ^/        Centered bottom center
+     /            ^-        Centered lower right corner
+     not shown     a        Left side (opposite of "d")
+
+     Note:the symbol "^" means press CTRL, (see pgs 18-19 of the 
+       O-1 Manual)
+
+     4. You may not be able to make graphics by just printing the 
+lower  case letters if you have a single density "brown 
+case" O-1. An MBASIC program (GRAFTEST.BAS) has been 
+placed on this disk to test your machine. You should 
+run this program to verify the character set for your 
+particular machine. 
+               Some of the earliest single density "brown case" 
+O-1s work a little differently from the "blue case" and 
+double density (of any color) machines. With the old 
+machines you cannot print graphics using the lower case 
+letters, you must use ASCII codes 0-31 and the CHR$(x) 
+function in MBASIC or CHR(x) in dBASE II. This program 
+will let you see if you have this problem. 
+               If ASCII codes 96-127 (these are the lower case 
+letters) make graphic symbols under the Graphics head-
+ing, you can use lower case letters to make graphics on 
+your machine. If not, your machine requires the use of 
+CHR$(x), and you will definitely need to use the pokes 
+mentioned before when making the "i", CHR$(9).
+
+Other Special Functions
+
+     There are a few other screen features that can be helpful. 
+Perhaps the most useful of these allows you to move the cursor to 
+any location on the screen by row and column number. This has the 
+form of: 
+
+     ESC + "=" + Y + X .
+
+Both Y (the row) and X (the column) must be "offset" by 32. The 
+rows are numbered 0 to 31 and the columns 0 to 127. What does 
+this mean ? To write in the first row and column (0 and 0) you 
+would need to send ESC+"="+32+32 to the screen. The "offset" of 
+32 means that 32,32 corresponds to 0,0 on the screen. For row 26 
+and column 12 (the center of the screen) ESC + "=" + 58 + 44. 
+Again, you can see the 32 "offset".
+
+     A second useful function allows you to move the screen 
+window (24 x 52) around the screen memory (32 x 128) without 
+changing the text. It is very similar to the screen movements 
+possible by pressing CTRL and the arrow keys. The form of the 
+function is almost identical to the cursor locate: 
+
+     ESC + "S" + Y + X .
+
+The difference is the use of the upper case "S" instead of the 
+character "=" . Everything else applies as above. To set the 
+upper left corner of the window to row 0 and column 76 (to show 
+columns 76-127) use ESC+"S"+32+108.
+
+Screen Memory
+
+     The O-1 screen is kept in the top 4k of memory as mentioned 
+earlier. This is pictured on pg 268 of the O-1 manual. The screen 
+memory begins at 61440 decimal or F000 hex. This is helpful for 
+three things that we can think of: direct screen "pokes"; direct 
+screen "peeks"; and using the screen for graphics storage. This 
+last is probably the most useful.
+
+     If you do extensive graphics work the storage of the screen 
+can present a real problem. With the O-1 though, you can out 
+smart this problem - just use the video memory beginning at 61440 
+(F000h)! Draw on the screen then use "peek" to read each loca-
+tion. In a game you could check to see if you had hit an alien, 
+or if your "pac-man" had bumped into a wall or chomped a "power 
+pill." You could, if you were slightly crazy, use a peek to check 
+for keyboard responses. (A better way is to use INKEY$ or INPUT.) 
+
+     You also may use "pokes" to place characters directly in 
+screen memory. There is some small speed advantage over 
+"printing", but not much. The characters you poke will be ASCII 0 
+through 31 for graphics. (No problems with ASCII-9/TAB as 
+before.) All the other ASCII characters will be fine. (Note that 
+128-255 will be 0-127 with underlines.)
+
+     A table of screen memory locations is given below. The 
+numbers are the memory locations in decimal (and hex) for key 
+points in the O-1 memory.
+
+           KEY SCREEN MEMORY LOCATIONS
+
+Screen    <--------  Screen Column  --------->
+ Line       0         51        79       127
+------    ------    ------    ------    ------
+ 0         61440     61491     61519     61667 
+          (F000)    (F033)    (F04F)    (F07F)
+ 1         61568     61619     61647     61695 
+          (F080)    (F0B3)    (F0CF)    (F0FF)
+ 7         62336     62387     62415     62463 
+          (F380)    (F3B3)    (F3CF)    (F3FF)
+15         63360    63411      63439     63487 
+          (F780)   (F7B3)     (F7CF)    (F7FF)
+23         64383     64434     64452     64511 
+          (FB80)    (FBB3)    (FBCF)    (FBFF)
+31         65407     65458     65486     65535 
+          (FE80)    (FEB3)    (FECF)    (FFFF)
+
+Remember the line and column numbering begin with zero! This 
+means column 51 is column 52 the way we humans usually think. 
+Line 23 is the bottom line on the O-1's 24 line screen.
+
+Sample Implementations
+
+     So now you've been given all this information, how do you 
+really use it? To complete the story, it seems only fair that you 
+get some samples of how you might use all these features. The 
+best way to use them is by defining variables or functions to do 
+what you want. Here is one such set:
+     
+Screen 
+Feature BASIC              dBASE II              
+------- ----------------   ------------------------
+Screen Variables:
+
+Graphics
+on     GRF$=CHR$(27)+"g"   STORE CHR(27)+"g" TO grf
+off    GRN$=CHR$(27)+"G"   STORE CHR(27)+"G" TO grn
+
+Underlining
+on     UL$=CHR$(27)+"l"    STORE CHR(27)+"l" TO ul
+off    UN$=CHR$(27)+"m"    STORE CHR(27)+"m" TO un
+
+Bright BR$=CHR$(27)+"("    STORE CHR(27)+"(" TO br 
+Dim    DM$=CHR$(27)+")"    STORE CHR(27)+")" TO dm 
+
+Clear  CL$=CHR$(26)        CLEAR
+"bell" BL$=CHR$(7)         STORE CHR(7) TO bl
+
+Screen Functions:
+Cursor locate
+       DEF FNLCT$(Y,X)=CHR$(27)+"="+(32+Y)+(32+X)
+                            @ Y,X SAY
+Screen locate
+       DEF FNSCS$(Y,X)=CHR$(27)+"S"+(32+Y)+(32+X)
+                           Not needed in dBASE II
+
+     Here are example lines for BASIC and dBASE II to clear the 
+screen and print a graphic "cross" at the center of the screen 
+(26,12) followed by dimmed, underlined text :
+
+Basic
+PRINT CL$;FNLCT$(26,12);GRF$;CHR$(12);GRN$;
+PRINT DM$;UL$;" Screen center.";UN$;BR$
+
+dBASE II
+CLEAR
+@ 26,12 SAY br+grf+CHR(12)+grn+dm+ul+" Screen center."+un+br
+
+ 
+
+NT DM$;UL$;" Screen cent

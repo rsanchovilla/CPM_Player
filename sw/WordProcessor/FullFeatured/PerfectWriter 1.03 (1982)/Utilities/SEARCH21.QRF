@@ -1,0 +1,44 @@
+                          SEARCH QUICK REFERENCE
+
+Calling syntax:
+    SEARCH [filespec] [separator] [-switches] [=search strings] [>output]
+    switches, search strings, and output filename can be put anywhere on
+    command line
+
+Filespec:
+   DU:afn or ZCPRDIR:afn okay
+   libraries and members must be in quotes - "du:ambiglbr ambig.typ"
+   
+Separators:
+    ""  Blank line (each paragraph is one item)
+    L   Each line is one item
+    Anything else is used literally (assumed followed by CRLF), e.g. ----
+
+Switches:
+    -F  Suppress filename display, but DO show text
+    -M  Pause output every 23 lines 
+    -N  Display line numbers
+    -S  Show filenames only, but do NOT display text
+    -U  Show filenames for unsuccesful searches. "-F" overrides this.
+    -I  Append selected items to file.  Must be follwed by filename.
+  switches can be stacked, e.g., -FMN is okay.  Can be in any order,
+  except -I must be last.
+
+Search strings:
+   &   And
+   |   Or
+   !   Not
+   \   Escape char:  \& finds ampersand, \| finds vertical bar
+   "   Use if search string contains spaces.  Examples:
+       SEARCH b3:myfile L -MF =CP/M&EDITOR|MS-DOS&COMPILER
+       SEARCH "b15:mylbr *.txt" "" "=TEXT SEARCHING&COMPUTER PROGRAMS"
+
+Output:  
+    >FILENAME.TYP   output to diskfile (>DU: prefix not permitted)
+    >LST:           output to printer
+   text is not echoed to the screen if output is specified.  File will
+   be silently overwritten if it already exists.  DU: or DIR: not
+   allowed here.
+
+
+

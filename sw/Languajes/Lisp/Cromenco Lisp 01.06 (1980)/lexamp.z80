@@ -1,0 +1,132 @@
+	title	Lisp/Machine-code Example Source
+	subttl	Equated Values and Macros
+	name	LEXAMP
+
+;  This is an example to illustrate the use of Bitmap to create a library
+;  external to LISP of machine code routines relocatable just under CDOS.
+
+
+;  Miscellaneous definitions:
+WStart	equ	0		; CDOS warm-start location
+CDOS	equ	5		; CDOS system call location
+Stack	equ	300H		; Use stack in middle of User Area for chaining
+LF	equ	0AH		; ASCII line feed
+CR	equ	0DH		; ASCII carriage return
+NIL	equ	0008H		; LISP value for NIL
+
+
+;  LISP object type definitions:
+list	equ	0
+expr	equ	1
+fexpr	equ	2
+macro	equ	3
+closure	equ	4
+atom	equ	5
+string	equ	6
+float	equ	7
+subr	equ	8
+fix	equ	9
+aload	equ	10
+none	equ	11
+char	equ	12
+unbound	equ	13
+byte	equ	14
+file	equ	15
+
+
+
+;  Macro to determine type of object in A register:
+objtyp:	macro
+	   exx			; Get primed registers (B' contains page base)
+	   ld	   c,a		; Set relative location in page from value in A
+	   ld	   a,(bc)	; Return object type in A
+	   exx			; Restore registers
+	mend
+	subttl	Definition of LISP Library Routine(s)
+
+;  These 3 JP's MUST be first to allow space for moving those in CDOS later:
+	jp	WStart		; Dummy jumps to be replaced by those in CDOS
+	jp	WStart		;  /
+	jp	WStart		; /
+
+;  Actual program MUST begin here, immediately following the 3 reserved JP's:
+Begin:	jp	Chain		; Skip to code which loads LISP interpretter
+
+;  LISP library information MUST immediately follow the 4 JP's above:
+	defb	34H		; This byte indicates library file to LISP
+	defb	1		; Number of subroutines which follow
+	defw	Dirctry		; Location of subroutine to give disk directory
+	defb	'DIR',-1	; LISP name of subroutine 1
+
+
+Dirctry:and	a		; Check for any LISP parameters passed
+	jr	nz,Dir30	; Skip if so to check for legal object types
+	ld	hl,DirFCB	; Point to ambiguous name for entire directory
+	ld	de,FCB		; Point to location to build FCB
+	ld	bc,12		; Length of disk no., file name, & extension
+	ldir			; Create correct FCB for entire directory
+	jr	Dir60		; Skip to display directory of current disk
+
+Dir30:	ld	l,(iy-2)	; Get the first LISP object from the stack
+	ld	h,(iy-1)	; /
+	ld	a,h		; Get page of object to use as type offset
+	objtyp			; Get type of object passed by LISP
+	cp	string		; Check to see that object is a string
+	jr	nz,Error	; Skip to print error message if not
+	ld	a,(hl)		; Get the length of String Vector (SV)
+	and	0FH		; Limit it to 15 characters at most
+	ld	c,a		; Put length of SV into BC
+	ld	b,0		;   (max. string has form: z:filename.ext)
+	inc	hl		; Point to location where
+	inc	hl		;   string address is stored
+	ld	e,(hl)		; Get string address (SAD) into DE
+	inc	hl		;  /
+	ld	d,(hl)		; /
+	ex	de,hl		; Swap string address into HL
+	ld	de,FilNam	; Point to free space to which to move it
+	ldir			; Move file name string into free space
+	ld	a,CR		; Store a carriage return (terminating
+	ld	(de),a		;   character) after last byte of string
+	ld	hl,FilNam	; Point to correctly terminated name string
+	ld	de,FCB		; Same FCB area used earlier to chain to LISP
+	ld	c,86H		; Format name to FCB sys-call
+	call	CDOS		; /
+Dir60:	ld	de,FCB		; Point to directory File-Control-Block
+	ld	c,9CH		; Print disk directory sys-call
+	call	CDOS		; /
+	ld	bc,NIL		; Return NIL to LISP for this function
+	ret			; Return to LISP
+
+
+Error:	ld	de,ObjErr	; "Incorrect object type"
+	ld	c,9		; Print buffered line sys-call
+	call	CDOS		; /
+	ld	bc,NIL		; Return NIL to LISP
+	ret
+	subttl	Routine to Chain to LISP (used only while loading this code)
+
+Chain:	ld	sp,Stack	; Initialize stack pointer
+;  Automatically chain to and run LISP:
+	ld	de,FCB		; Point to File-Control-Block of LISP
+	ld	c,88H		; Link to new program sys-call
+	call	CDOS		; /
+;  Return back here is made only if LISP is not found:
+	ld	de,NotFnd	; "LISP not found on current disk"
+	ld	c,9		; Print buffered line sys-call
+	call	CDOS		; /
+	jp	WStart		; Warm-start back to CDOS without loading LISP
+	subttl	Printable Messages and Data Area
+
+ObjErr:	defb	'Incorrect object type',CR,LF,'$'
+NotFnd:	defb	'LISP not found on current disk',CR,LF,'$'
+
+DirFCB:	defb	0		; Perform directory on current disk
+	defb	'???????????'	; Use ambiguous file name to return all files
+
+FCB:	defb	0		; Use current disk (unless changed later)
+	defb	'LISP    COM'	; File name and extension
+	defs	21		; Total no. of bytes in FCB must be 33
+
+FilNam:	defs	16		; Allow 15 bytes for string & 1 for terminator
+
+	end	Begin

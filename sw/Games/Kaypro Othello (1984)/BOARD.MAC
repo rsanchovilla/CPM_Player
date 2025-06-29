@@ -1,0 +1,749 @@
+;
+;********************************************************
+;*							*
+;*	PROGRAM DISK FILE NAME:		"BOARD.MAC"	*
+;*							*
+;********************************************************
+;
+	TITLE	CONSOLE I/O ROUTINES FOR "OTHELLO.FOR"
+;
+;********************************************************
+;*							*
+;*	PROGRAMMED BY:					*
+;*							*
+;*							*
+;*		RICHARD G. CODY				*
+;*		INTEGRAL COMPUTER SYSTEMS INC		*
+;*		136 MAIN ST PUTNAM CT 06260		*
+;*		JANUARY 2, 1984				*
+;*							*
+;*					VERSION 1.00	*
+;*							*
+;********************************************************
+;
+.Z80
+;
+;********************************************************
+;*							*
+;*	THESE ARE THE EQU'S				*
+;*							*
+;********************************************************
+;
+CR	EQU	0000DH	;CARRAGE RETURN
+LF	EQU	0000AH	;LINE FEED
+BS	EQU	00008H	;BACK SPACE
+ESC	EQU	0001BH	;ESCAPE
+BEL	EQU	00007H	;TERMINAL BELL
+BDOS	EQU	00005H	;BDOS ENTRY VECTOR
+;
+ENTRY	PBRD,SETUP,GETRES,GETMOV,GETHND
+ENTRY	MES01,MES02,MES04,MES05,MES06
+ENTRY	MES07,MES08,MES09,MES10,MES11,MES12
+ENTRY	MES13,MES14,MES16,MES17,MES18
+;
+;********************************************************
+;*							*
+;*	CODE SEGMENT OF MEMORY BEGINS HERE		*
+;*							*
+;********************************************************
+;
+	CSEG
+;
+;********************************************************
+;*							*
+;*	ROUTINE TO PRINT THE GAME BOARD			*
+;*							*
+;********************************************************
+;
+PBRD:
+	PUSH	HL
+	CALL	ILPRT
+	DB	ESC,'C4',0
+;
+	POP	HL
+	LD	A,(HL)
+	CP	'-'
+	JR	Z,OK
+	CP	'X'
+	JR	Z,WHITE
+	CP	'O'
+	RET	NZ
+BLACK:
+	CALL	INDEX
+	CALL	ILPRT
+	DB	ESC,'B6'	;REMEMBER
+	DB	195,179,179,227
+	DB	ESC,'C6'	;RETURN
+	DB	LF
+	DB	ESC,'B6'	;REMEMBER
+	DB	ESC,'B0'	;IVON
+	DB	213
+	DB	ESC,'C0'	;IVOFF
+	DB	128,128,128
+	DB	ESC,'B0'	;IVON
+	DB	213
+	DB	ESC,'C0'	;IVOFF
+	DB	ESC,'C6'	;RETURN
+	DB	LF
+	DB	134,176,176,164,130
+	DB	0
+;
+	JR	OK
+WHITE:
+	CALL	INDEX
+	CALL	ILPRT
+	DB	ESC,'B6'	;REMEMBER
+	DB	195
+	DB	ESC,'B0'	;IVON
+	DB	140,140,156
+	DB	ESC,'C6'	;RETURN
+	DB	LF
+	DB	ESC,'B6'	;REMEMBER
+	DB	128,128,128,128,213
+	DB	ESC,'C6'	;RETURN
+	DB	LF
+	DB	ESC,'C0'	;IVOFF
+	DB	135,191,191,175,130
+	DB	0
+;
+OK:
+	LD	A,(COUNT)
+	INC	A
+	INC	A
+	LD	(COUNT),A
+	CP	128
+	RET	NZ
+	XOR	A
+	LD	(COUNT),A
+	RET
+;
+COUNT:	DB	0
+TABLE:	DW	0001H,0007H,000DH,0013H,0019H,001FH,0025H,002BH
+	DW	0301H,0307H,030DH,0313H,0319H,031FH,0325H,032BH
+	DW	0601H,0607H,060DH,0613H,0619H,061FH,0625H,062BH
+	DW	0901H,0907H,090DH,0913H,0919H,091FH,0925H,092BH
+	DW	0C01H,0C07H,0C0DH,0C13H,0C19H,0C1FH,0C25H,0C2BH
+	DW	0F01H,0F07H,0F0DH,0F13H,0F19H,0F1FH,0F25H,0F2BH
+	DW	1201H,1207H,120DH,1213H,1219H,121FH,1225H,122BH
+	DW	1501H,1507H,150DH,1513H,1519H,151FH,1525H,152BH
+;
+;********************************************************
+;*							*
+;*	ROUTINE TO GET "Y/N" RESPONSE			*
+;*							*
+;********************************************************
+;
+GETRES:	PUSH	HL
+GETRE1:	CALL	KEYIN
+	CP	'Y'
+	JR	Z,GOTIT
+	CP	'N'
+	JR	NZ,GETRE1
+GOTIT:	POP	HL
+	LD	(HL),A
+	INC	HL
+	LD	(HL),0
+	JP	CTYPE
+;
+;********************************************************
+;*							*
+;*	ROUTINE TO GET PLAYERS MOVE			*
+;*							*
+;********************************************************
+;
+GETMOV:
+	PUSH	DE
+	PUSH	HL
+GETMO1:	CALL	KEYIN
+	CP	'A'
+	JR	C,GETMO1
+	CP	'H'+1
+	JR	NC,GETMO1
+	LD	(M1),A
+	CALL	CTYPE
+GETMO2:	CALL	KEYIN
+	CP	BS
+	JR	NZ,GETMO3
+	CALL	ERA1
+	JR	GETMO1
+GETMO3:	CP	'1'
+	JR	C,GETMO2
+	CP	'8'+1
+	JR	NC,GETMO2
+	LD	(M2),A
+	CALL	CTYPE
+GETMO4:	CALL	KEYIN
+	CP	BS
+	JR	NZ,GETMO5
+	CALL	ERA1
+	JR	GETMO2
+GETMO5:	CP	CR
+	JR	NZ,GETMO4
+	LD	A,(M1)
+	SUB	'@'
+	POP	HL
+	LD	(HL),A
+	INC	HL
+	LD	(HL),0
+	LD	A,(M2)
+	SUB	'0'
+	POP	HL
+	LD	(HL),A
+	INC	HL
+	LD	(HL),0
+	RET
+ERA1:
+	CALL	ILPRT
+	DB	BS,' ',BS,0
+;
+	RET
+;
+M1:	DB	0
+M2:	DB	0
+;
+;********************************************************
+;*							*
+;*	ROUTINE TO GET HANDICAP FROM PLAYER		*
+;*							*
+;********************************************************
+;
+GETHND:
+	PUSH	HL
+	CALL	ILPRT
+	DB	CR,LF
+	DB	'                       How many corners (1-4)? ',0
+;
+GETHN1:	CALL	KEYIN
+	CP	'1'
+	JR	C,GETHN1
+	CP	'4'+1
+	JR	NC,GETHN1
+	CALL	CTYPE
+	SUB	'0'
+	POP	HL
+	LD	(HL),A
+	INC	HL
+	LD	(HL),0
+	RET
+;
+;********************************************************
+;*							*
+;*	MESSAGE PRINTING ROUTINES			*
+;*							*
+;********************************************************
+;
+MES01:
+	LD	A,6
+	LD	(CURLIN),A
+	LD	A,26
+	CALL	CTYPE
+	LD	DE,0113H
+	CALL	ADCUR
+	CALL	ZO
+	LD	E,25
+	CALL	ADCUR
+	CALL	ZT
+	LD	E,31
+	CALL	ADCUR
+	CALL	ZH
+	LD	E,37
+	CALL	ADCUR
+	CALL	ZE
+	LD	E,43
+	CALL	ADCUR
+	CALL	ZL
+	LD	E,49
+	CALL	ADCUR
+	CALL	ZL
+	LD	E,55
+	CALL	ADCUR
+	CALL	ZO
+	CALL	ILPRT
+	DB	CR,LF,LF,LF
+	DB	'WHITE is first. Do you wish to go first (Y/N)? ',0
+;
+	RET
+MES02:
+	CALL	PRINT
+	DB	ESC,'B4'
+	DB	'What is your move? ',0
+;
+	RET
+MES04:
+	CALL	PRINT
+	DB	BEL
+	DB	'       '
+	DB	ESC,'B0'	;IVON
+	DB	' INVALID MOVE '
+	DB	ESC,'C0'	;IVOFF
+	DB	0
+;
+	JR	MES02
+MES05:
+	CALL	PRINT
+	DB	0
+	CALL	PRINT
+	DB	' I see no move for you, so',0
+;
+	CALL	PRINT
+	DB	' I''ll move if I can ..... ',0
+;
+	CALL	PRINT
+	DB	0
+;
+	RET
+MES06:
+	CALL	PRINT
+	DB	ESC,'B4'
+	DB	'       MY MOVE IS: ',0
+;
+	RET
+MES07:
+	CALL	PRINT
+	DB	ESC,'B4'
+	DB	'Do you have a move (Y/N)? ',0
+;
+	RET
+MES08:
+	CALL	CLRCEL
+	CALL	PRINT
+	DB	' CONGRATULATIONS, YOU PLAYED ',0
+;
+	CALL	PRINT
+	DB	'      WELL AND HAVE WON,     '
+	DB	0
+;
+	RET
+MES09:
+	CALL	CLRCEL
+	CALL	PRINT
+	DB	'  YOU PLAYED WELL, HOWEVER,  ',0
+;
+	CALL	PRINT
+	DB	'   YOUR LUCK WAS BAD AND I   ',0
+;
+	CALL	PRINT
+	DB	'          HAVE WON.          '
+	DB	0
+;
+	RET
+MES10:
+	CALL	CLRCEL
+	CALL	PRINT
+	DB	' YOU PLAYED WELL AND WE HAVE ',0
+;
+	CALL	PRINT
+	DB	'     TIED. I WAS LUCKY.      '
+	DB	0
+;
+	RET
+MES11:
+	CALL	PRINT
+	DB	ESC,'B0'
+	DB	' THANK YOU FOR A FINE GAME.  ',0
+;
+	CALL	PRINT
+	DB	'                             '
+	DB	ESC,'C0',0
+;
+	CALL	PRINT
+	DB	0
+	CALL	PRINT
+	DB	ESC,'B4'
+	DB	'   Play again (Y/N)? ',0
+;
+	RET
+MES12:
+	LD	A,(HL)
+	LD	(V1),A
+	LD	A,(DE)
+	ADD	A,'0'
+	LD	(V2),A
+	CALL	ILPRT
+V1:	DB	' '
+V2:	DB	' ',0
+;
+	RET
+MES13:
+	CALL	ILPRT
+	DB	26			;CLEAR SCREEN
+	DB	ESC,'B4'		;CURSOR ON
+	DB	0
+;
+	RET
+MES14:
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	CALL	ILPRT
+	DB	ESC,'=',0+32,54+32
+	DB	ESC,'B0'		;IVON
+	DB	'  '
+	DB	ESC,'B3'		;UNDERLINE ON
+	DB	'                    '
+	DB	ESC,'C3'		;UNDERLINE OFF
+	DB	'  '
+	DB	ESC,'=',1+32,54+32
+	DB	'  '
+	DB	ESC,'C0'		;IVOFF
+	DB	ESC,'B3'		;UNDERLINE ON
+	DB	'    AFTER   '
+	DB	ESC,'=',1+32,66+32,0
+;
+	POP	HL
+	LD	A,(HL)
+	INC	HL
+	LD	H,(HL)
+	LD	L,A
+	CALL	DECOUT
+	CALL	ILPRT
+	DB	ESC,'=',1+32,68+32
+	DB	' MOVES  '
+	DB	ESC,'C3'		;UNDERLINE OFF
+	DB	ESC,'B0'		;IVON
+	DB	'  '
+	DB	ESC,'=',2+32,54+32
+	DB	'  '
+	DB	ESC,'C0'		;IVOFF
+	DB	ESC,'B3'		;UNDERLINE ON
+	DB	'   I HAVE   '
+	DB	ESC,'=',2+32,66+32,0
+;
+	POP	HL
+	LD	A,(HL)
+	INC	HL
+	LD	H,(HL)
+	LD	L,A
+	CALL	DECOUT
+	CALL	ILPRT
+	DB	ESC,'=',2+32,68+32
+	DB	' PIECES '
+	DB	ESC,'C3'		;UNDERLINE OFF
+	DB	ESC,'B0'		;IVON
+	DB	'  '
+	DB	ESC,'=',3+32,54+32
+	DB	'  '
+	DB	ESC,'C0'		;IVOFF
+	DB	ESC,'B3'		;UNDERLINE ON
+	DB	' YOU HAVE   '
+	DB	ESC,'=',3+32,66+32,0
+;
+	POP	HL
+	LD	A,(HL)
+	INC	HL
+	LD	H,(HL)
+	LD	L,A
+	CALL	DECOUT
+	CALL	ILPRT
+	DB	ESC,'=',3+32,68+32
+	DB	' PIECES '
+	DB	ESC,'C3'		;UNDERLINE OFF
+	DB	ESC,'B0'		;IVON
+	DB	'  '
+	DB	ESC,'=',4+32,54+32
+	DB	ESC,'B3'		;UNDERLINE ON
+	DB	'                        '
+	DB	ESC,'C3'		;UNDERLINE OFF
+	DB	ESC,'C0'		;IVOFF
+	DB	0
+;
+	RET
+MES16:
+	CALL	PRINT
+	DB	0
+	CALL	PRINT
+	DB	'I have no moves & must pass.',0
+;
+	CALL	PRINT
+	DB	0
+	RET
+MES17:
+	CALL	ILPRT
+	DB	CR,LF
+	DB	'     Do you wish to be given a handicap (Y/N)? ',0
+;
+	RET
+MES18:
+	CALL	ILPRT
+	DB	CR,LF
+	DB	'      Do you wish to give me a handicap (Y/N)? ',0
+
+;
+	RET
+;
+;********************************************************
+;*							*
+;*	INITIAL GAME BOARD SET-UP			*
+;*							*
+;********************************************************
+;
+SETUP:
+	CALL	ILPRT
+	DB	ESC,'C4'		;TURN OFF CURSOR
+	DB	26			;CLEAR SCREEN
+	DB	ESC,'L',32,32,32,128
+	DB	ESC,'L',32,128,128,128
+	DB	ESC,'L',128,128,128,32
+	DB	ESC,'L',128,32,32,32
+	DB	ESC,'L',44,32,44,128
+	DB	ESC,'L',32,44,128,44
+	DB	ESC,'L',56,32,56,128
+	DB	ESC,'L',32,56,128,56
+	DB	ESC,'L',68,32,68,128
+	DB	ESC,'L',32,68,128,68
+	DB	ESC,'L',80,32,80,128
+	DB	ESC,'L',32,80,128,80
+	DB	ESC,'L',92,32,92,128
+	DB	ESC,'L',32,92,128,92
+	DB	ESC,'L',104,32,104,128
+	DB	ESC,'L',32,104,128,104
+	DB	ESC,'L',116,32,116,128
+	DB	ESC,'L',32,116,128,116
+	DB	0
+;
+	LD	B,8
+	LD	DE,0102H
+	LD	HL,4131H
+INILP1:	PUSH	BC
+	LD	B,8
+INILP2:	CALL	ADCUR
+	LD	A,H
+	CALL	CTYPE
+	LD	A,L
+	CALL	CTYPE
+	LD	A,6
+	ADD	A,E
+	LD	E,A
+	INC	L
+	DJNZ	INILP2
+	LD	L,'1'
+	INC	H
+	LD	E,2
+	LD	A,3
+	ADD	A,D
+	LD	D,A
+	POP	BC
+	DJNZ	INILP1
+	CALL	ILPRT
+	DB	ESC,'B4',0
+;
+	RET
+;
+INDEX:
+	LD	HL,TABLE
+	LD	A,(COUNT)
+	LD	B,0
+	LD	C,A
+	ADD	HL,BC
+	LD	E,(HL)
+	INC	HL
+	LD	D,(HL)
+;
+ADCUR:
+	LD	A,32
+	PUSH	AF
+	ADD	A,D
+	LD	(ROW),A
+	POP	AF
+	ADD	A,E
+	LD	(COL),A
+	CALL	ILPRT
+	DB	ESC,'='
+ROW:	DB	32
+COL:	DB	32
+	DB	0
+;
+	RET
+;
+CLRCEL:
+	LD	A,6
+	LD	(CURLIN),A
+	LD	DE,0632H
+	LD	B,20
+	CALL	CLRLP
+	CALL	PRINT
+	DB	ESC,'B0'
+	DB	'                             ',0
+;
+	RET
+;
+CLEAR:
+	LD	B,6
+CLRLP:	LD	A,24
+	INC	D
+	CP	D
+	JR	NZ,CLEAR1
+	LD	D,6
+CLEAR1:	CALL	ADCUR
+	LD	A,24
+	CALL	CTYPE
+	DJNZ	CLRLP
+	RET
+;
+CURLIN:	DB	6
+;
+PRINT:
+	LD	A,(CURLIN)
+	INC	A
+	LD	(CURLIN),A
+	CP	24
+	JR	NZ,PRINT1
+	LD	A,6
+	LD	(CURLIN),A
+PRINT1:	LD	D,A
+	LD	E,50
+	PUSH	DE
+	CALL	CLEAR
+	POP	DE
+	CALL	ADCUR
+;
+ILPRT:
+	EX	(SP),HL
+	LD	A,(HL)
+	INC	HL
+	EX	(SP),HL
+	OR	A
+	RET	Z
+	CALL	CTYPE
+	JR	ILPRT
+;
+CTYPE:
+	PUSH	AF
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	LD	C,6
+	LD	E,A
+	CALL	BDOS
+	POP	HL
+	POP	DE
+	POP	BC
+	POP	AF
+	RET
+;
+KEYIN:
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	LD	C,6
+	LD	E,-1
+	CALL	BDOS
+	CP	ESC
+	JR	Z,QUIT
+	CP	'a'
+	JR	C,NOUC
+	CP	'z'+1
+	JR	NC,NOUC
+	AND	5FH
+NOUC:	POP	HL
+	POP	DE
+	POP	BC
+	RET
+;
+DECOUT:
+	PUSH	AF
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	LD	BC,-10
+	LD	DE,-1
+DECOU2:	ADD	HL,BC
+	INC	DE
+	JR	C,DECOU2
+	LD	BC,10
+	ADD	HL,BC
+	EX	DE,HL
+	LD	A,H
+	OR	L
+	CALL	NZ,DECOUT
+	LD	A,E
+	ADD	A,'0'
+	CALL	CTYPE
+	POP	HL
+	POP	DE
+	POP	BC
+	POP	AF
+	RET
+;
+QUIT:
+	CALL	MES13
+	JP	0
+ZO:
+	CALL	ILPRT
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	208,137,131,131,216
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	213,128,128,128,213
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	129,152,176,176,137
+	DB	0
+;
+	RET
+ZT:
+	CALL	ILPRT
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	129,131,215,131,131
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	128,128,213,128,128
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	128,128,149,128,128
+	DB	0
+;
+	RET
+ZH:
+	CALL	ILPRT
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	213,128,128,128,213
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	213,140,140,140,221
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	149,128,128,128,149
+	DB	0
+;
+	RET
+ZE:
+	CALL	ILPRT
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	213,131,131,131,131
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	213,140,140,140,128
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	149,176,176,176,176
+	DB	0
+;
+	RET
+ZL:
+	CALL	ILPRT
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	213,128,128,128,128
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	ESC,'B6'		;SAVE CURSOR POSITION
+	DB	213,128,128,128,128
+	DB	ESC,'C6'		;RESTORE CURSOR POSITION
+	DB	LF
+	DB	149,176,176,176,176
+	DB	0
+;
+	RET
+;
+;********************************************************
+;*							*
+;*	END OF SOURCE CODE LISTING			*
+;*							*
+;********************************************************
+;
+	END
+

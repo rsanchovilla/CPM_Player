@@ -1,0 +1,157 @@
+.macro chttl = FILTERS#and#CONVENTIONS
+.ch .chttl
+.hl 1 General
+Various  "filter" programs are provided.   These have the  common
+characteristic that they use only "input" and "output" files, and
+perform  some sort of translation of the input file.  "Input" and
+"output" are always textfiles.   Filters have no extraneous files
+over which to prompt the user, and no added verbiage is generally
+desired on the output, thus they are unable to prompt the user.
+
+The  programs are generally executed by using the i/o redirection
+facilities ">" and "_<" (goes__to and comes__from respectively). .bb
+A minor  exception  is .eb
+"TYPETEXT",  as detailed below.  COPYCOLS also provides for
+additional parameters in the command line.
+
+.hl 1 LINE TERMINATORS
+
+CPM  textfiles  universally use the convention  that  lines  are
+terminated by a _<cr>_<lf> pair.   Some systems generate files that
+omit  the _<lf>.   Any such files are legible to Pascal  programs,
+and  after  passing through these filters will have  the 
+conventional line terminators inserted.
+
+.note WARNING:
+The ISO and ANSI Pascal standards specify, and for good
+reason,  that  an EOF must immediately follow an EOLN in  a  
+non-empty textfile,  i.e.  all lines must be terminated by EOLN
+(normally  a _<ret> under CPM).   Files created by other systems  may
+not respect this.  WordStar is a notable offender, where the user
+must  specifically terminate the last line in a file and not  add
+any  invisible blanks at the end.   When these programs read such
+files they will probably abort with a "READ PAST EOF" error.  The
+cure is to be sure to enter the final carriage return.   Programs
+can  be  written to correct this,  but may  require  an  enormous
+overhead  to  check EOF and decide what to do after  every  input
+character.
+.res
+
+.hl 1 INDENTATION CODING
+
+A convention widely used in the system is the "indentation__code",
+patterned  after  the  coding used  in  the  UCSD  system.   This
+expresses an indentation, for a text line, as the character 010h,
+or  control-p,  or 16 decimal,  or dle (all synonyms) followed by
+the printing character (space + number__of__spaces__to__indent). This
+is only a convention,  rather than forced as in the UCSD  system.
+All system programs respect this (PASCALP, PAGER, XREF, REFRENCE,
+COMPARE,  COPYCOLS,  TYPETEXT, EXPAND) and perform the output 
+expansion.  This avoids much useless and time-consuming scanning of
+blanks  in text files.   Program COMPRESS creates the indentation
+code from plain text.  Of the above programs, COPYCOLS, TYPETEXT,
+EXPAND,  COMPRESS  and  REFRENCE are all filters  for  textfiles.
+Note that COPYTEXT simply passes on any indentation code.
+
+.hl 1 NUMBERED LINES
+
+A  further convention used in this system is that textfile  lines
+which have an initial string of 8 digits (all must be digits) are
+numbered,  and that the first 5 digits are the line number.   The
+remaining digits express a fractional line number.  Programs that
+process source text,  such as PASCALP,  XREF,  REFRENCE, COMPARE,
+PAGER, XREFASSM respect this convention.
+
+.hl 1 THE PIP [b] (buffered) OPTION:
+
+To co-operate with PIP,  several programs provide for the PIP [b]
+buffered  option.   If the programs are executed with a  non-zero
+value of parm they will,  at intervals,  emit a dc3 character and
+then  pause for approximately parm seconds.   At file  completion
+they  will  emit a cntrl-z character.   These cause PIP to  flush
+buffers and terminate, and enable simple-minded information 
+transfers in printing characters.  Programs that include this feature
+are: COPYTEXT, STRIPNUM (both filters), BINHEX and RBMTOHEX 
+(documented elsewhere). .bb  The time delays assume execution via
+RUNPCD on a 2 Mhz machine (unless the CPMLINK portion has been
+customized), .eb or on the HP3000 (or other  machines  with
+process  blocking).  An  even value of parm  should  normally  be
+specified  to avoid an initial debug trap.
+
+.note   WARNING:
+some  earlier versions of these programs exist without the  delay
+feature.  They should be replaced when found.
+.res
+
+.hl 1                    MINI-MANUALS
+
+.hl 2 COPYCOLS (left__column, right__column) _<infile >outfile
+  copies left__column through right__column from infile to outfile.
+Left__column defaults to 1, and right__column to 132 (the maximum).
+Indentation  codes are expanded before measuring column position.
+Lines longer that 132 characters cannot be processed.
+
+.hl 2 COPYTEXT _<infile >outfile [optional__parm]
+  simply  copies all input to the output.   No indentation  codes
+are  expanded.   There is no limit to line length.   The PIP  [b]
+option is supported (see above).
+
+.hl 2 TYPETEXT _<infile      [>outfile may be specified, but is useless]
+  copies infile to "output", normally the user console, and halts
+every 20 lines until a _<ret> is entered.   Indentation codes  are
+expanded,  and  lines longer that 80 characters are wrapped  into
+multiple  lines.   TYPETEXT actually uses another file (KBD)  for
+non-echoing  interaction  with the  operator.   This  interaction
+reduces its portability.  Some versions may wrap at 79 characters
+to allow for terminals that wrap at 80 characters without 
+detecting  that  no more characters follow.   An  EndofFile  (control-z
+under CPM) when _<ret> is expected ends the pauses permanently. A
+control-c at this point exits the program.  [parm] may optionally
+be specified,  and alters the default pagesize of 20. Use an even
+number to avoid an initial debug trap.
+
+.hl 2 EXPAND _<infile >outfile
+  is  logically equivalent to COPYTEXT,  but expands  indentation
+codes.  There are no provisions for delays etc.
+
+.hl 2 COMPRESS _<infile >outfile
+  is  the inverse of EXPAND.   Files occupy less disk space,  and
+require  less  transmission  time  after  this,   but  are  still
+perfectly legible to compilers etc.   They remain comprehensible,
+but not pretty, to human viewers.
+
+.hl 2 STRIPNUM _<infile >outfile
+  removes  any  line  numbers from infile.   See  above  for  the
+definition  of a line number.   The PIP [b] option is  supported,
+see above.
+
+.hl 2 ADDNUMS _<infile >outfile   [optional__parm]
+  adds  sequential  line numbers to a textfile.   If a [parm]  is
+specified it sets the initial line number -1, i.e. the first line
+will be numbered one higher.  This is consistent with the default
+zero value of parm.
+
+.hl 2 WSTOTEXT _<infile >outfile   [optional__parm]
+  is  a preliminary program.   It converts the special characters
+in a WordStar document file to the normal Ascii set, removing any
+un-used  "soft" hyphens,  suppressing trailing blanks  on  lines,
+etc.  In addition any "dot commands" (i.e. lines beginning with a
+"."),  and  pagination are deleted.   EOF is correctly set in the
+output  file  (see the WARNING  below).   [parm],  if  specified,
+serves the same function as the WordStar ".po" dot  command,  and
+inserts blank spaces at the left of each line.  This document was
+prepared on WordStar and passed through WSTOTEXT.
+
+.hl 2 REFRENCE _<infile >outfile
+  is  a  highly specialized filter for showing the  structure  of
+Pascal source programs,  and respects indentation codes.  It also
+follows all _$include filename statements,  and,  if parm=100  was
+specified,  follows  all (*$i'filename'*) include commands.   See
+the Pascal-P documentation for the specific syntax.   REFRENCE is
+a customization of a program by Arthur Sale.
+
+All these filters,  with the exception of REFRENCE, are small and
+simple  programs.   P-code  versions  of these  filters  are  all
+executed  by  the prefix "runpcd ".   Native  code  versions  are
+executed as shown.
+cª

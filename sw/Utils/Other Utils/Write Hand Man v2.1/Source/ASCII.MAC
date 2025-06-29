@@ -1,0 +1,103 @@
+base	equ	$
+bdos	equ	5
+	org	base+0100h
+cr	equ	13
+lf	equ	10
+;
+home	equ	base+010h
+;
+loop:
+	call	home
+	lxi	d,asci1
+	call	pstr		 
+	call	inbyte
+;
+	call	home
+	lxi	d,asci2
+	call	pstr
+;
+	call	inbyte
+	call	home
+	lxi	d,asci3
+	call	pstr
+;
+	call	inbyte
+	call	home
+	lxi	d,asci4
+	call	pstr
+;
+	call	inbyte
+	jmp	loop
+;
+inbyte: 
+	mvi	c,1
+	call	bdos
+	cpi	03
+	jz	base
+	cpi	27
+	jz	base
+	ret
+;
+pstr:
+	ldax	d
+	ora	a
+	rz
+	push	d
+	mov	e,a
+	mvi	c,6 
+	call	bdos
+	pop	d
+	inx	d
+	jmp	pstr
+;
+asci1:
+	db	'  00 ^@  08 ^H  10 ^P  18 ^X |',cr,lf
+	db	'  01 ^A  09 ^I  11 ^Q  19 ^Y |',cr,lf
+	db	'  02 ^B  0A ^J  12 ^R  1A ^Z |',cr,lf
+	db	'  03 ^C  0B ^K  13 ^S  1B ^[ |',cr,lf
+	db	'  04 ^D  0C ^L  14 ^T  1C ^\ |',cr,lf
+	db	'  05 ^E  0D ^M  15 ^U  1D ^] |',cr,lf
+	db	'  06 ^F  0E ^N  16 ^V  1E ^^ |',cr,lf
+	db	'  07 ^G  0F ^O  17 ^W  1F ^_ |',cr,lf	  
+	db	'-----------------------------|',8,8,0
+asci2:
+	db	'  20     28  (  30  0  38  8 |',cr,lf
+	db	'  21  !  29  )  31  1  39  9 |',cr,lf
+	db	'  22  "  2A  *  32  2  3A  : |',cr,lf
+	db	'  23  #  2B  +  33  3  3B  ; |',cr,lf
+	db	'  24  $  2C  ,  34  4  3C  < |',cr,lf
+	db	'  25  %  2D  -  35  5  3D  = |',cr,lf
+	db	'  26  &  2E  .  36  6  3E  > |',cr,lf
+	db	'  27  ''  2F  /  37  7  3F  ? |',cr,lf    
+	db	'-----------------------------|',8,8,0
+asci3:
+	db	'  40  @  48  H  50  P  58  X |',cr,lf
+	db	'  41  A  49  I  51  Q  59  Y |',cr,lf
+	db	'  42  B  4A  J  52  R  5A  Z |',cr,lf
+	db	'  43  C  4B  K  53  S  5B  [ |',cr,lf
+	db	'  44  D  4C  L  54  T  5C  \ |',cr,lf
+	db	'  45  E  4D  M  55  U  5D  ] |',cr,lf
+	db	'  46  F  4E  N  56  V  5E  ^ |',cr,lf
+	db	'  47  G  4F  O  57  W  5F  _ |',cr,lf	  
+	db	'-----------------------------|',8,8,0
+asci4:
+	db	'  60  `  68  h  70  p  78  x |',cr,lf
+	db	'  61  a  69  i  71  q  79  y |',cr,lf
+	db	'  62  b  6A  j  72  r  7A  z |',cr,lf
+	db	'  63  c  6B  k  73  s  7B  { |',cr,lf
+	db	'  64  d  6C  l  74  t  7C  | |',cr,lf
+	db	'  65  e  6D  m  75  u  7D  } |',cr,lf
+	db	'  66  f  6E  n  76  v  7E  ~ |',cr,lf
+	db	'  67  g  6F  o  77  w  7F    |',cr,lf	  
+	db	'-----------------------------|',8,8,0
+;				       
+	end			      
+
+
+f
+	db	'  67  g  6F  o  77  w  7F    |',cr,lf	  
+	db	'-----------------------------|',8,8,0
+;				       
+	end			      
+
+

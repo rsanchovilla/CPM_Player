@@ -1,0 +1,56 @@
+XREFC is copyright (c) 1980, 1986 by C.B. Falconer.  It may be freely dis-
+tributed and used, but may not be sold, nor included in other packages for
+sale, without the express written permission of C.B. Falconer.
+
+
+XREFC is a utility program to cross-referance C programs.   As an option it
+can list the source file on input.   All reserved words are ignored, as are
+identifiers within comments or  strings.   The  standard  indentation  code
+(dle, space+N) is expanded if present.
+
+To execute, enter:
+
+     B>xrefc (inputfile, listfile)
+
+which will use the default settings, i.e. list a source file which does not
+contain  line-numbers  (defined  as "the first 8 characters on  a line  are
+numeric"), and not list a line-numbered source file.
+
+"PARM" values,  in the command below, of 2 or 4 unconditionally suppress or
+force source file listing respectively.  Commas, parentheses  and  brackets
+are all significant, and should be used as shown.
+
+     B>xref (inputfile, listfile) [PARM]
+
+Note that an initial field of 8 numeric characters is always considered  to
+be a line-number,  and that the 1st five of these are then used as the line
+identification no. in the cross-referance.
+
+Additional "PARM" options are:
+
+   10  Restrict the initial characters of identifiers cross-referanced.
+       This allows a cross-referance of a large program to be broken up
+       into two or more portions.  XREFC will ask for the range, etc.
+   20  Include all numeric values.  Very useful in uncovering anonymous
+       constants that really should be named constants.
+   40  Include all C reserved words (otherwise ignored)
+  100  Follow include files specified by "#include filename" construct.
+       '#include "filename"' and "#include <filename>" are also followed.
+
+For multiple options use the sum.
+
+XREFC uses lexical, NOT Ascii, character order. i.e. the collation sequence
+is 0...9, AaBb...Zz and "_".   This allows  the output table to be examined
+for inadverdant misentry of characters in names.   These are the ONLY char-
+cters allowed in identifiers, and the first character  must not be a digit.
+
+Input files (also included files) are searched on the default, and then the
+A: drive if no drive is  specified.  "listfile" may  be  CON, LST,  or  PUN
+for output to those devices, or any disk file.  No final colon is required.
+If CON is the input file then input can be  entered interactively,  e.g.  a
+"#include fn.ft" include command.
+
+To use the .PCD version, replace "xrefc" by "runpcd xrefc".
+
+C.B. Falconer, 680 Hartford Tpk., Hamden, Conn. 06517.   (203) 281-1438
+e

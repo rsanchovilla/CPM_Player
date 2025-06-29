@@ -1,0 +1,280 @@
+;	  intrinsic function for square root
+;
+	NAME SQRT
+	ENTRY SQRT,L135
+	EXT FPABS
+	INCLUDE DEFLT.SRC
+	INCLUDE FCTMAC.SRC
+;
+L135:
+;
+; (*
+;  * intrinsic function for square root
+;  *)
+; function sqrt( x:real ): real;
+;     var j,i,k: real;
+;     begin
+FCT527
+sqrt:	ENTR	D,2,12
+;	  i := 0.0;
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+;	if x < 0.0 then x := abs( x );
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,8
+	DADD	B
+	LXI	B,4
+	LDIR
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LESS	D,-4
+	JNC	FCT535
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,8
+	DADD	B
+	LXI	B,4
+	LDIR
+	CALL	FPABS
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,11
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT535
+;	  j := x / 2.0;
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,8
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	xchg		;decrement exponent by 1
+	dcr	m
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+;	  if x <> 0.0 then repeat
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,8
+	DADD	B
+	LXI	B,4
+	LDIR
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	NEQL	D,-4
+	JNC	FCT561
+;	    k := i;
+FCT569
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-8
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+;	    i := j;
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+;	    j := (x / j + j )/2.0;
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,8
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	FDVD	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	DADD	D,-4
+	lxi	h,3
+	dad	s
+	dcr	m	;decrement exponent by 1
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+;	    until (j = i) or (j = k);
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	EQUL	D,-4
+	JC	FCT595
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	EQUL	D,-4
+	JNC	FCT569
+FCT568
+FCT595	EQU  FCT568
+FCT561
+;	  sqrt := j
+;	  end;
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	LXI	B,15
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	EXIT	D,4
+;
+
+

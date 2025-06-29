@@ -1,0 +1,283 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;							       ;
+;    Termcomm  Simple terminal emulator for slow speed lines   ;
+;      EXIT with ^^  (CONTROL ^)  Hex 1E   Decimal 30	       ;
+;							       ;
+;	Copyright (c) 1985 by Poor Person Software	       ;
+;							       ;
+;							       ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	org	0
+base	equ	$
+;
+bdos	equ	base+5
+home	equ	base+010h
+fcb	equ	base+05ch
+buf	equ	base+080h
+outp	equ	buf+224
+;
+pstring equ	9
+conio	equ	6 
+;
+	org	0100h
+	jmp	start
+	org	0180h
+combuf:
+	org	0280h
+start:
+	xra	a
+	sta	ibp		; clear line input pointer
+	sta	obp		; clear line output pointer
+	sta	curcol
+	call	blkpage 	; blank window
+	call	dispage 	; display it
+	mvi	e,10
+	call	putchar
+	mvi	c,33
+l1:
+	push	b		; put out bottom line
+	mvi	e,'-'
+	call	putchar
+	pop	b
+	dcr	c
+	jnz	l1
+	mvi	e,13
+	call	putchar
+	mvi	e,11
+	call	putchar
+;
+loop:
+	call	constat 	; get console character if present
+	cnz	commout 	; if present send to line
+	call	linestat	; see if line character present
+	cnz	conout		; put to console if so
+	call	pollline	; poll the com line
+	jmp	loop
+;
+dispage:
+	call	home		; home cursor
+	mvi	c,8		; do 8 lines
+	lxi	h,buf		; from here
+dloop:
+	push	b
+	call	putline
+	pop	b
+	dcr	c
+	jnz	dloop 
+	mvi	e,11		; cursor up
+	call	putchar 	; now on last line
+	ret
+;
+putline:
+;
+	mvi	c,32		; 32 of these
+ploop:
+	mov	e,m		; get character
+	push	h		; save hl
+	push	b
+	call	putchar
+	call	pollline	; input character from line
+	pop	b
+	pop	h
+	inx	h
+	dcr	c
+	jnz	ploop
+	push	h		; end of line
+	mvi	e,'|'
+	call	putchar 	; put bar
+	call	crlf
+	pop	h
+	ret
+;
+putchar:
+	mvi	c,conio
+	call	bdos
+	ret
+crlf:
+	mvi	e,13
+	call	putchar
+	mvi	e,10
+	call	putchar
+	ret
+constat:			; console status routine
+	mvi	e,255
+	mvi	c,conio
+	call	bdos
+	ora	a
+	rz			; nothing here
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;								    ;
+	cpi	30		; ^^   exit character		    ;
+;								    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	jz	base		; exit
+	ret
+conout:
+	cpi	32		; see if control
+	jc	control 	; yes don't put to screen
+	mov	e,a
+	push	d
+	call	putchar 	; put on screen
+	pop	d		; get character back
+;
+	lda	curcol
+	mov	c,a
+	mvi	b,0
+	lxi	h,outp
+	dad	b
+	mov	m,e		; put into buffer
+	inr	a
+	sta	curcol
+	cpi	32
+	rc			; ok
+;
+	call	scrolup
+	ret 
+control:
+	cpi	13		; carriage return
+	jnz	ctrl1		; no
+	mov	e,a
+	call	putchar
+	xra	a
+	sta	curcol
+	ret
+ctrl1:
+	cpi	07		; bell	    
+	jnz	ctrl2
+	call	putchar
+	ret
+ctrl2:
+	cpi	10		; linefeed
+	jnz	ctrl3		;		     
+	call	scrolup
+	ret
+ctrl3:
+	cpi	08		; backspace
+	rnz
+	lda	curcol
+	ora	a
+	rz			; don't do anything
+	dcr	a		; decrement
+	sta	curcol
+	mov	c,a
+	mvi	b,0
+	lxi	h,outp
+	mvi	m,32		; put blank in buffer
+	lxi	d,bsp
+	mvi	c,pstring
+	call	bdos
+	ret
+;
+linestat:
+	lda	obp
+	mov	c,a
+	lda	ibp
+	sub	c
+	rz			; same no character
+	mvi	b,0		; bc has offset of character
+	lxi	h,combuf
+	dad	b
+	inr	c		; bump output pointer
+	mov	a,c		; wraps automatically
+	sta	obp		; set new value
+	mov	a,m
+	ora	a
+	ret
+;		 
+pollline:
+	call	commsta ; get line status
+	rz
+	mov	e,a		; save this character
+	lda	ibp		; input pointer
+	mov	c,a
+	mvi	b,0	
+	lxi	h,combuf	; put it here
+	dad	b
+	mov	m,e
+	inr	c
+	mov	a,c		; wraps automatically
+	sta	ibp
+	ret
+;
+scrolup:
+	lxi	d,buf		; to here
+	lxi	h,buf+32	; from here
+	lxi	b,224		; this many
+scllop:
+	mov	a,m
+	stax	d
+	inx	h
+	inx	d
+	dcx	b
+	mov	a,b
+	ora	c
+	jnz	scllop
+;
+;	blank last line
+;
+	lxi	h,outp
+	mvi	b,32
+scl2:
+	mvi	m,32
+	inx	h
+	dcr	b
+	jnz	scl2
+;
+	xra	a
+	sta	curcol
+	call	dispage
+	ret
+;
+blkpage:
+	lxi	h,buf
+	lxi	b,256
+bllop:
+	mvi	m,32
+	inx	h
+	dcx	b
+	mov	a,b
+	ora	c
+	jnz	bllop
+	ret
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;								 ;
+;      Comm line routines.					 ;
+;								 ;
+;	 Commout puts a character to the comm line		 ;    
+;		 (waiting till ready)				 ;
+;								 ;
+;	 Commsta  returns with zero status if no character ready ;
+;		  and returns with the character in A if ready	 ;
+;								 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+commout:
+	push	psw
+linel:
+	in	5
+	ani	1
+	jz	linel	; loop till ready
+	pop	psw
+	out	4	; send character
+	ret
+;
+commsta:
+	in	5
+	ani	02
+	rz  
+	in	4	; get character
+	ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;								 ;
+;	End of Comm line stuff					 ;
+;								 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+bsp:	db	8,32,8,'$'
+curcol: db	0
+ibp:	db	0
+obp:	db	0
+	end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;

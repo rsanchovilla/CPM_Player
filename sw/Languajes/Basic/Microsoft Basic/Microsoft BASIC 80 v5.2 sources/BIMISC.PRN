@@ -1,0 +1,894 @@
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.
+                                	EXTRN	ARYTAB,BRKTXT,CRDO,CRDONZ,CURLIN,DATPTR,ERROR,FADDS
+                                	EXTRN	FCERR,FCOMP,FNDFOR,FNDLIN,FRETOP,FRMEVL,INCHRI,INLIN,LINGET
+                                	EXTRN	MEMSIZ,MOVFM,MOVMF,MOVRM,NEWSTT,OLDLIN,OLDTXT,OVERR,PTRGET
+                                	EXTRN	SNERR,STREND,SUBFLG,OUTDO,SAVTXT,CHRCON
+                                
+                                	EXTRN	TOPMEM
+                                	EXTRN	TEMP,TEMPPT,TEMPST,TMERR,TXTTAB,USERR,VALTYP,VARTAB
+                                	EXTRN	ERRCN,ERRFIN,ERROM,GETBYT,STPRDY,NFERR,INTID2,NXTCON
+                                	PUBLIC	SYNCHR,DCOMPR
+                                	EXTRN	CHRGTR
+                                	EXTRN	GETYPR
+                                	EXTRN	VMOVE,PRMLEN,PRMLN2,DEFTBL,FRQINT,FUNACT,IADD,ICOMP,NOFUNS,PRMSTK
+                                	EXTRN	OPTFLG,OPTVAL
+                                	PUBLIC	STOPRG
+                                	PUBLIC	TON,TOFF
+                                	EXTRN	ONEFLG,ONELIN,TRCFLG,SAVSTK
+                                	EXTRN	NXTFLG
+                                	PUBLIC	CLEARC,SCRATH,STOP,ISLET,ISLET2,STKINI,GETSTK,SCRTCH
+                                	PUBLIC	STPEND,BLTU,CONT,BLTUC,ENDS,GTMPRT,RUNC,STPEND,ENDCON,RESTOR
+                                	PUBLIC	STOP,RESFIN,STKERR,REASON,OMERR
+                                	PUBLIC	NEXT
+                                ;
+                                ; THIS IS THE BLOCK TRANSFER ROUTINE
+                                ; IT MAKES SPACE BY SHOVING EVERYTHING FORWARD
+                                ;
+                                ; [H,L] = DESTINATION OF HIGH ADDRESS
+                                ; [D,E] = LOW ADDRESS TO BE TRANSFERRED
+                                ; [B,C] = HIGH ADDRESS TO BE TRANSFERRED
+                                ;
+                                ; A CHECK IS MADE TO MAKE SURE A REASONABLE AMOUNT
+                                ; OF SPACE REMAINS BETWEEN THE TOP OF THE STACK AND
+                                ; THE HIGHEST LOCATION TRANSFERRED INTO
+                                ;
+                                ; ON EXIT [H,L]=[D,E]=LOW [B,C]=LOCATION LOW WAS MOVED INTO
+                                ;
+  0000'   CD 0035'              BLTU:	CALL	REASON			;CHECK DESTINATION TO MAKE
+                                					;SURE THE STACK WON'T BE OVERRUN
+  0003'   C5                    BLTUC:	PUSH	B			;EXCHANGE [B,C] AND [H,L]
+  0004'   E3                    	XTHL	
+  0005'   C1                    	POP	B
+  0006'   CD 0117'              BLTLOP:	CALL	DCOMPR			;SEE IF WE ARE DONE
+  0009'   7E                    	MOV	A,M			;GET THE WORD TO TRANSFER
+  000A'   02                    	STAX	B			;TRANSFER IT
+  000B'   C8                    	RZ	
+  000C'   0B                    	DCX	B
+  000D'   2B                    	DCX	H			;BACKUP FOR NEXT GUY
+  000E'   C3 0006'              	JMP	BLTLOP
+                                ;
+                                ; THIS ROUTINE IS USED TO MAKE SURE A CERTAIN NUMBER
+                                ; OF LOCATIONS REMAIN AVAILABLE FOR THE
+                                ; STACK. THE CALL IS :
+                                ;	MVI	C,NUMBER OF 2 BYTE ENTRIES NECESSARY
+                                ;	CALL	GETSTK
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+Common file for BASIC interpreter
+
+                                ;
+                                ; THIS ROUTINE MUST BE CALLED BY ANY ROUTINE WHICH PUTS
+                                ; AN ARBITRARY AMOUNT OF STUFF ON THE STACK
+                                ; (I.E. ANY RECURSIVE ROUTINE LIKE FRMEVL)
+                                ; IT IS ALSO CALLED BY ROUTINES SUCH AS "GOSUB" AND "FOR"
+                                ; WHICH MAKE PERMANENT ENTRIES ON THE STACK
+                                ; ROUTINES WHICH MERELY USE AND FREE UP THE GUARANTEED
+                                ; NUMLEV STACK LOCATIONS NEED NOT CALL THIS
+                                ;
+  0011'   E5                    GETSTK:	PUSH	H			;SAVE [H,L]
+  0012'   2A 0000*              	LHLD	MEMSIZ
+  0015'   06 00                 	MVI	B,0
+  0017'   09                    	DAD	B
+  0018'   09                    	DAD	B			;SEE IF WE CAN HAVE THIS MANY
+                                ;
+                                ; [H,L]= SOME ADDRESS
+                                ; [H,L] IS EXAMINED TO MAKE SURE AT LEAST NUMLEV
+                                ; LOCATIONS REMAIN BETWEEN IT AND THE TOP OF THE STACK
+                                ;
+  00C6                          CONS1	SET	256-(2*NUMLEV)
+  0019'   3E C6                 	MVI	A,CONS1			;SET [H,L]=-[H,L]-2*NUMLEV
+  001B'   95                    	SUB	L
+  001C'   6F                    	MOV	L,A
+  001D'   3E FF                 	MVI	A,255
+  001F'   9C                    	SBB	H
+  0020'   DA 0027'              	JC	OMERR			;IN CASE [H,L] WAS TOO BIG(MBM 3/18**)
+  0023'   67                    	MOV	H,A			;NOW SEE IF [SP] IS LARGER
+  0024'   39                    	DAD	SP			;IF SO, CARRY WILL BE SET
+  0025'   E1                    	POP	H			;GET BACK ORIGINAL [H,L]
+  0026'   D8                    	RC				;WAS OK?
+  0027'                         OMERR:
+                                
+                                					;FOR SPACE REASONS LEAVE THIS CODE OUT
+                                
+                                					;ONLY IMPORTANT IN VERSIONS WHERE
+                                					;STACK CONTEXT SURVIVES OTHER ERRORS
+  0027'   2A 0000*              	LHLD	TOPMEM
+  002A'   2B                    	DCX	H			;UP SOME MEMORY SPACE
+  002B'   2B                    	DCX	H			;MAKE SURE THE FNDFOR STOPPER IS SAVED
+  002C'   22 0000*              	SHLD	SAVSTK			;PLACE STACK IS RESTORED FROM
+  002F'   11 0000*              OMERRR:	LXI	D,0+ERROM		;"OUT OF MEMORY"
+  0032'   C3 0000*              	JMP	ERROR
+                                	EXTRN	GARBA2
+  0035'   CD 0049'              REASON:	CALL	REALLY			;ENOUGH SPACE BETWEEN STRING & STACK
+  0038'   D0                    	RNC				;YES
+  0039'   C5                    	PUSH	B			;SAVE ALL REGS
+  003A'   D5                    	PUSH	D
+  003B'   E5                    	PUSH	H
+  003C'   CD 0000*              	CALL	GARBA2			;DO A GARBAGE COLLECTION
+  003F'   E1                    	POP	H			;RESTORE ALL REGS
+  0040'   D1                    	POP	D
+  0041'   C1                    	POP	B
+  0042'   CD 0049'              	CALL	REALLY			;ENOUGH SPACE THIS TIME?
+  0045'   D0                    	RNC				;YES
+  0046'   C3 002F'              	JMP	OMERRR			;NO, GIVE "OUT OF MEMORY BUT DONT TOUCH STACK
+  0049'   D5                    REALLY:	PUSH	D			;SAVE [D,E]
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+Common file for BASIC interpreter
+
+  004A'   EB                    	XCHG				;SAVE [H,L] IN [D,E]
+  004B'   2A 0000*              	LHLD	FRETOP			;GET WHERE STRINGS ARE
+  004E'   CD 0117'              	CALL	DCOMPR			;IS TOP OF VARS LESS THAN STRINGS?
+  0051'   EB                    	XCHG				;BACK TO [D,E]
+  0052'   D1                    	POP	D			;RESTORE [D,E]
+  0053'   C9                    	RET				;DONE
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+Common file for BASIC interpreter
+
+                                
+                                	SUBTTL	NODSKS, SCRATCH (NEW), RUNC, CLEARC, STKINI, QINLIN
+                                	PUBLIC	NODSKS
+                                	EXTRN	FILPTR,MAXFIL
+                                ; THE CODE BELOW SETS THE FILE MODE TO 0 (CLOSED) FOR ALL FCB'S
+  0054'   3A 0000*              NODSKS:	LDA	MAXFIL			;GET LARGEST FILE #
+  0057'   47                    	MOV	B,A			;INTO B FOR COUNTER
+  0058'   21 0000*              	LXI	H,FILPTR		;POINT TO TABLE OF FILE DATA BLOCKS
+  005B'   AF                    	XRA	A			;MAKE A ZERO TO MARK FILES AS CLOSED
+  005C'   04                    	INR	B
+  005D'   5E                    LOPNTO:	MOV	E,M			;GET POINTER TO FILE DATA BLOCK IN [D,E]
+  005E'   23                    	INX	H
+  005F'   56                    	MOV	D,M
+  0060'   23                    	INX	H
+  0061'   12                    	STAX	D			;MARK FILE AS CLOSED (MODE ZERO)
+  0062'   05                    	DCR	B
+  0063'   C2 005D'              	JNZ	LOPNTO			;LOOP UNTIL DONE
+                                	EXTRN	CLSALL
+  0066'   CD 0000*              	CALL	CLSALL
+  0069'   AF                    	XRA	A
+                                					;DONT WIPE OUT INIT MESSAGE ON SCREEN(NEW DOES CLEAR SCREEN)
+                                ;
+                                ; THE "NEW" COMMAND CLEARS THE PROGRAM TEXT AS WELL
+                                ; AS VARIABLE SPACE
+                                ;
+  006A'   C0                    SCRATH:	RNZ				;MAKE SURE THERE IS A TERMINATOR
+  006B'                         SCRTCH:
+  006B'   2A 0000*              	LHLD	TXTTAB			;GET POINTER TO START OF TEXT
+  006E'   CD 01C5'              	CALL	TOFF			;TURN OFF TRACE. SET [A]=0.
+                                	EXTRN	PROFLG
+  0071'   32 0000*              	STA	PROFLG			;NO LONGER A PROTECTED FILE
+                                	EXTRN	AUTFLG
+  0074'   32 0000*              	STA	AUTFLG			;CLEAR AUTO MODE
+                                	EXTRN	PTRFLG
+  0077'   32 0000*              	STA	PTRFLG			;SAY NO POINTERS EXIST
+  007A'   77                    	MOV	M,A			;SAVE AT END OFF TEXT
+  007B'   23                    	INX	H			;BUMP POINTER
+  007C'   77                    	MOV	M,A			;SAVE ZERO
+  007D'   23                    	INX	H			;BUMP POINTER
+  007E'   22 0000*              	SHLD	VARTAB			;NEW START OF VARIABLES
+  0081'                         RUNC:
+  0081'   2A 0000*              	LHLD	TXTTAB			;POINT AT THE START OF TEXT
+  0084'   2B                    	DCX	H
+                                ;
+                                ; CLEARC IS A SUBROUTINE WHICH INITIALIZES THE VARIABLE AND
+                                ; ARRAY SPACE BY RESETING ARYTAB [THE END OF SIMPLE VARIABLE SPACE]
+                                ; AND STREND [THE END OF ARRAY STORAGE]. IT FALLS INTO STKINI
+                                ; WHICH RESETS THE STACK. [H,L] IS PRESERVED.
+                                ;
+  0085'   22 0000*              CLEARC:	SHLD	TEMP			;SAVE [H,L] IN TEMP
+                                	EXTRN	MRGFLG
+  0088'   3A 0000*              	LDA	MRGFLG			;DOING A CHAIN MERGE?
+  008B'   B7                    	ORA	A			;TEST
+  008C'   C2 00A2'              	JNZ	LEVDTB			;LEAVE DEFAULT TABLE ALONE
+  008F'   AF                    	XRA	A
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+NODSKS, SCRATCH (NEW), RUNC, CLEARC, STKINI, QINLIN
+
+  0090'   32 0000*              	STA	OPTFLG			;INDICATE NO "OPTION" HAS BEEN SEEN
+  0093'   32 0000*              	STA	OPTVAL			;DEFAULT TO "OPTION BASE 0"
+  0096'   06 1A                 	MVI	B,26			;INITIALIZE THE DEFAULT VALTYPE TABLE
+  0098'   21 0000*              	LXI	H,DEFTBL		;POINT AT THE FIRST ENTRY
+  009B'   36 04                 LOPDFT:	MVI	M,4			;LOOP 26 TIMES STORING A DEFAULT VALTYP
+  009D'   23                    	INX	H			;FOR SINGLE PRECISION
+                                					;COUNT OFF THE LETTERS
+  009E'   05                    	DCR	B
+  009F'   C2 009B'              	JNZ	LOPDFT			;LOOP BACK, AND SETUP THE REST OF THE TABLE
+  00A2'                         LEVDTB:
+                                	EXTRN	RNDCOP,RNDX,MOVE
+                                	EXTRN	RNDCNT
+  00A2'   11 0000*              	LXI	D,RNDCOP		;RESET THE RANDOM NUMBER GENERATOR
+  00A5'   21 0000*              	LXI	H,RNDX			;SEED IN RNDX
+  00A8'   CD 0000*              	CALL	MOVE
+  00AB'   21 FFFF*              	LXI	H,RNDCNT-1		;AND ZERO COUNT REGISTERS
+  00AE'   AF                    	XRA	A
+  00AF'   77                    	MOV	M,A
+  00B0'   23                    	INX	H
+  00B1'   77                    	MOV	M,A
+  00B2'   23                    	INX	H
+  00B3'   77                    	MOV	M,A
+  00B4'   AF                    	XRA	A
+  00B5'   32 0000*              	STA	ONEFLG			;RESET ON ERROR FLAG FOR RUNS
+  00B8'   6F                    	MOV	L,A			;RESET ERROR LINE NUMBER
+  00B9'   67                    	MOV	H,A			;BY SETTING ONELIN=0.
+  00BA'   22 0000*              	SHLD	ONELIN
+  00BD'   22 0000*              	SHLD	OLDTXT			;MAKE CONTINUING IMPOSSIBLE
+  00C0'   2A 0000*              	LHLD	MEMSIZ
+                                	EXTRN	CHNFLG
+  00C3'   3A 0000*              	LDA	CHNFLG			;ARE WE CHAINING?
+  00C6'   B7                    	ORA	A			;TEST
+  00C7'   C2 00CD'              	JNZ	GODFRE			;FRETOP IS GOOD, LEAVE IT ALONE
+  00CA'   22 0000*              	SHLD	FRETOP			;FREE UP STRING SPACE
+  00CD'   AF                    GODFRE:	XRA	A			;MAKE SURE [A] IS ZERO, CC'S SET
+  00CE'   CD 0130'              	CALL	RESTOR			;RESTORE DATA
+  00D1'   2A 0000*              	LHLD	VARTAB			;GET START OF VARIABLE SPACE
+  00D4'   22 0000*              	SHLD	ARYTAB			;SAVE IN START OF ARRAY SPACE
+  00D7'   22 0000*              	SHLD	STREND			;AND END OF VARIABLE STORAGE
+                                	EXTRN	CLSALL
+  00DA'   3A 0000*              	LDA	MRGFLG			;DOING CHAIN MERGE?
+  00DD'   B7                    	ORA	A
+  00DE'   CC 0000*              	CZ	CLSALL			;IF SO, DONT CLOSE FILES...
+                                ;
+                                ; STKINI RESETS THE STACK POINTER ELIMINATING
+                                ; GOSUB & FOR CONTEXT.  STRING TEMPORARIES ARE FREED
+                                ; UP, SUBFLG IS RESET, CONTINUING IS DISALLOWED,
+                                ; AND A DUMMY ENTRY IS PUT ON THE STACK. THIS IS SO
+                                ; FNDFOR WILL ALWAYS FIND A NON-"FOR" ENTRY AT THE BOTTOM
+                                ; OF THE STACK. [A]=0 AND [D,E] IS PRESERVED.
+                                ;
+  00E1'   C1                    STKINI:	POP	B			;GET RETURN ADDRESS HERE
+  00E2'   2A 0000*              	LHLD	TOPMEM
+  00E5'   2B                    	DCX	H			;TAKE INTO ACCOUNT FNDFOR STOPPER
+  00E6'   2B                    	DCX	H
+  00E7'   22 0000*              	SHLD	SAVSTK			;MAKE SURE SAVSTK OK JUST IN CASE.
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+NODSKS, SCRATCH (NEW), RUNC, CLEARC, STKINI, QINLIN
+
+  00EA'   23                    	INX	H			;INCREMENT BACK FOR SPHL
+  00EB'   23                    	INX	H
+  00EC'   F9                    STKERR:	SPHL				;INITIALIZE STACK
+  00ED'   21 0000*              	LXI	H,TEMPST
+  00F0'   22 0000*              	SHLD	TEMPPT			;INITIALIZE STRING TEMPORARIES
+                                	EXTRN	CLROVC
+  00F3'   CD 0000*              	CALL	CLROVC			;BACK TO NORMAL OVERFLOW PRINT MODE
+                                	EXTRN	FINLPT
+  00F6'   CD 0000*              	CALL	FINLPT
+                                	EXTRN	FINPRT
+  00F9'   CD 0000*              	CALL	FINPRT			;CLEAR PTRFIL, OTHER I/O FLAGS
+  00FC'   AF                    	XRA	A			;ZERO OUT A
+  00FD'   67                    	MOV	H,A			;ZERO OUT H
+  00FE'   6F                    	MOV	L,A			;ZERO OUT L
+  00FF'   22 0000*              	SHLD	PRMLEN			;FLAG NO ACTIVE PARAMETERS
+  0102'   32 0000*              	STA	NOFUNS			;INDICATE NO USER FUNCTIONS ACTIVE
+  0105'   22 0000*              	SHLD	PRMLN2			;NO PARAMETERS BEING BUILT
+  0108'   22 0000*              	SHLD	FUNACT			;SET NUMBER OF FUNCTIONS ACTIVE TO 0
+  010B'   22 0000*              	SHLD	PRMSTK			;AND NO PARAMETER BLOCKS ON THE STACK
+  010E'   32 0000*              	STA	SUBFLG			;ALLOW SUBSCRIPTS
+  0111'   E5                    	PUSH	H			;PUT ZERO (NON $FOR,$GOSUB)
+                                					;ON THE STACK
+  0112'   C5                    	PUSH	B			;PUT RETURN ADDRESS BACK ON
+  0113'   2A 0000*              GTMPRT:	LHLD	TEMP			;GET SAVED [H,L]
+  0116'   C9                    	RET	
+                                
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+NODSKS, SCRATCH (NEW), RUNC, CLEARC, STKINI, QINLIN
+
+                                
+                                	SUBTTL	DCOMPR, SYNCHR - REPLACEMENTS FOR COMPAR & SYNCHK IN RSTLES VERSION
+                                	PUBLIC	SYNCHR
+  0117'   7C                    DCOMPR:	MOV	A,H			;REPLACEMENT FOR "COMPAR" RST
+  0118'   92                    	SUB	D
+  0119'   C0                    	RNZ	
+  011A'   7D                    	MOV	A,L
+  011B'   93                    	SUB	E
+  011C'   C9                    	RET	
+                                
+  011D'   7E                    SYNCHR:	MOV	A,M			;REPLACEMENT FOR "SYNCHK" RST
+  011E'   E3                    	XTHL	
+  011F'   BE                    	CMP	M
+  0120'   C2 012D'              	JNZ	SYNERR
+  0123'   23                    	INX	H
+  0124'   E3                    	XTHL	
+  0125'   23                    	INX	H			;LOOK AT NEXT CHAR
+  0126'   7E                    	MOV	A,M			;GET IT
+  0127'   FE 3A                 	CPI	':'			;IS IT END OF STATMENT OR BIGGER
+  0129'   D0                    	RNC	
+  012A'   C3 0000*              SYNCON:	JMP	CHRCON			;REST OF CHRGET
+  012D'   C3 0000*              SYNERR:	JMP	SNERR
+                                	SUBTTL	RESTORE, STOP, END
+                                
+  0130'   EB                    RESTOR:	XCHG				;SAVE [H,L] IN [D,E]
+  0131'   2A 0000*              	LHLD	TXTTAB
+  0134'   CA 0145'              	JZ	BGNRST			;RESTORE DATA POINTER TO BEGINNING OF PROGRAM
+  0137'   EB                    	XCHG				;TEXT POINTER BACK TO [H,L]
+  0138'   CD 0000*              	CALL	LINGET			;GET THE FOLLOWING LINE NUMBER
+  013B'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  013C'   CD 0000*              	CALL	FNDLIN			;FIND THE LINE NUMBER
+  013F'   60                    	MOV	H,B			;GET POINTER TO LINE IN [H,L]
+  0140'   69                    	MOV	L,C
+  0141'   D1                    	POP	D			;TEXT POINTER BACK TO [D,E]
+  0142'   D2 0000*              	JNC	USERR			;SHOULD HAVE FOUND LINE
+  0145'                         BGNRST:
+  0145'   2B                    	DCX	H			;INITIALIZE DATPTR TO [TXTTAB]-1
+  0146'   22 0000*              RESFIN:	SHLD	DATPTR			;READ FINISHES COME TO RESFIN
+  0149'   EB                    	XCHG				;GET THE TEXT POINTER BACK
+  014A'   C9                    	RET	
+  014B'   C0                    STOP:	RNZ				;RETURN IF NOT CONTROL-C AND MAKE
+                                					;SURE "STOP" STATEMENTS HAVE A TERMINATOR
+  014C'                         STOPRG:
+  014C'   3C                    	INR	A
+  014D'   C3 0156'              	JMP	CONSTP
+                                					;TO TYPE THE BREAK MESSAGE
+  0150'   C0                    ENDS:	RNZ				;MAKE SURE "END" STATEMENTS HAVE A TERMINATOR
+  0151'   F5                    	PUSH	PSW			;PRESERVE CONDITION CODES OVER CALL TO CLSALL
+  0152'   CC 0000*              	CZ	CLSALL
+  0155'   F1                    	POP	PSW			;RESTORE CONDITION CODES
+  0156'   22 0000*              CONSTP:	SHLD	SAVTXT			;SAVE FOR "CONTINUE"
+  0159'   21 0000*              	LXI	H,TEMPST		;RESET STRING TEMP POINTER
+  015C'   22 0000*              	SHLD	TEMPPT			;SAVE IN CASE ^C PRINT USING
+  015F'   21                    	DB	41Q			;"LXI H," OVER NEXT TWO
+  0160'   F6 FF                 STPEND:	ORI	377O			;SET NON-ZERO TO FORCE PRINTING OF BREAK MESSAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+RESTORE, STOP, END
+
+  0162'   C1                    	POP	B			;POP OFF NEWSTT ADDRESS
+  0163'   2A 0000*              ENDCON:	LHLD	CURLIN			;SAVE CURLIN
+  0166'   E5                    	PUSH	H			;SAVE LINE TO PRINT
+  0167'   F5                    	PUSH	PSW			;SAVE THE MESSAGE FLAG
+                                					;ZERO MEANS DON'T PRINT "BREAK"
+  0168'   7D                    	MOV	A,L
+  0169'   A4                    	ANA	H			;SEE IF IT WAS DIRECT
+  016A'   3C                    	INR	A
+  016B'   CA 0177'              	JZ	DIRIS			;IF NOT SET UP FOR CONTINUE
+  016E'   22 0000*              	SHLD	OLDLIN			;SAVE OLD LINE #
+  0171'   2A 0000*              	LHLD	SAVTXT			;GET POINTER TO START OF STATEMENT
+  0174'   22 0000*              	SHLD	OLDTXT			;SAVE IT
+  0177'                         DIRIS:
+                                	EXTRN	CNTOFL
+  0177'   AF                    	XRA	A
+  0178'   32 0000*              	STA	CNTOFL			;FORCE OUTPUT
+  017B'   CD 0000*              	CALL	FINLPT
+  017E'   CD 0000*              	CALL	CRDONZ			;PRINT CR IF TTYPOS .NE. 0
+  0181'   F1                    	POP	PSW			;GET BACK ^C FLAG
+  0182'   21 0000*              	LXI	H,BRKTXT		;"BREAK"
+  0185'   C2 0000*              	JNZ	ERRFIN			;CALL STROUT AND FALL INTO READY
+  0188'   C3 0000*              	JMP	STPRDY			;POP OFF LINE NUMBER & FALL INTO READY
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+RESTORE, STOP, END
+
+                                
+                                	SUBTTL	CTRLPT, DDT, CONT, NULL, TRON, TROFF
+                                	PUBLIC	CTRLPT,CTROPT
+  018B'   3E 0F                 CTROPT:	MVI	A,CONTO			;PRINT AN ^O.
+  018D'   F5                    CTRLPT:	PUSH	PSW			;SAVE CURRENT CHAR
+  018E'   D6 03                 	SUI	3			;CONTROL-C?
+  0190'   C2 0199'              	JNZ	NTCTCT			;NO
+                                	EXTRN	PRTFLG
+  0193'   32 0000*              	STA	PRTFLG			;DISPLAY ^C ONLY(NOT ON LPT)
+  0196'   32 0000*              	STA	CNTOFL			;RESET ^O FLAG
+  0199'                         NTCTCT:
+  0199'   3E 5E                 	MVI	A,'^'			;PRINT UP-ARROW.
+  019B'   CD 0000*              	CALL	OUTDO			;SEND IT
+  019E'   F1                    	POP	PSW			;GET BACK CONTROL CHAR.
+  019F'   C6 40                 	ADI	100O			;MAKE PRINTABLE
+  01A1'   CD 0000*              	CALL	OUTDO			;SEND IT
+  01A4'   C3 0000*              	JMP	CRDO			;AND THEN SEND CRLF.
+  01A7'   2A 0000*              CONT:	LHLD	OLDTXT			;A STORED TEXT POINTER OF
+                                					;ZERO IS SETUP BY STKINI
+                                					;AND INDICATES THERE IS NOTHING
+                                					;TO CONTINUE
+  01AA'   7C                    	MOV	A,H			;"STOP","END",TYPING CRLF
+  01AB'   B5                    	ORA	L			;TO "INPUT" AND ^C SETUP OLDTXT
+  01AC'   11 0000*              RESERR:	LXI	D,0+ERRCN		;"CAN'T CONTINUE"
+  01AF'   CA 0000*              	JZ	ERROR
+  01B2'   EB                    	XCHG				;SAVE [H,L]
+  01B3'   2A 0000*              	LHLD	OLDLIN
+  01B6'   22 0000*              	SHLD	CURLIN			;SET UP OLD LINE # AS CURRENT LINE #
+  01B9'   EB                    	XCHG				;RESTORE [H,L] 
+  01BA'   C9                    	RET	
+                                	EXTRN	NULCNT
+                                	PUBLIC	NULL
+  01BB'   CD 0000*              NULL:	CALL	GETBYT
+  01BE'   C0                    	RNZ				;MAKE SURE THERE IS A TERMINATOR
+  01BF'   3C                    	INR	A			;CODE AT CRDO EXPECTS AT LEAST 1
+  01C0'   32 0000*              	STA	NULCNT			;CHANGE NUMBER OF NULLS
+  01C3'   C9                    	RET	
+  01C4'   3E                    TON:	DB	76Q			;"MVI A," NON-ZERO QUANTITY
+  01C5'   AF                    TOFF:	XRA	A			;MAKE [A]=0 FOR NO TRACE
+  01C6'   32 0000*              	STA	TRCFLG			;UPDATE THE TRACE FLAG
+  01C9'   C9                    	RET	
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+CTRLPT, DDT, CONT, NULL, TRON, TROFF
+
+                                
+                                	SUBTTL	SWAP, ERASE
+                                	EXTRN	SWPTMP
+                                	PUBLIC	SWAP
+  01CA'   CD 0000*              SWAP:	CALL	PTRGET			;[D,E]=POINTER AT VALUE #1
+  01CD'   D5                    	PUSH	D			;SAVE THE POINTER AT VALUE #1
+  01CE'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  01CF'   21 0000*              	LXI	H,SWPTMP		;TEMPORARY STORE LOCATION
+  01D2'   CD 0000*              	CALL	VMOVE			;SWPTMP=VALUE #1
+  01D5'   2A 0000*              	LHLD	ARYTAB			;GET ARYTAB SO CHANGE CAN BE NOTED
+  01D8'   E3                    	XTHL				;GET THE TEXT POINTER BACK
+                                					;AND SAVE CURRENT [ARYTAB]
+  01D9'   CD 0000*              	CALL	GETYPR
+  01DC'   F5                    	PUSH	PSW			;SAVE THE TYPE OF VALUE #1
+  01DD'   CD 011D'              	CALL	SYNCHR
+  01E0'   2C                    	DB	44			;MAKE SURE THE VARIABLES ARE
+                                					;DELIMITED BY A COMMA
+  01E1'   CD 0000*              	CALL	PTRGET			;[D,E]=POINTER AT VALUE #2
+  01E4'   C1                    	POP	B			;[B]=TYPE OF VALUE #1
+  01E5'   CD 0000*              	CALL	GETYPR			;[A]=TYPE OF VALUE #2
+  01E8'   B8                    	CMP	B			;MAKE SURE THEY ARE THE SAME
+  01E9'   C2 0000*              	JNZ	TMERR			;IF NOT, "TYPE MISMATCH" ERROR
+  01EC'   E3                    	XTHL				;[H,L]=OLD [ARYTAB] SAVE THE TEXT POINTER
+  01ED'   EB                    	XCHG				;[D,E]=OLD [ARYTAB]
+  01EE'   E5                    	PUSH	H			;SAVE THE POINTER AT VALUE #2
+  01EF'   2A 0000*              	LHLD	ARYTAB			;GET NEW [ARYTAB]
+  01F2'   CD 0117'              	CALL	DCOMPR
+  01F5'   C2 0000*              	JNZ	FCERR			;IF ITS CHANGED, ERROR
+  01F8'   D1                    	POP	D			;[D,E]=POINTER AT VALUE #2
+  01F9'   E1                    	POP	H			;[H,L]=TEXT POINTER
+  01FA'   E3                    	XTHL				;SAVE THE TEXT POINTER ON THE STACK
+                                					;[H,L]=POINTER AT VALUE #1
+  01FB'   D5                    	PUSH	D			;SAVE THE POINTER AT VALUE #2
+  01FC'   CD 0000*              	CALL	VMOVE			;TRANSFER VALUE #2 INTO VALUE #1'S OLD
+                                					;POSITION
+  01FF'   E1                    	POP	H			;[H,L]=POINTER AT VALUE #2
+  0200'   11 0000*              	LXI	D,SWPTMP		;LOCATION OF VALUE #1
+  0203'   CD 0000*              	CALL	VMOVE			;TRANSFER SWPTMP=VALUE #1 INTO VALUE #2'S
+                                					;OLD POSITION
+  0206'   E1                    	POP	H			;GET THE TEXT POINTER BACK
+  0207'   C9                    	RET	
+                                	PUBLIC	ERASE
+  0208'                         ERASE:
+  0208'   3E 01                 	MVI	A,1
+  020A'   32 0000*              	STA	SUBFLG			;THAT THIS IS "ERASE" CALLING PTRGET
+  020D'   CD 0000*              	CALL	PTRGET			;GO FIND OUT WHERE TO ERASE
+  0210'   C2 0000*              	JNZ	FCERR			;PTRGET DID NOT FIND VARIABLE!
+  0213'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  0214'   32 0000*              	STA	SUBFLG			;ZERO OUT SUBFLG TO RESET "ERASE" FLAG
+  0217'   60                    	MOV	H,B			;[B,C]=START OF ARRAY TO ERASE
+  0218'   69                    	MOV	L,C
+  0219'   0B                    	DCX	B			;BACK UP TO THE FRONT
+  021A'   0B                    	DCX	B			;NO VALUE TYPE WITHOUT LENGTH=2
+  021B'   0B                    	DCX	B			;BACK UP ONE MORE
+  021C'   0A                    LPBKNM:	LDAX	B			;GET A CHARACTER. ONLY THE COUNT HAS HIGH BIT=0
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+SWAP, ERASE
+
+  021D'   0B                    	DCX	B			;SO LOOP UNTIL WE SKIP OVER THE COUNT
+  021E'   B7                    	ORA	A			;SKIP ALL THE EXTRA CHARACTERS
+  021F'   FA 021C'              	JM	LPBKNM
+  0222'   0B                    	DCX	B
+  0223'   0B                    	DCX	B
+  0224'   19                    	DAD	D			;[H,L]=THE END OF THIS ARRAY ENTRY
+  0225'   EB                    	XCHG				;[D,E]=END OF THIS ARRAY
+  0226'   2A 0000*              	LHLD	STREND			;[H,L]=LAST LOCATION TO MOVE UP
+  0229'   CD 0117'              ERSLOP:	CALL	DCOMPR			;SEE IF THE LAST LOCATION IS GOING TO BE MOVED
+  022C'   1A                    	LDAX	D			;DO THE MOVE
+  022D'   02                    	STAX	B
+  022E'   13                    	INX	D			;UPDATE THE POINTERS
+  022F'   03                    	INX	B
+  0230'   C2 0229'              	JNZ	ERSLOP			;MOVE THE REST
+  0233'   0B                    	DCX	B
+  0234'   60                    	MOV	H,B			;SETUP THE NEW STORAGE END POINTER
+  0235'   69                    	MOV	L,C
+  0236'   22 0000*              	SHLD	STREND
+  0239'   E1                    	POP	H			;GET BACK THE TEXT POINTER
+  023A'   7E                    	MOV	A,M			;SEE IF MORE ERASURES NEEDED
+  023B'   FE 2C                 	CPI	54O			;ADDITIONAL VARIABLES DELIMITED BY COMMA
+  023D'   C0                    	RNZ				;ALL DONE IF NOT
+  023E'   CD 0000*              	CALL	CHRGTR
+  0241'   C3 0208'              	JMP	ERASE
+  0244'                         CASDON:
+                                	PUBLIC	POPAHT
+  0244'   F1                    POPAHT:	POP	PSW
+  0245'   E1                    	POP	H			;GET THE TEXT POINTER
+  0246'   C9                    	RET	
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+SWAP, ERASE
+
+                                
+                                ;
+                                ;TEST FOR A LETTER / CARRY ON=NOT A LETTER
+                                ;		     CARRY OFF=A LETTER
+                                ;
+  0247'   7E                    ISLET:	MOV	A,M
+  0248'   FE 41                 ISLET2:	CPI	'A'
+  024A'   D8                    	RC				;IF LESS THAN "A", RETURN EARLY
+  024B'   FE 5B                 	CPI	91			;91="Z"+1
+  024D'   3F                    	CMC	
+  024E'   C9                    	RET	
+                                	SUBTTL	CLEAR
+                                ;
+                                ; THIS CODE IS FOR THE "CLEAR" COMMAND WITH AN ARGUMENT
+                                ; TO CHANGE THE AMOUNT OF STRING SPACE ALLOCATED.
+                                ; IF NO FORMULA IS GIVEN THE AMOUNT OF STRING SPACE
+                                ; REMAINS UNCHANGED.
+                                ;
+                                	PUBLIC	CLEAR
+  024F'   CA 0085'              CLEAR:	JZ	CLEARC			;IF NO FORMULA JUST CLEAR
+  0252'   FE 2C                 	CPI	54O			;ALLOW NO STRING SPACE
+  0254'   CA 0261'              	JZ	CSKPCM
+  0257'   CD 0000*              	CALL	INTID2			;GET AN INTEGER INTO [D,E]
+  025A'   2B                    	DCX	H
+  025B'   CD 0000*              	CALL	CHRGTR			;SEE IF ITS THE END
+  025E'   CA 0085'              	JZ	CLEARC
+  0261'   CD 011D'              CSKPCM:	CALL	SYNCHR
+  0264'   2C                    	DB	54O
+  0265'   CA 0085'              	JZ	CLEARC
+  0268'   EB                    	XCHG	
+  0269'   2A 0000*              	LHLD	TOPMEM			;GET HIGHEST ADDRESS
+  026C'   EB                    	XCHG	
+  026D'   FE 2C                 	CPI	54O
+  026F'   CA 0280'              	JZ	CLEARS			;SHOULD FINISH THERE
+  0272'   CD 0000*              	CALL	FRMEVL			;EVALUATE FORMULA
+  0275'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  0276'   CD 0000*              	CALL	FRQINT			;CONVERT TO INTEGER IN [H,L]
+  0279'   7C                    	MOV	A,H
+  027A'   B5                    	ORA	L			;Memory size =0?
+  027B'   CA 0000*              	JZ	FCERR##			;Yes, error
+  027E'   EB                    	XCHG				;VALUE TO [D,E]
+  027F'   E1                    	POP	H			;RESTORE TEXT POINTER
+  0280'   2B                    CLEARS:	DCX	H			;BACK UP
+  0281'   CD 0000*              	CALL	CHRGTR			;GET CHAR
+  0284'   D5                    	PUSH	D			;SAVE NEW HIGH MEM
+  0285'   CA 02C5'              	JZ	CDFSTK			;USE SAME STACK SIZE
+  0288'   CD 011D'              	CALL	SYNCHR
+  028B'   2C                    	DB	54O
+  028C'   CA 02C5'              	JZ	CDFSTK
+  028F'   CD 0000*              	CALL	INTID2
+  0292'   2B                    	DCX	H
+  0293'   CD 0000*              	CALL	CHRGTR
+  0296'   C2 0000*              	JNZ	SNERR
+  0299'   E3                    CLEART:	XTHL				;SAVE TEXT POINTER
+  029A'   E5                    	PUSH	H			;SAVE CANDIDATE FOR TOPMEM
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+CLEAR
+
+  029B'   21 004E               	LXI	H,0+(2*NUMLEV)+20	;CHECK STACK SIZE IS REASONABLE
+  029E'   CD 0117'              	CALL	DCOMPR
+  02A1'   D2 0027'              	JNC	OMERR
+  02A4'   E1                    	POP	H
+  02A5'   CD 02D7'              	CALL	SUBDE			;SUBTRACT [H,L]-[D,E] INTO [D,E]
+  02A8'   DA 0027'              	JC	OMERR			;WANTED MORE THAN TOTAL!
+  02AB'   E5                    	PUSH	H			;SAVE MEMSIZ
+  02AC'   2A 0000*              	LHLD	VARTAB			;TOP LOCATION IN USE
+  02AF'   01 0014               	LXI	B,0+20			;LEAVE BREATHING ROOM
+  02B2'   09                    	DAD	B
+  02B3'   CD 0117'              	CALL	DCOMPR			;ROOM?
+  02B6'   D2 0027'              	JNC	OMERR			;NO, DON'T EVEN CLEAR
+  02B9'   EB                    	XCHG				;NEW STACK LOCATION [H,L]
+  02BA'   22 0000*              	SHLD	MEMSIZ			;SET UP NEW STACK LOCATION
+  02BD'   E1                    	POP	H			;GET BACK MEMSIZ
+  02BE'   22 0000*              	SHLD	TOPMEM			;SET IT UP, MUST BE OK
+  02C1'   E1                    	POP	H			;REGAIN THE TEXT POINTER
+  02C2'   C3 0085'              	JMP	CLEARC			;GO CLEAR
+  02C5'   E5                    CDFSTK:	PUSH	H			;SAVE TEXT POINTER
+  02C6'   2A 0000*              	LHLD	TOPMEM			;FIGURE OUT CURRENT STACK SIZE SO
+  02C9'   EB                    	XCHG				;IT IS SAVED
+  02CA'   2A 0000*              	LHLD	MEMSIZ
+  02CD'   7B                    	MOV	A,E
+  02CE'   95                    	SUB	L
+  02CF'   5F                    	MOV	E,A
+  02D0'   7A                    	MOV	A,D
+  02D1'   9C                    	SBB	H
+  02D2'   57                    	MOV	D,A
+  02D3'   E1                    	POP	H
+  02D4'   C3 0299'              	JMP	CLEART
+                                
+  02D7'   7D                    SUBDE:	MOV	A,L
+  02D8'   93                    	SUB	E
+  02D9'   5F                    	MOV	E,A
+  02DA'   7C                    	MOV	A,H
+  02DB'   9A                    	SBB	D
+  02DC'   57                    	MOV	D,A
+  02DD'   C9                    	RET	
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+CLEAR
+
+                                
+                                	SUBTTL	NEXT CODE
+                                ;
+                                ; A "FOR" ENTRY ON THE STACK HAS THE FOLLOWING FORMAT:
+                                ;
+                                ; LOW ADDRESS
+                                ;	TOKEN ($FOR IN HIGH BYTE)  1 BYTES
+                                ;	A POINTER TO THE LOOP VARIABLE  2 BYTES
+                                ;	UNDER ANSI & LENGTH=2, TWO BYTES GIVING TEXT POINTER OF MATCHING "NEXT"
+                                ;	A BYTE REFLECTING THE SIGN OF THE INCREMENT 1 BYTE
+                                ;	UNDER LENGTH=2, A BYTE MINUS FOR INTEGER AND POSITIVE FOR FLOATING "FOR"S
+                                ;	THE STEP 4 BYTES
+                                ;	THE UPPER VALUE 4 BYTES
+                                ;	THE LINE # OF THE "FOR" STATEMENT 2 BYTES
+                                ;	A TEXT POINTER INTO THE "FOR" STATEMENT 2 BYTES
+                                ; HIGH ADDRESS
+                                ;
+                                ; TOTAL 16-19 BYTES
+                                ;
+                                	PUBLIC	NEXT
+  02DE'                         NEXT:
+  02DE'   F5                    	PUSH	PSW			;SAVE THE CHARACTER CODES
+  02DF'   F6                    	DB	366Q			;SET [A] NON-ZERO
+                                	PUBLIC	NEXTS
+  02E0'   AF                    NEXTS:	XRA	A			;FLAG THAT "FOR" IS USING "NEXT"
+  02E1'   32 0000*              	STA	NXTFLG
+  02E4'   F1                    	POP	PSW			;GET BACK THE CHARACTER CODE
+  02E5'   11 0000               	LXI	D,0			;FOR THE "NEXT"
+                                					;STATEMENT WITHOUT ANY ARGS
+                                					;WE CALL FNDFOR WITH [D,E]=0
+  02E8'                         NEXTC:
+                                	EXTRN	NXTTXT
+  02E8'   22 0000*              	SHLD	NXTTXT			;SAVE STARTING TEXT POINTER
+  02EB'   C4 0000*              	CNZ	PTRGET			;GET A POINTER TO THE
+                                					;LOOP VARIABLE INTO [D,E]
+  02EE'   22 0000*              	SHLD	TEMP			;PUT THE TEXT POINTER
+                                					;IN A TEMP LOCATION
+                                					;IN CASE THE LOOP TERMINATES
+  02F1'   CD 0000*              	CALL	FNDFOR			;TRY TO FIND A FOR ENTRY
+                                					;ON THE STACK WHOSE VARIABLE NAME
+                                					;MATCHES THIS ONES
+  02F4'   C2 0000*              	JNZ	NFERR			;"NEXT WITHOUT FOR"
+  02F7'   F9                    	SPHL				;SETUP STACK POINTER BY CHOPPING
+                                					;AT THIS POINT
+  02F8'   D5                    	PUSH	D			;PUT THE VARIABLE PTR BACK ON
+  02F9'   5E                    	MOV	E,M			;PICK UP THE CORRECT "NEXT" TEXT POINTER
+  02FA'   23                    	INX	H
+  02FB'   56                    	MOV	D,M
+  02FC'   23                    	INX	H
+  02FD'   E5                    	PUSH	H			;SAVE THE POINTER INTO THE STACK ENTRY
+  02FE'   2A 0000*              	LHLD	NXTTXT			;[H,L]=TEXT POINTER AT THE START OF THIS "NEXT"
+  0301'   CD 0117'              	CALL	DCOMPR
+  0304'   C2 0000*              	JNZ	NFERR			;IF NO MATCH, "NEXT WITHOUT FOR"
+  0307'   E1                    	POP	H
+  0308'   D1                    	POP	D			;GET BACK THE VARIABLE POINTER
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+NEXT CODE
+
+  0309'   D5                    	PUSH	D
+  030A'   7E                    	MOV	A,M			;STEP ONTO THE STACK
+  030B'   F5                    	PUSH	PSW
+  030C'   23                    	INX	H
+  030D'   D5                    	PUSH	D			;PUT THE POINTER TO THE LOOP
+                                					;VARIABLE ONTO THE STACK
+  030E'   7E                    	MOV	A,M			;GET FLAG WHETHER THIS IS AN INTEGER "FOR"
+  030F'   23                    	INX	H			;ADVANCE THE "FOR" ENTRY POINTER
+  0310'   B7                    	ORA	A			;SET THE MINUS FLAG IF IT'S AN INTEGER "FOR"
+  0311'   FA 0339'              	JM	INTNXT			;HANDLE INTEGERS SEPERATELY
+  0314'   CD 0000*              	CALL	MOVFM			;STEP VALUE INTO THE FAC
+  0317'   E3                    	XTHL				;PUT THE POINTER INTO THE
+                                					;FOR ENTRY ONTO THE STACK
+  0318'   E5                    	PUSH	H			;PUT THE POINTER TO THE LOOP
+                                					;VARIABLE BACK ONTO THE STACK
+  0319'   3A 0000*              	LDA	NXTFLG			;IS "FOR" USING "NEXT"
+  031C'   B7                    	ORA	A
+  031D'   C2 0327'              	JNZ	NXTDO			;NO, CONTINUE "NEXT"
+                                	EXTRN	FVALSV
+  0320'   21 0000*              	LXI	H,FVALSV		;FETCH THE INITIAL VALUE INTO THE FAC
+  0323'   CD 0000*              	CALL	MOVFM
+  0326'   AF                    	XRA	A			;CONTINUE THE "NEXT" WITH INITIAL VALUE
+  0327'   C4 0000*              NXTDO:	CNZ	FADDS
+  032A'   E1                    	POP	H			;POP OFF THE POINTER TO 
+                                					;THE LOOP VARIABLE
+  032B'   CD 0000*              	CALL	MOVMF			;MOV FAC INTO LOOP VARIABLE
+  032E'   E1                    	POP	H			;GET THE ENTRY POINTER
+  032F'   CD 0000*              	CALL	MOVRM			;GET THE FINAL INTO THE REGISTERS
+  0332'   E5                    	PUSH	H			;SAVE THE ENTRY POINTER
+  0333'   CD 0000*              	CALL	FCOMP			;COMPARE THE NUMBERS RETURNING 377 IF FAC IS
+                                					;LESS THAN THE REGISTERS,
+                                					;0 IF EQUAL, OTHERWISE 1
+  0336'   C3 036F'              	JMP	FINNXT			;SKIP OVER INTEGER CODE
+  0339'   23                    INTNXT:	INX	H			;SKIP THE FOUR DUMMY BYTES
+  033A'   23                    	INX	H
+  033B'   23                    	INX	H
+  033C'   23                    	INX	H
+  033D'   4E                    	MOV	C,M			;[B,C]= THE STEP
+  033E'   23                    	INX	H
+  033F'   46                    	MOV	B,M
+  0340'   23                    	INX	H
+  0341'   E3                    	XTHL				;SAVE THE ENTRY POINTER ON THE STACK
+                                					;AND SET [H,L]=POINTER TO THE LOOP VARIABLE
+  0342'   5E                    	MOV	E,M			;[D,E]=LOOP VARIABLE VALUE
+  0343'   23                    	INX	H
+  0344'   56                    	MOV	D,M
+  0345'   E5                    	PUSH	H			;SAVE THE POINTER AT THE LOOP VARIABLE VALUE
+  0346'   69                    	MOV	L,C
+  0347'   60                    	MOV	H,B			;SETUP TO ADD [D,E] TO [H,L]
+  0348'   3A 0000*              	LDA	NXTFLG			;SEE IF "FOR" IS USING "NEXT"
+  034B'   B7                    	ORA	A
+  034C'   C2 0355'              	JNZ	INXTDO			;NO, JUST CONTINUE NEXT
+  034F'   2A 0000*              	LHLD	FVALSV			;GET THE INITIAL VALUE
+  0352'   C3 0360'              	JMP	IFORIN			;CONTINUE FIRST ITERATION CHECK
+  0355'   CD 0000*              INXTDO:	CALL	IADD			;ADD THE STEP TO THE LOOP VARIABLE
+  0358'   3A 0000*              	LDA	VALTYP			;SEE IF THERE WAS OVERFLOW
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+NEXT CODE
+
+  035B'   FE 04                 	CPI	4			;TURNED TO SINGLE-PRECISION?
+  035D'   CA 0000*              	JZ	OVERR			;INDICE GOT TOO LARGE
+  0360'   EB                    IFORIN:	XCHG				;[D,E]=NEW LOOP VARIABLE VALUE
+  0361'   E1                    	POP	H			;GET THE POINTER AT THE LOOP VARIABLE
+  0362'   72                    	MOV	M,D			;STORE THE NEW VALUE
+  0363'   2B                    	DCX	H
+  0364'   73                    	MOV	M,E
+  0365'   E1                    	POP	H			;GET BACK THE POINTER INTO THE "FOR" ENTRY
+  0366'   D5                    	PUSH	D			;SAVE THE VALUE OF THE LOOP VARIABLE
+  0367'   5E                    	MOV	E,M			;[D,E]=FINAL VALUE
+  0368'   23                    	INX	H
+  0369'   56                    	MOV	D,M
+  036A'   23                    	INX	H
+  036B'   E3                    	XTHL				;SAVE THE ENTRY POINTER AGAIN
+                                					;GET THE VALUE OF THE LOOP VARIABLE INTO [H,L]
+  036C'   CD 0000*              	CALL	ICOMP			;DO THE COMPARE
+  036F'                         FINNXT:
+  036F'   E1                    	POP	H			;POP OFF THE "FOR" ENTRY POINTER WHICH IS NOW
+                                					;POINTING PAST THE FINAL VALUE
+  0370'   C1                    	POP	B			;GET THE SIGN OF THE INCREMENT
+  0371'   90                    	SUB	B			;SUBTRACT THE INCREMENTS SIGN FROM THAT
+                                					;OF (CURRENT VALUE-FINAL VALUE)
+  0372'   CD 0000*              	CALL	MOVRM			;GET LINE # OF "FOR" INTO [D,E]
+                                					;GET TEXT POINTER OF "FOR" INTO [B,C]
+  0375'   CA 0381'              	JZ	LOOPDN			;IF SIGN(FINAL-CURRENT)+SIGN(STEP)=0
+                                					;THEN THE LOOP IS FINISHED
+  0378'   EB                    	XCHG	
+  0379'   22 0000*              	SHLD	CURLIN			;STORE THE LINE #
+  037C'   69                    	MOV	L,C			;SETUP THE TEXT POINTER
+  037D'   60                    	MOV	H,B
+  037E'   C3 0000*              	JMP	NXTCON
+                                
+  0381'   F9                    LOOPDN:	SPHL				;ELIMINATE THE FOR ENTRY
+                                					;SINCE [H,L] MOVED ALL
+                                					;THE WAY DOWN THE ENTRY
+  0382'   22 0000*              	SHLD	SAVSTK			;UPDATE SAVED STACK
+  0385'   2A 0000*              	LHLD	TEMP			;RESTORE THE TEXT POINTER
+  0388'   7E                    	MOV	A,M			;IS THERE A COMMA AT THE END
+  0389'   FE 2C                 	CPI	44			;IF SO LOOK AT ANOTHER
+  038B'   C2 0000*              	JNZ	NEWSTT			;VARIABLE NAME TO "NEXT"
+  038E'   CD 0000*              	CALL	CHRGTR			;READ FIRST CHARCTER
+  0391'   CD 02E8'              	CALL	NEXTC			;DO NEXT, BUT DON'T ALLOW
+                                					;BLANK VARIABLE NAME [D,E]=STK PTR
+                                					;AND WILL NEVER MATCH ANY VARPTR
+                                					;USE CALL TO PUT DUMMY "NEWSTT" ENTRY ON
+                                	PAGE
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+NEXT CODE
+
+                                
+                                					;END I8086 CONDITONAL
+                                	END	
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	S
+NEXT CODE
+
+Macros:
+
+Symbols:
+01F0*	ARYTAB          0075*	AUTFLG          0145'	BGNRST          
+0006'	BLTLOP          0000I'	BLTU            0003I'	BLTUC           
+0183*	BRKTXT          00FF 	BUFLEN          0244'	CASDON          
+02C5'	CDFSTK          00C4*	CHNFLG          012B*	CHRCON          
+038F*	CHRGTR          024FI'	CLEAR           0085I'	CLEARC          
+0280'	CLEARS          0299'	CLEART          000E 	CLMWID          
+00F4*	CLROVC          0153*	CLSALL          0197*	CNTOFL          
+00C6 	CONS1           0156'	CONSTP          01A7I'	CONT            
+000F 	CONTO           0005 	CPMENT          0000 	CPMWRM          
+01A5*	CRDO            017F*	CRDONZ          0261'	CSKPCM          
+018DI'	CTRLPT          018BI'	CTROPT          037A*	CURLIN          
+0080 	DATPSC          0147*	DATPTR          0000 	DBLTRN          
+0117I'	DCOMPR          0099*	DEFTBL          0177'	DIRIS           
+0163I'	ENDCON          0150I'	ENDS            0208I'	ERASE           
+01AD*	ERRCN           0186*	ERRFIN          0030*	ERROM           
+01B0*	ERROR           0229'	ERSLOP          0328*	FADDS           
+027C*	FCERR           0334*	FCOMP           0059*	FILPTR          
+017C*	FINLPT          036F'	FINNXT          00FA*	FINPRT          
+02F2*	FNDFOR          013D*	FNDLIN          00CB*	FRETOP          
+0273*	FRMEVL          0277*	FRQINT          0109*	FUNACT          
+0350*	FVALSV          003D*	GARBA2          01BC*	GETBYT          
+0011I'	GETSTK          01E6*	GETYPR          00CD'	GODFRE          
+0113I'	GTMPRT          0356*	IADD            036D*	ICOMP           
+0360'	IFORIN          0000*	INCHRI          0000*	INLIN           
+0290*	INTID2          0339'	INTNXT          0355'	INXTDO          
+0247I'	ISLET           0248I'	ISLET2          00A2'	LEVDTB          
+0139*	LINGET          0050 	LINLN           0381'	LOOPDN          
+009B'	LOPDFT          005D'	LOPNTO          021C'	LPBKNM          
+0084 	LPTLEN          0055*	MAXFIL          0003 	MD.RND          
+0001 	MD.SQI          0002 	MD.SQO          02CB*	MEMSIZ          
+00A9*	MOVE            0324*	MOVFM           032C*	MOVMF           
+0373*	MOVRM           00DB*	MRGFLG          0028 	NAMLEN          
+038C*	NEWSTT          02DEI'	NEXT            02E8'	NEXTC           
+02E0I'	NEXTS           0305*	NFERR           0054I'	NODSKS          
+0103*	NOFUNS          0199'	NTCTCT          01C1*	NULCNT          
+01BBI'	NULL            001D 	NUMLEV          000A 	NUMTMP          
+037F*	NXTCON          0327'	NXTDO           0349*	NXTFLG          
+02FF*	NXTTXT          01B4*	OLDLIN          01A8*	OLDTXT          
+0027I'	OMERR           002F'	OMERRR          00B6*	ONEFLG          
+00BB*	ONELIN          0091*	OPTFLG          0094*	OPTVAL          
+01A2*	OUTDO           035E*	OVERR           0244I'	POPAHT          
+0100*	PRMLEN          0106*	PRMLN2          010C*	PRMSTK          
+0072*	PROFLG          0194*	PRTFLG          0078*	PTRFLG          
+02EC*	PTRGET          0049'	REALLY          0035I'	REASON          
+01AC'	RESERR          0146I'	RESFIN          0130I'	RESTOR          
+00AC*	RNDCNT          00A3*	RNDCOP          00A6*	RNDX            
+0081I'	RUNC            0383*	SAVSTK          0172*	SAVTXT          
+006AI'	SCRATH          006BI'	SCRTCH          0297*	SNERR           
+00ECI'	STKERR          00E1I'	STKINI          014BI'	STOP            
+014CI'	STOPRG          0160I'	STPEND          0189*	STPRDY          
+0237*	STREND          0003 	STRSIZ          02D7'	SUBDE           
+0215*	SUBFLG          01CAI'	SWAP            0201*	SWPTMP          
+BIMISC	BASIC Interpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+NEXT CODE
+
+011DI'	SYNCHR          012A'	SYNCON          012D'	SYNERR          
+0386*	TEMP            015D*	TEMPPT          015A*	TEMPST          
+01EA*	TMERR           01C5I'	TOFF            01C4I'	TON             
+02C7*	TOPMEM          01C7*	TRCFLG          0000 	TRUROM          
+0132*	TXTTAB          0143*	USERR           0359*	VALTYP          
+02AD*	VARTAB          0204*	VMOVE           
+
+
+
+No Fatal error(s)
+
+
+terpreter miscellaneous routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	S-1

@@ -1,0 +1,3087 @@
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                        TITLE 'XTAL XBAS 2.2'
+                                
+                                ; CRYSTAL XBASIC 2.2 FOR NASCOM 1 & 2 
+                                ; (C) COPYRIGHT 1980, CRYSTAL ELECTRONICS
+                                ; AND ANDREW CORNISH
+                                ;
+                                ; PORTED TO CPM ON JAN 2020
+                                ; BY ROBERTO SANCHO
+                                ;
+                                ; ASSEMBLE WITH MICROSOFT M80 UNDER CP/M.
+                                
+                                ;
+                                ; BUILD STANDALONE OR CP/M VERSION
+                                ;
+                                
+                                	.Z80
+  0000'                         	ASEG
+                                        ORG  0100H
+                                        
+  0005                          BDOS	EQU  0005h
+                                
+                                	; SET CONIN COUN OUT BIOS VECTORS
+                                
+  0100    2A 0001               	LD HL,(1)	;BIOS WARM BOOT -> HL
+  0103    01 0006                       LD BC,6		;BIOS CONIN -> HL
+  0106    09                            ADD HL,BC
+  0107    23                            INC HL
+  0108    5E                            LD E,(HL)
+  0109    23                            INC HL
+  010A    56                            LD D,(HL)
+  010B    ED 53 0125                    LD (CONIN+1),DE	;STORE ADR. FOR CONIN
+                                
+  010F    2A 0001               	LD HL,(1)	;BIOS WARM BOOT -> HL
+  0112    01 0009                       LD BC,9		;BIOS CONOU -> HL
+  0115    09                            ADD HL,BC
+  0116    23                            INC HL
+  0117    5E                            LD E,(HL)
+  0118    23                            INC HL
+  0119    56                            LD D,(HL)
+  011A    ED 53 0128                    LD (CONOUT+1),DE ;STORE ADR. FOR CONOUT
+                                
+  011E    C3 1004               	JP 01004H	; Jump to start of XBAS
+                                
+  0121    C3 0000               CPMOUT:	JP  0		; EXIT TO CP/M
+                                
+  0124    C3 0000               CONIN:	JP  0           ;CALL BIOS CONSOLE IN
+  0127    C3 0000               CONOUT:	JP  0           ;CALL BIOS CONSOLE OUT
+                                
+                                
+  012A    F5                    CO:	PUSH AF		; CP/M CONSOLE CHAR OUT
+  012B    E5                    	PUSH HL
+  012C    D5                    	PUSH DE
+  012D    C5                    	PUSH BC
+  012E    4F                    	LD C,A
+  012F    FE 0D                 	CP 13
+  0131    C2 0139               	JP NZ,CO2	; JMP if no CR 
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+  0134    CD 0127               	CALL CONOUT
+  0137    0E 0A                 	LD C,10
+  0139    CD 0127               CO2:	CALL CONOUT	
+  013C    C1                    	POP BC
+  013D    D1                    	POP DE
+  013E    E1                    	POP HL
+  013F    F1                    	POP AF
+  0140    B7                    	OR A		; Clear carry
+  0141    C9                    	RET
+                                
+                                	
+  0142    C9                    	RET
+                                
+  0143    E5                    CI:	PUSH HL		; CP/M CONSOLE CHAR IN IF AVAILABLE
+  0144    D5                    	PUSH DE
+  0145    C5                    	PUSH BC
+  0146    1E FF                 	LD E,255	
+  0148    0E 06                 	LD C,6
+  014A    CD 0005               	CALL BDOS	; BDOS function 6 (C_RAWIO) - Direct console I/O
+  014D    B7                    	OR A
+  014E    CA 0152               	JP Z,CI2	; JMP IF NO KEY PRESSED
+  0151    37                    	SCF		; SET CARRY
+  0152    C1                    CI2:	POP BC
+  0153    D1                    	POP DE
+  0154    E1                    	POP HL
+  0155    C9                    	RET
+                                
+                                	; CSAVE FILENAME -> save tokenized basic program on CP/M file
+                                	
+  0156    CD 032E               CSAVE:	CALL OPENFW
+  0159    B7                    	OR A
+  015A    C2 2A77               	JP NZ,2A77H 	; Tape Error
+  015D    3A 0CB7               	LD A,(0CB7H)	; Save End of basic program
+  0160    CD 0347               	CALL SAV1
+  0163    3A 0CB8               	LD A,(0CB7H+1)	; 0cb7=TXTUNF	End of basic program
+  0166    CD 0347               	CALL SAV1
+  0169    2A 0C8C               	LD HL,(0C8CH)	; 0c8c=TEXT	Start of basic program
+  016C    7E                    CS1:	LD A,(HL)
+  016D    23                    	INC HL
+  016E    E5                    	PUSH HL	
+  016F    CD 0347               	CALL SAV1
+  0172    E1                    	POP HL
+  0173    B7                    	OR A
+  0174    C2 2A77               	JP NZ,2A77H 	; Tape Error
+  0177    ED 5B 0CB7            	LD DE,(0CB7H)	; 0cb7=TXTUNF	End of basic program
+  017B    CD 1546               	CALL 1546H	; call CPHLDE
+  017E    DA 016C               	JP C,CS1	; end of prog not reached -> continue saving
+  0181    CD 036E               	CALL SAV2
+  0184    B7                    	OR A
+  0185    C2 2A77               	JP NZ,2A77H 	; Tape Error
+  0188    C3 1355               	JP 1355H	; go to READY
+                                
+  018B    CD 01E3               CLOAD:	CALL OPENFR
+  018E    B7                    	OR A
+  018F    C2 2A77               	JP NZ,2A77H 	; Tape Error
+  0192    CD 140B               	CALL 0140BH	; call NEW basic command
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  0195    CD 01C1               	CALL LOAD1
+  0198    DA 13D0               	JP C,13D0H 	; Tape Error/EOF
+  019B    32 0CB7               	LD (0CB7H),A	; Load End of basic program
+  019E    CD 01C1               	CALL LOAD1
+  01A1    DA 13D0               	JP C,13D0H 	; Tape Error/EOF
+  01A4    32 0CB8               	LD (0CB7H+1),A
+  01A7    2A 0C8C               	LD HL,(0C8CH)	; 0c8c=TEXT	Start of basic program
+  01AA    E5                    LD1: 	PUSH HL
+  01AB    CD 01C1               	CALL LOAD1
+  01AE    E1                    	POP HL
+  01AF    DA 13D0               	JP C,13D0H 	; Tape Error/EOF
+  01B2    77                    	LD (HL),A
+  01B3    23                    	INC HL
+  01B4    ED 5B 0CB7            	LD DE,(0CB7H)	; 0cb7=TXTUNF	End of basic program
+  01B8    CD 1546               	CALL 1546H	; call CPHLDE
+  01BB    DA 01AA               	JP C,LD1	; end of prog not reached -> continue loading
+  01BE    C3 13D0               	JP 13D0H	; end of load
+                                
+                                ;
+                                ; OPENF/CLOSEF FUNCTIONS FOR LOAD/SAVE FILE UNDER CPM 
+                                ; RETURNS 0 ON OK, NOT ZERO ON I/O ERROR
+                                ;
+                                        .Z80
+                                
+  001A                          CNTRLZ	EQU	1AH		;control-z (end-of-file mark)
+                                
+  01C1    3A 005C               LOAD1:	LD	A,(FCB)		;READ CHAR FROM FILE
+  01C4    FE FF                 	CP	255		;IF (FCB)=FF THERE IS NO FILE OPEN
+  01C6    CA 01D2               	JP	Z,LDBRK		;IF NO FILE OPEN END TAPE READ
+  01C9    CD 01FA               	CALL	TYPE1		;GET CHAR FROM FILE C=CHAR, A=0 OK, A<>0 ERROR/EOF
+  01CC    B7                    	OR	A
+  01CD    C2 01D2               	JP	NZ,LDBRK	;IF ERROR/EOF->RETURN ^C TO CALLER
+  01D0    79                    	LD	A,C
+  01D1    C9                    	RET
+  01D2    37                    LDBRK:	SCF
+  01D3    C9                    	RET	
+                                        
+  01D4    3A 005C               CLOSEF: LD	A,(FCB)		;IF (FCB)=FF THERE IS NO FILE OPEN
+  01D7    FE FF                 	CP	255
+  01D9    C8                    	RET	Z
+  01DA    CD 0310               	CALL	CLOSFCB		;  ELSE CLOSE FILE IN FCB
+  01DD    3E FF                 CLRFCB:	LD	A,255
+  01DF    32 005C               	LD	(FCB),A
+  01E2    C9                    	RET
+                                        
+  01E3    CD 0228               OPENFR:	CALL	CONVERT		;convert file name.
+  01E6    B7                    	OR	A
+  01E7    C2 021D               	JP	NZ,TYPERR	;wild cards not allowed.
+  01EA    CD 02F1               	CALL	OPENFCB		;open the file.
+  01ED    FE FF                 	CP	255
+  01EF    CA 021D               	JP	Z,TYPERR	;not there?
+  01F2    21 032B               	LD	HL,NBYTES	;initialize byte counter.
+  01F5    36 FF                 	LD	(HL),0FFH	;set to read first sector.	
+  01F7    3E 00                 	LD 	A,0		;return A=0 -> OK
+  01F9    C9                    	RET
+                                	
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+  01FA    21 032B               TYPE1:	LD	HL,NBYTES
+  01FD    7E                    TYPE2:	LD	A,(HL)		;have we written the entire sector?
+  01FE    FE 80                 	CP	128
+  0200    DA 020E               	JP	C,TYPE3
+  0203    E5                    	PUSH	HL		;yes, read in the next one.
+  0204    CD 02FE               	CALL	READFCB
+  0207    E1                    	POP	HL
+  0208    B7                    	OR	A
+  0209    C2 021D               	JP	NZ,TYPERR	;end or error?
+  020C    AF                    	XOR	A		;ok, clear byte counter.
+  020D    77                    	LD	(HL),A
+  020E    34                    TYPE3:	INC	(HL)		;count this byte.
+  020F    21 0080               	LD	HL,TBUFF	;and get the (A)th one from the buffer (TBUFF).
+  0212    CD 0223               	CALL	ADDHL
+  0215    7E                    	LD	A,(HL)
+  0216    4F                    	LD      C,A
+  0217    3E 00                 	LD 	A,0		;return A=0 -> OK
+  0219    C9                    	RET			; C=CHAR READ
+                                ;
+                                ;   Get here on an end of file or read error or open error.
+                                ;
+  021A    CD 0310               TYPERR2:CALL	CLOSFCB
+  021D    CD 01DD               TYPERR:	CALL	CLRFCB
+  0220    3E FF                   	LD	A,255		;eof found
+  0222    C9                            RET
+                                ;
+                                ;   Add (HL)=(HL)+(A)
+                                ;
+  0223    85                    ADDHL:	ADD	A,L
+  0224    6F                    	LD	L,A
+  0225    D0                    	RET	NC		;take care of any carry.
+  0226    24                    	INC	H
+  0227    C9                    	RET	
+                                ;
+                                ;   Convert the name in (hl) to (FCB).
+                                ;   Format a file name (convert * to '?', etc.). On return,
+                                ; (A)=0 is an unambigeous name was specified. Enter with (A) equal to
+                                ; the position within the fcb for the name (either 0 or 16).
+                                ;
+  0228    EB                    CONVERT:EX	DE,HL
+  0229    21 005C               	LD	HL,FCB
+  022C    1A                    	LD	A,(DE)		;get first character of filename
+  022D    B7                    	OR	A
+  022E    C2 0234               	JP	NZ,CONVRT1
+  0231    3E 01                 	LD	A,1		;error: empty filename
+  0233    C9                    	RET
+  0234    DE 40                 CONVRT1:SBC	A,'A'-1		;might be a drive name, convert to binary.
+  0236    47                    	LD	B,A		;and save.
+  0237    13                    	INC	DE		;check next character for a ':'.
+  0238    1A                    	LD	A,(DE)
+  0239    FE 3A                 	CP	':'
+  023B    CA 0245               	JP	Z,CONVRT2
+  023E    1B                    	DEC	DE		;nope, move pointer back to the start of the line.
+  023F    3E 00                 	LD	A,0             ;default drive
+  0241    77                    	LD	(HL),A
+  0242    C3 0247               	JP	CONVRT3
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+  0245    70                    CONVRT2:LD	(HL),B
+  0246    13                    	INC	DE
+                                ;
+                                ;   Convert the basic file name.
+                                ;
+  0247    06 08                 CONVRT3:LD	B,08H
+  0249    CD 02D8               CONVRT4:CALL	CHECK
+  024C    CA 026A               	JP	Z,CONVRT8
+  024F    23                    	INC	HL
+  0250    FE 2A                 	CP	'*'		;note that an '*' will fill the remaining
+  0252    C2 025A               	JP	NZ,CONVRT5	;field with '?'.
+  0255    36 3F                 	LD	(HL),'?'
+  0257    C3 025C               	JP	CONVRT6
+  025A    77                    CONVRT5:LD	(HL),A
+  025B    13                    	INC	DE
+  025C    05                    CONVRT6:DEC	B
+  025D    C2 0249               	JP	NZ,CONVRT4
+  0260    CD 02D8               CONVRT7:CALL	CHECK		;get next delimiter.
+  0263    CA 0271               	JP	Z,GETEXT
+  0266    13                    	INC	DE
+  0267    C3 0260               	JP	CONVRT7
+  026A    23                    CONVRT8:INC	HL		;blank fill the file name.
+  026B    36 20                 	LD	(HL),' '
+  026D    05                    	DEC	B
+  026E    C2 026A               	JP	NZ,CONVRT8
+                                ;
+                                ;   Get the extension and convert it.
+                                ;
+  0271    06 03                 GETEXT:	LD	B,03H
+  0273    FE 2E                 	CP	'.'
+  0275    C2 029A               	JP	NZ,GETEXT5
+  0278    13                    	INC	DE
+  0279    CD 02D8               GETEXT1:CALL	CHECK
+  027C    CA 029A               	JP	Z,GETEXT5
+  027F    23                    	INC	HL
+  0280    FE 2A                 	CP	'*'
+  0282    C2 028A               	JP	NZ,GETEXT2
+  0285    36 3F                 	LD	(HL),'?'
+  0287    C3 028C               	JP	GETEXT3
+  028A    77                    GETEXT2:LD	(HL),A
+  028B    13                    	INC	DE
+  028C    05                    GETEXT3:DEC	B
+  028D    C2 0279               	JP	NZ,GETEXT1
+  0290    CD 02D8               GETEXT4:CALL	CHECK
+  0293    CA 02A1               	JP	Z,GETEXT6
+  0296    13                    	INC	DE
+  0297    C3 0290               	JP	GETEXT4
+  029A    23                    GETEXT5:INC	HL
+  029B    36 20                 	LD	(HL),' '
+  029D    05                    	DEC	B
+  029E    C2 029A               	JP	NZ,GETEXT5
+  02A1    06 03                 GETEXT6:LD	B,3
+  02A3    23                    GETEXT7:INC	HL
+  02A4    36 00                 	LD	(HL),0
+  02A6    05                    	DEC	B
+  02A7    C2 02A3               	JP	NZ,GETEXT7
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+                                ;
+                                ; Check to see if this is an ambigeous file name specification.
+                                ; Set the (A) register to non zero if it is.
+                                ;
+  02AA    01 000B               	LD	BC,11		;set name length.
+  02AD    21 005C               	LD	HL,FCB	
+  02B0    23                    GETEXT8:INC	HL
+  02B1    7E                    	LD	A,(HL)
+  02B2    FE 3F                 	CP	'?'		;any question marks?
+  02B4    C2 02B8               	JP	NZ,GETEXT9
+  02B7    04                    	INC	B		;count them.
+  02B8    0D                    GETEXT9:DEC	C
+  02B9    C2 02B0               	JP	NZ,GETEXT8
+  02BC    78                    	LD	A,B
+  02BD    B7                    	OR	A
+  02BE    C0                    	RET     NZ		;do niot allow ? in filename
+  02BF    3A 005C               	LD 	A,(FCB)
+  02C2    B7                    	OR	A
+  02C3    CA 02CF               	JP	Z,GETEXTA
+  02C6    3D                    	DEC	A
+  02C7    5F                    	LD	E,A
+  02C8    0E 0E                 	LD	C,14		;DSKSEL
+  02CA    CD 0005               	CALL	BDOS		
+  02CD    B7                    	OR	A
+  02CE    C0                    	RET	NZ		;not ready?
+  02CF    11 0080               GETEXTA:LD	DE,TBUFF
+  02D2    0E 1A                 	LD	C,26		;SETDMA
+  02D4    CD 0005               	CALL 	BDOS
+  02D7    C9                    	RET	
+                                ;
+                                ; Check character at (DE) for legal command input. Note that the
+                                ; zero flag is set if the character is a delimiter.
+                                ;
+  02D8    1A                    CHECK:	LD	A,(DE)
+  02D9    B7                    	OR	A
+  02DA    C8                    	RET	Z
+  02DB    FE 3D                 	CP	'='
+  02DD    C8                    	RET	Z
+  02DE    FE 5F                 	CP	'_'
+  02E0    C8                    	RET	Z
+  02E1    FE 2E                 	CP	'.'
+  02E3    C8                    	RET	Z
+  02E4    FE 3A                 	CP	':'
+  02E6    C8                    	RET	Z
+  02E7    FE 3B                 	CP	';'
+  02E9    C8                    	RET	Z
+  02EA    FE 3C                 	CP	'<'
+  02EC    C8                    	RET	Z
+  02ED    FE 3E                 	CP	'>'
+  02EF    C8                    	RET	Z
+  02F0    C9                    	RET	
+                                ;
+                                ;   Routine to open file at (FCB).
+                                ;
+  02F1    AF                    OPENFCB:XOR	A		;clear the record number byte at fcb+32
+  02F2    32 007C               	LD	(FCB+32),A
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+  02F5    11 005C               	LD	DE,FCB
+  02F8    0E 0F                 	LD	C,15
+  02FA    CD 0005               	CALL 	BDOS
+  02FD    C9                    	RET
+                                ;
+                                ;   Routine to read file at (FCB).
+                                ;
+  02FE    11 005C               READFCB:LD	DE,FCB
+  0301    0E 14                 	LD	C,20
+  0303    CD 0005               	CALL 	BDOS
+  0306    C9                    	RET
+                                
+  0307    11 005C               WRTFCB: LD	DE,FCB
+  030A    0E 15                 	LD	C,21
+  030C    CD 0005               	CALL 	BDOS
+  030F    C9                    	RET
+                                ;
+                                ;   Routine to close file at (FCB).
+                                ;
+  0310    11 005C               CLOSFCB:LD	DE,FCB
+  0313    0E 10                 	LD	C,16
+  0315    CD 0005               	CALL 	BDOS
+  0318    C9                    	RET
+                                
+  0319    11 005C               DELFCB: LD	DE,FCB
+  031C    0E 13                 	LD	C,19
+  031E    CD 0005               	CALL 	BDOS
+  0321    C9                    	RET
+                                
+  0322    11 005C               CREAFCB:LD	DE,FCB
+  0325    0E 16                 	LD	C,22
+  0327    CD 0005               	CALL 	BDOS
+  032A    C9                    	RET
+                                
+                                ;
+                                ; File control block setup by the CCP.
+                                ;
+  005C                          FCB	EQU	5CH		;default file control block.
+  0080                          TBUFF	EQU	80H		;i/o buffer and command line storage.
+  032B    0000                  NBYTES:	DW	0		;byte counter used by tape command
+  032D    00                    CH:	DB	0		;save char
+                                
+  032E    CD 0228               OPENFW:	CALL	CONVERT		;convert file name.
+  0331    C2 021D               	JP	NZ,TYPERR	;wild cards not allowed.
+  0334    CD 0319               	CALL	DELFCB		;delete file
+  0337    CD 0322               	CALL	CREAFCB		;and create it again.
+  033A    FE FF                 	CP	255
+  033C    CA 021D               	JP	Z,TYPERR	;can't create?
+  033F    AF                    	XOR	A		;clear record number byte.
+  0340    32 007C               	LD	(FCB+32),A
+  0343    32 032B               	LD	(NBYTES),A
+  0346    C9                    	RET
+                                
+  0347    32 032D               SAV1:	LD	(CH),A
+  034A    3A 032B               	LD	A,(NBYTES)
+  034D    FE 80                 	CP	128
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+
+
+  034F    C2 035C               	JP	NZ,SAV1A
+  0352    CD 0307               	CALL	WRTFCB
+  0355    B7                    	OR	A
+  0356    C2 021A               	JP	NZ,TYPERR2
+  0359    32 032B               	LD	(NBYTES),A
+  035C    21 032B               SAV1A:	LD	HL,NBYTES
+  035F    7E                    	LD	A,(HL)
+  0360    34                    	INC 	(HL)
+  0361    21 0080               	LD	HL,TBUFF
+  0364    CD 0223               	CALL	ADDHL
+  0367    3A 032D               	LD	A,(CH)
+  036A    77                    	LD	(HL),A
+  036B    3E 00                 	LD      A,0
+  036D    C9                    	RET
+                                	
+                                ;
+                                ;   Get here after writing all of the file.
+                                ;
+  036E    3A 032B               SAV2:	LD	A,(NBYTES)
+  0371    B7                    	OR	A
+  0372    CA 037C               	JP	Z,SAV2A
+  0375    CD 0307               	CALL	WRTFCB
+  0378    B7                    	OR	A
+  0379    C2 021A               	JP	NZ,TYPERR2	
+  037C    11 005C               SAV2A:	LD	DE,FCB		;now close the file.
+  037F    CD 0310               	CALL	CLOSFCB
+  0382    FE FF                 	CP	255
+  0384    CA 021D               	JP	Z,TYPERR
+  0387    3E 00                 	LD	A,0
+  0389    C9                    	RET
+                                
+                                
+                                        ORG  00E80H
+                                
+  0E80    D3 45 54 D2           L0E80:   DB 0D3H, 045H, 054H, 0D2H, 045H, 053H, 045H, 054H
+  0E84    45 53 45 54           
+  0E88    C3 4C 53 C4           L0E88:   DB 0C3H, 04CH, 053H, 0C4H, 04FH, 04BH, 045H, 0C4H
+  0E8C    4F 4B 45 C4           
+  0E90    45 45 4B 28           L0E90:   DB 045H, 045H, 04BH, 028H, 0CCH, 049H, 04EH, 045H
+  0E94    CC 49 4E 45           
+  0E98    80 80 80 80           L0E98:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0E9C    80 80 80 80           
+  0EA0    80 80 80 80           L0EA0:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0EA4    80 80 80 80           
+  0EA8    80 80 80 80           L0EA8:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0EAC    80 80 80 80           
+  0EB0    80 80 80 80           L0EB0:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0EB4    80 80 80 80           
+  0EB8    80 80 80 80           L0EB8:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0EBC    80 80 80 80           
+  0EC0    80 80 80 80           L0EC0:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0EC4    80 80 80 80           
+  0EC8    80 80 80 80           L0EC8:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0ECC    80 80 80 80           
+  0ED0    80 80 80 80           L0ED0:   DB 080H, 080H, 080H, 080H, 002H, 002H, 065H, 007H
+  0ED4    02 02 65 07           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+
+
+  0ED8    02 02 0C 09           L0ED8:   DB 002H, 002H, 00CH, 009H, 06FH, 001H, 040H, 000H
+  0EDC    6F 01 40 00           
+  0EE0    88 8A 36 02           L0EE0:   DB 088H, 08AH, 036H, 002H, 065H, 002H, 008H, 00DH
+  0EE4    65 02 08 0D           
+  0EE8    6B 07 08 0D           L0EE8:   DB 06BH, 007H, 008H, 00DH, 03AH, 000H, 051H, 020H
+  0EEC    3A 00 51 20           
+  0EF0    8F 0B F4 02           L0EF0:   DB 08FH, 00BH, 0F4H, 002H, 000H, 000H, 0D6H, 0C0H
+  0EF4    00 00 D6 C0           
+  0EF8    0A 08 00 00           L0EF8:   DB 00AH, 008H, 000H, 000H, 043H, 0C1H, 05EH, 0C3H
+  0EFC    43 C1 5E C3           
+  0F00    00 20 00 50           L0F00:   DB 000H, 020H, 000H, 050H, 0C3H, 0BFH, 0D3H, 000H
+  0F04    C3 BF D3 00           
+  0F08    00 00 00 00           L0F08:   DB 000H, 000H, 000H, 000H, 0FFH, 0FFH, 0FFH, 0FFH
+  0F0C    FF FF FF FF           
+  0F10    00 11 00 21           L0F10:   DB 000H, 011H, 000H, 021H, 00AH, 036H, 0D0H, 0AAH
+  0F14    0A 36 D0 AA           
+  0F18    D0 8F D2 F4           L0F18:   DB 0D0H, 08FH, 0D2H, 0F4H, 0D2H, 091H, 020H, 02CH
+  0F1C    D2 91 20 2C           
+  0F20    98 3B 00 82           L0F20:   DB 098H, 03BH, 000H, 082H, 02BH, 029H, 027H, 0C0H
+  0F24    2B 29 27 C0           
+  0F28    24 A0 23 22           L0F28:   DB 024H, 0A0H, 023H, 022H, 080H, 000H, 0A0H, 0A0H
+  0F2C    80 00 A0 A0           
+  0F30    80 80 80 80           L0F30:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F34    80 80 80 80           
+  0F38    80 80 80 80           L0F38:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F3C    80 80 80 80           
+  0F40    80 80 80 80           L0F40:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F44    80 80 80 80           
+  0F48    80 80 80 80           L0F48:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F4C    80 80 80 80           
+  0F50    80 80 80 80           L0F50:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F54    80 80 80 80           
+  0F58    80 80 80 80           L0F58:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F5C    80 80 80 80           
+  0F60    80 80 80 80           L0F60:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F64    80 80 80 80           
+  0F68    80 80 80 80           L0F68:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 01AH
+  0F6C    80 80 80 1A           
+  0F70    11 38 00 00           L0F70:   DB 011H, 038H, 000H, 000H, 010H, 000H, 020H, 00AH
+  0F74    10 00 20 0A           
+  0F78    A5 DB A5 DB           L0F78:   DB 0A5H, 0DBH, 0A5H, 0DBH, 009H, 009H, 080H, 080H
+  0F7C    09 09 80 80           
+  0F80    00 2D 0B 2D           L0F80:   DB 000H, 02DH, 00BH, 02DH, 0C2H, 02EH, 0C6H, 02EH
+  0F84    C2 2E C6 2E           
+  0F88    D6 2E 16 2D           L0F88:   DB 0D6H, 02EH, 016H, 02DH, 080H, 080H, 080H, 080H
+  0F8C    80 80 80 80           
+  0F90    80 80 80 80           L0F90:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F94    80 80 80 80           
+  0F98    80 80 80 80           L0F98:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0F9C    80 80 80 80           
+  0FA0    80 80 80 80           L0FA0:   DB 080H, 080H, 080H, 080H, 080H, 080H, 080H, 080H
+  0FA4    80 80 80 80           
+  0FA8    80 80 80 80           L0FA8:   DB 080H, 080H, 080H, 080H, 080H, 013H, 00BH, 013H
+  0FAC    80 13 0B 13           
+  0FB0    0B 13 0B 13           L0FB0:   DB 00BH, 013H, 00BH, 013H, 00BH, 013H, 00BH, 013H
+  0FB4    0B 13 0B 13           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+
+
+  0FB8    0B 13 0B 13           L0FB8:   DB 00BH, 013H, 00BH, 013H, 00BH, 013H, 00BH, 013H
+  0FBC    0B 13 0B 13           
+  0FC0    0B 13 0B 13           L0FC0:   DB 00BH, 013H, 00BH, 013H, 00BH, 013H, 075H, 0D0H
+  0FC4    0B 13 75 D0           
+  0FC8    75 D0 1A 43           L0FC8:   DB 075H, 0D0H, 01AH, 043H, 075H, 0D0H, 01AH, 039H
+  0FCC    75 D0 1A 39           
+  0FD0    2C 39 75 D0           L0FD0:   DB 02CH, 039H, 075H, 0D0H, 01AH, 030H, 075H, 0D0H
+  0FD4    1A 30 75 D0           
+  0FD8    75 D0 FA 01           L0FD8:   DB 075H, 0D0H, 0FAH, 001H, 000H, 0A1H, 0F9H, 0FFH
+  0FDC    00 A1 F9 FF           
+  0FE0    40 09 33 AD           L0FE0:   DB 040H, 009H, 033H, 0ADH, 070H, 00FH, 070H, 00FH
+  0FE4    70 0F 70 0F           
+  0FE8    00 0A 90 AC           L0FE8:   DB 000H, 00AH, 090H, 0ACH, 0F9H, 080H, 000H, 002H
+  0FEC    F9 80 00 02           
+  0FF0    F7 A9 00 21           L0FF0:   DB 0F7H, 0A9H, 000H, 021H, 070H, 00FH, 08FH, 021H
+  0FF4    70 0F 8F 21           
+  0FF8    EC A9 C6 AA           L0FF8:   DB 0ECH, 0A9H, 0C6H, 0AAH, 07FH, 0A4H, 088H, 0A1H
+  0FFC    7F A4 88 A1           
+  1000    18 08 18 46           L1000:   DB 018H, 008H, 018H, 046H, 031H, 000H, 00EH, 0CDH
+  1004    31 00 0E CD           
+  1008    F5 17 31 00           L1008:   DB 0F5H, 017H, 031H, 000H, 00EH, 001H, 00EH, 000H
+  100C    0E 01 0E 00           
+  1010    21 77 12 11           L1010:   DB 021H, 077H, 012H, 011H, 080H, 00CH, 0EDH, 0B0H
+  1014    80 0C ED B0           
+  1018    CD 30 14 2A           L1018:   DB 0CDH, 030H, 014H, 02AH, 08CH, 00CH, 054H, 05DH
+  101C    8C 0C 54 5D           
+  1020    CD D3 2B 2B           L1020:   DB 0CDH, 0D3H, 02BH, 02BH, 0CDH, 046H, 015H, 0DAH
+  1024    CD 46 15 DA           
+  1028    FE 12 11 CE           L1028:   DB 0FEH, 012H, 011H, 0CEH, 0FFH, 022H, 092H, 00CH
+  102C    FF 22 92 0C           
+  1030    19 22 88 0C           L1030:   DB 019H, 022H, 088H, 00CH, 0CDH, 00BH, 014H, 0CDH
+  1034    CD 0B 14 CD           
+  1038    F0 2A 00 58           L1038:   DB 0F0H, 02AH, 000H, 058H, 074H, 061H, 06CH, 020H
+  103C    74 61 6C 20           
+  1040    42 41 53 49           L1040:   DB 042H, 041H, 053H, 049H, 043H, 020H, 032H, 02EH
+  1044    43 20 32 2E           
+  1048    32 8D 32 00           L1048:   DB 032H, 08DH, 032H, 000H, 00EH, 0CDH, 0F9H, 01EH
+  104C    0E CD F9 1E           
+  1050    ED 52 CD F0           L1050:   DB 0EDH, 052H, 0CDH, 0F0H, 02AH, 053H, 069H, 07AH
+  1054    2A 53 69 7A           
+  1058    65 3A A0 CD           L1058:   DB 065H, 03AH, 0A0H, 0CDH, 081H, 027H, 0F3H, 0CDH
+  105C    81 27 F3 CD           
+  1060    30 14 C3 55           L1060:   DB 030H, 014H, 0C3H, 055H, 013H, 0CEH, 065H, 078H
+  1064    13 CE 65 78           
+  1068    74 D3 79 6E           L1068:   DB 074H, 0D3H, 079H, 06EH, 074H, 061H, 078H, 0D2H
+  106C    74 61 78 D2           
+  1070    65 74 75 72           L1070:   DB 065H, 074H, 075H, 072H, 06EH, 0C4H, 061H, 074H
+  1074    6E C4 61 74           
+  1078    61 D1 74 79           L1078:   DB 061H, 0D1H, 074H, 079H, 0CFH, 076H, 066H, 06CH
+  107C    CF 76 66 6C           
+  1080    CD 65 6D 20           L1080:   DB 0CDH, 065H, 06DH, 020H, 046H, 075H, 06CH, 06CH
+  1084    46 75 6C 6C           
+  1088    C2 72 61 6E           L1088:   DB 0C2H, 072H, 061H, 06EH, 063H, 068H, 0D2H, 061H
+  108C    63 68 D2 61           
+  1090    6E 67 65 C4           L1090:   DB 06EH, 067H, 065H, 0C4H, 069H, 06DH, 065H, 06EH
+  1094    69 6D 65 6E           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+
+
+  1098    73 69 6F 6E           L1098:   DB 073H, 069H, 06FH, 06EH, 0C4H, 069H, 076H, 069H
+  109C    C4 69 76 69           
+  10A0    73 69 6F 6E           L10A0:   DB 073H, 069H, 06FH, 06EH, 0C4H, 069H, 072H, 065H
+  10A4    C4 69 72 65           
+  10A8    63 74 D4 79           L10A8:   DB 063H, 074H, 0D4H, 079H, 070H, 065H, 0D3H, 074H
+  10AC    70 65 D3 74           
+  10B0    72 20 53 70           L10B0:   DB 072H, 020H, 053H, 070H, 063H, 0D3H, 074H, 072H
+  10B4    63 D3 74 72           
+  10B8    20 4F 76 66           L10B8:   DB 020H, 04FH, 076H, 066H, 06CH, 0D3H, 074H, 072H
+  10BC    6C D3 74 72           
+  10C0    20 43 6F 6D           L10C0:   DB 020H, 043H, 06FH, 06DH, 070H, 06CH, 065H, 078H
+  10C4    70 6C 65 78           
+  10C8    C3 6F 6E 74           L10C8:   DB 0C3H, 06FH, 06EH, 074H, 0C6H, 06EH, 020H, 044H
+  10CC    C6 6E 20 44           
+  10D0    65 66 6E CF           L10D0:   DB 065H, 066H, 06EH, 0CFH, 070H, 065H, 072H, 061H
+  10D4    70 65 72 61           
+  10D8    6E 64 C3 6D           L10D8:   DB 06EH, 064H, 0C3H, 06DH, 064H, 0D4H, 061H, 070H
+  10DC    64 D4 61 70           
+  10E0    65 80 C5 4E           L10E0:   DB 065H, 080H, 0C5H, 04EH, 044H, 0C6H, 04FH, 052H
+  10E4    44 C6 4F 52           
+  10E8    CE 45 58 54           L10E8:   DB 0CEH, 045H, 058H, 054H, 0C4H, 041H, 054H, 041H
+  10EC    C4 41 54 41           
+  10F0    CE 41 53 C9           L10F0:   DB 0CEH, 041H, 053H, 0C9H, 04EH, 050H, 055H, 054H
+  10F4    4E 50 55 54           
+  10F8    C4 49 4D D2           L10F8:   DB 0C4H, 049H, 04DH, 0D2H, 045H, 041H, 044H, 0CCH
+  10FC    45 41 44 CC           
+  1100    45 54 C7 4F           L1100:   DB 045H, 054H, 0C7H, 04FH, 054H, 04FH, 0D2H, 055H
+  1104    54 4F D2 55           
+  1108    4E C9 46 D2           L1108:   DB 04EH, 0C9H, 046H, 0D2H, 045H, 053H, 054H, 04FH
+  110C    45 53 54 4F           
+  1110    52 45 C7 4F           L1110:   DB 052H, 045H, 0C7H, 04FH, 053H, 055H, 042H, 0D2H
+  1114    53 55 42 D2           
+  1118    45 54 55 52           L1118:   DB 045H, 054H, 055H, 052H, 04EH, 0C5H, 044H, 049H
+  111C    4E C5 44 49           
+  1120    54 D2 45 4D           L1120:   DB 054H, 0D2H, 045H, 04DH, 0D3H, 054H, 04FH, 050H
+  1124    D3 54 4F 50           
+  1128    CF 55 54 CF           L1128:   DB 0CFH, 055H, 054H, 0CFH, 04EH, 0C3H, 041H, 04CH
+  112C    4E C3 41 4C           
+  1130    4C D7 41 49           L1130:   DB 04CH, 0D7H, 041H, 049H, 054H, 0C4H, 045H, 046H
+  1134    54 C4 45 46           
+  1138    D0 4F 4B 45           L1138:   DB 0D0H, 04FH, 04BH, 045H, 0D0H, 052H, 049H, 04EH
+  113C    D0 52 49 4E           
+  1140    54 C3 4F 4E           L1140:   DB 054H, 0C3H, 04FH, 04EH, 054H, 0CCH, 049H, 053H
+  1144    54 CC 49 53           
+  1148    54 C3 4C 45           L1148:   DB 054H, 0C3H, 04CH, 045H, 041H, 052H, 0C3H, 04CH
+  114C    41 52 C3 4C           
+  1150    4F 41 44 C3           L1150:   DB 04FH, 041H, 044H, 0C3H, 053H, 041H, 056H, 045H
+  1154    53 41 56 45           
+  1158    CE 45 57 D3           L1158:   DB 0CEH, 045H, 057H, 0D3H, 050H, 045H, 045H, 044H
+  115C    50 45 45 44           
+  1160    D0 4F 50 D4           L1160:   DB 0D0H, 04FH, 050H, 0D4H, 041H, 042H, 028H, 0D4H
+  1164    41 42 28 D4           
+  1168    4F C6 4E D3           L1168:   DB 04FH, 0C6H, 04EH, 0D3H, 050H, 043H, 028H, 0D4H
+  116C    50 43 28 D4           
+  1170    48 45 4E CE           L1170:   DB 048H, 045H, 04EH, 0CEH, 04FH, 054H, 0D3H, 054H
+  1174    4F 54 D3 54           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+
+
+  1178    45 50 AB AD           L1178:   DB 045H, 050H, 0ABH, 0ADH, 0DEH, 0AAH, 0AFH, 0C1H
+  117C    DE AA AF C1           
+  1180    4E 44 CF 52           L1180:   DB 04EH, 044H, 0CFH, 052H, 0BEH, 0BDH, 0BCH, 0D3H
+  1184    BE BD BC D3           
+  1188    47 4E C9 4E           L1188:   DB 047H, 04EH, 0C9H, 04EH, 054H, 0C1H, 042H, 053H
+  118C    54 C1 42 53           
+  1190    C3 4D 44 24           L1190:   DB 0C3H, 04DH, 044H, 024H, 0C9H, 04EH, 050H, 0D0H
+  1194    C9 4E 50 D0           
+  1198    4F 53 D3 51           L1198:   DB 04FH, 053H, 0D3H, 051H, 052H, 0D2H, 04EH, 044H
+  119C    52 D2 4E 44           
+  11A0    CC 4F 47 C5           L11A0:   DB 0CCH, 04FH, 047H, 0C5H, 058H, 050H, 0C3H, 04FH
+  11A4    58 50 C3 4F           
+  11A8    53 D3 49 4E           L11A8:   DB 053H, 0D3H, 049H, 04EH, 0D4H, 041H, 04EH, 0C1H
+  11AC    D4 41 4E C1           
+  11B0    54 4E D0 45           L11B0:   DB 054H, 04EH, 0D0H, 045H, 045H, 04BH, 0CCH, 045H
+  11B4    45 4B CC 45           
+  11B8    4E D3 54 52           L11B8:   DB 04EH, 0D3H, 054H, 052H, 024H, 0D6H, 041H, 04CH
+  11BC    24 D6 41 4C           
+  11C0    C1 53 43 C3           L11C0:   DB 0C1H, 053H, 043H, 0C3H, 048H, 052H, 024H, 0CCH
+  11C4    48 52 24 CC           
+  11C8    45 46 54 24           L11C8:   DB 045H, 046H, 054H, 024H, 0D2H, 049H, 047H, 048H
+  11CC    D2 49 47 48           
+  11D0    54 24 CD 49           L11D0:   DB 054H, 024H, 0CDH, 049H, 044H, 024H, 0D3H, 049H
+  11D4    44 24 D3 49           
+  11D8    5A 45 C9 4E           L11D8:   DB 05AH, 045H, 0C9H, 04EH, 043H, 048H, 0CBH, 042H
+  11DC    43 48 CB 42           
+  11E0    44 C5 52 52           L11E0:   DB 044H, 0C5H, 052H, 052H, 0D0H, 049H, 080H, 080H
+  11E4    D0 49 80 80           
+  11E8    01 17 30 16           L11E8:   DB 001H, 017H, 030H, 016H, 02DH, 01BH, 085H, 018H
+  11EC    2D 1B 85 18           
+  11F0    E5 2B 56 1A           L11F0:   DB 0E5H, 02BH, 056H, 01AH, 04EH, 01DH, 07EH, 01AH
+  11F4    4E 1D 7E 1A           
+  11F8    9A 18 2E 18           L11F8:   DB 09AH, 018H, 02EH, 018H, 012H, 018H, 053H, 019H
+  11FC    12 18 53 19           
+  1200    2D 17 1D 18           L1200:   DB 02DH, 017H, 01DH, 018H, 062H, 018H, 000H, 02CH
+  1204    62 18 00 2C           
+  1208    87 18 FF 16           L1208:   DB 087H, 018H, 0FFH, 016H, 01DH, 022H, 0F0H, 018H
+  120C    1D 22 F0 18           
+  1210    72 15 23 22           L1210:   DB 072H, 015H, 023H, 022H, 008H, 01FH, 067H, 022H
+  1214    08 1F 67 22           
+  1218    B2 19 46 17           L1218:   DB 0B2H, 019H, 046H, 017H, 07EH, 015H, 0B0H, 017H
+  121C    7E 15 B0 17           
+  1220    2E 23 3F 2B           L1220:   DB 02EH, 023H, 03FH, 02BH, 00AH, 014H, 0A6H, 012H
+  1224    0A 14 A6 12           
+  1228    4C 18 79 B8           L1228:   DB 04CH, 018H, 079H, 0B8H, 023H, 079H, 0C8H, 023H
+  122C    23 79 C8 23           
+  1230    7F 77 28 7C           L1230:   DB 07FH, 077H, 028H, 07CH, 0F9H, 024H, 07CH, 04BH
+  1234    F9 24 7C 4B           
+  1238    25 50 AC 1C           L1238:   DB 025H, 050H, 0ACH, 01CH, 046H, 0ABH, 01CH, 003H
+  123C    46 AB 1C 03           
+  1240    26 C2 26 19           L1240:   DB 026H, 0C2H, 026H, 019H, 026H, 0FCH, 022H, 012H
+  1244    26 FC 22 12           
+  1248    22 01 1F 6E           L1248:   DB 022H, 001H, 01FH, 06EH, 028H, 080H, 022H, 0BAH
+  124C    28 80 22 BA           
+  1250    24 BB 28 38           L1250:   DB 024H, 0BBH, 028H, 038H, 029H, 03EH, 029H, 0FBH
+  1254    29 3E 29 FB           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+
+
+  1258    28 10 29 60           L1258:   DB 028H, 010H, 029H, 060H, 022H, 057H, 021H, 086H
+  125C    22 57 21 86           
+  1260    1F ED 21 66           L1260:   DB 01FH, 0EDH, 021H, 066H, 021H, 077H, 021H, 087H
+  1264    21 77 21 87           
+  1268    21 B6 21 BF           L1268:   DB 021H, 0B6H, 021H, 0BFH, 021H, 0CDH, 01EH, 08DH
+  126C    21 CD 1E 8D           
+  1270    12 85 12 92           L1270:   DB 012H, 085H, 012H, 092H, 012H, 098H, 012H, 052H
+  1274    12 98 12 52           
+  1278    C7 4F 80 00           L1278:   DB 0C7H, 04FH, 080H, 000H, 000H, 000H, 020H, 000H
+  127C    00 00 20 00           
+  1280    00 FE FF 00           L1280:   DB 000H, 0FEH, 0FFH, 000H, 030H, 0CDH, 0F7H, 02BH
+  1284    30 CD F7 2B           
+  1288    38 0B AF 18           L1288:   DB 038H, 00BH, 0AFH, 018H, 008H, 0CDH, 0CCH, 02AH
+  128C    08 CD CC 2A           
+  1290    18 03 3A 85           L1290:   DB 018H, 003H, 03AH, 085H, 00CH, 0C3H, 004H, 01FH
+  1294    0C C3 04 1F           
+  1298    01 49 82 11           L1298:   DB 001H, 049H, 082H, 011H, 0DBH, 00FH, 0C3H, 035H
+  129C    DB 0F C3 35           
+  12A0    26 00 00 00           L12A0:   DB 026H, 000H, 000H, 000H, 000H, 000H, 0CDH, 050H
+  12A4    00 00 CD 50           
+  12A8    22 2F 32 86           L12A8:   DB 022H, 02FH, 032H, 086H, 00CH, 0C9H, 021H, 004H
+  12AC    0C C9 21 04           
+  12B0    00 39 7E 23           L12B0:   DB 000H, 039H, 07EH, 023H, 0FEH, 081H, 0C0H, 04EH
+  12B4    FE 81 C0 4E           
+  12B8    23 46 23 E5           L12B8:   DB 023H, 046H, 023H, 0E5H, 060H, 069H, 07AH, 0B3H
+  12BC    60 69 7A B3           
+  12C0    EB 28 03 EB           L12C0:   DB 0EBH, 028H, 003H, 0EBH, 0EDH, 052H, 001H, 00DH
+  12C4    ED 52 01 0D           
+  12C8    00 E1 C8 09           L12C8:   DB 000H, 0E1H, 0C8H, 009H, 018H, 0E4H, 0CDH, 0EBH
+  12CC    18 E4 CD EB           
+  12D0    12 C5 E3 C1           L12D0:   DB 012H, 0C5H, 0E3H, 0C1H, 0CDH, 046H, 015H, 07EH
+  12D4    CD 46 15 7E           
+  12D8    02 C8 0B 2B           L12D8:   DB 002H, 0C8H, 00BH, 02BH, 018H, 0F6H, 0AFH, 047H
+  12DC    18 F6 AF 47           
+  12E0    E5 21 30 0D           L12E0:   DB 0E5H, 021H, 030H, 00DH, 009H, 009H, 0B7H, 0EDH
+  12E4    09 09 B7 ED           
+  12E8    72 18 11 E5           L12E8:   DB 072H, 018H, 011H, 0E5H, 0D5H, 011H, 0D0H, 0FFH
+  12EC    D5 11 D0 FF           
+  12F0    EB B7 ED 52           L12F0:   DB 0EBH, 0B7H, 0EDH, 052H, 038H, 008H, 0EDH, 05BH
+  12F4    38 08 ED 5B           
+  12F8    88 0C 19 D1           L12F8:   DB 088H, 00CH, 019H, 0D1H, 0E1H, 0D8H, 01EH, 007H
+  12FC    E1 D8 1E 07           
+  1300    18 17 2A AA           L1300:   DB 018H, 017H, 02AH, 0AAH, 00CH, 022H, 08AH, 00CH
+  1304    0C 22 8A 0C           
+  1308    1E 02 01 1E           L1308:   DB 01EH, 002H, 001H, 01EH, 014H, 001H, 01EH, 00BH
+  130C    14 01 1E 0B           
+  1310    01 1E 01 01           L1310:   DB 001H, 01EH, 001H, 001H, 01EH, 00AH, 001H, 01EH
+  1314    1E 0A 01 1E           
+  1318    12 7B 32 85           L1318:   DB 012H, 07BH, 032H, 085H, 00CH, 03AH, 084H, 00CH
+  131C    0C 3A 84 0C           
+  1320    B7 C2 27 19           L1320:   DB 0B7H, 0C2H, 027H, 019H, 0CDH, 030H, 014H, 0CDH
+  1324    CD 30 14 CD           
+  1328    0E 1A 21 65           L1328:   DB 00EH, 01AH, 021H, 065H, 010H, 07EH, 023H, 0CBH
+  132C    10 7E 23 CB           
+  1330    7F 28 FA 1D           L1330:   DB 07FH, 028H, 0FAH, 01DH, 020H, 0F7H, 0E6H, 07FH
+  1334    20 F7 E6 7F           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+
+
+  1338    CD 5C 15 7E           L1338:   DB 0CDH, 05CH, 015H, 07EH, 023H, 0CBH, 07FH, 028H
+  133C    23 CB 7F 28           
+  1340    F5 CD F0 2A           L1340:   DB 0F5H, 0CDH, 0F0H, 02AH, 020H, 045H, 072H, 072H
+  1344    20 45 72 72           
+  1348    6F F2 2A 8A           L1348:   DB 06FH, 0F2H, 02AH, 08AH, 00CH, 07CH, 0A5H, 03CH
+  134C    0C 7C A5 3C           
+  1350    C4 7A 27 3E           L1350:   DB 0C4H, 07AH, 027H, 03EH, 0C1H, 0CDH, 0F0H, 02AH
+  1354    C1 CD F0 2A           
+  1358    0D 4F 6B 8D           L1358:   DB 00DH, 04FH, 06BH, 08DH, 021H, 0FFH, 0FFH, 0FDH
+  135C    21 FF FF FD           
+  1360    21 5C 13 22           L1360:   DB 021H, 05CH, 013H, 022H, 08AH, 00CH, 03EH, 05DH
+  1364    8A 0C 3E 5D           
+  1368    CD 12 15 38           L1368:   DB 0CDH, 012H, 015H, 038H, 0E8H, 0CDH, 0D8H, 016H
+  136C    E8 CD D8 16           
+  1370    28 EA F5 CD           L1370:   DB 028H, 0EAH, 0F5H, 0CDH, 08CH, 017H, 0D5H, 0CDH
+  1374    8C 17 D5 CD           
+  1378    49 14 47 D1           L1378:   DB 049H, 014H, 047H, 0D1H, 0F1H, 0D2H, 0B0H, 016H
+  137C    F1 D2 B0 16           
+  1380    D5 C5 AF 32           L1380:   DB 0D5H, 0C5H, 0AFH, 032H, 0ADH, 00CH, 0CDH, 0D8H
+  1384    AD 0C CD D8           
+  1388    16 B7 F5 CD           L1388:   DB 016H, 0B7H, 0F5H, 0CDH, 0ECH, 013H, 038H, 006H
+  138C    EC 13 38 06           
+  1390    F1 F5 CA 47           L1390:   DB 0F1H, 0F5H, 0CAH, 047H, 018H, 0B7H, 0C5H, 030H
+  1394    18 B7 C5 30           
+  1398    12 EB 2A B7           L1398:   DB 012H, 0EBH, 02AH, 0B7H, 00CH, 0B7H, 0EDH, 052H
+  139C    0C B7 ED 52           
+  13A0    E5 EB 50 59           L13A0:   DB 0E5H, 0EBH, 050H, 059H, 0C1H, 0EDH, 0B0H, 0EDH
+  13A4    C1 ED B0 ED           
+  13A8    53 B7 0C D1           L13A8:   DB 053H, 0B7H, 00CH, 0D1H, 0F1H, 028H, 021H, 0EDH
+  13AC    F1 28 21 ED           
+  13B0    4B B7 0C E1           L13B0:   DB 04BH, 0B7H, 00CH, 0E1H, 009H, 0E5H, 0CDH, 0CEH
+  13B4    09 E5 CD CE           
+  13B8    12 E1 22 B7           L13B8:   DB 012H, 0E1H, 022H, 0B7H, 00CH, 0EBH, 074H, 0D1H
+  13BC    0C EB 74 D1           
+  13C0    23 23 73 23           L13C0:   DB 023H, 023H, 073H, 023H, 072H, 023H, 011H, 0D5H
+  13C4    72 23 11 D5           
+  13C8    0C 1A 77 23           L13C8:   DB 00CH, 01AH, 077H, 023H, 013H, 0B7H, 020H, 0F9H
+  13CC    13 B7 20 F9           
+  13D0    CD 16 14 23           L13D0:   DB 0CDH, 016H, 014H, 023H, 0EBH, 062H, 06BH, 07EH
+  13D4    EB 62 6B 7E           
+  13D8    23 B6 28 0E           L13D8:   DB 023H, 0B6H, 028H, 00EH, 023H, 023H, 023H, 0AFH
+  13DC    23 23 23 AF           
+  13E0    47 4F ED B1           L13E0:   DB 047H, 04FH, 0EDH, 0B1H, 0EBH, 073H, 023H, 072H
+  13E4    EB 73 23 72           
+  13E8    18 EB FD E9           L13E8:   DB 018H, 0EBH, 0FDH, 0E9H, 02AH, 08CH, 00CH, 044H
+  13EC    2A 8C 0C 44           
+  13F0    4D 7E 23 B6           L13F0:   DB 04DH, 07EH, 023H, 0B6H, 02BH, 0C8H, 023H, 023H
+  13F4    2B C8 23 23           
+  13F8    7E 23 66 6F           L13F8:   DB 07EH, 023H, 066H, 06FH, 0EDH, 052H, 060H, 069H
+  13FC    ED 52 60 69           
+  1400    7E 23 66 6F           L1400:   DB 07EH, 023H, 066H, 06FH, 03FH, 0C8H, 03FH, 0D0H
+  1404    3F C8 3F D0           
+  1408    18 E5 C0 2A           L1408:   DB 018H, 0E5H, 0C0H, 02AH, 08CH, 00CH, 0AFH, 077H
+  140C    8C 0C AF 77           
+  1410    23 77 23 22           L1410:   DB 023H, 077H, 023H, 022H, 0B7H, 00CH, 02AH, 08CH
+  1414    B7 0C 2A 8C           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+
+
+  1418    0C 2B 22 AF           L1418:   DB 00CH, 02BH, 022H, 0AFH, 00CH, 02AH, 092H, 00CH
+  141C    0C 2A 92 0C           
+  1420    22 A6 0C AF           L1420:   DB 022H, 0A6H, 00CH, 0AFH, 0CDH, 02DH, 017H, 02AH
+  1424    CD 2D 17 2A           
+  1428    B7 0C 22 B9           L1428:   DB 0B7H, 00CH, 022H, 0B9H, 00CH, 022H, 0BBH, 00CH
+  142C    0C 22 BB 0C           
+  1430    C1 31 00 0E           L1430:   DB 0C1H, 031H, 000H, 00EH, 021H, 096H, 00CH, 022H
+  1434    21 96 0C 22           
+  1438    94 0C AF 6F           L1438:   DB 094H, 00CH, 0AFH, 06FH, 067H, 022H, 0B5H, 00CH
+  143C    67 22 B5 0C           
+  1440    32 AC 0C E5           L1440:   DB 032H, 0ACH, 00CH, 0E5H, 0C5H, 02AH, 0AFH, 00CH
+  1444    C5 2A AF 0C           
+  1448    C9 AF 32 91           L1448:   DB 0C9H, 0AFH, 032H, 091H, 00CH, 00EH, 005H, 011H
+  144C    0C 0E 05 11           
+  1450    D5 0C AF 08           L1450:   DB 0D5H, 00CH, 0AFH, 008H, 07EH, 0FEH, 020H, 028H
+  1454    7E FE 20 28           
+  1458    7C 47 FE 22           L1458:   DB 07CH, 047H, 0FEH, 022H, 0CAH, 0FDH, 014H, 0B7H
+  145C    CA FD 14 B7           
+  1460    CA 03 15 3A           L1460:   DB 0CAH, 003H, 015H, 03AH, 091H, 00CH, 0B7H, 07EH
+  1464    91 0C B7 7E           
+  1468    20 6B FE 30           L1468:   DB 020H, 06BH, 0FEH, 030H, 038H, 004H, 0FEH, 03CH
+  146C    38 04 FE 3C           
+  1470    38 63 FE 3F           L1470:   DB 038H, 063H, 0FEH, 03FH, 03EH, 098H, 028H, 05DH
+  1474    3E 98 28 5D           
+  1478    D5 11 E1 10           L1478:   DB 0D5H, 011H, 0E1H, 010H, 0C5H, 001H, 0CAH, 014H
+  147C    C5 01 CA 14           
+  1480    C5 06 7F 7E           L1480:   DB 0C5H, 006H, 07FH, 07EH, 0CDH, 0A9H, 024H, 077H
+  1484    CD A9 24 77           
+  1488    4E EB 23 B6           L1488:   DB 04EH, 0EBH, 023H, 0B6H, 0F2H, 08AH, 014H, 004H
+  148C    F2 8A 14 04           
+  1490    7E E6 7F 20           L1490:   DB 07EH, 0E6H, 07FH, 020H, 00BH, 008H, 0B7H, 0C0H
+  1494    0B 08 B7 C0           
+  1498    EB 3D 08 11           L1498:   DB 0EBH, 03DH, 008H, 011H, 07FH, 00EH, 018H, 0E1H
+  149C    7F 0E 18 E1           
+  14A0    B9 20 E7 EB           L14A0:   DB 0B9H, 020H, 0E7H, 0EBH, 0E5H, 013H, 01AH, 0B7H
+  14A4    E5 13 1A B7           
+  14A8    FA B8 14 4F           L14A8:   DB 0FAH, 0B8H, 014H, 04FH, 023H, 07EH, 0CDH, 0A9H
+  14AC    23 7E CD A9           
+  14B0    24 00 B9 28           L14B0:   DB 024H, 000H, 0B9H, 028H, 0F0H, 0E1H, 018H, 0D0H
+  14B4    F0 E1 18 D0           
+  14B8    F1 08 28 0A           L14B8:   DB 0F1H, 008H, 028H, 00AH, 008H, 079H, 0FEH, 028H
+  14BC    08 79 FE 28           
+  14C0    20 05 CB F0           L14C0:   DB 020H, 005H, 0CBH, 0F0H, 008H, 000H, 008H, 048H
+  14C4    08 00 08 48           
+  14C8    EB C9 EB 79           L14C8:   DB 0EBH, 0C9H, 0EBH, 079H, 0C1H, 0D1H, 008H, 028H
+  14CC    C1 D1 08 28           
+  14D0    03 12 13 0C           L14D0:   DB 003H, 012H, 013H, 00CH, 008H, 023H, 012H, 013H
+  14D4    08 23 12 13           
+  14D8    0C D6 3A 28           L14D8:   DB 00CH, 0D6H, 03AH, 028H, 009H, 008H, 0C2H, 052H
+  14DC    09 08 C2 52           
+  14E0    14 08 FE 49           L14E0:   DB 014H, 008H, 0FEH, 049H, 020H, 003H, 032H, 091H
+  14E4    20 03 32 91           
+  14E8    0C FE 56 28           L14E8:   DB 00CH, 0FEH, 056H, 028H, 007H, 0E6H, 0FEH, 0FEH
+  14EC    07 E6 FE FE           
+  14F0    62 C2 52 14           L14F0:   DB 062H, 0C2H, 052H, 014H, 006H, 000H, 07EH, 0B7H
+  14F4    06 00 7E B7           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+
+
+  14F8    28 09 B8 28           L14F8:   DB 028H, 009H, 0B8H, 028H, 0D8H, 023H, 012H, 00CH
+  14FC    D8 23 12 0C           
+  1500    13 18 F3 21           L1500:   DB 013H, 018H, 0F3H, 021H, 0D4H, 00CH, 012H, 013H
+  1504    D4 0C 12 13           
+  1508    12 13 12 C9           L1508:   DB 012H, 013H, 012H, 0C9H, 0CDH, 0F0H, 02AH, 0BFH
+  150C    CD F0 2A BF           
+  1510    3E 20 21 D5           L1510:   DB 03EH, 020H, 021H, 0D5H, 00CH, 0CDH, 05CH, 015H
+  1514    0C CD 5C 15           
+  1518    CD CC 2A D8           L1518:   DB 0CDH, 0CCH, 02AH, 0D8H, 077H, 0FEH, 008H, 020H
+  151C    77 FE 08 20           
+  1520    09 7D FE D5           L1520:   DB 009H, 07DH, 0FEH, 0D5H, 028H, 0F2H, 07EH, 02BH
+  1524    28 F2 7E 2B           
+  1528    18 EB FE 0D           L1528:   DB 018H, 0EBH, 0FEH, 00DH, 0CAH, 004H, 01AH, 07DH
+  152C    CA 04 1A 7D           
+  1530    FE 34 28 E4           L1530:   DB 0FEH, 034H, 028H, 0E4H, 07EH, 0FEH, 020H, 038H
+  1534    7E FE 20 38           
+  1538    DF 23 32 A2           L1538:   DB 0DFH, 023H, 032H, 0A2H, 00CH, 018H, 0D6H, 000H
+  153C    0C 18 D6 00           
+  1540    00 00 00 00           L1540:   DB 000H, 000H, 000H, 000H, 000H, 000H, 07CH, 092H
+  1544    00 00 7C 92           
+  1548    C0 7D 93 C9           L1548:   DB 0C0H, 07DH, 093H, 0C9H, 07EH, 0FEH, 02CH, 018H
+  154C    7E FE 2C 18           
+  1550    05 7E E3 BE           L1550:   DB 005H, 07EH, 0E3H, 0BEH, 023H, 0E3H, 0CAH, 0D8H
+  1554    23 E3 CA D8           
+  1558    16 C3 08 13           L1558:   DB 016H, 0C3H, 008H, 013H, 0E5H, 021H, 08EH, 00CH
+  155C    E5 21 8E 0C           
+  1560    FE 0D 20 02           L1560:   DB 0FEH, 00DH, 020H, 002H, 036H, 000H, 0FEH, 020H
+  1564    36 00 FE 20           
+  1568    38 04 34 CD           L1568:   DB 038H, 004H, 034H, 0CDH, 074H, 022H, 0E1H, 0C3H
+  156C    74 22 E1 C3           
+  1570    F4 2B CD 61           L1570:   DB 0F4H, 02BH, 0CDH, 061H, 017H, 0E5H, 021H, 07CH
+  1574    17 E5 21 7C           
+  1578    15 E5 EB E9           L1578:   DB 015H, 0E5H, 0EBH, 0E9H, 0E1H, 0C9H, 0CDH, 08CH
+  157C    E1 C9 CD 8C           
+  1580    17 C1 D5 11           L1580:   DB 017H, 0C1H, 0D5H, 011H, 0FFH, 0FFH, 028H, 006H
+  1584    FF FF 28 06           
+  1588    CD 4C 15 CD           L1588:   DB 0CDH, 04CH, 015H, 0CDH, 08CH, 017H, 0EBH, 022H
+  158C    8C 17 EB 22           
+  1590    A8 0C D1 E5           L1590:   DB 0A8H, 00CH, 0D1H, 0E5H, 0C5H, 0C0H, 0C1H, 0CDH
+  1594    C5 C0 C1 CD           
+  1598    EC 13 C5 E1           L1598:   DB 0ECH, 013H, 0C5H, 0E1H, 04EH, 023H, 046H, 023H
+  159C    4E 23 46 23           
+  15A0    78 B1 CA 55           L15A0:   DB 078H, 0B1H, 0CAH, 055H, 013H, 0E3H, 07CH, 0B5H
+  15A4    13 E3 7C B5           
+  15A8    20 09 CD CC           L15A8:   DB 020H, 009H, 0CDH, 0CCH, 02AH, 0DAH, 055H, 013H
+  15AC    2A DA 55 13           
+  15B0    2A A8 0C 2B           L15B0:   DB 02AH, 0A8H, 00CH, 02BH, 0E3H, 0CDH, 0F8H, 016H
+  15B4    E3 CD F8 16           
+  15B8    C5 CD BE 15           L15B8:   DB 0C5H, 0CDH, 0BEH, 015H, 018H, 0DDH, 0CDH, 009H
+  15BC    18 DD CD 09           
+  15C0    1A 5E 23 56           L15C0:   DB 01AH, 05EH, 023H, 056H, 023H, 0E5H, 0CDH, 082H
+  15C4    23 E5 CD 82           
+  15C8    27 3E 20 E1           L15C8:   DB 027H, 03EH, 020H, 0E1H, 0CDH, 05CH, 015H, 07EH
+  15CC    CD 5C 15 7E           
+  15D0    FE 22 20 0E           L15D0:   DB 0FEH, 022H, 020H, 00EH, 0CDH, 05CH, 015H, 023H
+  15D4    CD 5C 15 23           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+
+
+  15D8    7E FE 22 23           L15D8:   DB 07EH, 0FEH, 022H, 023H, 028H, 0EEH, 02BH, 0B7H
+  15DC    28 EE 2B B7           
+  15E0    20 F2 B7 23           L15E0:   DB 020H, 0F2H, 0B7H, 023H, 0C8H, 0FEH, 0FFH, 028H
+  15E4    C8 FE FF 28           
+  15E8    23 B7 F2 CC           L15E8:   DB 023H, 0B7H, 0F2H, 0CCH, 015H, 011H, 0E2H, 010H
+  15EC    15 11 E2 10           
+  15F0    D6 7F 47 1A           L15F0:   DB 0D6H, 07FH, 047H, 01AH, 013H, 0B7H, 0F2H, 0F3H
+  15F4    13 B7 F2 F3           
+  15F8    15 E6 7F 28           L15F8:   DB 015H, 0E6H, 07FH, 028H, 018H, 010H, 0F4H, 0E6H
+  15FC    18 10 F4 E6           
+  1600    7F CD 5C 15           L1600:   DB 07FH, 0CDH, 05CH, 015H, 01AH, 013H, 0B7H, 0F2H
+  1604    1A 13 B7 F2           
+  1608    FF 15 18 C3           L1608:   DB 0FFH, 015H, 018H, 0C3H, 07EH, 023H, 0E6H, 0BFH
+  160C    7E 23 E6 BF           
+  1610    11 80 0E 18           L1610:   DB 011H, 080H, 00EH, 018H, 0DBH, 02BH, 07EH, 023H
+  1614    DB 2B 7E 23           
+  1618    E6 7F F6 40           L1618:   DB 0E6H, 07FH, 0F6H, 040H, 016H, 000H, 05FH, 0CDH
+  161C    16 00 5F CD           
+  1620    F0 2A 3F BF           L1620:   DB 0F0H, 02AH, 03FH, 0BFH, 0E5H, 0CDH, 082H, 027H
+  1624    E5 CD 82 27           
+  1628    E1 CD F0 2A           L1628:   DB 0E1H, 0CDH, 0F0H, 02AH, 0A0H, 018H, 0A0H, 000H
+  162C    A0 18 A0 00           
+  1630    3E 64 32 AC           L1630:   DB 03EH, 064H, 032H, 0ACH, 00CH, 0CDH, 09AH, 018H
+  1634    0C CD 9A 18           
+  1638    E3 CD AE 12           L1638:   DB 0E3H, 0CDH, 0AEH, 012H, 0D1H, 020H, 002H, 009H
+  163C    D1 20 02 09           
+  1640    F9 EB 0E 08           L1640:   DB 0F9H, 0EBH, 00EH, 008H, 0CDH, 0DEH, 012H, 0E5H
+  1644    CD DE 12 E5           
+  1648    CD 85 18 E3           L1648:   DB 0CDH, 085H, 018H, 0E3H, 0E5H, 02AH, 08AH, 00CH
+  164C    E5 2A 8A 0C           
+  1650    E3 CD 7A 1B           L1650:   DB 0E3H, 0CDH, 07AH, 01BH, 0CDH, 051H, 015H, 0A2H
+  1654    CD 51 15 A2           
+  1658    CD 77 1B E5           L1658:   DB 0CDH, 077H, 01BH, 0E5H, 0CDH, 05FH, 026H, 0E1H
+  165C    CD 5F 26 E1           
+  1660    C5 D5 01 00           L1660:   DB 0C5H, 0D5H, 001H, 000H, 081H, 051H, 05AH, 07EH
+  1664    81 51 5A 7E           
+  1668    FE A7 3E 01           L1668:   DB 0FEH, 0A7H, 03EH, 001H, 020H, 00EH, 0CDH, 0D8H
+  166C    20 0E CD D8           
+  1670    16 CD 77 1B           L1670:   DB 016H, 0CDH, 077H, 01BH, 0E5H, 0CDH, 05FH, 026H
+  1674    E5 CD 5F 26           
+  1678    CD F4 25 E1           L1678:   DB 0CDH, 0F4H, 025H, 0E1H, 0C5H, 0D5H, 0F5H, 033H
+  167C    C5 D5 F5 33           
+  1680    E5 2A AF 0C           L1680:   DB 0E5H, 02AH, 0AFH, 00CH, 0E3H, 006H, 081H, 0C5H
+  1684    E3 06 81 C5           
+  1688    33 CD F8 16           L1688:   DB 033H, 0CDH, 0F8H, 016H, 022H, 0AFH, 00CH, 07EH
+  168C    22 AF 0C 7E           
+  1690    FE 3A 28 1C           L1690:   DB 0FEH, 03AH, 028H, 01CH, 0EDH, 05BH, 08CH, 00CH
+  1694    ED 5B 8C 0C           
+  1698    1B B7 28 06           L1698:   DB 01BH, 0B7H, 028H, 006H, 0CDH, 046H, 015H, 0C2H
+  169C    CD 46 15 C2           
+  16A0    08 13 23 7E           L16A0:   DB 008H, 013H, 023H, 07EH, 023H, 0B6H, 028H, 061H
+  16A4    23 B6 28 61           
+  16A8    23 5E 23 56           L16A8:   DB 023H, 05EH, 023H, 056H, 0EDH, 053H, 08AH, 00CH
+  16AC    ED 53 8A 0C           
+  16B0    CD D8 16 11           L16B0:   DB 0CDH, 0D8H, 016H, 011H, 089H, 016H, 0D5H, 0EDH
+  16B4    89 16 D5 ED           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+
+
+  16B8    73 A0 0C C8           L16B8:   DB 073H, 0A0H, 00CH, 0C8H, 0FEH, 0FFH, 028H, 027H
+  16BC    FE FF 28 27           
+  16C0    D6 80 DA 9A           L16C0:   DB 0D6H, 080H, 0DAH, 09AH, 018H, 0FEH, 021H, 0D2H
+  16C4    18 FE 21 D2           
+  16C8    08 13 07 11           L16C8:   DB 008H, 013H, 007H, 011H, 0E8H, 011H, 006H, 000H
+  16CC    E8 11 06 00           
+  16D0    4F EB 09 4E           L16D0:   DB 04FH, 0EBH, 009H, 04EH, 023H, 046H, 0C5H, 0EBH
+  16D4    23 46 C5 EB           
+  16D8    23 7E FE 20           L16D8:   DB 023H, 07EH, 0FEH, 020H, 028H, 0FAH, 0FEH, 03AH
+  16DC    28 FA FE 3A           
+  16E0    D0 FE 30 3F           L16E0:   DB 0D0H, 0FEH, 030H, 03FH, 03CH, 03DH, 0C9H, 0CDH
+  16E4    3C 3D C9 CD           
+  16E8    D8 16 D6 80           L16E8:   DB 0D8H, 016H, 0D6H, 080H, 0DAH, 008H, 013H, 087H
+  16EC    DA 08 13 87           
+  16F0    FA 08 13 11           L16F0:   DB 0FAH, 008H, 013H, 011H, 080H, 00FH, 018H, 0D6H
+  16F4    80 0F 18 D6           
+  16F8    CD 00 2B D0           L16F8:   DB 0CDH, 000H, 02BH, 0D0H, 000H, 0FEH, 01BH, 0C0H
+  16FC    00 FE 1B C0           
+  1700    F6 C0 22 AF           L1700:   DB 0F6H, 0C0H, 022H, 0AFH, 00CH, 021H, 0F6H, 0FFH
+  1704    0C 21 F6 FF           
+  1708    C1 2A 8A 0C           L1708:   DB 0C1H, 02AH, 08AH, 00CH, 0F5H, 07DH, 0A4H, 03CH
+  170C    F5 7D A4 3C           
+  1710    28 09 22 B3           L1710:   DB 028H, 009H, 022H, 0B3H, 00CH, 02AH, 0AFH, 00CH
+  1714    0C 2A AF 0C           
+  1718    22 B5 0C CD           L1718:   DB 022H, 0B5H, 00CH, 0CDH, 00EH, 01AH, 0F1H, 0CAH
+  171C    0E 1A F1 CA           
+  1720    55 13 CD F0           L1720:   DB 055H, 013H, 0CDH, 0F0H, 02AH, 042H, 072H, 065H
+  1724    2A 42 72 65           
+  1728    61 EB C3 4A           L1728:   DB 061H, 0EBH, 0C3H, 04AH, 013H, 0EDH, 05BH, 08CH
+  172C    13 ED 5B 8C           
+  1730    0C 28 0D CD           L1730:   DB 00CH, 028H, 00DH, 0CDH, 08CH, 017H, 0E5H, 0CDH
+  1734    8C 17 E5 CD           
+  1738    EC 13 50 59           L1738:   DB 0ECH, 013H, 050H, 059H, 0E1H, 0D2H, 08BH, 018H
+  173C    E1 D2 8B 18           
+  1740    1B ED 53 BD           L1740:   DB 01BH, 0EDH, 053H, 0BDH, 00CH, 0C9H, 02AH, 0B5H
+  1744    0C C9 2A B5           
+  1748    0C 7C B5 1E           L1748:   DB 00CH, 07CH, 0B5H, 01EH, 011H, 0CAH, 009H, 013H
+  174C    11 CA 09 13           
+  1750    ED 5B B3 0C           L1750:   DB 0EDH, 05BH, 0B3H, 00CH, 0EDH, 053H, 08AH, 00CH
+  1754    ED 53 8A 0C           
+  1758    C9 7E FE 41           L1758:   DB 0C9H, 07EH, 0FEH, 041H, 0D8H, 0FEH, 05BH, 03FH
+  175C    D8 FE 5B 3F           
+  1760    C9 CD 77 1B           L1760:   DB 0C9H, 0CDH, 077H, 01BH, 018H, 00CH, 0CDH, 0D8H
+  1764    18 0C CD D8           
+  1768    16 CD 77 1B           L1768:   DB 016H, 0CDH, 077H, 01BH, 0CDH, 0F4H, 025H, 0FAH
+  176C    CD F4 25 FA           
+  1770    87 17 3A C2           L1770:   DB 087H, 017H, 03AH, 0C2H, 00CH, 0FEH, 091H, 0DAH
+  1774    0C FE 91 DA           
+  1778    97 26 01 80           L1778:   DB 097H, 026H, 001H, 080H, 090H, 011H, 000H, 000H
+  177C    90 11 00 00           
+  1780    E5 CD 6B 26           L1780:   DB 0E5H, 0CDH, 06BH, 026H, 0E1H, 051H, 0C8H, 01EH
+  1784    E1 51 C8 1E           
+  1788    05 C3 19 13           L1788:   DB 005H, 0C3H, 019H, 013H, 02BH, 011H, 000H, 000H
+  178C    2B 11 00 00           
+  1790    CD D8 16 D0           L1790:   DB 0CDH, 0D8H, 016H, 0D0H, 0E5H, 0F5H, 021H, 098H
+  1794    E5 F5 21 98           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-18
+
+
+  1798    19 B7 ED 52           L1798:   DB 019H, 0B7H, 0EDH, 052H, 0DAH, 008H, 013H, 062H
+  179C    DA 08 13 62           
+  17A0    6B 29 29 19           L17A0:   DB 06BH, 029H, 029H, 019H, 029H, 0F1H, 0D6H, 030H
+  17A4    29 F1 D6 30           
+  17A8    5F 16 00 19           L17A8:   DB 05FH, 016H, 000H, 019H, 0EBH, 0E1H, 018H, 0E0H
+  17AC    EB E1 18 E0           
+  17B0    28 40 FE 25           L17B0:   DB 028H, 040H, 0FEH, 025H, 028H, 03FH, 0CDH, 061H
+  17B4    28 3F CD 61           
+  17B8    17 CD D9 16           L17B8:   DB 017H, 0CDH, 0D9H, 016H, 0E5H, 02AH, 092H, 00CH
+  17BC    E5 2A 92 0C           
+  17C0    28 10 E1 CD           L17C0:   DB 028H, 010H, 0E1H, 0CDH, 04CH, 015H, 0D5H, 0CDH
+  17C4    4C 15 D5 CD           
+  17C8    61 17 CD D9           L17C8:   DB 061H, 017H, 0CDH, 0D9H, 016H, 0C2H, 008H, 013H
+  17CC    16 C2 08 13           
+  17D0    E3 EB 7D 93           L17D0:   DB 0E3H, 0EBH, 07DH, 093H, 05FH, 07CH, 09AH, 057H
+  17D4    5F 7C 9A 57           
+  17D8    DA FE 12 E5           L17D8:   DB 0DAH, 0FEH, 012H, 0E5H, 02AH, 0B7H, 00CH, 001H
+  17DC    2A B7 0C 01           
+  17E0    28 00 09 B7           L17E0:   DB 028H, 000H, 009H, 0B7H, 0EDH, 052H, 0D2H, 0FEH
+  17E4    ED 52 D2 FE           
+  17E8    12 ED 53 88           L17E8:   DB 012H, 0EDH, 053H, 088H, 00CH, 0E1H, 022H, 092H
+  17EC    0C E1 22 92           
+  17F0    0C E1 C3 1A           L17F0:   DB 00CH, 0E1H, 0C3H, 01AH, 014H, 0D9H, 021H, 080H
+  17F4    14 D9 21 80           
+  17F8    0E 11 81 0E           L17F8:   DB 00EH, 011H, 081H, 00EH, 001H, 000H, 001H, 036H
+  17FC    01 00 01 36           
+  1800    80 ED B0 36           L1800:   DB 080H, 0EDH, 0B0H, 036H, 00BH, 0EBH, 036H, 013H
+  1804    0B EB 36 13           
+  1808    23 EB 0E 7E           L1808:   DB 023H, 0EBH, 00EH, 07EH, 0EDH, 0B0H, 0D9H, 023H
+  180C    ED B0 D9 23           
+  1810    C9 00 CA 16           L1810:   DB 0C9H, 000H, 0CAH, 016H, 014H, 0CDH, 01AH, 014H
+  1814    14 CD 1A 14           
+  1818    01 89 16 18           L1818:   DB 001H, 089H, 016H, 018H, 010H, 00EH, 003H, 0CDH
+  181C    10 0E 03 CD           
+  1820    DE 12 C1 E5           L1820:   DB 0DEH, 012H, 0C1H, 0E5H, 0E5H, 02AH, 08AH, 00CH
+  1824    E5 2A 8A 0C           
+  1828    E3 3E 8D F5           L1828:   DB 0E3H, 03EH, 08DH, 0F5H, 033H, 0C5H, 0CDH, 08CH
+  182C    33 C5 CD 8C           
+  1830    17 CD 87 18           L1830:   DB 017H, 0CDH, 087H, 018H, 0E5H, 02AH, 08AH, 00CH
+  1834    E5 2A 8A 0C           
+  1838    B7 ED 52 E1           L1838:   DB 0B7H, 0EDH, 052H, 0E1H, 023H, 0DCH, 0EFH, 013H
+  183C    23 DC EF 13           
+  1840    D4 EC 13 60           L1840:   DB 0D4H, 0ECH, 013H, 060H, 069H, 02BH, 0D8H, 01EH
+  1844    69 2B D8 1E           
+  1848    08 C3 19 13           L1848:   DB 008H, 0C3H, 019H, 013H, 0C0H, 016H, 0FFH, 0E5H
+  184C    C0 16 FF E5           
+  1850    DD E1 CD AE           L1850:   DB 0DDH, 0E1H, 0CDH, 0AEH, 012H, 0F9H, 0FEH, 08DH
+  1854    12 F9 FE 8D           
+  1858    20 11 E1 DD           L1858:   DB 020H, 011H, 0E1H, 0DDH, 0E3H, 021H, 089H, 016H
+  185C    E3 21 89 16           
+  1860    E3 C9 C0 16           L1860:   DB 0E3H, 0C9H, 0C0H, 016H, 0FFH, 0CDH, 0AEH, 012H
+  1864    FF CD AE 12           
+  1868    F9 FE 8D 1E           L1868:   DB 0F9H, 0FEH, 08DH, 01EH, 003H, 020H, 0DAH, 0E1H
+  186C    03 20 DA E1           
+  1870    22 8A 0C 23           L1870:   DB 022H, 08AH, 00CH, 023H, 07CH, 0B5H, 020H, 007H
+  1874    7C B5 20 07           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-19
+
+
+  1878    3A AD 0C B7           L1878:   DB 03AH, 0ADH, 00CH, 0B7H, 0C2H, 054H, 013H, 021H
+  187C    C2 54 13 21           
+  1880    89 16 E3 3E           L1880:   DB 089H, 016H, 0E3H, 03EH, 0E1H, 001H, 03AH, 00EH
+  1884    E1 01 3A 0E           
+  1888    00 06 00 79           L1888:   DB 000H, 006H, 000H, 079H, 048H, 047H, 07EH, 0B7H
+  188C    48 47 7E B7           
+  1890    C8 B8 C8 23           L1890:   DB 0C8H, 0B8H, 0C8H, 023H, 0FEH, 022H, 028H, 0F3H
+  1894    FE 22 28 F3           
+  1898    18 F4 CD 53           L1898:   DB 018H, 0F4H, 0CDH, 053H, 01DH, 0CDH, 051H, 015H
+  189C    1D CD 51 15           
+  18A0    B0 D5 3A 90           L18A0:   DB 0B0H, 0D5H, 03AH, 090H, 00CH, 0F5H, 0CDH, 08BH
+  18A4    0C F5 CD 8B           
+  18A8    1B F1 E3 22           L18A8:   DB 01BH, 0F1H, 0E3H, 022H, 0AFH, 00CH, 01FH, 0CDH
+  18AC    AF 0C 1F CD           
+  18B0    7C 1B 28 35           L18B0:   DB 07CH, 01BH, 028H, 035H, 0E5H, 02AH, 0BFH, 00CH
+  18B4    E5 2A BF 0C           
+  18B8    E5 23 23 5E           L18B8:   DB 0E5H, 023H, 023H, 05EH, 023H, 056H, 02AH, 08CH
+  18BC    23 56 2A 8C           
+  18C0    0C B7 ED 52           L18C0:   DB 00CH, 0B7H, 0EDH, 052H, 030H, 012H, 02AH, 088H
+  18C4    30 12 2A 88           
+  18C8    0C B7 ED 52           L18C8:   DB 00CH, 0B7H, 0EDH, 052H, 0D1H, 030H, 011H, 02AH
+  18CC    D1 30 11 2A           
+  18D0    B7 0C B7 ED           L18D0:   DB 0B7H, 00CH, 0B7H, 0EDH, 052H, 030H, 009H, 03EH
+  18D4    52 30 09 3E           
+  18D8    D1 CD 46 21           L18D8:   DB 0D1H, 0CDH, 046H, 021H, 0EBH, 0CDH, 096H, 01FH
+  18DC    EB CD 96 1F           
+  18E0    CD 46 21 E1           L18E0:   DB 0CDH, 046H, 021H, 0E1H, 0CDH, 041H, 026H, 0E1H
+  18E4    CD 41 26 E1           
+  18E8    C9 E5 CD 3E           L18E8:   DB 0C9H, 0E5H, 0CDH, 03EH, 026H, 0D1H, 0E1H, 0C9H
+  18EC    26 D1 E1 C9           
+  18F0    FE CC 28 1C           L18F0:   DB 0FEH, 0CCH, 028H, 01CH, 0CDH, 050H, 022H, 07EH
+  18F4    CD 50 22 7E           
+  18F8    47 FE 8D 28           L18F8:   DB 047H, 0FEH, 08DH, 028H, 005H, 0CDH, 051H, 015H
+  18FC    05 CD 51 15           
+  1900    89 2B 4B 0D           L1900:   DB 089H, 02BH, 04BH, 00DH, 078H, 0CAH, 0BCH, 016H
+  1904    78 CA BC 16           
+  1908    CD 8D 17 FE           L1908:   DB 0CDH, 08DH, 017H, 0FEH, 02CH, 0C0H, 018H, 0F3H
+  190C    2C C0 18 F3           
+  1910    CD D8 16 FE           L1910:   DB 0CDH, 0D8H, 016H, 0FEH, 089H, 028H, 005H, 0FEH
+  1914    89 28 05 FE           
+  1918    8D C2 08 13           L1918:   DB 08DH, 0C2H, 008H, 013H, 032H, 084H, 00CH, 0CDH
+  191C    32 84 0C CD           
+  1920    8D 17 ED 53           L1920:   DB 08DH, 017H, 0EDH, 053H, 0D1H, 00CH, 0C9H, 0EDH
+  1924    D1 0C C9 ED           
+  1928    7B A0 0C C1           L1928:   DB 07BH, 0A0H, 00CH, 0C1H, 0FEH, 08DH, 020H, 015H
+  192C    FE 8D 20 15           
+  1930    2A AF 0C F5           L1930:   DB 02AH, 0AFH, 00CH, 0F5H, 07EH, 0B7H, 020H, 004H
+  1934    7E B7 20 04           
+  1938    23 23 23 23           L1938:   DB 023H, 023H, 023H, 023H, 023H, 0F1H, 0E5H, 02AH
+  193C    23 F1 E5 2A           
+  1940    8A 0C E5 F5           L1940:   DB 08AH, 00CH, 0E5H, 0F5H, 033H, 0EDH, 05BH, 0D1H
+  1944    33 ED 5B D1           
+  1948    0C AF 32 84           L1948:   DB 00CH, 0AFH, 032H, 084H, 00CH, 0C5H, 0C3H, 040H
+  194C    0C C5 C3 40           
+  1950    18 00 00 CD           L1950:   DB 018H, 000H, 000H, 0CDH, 08BH, 01BH, 07EH, 0FEH
+  1954    8B 1B 7E FE           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-20
+
+
+  1958    89 28 05 CD           L1958:   DB 089H, 028H, 005H, 0CDH, 051H, 015H, 0A5H, 02BH
+  195C    51 15 A5 2B           
+  1960    CD 7A 1B CD           L1960:   DB 0CDH, 07AH, 01BH, 0CDH, 0F4H, 025H, 0CAH, 087H
+  1964    F4 25 CA 87           
+  1968    18 CD D8 16           L1968:   DB 018H, 0CDH, 0D8H, 016H, 0DAH, 02EH, 018H, 0C3H
+  196C    DA 2E 18 C3           
+  1970    BB 16 CD 4D           L1970:   DB 0BBH, 016H, 0CDH, 04DH, 022H, 0F5H, 0CDH, 04CH
+  1974    22 F5 CD 4C           
+  1978    15 CD 50 22           L1978:   DB 015H, 0CDH, 050H, 022H, 0E6H, 00FH, 020H, 002H
+  197C    E6 0F 20 02           
+  1980    C6 10 3D E6           L1980:   DB 0C6H, 010H, 03DH, 0E6H, 00FH, 007H, 007H, 007H
+  1984    0F 07 07 07           
+  1988    07 17 CB 12           L1988:   DB 007H, 017H, 0CBH, 012H, 017H, 0CBH, 012H, 05FH
+  198C    17 CB 12 5F           
+  1990    F1 FE 30 D2           L1990:   DB 0F1H, 0FEH, 030H, 0D2H, 087H, 017H, 0E5H, 02AH
+  1994    87 17 E5 2A           
+  1998    18 0C 36 29           L1998:   DB 018H, 00CH, 036H, 029H, 021H, 00AH, 008H, 019H
+  199C    21 0A 08 19           
+  19A0    5F 32 8E 0C           L19A0:   DB 05FH, 032H, 08EH, 00CH, 016H, 000H, 019H, 022H
+  19A4    16 00 19 22           
+  19A8    29 0C E1 CD           L19A8:   DB 029H, 00CH, 0E1H, 0CDH, 04CH, 015H, 02BH, 0CDH
+  19AC    4C 15 2B CD           
+  19B0    D8 16 28 55           L19B0:   DB 0D8H, 016H, 028H, 055H, 0C8H, 0FEH, 0A1H, 028H
+  19B4    C8 FE A1 28           
+  19B8    5C FE A4 28           L19B8:   DB 05CH, 0FEH, 0A4H, 028H, 058H, 0FEH, 040H, 028H
+  19BC    58 FE 40 28           
+  19C0    B1 E5 FE 2C           L19C0:   DB 0B1H, 0E5H, 0FEH, 02CH, 028H, 02AH, 0FEH, 03BH
+  19C4    28 2A FE 3B           
+  19C8    28 6A C1 CD           L19C8:   DB 028H, 06AH, 0C1H, 0CDH, 08BH, 01BH, 0E5H, 03AH
+  19CC    8B 1B E5 3A           
+  19D0    90 0C B7 20           L19D0:   DB 090H, 00CH, 0B7H, 020H, 015H, 0CDH, 08CH, 027H
+  19D4    15 CD 8C 27           
+  19D8    CD BA 1F 2A           L19D8:   DB 0CDH, 0BAH, 01FH, 02AH, 0BFH, 00CH, 03AH, 08EH
+  19DC    BF 0C 3A 8E           
+  19E0    0C 86 CD FC           L19E0:   DB 00CH, 086H, 0CDH, 0FCH, 01FH, 0CDH, 0F0H, 02AH
+  19E4    1F CD F0 2A           
+  19E8    A0 AF C4 FC           L19E8:   DB 0A0H, 0AFH, 0C4H, 0FCH, 01FH, 0E1H, 018H, 0BEH
+  19EC    1F E1 18 BE           
+  19F0    3A 87 0C 47           L19F0:   DB 03AH, 087H, 00CH, 047H, 03AH, 08EH, 00CH, 0B8H
+  19F4    3A 8E 0C B8           
+  19F8    D4 09 1A 30           L19F8:   DB 0D4H, 009H, 01AH, 030H, 037H, 0D6H, 010H, 030H
+  19FC    37 D6 10 30           
+  1A00    FC 2F 18 27           L1A00:   DB 0FCH, 02FH, 018H, 027H, 036H, 000H, 021H, 0D4H
+  1A04    36 00 21 D4           
+  1A08    0C 3E 0D C3           L1A08:   DB 00CH, 03EH, 00DH, 0C3H, 05CH, 015H, 03AH, 08EH
+  1A0C    5C 15 3A 8E           
+  1A10    0C B7 20 F5           L1A10:   DB 00CH, 0B7H, 020H, 0F5H, 0C9H, 0F5H, 0CDH, 04DH
+  1A14    C9 F5 CD 4D           
+  1A18    22 CD 51 15           L1A18:   DB 022H, 0CDH, 051H, 015H, 029H, 02BH, 0F1H, 0D6H
+  1A1C    29 2B F1 D6           
+  1A20    A4 E5 28 03           L1A20:   DB 0A4H, 0E5H, 028H, 003H, 03AH, 08EH, 00CH, 02FH
+  1A24    3A 8E 0C 2F           
+  1A28    83 30 09 3C           L1A28:   DB 083H, 030H, 009H, 03CH, 047H, 03EH, 020H, 0CDH
+  1A2C    47 3E 20 CD           
+  1A30    5C 15 10 F9           L1A30:   DB 05CH, 015H, 010H, 0F9H, 0E1H, 0CDH, 0D8H, 016H
+  1A34    E1 CD D8 16           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-21
+
+
+  1A38    C3 B4 19 3A           L1A38:   DB 0C3H, 0B4H, 019H, 03AH, 0AEH, 00CH, 0B7H, 0C2H
+  1A3C    AE 0C B7 C2           
+  1A40    02 13 C1 CD           L1A40:   DB 002H, 013H, 0C1H, 0CDH, 0F0H, 02AH, 052H, 065H
+  1A44    F0 2A 52 65           
+  1A48    2D 65 6E 74           L1A48:   DB 02DH, 065H, 06EH, 074H, 065H, 072H, 020H, 061H
+  1A4C    65 72 20 61           
+  1A50    6C 6C 8D C3           L1A50:   DB 06CH, 06CH, 08DH, 0C3H, 045H, 014H, 0CDH, 067H
+  1A54    45 14 CD 67           
+  1A58    1F 7E FE 22           L1A58:   DB 01FH, 07EH, 0FEH, 022H, 020H, 00CH, 0CDH, 0BBH
+  1A5C    20 0C CD BB           
+  1A60    1F CD 51 15           L1A60:   DB 01FH, 0CDH, 051H, 015H, 03BH, 0E5H, 0CDH, 0FCH
+  1A64    3B E5 CD FC           
+  1A68    1F 3E E5 CD           L1A68:   DB 01FH, 03EH, 0E5H, 0CDH, 00CH, 015H, 0C1H, 0DAH
+  1A6C    0C 15 C1 DA           
+  1A70    06 17 23 7E           L1A70:   DB 006H, 017H, 023H, 07EH, 0B7H, 02BH, 0C5H, 0CAH
+  1A74    B7 2B C5 CA           
+  1A78    84 18 36 2C           L1A78:   DB 084H, 018H, 036H, 02CH, 018H, 005H, 0E5H, 02AH
+  1A7C    18 05 E5 2A           
+  1A80    BD 0C F6 AF           L1A80:   DB 0BDH, 00CH, 0F6H, 0AFH, 032H, 0AEH, 00CH, 0E3H
+  1A84    32 AE 0C E3           
+  1A88    18 03 CD 4C           L1A88:   DB 018H, 003H, 0CDH, 04CH, 015H, 0CDH, 053H, 01DH
+  1A8C    15 CD 53 1D           
+  1A90    E3 D5 7E FE           L1A90:   DB 0E3H, 0D5H, 07EH, 0FEH, 02CH, 028H, 01BH, 03AH
+  1A94    2C 28 1B 3A           
+  1A98    AE 0C B7 20           L1A98:   DB 0AEH, 00CH, 0B7H, 020H, 070H, 0CDH, 0F0H, 02AH
+  1A9C    70 CD F0 2A           
+  1AA0    BF CD 0C 15           L1AA0:   DB 0BFH, 0CDH, 00CH, 015H, 0D1H, 0C1H, 0DAH, 006H
+  1AA4    D1 C1 DA 06           
+  1AA8    17 23 7E B7           L1AA8:   DB 017H, 023H, 07EH, 0B7H, 02BH, 0C5H, 0CAH, 084H
+  1AAC    2B C5 CA 84           
+  1AB0    18 D5 3A 90           L1AB0:   DB 018H, 0D5H, 03AH, 090H, 00CH, 0B7H, 028H, 01AH
+  1AB4    0C B7 28 1A           
+  1AB8    CD D8 16 57           L1AB8:   DB 0CDH, 0D8H, 016H, 057H, 047H, 0FEH, 022H, 028H
+  1ABC    47 FE 22 28           
+  1AC0    05 16 3A 06           L1AC0:   DB 005H, 016H, 03AH, 006H, 02CH, 02BH, 0CDH, 0BEH
+  1AC4    2C 2B CD BE           
+  1AC8    1F EB 21 DD           L1AC8:   DB 01FH, 0EBH, 021H, 0DDH, 01AH, 0E3H, 0D5H, 0C3H
+  1ACC    1A E3 D5 C3           
+  1AD0    B4 18 CD D8           L1AD0:   DB 0B4H, 018H, 0CDH, 0D8H, 016H, 0CDH, 0F3H, 026H
+  1AD4    16 CD F3 26           
+  1AD8    E3 CD 3E 26           L1AD8:   DB 0E3H, 0CDH, 03EH, 026H, 0E1H, 0CDH, 0D9H, 016H
+  1ADC    E1 CD D9 16           
+  1AE0    28 05 FE 2C           L1AE0:   DB 028H, 005H, 0FEH, 02CH, 0C2H, 03BH, 01AH, 0E3H
+  1AE4    C2 3B 1A E3           
+  1AE8    CD D9 16 20           L1AE8:   DB 0CDH, 0D9H, 016H, 020H, 09DH, 0D1H, 03AH, 0AEH
+  1AEC    9D D1 3A AE           
+  1AF0    0C B7 C2 41           L1AF0:   DB 00CH, 0B7H, 0C2H, 041H, 017H, 0EBH, 0D5H, 0B6H
+  1AF4    17 EB D5 B6           
+  1AF8    28 11 CD F0           L1AF8:   DB 028H, 011H, 0CDH, 0F0H, 02AH, 045H, 078H, 074H
+  1AFC    2A 45 78 74           
+  1B00    72 61 20 69           L1B00:   DB 072H, 061H, 020H, 069H, 067H, 06EH, 06FH, 072H
+  1B04    67 6E 6F 72           
+  1B08    65 64 8D E1           L1B08:   DB 065H, 064H, 08DH, 0E1H, 0C9H, 0CDH, 085H, 018H
+  1B0C    C9 CD 85 18           
+  1B10    B7 20 11 23           L1B10:   DB 0B7H, 020H, 011H, 023H, 07EH, 023H, 0B6H, 01EH
+  1B14    7E 23 B6 1E           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-22
+
+
+  1B18    04 CA 19 13           L1B18:   DB 004H, 0CAH, 019H, 013H, 023H, 05EH, 023H, 056H
+  1B1C    23 5E 23 56           
+  1B20    ED 53 AA 0C           L1B20:   DB 0EDH, 053H, 0AAH, 00CH, 0CDH, 0D8H, 016H, 0FEH
+  1B24    CD D8 16 FE           
+  1B28    83 20 E2 18           L1B28:   DB 083H, 020H, 0E2H, 018H, 085H, 011H, 000H, 000H
+  1B2C    85 11 00 00           
+  1B30    C4 53 1D 22           L1B30:   DB 0C4H, 053H, 01DH, 022H, 0AFH, 00CH, 0CDH, 0AEH
+  1B34    AF 0C CD AE           
+  1B38    12 C2 11 13           L1B38:   DB 012H, 0C2H, 011H, 013H, 0F9H, 0D5H, 07EH, 023H
+  1B3C    F9 D5 7E 23           
+  1B40    F5 D5 CD 32           L1B40:   DB 0F5H, 0D5H, 0CDH, 032H, 026H, 0E3H, 0E5H, 0CDH
+  1B44    26 E3 E5 CD           
+  1B48    BF 23 E1 CD           L1B48:   DB 0BFH, 023H, 0E1H, 0CDH, 03EH, 026H, 0E1H, 0CDH
+  1B4C    3E 26 E1 CD           
+  1B50    62 26 E5 CD           L1B50:   DB 062H, 026H, 0E5H, 0CDH, 06BH, 026H, 0E1H, 0C1H
+  1B54    6B 26 E1 C1           
+  1B58    90 CD 62 26           L1B58:   DB 090H, 0CDH, 062H, 026H, 028H, 009H, 0EDH, 053H
+  1B5C    28 09 ED 53           
+  1B60    8A 0C 69 60           L1B60:   DB 08AH, 00CH, 069H, 060H, 0C3H, 085H, 016H, 0F9H
+  1B64    C3 85 16 F9           
+  1B68    2A AF 0C 7E           L1B68:   DB 02AH, 0AFH, 00CH, 07EH, 0FEH, 02CH, 0C2H, 089H
+  1B6C    FE 2C C2 89           
+  1B70    16 CD D8 16           L1B70:   DB 016H, 0CDH, 0D8H, 016H, 0CDH, 030H, 01BH, 0CDH
+  1B74    CD 30 1B CD           
+  1B78    8B 1B F6 37           L1B78:   DB 08BH, 01BH, 0F6H, 037H, 03AH, 090H, 00CH, 08FH
+  1B7C    3A 90 0C 8F           
+  1B80    B7 E8 1E 0D           L1B80:   DB 0B7H, 0E8H, 01EH, 00DH, 0C3H, 019H, 013H, 0CDH
+  1B84    C3 19 13 CD           
+  1B88    51 15 28 2B           L1B88:   DB 051H, 015H, 028H, 02BH, 016H, 000H, 0D5H, 00EH
+  1B8C    16 00 D5 0E           
+  1B90    01 CD DE 12           L1B90:   DB 001H, 0CDH, 0DEH, 012H, 0CDH, 0FEH, 01BH, 022H
+  1B94    CD FE 1B 22           
+  1B98    B1 0C 2A B1           L1B98:   DB 0B1H, 00CH, 02AH, 0B1H, 00CH, 0C1H, 078H, 0FEH
+  1B9C    0C C1 78 FE           
+  1BA0    78 D4 7A 1B           L1BA0:   DB 078H, 0D4H, 07AH, 01BH, 07EH, 016H, 000H, 0D6H
+  1BA4    7E 16 00 D6           
+  1BA8    AF 38 15 FE           L1BA8:   DB 0AFH, 038H, 015H, 0FEH, 003H, 030H, 011H, 0FEH
+  1BAC    03 30 11 FE           
+  1BB0    01 17 AA BA           L1BB0:   DB 001H, 017H, 0AAH, 0BAH, 057H, 0DAH, 008H, 013H
+  1BB4    57 DA 08 13           
+  1BB8    22 A8 0C CD           L1BB8:   DB 022H, 0A8H, 00CH, 0CDH, 0D8H, 016H, 018H, 0E7H
+  1BBC    D8 16 18 E7           
+  1BC0    7A B7 C2 D2           L1BC0:   DB 07AH, 0B7H, 0C2H, 0D2H, 01CH, 07EH, 022H, 0A8H
+  1BC4    1C 7E 22 A8           
+  1BC8    0C D6 A8 D8           L1BC8:   DB 00CH, 0D6H, 0A8H, 0D8H, 0FEH, 007H, 0D0H, 05FH
+  1BCC    FE 07 D0 5F           
+  1BD0    3A 90 0C 3D           L1BD0:   DB 03AH, 090H, 00CH, 03DH, 0B3H, 07BH, 0CAH, 0DDH
+  1BD4    B3 7B CA DD           
+  1BD8    20 07 83 5F           L1BD8:   DB 020H, 007H, 083H, 05FH, 021H, 02AH, 012H, 019H
+  1BDC    21 2A 12 19           
+  1BE0    78 56 BA D0           L1BE0:   DB 078H, 056H, 0BAH, 0D0H, 023H, 0CDH, 07AH, 01BH
+  1BE4    23 CD 7A 1B           
+  1BE8    C5 01 9A 1B           L1BE8:   DB 0C5H, 001H, 09AH, 01BH, 0C5H, 043H, 04AH, 0CDH
+  1BEC    C5 43 4A CD           
+  1BF0    25 26 58 51           L1BF0:   DB 025H, 026H, 058H, 051H, 04EH, 023H, 046H, 023H
+  1BF4    4E 23 46 23           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-23
+
+
+  1BF8    C5 2A A8 0C           L1BF8:   DB 0C5H, 02AH, 0A8H, 00CH, 018H, 090H, 0AFH, 032H
+  1BFC    18 90 AF 32           
+  1C00    90 0C CD D8           L1C00:   DB 090H, 00CH, 0CDH, 0D8H, 016H, 01EH, 013H, 0CAH
+  1C04    16 1E 13 CA           
+  1C08    19 13 DA F3           L1C08:   DB 019H, 013H, 0DAH, 0F3H, 026H, 0CDH, 059H, 017H
+  1C0C    26 CD 59 17           
+  1C10    30 3D FE A8           L1C10:   DB 030H, 03DH, 0FEH, 0A8H, 028H, 0E8H, 0FEH, 02EH
+  1C14    28 E8 FE 2E           
+  1C18    CA F3 26 FE           L1C18:   DB 0CAH, 0F3H, 026H, 0FEH, 0A9H, 028H, 01FH, 0FEH
+  1C1C    A9 28 1F FE           
+  1C20    22 CA BB 1F           L1C20:   DB 022H, 0CAH, 0BBH, 01FH, 0FEH, 0FFH, 028H, 038H
+  1C24    FE FF 28 38           
+  1C28    FE A6 CA 30           L1C28:   DB 0FEH, 0A6H, 0CAH, 030H, 01DH, 0FEH, 0A3H, 0CAH
+  1C2C    1D FE A3 CA           
+  1C30    2A 1F D6 B2           L1C30:   DB 02AH, 01FH, 0D6H, 0B2H, 030H, 03CH, 0CDH, 087H
+  1C34    30 3C CD 87           
+  1C38    1B CD 51 15           L1C38:   DB 01BH, 0CDH, 051H, 015H, 029H, 0C9H, 016H, 07DH
+  1C3C    29 C9 16 7D           
+  1C40    CD 8E 1B 2A           L1C40:   DB 0CDH, 08EH, 01BH, 02AH, 0B1H, 00CH, 0E5H, 0CDH
+  1C44    B1 0C E5 CD           
+  1C48    1D 26 CD 7A           L1C48:   DB 01DH, 026H, 0CDH, 07AH, 01BH, 0E1H, 0C9H, 0CDH
+  1C4C    1B E1 C9 CD           
+  1C50    53 1D E5 EB           L1C50:   DB 053H, 01DH, 0E5H, 0EBH, 022H, 0BFH, 00CH, 03AH
+  1C54    22 BF 0C 3A           
+  1C58    90 0C B7 CC           L1C58:   DB 090H, 00CH, 0B7H, 0CCH, 032H, 026H, 0E1H, 0C9H
+  1C5C    32 26 E1 C9           
+  1C60    CD D8 16 D6           L1C60:   DB 0CDH, 0D8H, 016H, 0D6H, 0C0H, 0DAH, 008H, 013H
+  1C64    C0 DA 08 13           
+  1C68    E5 26 00 07           L1C68:   DB 0E5H, 026H, 000H, 007H, 06FH, 001H, 080H, 00FH
+  1C6C    6F 01 80 0F           
+  1C70    18 33 06 00           L1C70:   DB 018H, 033H, 006H, 000H, 007H, 04FH, 0C5H, 0CDH
+  1C74    07 4F C5 CD           
+  1C78    D8 16 79 FE           L1C78:   DB 0D8H, 016H, 079H, 0FEH, 02DH, 030H, 01EH, 0FEH
+  1C7C    2D 30 1E FE           
+  1C80    27 38 17 CD           L1C80:   DB 027H, 038H, 017H, 0CDH, 087H, 01BH, 0CDH, 04CH
+  1C84    87 1B CD 4C           
+  1C88    15 CD 7B 1B           L1C88:   DB 015H, 0CDH, 07BH, 01BH, 0EBH, 02AH, 0BFH, 00CH
+  1C8C    EB 2A BF 0C           
+  1C90    E3 E5 EB CD           L1C90:   DB 0E3H, 0E5H, 0EBH, 0CDH, 050H, 022H, 0EBH, 0E3H
+  1C94    50 22 EB E3           
+  1C98    18 08 CD 36           L1C98:   DB 018H, 008H, 0CDH, 036H, 01CH, 0E3H, 011H, 04AH
+  1C9C    1C E3 11 4A           
+  1CA0    1C D5 01 3F           L1CA0:   DB 01CH, 0D5H, 001H, 03FH, 012H, 009H, 04EH, 023H
+  1CA4    12 09 4E 23           
+  1CA8    66 69 E9 F6           L1CA8:   DB 066H, 069H, 0E9H, 0F6H, 0AFH, 0F5H, 0CDH, 07AH
+  1CAC    AF F5 CD 7A           
+  1CB0    1B CD 72 17           L1CB0:   DB 01BH, 0CDH, 072H, 017H, 0F1H, 0EBH, 0C1H, 0E3H
+  1CB4    F1 EB C1 E3           
+  1CB8    EB CD 35 26           L1CB8:   DB 0EBH, 0CDH, 035H, 026H, 0F5H, 0CDH, 072H, 017H
+  1CBC    F5 CD 72 17           
+  1CC0    F1 C1 79 21           L1CC0:   DB 0F1H, 0C1H, 079H, 021H, 0ECH, 01EH, 020H, 005H
+  1CC4    EC 1E 20 05           
+  1CC8    A3 4F 78 A2           L1CC8:   DB 0A3H, 04FH, 078H, 0A2H, 0E9H, 0B3H, 04FH, 078H
+  1CCC    E9 B3 4F 78           
+  1CD0    B2 E9 21 7E           L1CD0:   DB 0B2H, 0E9H, 021H, 07EH, 022H, 03AH, 090H, 00CH
+  1CD4    22 3A 90 0C           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-24
+
+
+  1CD8    1F 7A 17 5F           L1CD8:   DB 01FH, 07AH, 017H, 05FH, 016H, 064H, 078H, 0BAH
+  1CDC    16 64 78 BA           
+  1CE0    D0 C3 E8 1B           L1CE0:   DB 0D0H, 0C3H, 0E8H, 01BH, 000H, 079H, 0B7H, 01FH
+  1CE4    00 79 B7 1F           
+  1CE8    C1 D1 F5 CD           L1CE8:   DB 0C1H, 0D1H, 0F5H, 0CDH, 07CH, 01BH, 021H, 026H
+  1CEC    7C 1B 21 26           
+  1CF0    1D E5 CA 6B           L1CF0:   DB 01DH, 0E5H, 0CAH, 06BH, 026H, 0AFH, 032H, 090H
+  1CF4    26 AF 32 90           
+  1CF8    0C D5 CD 29           L1CF8:   DB 00CH, 0D5H, 0CDH, 029H, 021H, 07EH, 023H, 023H
+  1CFC    21 7E 23 23           
+  1D00    4E 23 46 D1           L1D00:   DB 04EH, 023H, 046H, 0D1H, 0C5H, 0F5H, 0CDH, 02DH
+  1D04    C5 F5 CD 2D           
+  1D08    21 CD 62 26           L1D08:   DB 021H, 0CDH, 062H, 026H, 0F1H, 057H, 0E1H, 07BH
+  1D0C    F1 57 E1 7B           
+  1D10    B2 C8 7A D6           L1D10:   DB 0B2H, 0C8H, 07AH, 0D6H, 001H, 0D8H, 0AFH, 0BBH
+  1D14    01 D8 AF BB           
+  1D18    3C D0 15 1D           L1D18:   DB 03CH, 0D0H, 015H, 01DH, 00AH, 0BEH, 023H, 003H
+  1D1C    0A BE 23 03           
+  1D20    28 ED 3F C3           L1D20:   DB 028H, 0EDH, 03FH, 0C3H, 0FFH, 025H, 03CH, 08FH
+  1D24    FF 25 3C 8F           
+  1D28    C1 A0 C6 FF           L1D28:   DB 0C1H, 0A0H, 0C6H, 0FFH, 09FH, 0C3H, 006H, 026H
+  1D2C    9F C3 06 26           
+  1D30    16 5A CD 8E           L1D30:   DB 016H, 05AH, 0CDH, 08EH, 01BH, 0CDH, 07AH, 01BH
+  1D34    1B CD 7A 1B           
+  1D38    CD 72 17 7B           L1D38:   DB 0CDH, 072H, 017H, 07BH, 02FH, 04FH, 07AH, 02FH
+  1D3C    2F 4F 7A 2F           
+  1D40    CD EC 1E C1           L1D40:   DB 0CDH, 0ECH, 01EH, 0C1H, 0C3H, 09AH, 01BH, 0CDH
+  1D44    C3 9A 1B CD           
+  1D48    D9 16 C8 CD           L1D48:   DB 0D9H, 016H, 0C8H, 0CDH, 04CH, 015H, 001H, 047H
+  1D4C    4C 15 01 47           
+  1D50    1D C5 F6 AF           L1D50:   DB 01DH, 0C5H, 0F6H, 0AFH, 032H, 08FH, 00CH, 046H
+  1D54    32 8F 0C 46           
+  1D58    CD 59 17 DA           L1D58:   DB 0CDH, 059H, 017H, 0DAH, 008H, 013H, 0AFH, 04FH
+  1D5C    08 13 AF 4F           
+  1D60    32 90 0C CD           L1D60:   DB 032H, 090H, 00CH, 0CDH, 0D8H, 016H, 038H, 005H
+  1D64    D8 16 38 05           
+  1D68    CD 59 17 38           L1D68:   DB 0CDH, 059H, 017H, 038H, 00BH, 04FH, 0CDH, 0D8H
+  1D6C    0B 4F CD D8           
+  1D70    16 38 FB CD           L1D70:   DB 016H, 038H, 0FBH, 0CDH, 059H, 017H, 030H, 0F6H
+  1D74    59 17 30 F6           
+  1D78    D6 24 20 09           L1D78:   DB 0D6H, 024H, 020H, 009H, 03CH, 032H, 090H, 00CH
+  1D7C    3C 32 90 0C           
+  1D80    CB F9 CD D8           L1D80:   DB 0CBH, 0F9H, 0CDH, 0D8H, 016H, 03AH, 0ACH, 00CH
+  1D84    16 3A AC 0C           
+  1D88    3D CA 1C 1E           L1D88:   DB 03DH, 0CAH, 01CH, 01EH, 0F2H, 094H, 01DH, 07EH
+  1D8C    F2 94 1D 7E           
+  1D90    D6 28 28 61           L1D90:   DB 0D6H, 028H, 028H, 061H, 0AFH, 032H, 0ACH, 00CH
+  1D94    AF 32 AC 0C           
+  1D98    E5 ED 5B B9           L1D98:   DB 0E5H, 0EDH, 05BH, 0B9H, 00CH, 02AH, 0B7H, 00CH
+  1D9C    0C 2A B7 0C           
+  1DA0    CD 46 15 28           L1DA0:   DB 0CDH, 046H, 015H, 028H, 010H, 079H, 096H, 023H
+  1DA4    10 79 96 23           
+  1DA8    20 02 78 96           L1DA8:   DB 020H, 002H, 078H, 096H, 023H, 028H, 038H, 023H
+  1DAC    23 28 38 23           
+  1DB0    23 23 23 18           L1DB0:   DB 023H, 023H, 023H, 018H, 0EBH, 0E1H, 0E3H, 0D5H
+  1DB4    EB E1 E3 D5           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-25
+
+
+  1DB8    11 52 1C CD           L1DB8:   DB 011H, 052H, 01CH, 0CDH, 046H, 015H, 0D1H, 028H
+  1DBC    46 15 D1 28           
+  1DC0    29 E3 E5 C5           L1DC0:   DB 029H, 0E3H, 0E5H, 0C5H, 001H, 006H, 000H, 02AH
+  1DC4    01 06 00 2A           
+  1DC8    BB 0C E5 09           L1DC8:   DB 0BBH, 00CH, 0E5H, 009H, 0C1H, 0E5H, 0CDH, 0CEH
+  1DCC    C1 E5 CD CE           
+  1DD0    12 E1 22 BB           L1DD0:   DB 012H, 0E1H, 022H, 0BBH, 00CH, 060H, 069H, 022H
+  1DD4    0C 60 69 22           
+  1DD8    B9 0C 2B 36           L1DD8:   DB 0B9H, 00CH, 02BH, 036H, 000H, 0CDH, 046H, 015H
+  1DDC    00 CD 46 15           
+  1DE0    20 F8 D1 73           L1DE0:   DB 020H, 0F8H, 0D1H, 073H, 023H, 072H, 023H, 0EBH
+  1DE4    23 72 23 EB           
+  1DE8    E1 C9 32 C2           L1DE8:   DB 0E1H, 0C9H, 032H, 0C2H, 00CH, 021H, 077H, 012H
+  1DEC    0C 21 77 12           
+  1DF0    22 BF 0C E1           L1DF0:   DB 022H, 0BFH, 00CH, 0E1H, 0C9H, 0E5H, 02AH, 08FH
+  1DF4    C9 E5 2A 8F           
+  1DF8    0C E3 57 D5           L1DF8:   DB 00CH, 0E3H, 057H, 0D5H, 0C5H, 0CDH, 066H, 017H
+  1DFC    C5 CD 66 17           
+  1E00    C1 F1 EB E3           L1E00:   DB 0C1H, 0F1H, 0EBH, 0E3H, 0E5H, 0EBH, 03CH, 057H
+  1E04    E5 EB 3C 57           
+  1E08    7E FE 2C 28           L1E08:   DB 07EH, 0FEH, 02CH, 028H, 0EEH, 0CDH, 051H, 015H
+  1E0C    EE CD 51 15           
+  1E10    29 22 B1 0C           L1E10:   DB 029H, 022H, 0B1H, 00CH, 0E1H, 022H, 08FH, 00CH
+  1E14    E1 22 8F 0C           
+  1E18    1E 00 D5 11           L1E18:   DB 01EH, 000H, 0D5H, 011H, 0E5H, 0F5H, 02AH, 0B9H
+  1E1C    E5 F5 2A B9           
+  1E20    0C 3E 19 ED           L1E20:   DB 00CH, 03EH, 019H, 0EDH, 05BH, 0BBH, 00CH, 0CDH
+  1E24    5B BB 0C CD           
+  1E28    46 15 28 22           L1E28:   DB 046H, 015H, 028H, 022H, 07EH, 0B9H, 023H, 020H
+  1E2C    7E B9 23 20           
+  1E30    02 7E B8 23           L1E30:   DB 002H, 07EH, 0B8H, 023H, 05EH, 023H, 056H, 023H
+  1E34    5E 23 56 23           
+  1E38    20 E8 3A 8F           L1E38:   DB 020H, 0E8H, 03AH, 08FH, 00CH, 0B7H, 0C2H, 014H
+  1E3C    0C B7 C2 14           
+  1E40    13 F1 44 4D           L1E40:   DB 013H, 0F1H, 044H, 04DH, 028H, 0ADH, 096H, 028H
+  1E44    28 AD 96 28           
+  1E48    5E 1E 09 C3           L1E48:   DB 05EH, 01EH, 009H, 0C3H, 019H, 013H, 011H, 004H
+  1E4C    19 13 11 04           
+  1E50    00 F1 CA 87           L1E50:   DB 000H, 0F1H, 0CAH, 087H, 017H, 071H, 023H, 070H
+  1E54    17 71 23 70           
+  1E58    23 4F CD DE           L1E58:   DB 023H, 04FH, 0CDH, 0DEH, 012H, 023H, 023H, 022H
+  1E5C    12 23 23 22           
+  1E60    A8 0C 71 23           L1E60:   DB 0A8H, 00CH, 071H, 023H, 03AH, 08FH, 00CH, 017H
+  1E64    3A 8F 0C 17           
+  1E68    79 01 0B 00           L1E68:   DB 079H, 001H, 00BH, 000H, 030H, 002H, 0C1H, 003H
+  1E6C    30 02 C1 03           
+  1E70    71 23 70 23           L1E70:   DB 071H, 023H, 070H, 023H, 0F5H, 0E5H, 0CDH, 0DBH
+  1E74    F5 E5 CD DB           
+  1E78    26 EB E1 F1           L1E78:   DB 026H, 0EBH, 0E1H, 0F1H, 03DH, 020H, 0EAH, 0F5H
+  1E7C    3D 20 EA F5           
+  1E80    42 4B EB 19           L1E80:   DB 042H, 04BH, 0EBH, 019H, 038H, 0C3H, 0CDH, 0EBH
+  1E84    38 C3 CD EB           
+  1E88    12 22 BB 0C           L1E88:   DB 012H, 022H, 0BBH, 00CH, 02BH, 036H, 000H, 0CDH
+  1E8C    2B 36 00 CD           
+  1E90    46 15 20 F8           L1E90:   DB 046H, 015H, 020H, 0F8H, 003H, 057H, 02AH, 0A8H
+  1E94    03 57 2A A8           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-26
+
+
+  1E98    0C 5E EB 29           L1E98:   DB 00CH, 05EH, 0EBH, 029H, 009H, 0EBH, 02BH, 02BH
+  1E9C    09 EB 2B 2B           
+  1EA0    73 23 72 23           L1EA0:   DB 073H, 023H, 072H, 023H, 0F1H, 038H, 022H, 047H
+  1EA4    F1 38 22 47           
+  1EA8    4F 7E 23 16           L1EA8:   DB 04FH, 07EH, 023H, 016H, 0E1H, 05EH, 023H, 056H
+  1EAC    E1 5E 23 56           
+  1EB0    23 E3 F5 CD           L1EB0:   DB 023H, 0E3H, 0F5H, 0CDH, 046H, 015H, 030H, 091H
+  1EB4    46 15 30 91           
+  1EB8    E5 CD DB 26           L1EB8:   DB 0E5H, 0CDH, 0DBH, 026H, 0D1H, 019H, 0F1H, 03DH
+  1EBC    D1 19 F1 3D           
+  1EC0    44 4D 20 E8           L1EC0:   DB 044H, 04DH, 020H, 0E8H, 029H, 029H, 0C1H, 009H
+  1EC4    29 29 C1 09           
+  1EC8    EB 2A B1 0C           L1EC8:   DB 0EBH, 02AH, 0B1H, 00CH, 0C9H, 0C1H, 0E1H, 07EH
+  1ECC    C9 C1 E1 7E           
+  1ED0    FE 24 20 01           L1ED0:   DB 0FEH, 024H, 020H, 001H, 023H, 0E5H, 0C5H, 0CDH
+  1ED4    23 E5 C5 CD           
+  1ED8    F9 1E 20 0B           L1ED8:   DB 0F9H, 01EH, 020H, 00BH, 0E5H, 0CDH, 029H, 021H
+  1EDC    E5 CD 29 21           
+  1EE0    CD 34 20 D1           L1EE0:   DB 0CDH, 034H, 020H, 0D1H, 02AH, 0A6H, 00CH, 07DH
+  1EE4    2A A6 0C 7D           
+  1EE8    93 4F 7C 9A           L1EE8:   DB 093H, 04FH, 07CH, 09AH, 041H, 050H, 01EH, 000H
+  1EEC    41 50 1E 00           
+  1EF0    21 90 0C 73           L1EF0:   DB 021H, 090H, 00CH, 073H, 006H, 090H, 0C3H, 00BH
+  1EF4    06 90 C3 0B           
+  1EF8    26 ED 5B BB           L1EF8:   DB 026H, 0EDH, 05BH, 0BBH, 00CH, 02AH, 088H, 00CH
+  1EFC    0C 2A 88 0C           
+  1F00    C9 3A 8E 0C           L1F00:   DB 0C9H, 03AH, 08EH, 00CH, 047H, 0AFH, 018H, 0E5H
+  1F04    47 AF 18 E5           
+  1F08    CD 75 1F CD           L1F08:   DB 0CDH, 075H, 01FH, 0CDH, 067H, 01FH, 001H, 085H
+  1F0C    67 1F 01 85           
+  1F10    18 C5 D5 CD           L1F10:   DB 018H, 0C5H, 0D5H, 0CDH, 051H, 015H, 028H, 0CDH
+  1F14    51 15 28 CD           
+  1F18    53 1D CD 7A           L1F18:   DB 053H, 01DH, 0CDH, 07AH, 01BH, 0CDH, 051H, 015H
+  1F1C    1B CD 51 15           
+  1F20    29 CD 51 15           L1F20:   DB 029H, 0CDH, 051H, 015H, 0B0H, 044H, 04DH, 0E3H
+  1F24    B0 44 4D E3           
+  1F28    18 38 CD 75           L1F28:   DB 018H, 038H, 0CDH, 075H, 01FH, 0D5H, 0CDH, 036H
+  1F2C    1F D5 CD 36           
+  1F30    1C CD 7A 1B           L1F30:   DB 01CH, 0CDH, 07AH, 01BH, 0E3H, 05EH, 023H, 056H
+  1F34    E3 5E 23 56           
+  1F38    23 7E 23 66           L1F38:   DB 023H, 07EH, 023H, 066H, 06FH, 0CDH, 046H, 015H
+  1F3C    6F CD 46 15           
+  1F40    CA 17 13 4E           L1F40:   DB 0CAH, 017H, 013H, 04EH, 023H, 046H, 023H, 0C5H
+  1F44    23 46 23 C5           
+  1F48    4E 23 46 C5           L1F48:   DB 04EH, 023H, 046H, 0C5H, 02BH, 02BH, 02BH, 0E5H
+  1F4C    2B 2B 2B E5           
+  1F50    D5 CD 3E 26           L1F50:   DB 0D5H, 0CDH, 03EH, 026H, 0E1H, 0CDH, 077H, 01BH
+  1F54    E1 CD 77 1B           
+  1F58    2B CD D8 16           L1F58:   DB 02BH, 0CDH, 0D8H, 016H, 0C2H, 008H, 013H, 0E1H
+  1F5C    C2 08 13 E1           
+  1F60    D1 C1 71 23           L1F60:   DB 0D1H, 0C1H, 071H, 023H, 070H, 018H, 04DH, 0E5H
+  1F64    70 18 4D E5           
+  1F68    2A 8A 0C 23           L1F68:   DB 02AH, 08AH, 00CH, 023H, 07CH, 0B5H, 0E1H, 0C0H
+  1F6C    7C B5 E1 C0           
+  1F70    1E 0C C3 19           L1F70:   DB 01EH, 00CH, 0C3H, 019H, 013H, 0CDH, 051H, 015H
+  1F74    13 CD 51 15           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-27
+
+
+  1F78    A3 3E 80 32           L1F78:   DB 0A3H, 03EH, 080H, 032H, 0ACH, 00CH, 0B6H, 047H
+  1F7C    AC 0C B6 47           
+  1F80    CD 58 1D C3           L1F80:   DB 0CDH, 058H, 01DH, 0C3H, 07AH, 01BH, 0CDH, 07AH
+  1F84    7A 1B CD 7A           
+  1F88    1B CD 8C 27           L1F88:   DB 01BH, 0CDH, 08CH, 027H, 0CDH, 0BAH, 01FH, 0CDH
+  1F8C    CD BA 1F CD           
+  1F90    29 21 01 83           L1F90:   DB 029H, 021H, 001H, 083H, 021H, 0C5H, 07EH, 023H
+  1F94    21 C5 7E 23           
+  1F98    23 E5 CD 0C           L1F98:   DB 023H, 0E5H, 0CDH, 00CH, 020H, 0E1H, 04EH, 023H
+  1F9C    20 E1 4E 23           
+  1FA0    46 CD AE 1F           L1FA0:   DB 046H, 0CDH, 0AEH, 01FH, 0E5H, 06FH, 0CDH, 01DH
+  1FA4    E5 6F CD 1D           
+  1FA8    21 D1 C9 CD           L1FA8:   DB 021H, 0D1H, 0C9H, 0CDH, 00CH, 020H, 021H, 0A2H
+  1FAC    0C 20 21 A2           
+  1FB0    0C E5 77 23           L1FB0:   DB 00CH, 0E5H, 077H, 023H, 023H, 073H, 023H, 072H
+  1FB4    23 73 23 72           
+  1FB8    E1 C9 2B 06           L1FB8:   DB 0E1H, 0C9H, 02BH, 006H, 022H, 050H, 0E5H, 00EH
+  1FBC    22 50 E5 0E           
+  1FC0    FF 23 7E 0C           L1FC0:   DB 0FFH, 023H, 07EH, 00CH, 0B7H, 028H, 006H, 0BAH
+  1FC4    B7 28 06 BA           
+  1FC8    28 03 B8 20           L1FC8:   DB 028H, 003H, 0B8H, 020H, 0F4H, 0FEH, 022H, 0CCH
+  1FCC    F4 FE 22 CC           
+  1FD0    D8 16 E3 23           L1FD0:   DB 0D8H, 016H, 0E3H, 023H, 0EBH, 079H, 0CDH, 0AEH
+  1FD4    EB 79 CD AE           
+  1FD8    1F 11 A2 0C           L1FD8:   DB 01FH, 011H, 0A2H, 00CH, 02AH, 094H, 00CH, 022H
+  1FDC    2A 94 0C 22           
+  1FE0    BF 0C 3E 01           L1FE0:   DB 0BFH, 00CH, 03EH, 001H, 032H, 090H, 00CH, 0CDH
+  1FE4    32 90 0C CD           
+  1FE8    41 26 22 94           L1FE8:   DB 041H, 026H, 022H, 094H, 00CH, 0B7H, 0EDH, 052H
+  1FEC    0C B7 ED 52           
+  1FF0    E1 7E C0 1E           L1FF0:   DB 0E1H, 07EH, 0C0H, 01EH, 010H, 0C3H, 019H, 013H
+  1FF4    10 C3 19 13           
+  1FF8    23 CD BA 1F           L1FF8:   DB 023H, 0CDH, 0BAH, 01FH, 0CDH, 029H, 021H, 0CDH
+  1FFC    CD 29 21 CD           
+  2000    62 26 1C 1D           L2000:   DB 062H, 026H, 01CH, 01DH, 0C8H, 00AH, 0CDH, 05CH
+  2004    C8 0A CD 5C           
+  2008    15 03 18 F7           L2008:   DB 015H, 003H, 018H, 0F7H, 0B7H, 00EH, 0F1H, 0F5H
+  200C    B7 0E F1 F5           
+  2010    ED 5B 88 0C           L2010:   DB 0EDH, 05BH, 088H, 00CH, 02AH, 0A6H, 00CH, 02FH
+  2014    2A A6 0C 2F           
+  2018    4F 06 FF 09           L2018:   DB 04FH, 006H, 0FFH, 009H, 023H, 0CDH, 046H, 015H
+  201C    23 CD 46 15           
+  2020    38 07 22 A6           L2020:   DB 038H, 007H, 022H, 0A6H, 00CH, 023H, 0EBH, 0F1H
+  2024    0C 23 EB F1           
+  2028    C9 F1 1E 0E           L2028:   DB 0C9H, 0F1H, 01EH, 00EH, 028H, 0C7H, 0BFH, 0F5H
+  202C    28 C7 BF F5           
+  2030    01 0E 20 C5           L2030:   DB 001H, 00EH, 020H, 0C5H, 02AH, 092H, 00CH, 022H
+  2034    2A 92 0C 22           
+  2038    A6 0C 21 00           L2038:   DB 0A6H, 00CH, 021H, 000H, 000H, 0E5H, 02AH, 088H
+  203C    00 E5 2A 88           
+  2040    0C E5 21 96           L2040:   DB 00CH, 0E5H, 021H, 096H, 00CH, 0EDH, 05BH, 094H
+  2044    0C ED 5B 94           
+  2048    0C CD 46 15           L2048:   DB 00CH, 0CDH, 046H, 015H, 001H, 045H, 020H, 020H
+  204C    01 45 20 20           
+  2050    3F 2A B7 0C           L2050:   DB 03FH, 02AH, 0B7H, 00CH, 0EDH, 05BH, 0B9H, 00CH
+  2054    ED 5B B9 0C           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-28
+
+
+  2058    CD 46 15 28           L2058:   DB 0CDH, 046H, 015H, 028H, 00AH, 07EH, 023H, 023H
+  205C    0A 7E 23 23           
+  2060    B7 CD 93 20           L2060:   DB 0B7H, 0CDH, 093H, 020H, 018H, 0EEH, 0C1H, 0EDH
+  2064    18 EE C1 ED           
+  2068    5B BB 0C CD           L2068:   DB 05BH, 0BBH, 00CH, 0CDH, 046H, 015H, 028H, 048H
+  206C    46 15 28 48           
+  2070    CD 62 26 7B           L2070:   DB 0CDH, 062H, 026H, 07BH, 0E5H, 009H, 0B7H, 0F2H
+  2074    E5 09 B7 F2           
+  2078    66 20 22 A8           L2078:   DB 066H, 020H, 022H, 0A8H, 00CH, 0E1H, 04EH, 006H
+  207C    0C E1 4E 06           
+  2080    00 09 09 23           L2080:   DB 000H, 009H, 009H, 023H, 0EDH, 05BH, 0A8H, 00CH
+  2084    ED 5B A8 0C           
+  2088    CD 46 15 28           L2088:   DB 0CDH, 046H, 015H, 028H, 0DAH, 001H, 084H, 020H
+  208C    DA 01 84 20           
+  2090    C5 F6 80 7E           L2090:   DB 0C5H, 0F6H, 080H, 07EH, 023H, 023H, 05EH, 023H
+  2094    23 23 5E 23           
+  2098    56 23 F0 B7           L2098:   DB 056H, 023H, 0F0H, 0B7H, 0C8H, 044H, 04DH, 02AH
+  209C    C8 44 4D 2A           
+  20A0    A6 0C ED 52           L20A0:   DB 0A6H, 00CH, 0EDH, 052H, 060H, 069H, 0D8H, 0E1H
+  20A4    60 69 D8 E1           
+  20A8    E3 CD 46 15           L20A8:   DB 0E3H, 0CDH, 046H, 015H, 0E3H, 0E5H, 060H, 069H
+  20AC    E3 E5 60 69           
+  20B0    D0 C1 F1 F1           L20B0:   DB 0D0H, 0C1H, 0F1H, 0F1H, 0E5H, 0D5H, 0C5H, 0C9H
+  20B4    E5 D5 C5 C9           
+  20B8    D1 E1 7D B4           L20B8:   DB 0D1H, 0E1H, 07DH, 0B4H, 0C8H, 02BH, 046H, 02BH
+  20BC    C8 2B 46 2B           
+  20C0    4E E5 2B 2B           L20C0:   DB 04EH, 0E5H, 02BH, 02BH, 06EH, 026H, 000H, 009H
+  20C4    6E 26 00 09           
+  20C8    50 59 2B 44           L20C8:   DB 050H, 059H, 02BH, 044H, 04DH, 02AH, 0A6H, 00CH
+  20CC    4D 2A A6 0C           
+  20D0    CD D1 12 E1           L20D0:   DB 0CDH, 0D1H, 012H, 0E1H, 071H, 023H, 070H, 069H
+  20D4    71 23 70 69           
+  20D8    60 2B C3 37           L20D8:   DB 060H, 02BH, 0C3H, 037H, 020H, 0C5H, 0E5H, 02AH
+  20DC    20 C5 E5 2A           
+  20E0    BF 0C E3 CD           L20E0:   DB 0BFH, 00CH, 0E3H, 0CDH, 0FEH, 01BH, 0E3H, 0CDH
+  20E4    FE 1B E3 CD           
+  20E8    7B 1B 7E E5           L20E8:   DB 07BH, 01BH, 07EH, 0E5H, 02AH, 0BFH, 00CH, 0E5H
+  20EC    2A BF 0C E5           
+  20F0    86 1E 0F DA           L20F0:   DB 086H, 01EH, 00FH, 0DAH, 019H, 013H, 0CDH, 0ABH
+  20F4    19 13 CD AB           
+  20F8    1F D1 CD 2D           L20F8:   DB 01FH, 0D1H, 0CDH, 02DH, 021H, 0E3H, 0CDH, 02CH
+  20FC    21 E3 CD 2C           
+  2100    21 E5 ED 5B           L2100:   DB 021H, 0E5H, 0EDH, 05BH, 0A4H, 00CH, 0CDH, 014H
+  2104    A4 0C CD 14           
+  2108    21 CD 14 21           L2108:   DB 021H, 0CDH, 014H, 021H, 021H, 09DH, 01BH, 0E3H
+  210C    21 9D 1B E3           
+  2110    E5 C3 D9 1F           L2110:   DB 0E5H, 0C3H, 0D9H, 01FH, 0E1H, 0E3H, 07EH, 023H
+  2114    E1 E3 7E 23           
+  2118    23 4E 23 46           L2118:   DB 023H, 04EH, 023H, 046H, 06FH, 02CH, 02DH, 0C8H
+  211C    6F 2C 2D C8           
+  2120    0A 12 03 13           L2120:   DB 00AH, 012H, 003H, 013H, 018H, 0F8H, 0CDH, 07BH
+  2124    18 F8 CD 7B           
+  2128    1B 2A BF 0C           L2128:   DB 01BH, 02AH, 0BFH, 00CH, 0EBH, 0CDH, 046H, 021H
+  212C    EB CD 46 21           
+  2130    EB C0 D5 50           L2130:   DB 0EBH, 0C0H, 0D5H, 050H, 059H, 01BH, 04EH, 02AH
+  2134    59 1B 4E 2A           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-29
+
+
+  2138    A6 0C CD 46           L2138:   DB 0A6H, 00CH, 0CDH, 046H, 015H, 020H, 005H, 047H
+  213C    15 20 05 47           
+  2140    09 22 A6 0C           L2140:   DB 009H, 022H, 0A6H, 00CH, 0E1H, 0C9H, 02AH, 094H
+  2144    E1 C9 2A 94           
+  2148    0C 2B 46 2B           L2148:   DB 00CH, 02BH, 046H, 02BH, 04EH, 02BH, 02BH, 0CDH
+  214C    4E 2B 2B CD           
+  2150    46 15 C0 22           L2150:   DB 046H, 015H, 0C0H, 022H, 094H, 00CH, 0C9H, 001H
+  2154    94 0C C9 01           
+  2158    04 1F C5 CD           L2158:   DB 004H, 01FH, 0C5H, 0CDH, 026H, 021H, 0AFH, 057H
+  215C    26 21 AF 57           
+  2160    32 90 0C 7E           L2160:   DB 032H, 090H, 00CH, 07EH, 0B7H, 0C9H, 001H, 004H
+  2164    B7 C9 01 04           
+  2168    1F C5 CD 5B           L2168:   DB 01FH, 0C5H, 0CDH, 05BH, 021H, 0CAH, 087H, 017H
+  216C    21 CA 87 17           
+  2170    23 23 5E 23           L2170:   DB 023H, 023H, 05EH, 023H, 056H, 01AH, 0C9H, 03EH
+  2174    56 1A C9 3E           
+  2178    01 CD AB 1F           L2178:   DB 001H, 0CDH, 0ABH, 01FH, 0CDH, 053H, 022H, 02AH
+  217C    CD 53 22 2A           
+  2180    A4 0C 73 C1           L2180:   DB 0A4H, 00CH, 073H, 0C1H, 0C3H, 0D9H, 01FH, 0CDH
+  2184    C3 D9 1F CD           
+  2188    08 22 AF E3           L2188:   DB 008H, 022H, 0AFH, 0E3H, 04FH, 0E5H, 07EH, 0B8H
+  218C    4F E5 7E B8           
+  2190    38 02 78 11           L2190:   DB 038H, 002H, 078H, 011H, 00EH, 000H, 0C5H, 0CDH
+  2194    0E 00 C5 CD           
+  2198    0C 20 C1 E1           L2198:   DB 00CH, 020H, 0C1H, 0E1H, 0E5H, 023H, 023H, 046H
+  219C    E5 23 23 46           
+  21A0    23 66 68 06           L21A0:   DB 023H, 066H, 068H, 006H, 000H, 009H, 044H, 04DH
+  21A4    00 09 44 4D           
+  21A8    CD AE 1F 6F           L21A8:   DB 0CDH, 0AEH, 01FH, 06FH, 0CDH, 01DH, 021H, 0D1H
+  21AC    CD 1D 21 D1           
+  21B0    CD 2D 21 C3           L21B0:   DB 0CDH, 02DH, 021H, 0C3H, 0D9H, 01FH, 0CDH, 008H
+  21B4    D9 1F CD 08           
+  21B8    22 D1 D5 1A           L21B8:   DB 022H, 0D1H, 0D5H, 01AH, 090H, 018H, 0CCH, 0EBH
+  21BC    90 18 CC EB           
+  21C0    7E CD 0D 22           L21C0:   DB 07EH, 0CDH, 00DH, 022H, 004H, 005H, 0CAH, 087H
+  21C4    04 05 CA 87           
+  21C8    17 C5 1E FF           L21C8:   DB 017H, 0C5H, 01EH, 0FFH, 0FEH, 029H, 028H, 006H
+  21CC    FE 29 28 06           
+  21D0    CD 4C 15 CD           L21D0:   DB 0CDH, 04CH, 015H, 0CDH, 050H, 022H, 0CDH, 051H
+  21D4    50 22 CD 51           
+  21D8    15 29 F1 E3           L21D8:   DB 015H, 029H, 0F1H, 0E3H, 001H, 08DH, 021H, 0C5H
+  21DC    01 8D 21 C5           
+  21E0    3D BE 06 00           L21E0:   DB 03DH, 0BEH, 006H, 000H, 0D0H, 04FH, 07EH, 091H
+  21E4    D0 4F 7E 91           
+  21E8    BB 47 D8 43           L21E8:   DB 0BBH, 047H, 0D8H, 043H, 0C9H, 0CDH, 05BH, 021H
+  21EC    C9 CD 5B 21           
+  21F0    CA 2D 24 5F           L21F0:   DB 0CAH, 02DH, 024H, 05FH, 023H, 023H, 07EH, 023H
+  21F4    23 23 7E 23           
+  21F8    66 6F E5 19           L21F8:   DB 066H, 06FH, 0E5H, 019H, 046H, 072H, 0E3H, 0C5H
+  21FC    46 72 E3 C5           
+  2200    7E CD F3 26           L2200:   DB 07EH, 0CDH, 0F3H, 026H, 0C1H, 0E1H, 070H, 0C9H
+  2204    C1 E1 70 C9           
+  2208    EB CD 51 15           L2208:   DB 0EBH, 0CDH, 051H, 015H, 029H, 0C1H, 0D1H, 0C5H
+  220C    29 C1 D1 C5           
+  2210    43 C9 CD 53           L2210:   DB 043H, 0C9H, 0CDH, 053H, 022H, 0C5H, 04FH, 0EDH
+  2214    22 C5 4F ED           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-30
+
+
+  2218    78 C1 C3 04           L2218:   DB 078H, 0C1H, 0C3H, 004H, 01FH, 0CDH, 040H, 022H
+  221C    1F CD 40 22           
+  2220    ED 79 C9 CD           L2220:   DB 0EDH, 079H, 0C9H, 0CDH, 040H, 022H, 0F5H, 0C5H
+  2224    40 22 F5 C5           
+  2228    1E 00 CD D9           L2228:   DB 01EH, 000H, 0CDH, 0D9H, 016H, 028H, 007H, 0CDH
+  222C    16 28 07 CD           
+  2230    4C 15 CD 54           L2230:   DB 04CH, 015H, 0CDH, 054H, 022H, 05FH, 0C1H, 0F1H
+  2234    22 5F C1 F1           
+  2238    47 ED 78 AB           L2238:   DB 047H, 0EDH, 078H, 0ABH, 0A0H, 028H, 0FAH, 0C9H
+  223C    A0 28 FA C9           
+  2240    CD 50 22 4F           L2240:   DB 0CDH, 050H, 022H, 04FH, 0C5H, 0CDH, 04CH, 015H
+  2244    C5 CD 4C 15           
+  2248    CD 50 22 C1           L2248:   DB 0CDH, 050H, 022H, 0C1H, 0C9H, 0CDH, 0D8H, 016H
+  224C    C9 CD D8 16           
+  2250    CD 77 1B CD           L2250:   DB 0CDH, 077H, 01BH, 0CDH, 06CH, 017H, 07AH, 0B7H
+  2254    6C 17 7A B7           
+  2258    C2 87 17 CD           L2258:   DB 0C2H, 087H, 017H, 0CDH, 0D9H, 016H, 07BH, 0C9H
+  225C    D9 16 7B C9           
+  2260    CD 72 17 1A           L2260:   DB 0CDH, 072H, 017H, 01AH, 0C3H, 004H, 01FH, 0CDH
+  2264    C3 04 1F CD           
+  2268    61 17 D5 CD           L2268:   DB 061H, 017H, 0D5H, 0CDH, 04CH, 015H, 0CDH, 050H
+  226C    4C 15 CD 50           
+  2270    22 D1 12 C9           L2270:   DB 022H, 0D1H, 012H, 0C9H, 0F5H, 03AH, 086H, 00CH
+  2274    F5 3A 86 0C           
+  2278    B7 C4 23 2A           L2278:   DB 0B7H, 0C4H, 023H, 02AH, 0F1H, 0C9H, 0E5H, 01CH
+  227C    F1 C9 E5 1C           
+  2280    CD F4 25 38           L2280:   DB 0CDH, 0F4H, 025H, 038H, 02DH, 021H, 080H, 00CH
+  2284    2D 21 80 0C           
+  2288    CD 32 26 C8           L2288:   DB 0CDH, 032H, 026H, 0C8H, 0EDH, 05FH, 0E6H, 007H
+  228C    ED 5F E6 07           
+  2290    06 00 21 D0           L2290:   DB 006H, 000H, 021H, 0D0H, 022H, 087H, 087H, 04FH
+  2294    22 87 87 4F           
+  2298    09 CD 62 26           L2298:   DB 009H, 0CDH, 062H, 026H, 0CDH, 0FBH, 024H, 0EDH
+  229C    CD FB 24 ED           
+  22A0    5F E6 03 06           L22A0:   DB 05FH, 0E6H, 003H, 006H, 000H, 0FEH, 001H, 088H
+  22A4    00 FE 01 88           
+  22A8    21 EC 22 87           L22A8:   DB 021H, 0ECH, 022H, 087H, 087H, 04FH, 009H, 0CDH
+  22AC    87 4F 09 CD           
+  22B0    BF 23 CD 5F           L22B0:   DB 0BFH, 023H, 0CDH, 05FH, 026H, 07BH, 059H, 0EEH
+  22B4    26 7B 59 EE           
+  22B8    4F 4F 36 80           L22B8:   DB 04FH, 04FH, 036H, 080H, 02BH, 046H, 036H, 080H
+  22BC    2B 46 36 80           
+  22C0    ED 5F 20 03           L22C0:   DB 0EDH, 05FH, 020H, 003H, 00CH, 015H, 01CH, 0CDH
+  22C4    0C 15 1C CD           
+  22C8    1A 24 21 80           L22C8:   DB 01AH, 024H, 021H, 080H, 00CH, 0C3H, 03EH, 026H
+  22CC    0C C3 3E 26           
+  22D0    35 4A CA 99           L22D0:   DB 035H, 04AH, 0CAH, 099H, 039H, 01CH, 076H, 098H
+  22D4    39 1C 76 98           
+  22D8    22 95 B3 98           L22D8:   DB 022H, 095H, 0B3H, 098H, 00AH, 0DDH, 047H, 098H
+  22DC    0A DD 47 98           
+  22E0    53 D1 99 99           L22E0:   DB 053H, 0D1H, 099H, 099H, 00AH, 01AH, 09FH, 098H
+  22E4    0A 1A 9F 98           
+  22E8    65 BC CD 98           L22E8:   DB 065H, 0BCH, 0CDH, 098H, 0D6H, 077H, 03EH, 098H
+  22EC    D6 77 3E 98           
+  22F0    68 B1 46 68           L22F0:   DB 068H, 0B1H, 046H, 068H, 099H, 0E9H, 092H, 069H
+  22F4    99 E9 92 69           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-31
+
+
+  22F8    10 D1 75 68           L22F8:   DB 010H, 0D1H, 075H, 068H, 0CDH, 053H, 022H, 0B7H
+  22FC    CD 53 22 B7           
+  2300    21 E1 10 F4           L2300:   DB 021H, 0E1H, 010H, 0F4H, 0C7H, 02BH, 030H, 003H
+  2304    C7 2B 30 03           
+  2308    21 7F 0E E6           L2308:   DB 021H, 07FH, 00EH, 0E6H, 07FH, 047H, 004H, 023H
+  230C    7F 47 04 23           
+  2310    7E B7 F2 0F           L2310:   DB 07EH, 0B7H, 0F2H, 00FH, 023H, 0E6H, 07FH, 0CAH
+  2314    23 E6 7F CA           
+  2318    0B 13 10 F3           L2318:   DB 00BH, 013H, 010H, 0F3H, 011H, 0C4H, 00CH, 0D5H
+  231C    11 C4 0C D5           
+  2320    12 23 13 7E           L2320:   DB 012H, 023H, 013H, 07EH, 0B7H, 0F2H, 020H, 023H
+  2324    B7 F2 20 23           
+  2328    AF 12 E1 C3           L2328:   DB 0AFH, 012H, 0E1H, 0C3H, 08CH, 01FH, 0FEH, 03FH
+  232C    8C 1F FE 3F           
+  2330    F5 CC D8 16           L2330:   DB 0F5H, 0CCH, 0D8H, 016H, 008H, 0F1H, 008H, 0FEH
+  2334    08 F1 08 FE           
+  2338    40 CA 7C 2A           L2338:   DB 040H, 0CAH, 07CH, 02AH, 008H, 0F5H, 0CDH, 023H
+  233C    08 F5 CD 23           
+  2340    2B 0E AE CD           L2340:   DB 02BH, 00EH, 0AEH, 0CDH, 052H, 02AH, 0CDH, 0A8H
+  2344    52 2A CD A8           
+  2348    23 CD 60 2A           L2348:   DB 023H, 0CDH, 060H, 02AH, 036H, 000H, 02EH, 0D5H
+  234C    36 00 2E D5           
+  2350    CD B2 24 08           L2350:   DB 0CDH, 0B2H, 024H, 008H, 0B7H, 028H, 00CH, 008H
+  2354    B7 28 0C 08           
+  2358    CD A8 23 1A           L2358:   DB 0CDH, 0A8H, 023H, 01AH, 096H, 020H, 0E2H, 013H
+  235C    96 20 E2 13           
+  2360    23 10 F8 F1           L2360:   DB 023H, 010H, 0F8H, 0F1H, 008H, 000H, 0EDH, 05BH
+  2364    08 00 ED 5B           
+  2368    8C 0C CD 50           L2368:   DB 08CH, 00CH, 0CDH, 050H, 02AH, 0CDH, 0FAH, 02BH
+  236C    2A CD FA 2B           
+  2370    4F CD FA 2B           L2370:   DB 04FH, 0CDH, 0FAH, 02BH, 081H, 04FH, 0CDH, 0FAH
+  2374    81 4F CD FA           
+  2378    2B 6F CD FA           L2378:   DB 02BH, 06FH, 0CDH, 0FAH, 02BH, 067H, 0EBH, 0CDH
+  237C    2B 67 EB CD           
+  2380    9A 2B 79 94           L2380:   DB 09AH, 02BH, 079H, 094H, 095H, 04FH, 0CDH, 06FH
+  2384    95 4F CD 6F           
+  2388    2A 43 0E 00           L2388:   DB 02AH, 043H, 00EH, 000H, 0CDH, 060H, 02AH, 0CDH
+  238C    CD 60 2A CD           
+  2390    09 1A EB 7C           L2390:   DB 009H, 01AH, 0EBH, 07CH, 0B7H, 020H, 0D3H, 0CDH
+  2394    B7 20 D3 CD           
+  2398    FD 2B 08 28           L2398:   DB 0FDH, 02BH, 008H, 028H, 004H, 0EDH, 053H, 0B7H
+  239C    04 ED 53 B7           
+  23A0    0C FD 21 5C           L23A0:   DB 00CH, 0FDH, 021H, 05CH, 013H, 0C3H, 0D0H, 013H
+  23A4    13 C3 D0 13           
+  23A8    21 D5 0C 11           L23A8:   DB 021H, 0D5H, 00CH, 011H, 0C4H, 00CH, 001H, 000H
+  23AC    C4 0C 01 00           
+  23B0    06 C9 CD 25           L23B0:   DB 006H, 0C9H, 0CDH, 025H, 026H, 0CDH, 006H, 026H
+  23B4    26 CD 06 26           
+  23B8    C1 D1 18 11           L23B8:   DB 0C1H, 0D1H, 018H, 011H, 021H, 0B2H, 029H, 0CDH
+  23BC    21 B2 29 CD           
+  23C0    62 26 18 09           L23C0:   DB 062H, 026H, 018H, 009H, 0CDH, 062H, 026H, 021H
+  23C4    CD 62 26 21           
+  23C8    C1 D1 CD 1D           L23C8:   DB 0C1H, 0D1H, 0CDH, 01DH, 026H, 078H, 0B7H, 0C8H
+  23CC    26 78 B7 C8           
+  23D0    3A C2 0C B7           L23D0:   DB 03AH, 0C2H, 00CH, 0B7H, 0CAH, 035H, 026H, 090H
+  23D4    CA 35 26 90           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-32
+
+
+  23D8    30 0C ED 44           L23D8:   DB 030H, 00CH, 0EDH, 044H, 0EBH, 0CDH, 025H, 026H
+  23DC    EB CD 25 26           
+  23E0    EB CD 35 26           L23E0:   DB 0EBH, 0CDH, 035H, 026H, 0C1H, 0D1H, 0FEH, 019H
+  23E4    C1 D1 FE 19           
+  23E8    D0 F5 CD 4A           L23E8:   DB 0D0H, 0F5H, 0CDH, 04AH, 026H, 067H, 0F1H, 0CDH
+  23EC    26 67 F1 CD           
+  23F0    8C 24 B4 21           L23F0:   DB 08CH, 024H, 0B4H, 021H, 0BFH, 00CH, 0F2H, 009H
+  23F4    BF 0C F2 09           
+  23F8    24 CD 6B 24           L23F8:   DB 024H, 0CDH, 06BH, 024H, 030H, 04CH, 023H, 034H
+  23FC    30 4C 23 34           
+  2400    28 64 2E 01           L2400:   DB 028H, 064H, 02EH, 001H, 0CDH, 09FH, 024H, 018H
+  2404    CD 9F 24 18           
+  2408    41 AF 90 47           L2408:   DB 041H, 0AFH, 090H, 047H, 07EH, 09BH, 05FH, 023H
+  240C    7E 9B 5F 23           
+  2410    7E 9A 57 23           L2410:   DB 07EH, 09AH, 057H, 023H, 07EH, 099H, 04FH, 0DCH
+  2414    7E 99 4F DC           
+  2418    77 24 68 63           L2418:   DB 077H, 024H, 068H, 063H, 0AFH, 047H, 079H, 0B7H
+  241C    AF 47 79 B7           
+  2420    20 17 4A 54           L2420:   DB 020H, 017H, 04AH, 054H, 065H, 06FH, 078H, 0D6H
+  2424    65 6F 78 D6           
+  2428    08 FE E0 20           L2428:   DB 008H, 0FEH, 0E0H, 020H, 0F0H, 0AFH, 032H, 0C2H
+  242C    F0 AF 32 C2           
+  2430    0C C9 05 29           L2430:   DB 00CH, 0C9H, 005H, 029H, 0CBH, 012H, 079H, 08FH
+  2434    CB 12 79 8F           
+  2438    4F F2 32 24           L2438:   DB 04FH, 0F2H, 032H, 024H, 078H, 05CH, 045H, 0B7H
+  243C    78 5C 45 B7           
+  2440    28 08 21 C2           L2440:   DB 028H, 008H, 021H, 0C2H, 00CH, 086H, 077H, 030H
+  2444    0C 86 77 30           
+  2448    E4 C8 78 21           L2448:   DB 0E4H, 0C8H, 078H, 021H, 0C2H, 00CH, 0B7H, 0FCH
+  244C    C2 0C B7 FC           
+  2450    5C 24 46 23           L2450:   DB 05CH, 024H, 046H, 023H, 07EH, 0E6H, 080H, 0A9H
+  2454    7E E6 80 A9           
+  2458    4F C3 35 26           L2458:   DB 04FH, 0C3H, 035H, 026H, 01CH, 0C0H, 014H, 0C0H
+  245C    1C C0 14 C0           
+  2460    0C C0 0E 80           L2460:   DB 00CH, 0C0H, 00EH, 080H, 034H, 0C0H, 01EH, 006H
+  2464    34 C0 1E 06           
+  2468    C3 19 13 7E           L2468:   DB 0C3H, 019H, 013H, 07EH, 083H, 05FH, 023H, 07EH
+  246C    83 5F 23 7E           
+  2470    8A 57 23 7E           L2470:   DB 08AH, 057H, 023H, 07EH, 089H, 04FH, 0C9H, 021H
+  2474    89 4F C9 21           
+  2478    C3 0C 7E 2F           L2478:   DB 0C3H, 00CH, 07EH, 02FH, 077H, 0AFH, 06FH, 07DH
+  247C    77 AF 6F 7D           
+  2480    90 47 7D 9B           L2480:   DB 090H, 047H, 07DH, 09BH, 05FH, 07DH, 09AH, 057H
+  2484    5F 7D 9A 57           
+  2488    7D 99 4F C9           L2488:   DB 07DH, 099H, 04FH, 0C9H, 006H, 000H, 0D6H, 008H
+  248C    06 00 D6 08           
+  2490    38 07 43 5A           L2490:   DB 038H, 007H, 043H, 05AH, 051H, 00EH, 000H, 018H
+  2494    51 0E 00 18           
+  2498    F5 C6 09 6F           L2498:   DB 0F5H, 0C6H, 009H, 06FH, 0AFH, 02DH, 0C8H, 0CBH
+  249C    AF 2D C8 CB           
+  24A0    19 CB 1A CB           L24A0:   DB 019H, 0CBH, 01AH, 0CBH, 01BH, 0CBH, 018H, 018H
+  24A4    1B CB 18 18           
+  24A8    F3 FE 61 D8           L24A8:   DB 0F3H, 0FEH, 061H, 0D8H, 0FEH, 07BH, 0D0H, 0E6H
+  24AC    FE 7B D0 E6           
+  24B0    5F C9 CD F9           L24B0:   DB 05FH, 0C9H, 0CDH, 0F9H, 01FH, 0C3H, 009H, 01AH
+  24B4    1F C3 09 1A           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-33
+
+
+  24B8    00 00 CD F4           L24B8:   DB 000H, 000H, 0CDH, 0F4H, 025H, 0B7H, 0EAH, 087H
+  24BC    25 B7 EA 87           
+  24C0    17 21 C2 0C           L24C0:   DB 017H, 021H, 0C2H, 00CH, 07EH, 001H, 035H, 080H
+  24C4    7E 01 35 80           
+  24C8    11 F3 04 90           L24C8:   DB 011H, 0F3H, 004H, 090H, 0F5H, 070H, 0D5H, 0C5H
+  24CC    F5 70 D5 C5           
+  24D0    CD CD 23 C1           L24D0:   DB 0CDH, 0CDH, 023H, 0C1H, 0D1H, 004H, 0CDH, 04DH
+  24D4    D1 04 CD 4D           
+  24D8    25 21 FD 29           L24D8:   DB 025H, 021H, 0FDH, 029H, 0CDH, 0C4H, 023H, 021H
+  24DC    CD C4 23 21           
+  24E0    CF 29 CD 7F           L24E0:   DB 0CFH, 029H, 0CDH, 07FH, 029H, 001H, 080H, 080H
+  24E4    29 01 80 80           
+  24E8    11 00 00 CD           L24E8:   DB 011H, 000H, 000H, 0CDH, 0CDH, 023H, 0F1H, 0CDH
+  24EC    CD 23 F1 CD           
+  24F0    B2 23 01 31           L24F0:   DB 0B2H, 023H, 001H, 031H, 080H, 011H, 018H, 072H
+  24F4    80 11 18 72           
+  24F8    21 C1 D1 CD           L24F8:   DB 021H, 0C1H, 0D1H, 0CDH, 0F4H, 025H, 0C8H, 02EH
+  24FC    F4 25 C8 2E           
+  2500    00 CD B5 25           L2500:   DB 000H, 0CDH, 0B5H, 025H, 0D9H, 001H, 000H, 000H
+  2504    D9 01 00 00           
+  2508    50 58 21 1A           L2508:   DB 050H, 058H, 021H, 01AH, 024H, 0E5H, 021H, 016H
+  250C    24 E5 21 16           
+  2510    25 E5 E5 21           L2510:   DB 025H, 0E5H, 0E5H, 021H, 0BFH, 00CH, 07EH, 023H
+  2514    BF 0C 7E 23           
+  2518    B7 28 1F E5           L2518:   DB 0B7H, 028H, 01FH, 0E5H, 02EH, 008H, 01FH, 067H
+  251C    2E 08 1F 67           
+  2520    79 30 09 D5           L2520:   DB 079H, 030H, 009H, 0D5H, 0D9H, 0E1H, 019H, 079H
+  2524    D9 E1 19 79           
+  2528    E5 D9 D1 89           L2528:   DB 0E5H, 0D9H, 0D1H, 089H, 01FH, 04FH, 0CBH, 01AH
+  252C    1F 4F CB 1A           
+  2530    CB 1B CB 18           L2530:   DB 0CBH, 01BH, 0CBH, 018H, 02DH, 07CH, 020H, 0E6H
+  2534    2D 7C 20 E6           
+  2538    E1 C9 43 5A           L2538:   DB 0E1H, 0C9H, 043H, 05AH, 051H, 04FH, 0C9H, 0CDH
+  253C    51 4F C9 CD           
+  2540    25 26 01 20           L2540:   DB 025H, 026H, 001H, 020H, 084H, 011H, 000H, 000H
+  2544    84 11 00 00           
+  2548    CD 35 26 C1           L2548:   DB 0CDH, 035H, 026H, 0C1H, 0D1H, 0CDH, 0F4H, 025H
+  254C    D1 CD F4 25           
+  2550    CA 0E 13 2E           L2550:   DB 0CAH, 00EH, 013H, 02EH, 0FFH, 0CDH, 0B5H, 025H
+  2554    FF CD B5 25           
+  2558    34 34 2B E5           L2558:   DB 034H, 034H, 02BH, 0E5H, 0D9H, 0E1H, 04EH, 02BH
+  255C    D9 E1 4E 2B           
+  2560    56 2B 5E E5           L2560:   DB 056H, 02BH, 05EH, 0E5H, 0D9H, 0E1H, 041H, 0EBH
+  2564    D9 E1 41 EB           
+  2568    AF 4F 57 5F           L2568:   DB 0AFH, 04FH, 057H, 05FH, 032H, 091H, 00CH, 0E5H
+  256C    32 91 0C E5           
+  2570    C5 78 E5 D9           L2570:   DB 0C5H, 078H, 0E5H, 0D9H, 0E1H, 0B7H, 0EDH, 052H
+  2574    E1 B7 ED 52           
+  2578    99 E5 D9 E1           L2578:   DB 099H, 0E5H, 0D9H, 0E1H, 047H, 03AH, 091H, 00CH
+  257C    47 3A 91 0C           
+  2580    DE 00 3F 30           L2580:   DB 0DEH, 000H, 03FH, 030H, 007H, 032H, 091H, 00CH
+  2584    07 32 91 0C           
+  2588    F1 F1 37 D2           L2588:   DB 0F1H, 0F1H, 037H, 0D2H, 0C1H, 0E1H, 079H, 03CH
+  258C    C1 E1 79 3C           
+  2590    3D 1F FA 4B           L2590:   DB 03DH, 01FH, 0FAH, 04BH, 024H, 017H, 0CBH, 013H
+  2594    24 17 CB 13           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-34
+
+
+  2598    CB 12 CB 11           L2598:   DB 0CBH, 012H, 0CBH, 011H, 029H, 0CBH, 010H, 03AH
+  259C    29 CB 10 3A           
+  25A0    91 0C 17 32           L25A0:   DB 091H, 00CH, 017H, 032H, 091H, 00CH, 079H, 0B2H
+  25A4    91 0C 79 B2           
+  25A8    B3 20 C4 E5           L25A8:   DB 0B3H, 020H, 0C4H, 0E5H, 021H, 0C2H, 00CH, 035H
+  25AC    21 C2 0C 35           
+  25B0    E1 20 BC 18           L25B0:   DB 0E1H, 020H, 0BCH, 018H, 03FH, 078H, 0B7H, 028H
+  25B4    3F 78 B7 28           
+  25B8    1F 7D 21 C2           L25B8:   DB 01FH, 07DH, 021H, 0C2H, 00CH, 0AEH, 080H, 047H
+  25BC    0C AE 80 47           
+  25C0    1F A8 78 F2           L25C0:   DB 01FH, 0A8H, 078H, 0F2H, 0D7H, 025H, 0C6H, 080H
+  25C4    D7 25 C6 80           
+  25C8    77 CA 38 25           L25C8:   DB 077H, 0CAH, 038H, 025H, 0CDH, 04AH, 026H, 077H
+  25CC    CD 4A 26 77           
+  25D0    2B C9 CD F4           L25D0:   DB 02BH, 0C9H, 0CDH, 0F4H, 025H, 02FH, 0E1H, 0B7H
+  25D4    25 2F E1 B7           
+  25D8    E1 F2 2D 24           L25D8:   DB 0E1H, 0F2H, 02DH, 024H, 018H, 013H, 0CDH, 05FH
+  25DC    18 13 CD 5F           
+  25E0    26 78 B7 C8           L25E0:   DB 026H, 078H, 0B7H, 0C8H, 0C6H, 002H, 038H, 009H
+  25E4    C6 02 38 09           
+  25E8    47 CD CD 23           L25E8:   DB 047H, 0CDH, 0CDH, 023H, 021H, 0C2H, 00CH, 034H
+  25EC    21 C2 0C 34           
+  25F0    C0 C3 66 24           L25F0:   DB 0C0H, 0C3H, 066H, 024H, 03AH, 0C2H, 00CH, 0B7H
+  25F4    3A C2 0C B7           
+  25F8    C8 3A C1 0C           L25F8:   DB 0C8H, 03AH, 0C1H, 00CH, 0FEH, 02FH, 017H, 09FH
+  25FC    FE 2F 17 9F           
+  2600    C0 3C C9 CD           L2600:   DB 0C0H, 03CH, 0C9H, 0CDH, 0F4H, 025H, 006H, 088H
+  2604    F4 25 06 88           
+  2608    11 00 00 21           L2608:   DB 011H, 000H, 000H, 021H, 0C2H, 00CH, 04FH, 070H
+  260C    C2 0C 4F 70           
+  2610    06 00 23 36           L2610:   DB 006H, 000H, 023H, 036H, 080H, 017H, 0C3H, 017H
+  2614    80 17 C3 17           
+  2618    24 CD F4 25           L2618:   DB 024H, 0CDH, 0F4H, 025H, 0F0H, 021H, 0C1H, 00CH
+  261C    F0 21 C1 0C           
+  2620    7E EE 80 77           L2620:   DB 07EH, 0EEH, 080H, 077H, 0C9H, 0EBH, 02AH, 0BFH
+  2624    C9 EB 2A BF           
+  2628    0C E3 E5 2A           L2628:   DB 00CH, 0E3H, 0E5H, 02AH, 0C1H, 00CH, 0E3H, 0E5H
+  262C    C1 0C E3 E5           
+  2630    EB C9 CD 62           L2630:   DB 0EBH, 0C9H, 0CDH, 062H, 026H, 0EDH, 053H, 0BFH
+  2634    26 ED 53 BF           
+  2638    0C ED 43 C1           L2638:   DB 00CH, 0EDH, 043H, 0C1H, 00CH, 0C9H, 011H, 0BFH
+  263C    0C C9 11 BF           
+  2640    0C 06 04 1A           L2640:   DB 00CH, 006H, 004H, 01AH, 077H, 013H, 023H, 010H
+  2644    77 13 23 10           
+  2648    FA C9 21 C1           L2648:   DB 0FAH, 0C9H, 021H, 0C1H, 00CH, 07EH, 007H, 037H
+  264C    0C 7E 07 37           
+  2650    1F 77 3F 1F           L2650:   DB 01FH, 077H, 03FH, 01FH, 023H, 023H, 077H, 079H
+  2654    23 23 77 79           
+  2658    07 37 1F 4F           L2658:   DB 007H, 037H, 01FH, 04FH, 01FH, 0AEH, 0C9H, 021H
+  265C    1F AE C9 21           
+  2660    BF 0C 5E 23           L2660:   DB 0BFH, 00CH, 05EH, 023H, 056H, 023H, 04EH, 023H
+  2664    56 23 4E 23           
+  2668    46 23 C9 78           L2668:   DB 046H, 023H, 0C9H, 078H, 0B7H, 028H, 085H, 021H
+  266C    B7 28 85 21           
+  2670    FD 25 E5 CD           L2670:   DB 0FDH, 025H, 0E5H, 0CDH, 0F4H, 025H, 079H, 0C8H
+  2674    F4 25 79 C8           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-35
+
+
+  2678    21 C1 0C AE           L2678:   DB 021H, 0C1H, 00CH, 0AEH, 079H, 0F8H, 0CDH, 084H
+  267C    79 F8 CD 84           
+  2680    26 1F A9 C9           L2680:   DB 026H, 01FH, 0A9H, 0C9H, 023H, 078H, 0BEH, 0C0H
+  2684    23 78 BE C0           
+  2688    2B 79 BE C0           L2688:   DB 02BH, 079H, 0BEH, 0C0H, 02BH, 07AH, 0BEH, 0C0H
+  268C    2B 7A BE C0           
+  2690    2B 7B 96 C0           L2690:   DB 02BH, 07BH, 096H, 0C0H, 0E1H, 0E1H, 0C9H, 047H
+  2694    E1 E1 C9 47           
+  2698    4F 57 5F B7           L2698:   DB 04FH, 057H, 05FH, 0B7H, 0C8H, 0E5H, 0CDH, 05FH
+  269C    C8 E5 CD 5F           
+  26A0    26 CD 4A 26           L26A0:   DB 026H, 0CDH, 04AH, 026H, 0AEH, 067H, 0FCH, 0BBH
+  26A4    AE 67 FC BB           
+  26A8    26 3E 98 90           L26A8:   DB 026H, 03EH, 098H, 090H, 0CDH, 08CH, 024H, 07CH
+  26AC    CD 8C 24 7C           
+  26B0    17 DC 5C 24           L26B0:   DB 017H, 0DCH, 05CH, 024H, 006H, 000H, 0DCH, 077H
+  26B4    06 00 DC 77           
+  26B8    24 E1 C9 1B           L26B8:   DB 024H, 0E1H, 0C9H, 01BH, 07AH, 0A3H, 03CH, 0C0H
+  26BC    7A A3 3C C0           
+  26C0    0B C9 21 C2           L26C0:   DB 00BH, 0C9H, 021H, 0C2H, 00CH, 07EH, 0FEH, 098H
+  26C4    0C 7E FE 98           
+  26C8    3A BF 0C D0           L26C8:   DB 03AH, 0BFH, 00CH, 0D0H, 07EH, 0CDH, 097H, 026H
+  26CC    7E CD 97 26           
+  26D0    36 98 7B F5           L26D0:   DB 036H, 098H, 07BH, 0F5H, 079H, 017H, 0CDH, 017H
+  26D4    79 17 CD 17           
+  26D8    24 F1 C9 21           L26D8:   DB 024H, 0F1H, 0C9H, 021H, 000H, 000H, 078H, 0B1H
+  26DC    00 00 78 B1           
+  26E0    C8 3E 10 29           L26E0:   DB 0C8H, 03EH, 010H, 029H, 038H, 006H, 0EBH, 029H
+  26E4    38 06 EB 29           
+  26E8    EB 30 04 09           L26E8:   DB 0EBH, 030H, 004H, 009H, 0DAH, 049H, 01EH, 03DH
+  26EC    DA 49 1E 3D           
+  26F0    20 F1 C9 FE           L26F0:   DB 020H, 0F1H, 0C9H, 0FEH, 02DH, 0F5H, 028H, 005H
+  26F4    2D F5 28 05           
+  26F8    FE 2B 28 01           L26F8:   DB 0FEH, 02BH, 028H, 001H, 02BH, 0CDH, 02DH, 024H
+  26FC    2B CD 2D 24           
+  2700    47 57 5F 2F           L2700:   DB 047H, 057H, 05FH, 02FH, 04FH, 0CDH, 0D8H, 016H
+  2704    4F CD D8 16           
+  2708    38 4F FE 2E           L2708:   DB 038H, 04FH, 0FEH, 02EH, 028H, 028H, 0FEH, 045H
+  270C    28 28 FE 45           
+  2710    20 27 CD D8           L2710:   DB 020H, 027H, 0CDH, 0D8H, 016H, 0E5H, 021H, 02AH
+  2714    16 E5 21 2A           
+  2718    27 E3 15 FE           L2718:   DB 027H, 0E3H, 015H, 0FEH, 0A9H, 0C8H, 0FEH, 02DH
+  271C    A9 C8 FE 2D           
+  2720    C8 14 FE A8           L2720:   DB 0C8H, 014H, 0FEH, 0A8H, 0C8H, 0FEH, 02BH, 0C8H
+  2724    C8 FE 2B C8           
+  2728    F1 2B CD D8           L2728:   DB 0F1H, 02BH, 0CDH, 0D8H, 016H, 038H, 040H, 014H
+  272C    16 38 40 14           
+  2730    20 07 AF 93           L2730:   DB 020H, 007H, 0AFH, 093H, 05FH, 00CH, 00CH, 028H
+  2734    5F 0C 0C 28           
+  2738    CC E5 7B 90           L2738:   DB 0CCH, 0E5H, 07BH, 090H, 0F4H, 051H, 027H, 0F2H
+  273C    F4 51 27 F2           
+  2740    48 27 F5 CD           L2740:   DB 048H, 027H, 0F5H, 0CDH, 03FH, 025H, 0F1H, 03CH
+  2744    3F 25 F1 3C           
+  2748    20 F2 D1 F1           L2748:   DB 020H, 0F2H, 0D1H, 0F1H, 0CCH, 01DH, 026H, 0EBH
+  274C    CC 1D 26 EB           
+  2750    C9 C8 F5 CD           L2750:   DB 0C9H, 0C8H, 0F5H, 0CDH, 0DEH, 025H, 0F1H, 03DH
+  2754    DE 25 F1 3D           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-36
+
+
+  2758    C9 D5 57 78           L2758:   DB 0C9H, 0D5H, 057H, 078H, 089H, 047H, 0C5H, 0E5H
+  275C    89 47 C5 E5           
+  2760    D5 CD DE 25           L2760:   DB 0D5H, 0CDH, 0DEH, 025H, 0F1H, 0D6H, 030H, 0CDH
+  2764    F1 D6 30 CD           
+  2768    B2 23 E1 C1           L2768:   DB 0B2H, 023H, 0E1H, 0C1H, 0D1H, 018H, 096H, 07BH
+  276C    D1 18 96 7B           
+  2770    07 07 83 07           L2770:   DB 007H, 007H, 083H, 007H, 086H, 0D6H, 030H, 05FH
+  2774    86 D6 30 5F           
+  2778    18 B0 CD F0           L2778:   DB 018H, 0B0H, 0CDH, 0F0H, 02AH, 020H, 069H, 06EH
+  277C    2A 20 69 6E           
+  2780    A0 EB AF 06           L2780:   DB 0A0H, 0EBH, 0AFH, 006H, 098H, 0CDH, 00BH, 026H
+  2784    98 CD 0B 26           
+  2788    21 F8 1F E5           L2788:   DB 021H, 0F8H, 01FH, 0E5H, 021H, 0C4H, 00CH, 0E5H
+  278C    21 C4 0C E5           
+  2790    CD F4 25 36           L2790:   DB 0CDH, 0F4H, 025H, 036H, 020H, 0F2H, 09AH, 027H
+  2794    20 F2 9A 27           
+  2798    36 2D 23 36           L2798:   DB 036H, 02DH, 023H, 036H, 030H, 0CAH, 047H, 028H
+  279C    30 CA 47 28           
+  27A0    E5 FC 1D 26           L27A0:   DB 0E5H, 0FCH, 01DH, 026H, 0AFH, 0F5H, 0CDH, 04DH
+  27A4    AF F5 CD 4D           
+  27A8    28 01 43 91           L27A8:   DB 028H, 001H, 043H, 091H, 011H, 0F8H, 04FH, 0CDH
+  27AC    11 F8 4F CD           
+  27B0    6B 26 B7 E2           L27B0:   DB 06BH, 026H, 0B7H, 0E2H, 0C6H, 027H, 0F1H, 0CDH
+  27B4    C6 27 F1 CD           
+  27B8    52 27 F5 18           L27B8:   DB 052H, 027H, 0F5H, 018H, 0ECH, 0CDH, 03FH, 025H
+  27BC    EC CD 3F 25           
+  27C0    F1 3C F5 CD           L27C0:   DB 0F1H, 03CH, 0F5H, 0CDH, 04DH, 028H, 0CDH, 0BCH
+  27C4    4D 28 CD BC           
+  27C8    23 3C CD 97           L27C8:   DB 023H, 03CH, 0CDH, 097H, 026H, 0CDH, 035H, 026H
+  27CC    26 CD 35 26           
+  27D0    01 06 03 F1           L27D0:   DB 001H, 006H, 003H, 0F1H, 081H, 03CH, 0FAH, 0E2H
+  27D4    81 3C FA E2           
+  27D8    27 FE 08 F2           L27D8:   DB 027H, 0FEH, 008H, 0F2H, 0E2H, 027H, 03CH, 047H
+  27DC    E2 27 3C 47           
+  27E0    3E 02 3D 3D           L27E0:   DB 03EH, 002H, 03DH, 03DH, 0E1H, 0F5H, 011H, 05CH
+  27E4    E1 F5 11 5C           
+  27E8    28 10 06 36           L27E8:   DB 028H, 010H, 006H, 036H, 02EH, 023H, 036H, 030H
+  27EC    2E 23 36 30           
+  27F0    23 05 36 2E           L27F0:   DB 023H, 005H, 036H, 02EH, 020H, 001H, 023H, 0C5H
+  27F4    20 01 23 C5           
+  27F8    E5 D5 CD 5F           L27F8:   DB 0E5H, 0D5H, 0CDH, 05FH, 026H, 0E1H, 006H, 02FH
+  27FC    26 E1 06 2F           
+  2800    04 7B 96 5F           L2800:   DB 004H, 07BH, 096H, 05FH, 023H, 07AH, 09EH, 057H
+  2804    23 7A 9E 57           
+  2808    23 79 9E 4F           L2808:   DB 023H, 079H, 09EH, 04FH, 02BH, 02BH, 030H, 0F0H
+  280C    2B 2B 30 F0           
+  2810    CD 6B 24 23           L2810:   DB 0CDH, 06BH, 024H, 023H, 0CDH, 035H, 026H, 0EBH
+  2814    CD 35 26 EB           
+  2818    E1 70 23 C1           L2818:   DB 0E1H, 070H, 023H, 0C1H, 00DH, 020H, 0D2H, 005H
+  281C    0D 20 D2 05           
+  2820    28 0B 2B 7E           L2820:   DB 028H, 00BH, 02BH, 07EH, 0FEH, 030H, 028H, 0FAH
+  2824    FE 30 28 FA           
+  2828    FE 2E 28 01           L2828:   DB 0FEH, 02EH, 028H, 001H, 023H, 0F1H, 028H, 01AH
+  282C    23 F1 28 1A           
+  2830    36 45 23 36           L2830:   DB 036H, 045H, 023H, 036H, 02BH, 0F2H, 03CH, 028H
+  2834    2B F2 3C 28           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-37
+
+
+  2838    36 2D ED 44           L2838:   DB 036H, 02DH, 0EDH, 044H, 006H, 02FH, 004H, 0D6H
+  283C    06 2F 04 D6           
+  2840    0A 30 FB C6           L2840:   DB 00AH, 030H, 0FBH, 0C6H, 03AH, 023H, 070H, 023H
+  2844    3A 23 70 23           
+  2848    77 23 71 E1           L2848:   DB 077H, 023H, 071H, 0E1H, 0C9H, 001H, 074H, 094H
+  284C    C9 01 74 94           
+  2850    11 F7 23 CD           L2850:   DB 011H, 0F7H, 023H, 0CDH, 06BH, 026H, 0B7H, 0E1H
+  2854    6B 26 B7 E1           
+  2858    E2 BD 27 E9           L2858:   DB 0E2H, 0BDH, 027H, 0E9H, 0A0H, 086H, 001H, 010H
+  285C    A0 86 01 10           
+  2860    27 00 E8 03           L2860:   DB 027H, 000H, 0E8H, 003H, 000H, 064H, 000H, 000H
+  2864    00 64 00 00           
+  2868    0A 00 00 01           L2868:   DB 00AH, 000H, 000H, 001H, 000H, 000H, 0CDH, 025H
+  286C    00 00 CD 25           
+  2870    26 21 B2 29           L2870:   DB 026H, 021H, 0B2H, 029H, 0CDH, 032H, 026H, 0C1H
+  2874    CD 32 26 C1           
+  2878    D1 CD F4 25           L2878:   DB 0D1H, 0CDH, 0F4H, 025H, 078H, 028H, 03CH, 0F2H
+  287C    78 28 3C F2           
+  2880    86 28 B7 CA           L2880:   DB 086H, 028H, 0B7H, 0CAH, 00EH, 013H, 0B7H, 0CAH
+  2884    0E 13 B7 CA           
+  2888    2E 24 D5 C5           L2888:   DB 02EH, 024H, 0D5H, 0C5H, 079H, 0F6H, 07FH, 0CDH
+  288C    79 F6 7F CD           
+  2890    5F 26 F2 A3           L2890:   DB 05FH, 026H, 0F2H, 0A3H, 028H, 0D5H, 0C5H, 0CDH
+  2894    28 D5 C5 CD           
+  2898    C2 26 C1 D1           L2898:   DB 0C2H, 026H, 0C1H, 0D1H, 0F5H, 0CDH, 06BH, 026H
+  289C    F5 CD 6B 26           
+  28A0    E1 7C 1F E1           L28A0:   DB 0E1H, 07CH, 01FH, 0E1H, 022H, 0C1H, 00CH, 0E1H
+  28A4    22 C1 0C E1           
+  28A8    22 BF 0C DC           L28A8:   DB 022H, 0BFH, 00CH, 0DCH, 0B0H, 02BH, 0CCH, 01DH
+  28AC    B0 2B CC 1D           
+  28B0    26 D5 C5 CD           L28B0:   DB 026H, 0D5H, 0C5H, 0CDH, 0BAH, 024H, 0C1H, 0D1H
+  28B4    BA 24 C1 D1           
+  28B8    CD FB 24 CD           L28B8:   DB 0CDH, 0FBH, 024H, 0CDH, 025H, 026H, 001H, 038H
+  28BC    25 26 01 38           
+  28C0    81 11 3B AA           L28C0:   DB 081H, 011H, 03BH, 0AAH, 0CDH, 0FBH, 024H, 03AH
+  28C4    CD FB 24 3A           
+  28C8    C2 0C FE 88           L28C8:   DB 0C2H, 00CH, 0FEH, 088H, 0D2H, 0D2H, 025H, 0CDH
+  28CC    D2 D2 25 CD           
+  28D0    C2 26 C6 80           L28D0:   DB 0C2H, 026H, 0C6H, 080H, 0C6H, 002H, 0DAH, 0D2H
+  28D4    C6 02 DA D2           
+  28D8    25 F5 21 FD           L28D8:   DB 025H, 0F5H, 021H, 0FDH, 029H, 0CDH, 0BFH, 023H
+  28DC    29 CD BF 23           
+  28E0    CD F2 24 F1           L28E0:   DB 0CDH, 0F2H, 024H, 0F1H, 0C1H, 0D1H, 0F5H, 0CDH
+  28E4    C1 D1 F5 CD           
+  28E8    CA 23 CD 1D           L28E8:   DB 0CAH, 023H, 0CDH, 01DH, 026H, 021H, 001H, 02AH
+  28EC    26 21 01 2A           
+  28F0    CD 8E 29 11           L28F0:   DB 0CDH, 08EH, 029H, 011H, 000H, 000H, 0C1H, 04AH
+  28F4    00 00 C1 4A           
+  28F8    C3 FB 24 CD           L28F8:   DB 0C3H, 0FBH, 024H, 0CDH, 025H, 026H, 0CDH, 03EH
+  28FC    25 26 CD 3E           
+  2900    29 C1 E1 CD           L2900:   DB 029H, 0C1H, 0E1H, 0CDH, 025H, 026H, 0EBH, 0CDH
+  2904    25 26 EB CD           
+  2908    35 26 CD 38           L2908:   DB 035H, 026H, 0CDH, 038H, 029H, 0C3H, 04BH, 025H
+  290C    29 C3 4B 25           
+  2910    CD F4 25 FC           L2910:   DB 0CDH, 0F4H, 025H, 0FCH, 0B0H, 02BH, 0FCH, 01DH
+  2914    B0 2B FC 1D           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-38
+
+
+  2918    26 3A C2 0C           L2918:   DB 026H, 03AH, 0C2H, 00CH, 0FEH, 081H, 038H, 00CH
+  291C    FE 81 38 0C           
+  2920    01 00 81 51           L2920:   DB 001H, 000H, 081H, 051H, 059H, 0CDH, 04DH, 025H
+  2924    59 CD 4D 25           
+  2928    21 C4 23 E5           L2928:   DB 021H, 0C4H, 023H, 0E5H, 021H, 0DCH, 029H, 0CDH
+  292C    21 DC 29 CD           
+  2930    7F 29 21 AE           L2930:   DB 07FH, 029H, 021H, 0AEH, 029H, 0C9H, 000H, 000H
+  2934    29 C9 00 00           
+  2938    21 AE 29 CD           L2938:   DB 021H, 0AEH, 029H, 0CDH, 0BFH, 023H, 0CDH, 025H
+  293C    BF 23 CD 25           
+  2940    26 01 49 83           L2940:   DB 026H, 001H, 049H, 083H, 011H, 0DBH, 00FH, 0CDH
+  2944    11 DB 0F CD           
+  2948    35 26 C1 D1           L2948:   DB 035H, 026H, 0C1H, 0D1H, 0CDH, 04DH, 025H, 0CDH
+  294C    CD 4D 25 CD           
+  2950    25 26 CD C2           L2950:   DB 025H, 026H, 0CDH, 0C2H, 026H, 0C1H, 0D1H, 0CDH
+  2954    26 C1 D1 CD           
+  2958    CA 23 21 B6           L2958:   DB 0CAH, 023H, 021H, 0B6H, 029H, 0CDH, 0C4H, 023H
+  295C    29 CD C4 23           
+  2960    CD F4 25 37           L2960:   DB 0CDH, 0F4H, 025H, 037H, 0F2H, 06EH, 029H, 0CDH
+  2964    F2 6E 29 CD           
+  2968    BC 23 CD F4           L2968:   DB 0BCH, 023H, 0CDH, 0F4H, 025H, 0B7H, 0F5H, 0F4H
+  296C    25 B7 F5 F4           
+  2970    1D 26 21 B6           L2970:   DB 01DH, 026H, 021H, 0B6H, 029H, 0CDH, 0BFH, 023H
+  2974    29 CD BF 23           
+  2978    F1 D4 1D 26           L2978:   DB 0F1H, 0D4H, 01DH, 026H, 021H, 0BAH, 029H, 0CDH
+  297C    21 BA 29 CD           
+  2980    25 26 11 F9           L2980:   DB 025H, 026H, 011H, 0F9H, 024H, 0D5H, 0E5H, 0CDH
+  2984    24 D5 E5 CD           
+  2988    5F 26 CD FB           L2988:   DB 05FH, 026H, 0CDH, 0FBH, 024H, 0E1H, 0CDH, 025H
+  298C    24 E1 CD 25           
+  2990    26 7E 23 CD           L2990:   DB 026H, 07EH, 023H, 0CDH, 032H, 026H, 006H, 0F1H
+  2994    32 26 06 F1           
+  2998    C1 D1 3D C8           L2998:   DB 0C1H, 0D1H, 03DH, 0C8H, 0D5H, 0C5H, 0F5H, 0E5H
+  299C    D5 C5 F5 E5           
+  29A0    CD FB 24 E1           L29A0:   DB 0CDH, 0FBH, 024H, 0E1H, 0CDH, 062H, 026H, 0E5H
+  29A4    CD 62 26 E5           
+  29A8    CD CD 23 E1           L29A8:   DB 0CDH, 0CDH, 023H, 0E1H, 018H, 0E9H, 0DBH, 00FH
+  29AC    18 E9 DB 0F           
+  29B0    49 81 00 00           L29B0:   DB 049H, 081H, 000H, 000H, 000H, 080H, 000H, 000H
+  29B4    00 80 00 00           
+  29B8    00 7F 05 BA           L29B8:   DB 000H, 07FH, 005H, 0BAH, 0D7H, 01EH, 086H, 064H
+  29BC    D7 1E 86 64           
+  29C0    26 99 87 58           L29C0:   DB 026H, 099H, 087H, 058H, 034H, 023H, 087H, 0E0H
+  29C4    34 23 87 E0           
+  29C8    5D A5 86 DA           L29C8:   DB 05DH, 0A5H, 086H, 0DAH, 00FH, 049H, 083H, 003H
+  29CC    0F 49 83 03           
+  29D0    AA 56 19 80           L29D0:   DB 0AAH, 056H, 019H, 080H, 0F1H, 022H, 076H, 080H
+  29D4    F1 22 76 80           
+  29D8    45 AA 38 82           L29D8:   DB 045H, 0AAH, 038H, 082H, 009H, 04AH, 0D7H, 03BH
+  29DC    09 4A D7 3B           
+  29E0    78 02 6E 84           L29E0:   DB 078H, 002H, 06EH, 084H, 07BH, 0FEH, 0C1H, 02FH
+  29E4    7B FE C1 2F           
+  29E8    7C 74 31 9A           L29E8:   DB 07CH, 074H, 031H, 09AH, 07DH, 084H, 03DH, 05AH
+  29EC    7D 84 3D 5A           
+  29F0    7D C8 7F 91           L29F0:   DB 07DH, 0C8H, 07FH, 091H, 07EH, 0E4H, 0BBH, 04CH
+  29F4    7E E4 BB 4C           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-39
+
+
+  29F8    7E 6C AA AA           L29F8:   DB 07EH, 06CH, 0AAH, 0AAH, 07FH, 000H, 000H, 000H
+  29FC    7F 00 00 00           
+  2A00    81 08 40 2E           L2A00:   DB 081H, 008H, 040H, 02EH, 094H, 074H, 070H, 04FH
+  2A04    94 74 70 4F           
+  2A08    2E 77 6E 02           L2A08:   DB 02EH, 077H, 06EH, 002H, 088H, 07AH, 0E6H, 0A0H
+  2A0C    88 7A E6 A0           
+  2A10    2A 7C 50 AA           L2A10:   DB 02AH, 07CH, 050H, 0AAH, 0AAH, 07EH, 0FFH, 0FFH
+  2A14    AA 7E FF FF           
+  2A18    7F 7F 00 00           L2A18:   DB 07FH, 07FH, 000H, 000H, 080H, 081H, 000H, 000H
+  2A1C    80 81 00 00           
+  2A20    00 81 AF C5           L2A20:   DB 000H, 081H, 0AFH, 0C5H, 047H, 0F5H, 0CDH, 0EBH
+  2A24    47 F5 CD EB           
+  2A28    2B F1 10 F9           L2A28:   DB 02BH, 0F1H, 010H, 0F9H, 0C1H, 0C9H, 07EH, 081H
+  2A2C    C1 C9 7E 81           
+  2A30    4F 7E CD EE           L2A30:   DB 04FH, 07EH, 0CDH, 0EEH, 02BH, 023H, 010H, 0F6H
+  2A34    2B 23 10 F6           
+  2A38    79 C3 EE 2B           L2A38:   DB 079H, 0C3H, 0EEH, 02BH, 000H, 0CDH, 022H, 02AH
+  2A3C    00 CD 22 2A           
+  2A40    C5 47 4F CD           L2A40:   DB 0C5H, 047H, 04FH, 0CDH, 049H, 02AH, 0C1H, 006H
+  2A44    49 2A C1 06           
+  2A48    04 79 CD EE           L2A48:   DB 004H, 079H, 0CDH, 0EEH, 02BH, 010H, 0FAH, 0C9H
+  2A4C    2B 10 FA C9           
+  2A50    0E FF 06 04           L2A50:   DB 00EH, 0FFH, 006H, 004H, 0CDH, 0FAH, 02BH, 0B9H
+  2A54    CD FA 2B B9           
+  2A58    20 F8 10 F8           L2A58:   DB 020H, 0F8H, 010H, 0F8H, 0C9H, 0CDH, 009H, 01AH
+  2A5C    C9 CD 09 1A           
+  2A60    CD FA 2B 08           L2A60:   DB 0CDH, 0FAH, 02BH, 008H, 028H, 003H, 008H, 077H
+  2A64    28 03 08 77           
+  2A68    08 08 81 4F           L2A68:   DB 008H, 008H, 081H, 04FH, 023H, 010H, 0F1H, 0CDH
+  2A6C    23 10 F1 CD           
+  2A70    FA 2B B9 C8           L2A70:   DB 0FAH, 02BH, 0B9H, 0C8H, 0CDH, 0FDH, 02BH, 01EH
+  2A74    CD FD 2B 1E           
+  2A78    15 C3 19 13           L2A78:   DB 015H, 0C3H, 019H, 013H, 0CDH, 0D8H, 016H, 078H
+  2A7C    CD D8 16 78           
+  2A80    B7 F5 3E 01           L2A80:   DB 0B7H, 0F5H, 03EH, 001H, 032H, 0ACH, 00CH, 0CDH
+  2A84    32 AC 0C CD           
+  2A88    53 1D E3 E5           L2A88:   DB 053H, 01DH, 0E3H, 0E5H, 032H, 0ACH, 00CH, 060H
+  2A8C    32 AC 0C 60           
+  2A90    69 EB 19 EB           L2A90:   DB 069H, 0EBH, 019H, 0EBH, 006H, 000H, 04EH, 009H
+  2A94    06 00 4E 09           
+  2A98    09 23 CD 7A           L2A98:   DB 009H, 023H, 0CDH, 07AH, 01BH, 00EH, 0D2H, 0CDH
+  2A9C    1B 0E D2 CD           
+  2AA0    FD 2B F1 20           L2AA0:   DB 0FDH, 02BH, 0F1H, 020H, 00BH, 0CDH, 03DH, 02AH
+  2AA4    0B CD 3D 2A           
+  2AA8    CD BB 2A CD           L2AA8:   DB 0CDH, 0BBH, 02AH, 0CDH, 02EH, 02AH, 018H, 0F8H
+  2AAC    2E 2A 18 F8           
+  2AB0    CD 52 2A CD           L2AB0:   DB 0CDH, 052H, 02AH, 0CDH, 0BBH, 02AH, 0CDH, 060H
+  2AB4    BB 2A CD 60           
+  2AB8    2A 18 F8 01           L2AB8:   DB 02AH, 018H, 0F8H, 001H, 000H, 004H, 0CDH, 046H
+  2ABC    00 04 CD 46           
+  2AC0    15 D8 CD FD           L2AC0:   DB 015H, 0D8H, 0CDH, 0FDH, 02BH, 0E1H, 0E1H, 0C9H
+  2AC4    2B E1 E1 C9           
+  2AC8    00 E5 18 04           L2AC8:   DB 000H, 0E5H, 018H, 004H, 0E5H, 02AH, 029H, 00CH
+  2ACC    E5 2A 29 0C           
+  2AD0    C5 4E 36 5F           L2AD0:   DB 0C5H, 04EH, 036H, 05FH, 0CDH, 0E7H, 02AH, 071H
+  2AD4    CD E7 2A 71           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-40
+
+
+  2AD8    38 05 CD E7           L2AD8:   DB 038H, 005H, 0CDH, 0E7H, 02AH, 030H, 0F2H, 0C1H
+  2ADC    2A 30 F2 C1           
+  2AE0    E1 FE 1B 3F           L2AE0:   DB 0E1H, 0FEH, 01BH, 03FH, 0C8H, 0B7H, 0C9H, 006H
+  2AE4    C8 B7 C9 06           
+  2AE8    C0 CD F7 2B           L2AE8:   DB 0C0H, 0CDH, 0F7H, 02BH, 0D8H, 010H, 0FAH, 0C9H
+  2AEC    D8 10 FA C9           
+  2AF0    E3 7E CB 7F           L2AF0:   DB 0E3H, 07EH, 0CBH, 07FH, 0CBH, 0BFH, 0F5H, 0CDH
+  2AF4    CB BF F5 CD           
+  2AF8    5C 15 F1 23           L2AF8:   DB 05CH, 015H, 0F1H, 023H, 028H, 0F3H, 0E3H, 0C9H
+  2AFC    28 F3 E3 C9           
+  2B00    E5 3E 02 21           L2B00:   DB 0E5H, 03EH, 002H, 021H, 000H, 00CH, 0AEH, 0D3H
+  2B04    00 0C AE D3           
+  2B08    00 EE 01 D3           L2B08:   DB 000H, 0EEH, 001H, 0D3H, 000H, 0EEH, 002H, 0D3H
+  2B0C    00 EE 02 D3           
+  2B10    00 7E D3 00           L2B10:   DB 000H, 07EH, 0D3H, 000H, 0E1H, 0DBH, 000H, 02FH
+  2B14    E1 DB 00 2F           
+  2B18    E6 11 C8 E6           L2B18:   DB 0E6H, 011H, 0C8H, 0E6H, 010H, 028H, 0ADH, 0CDH
+  2B1C    10 28 AD CD           
+  2B20    F7 2B C9 CD           L2B20:   DB 0F7H, 02BH, 0C9H, 0CDH, 0ABH, 023H, 00DH, 07EH
+  2B24    AB 23 0D 7E           
+  2B28    FE 5B 30 0D           L2B28:   DB 0FEH, 05BH, 030H, 00DH, 0FEH, 030H, 038H, 009H
+  2B2C    FE 30 38 09           
+  2B30    ED A0 10 F3           L2B30:   DB 0EDH, 0A0H, 010H, 0F3H, 0AFH, 012H, 0C3H, 0FDH
+  2B34    AF 12 C3 FD           
+  2B38    2B 3E 20 12           L2B38:   DB 02BH, 03EH, 020H, 012H, 013H, 018H, 0F3H, 0D6H
+  2B3C    13 18 F3 D6           
+  2B40    40 47 CA 7C           L2B40:   DB 040H, 047H, 0CAH, 07CH, 02AH, 0CDH, 023H, 02BH
+  2B44    2A CD 23 2B           
+  2B48    0E AE CD 3D           L2B48:   DB 00EH, 0AEH, 0CDH, 03DH, 02AH, 0CDH, 0A8H, 023H
+  2B4C    2A CD A8 23           
+  2B50    EB CD 2E 2A           L2B50:   DB 0EBH, 0CDH, 02EH, 02AH, 0CDH, 022H, 02AH, 02AH
+  2B54    CD 22 2A 2A           
+  2B58    8C 0C ED 5B           L2B58:   DB 08CH, 00CH, 0EDH, 05BH, 0B7H, 00CH, 0EBH, 037H
+  2B5C    B7 0C EB 37           
+  2B60    ED 52 38 30           L2B60:   DB 0EDH, 052H, 038H, 030H, 0EBH, 03EH, 004H, 00EH
+  2B64    EB 3E 04 0E           
+  2B68    FF CD 40 2A           L2B68:   DB 0FFH, 0CDH, 040H, 02AH, 0AFH, 0BAH, 020H, 002H
+  2B6C    AF BA 20 02           
+  2B70    43 04 58 7D           L2B70:   DB 043H, 004H, 058H, 07DH, 0CDH, 0EEH, 02BH, 07CH
+  2B74    CD EE 2B 7C           
+  2B78    CD EE 2B 7B           L2B78:   DB 0CDH, 0EEH, 02BH, 07BH, 0CDH, 0EEH, 02BH, 07AH
+  2B7C    CD EE 2B 7A           
+  2B80    CD EE 2B 0C           L2B80:   DB 0CDH, 0EEH, 02BH, 00CH, 0CDH, 09AH, 02BH, 0CDH
+  2B84    CD 9A 2B CD           
+  2B88    38 2A 0E 00           L2B88:   DB 038H, 02AH, 00EH, 000H, 0CDH, 02EH, 02AH, 0CDH
+  2B8C    CD 2E 2A CD           
+  2B90    09 1A 18 C6           L2B90:   DB 009H, 01AH, 018H, 0C6H, 0CDH, 0FDH, 02BH, 0C3H
+  2B94    CD FD 2B C3           
+  2B98    55 13 CD 9D           L2B98:   DB 055H, 013H, 0CDH, 09DH, 02BH, 0D5H, 0CDH, 0F1H
+  2B9C    2B D5 CD F1           
+  2BA0    2B D1 EB C9           L2BA0:   DB 02BH, 0D1H, 0EBH, 0C9H, 0CDH, 0EDH, 01EH, 0CDH
+  2BA4    CD ED 1E CD           
+  2BA8    7A 1B E1 CD           L2BA8:   DB 07AH, 01BH, 0E1H, 0CDH, 051H, 015H, 029H, 0C9H
+  2BAC    51 15 29 C9           
+  2BB0    21 1D 26 E3           L2BB0:   DB 021H, 01DH, 026H, 0E3H, 0E9H, 000H, 000H, 000H
+  2BB4    E9 00 00 00           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-41
+
+
+  2BB8    00 00 00 00           L2BB8:   DB 000H, 000H, 000H, 000H, 000H, 000H, 000H, 000H
+  2BBC    00 00 00 00           
+  2BC0    00 00 00 00           L2BC0:   DB 000H, 000H, 000H, 000H, 000H, 000H, 000H, 021H
+  2BC4    00 00 00 21           
+  2BC8    64 10 47 CB           L2BC8:   DB 064H, 010H, 047H, 0CBH, 0B0H, 007H, 007H, 078H
+  2BCC    B0 07 07 78           
+  2BD0    D8 3D C9 7E           L2BD0:   DB 0D8H, 03DH, 0C9H, 07EH, 047H, 02FH, 077H, 0BEH
+  2BD4    47 2F 77 BE           
+  2BD8    70 C0 24 18           L2BD8:   DB 070H, 0C0H, 024H, 018H, 0F6H, 0E5H, 0DFH, 077H
+  2BDC    F6 E5 DF 77           
+  2BE0    E1 C9 C9 0C           L2BE0:   DB 0E1H, 0C9H, 0C9H, 00CH, 0C9H, 0DFH, 05BH, 0C9H
+  2BE4    C9 DF 5B C9           
+  2BE8    C3 59 03 FF           L2BE8:   DB 0C3H, 059H, 003H, 0FFH, 0C9H, 000H, 0DFH, 06FH
+  2BEC    C9 00 DF 6F           
+  2BF0    C9 DF 66 C9           L2BF0:   DB 0C9H, 0DFH, 066H, 0C9H, 0F7H, 0C9H, 000H, 0DFH
+  2BF4    F7 C9 00 DF           
+  2BF8    62 C9 CF C9           L2BF8:   DB 062H, 0C9H, 0CFH, 0C9H, 000H, 0DFH, 05FH, 0C9H
+  2BFC    00 DF 5F C9           
+  2C00    CD DD 2B CD           L2C00:   DB 0CDH, 0DDH, 02BH, 0CDH, 08CH, 017H, 0CDH, 030H
+  2C04    8C 17 CD 30           
+  2C08    14 D9 FD 21           L2C08:   DB 014H, 0D9H, 0FDH, 021H, 00AH, 02CH, 0D9H, 0CDH
+  2C0C    0A 2C D9 CD           
+  2C10    EC 13 38 03           L2C10:   DB 0ECH, 013H, 038H, 003H, 0CAH, 055H, 013H, 003H
+  2C14    CA 55 13 03           
+  2C18    03 C5 60 69           L2C18:   DB 003H, 0C5H, 060H, 069H, 05EH, 023H, 056H, 013H
+  2C1C    5E 23 56 13           
+  2C20    D9 E1 11 8A           L2C20:   DB 0D9H, 0E1H, 011H, 08AH, 00BH, 0EDH, 053H, 029H
+  2C24    0B ED 53 29           
+  2C28    0C CD F0 2A           L2C28:   DB 00CH, 0CDH, 0F0H, 02AH, 00DH, 08DH, 000H, 011H
+  2C2C    0D 8D 00 11           
+  2C30    CA 0A D5 ED           L2C30:   DB 0CAH, 00AH, 0D5H, 0EDH, 053H, 029H, 00CH, 0CDH
+  2C34    53 29 0C CD           
+  2C38    C1 15 2A 29           L2C38:   DB 0C1H, 015H, 02AH, 029H, 00CH, 03EH, 020H, 077H
+  2C3C    0C 3E 20 77           
+  2C40    21 8A 0B 22           L2C40:   DB 021H, 08AH, 00BH, 022H, 029H, 00CH, 0E1H, 0E5H
+  2C44    29 0C E1 E5           
+  2C48    3E 03 11 D5           L2C48:   DB 03EH, 003H, 011H, 0D5H, 00CH, 001H, 030H, 000H
+  2C4C    0C 01 30 00           
+  2C50    ED B0 0E 10           L2C50:   DB 0EDH, 0B0H, 00EH, 010H, 009H, 03DH, 020H, 0F5H
+  2C54    09 3D 20 F5           
+  2C58    4F D1 D5 C5           L2C58:   DB 04FH, 0D1H, 0D5H, 0C5H, 021H, 0D5H, 00CH, 03EH
+  2C5C    21 D5 0C 3E           
+  2C60    03 01 30 00           L2C60:   DB 003H, 001H, 030H, 000H, 0EDH, 0B0H, 00EH, 010H
+  2C64    ED B0 0E 10           
+  2C68    EB 09 EB 3D           L2C68:   DB 0EBH, 009H, 0EBH, 03DH, 020H, 0F3H, 0C1H, 0E1H
+  2C6C    20 F3 C1 E1           
+  2C70    E5 11 40 00           L2C70:   DB 0E5H, 011H, 040H, 000H, 079H, 0D6H, 030H, 038H
+  2C74    79 D6 30 38           
+  2C78    03 19 18 F9           L2C78:   DB 003H, 019H, 018H, 0F9H, 0C6H, 030H, 05FH, 019H
+  2C7C    C6 30 5F 19           
+  2C80    CD C9 2A DA           L2C80:   DB 0CDH, 0C9H, 02AH, 0DAH, 055H, 013H, 0FEH, 00DH
+  2C84    55 13 FE 0D           
+  2C88    20 11 11 65           L2C88:   DB 020H, 011H, 011H, 065H, 00DH, 01BH, 01AH, 0FEH
+  2C8C    0D 1B 1A FE           
+  2C90    20 28 FA 13           L2C90:   DB 020H, 028H, 0FAH, 013H, 0EBH, 0CDH, 004H, 01AH
+  2C94    EB CD 04 1A           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-42
+
+
+  2C98    C3 6D 13 E5           L2C98:   DB 0C3H, 06DH, 013H, 0E5H, 021H, 059H, 02CH, 0E3H
+  2C9C    21 59 2C E3           
+  2CA0    FE 12 20 06           L2CA0:   DB 0FEH, 012H, 020H, 006H, 079H, 0FEH, 08FH, 0D0H
+  2CA4    79 FE 8F D0           
+  2CA8    0C C9 FE 11           L2CA8:   DB 00CH, 0C9H, 0FEH, 011H, 020H, 004H, 00DH, 0F0H
+  2CAC    20 04 0D F0           
+  2CB0    0C C9 FE 15           L2CB0:   DB 00CH, 0C9H, 0FEH, 015H, 020H, 015H, 021H, 0D5H
+  2CB4    20 15 21 D5           
+  2CB8    0C 09 54 5D           L2CB8:   DB 00CH, 009H, 054H, 05DH, 023H, 0C5H, 03EH, 090H
+  2CBC    23 C5 3E 90           
+  2CC0    91 4F ED B0           L2CC0:   DB 091H, 04FH, 0EDH, 0B0H, 0C1H, 03EH, 020H, 032H
+  2CC4    C1 3E 20 32           
+  2CC8    64 0D C9 FE           L2CC8:   DB 064H, 00DH, 0C9H, 0FEH, 016H, 020H, 015H, 011H
+  2CCC    16 20 15 11           
+  2CD0    64 0D 21 63           L2CD0:   DB 064H, 00DH, 021H, 063H, 00DH, 0C5H, 03EH, 090H
+  2CD4    0D C5 3E 90           
+  2CD8    91 4F ED B8           L2CD8:   DB 091H, 04FH, 0EDH, 0B8H, 0C1H, 021H, 0D5H, 00CH
+  2CDC    C1 21 D5 0C           
+  2CE0    09 36 20 C9           L2CE0:   DB 009H, 036H, 020H, 0C9H, 0FEH, 008H, 020H, 00DH
+  2CE4    FE 08 20 0D           
+  2CE8    21 D5 0C 09           L2CE8:   DB 021H, 0D5H, 00CH, 009H, 07EH, 03EH, 020H, 077H
+  2CEC    7E 3E 20 77           
+  2CF0    0D F0 0C 00           L2CF0:   DB 00DH, 0F0H, 00CH, 000H, 0C9H, 021H, 0D5H, 00CH
+  2CF4    C9 21 D5 0C           
+  2CF8    09 FE 20 38           L2CF8:   DB 009H, 0FEH, 020H, 038H, 0A7H, 077H, 018H, 0A4H
+  2CFC    A7 77 18 A4           
+  2D00    CD 39 2D C5           L2D00:   DB 0CDH, 039H, 02DH, 0C5H, 03EH, 001H, 0CDH, 048H
+  2D04    3E 01 CD 48           
+  2D08    2D E1 C9 CD           L2D08:   DB 02DH, 0E1H, 0C9H, 0CDH, 039H, 02DH, 0C5H, 03EH
+  2D0C    39 2D C5 3E           
+  2D10    00 CD 48 2D           L2D10:   DB 000H, 0CDH, 048H, 02DH, 0E1H, 0C9H, 0CDH, 024H
+  2D14    E1 C9 CD 24           
+  2D18    2D CD 39 2D           L2D18:   DB 02DH, 0CDH, 039H, 02DH, 0C5H, 03EH, 001H, 0CDH
+  2D1C    C5 3E 01 CD           
+  2D20    AC 2D E1 C9           L2D20:   DB 0ACH, 02DH, 0E1H, 0C9H, 0CDH, 061H, 017H, 0EDH
+  2D24    CD 61 17 ED           
+  2D28    53 1C 0C CD           L2D28:   DB 053H, 01CH, 00CH, 0CDH, 04CH, 015H, 0CDH, 061H
+  2D2C    4C 15 CD 61           
+  2D30    17 ED 53 1E           L2D30:   DB 017H, 0EDH, 053H, 01EH, 00CH, 0CDH, 04CH, 015H
+  2D34    0C CD 4C 15           
+  2D38    C9 CD 61 17           L2D38:   DB 0C9H, 0CDH, 061H, 017H, 0D5H, 0CDH, 04CH, 015H
+  2D3C    D5 CD 4C 15           
+  2D40    CD 61 17 E5           L2D40:   DB 0CDH, 061H, 017H, 0E5H, 0C1H, 0E1H, 0EBH, 0C9H
+  2D44    C1 E1 EB C9           
+  2D48    F5 C5 D5 E5           L2D48:   DB 0F5H, 0C5H, 0D5H, 0E5H, 0F5H, 0CDH, 06EH, 02DH
+  2D4C    F5 CD 6E 2D           
+  2D50    D1 30 18 BE           L2D50:   DB 0D1H, 030H, 018H, 0BEH, 038H, 001H, 077H, 07AH
+  2D54    38 01 77 7A           
+  2D58    B7 20 06 78           L2D58:   DB 0B7H, 020H, 006H, 078H, 02FH, 0A6H, 077H, 018H
+  2D5C    2F A6 77 18           
+  2D60    0A 3D 78 20           L2D60:   DB 00AH, 03DH, 078H, 020H, 004H, 0B6H, 077H, 018H
+  2D64    04 B6 77 18           
+  2D68    02 AE 77 C3           L2D68:   DB 002H, 0AEH, 077H, 0C3H, 0BDH, 02EH, 07CH, 0B2H
+  2D6C    BD 2E 7C B2           
+  2D70    C0 7B FE 60           L2D70:   DB 0C0H, 07BH, 0FEH, 060H, 0D0H, 07DH, 0FEH, 030H
+  2D74    D0 7D FE 30           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-43
+
+
+  2D78    D0 ED 44 C6           L2D78:   DB 0D0H, 0EDH, 044H, 0C6H, 030H, 026H, 0FFH, 0D6H
+  2D7C    30 26 FF D6           
+  2D80    03 30 02 C6           L2D80:   DB 003H, 030H, 002H, 0C6H, 030H, 024H, 0D6H, 003H
+  2D84    30 24 D6 03           
+  2D88    30 FB C6 04           L2D88:   DB 030H, 0FBH, 0C6H, 004H, 0CBH, 03BH, 030H, 002H
+  2D8C    CB 3B 30 02           
+  2D90    C6 03 47 AF           L2D90:   DB 0C6H, 003H, 047H, 0AFH, 057H, 06FH, 037H, 017H
+  2D94    57 6F 37 17           
+  2D98    10 FD 47 CB           L2D98:   DB 010H, 0FDH, 047H, 0CBH, 03CH, 0CBH, 01DH, 0CBH
+  2D9C    3C CB 1D CB           
+  2DA0    3C CB 1D 19           L2DA0:   DB 03CH, 0CBH, 01DH, 019H, 011H, 00AH, 008H, 019H
+  2DA4    11 0A 08 19           
+  2DA8    3E C0 37 C9           L2DA8:   DB 03EH, 0C0H, 037H, 0C9H, 0F5H, 0C5H, 0D5H, 0E5H
+  2DAC    F5 C5 D5 E5           
+  2DB0    DD E5 06 06           L2DB0:   DB 0DDH, 0E5H, 006H, 006H, 03BH, 010H, 0FDH, 0DDH
+  2DB4    3B 10 FD DD           
+  2DB8    21 00 00 DD           L2DB8:   DB 021H, 000H, 000H, 0DDH, 039H, 0DDH, 077H, 001H
+  2DBC    39 DD 77 01           
+  2DC0    DD 36 00 00           L2DC0:   DB 0DDH, 036H, 000H, 000H, 0E5H, 02AH, 01CH, 00CH
+  2DC4    E5 2A 1C 0C           
+  2DC8    EB B7 ED 52           L2DC8:   DB 0EBH, 0B7H, 0EDH, 052H, 030H, 009H, 019H, 0EBH
+  2DCC    30 09 19 EB           
+  2DD0    B7 ED 52 DD           L2DD0:   DB 0B7H, 0EDH, 052H, 0DDH, 0CBH, 000H, 0C6H, 0DDH
+  2DD4    CB 00 C6 DD           
+  2DD8    74 02 DD 75           L2DD8:   DB 074H, 002H, 0DDH, 075H, 003H, 0EDH, 05BH, 01EH
+  2DDC    03 ED 5B 1E           
+  2DE0    0C E1 B7 ED           L2DE0:   DB 00CH, 0E1H, 0B7H, 0EDH, 052H, 030H, 009H, 019H
+  2DE4    52 30 09 19           
+  2DE8    EB B7 ED 52           L2DE8:   DB 0EBH, 0B7H, 0EDH, 052H, 0DDH, 0CBH, 000H, 0CEH
+  2DEC    DD CB 00 CE           
+  2DF0    DD 74 04 DD           L2DF0:   DB 0DDH, 074H, 004H, 0DDH, 075H, 005H, 0DDH, 066H
+  2DF4    75 05 DD 66           
+  2DF8    02 DD 6E 03           L2DF8:   DB 002H, 0DDH, 06EH, 003H, 0DDH, 056H, 004H, 0DDH
+  2DFC    DD 56 04 DD           
+  2E00    5E 05 B7 ED           L2E00:   DB 05EH, 005H, 0B7H, 0EDH, 052H, 030H, 011H, 019H
+  2E04    52 30 11 19           
+  2E08    DD 74 04 DD           L2E08:   DB 0DDH, 074H, 004H, 0DDH, 075H, 005H, 0DDH, 072H
+  2E0C    75 05 DD 72           
+  2E10    02 DD 73 03           L2E10:   DB 002H, 0DDH, 073H, 003H, 0DDH, 0CBH, 000H, 0D6H
+  2E14    DD CB 00 D6           
+  2E18    00 DD 56 02           L2E18:   DB 000H, 0DDH, 056H, 002H, 0DDH, 05EH, 003H, 021H
+  2E1C    DD 5E 03 21           
+  2E20    00 00 B7 ED           L2E20:   DB 000H, 000H, 0B7H, 0EDH, 052H, 0CBH, 02CH, 0CBH
+  2E24    52 CB 2C CB           
+  2E28    1D 11 00 00           L2E28:   DB 01DH, 011H, 000H, 000H, 001H, 000H, 000H, 0CDH
+  2E2C    01 00 00 CD           
+  2E30    6C 2E 13 D5           L2E30:   DB 06CH, 02EH, 013H, 0D5H, 0DDH, 056H, 004H, 0DDH
+  2E34    DD 56 04 DD           
+  2E38    5E 05 19 D1           L2E38:   DB 05EH, 005H, 019H, 0D1H, 0CBH, 07CH, 020H, 00CH
+  2E3C    CB 7C 20 0C           
+  2E40    D5 DD 56 02           L2E40:   DB 0D5H, 0DDH, 056H, 002H, 0DDH, 05EH, 003H, 0B7H
+  2E44    DD 5E 03 B7           
+  2E48    ED 52 D1 03           L2E48:   DB 0EDH, 052H, 0D1H, 003H, 0E5H, 0DDH, 066H, 002H
+  2E4C    E5 DD 66 02           
+  2E50    DD 6E 03 B7           L2E50:   DB 0DDH, 06EH, 003H, 0B7H, 0EDH, 052H, 0E1H, 030H
+  2E54    ED 52 E1 30           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-44
+
+
+  2E58    D6 06 06 33           L2E58:   DB 0D6H, 006H, 006H, 033H, 010H, 0FDH, 0DDH, 0E1H
+  2E5C    10 FD DD E1           
+  2E60    E1 D1 C1 F1           L2E60:   DB 0E1H, 0D1H, 0C1H, 0F1H, 0EDH, 053H, 01CH, 00CH
+  2E64    ED 53 1C 0C           
+  2E68    22 1E 0C C9           L2E68:   DB 022H, 01EH, 00CH, 0C9H, 0C5H, 0D5H, 0E5H, 0DDH
+  2E6C    C5 D5 E5 DD           
+  2E70    CB 00 56 28           L2E70:   DB 0CBH, 000H, 056H, 028H, 004H, 0C5H, 0D5H, 0C1H
+  2E74    04 C5 D5 C1           
+  2E78    D1 DD CB 00           L2E78:   DB 0D1H, 0DDH, 0CBH, 000H, 04EH, 028H, 008H, 021H
+  2E7C    4E 28 08 21           
+  2E80    00 00 B7 ED           L2E80:   DB 000H, 000H, 0B7H, 0EDH, 042H, 044H, 04DH, 0DDH
+  2E84    42 44 4D DD           
+  2E88    CB 00 46 28           L2E88:   DB 0CBH, 000H, 046H, 028H, 007H, 021H, 000H, 000H
+  2E8C    07 21 00 00           
+  2E90    B7 ED 52 EB           L2E90:   DB 0B7H, 0EDH, 052H, 0EBH, 0DDH, 0CBH, 000H, 05EH
+  2E94    DD CB 00 5E           
+  2E98    C4 AE 2E 2A           L2E98:   DB 0C4H, 0AEH, 02EH, 02AH, 01CH, 00CH, 019H, 0EBH
+  2E9C    1C 0C 19 EB           
+  2EA0    2A 1E 0C 09           L2EA0:   DB 02AH, 01EH, 00CH, 009H, 0DDH, 07EH, 001H, 0CDH
+  2EA4    DD 7E 01 CD           
+  2EA8    48 2D E1 D1           L2EA8:   DB 048H, 02DH, 0E1H, 0D1H, 0C1H, 0C9H, 060H, 069H
+  2EAC    C1 C9 60 69           
+  2EB0    09 09 CB 2C           L2EB0:   DB 009H, 009H, 0CBH, 02CH, 0CBH, 01DH, 0CBH, 02CH
+  2EB4    CB 1D CB 2C           
+  2EB8    CB 1D 44 4D           L2EB8:   DB 0CBH, 01DH, 044H, 04DH, 0C9H, 0E1H, 0D1H, 0C1H
+  2EBC    C9 E1 D1 C1           
+  2EC0    F1 C9 3E 0C           L2EC0:   DB 0F1H, 0C9H, 03EH, 00CH, 0F7H, 0C9H, 0CDH, 061H
+  2EC4    F7 C9 CD 61           
+  2EC8    17 D5 CD 4C           L2EC8:   DB 017H, 0D5H, 0CDH, 04CH, 015H, 0CDH, 061H, 017H
+  2ECC    15 CD 61 17           
+  2ED0    E3 73 23 72           L2ED0:   DB 0E3H, 073H, 023H, 072H, 0E1H, 0C9H, 0E1H, 023H
+  2ED4    E1 C9 E1 23           
+  2ED8    CD 61 17 1A           L2ED8:   DB 0CDH, 061H, 017H, 01AH, 013H, 047H, 01AH, 0E5H
+  2EDC    13 47 1A E5           
+  2EE0    C3 A4 2B 00           L2EE0:   DB 0C3H, 0A4H, 02BH, 000H, 000H, 000H, 000H, 000H
+  2EE4    00 00 00 00           
+  2EE8    00 00 00 00           L2EE8:   DB 000H, 000H, 000H, 000H, 000H, 000H, 000H, 000H
+  2EEC    00 00 00 00           
+  2EF0    00 00 00 00           L2EF0:   DB 000H, 000H, 000H, 000H, 000H, 000H, 000H, 000H
+  2EF4    00 00 00 00           
+  2EF8    00 00 00 00           L2EF8:   DB 000H, 000H, 000H, 000H, 000H, 000H, 000H, 000H
+  2EFC    00 00 00 00           
+                                
+                                ;
+                                ; PATCH TO RUN UNDER CP/M
+                                ;
+                                
+                                        ORG  2BD3H	;Get end of ram from end of tpa value
+  2BD3    2A 0006                      	LD HL, (BDOS+1)	;Get End of TPA
+  2BD6    2B                           	DEC HL
+  2BD7    C9                           	RET
+                                       	
+                                	ORG 2B00H
+  2B00    C3 2BF7               	JP 2BF7H	; jump to VKBD (2BF7) on systems other than NASCOM
+                                	
+                                	ORG 2BDDh
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	1-45
+
+
+  2BDD    C9                    	RET		; ignore  NASSYS: Set VDU output
+                                
+                                	ORG 2BEBh
+  2BEB    C9                    	RET		; ignore  NASSYS: Delay routine
+                                	
+                                	ORG 2BF4h
+  2BF4    C3 012A               	JP CO		; CP/M CONSOLE CHAR OUT
+                                
+                                	ORG 2BF7h
+  2BF7    C3 0143               	JP CI		; CP/M CONSOLE CHAR IN IF AVAILABLE
+                                
+                                	ORG 2BFAh
+  2BFA    C3 0124               	JP CONIN	; CP/M CONSOLE CHAR IN (WAIT FOR KEY)
+                                
+                                	ORG 2BFDh
+  2BFD    C9                    	RET		; Ignore NASSYS: Switch tape motor
+                                
+                                	ORG 11F0h	
+  11F0    0121                  	DW CPMOUT	; EXIT TO CP/M ON NAS COMMAND 
+                                		
+                                	ORG 103Ah	
+  103A    1A                    	DB 26		; PRINT CHR(26) ^Z CLEAR SCREEN ON BASIC STARTUP
+                                
+                                	ORG 2B3FH
+  2B3F    C3 0156               	JP CSAVE	; Point to new csave on cp/m
+                                	
+                                	ORG 232EH
+  232E    C3 018B               	JP CLOAD	; Point to new cload on cp/m
+                                	
+                                       	END
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+0223 	ADDHL           0005 	BDOS            032D 	CH              
+02D8 	CHECK           0143 	CI              0152 	CI2             
+018B 	CLOAD           01D4 	CLOSEF          0310 	CLOSFCB         
+01DD 	CLRFCB          001A 	CNTRLZ          012A 	CO              
+0139 	CO2             0124 	CONIN           0127 	CONOUT          
+0228 	CONVERT         0234 	CONVRT1         0245 	CONVRT2         
+0247 	CONVRT3         0249 	CONVRT4         025A 	CONVRT5         
+025C 	CONVRT6         0260 	CONVRT7         026A 	CONVRT8         
+0121 	CPMOUT          0322 	CREAFCB         016C 	CS1             
+0156 	CSAVE           0319 	DELFCB          005C 	FCB             
+0271 	GETEXT          0279 	GETEXT1         028A 	GETEXT2         
+028C 	GETEXT3         0290 	GETEXT4         029A 	GETEXT5         
+02A1 	GETEXT6         02A3 	GETEXT7         02B0 	GETEXT8         
+02B8 	GETEXT9         02CF 	GETEXTA         0E80 	L0E80           
+0E88 	L0E88           0E90 	L0E90           0E98 	L0E98           
+0EA0 	L0EA0           0EA8 	L0EA8           0EB0 	L0EB0           
+0EB8 	L0EB8           0EC0 	L0EC0           0EC8 	L0EC8           
+0ED0 	L0ED0           0ED8 	L0ED8           0EE0 	L0EE0           
+0EE8 	L0EE8           0EF0 	L0EF0           0EF8 	L0EF8           
+0F00 	L0F00           0F08 	L0F08           0F10 	L0F10           
+0F18 	L0F18           0F20 	L0F20           0F28 	L0F28           
+0F30 	L0F30           0F38 	L0F38           0F40 	L0F40           
+0F48 	L0F48           0F50 	L0F50           0F58 	L0F58           
+0F60 	L0F60           0F68 	L0F68           0F70 	L0F70           
+0F78 	L0F78           0F80 	L0F80           0F88 	L0F88           
+0F90 	L0F90           0F98 	L0F98           0FA0 	L0FA0           
+0FA8 	L0FA8           0FB0 	L0FB0           0FB8 	L0FB8           
+0FC0 	L0FC0           0FC8 	L0FC8           0FD0 	L0FD0           
+0FD8 	L0FD8           0FE0 	L0FE0           0FE8 	L0FE8           
+0FF0 	L0FF0           0FF8 	L0FF8           1000 	L1000           
+1008 	L1008           1010 	L1010           1018 	L1018           
+1020 	L1020           1028 	L1028           1030 	L1030           
+1038 	L1038           1040 	L1040           1048 	L1048           
+1050 	L1050           1058 	L1058           1060 	L1060           
+1068 	L1068           1070 	L1070           1078 	L1078           
+1080 	L1080           1088 	L1088           1090 	L1090           
+1098 	L1098           10A0 	L10A0           10A8 	L10A8           
+10B0 	L10B0           10B8 	L10B8           10C0 	L10C0           
+10C8 	L10C8           10D0 	L10D0           10D8 	L10D8           
+10E0 	L10E0           10E8 	L10E8           10F0 	L10F0           
+10F8 	L10F8           1100 	L1100           1108 	L1108           
+1110 	L1110           1118 	L1118           1120 	L1120           
+1128 	L1128           1130 	L1130           1138 	L1138           
+1140 	L1140           1148 	L1148           1150 	L1150           
+1158 	L1158           1160 	L1160           1168 	L1168           
+1170 	L1170           1178 	L1178           1180 	L1180           
+1188 	L1188           1190 	L1190           1198 	L1198           
+11A0 	L11A0           11A8 	L11A8           11B0 	L11B0           
+11B8 	L11B8           11C0 	L11C0           11C8 	L11C8           
+11D0 	L11D0           11D8 	L11D8           11E0 	L11E0           
+11E8 	L11E8           11F0 	L11F0           11F8 	L11F8           
+1200 	L1200           1208 	L1208           1210 	L1210           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+
+
+1218 	L1218           1220 	L1220           1228 	L1228           
+1230 	L1230           1238 	L1238           1240 	L1240           
+1248 	L1248           1250 	L1250           1258 	L1258           
+1260 	L1260           1268 	L1268           1270 	L1270           
+1278 	L1278           1280 	L1280           1288 	L1288           
+1290 	L1290           1298 	L1298           12A0 	L12A0           
+12A8 	L12A8           12B0 	L12B0           12B8 	L12B8           
+12C0 	L12C0           12C8 	L12C8           12D0 	L12D0           
+12D8 	L12D8           12E0 	L12E0           12E8 	L12E8           
+12F0 	L12F0           12F8 	L12F8           1300 	L1300           
+1308 	L1308           1310 	L1310           1318 	L1318           
+1320 	L1320           1328 	L1328           1330 	L1330           
+1338 	L1338           1340 	L1340           1348 	L1348           
+1350 	L1350           1358 	L1358           1360 	L1360           
+1368 	L1368           1370 	L1370           1378 	L1378           
+1380 	L1380           1388 	L1388           1390 	L1390           
+1398 	L1398           13A0 	L13A0           13A8 	L13A8           
+13B0 	L13B0           13B8 	L13B8           13C0 	L13C0           
+13C8 	L13C8           13D0 	L13D0           13D8 	L13D8           
+13E0 	L13E0           13E8 	L13E8           13F0 	L13F0           
+13F8 	L13F8           1400 	L1400           1408 	L1408           
+1410 	L1410           1418 	L1418           1420 	L1420           
+1428 	L1428           1430 	L1430           1438 	L1438           
+1440 	L1440           1448 	L1448           1450 	L1450           
+1458 	L1458           1460 	L1460           1468 	L1468           
+1470 	L1470           1478 	L1478           1480 	L1480           
+1488 	L1488           1490 	L1490           1498 	L1498           
+14A0 	L14A0           14A8 	L14A8           14B0 	L14B0           
+14B8 	L14B8           14C0 	L14C0           14C8 	L14C8           
+14D0 	L14D0           14D8 	L14D8           14E0 	L14E0           
+14E8 	L14E8           14F0 	L14F0           14F8 	L14F8           
+1500 	L1500           1508 	L1508           1510 	L1510           
+1518 	L1518           1520 	L1520           1528 	L1528           
+1530 	L1530           1538 	L1538           1540 	L1540           
+1548 	L1548           1550 	L1550           1558 	L1558           
+1560 	L1560           1568 	L1568           1570 	L1570           
+1578 	L1578           1580 	L1580           1588 	L1588           
+1590 	L1590           1598 	L1598           15A0 	L15A0           
+15A8 	L15A8           15B0 	L15B0           15B8 	L15B8           
+15C0 	L15C0           15C8 	L15C8           15D0 	L15D0           
+15D8 	L15D8           15E0 	L15E0           15E8 	L15E8           
+15F0 	L15F0           15F8 	L15F8           1600 	L1600           
+1608 	L1608           1610 	L1610           1618 	L1618           
+1620 	L1620           1628 	L1628           1630 	L1630           
+1638 	L1638           1640 	L1640           1648 	L1648           
+1650 	L1650           1658 	L1658           1660 	L1660           
+1668 	L1668           1670 	L1670           1678 	L1678           
+1680 	L1680           1688 	L1688           1690 	L1690           
+1698 	L1698           16A0 	L16A0           16A8 	L16A8           
+16B0 	L16B0           16B8 	L16B8           16C0 	L16C0           
+16C8 	L16C8           16D0 	L16D0           16D8 	L16D8           
+16E0 	L16E0           16E8 	L16E8           16F0 	L16F0           
+16F8 	L16F8           1700 	L1700           1708 	L1708           
+1710 	L1710           1718 	L1718           1720 	L1720           
+1728 	L1728           1730 	L1730           1738 	L1738           
+1740 	L1740           1748 	L1748           1750 	L1750           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	S-2
+
+
+1758 	L1758           1760 	L1760           1768 	L1768           
+1770 	L1770           1778 	L1778           1780 	L1780           
+1788 	L1788           1790 	L1790           1798 	L1798           
+17A0 	L17A0           17A8 	L17A8           17B0 	L17B0           
+17B8 	L17B8           17C0 	L17C0           17C8 	L17C8           
+17D0 	L17D0           17D8 	L17D8           17E0 	L17E0           
+17E8 	L17E8           17F0 	L17F0           17F8 	L17F8           
+1800 	L1800           1808 	L1808           1810 	L1810           
+1818 	L1818           1820 	L1820           1828 	L1828           
+1830 	L1830           1838 	L1838           1840 	L1840           
+1848 	L1848           1850 	L1850           1858 	L1858           
+1860 	L1860           1868 	L1868           1870 	L1870           
+1878 	L1878           1880 	L1880           1888 	L1888           
+1890 	L1890           1898 	L1898           18A0 	L18A0           
+18A8 	L18A8           18B0 	L18B0           18B8 	L18B8           
+18C0 	L18C0           18C8 	L18C8           18D0 	L18D0           
+18D8 	L18D8           18E0 	L18E0           18E8 	L18E8           
+18F0 	L18F0           18F8 	L18F8           1900 	L1900           
+1908 	L1908           1910 	L1910           1918 	L1918           
+1920 	L1920           1928 	L1928           1930 	L1930           
+1938 	L1938           1940 	L1940           1948 	L1948           
+1950 	L1950           1958 	L1958           1960 	L1960           
+1968 	L1968           1970 	L1970           1978 	L1978           
+1980 	L1980           1988 	L1988           1990 	L1990           
+1998 	L1998           19A0 	L19A0           19A8 	L19A8           
+19B0 	L19B0           19B8 	L19B8           19C0 	L19C0           
+19C8 	L19C8           19D0 	L19D0           19D8 	L19D8           
+19E0 	L19E0           19E8 	L19E8           19F0 	L19F0           
+19F8 	L19F8           1A00 	L1A00           1A08 	L1A08           
+1A10 	L1A10           1A18 	L1A18           1A20 	L1A20           
+1A28 	L1A28           1A30 	L1A30           1A38 	L1A38           
+1A40 	L1A40           1A48 	L1A48           1A50 	L1A50           
+1A58 	L1A58           1A60 	L1A60           1A68 	L1A68           
+1A70 	L1A70           1A78 	L1A78           1A80 	L1A80           
+1A88 	L1A88           1A90 	L1A90           1A98 	L1A98           
+1AA0 	L1AA0           1AA8 	L1AA8           1AB0 	L1AB0           
+1AB8 	L1AB8           1AC0 	L1AC0           1AC8 	L1AC8           
+1AD0 	L1AD0           1AD8 	L1AD8           1AE0 	L1AE0           
+1AE8 	L1AE8           1AF0 	L1AF0           1AF8 	L1AF8           
+1B00 	L1B00           1B08 	L1B08           1B10 	L1B10           
+1B18 	L1B18           1B20 	L1B20           1B28 	L1B28           
+1B30 	L1B30           1B38 	L1B38           1B40 	L1B40           
+1B48 	L1B48           1B50 	L1B50           1B58 	L1B58           
+1B60 	L1B60           1B68 	L1B68           1B70 	L1B70           
+1B78 	L1B78           1B80 	L1B80           1B88 	L1B88           
+1B90 	L1B90           1B98 	L1B98           1BA0 	L1BA0           
+1BA8 	L1BA8           1BB0 	L1BB0           1BB8 	L1BB8           
+1BC0 	L1BC0           1BC8 	L1BC8           1BD0 	L1BD0           
+1BD8 	L1BD8           1BE0 	L1BE0           1BE8 	L1BE8           
+1BF0 	L1BF0           1BF8 	L1BF8           1C00 	L1C00           
+1C08 	L1C08           1C10 	L1C10           1C18 	L1C18           
+1C20 	L1C20           1C28 	L1C28           1C30 	L1C30           
+1C38 	L1C38           1C40 	L1C40           1C48 	L1C48           
+1C50 	L1C50           1C58 	L1C58           1C60 	L1C60           
+1C68 	L1C68           1C70 	L1C70           1C78 	L1C78           
+1C80 	L1C80           1C88 	L1C88           1C90 	L1C90           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	S-3
+
+
+1C98 	L1C98           1CA0 	L1CA0           1CA8 	L1CA8           
+1CB0 	L1CB0           1CB8 	L1CB8           1CC0 	L1CC0           
+1CC8 	L1CC8           1CD0 	L1CD0           1CD8 	L1CD8           
+1CE0 	L1CE0           1CE8 	L1CE8           1CF0 	L1CF0           
+1CF8 	L1CF8           1D00 	L1D00           1D08 	L1D08           
+1D10 	L1D10           1D18 	L1D18           1D20 	L1D20           
+1D28 	L1D28           1D30 	L1D30           1D38 	L1D38           
+1D40 	L1D40           1D48 	L1D48           1D50 	L1D50           
+1D58 	L1D58           1D60 	L1D60           1D68 	L1D68           
+1D70 	L1D70           1D78 	L1D78           1D80 	L1D80           
+1D88 	L1D88           1D90 	L1D90           1D98 	L1D98           
+1DA0 	L1DA0           1DA8 	L1DA8           1DB0 	L1DB0           
+1DB8 	L1DB8           1DC0 	L1DC0           1DC8 	L1DC8           
+1DD0 	L1DD0           1DD8 	L1DD8           1DE0 	L1DE0           
+1DE8 	L1DE8           1DF0 	L1DF0           1DF8 	L1DF8           
+1E00 	L1E00           1E08 	L1E08           1E10 	L1E10           
+1E18 	L1E18           1E20 	L1E20           1E28 	L1E28           
+1E30 	L1E30           1E38 	L1E38           1E40 	L1E40           
+1E48 	L1E48           1E50 	L1E50           1E58 	L1E58           
+1E60 	L1E60           1E68 	L1E68           1E70 	L1E70           
+1E78 	L1E78           1E80 	L1E80           1E88 	L1E88           
+1E90 	L1E90           1E98 	L1E98           1EA0 	L1EA0           
+1EA8 	L1EA8           1EB0 	L1EB0           1EB8 	L1EB8           
+1EC0 	L1EC0           1EC8 	L1EC8           1ED0 	L1ED0           
+1ED8 	L1ED8           1EE0 	L1EE0           1EE8 	L1EE8           
+1EF0 	L1EF0           1EF8 	L1EF8           1F00 	L1F00           
+1F08 	L1F08           1F10 	L1F10           1F18 	L1F18           
+1F20 	L1F20           1F28 	L1F28           1F30 	L1F30           
+1F38 	L1F38           1F40 	L1F40           1F48 	L1F48           
+1F50 	L1F50           1F58 	L1F58           1F60 	L1F60           
+1F68 	L1F68           1F70 	L1F70           1F78 	L1F78           
+1F80 	L1F80           1F88 	L1F88           1F90 	L1F90           
+1F98 	L1F98           1FA0 	L1FA0           1FA8 	L1FA8           
+1FB0 	L1FB0           1FB8 	L1FB8           1FC0 	L1FC0           
+1FC8 	L1FC8           1FD0 	L1FD0           1FD8 	L1FD8           
+1FE0 	L1FE0           1FE8 	L1FE8           1FF0 	L1FF0           
+1FF8 	L1FF8           2000 	L2000           2008 	L2008           
+2010 	L2010           2018 	L2018           2020 	L2020           
+2028 	L2028           2030 	L2030           2038 	L2038           
+2040 	L2040           2048 	L2048           2050 	L2050           
+2058 	L2058           2060 	L2060           2068 	L2068           
+2070 	L2070           2078 	L2078           2080 	L2080           
+2088 	L2088           2090 	L2090           2098 	L2098           
+20A0 	L20A0           20A8 	L20A8           20B0 	L20B0           
+20B8 	L20B8           20C0 	L20C0           20C8 	L20C8           
+20D0 	L20D0           20D8 	L20D8           20E0 	L20E0           
+20E8 	L20E8           20F0 	L20F0           20F8 	L20F8           
+2100 	L2100           2108 	L2108           2110 	L2110           
+2118 	L2118           2120 	L2120           2128 	L2128           
+2130 	L2130           2138 	L2138           2140 	L2140           
+2148 	L2148           2150 	L2150           2158 	L2158           
+2160 	L2160           2168 	L2168           2170 	L2170           
+2178 	L2178           2180 	L2180           2188 	L2188           
+2190 	L2190           2198 	L2198           21A0 	L21A0           
+21A8 	L21A8           21B0 	L21B0           21B8 	L21B8           
+21C0 	L21C0           21C8 	L21C8           21D0 	L21D0           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	S-4
+
+
+21D8 	L21D8           21E0 	L21E0           21E8 	L21E8           
+21F0 	L21F0           21F8 	L21F8           2200 	L2200           
+2208 	L2208           2210 	L2210           2218 	L2218           
+2220 	L2220           2228 	L2228           2230 	L2230           
+2238 	L2238           2240 	L2240           2248 	L2248           
+2250 	L2250           2258 	L2258           2260 	L2260           
+2268 	L2268           2270 	L2270           2278 	L2278           
+2280 	L2280           2288 	L2288           2290 	L2290           
+2298 	L2298           22A0 	L22A0           22A8 	L22A8           
+22B0 	L22B0           22B8 	L22B8           22C0 	L22C0           
+22C8 	L22C8           22D0 	L22D0           22D8 	L22D8           
+22E0 	L22E0           22E8 	L22E8           22F0 	L22F0           
+22F8 	L22F8           2300 	L2300           2308 	L2308           
+2310 	L2310           2318 	L2318           2320 	L2320           
+2328 	L2328           2330 	L2330           2338 	L2338           
+2340 	L2340           2348 	L2348           2350 	L2350           
+2358 	L2358           2360 	L2360           2368 	L2368           
+2370 	L2370           2378 	L2378           2380 	L2380           
+2388 	L2388           2390 	L2390           2398 	L2398           
+23A0 	L23A0           23A8 	L23A8           23B0 	L23B0           
+23B8 	L23B8           23C0 	L23C0           23C8 	L23C8           
+23D0 	L23D0           23D8 	L23D8           23E0 	L23E0           
+23E8 	L23E8           23F0 	L23F0           23F8 	L23F8           
+2400 	L2400           2408 	L2408           2410 	L2410           
+2418 	L2418           2420 	L2420           2428 	L2428           
+2430 	L2430           2438 	L2438           2440 	L2440           
+2448 	L2448           2450 	L2450           2458 	L2458           
+2460 	L2460           2468 	L2468           2470 	L2470           
+2478 	L2478           2480 	L2480           2488 	L2488           
+2490 	L2490           2498 	L2498           24A0 	L24A0           
+24A8 	L24A8           24B0 	L24B0           24B8 	L24B8           
+24C0 	L24C0           24C8 	L24C8           24D0 	L24D0           
+24D8 	L24D8           24E0 	L24E0           24E8 	L24E8           
+24F0 	L24F0           24F8 	L24F8           2500 	L2500           
+2508 	L2508           2510 	L2510           2518 	L2518           
+2520 	L2520           2528 	L2528           2530 	L2530           
+2538 	L2538           2540 	L2540           2548 	L2548           
+2550 	L2550           2558 	L2558           2560 	L2560           
+2568 	L2568           2570 	L2570           2578 	L2578           
+2580 	L2580           2588 	L2588           2590 	L2590           
+2598 	L2598           25A0 	L25A0           25A8 	L25A8           
+25B0 	L25B0           25B8 	L25B8           25C0 	L25C0           
+25C8 	L25C8           25D0 	L25D0           25D8 	L25D8           
+25E0 	L25E0           25E8 	L25E8           25F0 	L25F0           
+25F8 	L25F8           2600 	L2600           2608 	L2608           
+2610 	L2610           2618 	L2618           2620 	L2620           
+2628 	L2628           2630 	L2630           2638 	L2638           
+2640 	L2640           2648 	L2648           2650 	L2650           
+2658 	L2658           2660 	L2660           2668 	L2668           
+2670 	L2670           2678 	L2678           2680 	L2680           
+2688 	L2688           2690 	L2690           2698 	L2698           
+26A0 	L26A0           26A8 	L26A8           26B0 	L26B0           
+26B8 	L26B8           26C0 	L26C0           26C8 	L26C8           
+26D0 	L26D0           26D8 	L26D8           26E0 	L26E0           
+26E8 	L26E8           26F0 	L26F0           26F8 	L26F8           
+2700 	L2700           2708 	L2708           2710 	L2710           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	S-5
+
+
+2718 	L2718           2720 	L2720           2728 	L2728           
+2730 	L2730           2738 	L2738           2740 	L2740           
+2748 	L2748           2750 	L2750           2758 	L2758           
+2760 	L2760           2768 	L2768           2770 	L2770           
+2778 	L2778           2780 	L2780           2788 	L2788           
+2790 	L2790           2798 	L2798           27A0 	L27A0           
+27A8 	L27A8           27B0 	L27B0           27B8 	L27B8           
+27C0 	L27C0           27C8 	L27C8           27D0 	L27D0           
+27D8 	L27D8           27E0 	L27E0           27E8 	L27E8           
+27F0 	L27F0           27F8 	L27F8           2800 	L2800           
+2808 	L2808           2810 	L2810           2818 	L2818           
+2820 	L2820           2828 	L2828           2830 	L2830           
+2838 	L2838           2840 	L2840           2848 	L2848           
+2850 	L2850           2858 	L2858           2860 	L2860           
+2868 	L2868           2870 	L2870           2878 	L2878           
+2880 	L2880           2888 	L2888           2890 	L2890           
+2898 	L2898           28A0 	L28A0           28A8 	L28A8           
+28B0 	L28B0           28B8 	L28B8           28C0 	L28C0           
+28C8 	L28C8           28D0 	L28D0           28D8 	L28D8           
+28E0 	L28E0           28E8 	L28E8           28F0 	L28F0           
+28F8 	L28F8           2900 	L2900           2908 	L2908           
+2910 	L2910           2918 	L2918           2920 	L2920           
+2928 	L2928           2930 	L2930           2938 	L2938           
+2940 	L2940           2948 	L2948           2950 	L2950           
+2958 	L2958           2960 	L2960           2968 	L2968           
+2970 	L2970           2978 	L2978           2980 	L2980           
+2988 	L2988           2990 	L2990           2998 	L2998           
+29A0 	L29A0           29A8 	L29A8           29B0 	L29B0           
+29B8 	L29B8           29C0 	L29C0           29C8 	L29C8           
+29D0 	L29D0           29D8 	L29D8           29E0 	L29E0           
+29E8 	L29E8           29F0 	L29F0           29F8 	L29F8           
+2A00 	L2A00           2A08 	L2A08           2A10 	L2A10           
+2A18 	L2A18           2A20 	L2A20           2A28 	L2A28           
+2A30 	L2A30           2A38 	L2A38           2A40 	L2A40           
+2A48 	L2A48           2A50 	L2A50           2A58 	L2A58           
+2A60 	L2A60           2A68 	L2A68           2A70 	L2A70           
+2A78 	L2A78           2A80 	L2A80           2A88 	L2A88           
+2A90 	L2A90           2A98 	L2A98           2AA0 	L2AA0           
+2AA8 	L2AA8           2AB0 	L2AB0           2AB8 	L2AB8           
+2AC0 	L2AC0           2AC8 	L2AC8           2AD0 	L2AD0           
+2AD8 	L2AD8           2AE0 	L2AE0           2AE8 	L2AE8           
+2AF0 	L2AF0           2AF8 	L2AF8           2B00 	L2B00           
+2B08 	L2B08           2B10 	L2B10           2B18 	L2B18           
+2B20 	L2B20           2B28 	L2B28           2B30 	L2B30           
+2B38 	L2B38           2B40 	L2B40           2B48 	L2B48           
+2B50 	L2B50           2B58 	L2B58           2B60 	L2B60           
+2B68 	L2B68           2B70 	L2B70           2B78 	L2B78           
+2B80 	L2B80           2B88 	L2B88           2B90 	L2B90           
+2B98 	L2B98           2BA0 	L2BA0           2BA8 	L2BA8           
+2BB0 	L2BB0           2BB8 	L2BB8           2BC0 	L2BC0           
+2BC8 	L2BC8           2BD0 	L2BD0           2BD8 	L2BD8           
+2BE0 	L2BE0           2BE8 	L2BE8           2BF0 	L2BF0           
+2BF8 	L2BF8           2C00 	L2C00           2C08 	L2C08           
+2C10 	L2C10           2C18 	L2C18           2C20 	L2C20           
+2C28 	L2C28           2C30 	L2C30           2C38 	L2C38           
+2C40 	L2C40           2C48 	L2C48           2C50 	L2C50           
+'XTAL XBAS 2.2'	MACRO-80 3.44	09-Dec-81	PAGE	S-6
+
+
+2C58 	L2C58           2C60 	L2C60           2C68 	L2C68           
+2C70 	L2C70           2C78 	L2C78           2C80 	L2C80           
+2C88 	L2C88           2C90 	L2C90           2C98 	L2C98           
+2CA0 	L2CA0           2CA8 	L2CA8           2CB0 	L2CB0           
+2CB8 	L2CB8           2CC0 	L2CC0           2CC8 	L2CC8           
+2CD0 	L2CD0           2CD8 	L2CD8           2CE0 	L2CE0           
+2CE8 	L2CE8           2CF0 	L2CF0           2CF8 	L2CF8           
+2D00 	L2D00           2D08 	L2D08           2D10 	L2D10           
+2D18 	L2D18           2D20 	L2D20           2D28 	L2D28           
+2D30 	L2D30           2D38 	L2D38           2D40 	L2D40           
+2D48 	L2D48           2D50 	L2D50           2D58 	L2D58           
+2D60 	L2D60           2D68 	L2D68           2D70 	L2D70           
+2D78 	L2D78           2D80 	L2D80           2D88 	L2D88           
+2D90 	L2D90           2D98 	L2D98           2DA0 	L2DA0           
+2DA8 	L2DA8           2DB0 	L2DB0           2DB8 	L2DB8           
+2DC0 	L2DC0           2DC8 	L2DC8           2DD0 	L2DD0           
+2DD8 	L2DD8           2DE0 	L2DE0           2DE8 	L2DE8           
+2DF0 	L2DF0           2DF8 	L2DF8           2E00 	L2E00           
+2E08 	L2E08           2E10 	L2E10           2E18 	L2E18           
+2E20 	L2E20           2E28 	L2E28           2E30 	L2E30           
+2E38 	L2E38           2E40 	L2E40           2E48 	L2E48           
+2E50 	L2E50           2E58 	L2E58           2E60 	L2E60           
+2E68 	L2E68           2E70 	L2E70           2E78 	L2E78           
+2E80 	L2E80           2E88 	L2E88           2E90 	L2E90           
+2E98 	L2E98           2EA0 	L2EA0           2EA8 	L2EA8           
+2EB0 	L2EB0           2EB8 	L2EB8           2EC0 	L2EC0           
+2EC8 	L2EC8           2ED0 	L2ED0           2ED8 	L2ED8           
+2EE0 	L2EE0           2EE8 	L2EE8           2EF0 	L2EF0           
+2EF8 	L2EF8           01AA 	LD1             01D2 	LDBRK           
+01C1 	LOAD1           032B 	NBYTES          02F1 	OPENFCB         
+01E3 	OPENFR          032E 	OPENFW          02FE 	READFCB         
+0347 	SAV1            035C 	SAV1A           036E 	SAV2            
+037C 	SAV2A           0080 	TBUFF           01FA 	TYPE1           
+01FD 	TYPE2           020E 	TYPE3           021D 	TYPERR          
+021A 	TYPERR2         0307 	WRTFCB          
+
+
+
+No Fatal error(s)
+
+
+    2EF0 	L2EF0           
+2EF8 	L2EF8           01AA 	LD1         

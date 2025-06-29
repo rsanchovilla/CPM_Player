@@ -1,0 +1,1605 @@
+.pl68
+..24.1.1990/ 31.1.90
+.pn147
+.op
+.po10
+.hePASCAL                        #                        Anhang F
+A n h a n g   F : Interne Datenformate
+      
+Ií  folgendeî  bezeichneô  ø diå Adresså deó ersteî  Byteó  eineò 
+Variableî  eineó entsprechendeî Typs®  Diå Standardfunktioî  ADDÒ 
+kanî maî dazõ verwenden¬  dieseî Werô f{ò einå beliebigå Variablå 
+zõ erhalten.
+
+
+F.1. Basis-Datentypen
+
+F.1.1. Skalare
+--------------
+
+In einem einzigen Byte werden folgende Skalare gespeichert:
+
+- INTEGER-Teilbereiche¬  wenî  beidå  Grenzeî ií  Bereicè  0..25µ 
+  liegen,
+- BOOLEAN,
+- CHAR und
+- deklariertå  ordinalå Datentypeî miô wenigeò aló 25¶  m>glicheî 
+  Werten.
+
+Dieses Byte enth}lt die Ordnungszahl der Variablen.
+
+Folgende ordinale Datentypen werden in zwei Bytes gespeichert:
+
+- INTEGER,
+- INTEGER-Teilbereiche¬ wenî mindestenó einå deò Grenzeî nichô ií 
+  Bereich 0..255 liegt, und
+- deklariertå  ordinalå  Datentypeî  miô mehò aló  25¶  m>glicheî 
+  Werten.
+
+Dieså Byteó enthalteî eiî Zweierkomplemenô  - 16-Bit-Wert¬  wobeé 
+deò niederwertigå Teiì zuersô gespeicherô wirä (umgekehrteó Byte-
+Format).
+
+
+F.1.2. REAL-Zahlen
+------------------
+
+REAL-Zahleî  belegeî sechó Byteó unä stelleî einå  Gleitkommazahì 
+miô  40-Bit-Mantisså unä eineí 8-Bit-Exponenteî zuò Basió ²  dar® 
+Ií  ersteî Bytå wirä deò Exponenô unä iî deî n}chsteî f{næ  Byteó 
+diå Mantisså gespeichert¬ miô deí niederwertigeî Bytå zuerst.
+
+  x     Exponent
+  x+1   niederwertiger Teil
+  :
+  .
+  x+5   h>herwertiger Teil
+
+Deò  Exponenô verwendeô eiî Bin}rformaô miô eineí Offseô voî J80¬ 
+d.h.¬ eiî  Exponenô  voî  J8´  bedeutet¬  diå  Mantisså  isô  miô 
+² (J84-J80© ½ ² ´ ½ 1¶ zõ multiplizieren®  Deò Gleitkommawerô isô 
+Null, wenn der Exponent Null ist.
+.paŠDeî  Werô  erh}lô man¬  indeí maî  diå  40-Bit-INTEGER-Zahì (ohnå 
+Vorzeichen©  durcè  ²  4°  dividiert®  Diå  Mantisså  wirä  immeò 
+normalisiert¬  d.h.¬  daó  h>chstwertigå  Biô (Biô · deó  f{nfteî 
+Byte© wirä immeò aló ± interpretiert® Daó Vorzeicheî deò Mantisså 
+wirä jedocè aucè iî dieseí Biô gespeichert®  ± bedeuteô negativeó 
+und 0 positives Vorzeichen.
+
+
+F.1.3. STRING
+-------------
+
+Eiî  STRINÇ  belegô  ií Speicheò immeò eiî Bytå  mehò  aló  seinå 
+angegebenå  (maximale©  L}nge®  Daó 1.Bytå enth}lô  diå  aktuellå 
+L}ngå deó STRING»  dieseó wirä aucè aló dynamischeó Bytå bezeich
+net®  Diå  folgendeî  Byteó enthalteî diå aktuelleî  Zeicheî  deó 
+STRING®  Daó erstå Bytå stehô auæ deò niedrigsteî Adresse® Iî deò 
+folgendeî  Tabellå  bezeichneô Ì diå aktuellå L}ngå unä  Maø  diå 
+maximalå L}ngå deó STRING:
+
+  x      aktuelle L}nge: L
+  x+1    1. Zeichen
+  x+2    2. Zeichen
+  :
+  .
+  x+L    letztes Zeichen
+  x+L+1  nicht verwendet
+  :
+  .
+  x+Max  nicht verwendet
+
+Der Bereich ab x+L+1 wird nicht gel>scht.
+   
+
+F.1.4. Mengen
+-------------
+
+Eiî Elemenô eineò  Mengå belegt eiî Bit®  Diå maximalå Anzahì voî 
+Elementeî  eineò  Mengå betr}gô 256»  einå Mengenvariablå  belegô 
+also niemals mehr als 32 (=256/8) Bytes.
+Diå  Bytes¬  dereî  Bitó  allå  statiscè  Nulì sinä  (d.h®  nichô 
+verwendet werden), werden nicht gespeichert.
+Diå  Zahì deò Bytes¬  diå voî eineò Mengenvariableî belegô  wird¬ 
+isô (Maø DIÖ 8© - (Miî DIÖ 8© « 1¬  wobeé Maø unä Miî diå  obereî 
+unä   untereî   Grenzeî  deó  Basistypó  deò  Mengå   sind®   Diå 
+Speicheradresse eines speziellen Elementes E ist:
+
+  Elementeadresse = x + (E DIV 8) - (Min DIV 8)
+
+Diå  Bit-Adresså  innerhalâ  deó Byteó  miô  deò  Elementeadresså 
+betr}gt
+
+  BitAdresse = E MOD 8
+
+wobei E die Ordnungszahl des Elementes ist.
+.paŠF.1.5. FILE-Interface-Block
+---------------------------
+
+@edå Dateivariablå besitzô eineî ihò zugeordneteî File-Interface-
+Blocë  (FIB)®  Eiî  FIÂ  bestehô auó 17¶ Byteó unä  isô  iî  zweé 
+Abschnittå geteilt¬ deî Steuerabschnitô (diå ersteî 4¸ Bytes© unä 
+deî  Sektorpuffeò  (diå letzteî 12¸  Bytes)®  Ií  Steuerabschnitô 
+steheî  verschiedenå Informationeî {beò diå  Diskettendateé  odeò 
+daó Ger}t¬ daó aktuelì deò Dateé zugeordneô ist® Deò Sektorpuffeò 
+wirä   zuò   Pufferunç   deò  Ein- unä  Ausgabeî  voî   unä   zuò 
+Diskettendatei verwendet.
+
+Die untenstehende Tabelle gibt das Format des FIB 
+(LSB = niedrigstes signifikantes Byte,
+ MSB = h>chstes signifikantes Byte):
+
+  x      Flagbyte
+  x+1    Dateitype
+  x+2    Zeichenpuffer
+  x+3    Sektorpufferpointer
+  x+4    Zahl der Records (LSB)
+  x+5    Zahl der Records (MSB)
+  x+6    Recordl}nge in Byte (LSB)
+  x+7    Recordl}nge in Byte (MSB)
+  x+8    aktuelle Record-Nummer (LSB)
+  x+9    aktuelle Record-Nummer (MSB)
+  x+10   nicht verwendet
+  x+11   nicht verwendet
+  x+12   erstes Byte vom FCB
+  :
+  .
+  x+47   letztes Byte vom FCB
+  x+48   erstes Byte des Sektor-Puffers
+  :
+  .
+  x+175  letztes Byte des Sektor-Puffers
+
+Daó  Flagbytå iî ø enth}lô vieò 1-Bit-Flags¬  diå  deî  aktuelleî 
+Status der Datei indizieren:
+
+  Bit 0     Eingabe-Flag: = 1, wenn Eingabe
+  Bit 1     Ausgabe-Flag: = 1, wenn Ausgabe
+  Bit 2     Signalisiert Schreiben: = 1, wenn Daten in den 
+            Sektorpuffer geschrieben wurden
+  Bit 3     Signalisiert Lesen: = 1, wenn der Inhalt des
+            Sektorpuffers undefiniert wird
+.paŠDaó  Dateitypbytå iî x+± definierô deî Tyğ deó aktuelleî Ger}tes¬ 
+daó deò Dateivariableî zugeordneô wurde®  Eó k>nneî diå folgendeî 
+Werte auftreten:
+
+  0     Consol-Ger}t ('CON:')
+  1     Terminal-Ger}t ('TRM:')
+  2     Keybord-Ger}t ('KBD:')
+  3     List-Ger}t ('LST:')
+  4     Hilfs-Ger}t ('AUX:')
+  5     Nutzer-Ger}t ('USR:')
+  6     Diskettendatei
+
+Deò Sektorpufferpointeò iî x+³ enth}lô eiî Offseô voí ersteî Bytå 
+deó  Sektorpuffers®  Diå  folgendeî  dreé Feldeò werdeî  nuò  beé 
+Dateieî miô wahlfreieí Zugrifæ unä nichttypisierteî Fileó verwen
+det®  @edeó  Felä  bestehô auó zweé Byteó  ií  umgekehrteî  Byte-
+Format® Diå Byteó x+1° unä x+1± werdeî gew>hnlicè nichô verwendeô 
+unä sinä f{ò sp}terå Erweiterungeî vorgesehen.
+
+Diå  Byteó x+1² unä x+4· enthalteî deî FILE-Control-Blocë  (FCB)® 
+Deò letztå Blocë deó FIÂ isô deò Sektorpuffer¬  deò zuò Pufferunç 
+deò Ein- unä Ausgabeî voî unä zõ Diskettendateieî verwendeô wird.
+
+Wirä  einå Dateé eineí logischeî Ger}ô zugewiesen¬  sinä nuò  diå 
+ersten drei Bytes des FIB signifikant.
+
+Daó  obeî  beschriebenå  FIB-Formaô wirä  beé  alleî  definierteî 
+Dateieî unä Textdateieî verwendet® Deò FIÂ eineò nichttypisierteî 
+Dateé  haô keineî Sektorpuffer¬  dá diå Dateî direkô zwischeî deò 
+Variableî  unä  deò Diskettendateé  transportierô  werden®  Daheò 
+betr}gt die L}nge einer solchen Datei nur 48 Bytes.
+
+
+F.1.6. Zeiger
+-------------
+
+Eiî Zeigeò bestehô auó zweé Bytes¬ diå einå 16-Bit-Speicheradres
+så  enthalten¬  diå  ií umgekehrteî Byte-Formaô gespeicherô  ist¬ 
+d.h.¬  deò niederwertigå Adre\teiì wirä zuersô  gespeichert®  Deò 
+Werô NIÌ entsprichô eineí Worô miô deí Werô Null.
+
+
+F.2. Strukturen
+
+Datenstruktureî werdeî entsprechenä deî Basistypeî aufgebaut¬ diå 
+verschiedenå   Struktur-Methodeî   verwenden®    Eó   gibô   dreé 
+unterschiedliche Strukturmethoden:
+
+- ARRAY,
+- RECORD und
+- Diskettendateien.
+
+Diå  Strukturierunç deò Dateî beeinflu\ô nichô daó internå Formaô 
+der Datentypen.
+.paŠF.2.1. ARRAY
+------------
+
+Diå  Komponenteî  deò  niedrigsteî Indexadresså  werdeî  auæ  deò 
+niedrigsteî  Speicheradresså gespeichert®  Eiî  mehrdimensionaleó 
+ARRAÙ wirä sï abgespeichert¬ da\ diå aí weitesteî rechtó stehendå 
+Dimension zuerst aufgebaut wird.
+
+
+F.2.2. RECORD
+-------------
+
+Daó   erstå  Felä  eineó  Recoräs  wirä   auæ   deò   niedrigsteî 
+Speicheradresså gespeichert® Diå L}ngå deó Recordó isô gleicè deò 
+Summå  deò  L}ngå deò einzelneî Felder¬  wenî deò  RECORÄ  keineî 
+varianteî  Teiì  hat®  Haô eò eineî varianteî Teil¬  sï wirä  diå 
+Gesamtzahì deò belegteî Byteó bestimmô durcè diå L}ngå deó festeî 
+Teiìs pluó L}ngå deò maximaleî Gr>\å deó varianteî  Teils®  @edeò 
+variante Teil beginnt an der gleichen Speicheradresse.
+.paŠF.2.3. Diskettendateien
+-----------------------
+
+Diskettendateieî  unterscheideî sicè voî deî andereî  Datenstruk
+tureî dadurch¬ da\ ihrå Dateî nichô ií interneî Speicher¬ sonderî 
+iî eineò Dateé auæ eineò externeî Diskettå gespeicherô sind® Einå 
+Diskettendateé   wirä  beé  deò  ]bertragunç  durcè  eineî  File-
+Interface-Block (FIB) gesteuert (siehe F.1.5.).
+Im allgemeinen gibt es zwei unterschiedliche Dateitypen:
+- Bin}rdateien und 
+- Textdateien.
+
+
+F.2.3.1. Bin}rdateien
+- - - - - - - - - - -
+
+Einå Bin}rdateé bestehô auó eineò Folgå voî S}tzeî gleicheò L}ngå 
+unä  gleicheí  interneî Format®  Diå S}tzå werdeî  kontinuierlicè 
+hintereinandeò  gespeichert¬  uí  diå Dateispeicherunç  zõ  opti
+mieren®  Diå  ersteî  vieò Byteó deó ersteî Sektoró  eineò  Dateé 
+enthalteî diå Anzahì unä diå L}ngå (iî Byte© jedeó Records.
+
+  Sektor 0     Byte 0       Zahl des Records (LSB)
+  Sektor 0     Byte 1       Zahl des Records (MSB)
+  Sektor 0     Byte 2       Recordl}nge (LSB)
+  Sektor 0     Byte 3       Recordl}nge (MSB)
+
+Nacè dieseò Organisationsinformatioî beginnô diå Nutzinformation¬ 
+alsï  deò  erstå Record®  Auæ Bin}rdateieî kanî  sequentielì  unä 
+wahlfrei zugegriffen werden.
+
+
+F.2.3.2. Textdateien
+- - - - - - - - - - -
+
+Diå  Basiskomponenteî eineò Textdateé sinä  Zeicheî  (CHAR)¬  unä 
+au\erdeí  wirä  jedå Textdateé iî Zeileî eingeteilt®  @edå  Zeilå 
+bestehô  auó eineò beliebigeî Zahì voî Byteó unä endeô miô  eineò 
+CR/LF-Folgå  (J0D/J0A)®  Diå Dateé wirä durcè daó Zeicheî CTRÌ  Ú 
+(J1A© beendeô (EOF).
+
+
+F.3. Parameter
+
+Aî Prozedureî unä Funktioneî werdeî Parameteò durcè deî CPU-Stacë 
+{bertragen®  Deò generiertå Maschinencodå bringô automatiscè  diå 
+Parameterwertå  mitteló PUSÈ iî deî Stacë unä stellô siå  mitteló 
+POĞ deí Unterprogramí zuò Verf{gung® Docè ií Fallå deò Verwendunç 
+externeò  Unterprogrammå mu\ deò Programmiereò mitteló POĞ  dieså 
+Wertå selbsô deí Unterprogramí auó deí Stacë {bergeben.
+Zõ Beginî eineó EXTERNAL-Unterprogrammeó enth}lô deò Stacë  immeò 
+zuersô diå Return-Adresse  (eiî Wort)®  Diå Parameter¬ falló wel
+chå  existieren¬  steheî  ií Stacë hinteò dieseò  Return-Adresse¬ 
+d.h®  iî Richtunç h>hereò Adressen®  Uí dieså Parameteò zõ erhal
+ten¬  mu\  mitteló POĞ zun}chsô diå  Return-Adresse¬  danacè  diå 
+Parameteò  {bernommeî  unä  zuí Schlu\ mitteló PUSÈ  diå  Return-
+Adresså wiedeò zur{cë iî deî Stacë gebrachô werden.ŠF.3.1. Variablenparameter
+-------------------------
+
+Beé  Variablen-Parameterî  (VAR©  wirä  eiî  Worô  iî  deî  Stacë 
+gespeichert¬  daó diå  absolutå  Adresså  deó  ersteî  Byteó  deó 
+aktuellen Parameters enth}lt.
+
+
+F.3.2. Wertparameter
+--------------------
+
+Beé  Wertparameterî  h}ngô  diå Forí deò  ]bergabå  voí  Tyğ  deò 
+Parameter ab. Dies wird im folgenden beschrieben.
+
+
+F.3.2.1. Ordinaltyp
+- - - - - - - - - -
+
+INTEGER¬  BOOLEAN¬  CHAÒ unä Aufz}hlungstypeî werdeî aló eiî Worô 
+{beò deî Stacë {bertragen®  Belegô diå Variablå nuò eiî Byte¬  sï 
+isô deò h>chstwertigå Teiì Null®  Normalerweiså wirä f{ò diå POP-
+Anweisunç "POĞ HL¢ verwendet®       
+
+
+F.3.2.2. REAL-Zahlen
+- - - - - - - - - - -
+
+REAL-Zahleî ben>tigeî ií Stacë sechó Bytes® Maî verwendeô deshalâ 
+iî deò ]bertragunç diå Anweisungeî 
+
+  POP HL
+  POP DE
+  POP BC
+
+Dabeé   enth}lô   danî  Ì  deî  Exponenteî  unä  È   daó   f{nftå 
+(niederwertige© Byte¬  Å daó vierte¬  Ä daó dritte¬  Ã daó zweitå 
+und B das erste (h>chstwertige) Byte.
+
+
+F.3.2.3. STRING
+- - - - - - - -
+
+Wirä  eiî  STRINÇ {beò deî Stacë {bergeben¬  sï weisô SĞ auæ  daó 
+Byte¬ welcheó diå L}ngå î deó STRING'ó enth}lt® Auæ deî folgendeî 
+Adresseî  SP+±  bió SP+î steheî diå  Zeicheî  deó  STRING's®  Zuò 
+]bernahmå  kanî maî diå folgendeî Instruktionen verwenden¬ uí deî 
+STRING aus dem Stack zum Puffer zu {bertragen:
+
+  LD    DE,Puffer
+  LD    HL,0
+  LD    B,H
+  ADD   HL,SP
+  LD    C,(HL)
+  INC   BC
+  LDIR
+  LD    SP,HL
+.paŠF.3.2.4. Mengen
+- - - - - - - -
+
+Einå  Mengå belegô stetó 3² Byteó ií  Stacë  (Mengenkomprimierunç 
+wird nur beim Laden und Speichern von Mengen verwendet).
+Miô deî folgendeî Instruktioneî kanî maî einå Mengå auó deí Stacë 
+zum Puffer {bertragen:
+
+  LD    DE,Puffer
+  LD    HL,0
+  ADD   HL,SP
+  LD    BC,32
+  LDIR
+  LD    SP,HL
+
+Damiô wirä daó geringstwertigå Bytå auæ diå niedrigstå Adresså ií 
+Puffer gespeichert.
+
+
+F.3.2.5. Zeiger
+- - - - - - - -
+
+Eiî  Zeigerwerô wirä {beò deî Stacë aló eiî Worô  {bertragen®  Eó 
+enth}lô  diå Speicheradresså deò dynamischeî Variablen®  Deò Werô 
+NIL entspricht Null.
+
+
+F.3.2.6. ARRAYS und RECORDS
+- - - - - - - - - - - - - -
+
+Obgleicè ARRAY- unä RECORD-Parameteò Wertparameteò  sind¬  werdeî 
+siå nichô direkô {beò deî Stacë {bertragen®  Eó wirä nuò eiî Worô 
+{bertragen¬  das  diå Adresså deó ersteî Byteó deó entsprechendeî 
+Parameteró  enth}lt®  Ií Unterprogramí isô dieså Adresså  mitteló 
+POĞ zõ {bernehmeî unä aló Quelladresså eineò Block-COPY-Operatioî 
+zu verwenden.
+
+
+F.4. Funktionsergebnisse
+ 
+Voí Nutzeò geschriebenå Funktioneî m{sseî ihreî Werô iî folgendeò 
+Weise zur{ckgeben:
+
+- Wertå voî ordinaleî Typeî werden ií HL-Registerpaaò  {bergeben® 
+  Wenî  deò  Tyğ nuò auó eineí Bytå besteht¬  wirä deò Werô iî  Ì 
+  {bergeben¬ unä È mu\ Nulì sein.
+- REAL'ó werdeî iî deî Registerpaareî BC¬ DE¬ HÌ {bergeben» dabeé 
+  enth}lô  Ì deî Exponenteî unä BC¬  DÅ unä È diå  Mantisså  (daó 
+  h>chstwertige Byte in B).
+- STRING'ó  unä  Mengeî werdeî ií Stacë iî deí  iî  F.3.2.3®  unä 
+  F.3.2.4. beschriebenen Format {bergeben.
+- Zeigerwerte werden in HL zur{ckgegeben.
+.paŠ.hePASCAL                        #                        Anhang G
+A n h a n g   G : BDOS/BIOS-Rufe MicroDOS
+
+G.1. BDOS-Funktionen (BDOS-Ruf: JCD/<5(*CALL 5*))
+
+BDOS-/BIOS-Funktioneî    zuò   Nutzunç   voî   Komponenteî    deó 
+Laufzeitsystemó MicroDOS (Erl}uterungeî sinä deî Systemunterlageî 
+zu entnehmen):
+
+-----------------------------------------------------------------
+ n  Operation                 ]bertragener Wert  Erhaltener Wert
+                              (Register)  
+-----------------------------------------------------------------
+ 0  Warmstart
+ 1  Konsoleingabe                                Zeichen (A)
+ 2  Konsolausgabe             Zeichen (E)
+ 3  Lesereingabe                                 Zeichen (A)
+ 4  Stanzerausgabe            Zeichen (E)
+ 5  Druckerausgabe            Zeichen (E)
+ 6  Direkte Konsol-           FF (Eingabe)       0: nicht bereit
+    Ein-/Ausgabe              Zeichen (Ausgabe)  oder Zeichen (A)
+ 7  I/O-Byte lesen                               Byte (A)
+ 8  I/O-Byte setzen           Byte (E)
+ 9  Puffer drucken            Adresse (DE)
+10  Puffer lesen              Adresse (DE)
+11  Konsolstatus lesen                           Byte (A)
+13  Laufwerk Grundeinstellung ( C)
+14  Laufwerk anw}hlen         Laufwerk-Nr. (E)
+15  Datei er>ffnen            FCB-Adresse (DE)   Fehlercode (A)
+16  Datei schlie\en           FCB-Adresse (DE)   Fehlercode (A)
+17  Erste Datei suchen        FCB-Adresse (DE)   Fehlercode (A)
+18  N}chste Datei suchen                         Fehlercode (A)
+19  Datei l>schen             FCB-Adresse (DE)   Fehlercode (A)
+20  Sequentiell lesen         FCB-Adresse (DE)   Fehlercode (A)
+21  Sequentiell schreiben     FCB-Adresse (DE)   Fehlercode (A)
+22  Datei erstellen           FCB-Adresse (DE)   Fehlercode (A)
+23  Datei umbenennen          FCB-Adresse (DE)   Fehlercode (A)
+24  Momentane Laufwerke                          Vektor (HL)
+    bestimmen
+25  Standardlaufwerk suchen                      Laufwerk (A)
+26  DMA-Adresse setzen        DMA-Adresse (DE)
+27  Belegtabelle lesen                           Vektor (HL)
+28  Schreibschutz setzen      
+29  R/O-Laufwerke finden                         Vektor (HL)
+30  Dateiattribute setzen     FCB-Adresse (DE)
+3±  Diskettenparameteò leseî                     Blockadresså(HL)
+32  Benutzernummer lesen      (E) = JFF          Benutzer-
+    oder setzen               Neue Nummer (E)    Nummer (A)
+33  Direkt lesen              FCB-Adresse (DE)   Fehlercode (A)
+34  Direkt schreiben          FCB-Adresse (DE)   Fehlercode (A)
+35  Dateigr>\e lesen          FCB-Adresse (DE)
+36  Direkt-Satznummer lesen   FCB-Adresse (DE)
+37  Laufwerk(e) zur{cksetzen  Laufwerkvektor (DE)
+-----------------------------------------------------------------
+
+Fehlercode: JFF
+.paŠG.2. BIOS-Funktionen
+
+(î Funktionsnummer»  autonomeò Aufruæ miô CALÌ xxxx¬ wobeé xxxø ½ 
+BIOS-Adresså  « î *»  ]bergabå iî deî Registerî  C¬  BC¬  DÅ  unä 
+R{ckgabå  iî  Á odeò HL»  RÁ isô R{ckkehrcodå iî  Á  - Fehlercodå 
+erstgenannt)
+
+-----------------------------------------------------------------
+  n  Wirkung                          Aufruf-        R{ckgabewert   
+                                      parameter p
+-----------------------------------------------------------------
+  0  Warmstart              
+  1  Konsolstatus abfragen                           JFF/J00  (A)
+  2  Eingabe (Konsole)                               Zeichen  (A)
+  3  Ausgabe (Konsole)                Zeichen   (C)  
+  4  Ausgabe (Drucker)                Zeichen   (C)
+  5  Ausgabe (Stanzer)                Zeichen   (C)
+  6  Eingabe (Leser)                                 Zeichen  (A)
+  7  Spur 0 einstellen                               Zeichen  (A)
+  8  Laufwerk selektieren             Nummer 0..(C)  Vektor  (HL)
+  9  Spur ausw}hlen                   Spur     (BC)
+ 10  Sektor ausw}hlen                 Sektor   (BC)
+ 11  Pufferadresse setzen             Adresse  (BC)
+ 12  Selektierten Sektor lesen                       RA:  J01/J00
+ 13  Selektierten Sektor schreiben                   RA:  J01/J00
+ 14  Druckerstatus abfragen                          RA:  JFF/J00
+ 15  Logische in physische            Sektor   (BC) 
+     Sektornummer umrechnen           Tabelle  (DE)  Nummer  (HL)
+-----------------------------------------------------------------
+.paŠ.hePASCAL                        #                        Anhang H
+A n h a n g   H : Syntax in Backus-Naur-Notation
+
+Es bedeuten
+::=    Definiert durch
+  !    Exklusives OR (eine M>glichkeit mu\ genutzt werden)
+(* *)  Elementå   k>nneî  nullmaì  odeò  wiederholô   dargestellô        
+       werdeî            
+  <    Elementå  unä  einschlie\licè   Klammerî   (Nichtterminal
+       symbole© sinä durcè g{ltigå Konstruktioneî lt®  Definitioî 
+       zõ ersetzen.
+Allå  andereî  Elementå (Terminalsymbole© sinä umittelbaò iî  deî 
+Quelltext zu {bernehmen.
+
+
+A
+
+ Additionsoperator<     ::= + ! - ! OR ! XOR
+ Adresse<               ::=  vorzeichenlose ganze Zahl<
+                          !  Variablenbezeichner<
+ aktueller Parameter<   ::=  Ausdruck<! Variable<
+ Anfangswert<           ::=  Ausdruck<
+ Anweisung<             ::=  Marke<: einfache Anweisung<
+                          !  einfache Anweisung<
+                          !  Marke<: strukturierte Anweisung<
+                          !  strukturierte Anweisung<
+ Anweisungsteil<        ::=  Verbund-Anweisung<
+ Array-Konstante<       ::= ( strukturierte Konstante<)
+                            (*,( strukturierte Konstante<)*)
+ Array-Typ<             ::= ARRAY^ Indextyp<(*, Indextyp<)*)~
+                            OF  Komponententyp<
+ Array-Variable<        ::=  Variable<
+ Aufz}hlungstyp<        ::= ( Bezeichner<(*, Bezeichner<*))
+ Ausdruck<              ::=  einfacher Ausdruck<
+                            (* Vergleichsoperator<  
+                             einfacher Ausdruck<*)
+
+
+B
+
+ Basistyp<              ::=  ordinaler Typ<
+ Bereichsbezeichner<    ::=  Bezeichner<
+ Bereichskennzeichner<  ::=  Record-Variable<. Bereichsbezeichner<
+ Bereichsliste<         ::=  fester Teil<
+                          !  fester Teil<; varianter Teil<
+                          !  varianter Teil<
+ Bezeichner<            ::½  Buchstabe<(ª Buchstabå od. Ziffer<*)
+ Bezeichnerliste        ::=  Bezeichner<(*, Bezeichner<*)
+ Block<                 ::=  Deklarationsteil< Anweisungsteil<
+ Buchstabe<             ::=    A ! B ! C ! D ! E ! F ! G
+                               H ! I ! @ ! K ! L ! M ! N
+                               O ! P ! Q ! R ! S ! T ! U
+                               V ! W ! X ! Y ! Z
+                               a ! b ! c ! d ! e ! f ! g
+                               h ! i ! j ! k ! l ! m ! n
+                               o ! p ! q ! r ! s ! t ! u
+                               v ! w ! x ! y ! z
+ Buchstabe oder Ziffer< ::=  Buchstabe< ! Ziffer !ŠC
+
+ Case-Anweisung<        ::= CASE  Ausdruck< OF  Case-Element<
+                            (*; Case-Element<*)
+                            END
+                          ! CASE  Ausdruck< OF  Case-Element<
+                            (*; Case-Element<*)
+                            ELSE  Anweisung<(*; Anweisung<*)
+                            END
+ Case-Element<          ::=  Case-Liste< :  Anweisung<
+ Case-Liste<            ::=  Case-Listenelement<
+                            (*, Case-Listenelement<*)
+ Case-Listenelement<    ::=  Konstante<! Konstante<.. Konstante<
+ Case-Marke<            ::=  Konstante<
+ Case-Markenliste<      ::=  Case-Marke<(*, Case-Marke<*)
+
+
+D
+
+ Deklarationsabschnitt< ::=  Label-Deklarationsteil<
+                          !  Konstanten-Definitionsteil<
+                          !  Typ-Definitonsteil<
+                          !  Variablen-Deklarationsteil<
+                          !  Unterprogramm-Deklarationsteil<
+ Deklarationsteil<      ::= (* Deklarationsabschnitt<*)
+ dynamische Variable<   ::=  Zeigervariable<
+
+   
+E
+
+ einfacher Ausdruck<    ::=  Term(* Additionsoperator< Term<*)
+ einfache Anweisung<    ::=  Ergibt-Anweisung<
+                          !  Prozedur-Anweisung<
+                          !  GOTO-Anweisung<
+                          !  Inline-Anweisung<
+                          !  Leer-Anweisung<
+
+ einfache Konstantendefinition<
+                        ::=  Bezeichner<: einfacher Typ<=
+                                          Konstante<
+ einfacher Typ<         ::=  ordinaler Typ<
+                          ! REAL
+                          !  Typbezeichner<
+ Endwert<               ::=  Ausdruck<
+ Ergibt-Anweisung<      ::=  Variable< :=  Ausdruck<
+                          !  Funktionsbezeichner< :=  Ausdruck<
+ Etikette<              ::=  leer<
+                          !  Etikettenbezeichner<
+.paŠF
+
+ Faktor<                ::=  Variable<  vorzeichenlose Konstante<
+                          ! ( Ausdruck<)
+                          !  Funktionskennzeichner<
+                          !  Menge<
+ fester Teil<           ::=  Record-Abschnitt<
+                            (*; Record-Abschnitt<*)
+ Dateibezeichner<       ::=  Bezeichner< !  INPUT !  OUTPUT
+ Dateibezeichner-Liste< ::=  leer<
+                          !  Dateibezeichner<
+                            (*, Dateibezeichner<*)
+ Datei-Typ<             ::= FILE OF  Typ<
+                          ! TEXT
+                          ! FILE
+ For-Anweisung<         ::= FOR  Laufvariable< :=
+                             For-Liste< DO  Anweisung<
+ For-Liste<             ::=  Anfangswert< TO  Endwert<
+                          !  Anfangswert< DOWNTO  Endwert<
+ Formal-Parameterabschnitt<
+                        ::=  Parametergruppe<
+                          ! VAR Parametergruppe<
+ Funktionsbezeichner<   ::=  Bezeichner<
+ Funktionsdeklaration<  ::=  Funktionskopf< Block<;
+                          !  Funktionskopf<FORWARD;
+                          !  Funktionskopf<EXTERNAL
+                             vorzeichenlose ganze Zahl<
+ Funktionskennzeichner< ::=  Funktionsbezeichner<
+                          !  Funktionsbezeichner<
+                            ( aktueller Parameter<
+                            (*, aktueller Parameter<*))
+ Funktionskopf<         ::= FUNCTION  Funktionsbezeichner<:
+                             Resultatstyp<;
+                          ! FUNCTION  Funktionsbezeichner<
+                            ( Formal-Parameterabschnitt<
+                            (*; Formal-Parameterabschnitt<*))
+                            : Resultatstyp<;
+
+
+G
+
+ ganze Variable<        ::=  Variablenbezeichner<
+                          !  Typ-Konstantenbezeichner<
+ GOTO-Anweisung<        ::= GOTO  Marke<
+
+
+H
+
+ Hexadezimal-Ziffer<    ::=  Ziffer<   A ! B ! C ! D ! E ! F
+ Hexadezimal-Ziffernfolge<
+                        ::=  Hexadezimal-Ziffer<
+                            (* Hexadezimal-Ziffer<*)
+.paŠI
+
+ If-Anweisung<          ::= IF  Ausdruck< THEN  Anweisung<
+                          ! IF  Ausdruck< THEN  Anweisung<
+                            ELSE  Anweisung<
+ Indextyp<              ::=  ordinaler Typ<
+ indizierte Variable<   ::=  Array-Variable<^ Ausdruck<
+                            (*, Ausdruck<*)~
+ Inline-Anweisung<      ::= INLINE( Inline-Listenelement<
+                            (*/ Inline-Listenelement<*))
+ Inline-Listenelement<  ::=  vorzeichenlose ganze Zahl<
+                          !  Konstantenbezeichner<
+                          !  Variablenbezeichner<
+                             lokaler Z}hlbezug<
+ Iterations-Anweisung<  ::=  While-Anweisung<
+                          !  Repeat-Anweisung<
+                          !  For-Anweisung<
+
+
+K
+
+ Komplement-Faktor<     ::=  Vorzeichen-Faktor<
+                          ! NOT  Vorzeichen-Faktor<
+ Komponententyp<        ::=  Typ<
+ Komponenten-Variable<  ::=  indizierte Variable<
+                          !  Bereichskennzeichner<
+ Konstante<             ::=  vorzeichenlose Zahl<
+                          !  Vorzeichen< vorzeichenlose Zahl<
+                          !  Konstantenbezeichner<
+                          !  Vorzeichen< Konstantenbezeichner<
+                          !  Zeichenkette<
+ Konstantenbezeichner<  ::=  Bezeichner<
+                          !  TRUE ! FALSE ! MAXINT ! PI
+ Konstanten-Definition< ::=  ungetypte Konstantendefinition<
+                          !  getypte Konstantendefinition<
+ Konstanten-Definitionsteil<
+                        ::= CONST  Konstanten-Definition<
+                            (*; Konstanten-Definition<*)
+
+
+L
+
+ Label-Deklarationsteil<::=  leer<
+                          ! LABEL  Marke<(*, Marke<*)
+ Laufwerk<              ::= A ! B ! C ! D ! E ! F
+ leer<                  ::=
+ Leeranweisung<         ::=  leer<
+ lokaler Z}hlbezug<    ::= *
+                            *  Vorzeichen< Konstante<
+.paŠM
+
+ Marke<                 ::=  Buchstabe oder Ziffer<
+                            (* Buchstabe oder Ziffer<*)
+ Menge<                 ::= ^~       
+                          ! ^ Mengenelement<(*, Mengenelement<*)~
+ Mengenelement<         ::=  Ausdruck<
+                          !  Ausdruck<.. Ausdruck<
+ Mengenkonstante<       ::= ^(* Mengenkonstantenelement<*)~
+ Mengenkonstantenelement<
+                        ::=  Konstante<
+                          !  Konstante<.. Konstante<
+ Mengen-Typ<            ::= SET OF  Basistyp<
+ Multiplikationsoperator<
+                        ::= * ! / ! DIV ! MOD ! AND ! SHL ! SHR
+
+
+O
+
+ ordinaler Typ<         ::= BYTE ! INTEGER ! CHAR ! BOOLEAN
+                          !  Aufz}hlungstyp<
+                          !  Teilbereichstyp<
+
+
+P
+
+ Parametergruppe<       ::=  Bezeichnerliste<: Typbezeichner<
+                          !  Bezeichnerliste<
+ Programm<              ::=  Programmkopf< Block<.
+ Programmbezeichner<    ::=  Bezeichner<
+ Programmkopf<          ::=  leer<
+                          ! PROGRAM  Programmbezeichner<
+                          ! PROGRAM  Programmbezeichner<
+                            ( Dateibezeichner-Liste<)
+ Prozedur-Anweisung<    ::=  Prozedurbezeichner<
+                          !  Prozedurbezeichner<
+                            ( aktueller Parameter<
+                            (*, aktueller Parameter<)
+ Prozedurbezeichner<    ::=  Bezeichner<
+ Prozedur-Deklaration<  ::=  Prozedur-Kopf< Block<;
+                          !  Prozedur-Kopf<FORWARD;
+                          !  Prozedur-Kopf<EXTERNAL
+                             vorzeichenlose ganze Zahl<
+ Prozedur-Kopf<         ::= PROCEDURE  Prozedurbezeichner<;
+                          ! PROCEDURE  Prozedurbezeichner<
+                            ( Formal-Parameterabschnitt<
+                            (*, Formal-Parameterabschnitt<*));
+.paŠR
+
+ Record-Abschnitt<      ::=  leer<
+                          !  Bereichsbezeichner<
+                             (*, Bereichsbezeichner<*): Typ<
+ Record-Konstante<      ::=  Record-Konstantenelement<
+                            (*; Record-Konstantenelement<*)
+ Record-Konstantenelement< 
+                        ::=  Bereichsbezeichner<:
+                             strukturierte Konstante<
+ Record-Typ<            ::= RECORD  Bereichsliste< END
+ Record-Variable<       ::=  Variable<
+ Record-Variablenliste< ::=  Record-Variable<
+                            (*, Record-Variable<*)
+ Repeat-Anweisung<      ::= REPEAT
+                             Anweisung<(*; Anweisung<*)
+                            UNTIL  Ausdruck<
+ Resultatstyp<          ::=  Typbezeichner<
+
+
+S
+
+ MicroDOS-Dateiname<    ::=  MicroDOS-Basisname<
+                            (*. MicroDOS-Erweiterung<*)
+                          !  Laufwerk<: MicroDOS-Basisname<
+                            (*. MicroDOS-Erweiterung<*)
+ MicroDOS-Basisname<    ::=  Buchstabe<(* Buchstabe<*)
+ MicroDOS-Erweiterung<  ::=  Buchstabe<(* Buchstabe<*)
+ Selektions-Anweisung<  ::=  If-Anweisung<
+                          !  Case-Anweisung<
+ Skalenfaktor<          ::=  Ziffernfolge<
+                          !  Vorzeichen< Ziffernfolge<
+ Steuervariable<        ::=  Variablenbezeichner<
+ Steuerzeichen<         ::= # vorzeichenlose ganze Zahl<
+                          !   druckbares Zeichen<
+ String-Typ<            ::= STRING^ Konstante<~
+ strukturierte Anweisung<
+                        ::=  Verbundanweisung<
+                          !  Selektionsanweisung<
+                          !  Iterationsanweisung<
+                          !  With-Anweisung<
+ strukturierte Konstante<
+                        ::=  Array-Konstante<
+                          !  Record-Konstante<
+                          !  Set-Konstante<
+                          !  Konstante<
+ strukturierte Konstantendefinition<
+                        ::=  Bezeichner<: Typ<
+                            = strukturierte Konstante<
+ strukturierter Typ<    ::=  ungepackter strukturierter Typ<
+                          ! PACKED
+                             ungepackter strukturierter Typ<
+.paŠT
+
+ Teilbereichstyp<       ::=  Konstante<.. Konstante<
+ Term<                  ::=  Komplement-Faktor<
+                            (* Multiplikationsoperator<
+                             Komplement-Faktor<*)
+ Typ<                   ::=  einfacher Typ<
+                          !  strukturierter Typ<
+                          !  Zeigertyp<
+ Typbezeichner<         ::=  Bezeichner<
+ Typ-Definition<        ::=  Bezeichner<= Typ<
+ Typ-Definitionsteil<   ::= TYPE
+                             Typ-Definition<(*; Typ-Definition<*)
+ Typ-Konstantenbezeichner<
+                        ::=  Bezeichner<
+ Typ-Konstantendefinition<
+                        ::=  einfache Konstantendefinition<
+                          !  strukturierte Konstantendefinition<
+
+
+U
+
+ ungepackter strukturierter Typ<
+                        ::=  String-Typ<
+                          !  Array-Typ<
+                          !  Record-Typ<
+                          !  Mengen-Typ<
+                          !  Datei-Typ<
+ ungetypte Konstantendefinition<
+                        ::=  Bezeichner<= Konstante<
+ Unterprogramm-Deklaration<
+                        ::=  Prozedur-Deklaration<
+                          ! OVERLAY  Prozedur-Deklaration<
+                          !  Funktions-Deklaration<
+                          ! OVERLAY  Funktions-Deklaration<
+ Unterprogramm-Deklarationsteil<
+                        ::=  leer<
+                          !  Unterprogramm-Deklaration<
+                            (* Unterprogramm-Deklaration<*)
+
+
+V
+
+ Variable<              ::=  ganze Variable<
+                          !  Komponenten-Variable<
+                          !  dynamische Variable<
+ Variablen-Bezeichner<  ::=  Bezeichner<
+ Variablen-Deklaration< ::=  Bezeichner-Liste<: Typ<
+                             Bezeichner-Liste<: Typ<:ABSOLUTE
+                             Adresse<
+ Variablen-Deklarationsteil<
+                        ::= VAR  Variablendeklaration<
+                            (*; Variablendeklaration<*)
+ Variante<              ::=  leer<
+                          !  Case-Markenliste<:( Bereichsliste<)
+.paŠ varianter Teil<        ::= CASE  Etikette< Typbezeichner<
+                            OF  Variante<(*; Variante<*)
+                          ! CASE  Typbezeichner< OF
+                             Variante<(*; Variante<*)
+ Verbund-Anweisung<     ::= BEGIN
+                             Anweisung<(*; Anweisung<*)
+                            END
+ Vergleichsoperator<    ::=   !  = ! = ! < ! <= !  < ! IN
+ Vorzeichen<            ::= + !  -
+ Vorzeichen-Faktor<     ::=  Faktor<
+                          !  Vorzeichen-Faktor<
+ vorzeichenlose Konstante<
+                        ::=  vorzeichenlose Zahl<
+                          !  Zeichenkette<
+                          !  Konstantenbezeichner<
+                          !  NIL
+ vorzeichenlose Zahl<   ::=  vorzeichenlose ganze Zahl<
+                          !  vorzeichenlose reelle Zahl<
+ vorzeichenlose ganze Zahl<
+                        ::=  Ziffernfolge<
+                          ! J Hexadezimal-Ziffernfolge<
+ vorzeichenlose reelle Zahl<
+                        ::=  Ziffernfolge<. Ziffernfolge<
+                          !  Ziffernfolge<. Ziffernfolge<
+                            E Skalenfaktor<
+                          !  Ziffernfolge<E Skalenfaktor<
+
+
+W
+
+ While-Anweisung<       ::= WHILE  Ausdruck< DO  Anweisung<
+ With-Anweisung<        ::= WITH  Recordvariablen-Liste<           
+                            DO  Anweisung<
+
+
+Z
+
+ Zeichen<               ::=  druckbares Zeichen<
+                          !  Steuerzeichen<
+ Zeichenkette<          ::=  ''
+                          !  ' Zeichen<(* Zeichen<*)
+ Zeiger-Typ<            ::=   Typbezeichner<
+ Zeigervariable<        ::=  Variable<
+ Ziffer<                ::= 0 ! 1 ! 2 ! 3 ! 4
+                            5 ! 6 ! 7 ! 8 ! 9
+ Ziffernfolge<          ::=  Ziffer<(* Ziffer<*)
+.paŠ.hePASCAL                        #                        Anhang I
+A n h a n g   I : Vordefinierte Prozeduren und Funktionen
+
+Folgende Funktionen/Prozeduren stehen zur Verf{gung:
+
+Es bedeuten:
+
+   c<   Konstante oder Variable vom Typ CHAR
+   f<   Dateivariable
+   i<   Ausdruck des Typs INTEGER
+   m<   Mengenvariable
+   n<   Konstante des Typs INTEGER
+   o<   Ausdruck ordinalen Typs
+   r<   Ausdruck des Typs REAL
+   s<   Stringkonstante oder -variable
+   v<   Variable, ohne Erl}uterung einfach oder indiziert
+   z<   Variable des Zeigertyps
+
+BYTÅ isô Teilbereicè voî INTEGER® Diå Notatioî "ir"¬ "irz¢ dr{ckô 
+aus, da\ jeder dieser Typen erlaubt ist.
+
+F{r Funktionen beginnt der Erl}uterungstext mit "Ergebnistyp".
+
+ABÓ ¨ ir<©              Ergebnistyğ wiå  Argument®  Absolutbetraç 
+                        von ir.      
+
+ADDÒ ¨ v<©              Ergebnistyğ  Zeiger®  Adresså deó  ersteî 
+                        Bytås deò einfacheî  odeò  strukturierteî 
+                        Variableî v.
+
+ARCTAÎ ¨ ir<©           Ergebnistyp wiå  Argument®   Ergebnió  ií 
+                        Bogenma\ (9° Graä ½ PI/2).
+
+ASSIGÎ ¨ f<¬ s<©        Verbindunç deò  Dateivariableî æ miô  deí 
+                        Speicher- odeò Ger}tenameî s.
+
+BDOÓ ¨ n<©              Aufruæ  aló  Funktioî odeò  Prozeduò  zuò 
+BDOS ( n<, p<)          Nutzunç   deó  BDOÓ  voî MicroDOS®  î isô 
+BDOSHÌ ¨ n<©            diå Funktionsnummer¬ ğ deò Aufrufparame-
+                        ter. R{ckgabewertå  werdeî  durcè  Aufruæ  
+                        aló Funktion verf{gbar.
+                        Isô  R{ckgabå ií Registeò HÌ  vorgesehen¬ 
+                        hat der Aufruf mit BDOSHL zu erfolgen.
+ 
+BIOÓ ¨ n<©              Auruæ aló Funktioî odeò aló Prozeduò  zuò 
+BIOÓ ¨ n<¬ p<©          direkteî  Nutzunç deò Treiberroutineî deó 
+BIOSHL ( n<)            Laufzeitsystemó   MicroDOS®   Diå  Erl}u
+                        terungeî zõ BDOÓ gelteî sinngem}\.
+
+BLOCKREAÄ ¨ f<¬ v<¬ i<© Leseî voî é S}tzeî zõ  12¸ Bytå deó Fileó 
+                        æ  beliebigeî  Typó  (ungetypt©  auæ  deî 
+                        Speicherplatú  deò (strukturierten© Vari
+                        ableî v.
+.paŠBLOCKWRITE ( f<, v<, i<)
+                        Schreibeî  voî  é S}tzeî zõ 12¸ Bytå  aló 
+                        Komponentå deò ungetypteî Dateé æ miô deí 
+                        Inhalô  aâ Adresså  deò  (strukturierten© 
+                        Variableî v.
+
+CHAIN ( f<)             Start der Chaindatei f.
+CHÒ ¨ i<©               Ergebnistyğ CHAR® Pseudofunktioî f{ò Typ-  
+                        konvertierung.
+
+CLOSÅ ¨ f<©             Schlie\eî deò Dateé æ unä  Aktualisierunç 
+                        des Diskettenverzeichnisses (Directory).
+ 
+CLREOÌ                  L>scheî deò Bildschirmzeilå aâ  Cursorpo
+                        sitioî (wiå Steuerzeicheî J16).
+
+CLRSCÒ                  L>scheî deó  Bildschirmó unä Cursoò  HOMÅ 
+                        (Position 1,1; wie Steuerzeichen J0C).
+
+CONCAÔ ¨ s<(*¬ s<*©     Ergebnistyğ  STRING®   Zusammenf{geî  voî 
+                        Strings. Auch mit + m>glich.
+
+COPÙ ¨ s<¬ i1<¬ i2<©    Ergebnistyğ STRING® Kopiereî deó String'ó 
+                        ab Position i1 mit i2 Zeichen.
+
+COÓ ¨ ir<©              Ergebnistyğ wiå Argument® Cosinuó voî ir® 
+                        Argument im Bogenma\ (90 Grad = PI/2).
+
+DELETÅ ¨ s<¬ i1<¬ i2<©  Aâ  Positioî  i±  werdeî  iî ó  genaõ  i² 
+                        Zeichen gel>scht.
+
+DELAY ( i<)             Verz>gerung um etwa i Millisekunden.
+
+DISPOSÅ ¨ z<©           Freigabå deó Speicherplatzeó f{ò diå  miô 
+                        z adressierte dynamische Variable.
+                        Unvertr}glich mit RELEASE.
+
+EOÆ ¨ f<©               Ergebnistyğ BOOLEAN® Diå Funktioî lieferô 
+                        TRUE¬  wenî  daó Endå voî æ erreichô ist¬ 
+                        sonsô FALSE.
+
+EOLÎ ¨ f<©              Ergebnistyğ BOOLEAN®  Deò Werô isô  TRUE¬ 
+                        wenî iî deò Textdateé æ diå Steuerzeicheî 
+                        J0Ä  J0Á erkannô werdeî (beé  Ger}tefileó 
+                        Endetastå ^ET~).
+
+ERASÅ ¨ f<©             L>scheî  deò  geschlossenen¬  miô  ASSIGÎ 
+                        spezifizierten Datei f.
+
+EXECUTÅ ¨ f<©           Starteî eineò  miô ASSIGÎ  spezifizierteî 
+                        COM-Datei.
+
+EXP ( ir<)              Ergebnistyp wie Argument. e hoch ir.
+.paŠEXIÔ                    Verlasseî deó aktuelleî Blocks® Iî Haupt
+                        programmeî R{ckkehò zuí Laufzeitsystem.
+
+FILEPOÓ ¨ f<©           Ergebnistyğ  INTEGER®  Aktuellå  Positioî 
+                        des Dateifensters in der Bin}rdatei f.
+
+FILESIZÅ ¨ f<©          Ergebnistyğ INTEGER® Anzahì deò Komponen
+                        teî deò Bin}rdateé f.
+
+FILLCHAÒ ¨ v<¬ i<¬ c<©  Aâ  Adresså  deò  Variableî  ö  werdeî  é 
+                        Zeicheî ã geschrieben® F{ò ã isô aucè Tyğ 
+                        BYTÅ zul}ssig.
+
+FREEMEÍ ¨ z<¬ i<©       Freigabå voî é Byteó deó miô ú adressier
+                        teî  unä  GETMEÍ  reservierteî  Speicher
+                        platzes.
+
+GETMEÍ ¨ z<¬ i<©        Aâ Adresså ú werdeî é Byteó Speicherplatú 
+                        reserviert.
+
+GOTOXÙ ¨ i1<¬ i2<©      Deò  Cursoò wirä auæ diå Spaltå i1¬ Zeilå 
+                        i² positionierô (diå Z}hlunç beginnô  beé 
+                        1).
+
+HALÔ                    Abbrucè deò Programmausf{hrunç unä  R{ck
+                        kehò iî daó Laufzeitsystem.
+
+HÉ ¨ iz<©               Ergebnistyğ  INTEGER®  H>herwertigeó Bytå 
+                        von iz.
+
+INSERT ( s1<, s2<, i<)  s1 wird ab Position i in s2 eingef{gt.
+
+INÔ ¨ ir<©              Ergebnistyğ wiå Argument® Ganzeò Teiì voî 
+                        ir.
+
+IORESULÔ                Ergebnistyğ INTEGER®  Fehlercodå beé Ein- 
+                        und Ausgabeoperationen (0: ohne Fehler).
+
+KEYPRESSEÄ              Ergebnistyğ BOOLEAN® Diå Funktioî lieferô 
+                        TRUE¬  wenî diå Tastatuò bet}tigô  wurde¬ 
+                        sonsô FALSE.
+
+LENGTÈ ¨ s<©            Ergebnistyğ INTEGER®Aktuellå L}ngå voî s.
+
+LN ( ir<)               Ergebnistyp REAL.Nat{rlicher Logarithmus.
+
+LO ¨ iz<©               Ergebnistyğ INTEGER®  Niederwertigeò Teiì 
+                        von iz.
+
+MARË ¨ z<©              Deò  Variableî ú wirä deò  aktuellå  Werô 
+                        deó   Haldenzeigeró   f{ò   eiî  sp}tereó 
+                        RELEASÅ zugewiesen®  ú daræ sicè zwischeî 
+                        MARË unä RELEASÅ nichô }ndern.
+
+MAXAVAIÌ                Ergebnistyğ  INTEGER®  Gr>\teò  zusammen
+                        h}ngendeò  freieò Speicherblocë iî  Byte® 
+                        Diå Haldå wirä reorganisiert.ŠMEMAVAIÌ                Ergebnistyğ   INTEGER®   Freieò   Bereicè 
+                        zwischen Halde und Keller in Byte.
+
+MOVÅ ¨ v1¬ v2<¬ i<©     Deò  Inhalô  voî v± wirä miô é Byteó nacè 
+                        v2 kopiert.
+
+NE× ¨ z<©               Deò  Variableî  ú wirä  diå  Adresså  deó 
+                        Speicherplatzeó f{ò diå dynamischå  Vari
+                        ablå  ú  zugewieseî unä deò Speicherplatú 
+                        reserviert.
+
+NORMSCÒ                 Daó miô SPRCSCÒ gesetztå Bildschirmattri
+                        buô wirä zur{ckgesetzô  (installationsun
+                        abh}ngig).
+
+ODÄ ¨ i<©               Ergebnistyğ BOOLEAN® Diå Funktioî lieferô 
+                        TRUE, wenn i ungerade ist, sonst FALSE.
+
+ORÄ ¨ o<©               Ergebnistyğ  INTEGER®  Ordnungsnummeò deó 
+                        Elementes o im ordinalen Typ.
+
+OVRDRIVE ( i<)          Laufwerkzuweisung f{r OVERLAY-Datei
+                        (i=0: aktuelles Laufwerk,
+                         i=1: Laufwerk A,
+                         i=2: Laufwerk B usw.)
+
+PARAMCOUNÔ              Ergebnistyğ INTEGER® Anzahì deò Kommando
+                        zeilenparameteò.
+
+PARAMSTÒ ¨ i<©          Ergebnistyğ STRING®  Deò  i-tå  Kommando
+                        zeilenparameteò wirä bereitgestellt.
+ 
+POÓ ¨ s1<¬ s2<©         Ergebnistyğ  INTEGER®  Daó Musteò s± wirä 
+                        iî s² gesucht®  Eó wirä diå Positioî  er
+                        mittelt¬ aâ deò s± iî s² erstmaliç gefun
+                        deî wurde®  Isô s± nichô iî s² enthalten¬ 
+                        lieferô diå Funktioî deî Werô 0.
+
+PREÄ ¨ o<©              Ergebnistyğ wiå Argument®  
+                        Vorg}ngeò voî o. 
+                        i:= pred (i) ist schneller als i:= i-1.
+
+PTÒ ¨ i<©               Ergebnistyğ  Zeiger®  Pseudofunktioî  f{ò 
+                        Typvertr}glichkeit®    Implementationsab
+                        h}ngiç aucè WRD.
+
+RANDOÍ                  Ergebnistyğ   REAL®  Gleichverteiltå  Zu
+                        fallszahì zwischeî ° unä 1.
+
+RANDOÍ ¨ i<©            Ergebnistyğ  INTEGER®   Erzeugunç   eineò 
+                        Zufallzahl zwischen 0 und i-1.
+
+RANDOMIZÅ               Deò   Zufallsgeneratoò   wirä  iî   eineî 
+                        definierten Anfangszustand versetzt.
+.paŠREAD ( f<, cinorsv<,.., cinorsv<))
+READLN ( f<, cinorsv<,.., cinorsv<)
+                        Leseî   voî   deò   spezifizierteî   odeò 
+                        vordefinierten Datei f.
+
+READ ( cinorsv<,.., cinorsv<)
+READLN ( cinorsv<,.., cinorsv<)
+                        Lesen von der Standarddatei.
+
+RELEASÅ ¨ z<©           Diå  Haldå dynamischeò Variableî wirä  aâ 
+                        deò  miô MARË (z© fixierteî Adresså frei
+                        gegeben.
+
+RENAMÅ ¨ f<¬  s<©       Diå  (geschlossene© miô  ASSIGÎ  spezifi
+                        ziertå Dateé erh}lô deî Nameî s.
+
+RESEÔ ¨ f<©             Er>ffneî  eineò existierendeî Dateé æ unä 
+                        Positionierunç  deó Dateifensteró auæ diå 
+                        erstå Komponente® Implementationsabh}ngiç 
+                        wirä diå erstå Komponentå aucè gelesen.
+    
+REWRITÅ ¨ f<©           Er>ffnunç eineò nichô existierendeî  odeò 
+                        zu {berschreibenden Datei f.
+
+ROUNÄ ¨ r<©             Ergebnistyğ INTEGER®  Additioî voî 0.µ zõ 
+                        r und Abtrennen des gebrochenen Teils.
+
+SEEË ¨ f<¬ i<©          Positionierunç  deó Dateifensteró auæ diå 
+                        (i-1)-tå  Komponentå  voî æ (diå  Z}hlunç 
+                        deò Dateikomponenteî beginnô miô 0).
+
+SEEKEOF ¨ f<©           Wirkunç wiå  EOF®  Tabulator-¬  Leer- unä 
+                        EOLN-Zeichen werden {bergangen.
+
+SEEKOLÎ ¨ f<©           Wirkunç wiå EOLN®  Tabulator-¬  Leer- unä 
+                        EOLN-Zeichen werden {bergangen.
+
+SIÎ ¨ ir<©              Ergebnistyğ  REAL®  Sinuó  voî iò (iò  ií 
+                        Bogenma\, 90 Grad = PI/2).
+
+SIZEOÆ ¨ v<©            Ergebnistyğ INTEGER® Speicherbelegunç f{ò 
+                        v in Byte. v kann strukturiert sein.
+
+SPECSCÒ                 Daó f{ò SPECSCÒ gesetztå Bildschirmattri
+                        buô (z.B® INVERS© wirä gesetzt.
+
+SQR ( ir<)              Ergebnistyp wie Argument. Quadrat von ir.
+
+SQRÔ ¨ ir<©             Ergebnistyğ wiå  Argument®  Quadratwurzeì 
+                        von ir (ir < 0).
+
+STÒ ¨ ir<¬ s<©          Deò  Werô iò wirä iî diå  Zeichenkettå  ó 
+                        konvertiert®   iò  kanî  miô  ir:Breiten
+                        formatº  Dezimalstellenformaô  formatierô 
+                        werden.
+.paŠSUCÃ ¨ o<©              Ergebnistyğ wiå Argument®  Nachfolgeò voî 
+                        o. i:= succ(i) ist schneller als i:= i+1. 
+
+SWAĞ ¨ iz<©             H>herwertigeó unä niederwertigeó Bytå deò 
+                        16-Bit-Variablen werden vertauscht.
+
+TRUNÃ ¨ r<©             Ergebnistyğ INTEGER®  Deò gebrochenå Teiì 
+                        von r wird abgeschnitten.
+
+UPCASÅ ¨ c<©            Ergebnistyğ   CHAR®   Umwandlunç   eineó 
+                        Klein- iî eineî Gro\buchstaben.
+                        Bei c  < Kleinbuchstabe wirkungslos.
+
+VAÌ ¨ s<¬ v1<¬ v2<©     Diå  Zeichenkettå  ó  wirä  iî einå  Zahì 
+                        konvertierô  unä auæ v±  gespeichert®  v± 
+                        isô voí Tyğ INTEGEÒ odeò REAL® v² isô voí 
+                        Tyğ  INTEGEÒ  unä gibô  eineî  Fehlercodå 
+                        zur{cë   ¨ v² < °   zeigô    fehlerhafteó 
+                        Element).
+ 
+WRITE (f<, cinorsv<,.., cinorsv<)
+WRITELN ( f<, cinorsv<,.., cinorsv<)
+                        Schreibeî    deò   spezifizierteî    odeò 
+                        vordefinierten Datei f.
+
+WRITE ( cinorsv<,.., cinorsv<)
+WRITELN ( cinorsv<,.., cinorsv<)
+                        Schreiben einer Standarddatei.
+.paŠ.hePASCAL                        #                        Anhang @
+A n h a n g   @ :  Grafik-Tool-Boxeî  f{ò deî KC85/³ bzw®  KC85/´ 
+                   miô  D004-Erweiterunç unä f{ò daó  KÃ compact-                     
+                   Floppy-System
+      
+@.1. Tool-Boxen f{r den KC85/3 und KC85/4 mit D004-Erweiterung
+
+Zuò  optimaleî Ausnutzunç deò Systemressourceî deò  Kleincomputeò 
+KÃ  85/³  unä KÃ 85/´ dieneî diå Grafik-Tool-Boxeî  BOX3.INÃ  unä 
+BOX4.INC®  
+
+BOX3.INC f{r den KC85/3 mit D004-Erweiterung
+BOX4.INC f{r den KC85/4 mit D004-Erweiterung
+
+Siå werdeî unteò Turbï Pascaì bzw® Pascaì 880/Ó aló Include-Dateé 
+verwendet®  Deò Unterschieä zwischeî deî beideî Versioneî bestehô 
+iî deò Nutzunç deò erweiterteî Grafikm>glichkeiteî ¨ zweé Bilder¬ 
+Farbaufl>sung©  unä   deò Abspeicherunç kompletteò  Grafikeî  auæ 
+Diskette.
+
+
+@.1.1. Hilfsprogramme
+---------------------
+
+WZB„ Umwandlunç REAL-Zahì iî Zeichenkettå (auæ INTEGER gerundet© 
+I: REAL-Zahl
+O: STRING aus zwei Zeichen
+
+ADRCHAR Umwandlung INTEGER-Zahl in Zeichenkette
+I: INTEGER-Zahl
+O: STRING aus zwei Zeichen
+
+WEB Umwandlung BYTE in CHARacter
+I: BYTE
+O: CHAR
+
+ESC Sendet ESC (1BH) und ein Zeichen zum Terminal
+I: CHAR
+O: -
+
+WEBWRITE Sendet Liste von 5 Parametern zum Terminal
+I: 5 INTEGER-Werte
+O: -
+
+
+@.1.2. Grundroutinen
+--------------------
+
+PSET Punktsetzen
+I: X,Y REAL
+O: -
+
+PRES Punktl>schen
+I: X,Y REAL
+O: -
+.paŠGFARB Stellt Farbe f{r Punktsetzen, Linie und Kreis ein
+I: BYTE f{r Farbwert
+O: -
+
+LINE Zeichnet Linie aus Anfangs- und Endpunkt
+I: Xa,Ya,Xe,Ye REAL
+O: -
+
+CIRCL Zeichnet Kreis um Mittelpunkt mit Radius
+I: Xm,Ym,R REAL
+O: -
+
+WINDOW„  Rufô definierteó Fensteò ií 40-Zeichenmoduó  {beò  Nummeò
+auf
+I: Nummer INTEGER
+O: -
+
+SOUND„  Tonausgabå  zweé  Kan}lå  miô  Vorteiler¬  Lautst}rkå  unä            
+Tondauer
+I: T1, V1, T2, V2, L, Z INTEGER
+O: -
+
+COLORZ„  Stellô Vorder- unä Hintergrundfarbå f{ò Zeichenausgabå ií 
+40-Zeichenmoduó ein
+I: Ink,Paper BYTE
+O: -
+
+WININ„ Initialisierô Fensteò miô Nummer¬ Anfanç unä Endå voî Zeilå 
+unä Spaltå unä rufô eó auf
+I: N, Xa, Ya, Xe, Ye INTEGER
+O: -
+
+CLSG L>scht alle Pixel ohne [nderung der Hintergrundfarbe
+I: - 
+O: -
+
+INK Setzt Vordergrundfarbe 
+I: Farbe BYTE
+O: -
+
+PAPER Setzt Hintergrundfarbe 
+I: X,Y REAL
+O: -
+
+BSMODE Schaltet zwischen 40- und 80-Zeichenmodus um
+I: -
+O: -
+
+READ1„ Liesô eiî BYTE auó deí Speicheò deó Grundger}tes
+I: Adresse INTEGER
+O: Inhalt BYTE
+
+READN„  Liesô  25¶ Byteó auó deí Speicheò deó Grundger}teó iî  daó 
+BYTE-Array
+I: Anfangsadresse INTEGER
+O: BYTE-Array
+.paŠWRIT1 Schreibt ein BYTE in RAM des Grundger}ts
+I: Adresse INTEGER, BYTE
+O: -
+
+WRITN„ Bereiteô daó Schreibeî voî mehrereî BYTEó iî RAÍ deó Grund
+ger}teó vor¬ diå BYTEó selbsô m{sseî aló CHAÒ miô WRITÅ {bergebeî 
+werden
+I: Adresse INTEGER, Anzahl INTEGER
+O: -
+
+KCCALL Ruft Unterprogramm im Grundger}t auf
+I: Startadresse INTEGER
+O: -
+
+DIROUT„  Gibô eiî Zeicheî aî daó CAOS-UĞ ° (Bildschirmausgabå  40-
+Zeichenmodus©  auó (dienô deò gemischteî  Ausgabå  40/80-Zeichen
+darstellung)
+I: Zeichen CHAR
+O: -
+
+UOUT2 Gibt ein Zeichen an CAOS-UP 2 (USER-OUT)
+I: Zeichen CHAR
+O: -
+
+UOUT3 Gibt ein Zeichen an CAOS-UP 3 (USER-OUT)
+I: Zeichen CHAR
+O: -
+
+CAOSUP Ruft CAOS-UP {ber Programmverteiler auf
+I: UP-Nummer BYTE
+O: -
+
+BYE Gibt die Steuerung ans CAOS zur{ck
+I: -
+O: -
+
+SCRMODE Schaltet um zwischen Page- und Scrollmode
+I: -
+O: -
+
+KBDMODE Schaltet um zwischen Text- und Programmode
+I: -
+O: -
+
+DIRSTRING„ Gibô einå Zeichenkettå voî max® 25´ BYTE iî 40-Zeichen
+darstellunç  auó (geigneô zuò 40-Zeichendarstellunç ií eingestel
+teî 80-Zeichenmodus)
+I: Zeichenkette
+O: -
+
+SCREEN40„  Schalteô  auæ  40-Zeichendarstellung®  Bildschirí  wirä 
+gel>scht
+I: -
+O: -
+.paŠSCREEN80„  Schalteô  auæ  80-Zeichendarstellung®  Bildschirí  wirä 
+gel>scht
+I: -
+O: -
+
+AMZSATZ Schaltet auf amerikanischen Zeichensatz
+I: -
+O: -
+
+DTZSATZ Schaltet auf deutschen Zeichensatz
+I: -
+O: -
+
+COLOR„  Wechselô Vorder- unä Hintergundfarbå deó kompletteî  Bild
+schirms
+I: Ink, Paper BYTE
+O: -
+
+CLS„ L>schô allå Pixeì unä stellô Vorder- unä Hintergrundfarbå deó 
+kompletteî Bildschirms neu ein
+I: Ink, Paper BYTE
+O: -
+
+DRAWLINE Zeichnet Polygon aus Punktfeld
+I: Anzahl Punkte INTEGER
+   ARRAY 0..255 / X, Y REAL
+O: - 
+
+HEXSTRING„   Schreibô   aló   Hexadezimalzahleî    verschl{sselteî 
+Maschinencodå iî RAÍ deó Grundger}teó 
+(Bsp® '3E02210080CD0010C9')
+I: STRING (max 254 Zeichen), Adresse INTEGER
+O: -
+
+IRMEBENE Stellt IRM-Zugriff des KC 85/4 ein
+ Bit 0 Zugriff auf Bild 0/1
+ Bit 1 Darstellung Bild 0/1
+ Bit 2 Zugriff Pixel/Farbe
+I: Steuerbyte BYTE
+O: -
+
+IRMZUGR Schaltet Zugriff zwischen Bild 0/1 beim KC 85/4 um
+I: -
+O: -
+
+IRMANZ„ Schalteô zwischeî angezeigteí Bilä 0/± beií KÃ 85/4 um
+I: -
+O: -
+
+FARBZUGRIFF„  Schalteô  uí zwischeî Zugrifæ auæ Pixel- odeò  Farb
+speicheò beií KÃ 85/4
+I: -
+O: -
+.paŠHOCH„ Stellô hohå Farbaufl>sunç (´ Farbeî Pixelweise© beií KÃ 85/´ 
+ein
+I: -
+O: -
+
+
+@.1.3. Abspeicherung von Bildern
+--------------------------------
+
+BILDSAVE„   Retteô   Bidschirminhalô  deó   Ausschnitteó   256*25¶ 
+einschlie\licè  Farbå auæ Diskette®  Unterschiedlicè beé KÃ  85/³ 
+unä /´ !
+I: Dateiname STRING
+O: - 
+
+BILD„   L}dô  Filå  voî  deò  Diskettå  iî  RAÍ  deó  Grundger}teó 
+(i.allg.   Bildinhalô iî  Bildwiederholspeicher)®  Bildausschnitô 
+voî 256*25¶ Pixeì miô Farbe® Unterschiedlicè beé KÃ 85/³ unä /´ !
+I: Dateiname STRING, Zieladresse INTEGER
+O: -
+
+
+@.2. Tool-Box f{ò daó  KÃ compact-Floppy-System
+
+Zuò  optimaleî  Ausnutzunç deò Systemressourceî  deó  KÃ compact-
+Floppy-Systemó dienô diå Grafik-Tool-Boø BOXC.INC® Siå wirä unteò 
+Turbï Pascaì bzw® Pascaì 880/Ó aló Include-Dateé verwendet® 
+Diå Boø isô auæ Kompatibilit}ô zõ BOX3.INÃ unä BOX4.INÃ zuí KC85-
+Systeí ausgelegt® 
+
+
+@.2.1. Hilfsprogramme
+---------------------
+
+WZB„ Umwandlunç REAL-Zahì iî Zeichenkettå (auæ INTEGER gerundet© 
+I: REAL-Zahl
+O: STRING aus zwei Zeichen
+
+ADRCHAR Umwandlung INTEGER-Zahl in Zeichenkette
+I: INTEGER-Zahl
+O: STRING aus zwei Zeichen
+
+WEB Umwandlung BYTE in CHARacter
+I: BYTE
+O: CHAR
+
+ESC Sendet ESC (1BH) und ein Zeichen zum Terminal
+I: CHAR
+O: -
+
+ESC  Sendet ESC (1BH),  (5FH) und ein Zeichen zum Terminal
+I: CHAR
+O: -
+
+WEBWRITE Sendet Liste von 5 Parametern zum Terminal
+I: 5 INTEGER-Werte
+O: -Š@.2.2. Grundroutinen
+--------------------
+
+PSET Punktsetzen
+I: X,Y REAL
+O: -
+
+PRES Punktl>schen
+I: X,Y REAL
+O: -
+
+GFARB Stellt Modus f{r Punktsetzen, Linie und Kreis ein
+I: BYTE f{r Modus 0 - l>schen
+                  1 - XOR
+                  2 - AND
+                  3 - OR
+O: -
+
+GSETLOE Stellt L>schmodus ein
+I: -
+o: -
+
+GSETXOR Stellt XOR-Modus ein
+I: -
+O: -
+
+GSETAND Stellt AND-Modus ein
+I: -
+O: -
+
+GSETOR Stellt OR-Modus ein
+I: -
+O: -  
+
+LINE Zeichnet Linie aus Anfangs- und Endpunkt
+I: Xa,Ya,Xe,Ye REAL
+O: -
+
+CIRCL Zeichnet Kreis um Mittelpunkt mit Radius
+I: Xm,Ym,R REAL
+O: -
+
+COLORZ„ Stellô Vorder- unä Hintergrundfarbå ein
+I: Ink,Paper BYTE
+O: -
+
+CLSG L>scht Bildschirm
+I: - 
+O: -
+
+INK Setzt Vordergrundfarbe 
+I: Farbe BYTE
+O: -
+
+PAPER Setzt Hintergrundfarbe 
+I: X,Y REAL
+O: -ŠHARDCOPY Ruft Hardcopy des Druckers auf
+I: -
+O: -
+
+WRITN„ Bereiteô daó Schreibeî voî mehrereî BYTEó iî RAÍ deó Grund
+ger}teó vor¬ diå BYTEó selbsô m{sseî aló CHAÒ miô WRITÅ {bergebeî 
+werden
+I: Adresse INTEGER, Anzahl INTEGER
+O: -
+
+AMZSATZ Schaltet auf amerikanischen Zeichensatz
+I: -
+O: -
+
+DTZSATZ Schaltet auf deutschen Zeichensatz
+I: -
+O: -
+
+NEWZSATZ Schaltet auf alternativen Zeichensatz
+(kyrillisch vorbereitet)
+I: -
+O:-
+
+OLDZSATZ Schaltet aus alternativem Zeichensatz
+zur{ck
+I: -
+O: -
+
+LOADZSATZ L}dt neuen Zeichensatz von Datei
+95 Zeichen zu je 8 BYTE
+I: Dateiname
+O: -
+
+NTAST Belegt eine Taste in Erstbelegung neu
+I: Tastennummer, Code : INTEGER
+O: -
+
+STAST Belegt eine Taste in Zweitbelegung neu
+I: Tastennummer, Code : INTEGER
+O: -
+
+CTAST Belegt eine Taste in Controlbelegung neu
+I: Tastennummer, Code : INTEGER
+O: -
+
+NEXT Legt Zeichenkette auf eine Taste in Erst-
+belegung
+I: Nummer: INTEGER, Zeichenkette : STRING
+O: -
+
+SEXT Legt Zeichenkette auf eine Taste in Zweit-
+belegung
+I: Nummer: INTEGER, Zeichenkette : STRING
+O: -
+.paŠCEXT Legt Zeichenkette auf eine Taste in Control-
+belegung
+I: Nummer: INTEGER, Zeichenkette : STRING
+O: -
+ 
+COLOR„ Wechselô Vorder- unä Hintergundfarbå deó kompletteî 
+Bildschirms
+I: Ink, Paper BYTE
+O: -
+
+CLS„ L>schô Bildschirm unä stellô Vorder- unä Hintergrundfarbå 
+des kompletten Bildschirms ein
+I: Ink, Paper BYTE
+O: -
+
+DRAWLINE Zeichnet Polygon aus Punktfeld
+I: Anzahl Punkte INTEGER
+   ARRAY 0..255 / X, Y REAL
+O: - 
+
+
+@.2.3. Abspeicherung von Bildern
+--------------------------------
+
+BILDSAVE„  Retteô  Bidschirminhalô einschlie\licè Farbå  auæ  Dis
+kette® 
+I: Dateiname STRING
+O: - 
+
+BILD„ L}dô Bildschirminhalt voî deò Diskettå 
+I: Dateiname STRING
+O: -
+

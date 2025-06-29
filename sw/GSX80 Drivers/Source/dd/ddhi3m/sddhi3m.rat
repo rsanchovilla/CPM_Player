@@ -1,0 +1,542 @@
+h57110
+s 00530/00000/00000
+d D 1.1 83/03/15 21:20:42 tes 1 0
+c date and time created 83/03/15 21:20:42 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  ddhi3m.c            local   03/24/82  11:21
+#-h-  ddhi3m.rat          local   03/24/82  11:21
+subroutine ddhi3m (contrl, intin, rlin, intout, rlout)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver for Houston Instruments DMP3    #
+#               6 pen plotter                                          #
+#                                                                      #
+#     Input Parameters:                                                #
+#            contrl(1-3) - An integer array with following information #
+#                          contrl(1) - opcode for driver function      #
+#                          contrl(2) - length of integer array intin   #
+#                          contrl(3) - length of real input array rlin #
+#                                                                      #
+#            intin   -     Array of integer input parameters           #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters:                                               #
+#            contrl(4-6) - contrl(4) - length of integer array intout  #
+#                          contrl(5) - length of integer array rlout   #
+#                          contrl(6) - count of any other control parms#
+#                                                                      #
+#             rlout  -     Array of integer output parameters          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             Dbufhi - buffered output for hiplot plotter              #
+#             Dnfplt - prompt the user for a new sheet of paper        #
+#             Drhi3m - move/draw for hiplot plotter                    #
+#             gimnmx - bound an integer variable                       #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+# local defines
+define(X_LIMITS_HI3M,1880.)             #plotter surface width
+define(Y_LIMITS_HI3M,1400.)             #plotter surface height
+define (MAX_HI_BUFFER,255)
+ 
+integer contrl(1),intin(1),intout(1)
+real rlin(1),rlout(1)
+ 
+integer opcode, i, j, gimnmx,
+        newfrm(5), setup(16), stopgr(11),
+        txtout(4), trotat, thite,
+        mrkout(4), mtype,
+        lstyle(3), kstyle,
+        txtcap, lstcap, clrcap, tszcap, mrkcap, trtcap, bflcap
+real chrwid, chrhgt, hlfsiz, pwr2
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       devcap(TEXT_CAP)         :: txtcap
+#       devcap(LINESTYLE_CAP)    :: lstcap
+#       devcap(COLOR_CAP)        :: clrcap
+#       devcap(TEXT_SIZE_CAP)    :: tszcap
+#       devcap(MARKER_CAP)       :: mrkcap
+#       devcap(TEXT_ROT_CAP)     :: trtcap
+#       devcap(BAR_FILL_CAP)     :: bflcap
+#
+#       txtout(2) :: trotat
+#       txtout(3) :: thite
+#
+#       mrkout(3) :: mtype
+#
+#       lstyle(2) :: kstyle
+ 
+equivalence (devcap(TEXT_CAP), txtcap), (devcap(LINESTYLE_CAP), lstcap),
+            (devcap(COLOR_CAP), clrcap), (devcap(TEXT_SIZE_CAP), tszcap),
+            (devcap(MARKER_CAP), mrkcap), (devcap(TEXT_ROT_CAP), trtcap),
+            (devcap(BAR_FILL_CAP), bflcap),
+            (txtout(2), trotat), (txtout(3), thite),
+            (mrkout(3), mtype),
+            (lstyle(2), kstyle)
+ 
+#   The hiplot character base cell is 12x14 units. The character cell includes
+#      intercharacter gap but does not include any interline gap. We will add
+#      ten percent of the height for interline spacing.
+ 
+#            chrwid = 12./X_LIMITS_HI3M
+data chrwid /0.0063829787/
+ 
+#            chrhgt = (14.+1.4)/X_LIMITS_HI3M
+data chrhgt /0.008191489/
+ 
+# hlfsiz = 12. / X_LIMITS_HI3M   half width/height of marker
+data hlfsiz /0.0063829787/
+ 
+#            Text output set up /S<0><0> /
+data txtout /BIGS, 0, 0, BLANK/
+ 
+#            Marker output /M2<0> /
+data mrkout /BIGM, DIG2, 0, BLANK/
+ 
+#            Line style /L<0> /
+data lstyle /BIGL, 0, BLANK/
+ 
+#            Home /P0 H /
+data newfrm /BIGP, DIG0, BLANK, BIGH, BLANK/
+ 
+#            Set up - / ;:I0D 0 HOAL0 /
+data setup  /BLANK,SEMICOL,COLON,BIGI,DIG0,BIGD,BLANK,DIG0,BLANK,BIGH,_
+             BIGO,BIGA,BIGL,DIG0,BLANK,NEWLINE/
+ 
+#            Stop graphics - /P0 U200,0 @/
+data stopgr /BIGP,DIG0,BLANK,BIGU,DIG2,DIG0,DIG0,COMMA,DIG0,BLANK,ATSIGN/
+ 
+ 
+opcode=contrl(OPCODE)
+ 
+#
+#  opcode move and draw
+#
+if  ((opcode == DRAW) | (opcode == MOVE)) {
+ 
+   if (opcode == DRAW & ndclrp ~= ndclrl) call dphi3m (ndclrl)
+ 
+   # Insure that there is enough room in the buffer for the next move or
+   #    draw command.
+   if ((ndotkt + 11) > MAX_HI_BUFFER) call dbufhi (-1, intin)
+   call drhi3m (opcode, rlin)
+   }
+ 
+#
+#  opcode text
+#
+else if (opcode == TEXT) {
+      if (ndclrp ~= ndclrt) call dphi3m (ndclrt)
+ 
+      j = contrl(INTEGER_IN_LENGTH)   # Get the string length
+ 
+      # Check for a full buffer. This is done to insure that there is enough
+      #    room in the current buffer for the next text string. If a text
+      #    string is sent and is split by the buffering mechanism, the plotter
+      #    hangs. This is probably a bug on the plotters part.
+ 
+      if ((ndotkt + (j+5)) > MAX_HI_BUFFER) call dbufhi (-1, intin)
+ 
+      # txtout(2)
+      trotat = ndtxrt              #text rotation
+ 
+      # txtout(3)
+      thite = ndtxsz              #text size
+      call dbufhi (4, txtout)           #text command
+      for (i = 1; i <= j; i = i + 1) {
+         if (intin(i) == UNDERLINE) {
+            call dbufhi (1, BLANK)
+            }
+         else {
+            call dbufhi (1, intin(i))
+            }
+         }
+      call dbufhi (1, UNDERLINE)       #terminate string
+      }
+ 
+#
+#  opcode marker
+#
+else if (opcode == MARKER) {
+      if (ndclrp ~= ndclrm) call dphi3m (ndclrm)
+ 
+      # clip marker to device limits
+      x1 = rlin(1) - hlfsiz
+      x2 = rlin(1) + hlfsiz
+      y1 = rlin(2) - hlfsiz
+      y2 = rlin(2) + hlfsiz
+      if ((amin1(x1,y1) < 0.0) | (x2 > zdxlng) | (y2 > zdylng)) return
+ 
+      itemp = gimnmx (intin(1), 1, 6) - 1 #map index (1-6) to (0-5)
+      # mrkout(3)
+      mtype = itemp+DIG0        # set the marker type
+      call dbufhi (4, mrkout)    # Output marker
+      }
+ 
+#
+#  opcode set fill pattern
+#
+else if (opcode == SET_FILL_COLOR) {
+ 
+   ndclrf = gimnmx (intin(1), 0, 7)   # Emulation supports 8 patterns
+   intout(1) = ndclrf
+   }
+ 
+#
+#  opcode polygon edge style
+#
+else if (opcode == SET_POLYGON_EDGE_STYLE) {
+      ndedgs = intin(1)
+      }
+ 
+#
+#  opcode text size
+#
+else if (opcode == TEXT_SIZE) {
+      areain = rlin(1)*rlin(2)
+      i = 1
+      pwr2 = 1.
+      repeat {
+         darea = (pwr2*chrwid)*(pwr2*chrhgt)
+         if (darea > areain) break
+         i = i + 1
+         pwr2 = 2.*pwr2
+         }
+      i = gimnmx ((i-1), 1, 5)   # The plotter has 5 text sizes, 1-5
+      ndtxsz = i + DIG0
+      pwr2 = 2.**(i-1)
+      rlout(1) = pwr2*chrwid
+      rlout(2) = pwr2*chrhgt
+      }
+ 
+#
+#  opcode line style
+#
+else if (opcode == LINESTYLE) {
+      i = gimnmx (intin(1), 1, 9)   # The plotter has 9 line styles, 0-8
+      intout(1) = i      # Inform upper level of style selected
+      ndlntp = (i-1) + DIG0
+      # lstyle(2)
+      kstyle = ndlntp
+      call dbufhi (3, lstyle)
+      }
+ 
+#
+#  opcode line color
+#
+else if (opcode == SET_LINE_COLOR) {
+      i = gimnmx (intin(1), 1, 6)   # This device has 6 pen stations (1-6)
+      ndclrl = i + DIG0
+      intout(1) = i       # Inform upper level of color selected
+      }
+ 
+#
+#  opcode text color
+#
+else if (opcode == SET_TEXT_COLOR) {
+      i = gimnmx (intin(1), 1, 6)   # This device has 6 pen stations (1-6)
+      ndclrt = i + DIG0
+      intout(1) = i       # Inform upper level of color selected
+      }
+ 
+#
+#  opcode marker color
+#
+else if (opcode == SET_MARKER_COLOR) {
+      i = gimnmx (intin(1), 1, 6)   # This device has 6 pen stations (1-6)
+      ndclrm = i + DIG0
+      intout(1) = i       # Inform upper level of color selected
+      }
+ 
+#
+#  opcode text rotation
+#
+else if (opcode == CHAR_ROTATION) {
+      i = amod ((rlin(1)+45.)/90., 4.) + 1   # This device can rotate in 90
+                                             #    degree increments
+      rlout(1) = (i-1)*90   # Inform upper level of actual angle selected
+      if (i == 2) {
+         i = 4
+         }
+      else if (i == 4) {
+         i = 2
+         }
+      ndtxrt = i + DIG0
+      }
+#
+#    opcode new_frame
+#
+else if (opcode == NEW_FRAME) {
+      call dbufhi (5, newfrm)   # Put the current pen away and home plotter
+      call dbufhi (-1, newfrm)  # Dump buffer
+      call dnfplt               # prompt user for new paper
+      itemp = ndclrp
+      call dphi3m (itemp)       # Get the current pen color
+      }
+ 
+#
+# opcode set_device_parameters
+#
+else if (opcode == SET_DEVICE_PARAMETERS) {
+ 
+      # set up device capability array
+ 
+      txtcap = YES   # Text capability
+      lstcap = 9     # Capable of 9 different linestyle
+      clrcap = 6     # Capable of 6 different colors
+      tszcap = 5     # Capable of 5 different text sizes
+      mrkcap = 6     # Capable of 6 different markers
+      trtcap = 4     # Capable of 4 different text rotations
+ 
+      # Initialize Device Driver globals
+ 
+      zdlgax = X_LIMITS_HI3M    # Set the length of the longest axis in device
+                                #    units
+      zdxlng = 1.0              # Set x and y axis lengths in NDC units
+      zdylng = 0.74468085       # Y_LIMITS_HI3M/X_LIMITS_HI3M
+ 
+      ndtxrt = DIG0
+      ndtxsz = DIG1
+      ndclrp = DIG1
+      ndclrl = DIG1
+      ndclrt = DIG1
+      ndclrm = DIG1
+      ndlntp = DIG0
+      zdxpos = 0.0
+      zdypos = 0.0
+ 
+      # initialize plotter
+ 
+      ndotkt = 0                # Initialize the plotter ouput counter. This
+                                #    counter is used by the routine 'dbufhi'
+      call dbufhi (16, setup)
+      call dbufhi (-1, setup)   # Dump the buffer
+      }
+ 
+#
+#     inquire screen size
+#
+else if (opcode == INQUIRE_SCREEN_SIZE) {
+      rlout(1) = zdxlng
+      rlout(2) = zdylng
+      rlout(3) = X_LIMITS_HI3M
+      }
+ 
+#
+#  opcode escape
+#
+else if (opcode == ESCAPE) {
+      j = contrl(INTEGER_IN_LENGTH)
+      call dbufhi (j, intin(i))
+      }
+#
+#     stop graphics
+#
+else if (opcode == STOP_GRAPHICS) {
+      call dbufhi (11, stopgr)      # Terminate graphics
+      call dbufhi (-1, stopgr)      # dump buffer
+      }
+ 
+return
+end
+#-t-  ddhi3m.rat          local   03/24/82  11:21
+#-h-  hiplot.sup          local   03/24/82  11:21
+#-h-  dphi3m.rat          local   03/24/82  11:21
+subroutine dphi3m (color)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver pen changer for the Houston     #
+#               Instruments 6 pen plotter                              #
+#                                                                      #
+#     Input Parameters:                                                #
+#            color - pen station to change to                          #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            dbufhi - buffered output routine for Houston Inst. plotter#
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+integer color
+ 
+integer pencmd(5), penc, ltype
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       pencmd(2) :: penc
+#       pencmd(4) :: ltype
+ 
+equivalence (pencmd(2), penc), (pencmd(4), ltype)
+ 
+ 
+#            Get new pen color /P<0>L<0> /
+data pencmd /BIGP,0,BIGL,0,BLANK/
+ 
+   ndclrp = color         # set the current pen color
+   # pencmd(2)
+   penc = ndclrp          # set the requested pen
+   # pencmd(4)
+   ltype = ndlntp         # restore the current line type, this is done
+                          #   because the device forgets the current line
+                          #   style
+   call dbufhi (5, pencmd)
+ 
+   return
+end
+#-t-  dphi3m.rat          local   03/24/82  11:21
+#-h-  drhi3m.rat          local   03/24/82  11:21
+subroutine drhi3m (opcode, rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver move/draw for Houston           #
+#               Instruments plotter                                    #
+#                                                                      #
+#     Input Parameters:                                                #
+#           opcode - driver function, either move/draw                 #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            dbufhi - output a string to the Houston Inst. plotter     #
+#            itoch   - convert a binary integer to a character string  #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+integer opcode
+real rlin(1), xtemp, ytemp
+ 
+integer i,positn,xcoord,ycoord,string(4)
+ 
+include mgscom
+ 
+   xtemp = rlin(1)
+   ytemp = rlin(2)
+   if (opcode == DRAW) { positn = BIGD }      # pen down
+   else                { positn = BIGU }      # pen up
+   call dbufhi (1, positn)
+   zdxpos = xtemp
+   zdypos = ytemp
+   xcoord = int (xtemp*zdlgax)
+   ycoord = int (ytemp*zdlgax)
+   length = itoch (xcoord, string, 4, ierror)
+   call dbufhi (length, string)
+   call dbufhi (1, COMMA)
+   length = itoch (ycoord, string, 4, ierror)
+   call dbufhi (length, string)
+   call dbufhi (1, BLANK)
+ 
+   return
+end
+#-t-  drhi3m.rat          local   03/24/82  11:21
+#-h-  dbufhi.rat          local   03/24/82  11:21
+subroutine dbufhi (icount, iarray)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: Houston Instruments buffered output handler            #
+#                                                                      #
+#     Input Parameters:                                                #
+#           icount - number of characters in iarray to be output       #
+#                                                                      #
+#           iarray - Array of characters to be output                  #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            GDEVIN  - get a character form the graphics device        #
+#            gdevot  - output a character to the device                #
+#            gdstot - output a string to the device                    #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+#local define
+define (MAX_HI_BUFFER,255)
+ 
+integer icount, iarray(1)
+ 
+integer c, k
+ 
+include mgscom
+ 
+   k = icount
+   if (k < 0) k = 0
+   if ((ndotkt+k) > MAX_HI_BUFFER | icount < 0) {
+      call gdevot (CR)          # Output buffer terminating character
+      call gdevot (NEWLINE)     # Output the current buffer
+      ndotkt = 0                # Reset the plotter buffer counter
+ 
+      # Wait for prompt response from device. The prompt in most cases is
+      #    the carriage return (15) character which is returned by GDEVIN
+      #    as a new line (10). But when the device is turned off (ie. graphic
+      #    termination character (@)) the device responds to the last buffer
+      #    with RUBOUT (8%177 or 8%255 dependent upon 7 or 8 bit interface).
+ 
+      repeat { call GDEVIN(c) } until (c == NEWLINE | c >= RUBOUT)
+      }
+   call gdstot (k, iarray)
+   ndotkt = ndotkt + k          # Update the plotter buffer counter
+   return
+end
+#-t-  dbufhi.rat          local   03/24/82  11:21
+#-t-  hiplot.sup          local   03/24/82  11:21
+#-t-  ddhi3m.c            local   03/24/82  11:21
+E 1

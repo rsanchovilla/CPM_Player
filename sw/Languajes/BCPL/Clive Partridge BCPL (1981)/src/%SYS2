@@ -1,0 +1,70 @@
+////////////////////////////////////////////////////////////////////
+// SYS2  - the highlevel part of the NewBrain OS  module           /
+////////////////////////////////////////////////////////////////////
+
+//  Some of the complications of this are caused by BCPL's addressing
+//  habits. Only EVEN byte-addresses can be simply converted to their
+//  word equivalents, so CPM0 will convert but SYSP0 and S0 won't.
+//  The method is then to reverse the % or ! operation and use a known
+//  word-address like tslotcode, (or the constant Mem which is 0) as
+//  the address base. E.G. mem%(byteaddress+offset) rather than the
+//  more standard wordaddress%offset.
+
+//   The primitives PAGEIN, DISABLEINT,ENABLEINT are in SYS1
+
+//   Since the S-P-Ns are stored low/high in z80 fashion, and
+//   BCPL stores integers high/low a conversion procedure is needed.
+
+GET "LIBHDR"
+GET "SYSHDR"
+
+
+LET  getSpn(n,store) =  VALOF
+$( LET spn,ptr = ?,@spn
+   store +:= n
+   ptr%pge  := store%page
+   ptr%slt  := store%slot
+   RESULTIS spn
+$)
+
+//  When putting a page into an 'unofficial' slot we need to make
+//  a bogus s-p-n from the new slot and the old page.
+
+LET makeSpn(sl,pg) = VALOF
+$(
+  LET spn,ptr = ?,@spn
+  ptr%slt  := sl
+  ptr%pge  := pg
+  RESULTIS spn
+$)
+
+//  Put a page into a temporary slot. Since sysp0 is an odd 
+//  address it has not been converted & mem% (i.e. 0%..) is
+//  used instead. 
+
+LET sysin() BE
+$( 
+   LET spn = makeSpn(tslot,mem%sysp0)
+   pagein(spn)
+   setSlot(temp,@spn)
+$)
+
+// And restore proper page to temporary slot
+
+LET sysout() BE
+$(
+   LET spn = getSpn(temp, cpm0)
+   setSlot(temp,@spn)
+   pagein(spn)
+$)
+
+// Note that setSlot takes a POINTER argument!
+
+LET setSlot(sl,spn) BE
+$(
+  sl +:= sl
+  tslotcode%(S0+sl+page) := spn%pge
+  tslotcode%(S0+sl+slot) := spn%slt
+$)
+
+

@@ -1,0 +1,750 @@
+	.SALL
+	TITLE 'CRrunch LZH v2.0  20 July 1991'
+;************************************************************************
+;*									*
+;*			    CRunch LZH v2.0				*
+;*			      20 July 1991				*
+;*						   - Roger Warren	*
+;************************************************************************
+;
+;	With the kind permission of Mr. Steven Greenberg, author of 
+;	CRunch, this program was generated from his CRunch v2.4 code
+;	dated 15 Sept 1987.  Accordingly, the following notifications
+;	are in order:
+;
+; 	Portions Copyright (c)   S. Greenberg  09/15/87
+; 	Portions Copyright (c)   R. Warren     07/20/91
+;	May be reproduced for non-profit use only
+;
+;	You can distribute it AS IS or modify it for your OWN use,
+;	but public release of modified versions (source or object
+;	files) without permission is prohibited, nor can it be sold.
+
+;CRLZH HISTORY:
+; v2.0 Re-released because of new CRLZH algorithm changes.  Version 2.0
+;	of CRLZH is 10% FASTER and compresses further than V1.1.  The output
+;	files must be de-compressed with UCRLZH version 2.0, which replaces
+;	UNCRLZH 1.1.  UNCRLZH 2.0 handles LZH encoded files of both versions
+;	as well as CRUCNCHED and SQUEEZED files.
+;	With the kind permission of Gene Pizzetta, changes made to CRUNCH
+;	thru version 2.8 have been incorporated into this stripped down
+;	driver taken from Steve Greenberg's version 2.4.  This program will
+;	NOW handle date stamps ala ZSDOS.
+;
+; v1.1 Official first release.  No functional changes from Beta version.
+; 	Merely stepped version for differentiation.
+;
+; v1.0 Beta test version
+; 
+
+VERS	EQU	20
+SUBVERS	EQU	' '		; modification level
+
+	.Z80
+
+	CSEG
+
+NO	EQU	0
+YES	EQU	NOT NO
+N	EQU	NO
+Y	EQU	YES
+CRUNCH	EQU	YES		; Yes for CRLZH, No for UNCRLZH (for common)
+;ZSYS	EQU	NO		; Yes if exclusively for Z-System
+.ACCEPT	'ZCPR3-Only Version [Y/N] ? ',ZSYS
+
+;=======================================================================
+
+  IF ZSYS
+MEMPAG	EQU	1F00H		; <== set! [see comment near end of program]
+  ELSE	; ZSYS
+MEMPAG	EQU	2100H		; <== set! [see comment near end of program]
+  ENDIF	; ZSYS
+
+;=======================================================================
+
+REV	EQU	(VERS/10*16)+(VERS MOD 10) ; Program revision level in BCD
+SIGREV	EQU	20H		; "Significant" revision level (compatibility)
+
+NOPRED	EQU	0FFFFH		; "no predecessor"
+SCRUPT1	EQU	03H		; Screen update speeds
+SCRUPT2	EQU	0FH
+
+; --- Ascii equates ---
+
+CTRLC	EQU	03H		; ^c
+BELL	EQU	07H		; Beep
+BS	EQU	08H		; Backspace
+LF	EQU	0AH		; Linefeed
+CR	EQU	0DH		; Carriage return
+
+; --- CP/M address equates ---
+
+DFCB	EQU	5CH		; Default FCB #1
+DFCB2	EQU	6CH		; Default FCG #2
+DDMA	EQU	80H		; Default DMA address
+BDOS	EQU	0005H		; BDOS entry point
+
+; --- BDOS function equates ---
+
+CONIN	EQU	1		; Input a character from the console
+CONOUT	EQU	2		; Output single char to console
+PRTSTR	EQU	9		; Print string to console
+CONST	EQU	11		; Get console status
+GETVER	EQU	12		; Get CP/M version #
+SELDSK	EQU	14		; Select disk
+OPEN	EQU	15		; Open file
+CLOSE	EQU	16		; Close file
+SFIRST	EQU	17		; Search for first file
+SNEXT	EQU	18		; Search for next file
+ERASE	EQU	19		; Erase file
+READ	EQU	20		; Read file (sequential)
+WRITE	EQU	21		; Write file (sequential)
+MAKE	EQU	22		; Make file
+GETDSK	EQU	25		; Get currently logged drive
+SETDMA	EQU	26		; Set DMA address
+SETATR	EQU	30		; Set file attributes
+GSUSER	EQU	32		; Get/set user code
+RSTDRV	EQU	37		; Reset disk drive
+SETMS	EQU	44		; Set multi-sector count (CP/M+ only)
+GETDMA	equ	47		; get current DMA address
+EXDOSV	equ	48		; extended BDOS version
+GETFSTP	equ	102		; get file stamp
+SETFSTP	equ	103		; set file stamp
+
+;.......................................................................
+
+  IF NOT ZSYS
+	EXTRN	PARSEU
+  ENDIF	; NOT ZSYS
+
+	EXTRN	CRLZH		; CRLZH module
+	PUBLIC	GLZHEN		; CRLZH 'gets' thru this routine
+	PUBLIC 	PLZHEN		; CRLZH 'puts' thru this routine
+
+;.......................................................................
+
+START:	JP	STRT		; <--- entry
+	DB	'Z3ENV',01h	; ZCPR3 environment descriptor
+Z3ED:	DW	00h
+
+;-----------------------------------------------------------------------
+
+	DW	0		; filler
+	DB	'CRLZH'		; for ZCNFG
+	DB	VERS/10+'0',VERS MOD 10+'0'
+	DB	' '		; Filler
+ARCHIV:	DB	0		; Archive bit mode flag
+QUIFL:	DB	0		; Quiet mode flag
+NPROFL:	DB	0		; No prompt before overwrite flag
+TRBOFL:	DB	0		; Defeat multi-sector i/o flag
+CNFRFL:	DB	0		; Confirm every file flag
+WRMFLG:	DB	0		; Warm boot flag
+BIGFLG:	DB	0		; Bigger file prompt flag
+MAXUSR:	DB	31		; Maximum user # allowed by program
+MAXDRV:	DB	16		; Maximum drive allowed by program
+SYSFL:	DB	0		; System file inclusion flag
+TYPFL:	DB	' '		; Default filetype (UNCR only)
+
+;.......................................................................
+;
+; File type exclusion list. Must end with zero.
+;	       |<-1->|<-2->|<-3->|<-4->|<-5->|
+EXTBL:	DB	'ARC','ARK','LBR','FOR','ARK'
+;	       |<-6->|<-7->|<-8->|<-9->|<10->|
+	DB	'ARK','ARK','ARK','ARK','ARK'
+	DB	0		; Must leave this terminating zero.
+
+;=*=-=*=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=
+
+CPYRT:	DB	'CRLZH '
+  IF ZSYS
+	DB	'Z-'
+  ENDIF	; ZSYS
+	DB	'Version ',VERS/10+'0','.',VERS MOD 10+'0',SUBVERS
+	DB	' Copyright (c) 1987 by S. Greenberg',CR,LF
+        DB	'      Portions  Copyright (c) 1991 by R. Warren',CR,LF
+	DB	' May be used/reproduced for non-profit use only',CR,LF,LF,'$'
+
+;=*=-=*=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=
+
+STRT:
+  IF ZSYS
+	LD	HL,(Z3ED)	; check for ZCPR3
+	LD	A,H
+	OR	L
+	JP	NZ,Z80
+  ELSE	; ZSYS
+	SUB	A		; Z-80 test [RAF]
+	JP	PO,Z80		;
+  ENDIF	; ZSYS
+	LD	DE,WRNGUP	; "Program requires Z-80 Processor"
+	JP	MESS80		; Special no frills exit w/ message
+
+Z80:	LD	(OLDSTK),SP	; Save os's stack
+	LD	SP,TOPSTK	; Set local stack
+	CALL	STRTUP		; Does a lot of stuff
+
+;.......................................................................
+;
+;	*****	Re-enter here for each matching file *****
+;
+; General wildcard operation:  When the program is first invoked, all
+; matching filenames are put end to end in FNBUFF, 12 bytes each, in
+; alphabetical order.  Since a filename is only 11 characters long the
+; spare byte, which precedes each filename, is used as a "tag/flag".  By
+; the time file processing starts (now), a number of routines have al-
+; ready run (parts of the STRTUP routine).  These routines set the tag-
+; flag which indicates to us now in what manner the file should be pro-
+; cessed: "00" = "skip it", "01" = process it", "02" = "perform a direct
+; copy (if possible)", "FF" = "no more files".
+
+NXTFIL:	LD	SP,TOPSTK	; Reset SP
+	XOR	A		; clear embedded date stamp flag
+	LD	(DATFLG),A
+	LD	DE,INFCB	; Input file's fcb
+	CALL	CLRFCB		; Init it to blanks and zeroes
+	INC	DE		; Leave "DE" pointing at "INFCB+1" for below
+	LD	HL,(BUFPTR)	; Pntr to name of next file from expansion bfr
+NXTSEL:	LD	A,(HL)
+	OR	A		; If zero, the file is "unselected"
+	JR	NZ,ISSEL	; Br if it is selected
+	LD	BC,12		; Else just quietly skip to the next file
+	ADD	HL,BC
+	LD	(BUFPTR),HL
+	JR	NXTSEL
+
+;...............................
+;
+; The file is "selected"; prepare to process it
+
+ISSEL:	CP	0FFH		; (FF means done)
+	JP	Z,RETCCP	; Br if that is the case
+	PUSH	AF		; Save stat (to see if file is "excluded" blw)
+	INC	HL		; Skip to 1st filename char
+	LD	BC,11		; Filename character count
+	LDIR			; Put next file name into input fcb
+	LD	(BUFPTR),HL	; Save new pointer for next file
+	CALL	INTRAM		; Initialize all ram
+	LD	A,01H		; This loc req's diff init for crunch vs uncr
+	LD	(CSAVE),A	; Goes there
+	POP	AF		; Get file's status byte back again
+
+	CP	02H		; 02 if file matched the "exclusion" list
+	JR	NZ,COPNIN	; If not, definitely attempt to compress it
+	LD	A,(WLDFLG)	; If so, see if prgm was invoked w/ wildcards
+	OR	A
+	JR	Z,COPNIN	; If not, go attempt compression
+	LD	A,(DIFDU)	; Else see if a direct copy is in order
+	OR	A		; (flag set if data flow is to distinct DU:'s)
+	JP	Z,NXTFIL	; If not, forget the whole thing
+
+;.......................................................................
+;
+; Perform a direct straight copy of the file
+
+	LD	A,(QUIFM)
+	OR	A
+	LD	DE,DASHES	; "-----" for visual separation
+	CALL	Z,MESAG2
+	JP	COPY9		; Performs the copy
+
+;.......................................................................
+;
+; Normal Processing;  Prepare to compress the input file.  First, open
+; the input file.  A failure here is unusual, since the file existed at
+; the time the filename expansion took place.  There are "normal" series
+; of events which could lead up to this, however.
+
+COPNIN:	LD	A,(QUIFM)
+	OR	A
+	LD	DE,DASHES	; "-----" for visual separation
+	CALL	Z,MESAG2
+	CALL	OPNIN		; Attempt to open the next input file "INFCB"
+	JR	NC,OPOK		; Br if ok
+	LD	DE,ERR1		; "input file not found"
+	JP	SKIP1		; Skip to next file
+
+OPOK:	CALL	GETCHR		; Start input machine
+	JR	NC,NOTMT	; If carry is set on 1st byte, file is empty
+	LD	DE,ERR0		; "input file empty"
+	JP	SKP991
+; If file starts with 76FFh, it's already squeezed.  If it starts with 76FEh,
+; it's already crunched (LZW, by us).  If it starts with 76FDh, it's already
+; crunched (LZH).
+NOTMT:	CP	76H		; does it start with 76h?
+	JR	NZ,CBL		; (no, it's not compressed..is it?)
+	PUSH	AF		; 1st byte was "76H", take advance peek at 2nd
+	EXX			; Carefully check next byte, w/o norm call
+	LD	A,(HL)
+	EXX
+	INC	A		; Well?  FFh?
+	JR	Z,ALRDSQ	; Br if already squeezed
+	INC	A		; FEh?
+	JR	Z,ALRDCR	; Br if already crunched
+	INC	A		; FDh?
+	JR	Z,ALRDLZ	; Br if already crunched (LZH)
+	POP	AF
+
+NOTSQ:	JR	CBL		; Continue below
+
+;.......................................................................
+
+ALRDCR:	POP	AF
+	LD	DE,MSGCR	; "Already crunched"
+	JP	SKP991
+
+ALRDSQ:	POP	AF
+	LD	DE,MSGSQ	; "Already squeezed"
+	JP	SKP991
+
+ALRDLZ:	POP	AF
+	LD	DE,MSGLZH	; "Already LZH encoded"
+	JP	SKP991
+
+;.......................................................................
+;
+; So far the input file is open. The output file is not.
+
+CBL:	LD	A,' '		; For aesthetic alignment purposes
+	CALL	TYPE
+	LD	HL,INFCB	; Print input filename to console
+	CALL	PRNFIL
+	LD	DE,OUTFCB	; Now for the output fcb
+	CALL	CLRFCB		; Clear it
+	INC	DE		; Leave "DE" pointing at filename area
+	CALL	CPYNAM		; Copies filename from input fcb to output fcb
+
+; The following routine allows files with a "Y" as the second character
+; of their filetype to have a compressed filetype of "xYY".  This code
+; was released to the public domain as a patch for CRUNCH24.  The
+; author is unknown.
+
+	LD	HL,OUTFCB+9	; point to first filetype character
+	LD	A,' '		; see if filetype is blank
+	CP	(HL)
+	LD	A,'Y'		; we'll need a Y later
+	JR	Z,ZZZ		; (yes, force a filetype of "YYY"
+	INC	HL		; point to second filetype character
+	CP	(HL)		; is middle character a "Y"
+	JR	NZ,XZY		; (no, so make type "1Y3"
+	INC	HL		; point to last filetype character
+	CP	(HL)		; is last character a "Y"
+	JR	NZ,XZZ		; (no, so make type "1YY")
+	DEC	HL		; point back to first character
+	DEC	HL
+	CP	(HL)		; is first character a "Y"?
+	JR	NZ,ZZZ		; (no, "YYY" is okay)
+	LD	DE,ERR7		; it's "YYY", so we can't do it
+	JP	SKP991		; ..but make a straight copy anyway
+ZZZ:	LD	(HL),A		; make first character "Y"
+	INC	HL
+	LD	(HL),A		; make second character "Y"
+	INC	HL
+XZY:
+XZZ:	LD	(HL),A		; make pointed-to character "Y"
+
+;.......................................................................
+;
+; Now open the output file. "OPNOUT" will check for duplicate filenames,
+; and prompt if indicated.  If carry is set on return, the file was not
+; opened.  DE points to an appropriate error message, if any.  The rou-
+; tine also types an arrow to the screen, followed by a "PRNFIL" call to
+; type the DU: and filename to the screen.
+
+	CALL	OPNOUT		; Do all that
+	JP	C,SKIP2A	; Skips to next file if so deemed by "OPNOUT"
+
+;.......................................................................
+;
+; Now both files are open. Eventually either both will be closed, or the
+; input closed and the output deleted.
+
+	LD	A,76H		; Output the "76FE" header
+	CALL	OUTB		; Each call to "OUTB" outputs one byte
+	LD	A,0FDH
+	CALL	OUTB
+	LD	HL,INFCB	; Pointer to original (input) file's name
+	CALL	OUTFIL		; Embed it into the output file at bytes 2+
+	CALL	OUTDAT		; Include date stamp, if available
+	LD	HL,STAMP	; Pointer to possible additional "stamp" chars
+
+IDOULP:	LD	A,(HL)		; Possibly get a stamp char
+	INC	HL		; Incr bfr pntr
+	CALL	OUTB		; (output at least one zero no matter what)
+	OR	A		; End of stamp bfr?
+	JR	NZ,IDOULP	; Loop till so
+
+;.......................................................................
+
+	LD	A,(QUIFM)	; Print "heading" if in verbose mode
+	OR	A
+	JR	NZ,QUIET1
+	LD	DE,HEADNG	; (the "in / out  ca  cr" stuff)
+	CALL	MESAGE
+
+QUIET1:
+	LD	A,0FFH		; Flag as 'old' to COMMON.LIB
+	LD	(OLDFLG),A
+
+;=======================================================================
+;
+;		    *** Main encoding loop ***
+;
+; --- End-of file processing ---
+
+	EXX			; Go back to the start of file (already
+				; read some)
+	LD	HL,IBUF		; Point 
+	EXX
+	LD	HL,SECNT	; Bugger up sector counter since we just
+	INC	(HL)		; - reset the input pointer
+	LD	HL,(INCTR)	; Decr INCTR for same reason
+	DEC	HL
+	LD	(INCTR),HL
+	LD	A,'0'		; Reset ASCII display to '0'
+	LD	(PROGBF+5),A
+
+	LD	HL,TABLE	; Point to large data space
+	LD	A,0		; ZERO (Actually xx00xxxx) for
+				; Normal checksum flag to CRLZH
+
+	CALL	CRLZH		
+	JP	C,INSUFF	; Only error can be insufficient memory
+
+ONBND:	LD	A,(CHKSUM+0)	; Now output the checksum
+	CALL	OUTB		; (lo byte)
+	LD	A,(CHKSUM+1)
+	CALL	OUTB		; (high byte). This completes all output.
+
+	CALL	DONE		; Writes out partial output bfr, thru cur loc
+	CALL	CLSOUT		; Close the output file
+	CALL	CLSIN		; Close the input file (prevents inadvertent
+				; Accumulation of open files).
+
+;.......................................................................
+;
+; Now we are done with the file.  The size of the resulting file will be
+; compared with the original.  If the resulting file is larger, the file
+; will be erased and the original will be copied in uncompressed format
+; instead.  This will only be done if the source and destination DU:'s
+; are different (obviously a direct copy to the same drive and user is
+; nonsensical).  When this is the case, the user will be given the op-
+; tion of saving the "crunched" file - if he doesn't, then it will be
+; erased.
+
+	LD	A,(BIGFLG)	; Get size question override flag
+	AND	A		; Check if non-0, clear carry at same time
+	JP	NZ,NEXT		; Skip if bigger
+	LD	DE,(INCTR)	; Size of input file
+	LD	HL,(OUTCTR)	; Size of resulting file
+	SBC	HL,DE		; Compare
+	JP	C,NEXT		; (normally the case)
+
+	LD	A,(DIFDU)	; Dest du: differ from origin?
+	OR	A
+	JP	Z,ASKHIM	; If not, give option of saving larger file
+
+	LD	DE,MSG998	; "not smaller..."
+	CALL	MESAG2
+	CALL	ERAOUT		; Erase the output file
+
+COPY9:	CALL	COPY		; Perform a straight copy
+	JP	C,NXTFIL	; If the copy did not actually take place
+	JR	NEXT		; If it did, count it
+
+;.......................................................................
+
+SKP991:	CALL	MESAG2		; Type predefined message
+	CALL	CRLF		; Pretty up line
+	LD	A,(DIFDU)	; Dest du: differ from origin?
+	OR	A
+	JP	Z,NXTFIL
+	JR	COPY9
+
+;.......................................................................
+
+ASKHIM:	LD	DE,QUES1	; Result file not smaller than original
+	CALL	MESAGE		; Ask the guy if he wants it anyway
+	CALL	RSPNSE		; Get his response
+	PUSH	AF		; Nec?
+	CALL	CRLF
+	POP	AF
+	JR	NZ,SKIP4A	; "skip4a" erases output file, goes to next
+
+;.......................................................................
+
+NEXT:	LD	HL,(NFP)	; Increment # of files processed
+	INC	HL
+	LD	(NFP),HL
+	CALL	ARCIT		; Flag input file as archived
+	CALL	DATSTP		; Move date stamp
+	JP	NXTFIL		; Repeat if still more files
+
+;.......................................................................
+
+SKIP1:	CALL	MESAGE		; Entry if neither input nor output files
+				;   have been opened yet
+SKIP1A:	JP	NXTFIL		; (Entry here if no error text desired)
+
+;...............................
+
+SKIP2A:	CALL	CLSIN		; (Entry here for no message)
+	JP	NXTFIL
+
+;...............................
+
+SKIP4A:	CALL	CLSOUT		; (Entry here for no message)
+	LD	DE,OUTFCB	; Close, then erase output file
+	LD	C,ERASE
+	CALL	BDOSAV
+	CALL	CLSIN		; Close input file as well
+	JP	NXTFIL
+
+;=======================================================================
+;
+; Subroutine gets a character from the input stream and adds its value
+; to running checksum.
+
+GETC:	CALL	GETCHR		; Get a character into A
+	RET	C		; Don't add in the garbage char recv'd on eof
+	CALL	CKSUM		; Add it in
+	AND	A		; Guarantee clear carry when no eof
+	RET			; That's it
+
+;-----------------------------------------------------------------------
+;
+; Like "PRNFIL", but send chars to the output stream instead of typing.
+; This routine WILL explicitly output blanks in the filename extension.
+
+OUTFIL:	LD	BC,0C20H	; B = loop counter, c = blank character
+
+CHARL2:	INC	HL		; Pre-incr pointer
+	LD	A,(HL)		; Get a char
+	CP	C		; Blank?
+	JR	Z,SKPTY2	; Suppress them (but not in the .ext)
+
+TYPEI2:	CALL	OUTB		; Send char to the output stream
+
+SKPTY2:	DEC	B		; Loop counter
+	RET	Z		; Return when done
+
+	LD	A,B		; Check loop counter
+	CP	4		; At this point, type a "."
+	JR	NZ,CHARL2
+	LD	A,"."		; This is also a convenient char to set "C" to
+	LD	C,A		; A "." cannot be found in an fcb filename
+	JR	TYPEI2		; Type the ".".  do no incr hl.
+
+;.......................................................................
+;
+; Like OUTFIL, but outputs date stamp to the output stream
+
+OUTDAT:	LD	A,(DATFLG)	; do we have a date stamp?
+	OR	A
+	RET	Z		; (no, do nothing)
+	LD	A,1		; a 1 byte is the date stamp lead-in
+	CALL	OUTB
+	LD	HL,DATBUF	; point to date stamp buffer
+	LD	B,15		; 15 bytes
+OUTDT2:	LD	A,(HL)		; get date byte
+	OR	A		; zero?
+	JR	NZ,OUTDT3	; (no)
+	CPL			; yes, make it FFh
+OUTDT3:	CALL	OUTB
+	INC	HL		; increment pointer
+	DJNZ	OUTDT2		; and loop
+	RET
+
+;=======================================================================
+;
+; "Stamp" processing.
+
+PRCSTM:	PUSH	DE		; Called w/ "HL" pointing to text of "stamp"
+	LD	DE,STAMP	; Buffer for holding the date stamp or text
+	LD	B,7FH		; Put a limit on its length
+
+STMPLP:	LD	A,(HL)		; Get a character
+	LD	(DE),A		; Put it in the buffer
+	INC	DE
+	OR	A		; Zero denotes end of cmnd tail, ending stamp
+	JR	Z,PRCDN1
+	INC	HL
+	SUB	']'		; The "proper" way the stamp should end
+	JR	Z,PRCDN2
+	DJNZ	STMPLP		; Get more chars
+
+ERR8:	LD	DE,PRSER8	; Stamp overflow, probably impossible
+	JP	FATALU
+
+PRCDN1:	POP	DE		; Come here if null terminated the stamp
+	RET			; Return with the null in "A" & z set
+
+PRCDN2:	LD	(DE),A		; Make sure a null (a has one now) gets here
+
+NBLP:	LD	A,(HL)		; Advance to first non-blank after stamp
+	CP	' '
+	JR	NZ,NBC		; Branch if we have one
+	INC	HL		; Else advance
+	DJNZ	NBLP		; And continue
+	JR	ERR8		; Overflow error
+
+NBC:	POP	DE		; Rtn with "HL" pointing to 1st non-blank char
+	OR	A		; (Return z stat if that character is null)
+	RET
+
+;.......................................................................
+;
+; Flag files matching the "exclusion list"
+
+EXCLUD:	LD	BC,12		; Leave 12 in bc for incrementing ix
+	LD	IX,FNBUFF	; Points to beg of filenames
+
+OUTLP:	LD	A,(IX+0)	; Get flag byte for this entry
+	CP	0FFH		; Final [non-] entry?
+	RET	Z		; (return if so)
+	OR	A		; Is it an untagged filename?
+	JR	Z,NXTFN		; If so, leave it that way & move to next
+	LD	HL,EXTBL-3	; Beginning of "exclusion" list
+
+INRLP0:	INC	HL
+
+INRLP1:	INC	HL		; (If HL already incremnted once)
+
+INRLP2:	INC	HL		; ( "		  "    twice)
+	LD	A,(HL)		; Get a char from list
+	OR	A		; End of list?
+	JR	Z,NXTFN		; If so, move on to next filename in "fnbuff"
+	CP	'?'		; Wildcard?
+	JR	Z,AUTOM1	; Yes, automatically matches
+	CP	(IX+9)		; Else see if it matches first ft char
+	JR	NZ,INRLP0	; No match, forget it and move to next filename
+
+AUTOM1:	INC	HL
+	LD	A,(HL)		; Repeat twice more for other 2 chars
+	CP	'?'
+	JR	Z,AUTOM2
+	CP	(IX+10)
+	JR	NZ,INRLP1
+
+AUTOM2:	INC	HL
+	LD	A,(HL)		; As above
+	CP	'?'
+	JR	Z,AUTOM3
+	CP	(IX+11)
+	JR	NZ,INRLP2
+
+AUTOM3:	LD	A,02H		; File type matches; flag file as "excluded"
+	LD	(IX+0),A
+
+NXTFN:	ADD	IX,BC		; Move to next filename in "fnbuff"
+	JR	OUTLP
+
+;=======================================================================
+;
+; All ASCII centralized here as a service to disassembly hobbyists.
+
+INTRO:	DB	'LZH Cruncher  Version ',VERS/10+'0','.',VERS MOD 10+'0'
+	DB	SUBVERS,CR,LF,'$'
+ERR7:	DB	' [ Can''t compress .YYY files ]$'
+MSGCR:	DB	' [ Already crunched ] $'
+MSGSQ:	DB	' [ Already squeezed ] $'
+MSGLZH:	DB	' [ Already LZH encoded ] $'
+MSG998:	DB	' [ Result not smaller ] $'
+QUES1:	DB	'Result not smaller--Save anyway (Y/[N])? ',BELL,'$'
+USAGE:	DB	'Usage:',CR,LF
+	DB	'   $'
+PRGNAM:	DB	'CRLZH  '	; must end in space, if < 8 characters
+COMNAM:	DB	'        '
+SYNTX1:	DB	' {d$'
+SYNTX2:	DB	':}afn {d$'
+USAGE1:	DB	':} {[text]} {/options}',CR,LF
+	DB	'Second parameter is destination.',CR,LF
+	DB	'"[text]" is any text enclosed in brackets.',CR,LF
+	DB	'Options following slash:',CR,LF
+	DB	'   Q   Quiet mode o$'
+USAGE2:	DB	CR,LF
+	DB	'   I   Inspect (Tag) mode o$'
+USAGE3:	DB	CR,LF
+	DB	'   T   Same as I',CR,LF
+	DB	'   E   $'
+USAGE4:	DB	'Erase existing files',CR,LF
+	DB	'   A   Archive mode o$'
+USAGE5:	DB	CR,LF
+	DB	'   S   $'
+USAGE6:	DB	'clude System files$'
+
+;=======================================================================
+
+; ** Include file begins here **
+
+	INCLUDE	COMMONLZ.LIB
+
+; ** Include file ends here **
+
+;=======================================================================
+; File I/O For LZH
+;
+
+PLZHEN	EQU	OUTB
+GLZHEN	EQU	GETC
+
+;=======================================================================
+
+; Additional misc ram locs which need not be initialized, or are init-
+; ialized by the routines which use them.
+
+CSAVE:	DS	1
+
+;...............................
+
+SAFETY:	DS	16		; Safety region beyond stack limit check
+ENDPRG	EQU	$		; (approx bottom of stack)
+
+;_______________________________________________________________________
+
+STKSZ	EQU	8		; Minimum stack size (pages)
+IBUFSZ	EQU	8		; Input buffer size (pages)
+
+;=======================================================================
+;
+; ===> All tables will begin at "MEMPAG", defined at the top of the
+;      program.  This should be set to a page aligned value i.e., ad-
+;      dress that ends in "00")  which is ABOVE the end all program and
+;      data segments.  You may have to do one test link to determine the
+;      proper value (changing "MEMPAG" will not change the length of the
+;      segments on the subsequent link).
+;
+; "MEMPAG" is defined at the beginning of this program to remind you to
+; set it properly.  If you set it higher than necessary, there will be
+; no negative effect other than an increase in the TPA required to run
+; the program.	If you set it too low, you will be in big trouble.  The
+; value must be set manually because most linkers cannot resolve an
+; "and", "shift" or "hi" byte extraction at link time to determine the
+; page boundary.
+;
+;=======================================================================
+
+; "MAXFLS" is  buffer size (in files) for wildcard expansions.	Room for
+; this many files will be allocated.
+
+MAXFLS	EQU	256
+
+TOPSTK	EQU	MEMPAG+(STKSZ*256) ; Top of stack
+IBUF	EQU	TOPSTK		   ; (= beginning of input buffer)
+EIBUF	EQU	IBUF+(IBUFSZ*256)  ; End of input buffer
+TABLE	EQU	EIBUF		   ; (= beginning of table)
+EOTBL	EQU	TABLE+(5*20*256)   ; End of table
+FNBUFF	EQU	EOTBL		   ; (= beginning of wildcard expansion buffer)
+ENDFNB	EQU	FNBUFF+(12*MAXFLS) ; End of expansion buffer
+
+STAMP	EQU	ENDFNB		   ; File "stamp" buffer ** size temp ***
+ENDALL	EQU	STAMP+100H	   ; End of everything, except output buffer
+OBUF	EQU	ENDALL		   ; Beginning of dynamically sized output buffer
+
+;-----------------------------------------------------------------------
+
+ENDHI	EQU	HIGH ENDALL	;
+OBUFHI	EQU	HIGH OBUF	; Output buffer addrress, high byte likewise
+
+	END
+

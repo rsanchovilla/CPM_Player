@@ -1,0 +1,152 @@
+! APRIL 29, 1983
+
+@1
+VARIABLE MEN1, M1
+CLEARSCREEN
+RECOVER 1
+!!===================================================
+!!	AXIS LABELING MENU
+!!===================================================
+!!1  .. HELP ........................................
+!!2  .. ERASE GRAPHICS ..............................
+!!3  .. RETURN TO CALLING MENU ......................
+!!4  .. CLEAR TEXT FROM SCREEN (CR BRINGS IT BACK) ..
+!!
+!!5  .. DISABLE X AXIS LABELS .......................
+!!6  .. LABEL X AXIS WITH SPECIFIED LABELS ..........
+!!7  .. LABEL X AXIS WITH MONTHS ....................
+!!8  .. LABEL X AXIS WITH DAYS ......................
+!!9  .. LABEL X AXIS WITH YEARS .....................
+!!10 .. LABEL X AXIS WITH NUMBERS....................
+!!
+!!11 .. DISABLE Y AXIS LABELS .......................
+!!12 .. LABEL Y AXIS WITH SPECIFIED LABELS ..........
+!!13 .. LABEL Y AXIS WITH MONTHS ....................
+!!14 .. LABEL Y AXIS WITH DAYS ......................
+!!15 .. LABEL Y AXIS WITH YEARS .....................
+!!16 .. LABEL Y AXIS WITH NUMBERS....................
+!!===================================================
+!!ENTER YOUR CHOICE >
+MENU MEN1 16 1 ^
+COMPARE MEN1 1
+IF YES JUMP 2
+COMPARE MEN1 3
+IF YES END
+COMPARE MEN1 2
+IF YES ERASE
+COMPARE MEN1 5
+IF YES NO X LABELS
+COMPARE MEN1 6
+IF YES JUMP 5
+COMPARE MEN1 7
+IF YES JUMP 6
+COMPARE MEN1 8
+IF YES JUMP 7
+COMPARE MEN1 9
+IF YES JUMP 8
+COMPARE MEN1 10
+IF YES X NUMERIC
+COMPARE MEN1 11
+IF YES NO Y LABEL
+COMPARE MEN1 12
+IF YES JUMP 11
+COMPARE MEN1 13
+IF YES JUMP 12
+COMPARE MEN1 14
+IF YES JUMP 13
+COMPARE MEN1 15
+IF YES JUMP 14
+COMPARE MEN1 16
+IF YES Y NUMERIC
+COMPARE MEN1 4
+IF YES JUMP 40
+JUMP 1
+
+@5
+!!ENTER EACH TICK-MARK LABEL ON A SEPARATE LINE.
+!!WHEN YOU ARE THROUGH, ENTER A BLANK LINE.
+X LABELS \^\
+JUMP 1
+
+@11
+!!ENTER EACH TICK-MARK LABEL ON A SEPARATE LINE.
+!!WHEN YOU ARE THROUGH, ENTER A BLANK LINE.
+Y LABELS \^\
+JUMP 1
+
+@6
+!!LABELS WILL BE MADE FROM EVERY nTH MONTH. ENTER n. >
+M1 = ^
+!!ENTER MONTH AT WHICH TO BEGIN.  USE 3-LETTER ABBREVIATION. >
+X MONTH ^ M1
+JUMP 1
+
+@12
+!!LABELS WILL BE MADE FROM EVERY nTH MONTH. ENTER n. >
+M1 = ^
+!!ENTER MONTH AT WHICH TO BEGIN.  USE 3-LETTER ABBREVIATION. >
+Y MONTH ^ M1
+JUMP 1
+
+@7
+!!LABELS WILL BE MADE FROM EVERY nTH DAY. ENTER n. >
+M1 = ^
+!!ENTER DAY AT WHICH TO BEGIN.	USE 3-LETTER ABBREVIATION. >
+X DAY ^ M1
+JUMP 1
+
+@13
+!!LABELS WILL BE MADE FROM EVERY nTH DAY. ENTER n. >
+M1 = ^
+!!ENTER DAY AT WHICH TO BEGIN.	USE 3-LETTER ABBREVIATION. >
+Y DAY ^ M1
+JUMP 1
+
+@8
+!!LABELS WILL BE MADE FROM EVERY nTH YEAR. ENTER n. >
+M1 = ^
+!!ENTER YEAR AT WHICH TO BEGIN. >
+X YEAR ^ M1
+JUMP 1
+
+@14
+!!LABELS WILL BE MADE FROM EVERY nTH YEAR. ENTER n. >
+M1 = ^
+!!ENTER YEAR AT WHICH TO BEGIN.	 >
+Y YEAR ^ M1
+JUMP 1
+
+@2
+CLEARSCREEN
+!!HELP INFORMATION FOR THE AXIS LABELING MENU
+!!============================================================================
+!!
+!!There are three possibilites for axis labeling:
+!!	1  Let GrafTalk do it automatically with numbers;
+!!	2  Choose your own labels;
+!!	3  Choose one of the sets of special labels  -	months, days or years.
+!!
+!!To specify your own labels, follow these rules:
+!!	Enter each label on a single line.
+!!
+!!To use the special labels, follow these rules:
+!!	First, you will	 be asked to enter the increment, n,  of months, days
+!!	or years to be used.  Second, you  will be  asked to  enter the month,
+!!	day or	year at	 which to  begin.  Thus, for example, an n of 3 and a
+!!	beginning month of  DEC	 would result in the labels:  DECEMBER, MARCH,
+!!	JUNE, SEPTEMBER, etc.
+!!
+!!If you  have used either your own  labels, or the  special labels,  you can
+!!return to GrafTalk's  automatic labeling by choosing to  label with numbers.
+!!
+!!Pie labels are discussed separatley under the PIE menu.
+!!
+!!TYPE <cr> TO RETURN TO MENU >
+STOP
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+dis

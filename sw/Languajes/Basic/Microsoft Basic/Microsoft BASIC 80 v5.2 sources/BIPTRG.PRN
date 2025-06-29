@@ -1,0 +1,840 @@
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA
+                                	SUBTTL	DIMENSION & VARIABLE SEARCHING - PTRGET
+                                	EXTRN	ARYTA2,ARYTAB,BLTU,DIMFLG,ERRBS,ERROR,FAC,FCERR
+                                	EXTRN	FACLO,GETSTK,INTIDX,ISLET,ISLET2,OMERR,REASON,SNERR,STREND
+                                	EXTRN	SUBFLG,TEMP2,TEMP3,UMULT,VALTYP,VARTAB,REDDY,POPHRT,ERRDD,RETVAR
+                                	EXTRN	CHRGTR,DCOMPR,SYNCHR
+                                	EXTRN	GETYPR
+                                	EXTRN	NAMBUF,NAMCNT,NAMTMP
+                                	EXTRN	OPTVAL
+                                	EXTRN	PARM1,PRMFLG,PRMLEN,DEFTBL,NOFUNS
+                                	PUBLIC	PTRGET,BSERR,PTRGT2,DIM,NOARYS
+  0000'   2B                    DIMCON:	DCX	H			;SEE IF COMMA ENDED THIS VARIABLE
+  0001'   CD 0000*              	CALL	CHRGTR
+  0004'   C8                    	RZ				;IF TERMINATOR, GOOD BYE
+  0005'   CD 0000*              	CALL	SYNCHR
+  0008'   2C                    	DB	44			;MUST BE COMMA
+                                ;
+                                ; THE "DIM" CODE SETS DIMFLG AND THEN FALLS INTO THE VARIABLE
+                                ; SEARCH ROUTINE. THE VARIABLE SEARCH ROUTINE LOOKS AT
+                                ; DIMFLG AT THREE DIFFERENT POINTS:
+                                ;
+                                ;	1) IF AN ENTRY IS FOUND, DIMFLG BEING ON INDICATES
+                                ;		A "DOUBLY DIMENSIONED" VARIABLE
+                                ;	2) WHEN A NEW ENTRY IS BEING BUILT DIMFLG'S BEING ON
+                                ;		INDICATES THE INDICES SHOULD BE USED FOR
+                                ;		THE SIZE OF EACH INDICE. OTHERWISE THE DEFAULT
+                                ;		OF TEN IS USED.
+                                ;	3) WHEN THE BUILD ENTRY CODE FINISHES, ONLY IF DIMFLG IS
+                                ;		OFF WILL INDEXING BE DONE
+                                ;
+  0009'   01 0000'              DIM:	LXI	B,DIMCON		;PLACE TO COME BACK TO
+  000C'   C5                    	PUSH	B
+  000D'   F6                    	DB	366Q			;"ORI" NON ZERO THING
+                                					;MUST TURN THE MSB ON
+                                ;
+                                ; ROUTINE TO READ THE VARIABLE NAME AT THE CURRENT TEXT POSITION
+                                ; AND PUT A POINTER TO ITS VALUE IN [D,E]. [H,L] IS UPDATED
+                                ; TO POINT TO THE CHARACTER AFTER THE VARIABLE NAME.
+                                ; VALTYP IS SETUP. NOTE THAT EVALUATING SUBSCRIPTS IN
+                                ; A VARIABLE NAME CAN CAUSE RECURSIVE CALLS TO PTRGET SO AT
+                                ; THAT POINT ALL VALUES MUST BE STORED ON THE STACK.
+                                ; ON RETURN, [A] DOES NOT REFLECT THE VALUE OF THE TERMINATING CHARACTER
+                                ;
+  000E'   AF                    PTRGET:	XRA	A			;MAKE [A]=0
+  000F'   32 0000*              	STA	DIMFLG			;FLAG IT AS SUCH
+  0012'   4E                    	MOV	C,M			;GET FIRST CHARACTER IN [C]
+  0013'   CD 0000*              PTRGT2:	CALL	ISLET			;CHECK FOR LETTER
+  0016'   DA 0000*              	JC	SNERR			;MUST HAVE A LETTER
+  0019'   AF                    	XRA	A
+  001A'   47                    	MOV	B,A			;ASSUME NO SECOND CHARACTER
+  001B'   32 0000*              	STA	NAMCNT			;ZERO NAMCNT
+  001E'   23                    	INX	H			;INCRMENT TEXT POINTER
+  001F'   7E                    	MOV	A,M			;GET CHAR
+  0020'   FE 2E                 	CPI	'.'			;IS IT A DOT?
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+DIMENSION & VARIABLE SEARCHING - PTRGET
+
+  0022'   DA 0066'              	JC	NOSEC			;TOO SMALL FOR ANYTHING REASONABLE
+  0025'   CA 0038'              	JZ	ISSEC			;"." IS VALID VAR CHAR
+  0028'   FE 3A                 	CPI	'9'+1			;TOO BIG FOR NUMERIC?
+  002A'   D2 0032'              	JNC	PTRGT3			;YES
+  002D'   FE 30                 	CPI	'0'			;IN RIGHT RANGE?
+  002F'   D2 0038'              	JNC	ISSEC			;YES, WAS NUMERIC
+  0032'   CD 0000*              PTRGT3:	CALL	ISLET2			;SET CARRY IF NOT ALPHABETIC
+  0035'   DA 0066'              	JC	NOSEC			;ALLOW ALPHABETICS
+  0038'   47                    ISSEC:	MOV	B,A			;IT IS A NUMBER--SAVE IN B
+  0039'   C5                    	PUSH	B			;SAVE [B,C]
+  003A'   06 FF                 	MVI	B,255			;[B] COUNTS THE CHARACTERS PAST #2
+  003C'   11 FFFF*              	LXI	D,NAMBUF-1		;THE PLACE TO PUT THE CHARACTERS
+  003F'   F6 80                 VMORCH:	ORI	128			;EXTRA CHARACTERS MUST HAVE THE HIGH BIT ON
+                                					;SO ERASE CAN SCAN BACKWARDS OVER THEM
+  0041'   04                    	INR	B			;INCREASE THE CHACRACTER COUNT
+  0042'   12                    	STAX	D			;AND STORE INTO THE BUFFER
+  0043'   13                    	INX	D			;AND UPDATE THE BUFFER POINTER
+  0044'   23                    	INX	H			;INCREMENT TEXT POINTER
+  0045'   7E                    	MOV	A,M			;GET CHAR
+  0046'   FE 3A                 	CPI	'9'+1			;TOO BIG?
+  0048'   D2 0050'              	JNC	VMORC1			;YES
+  004B'   FE 30                 	CPI	'0'			;IN RANGE FOR DIGIT
+  004D'   D2 003F'              	JNC	VMORCH			;YES, VALID CHAR
+  0050'   CD 0000*              VMORC1:	CALL	ISLET2			;AS ARE ALPHABETICS
+  0053'   D2 003F'              	JNC	VMORCH
+  0056'   FE 2E                 	CPI	'.'			;DOTS ALSO OK
+  0058'   CA 003F'              	JZ	VMORCH			;SO EAT IT
+  005B'   78                    	MOV	A,B			;CHECK FOR MAXIMUM COUNT
+  005C'   FE 27                 	CPI	NAMLEN-1		;LIMITED TO SIZE OF NAMBUF ONLY
+  005E'   D2 0000*              	JNC	SNERR			;MUST BE BAD SYNTAX
+  0061'   C1                    	POP	B			;GET BACK THE STORED [B,C]
+  0062'   32 0000*              	STA	NAMCNT			;ALWAYS SET UP COUNT OF EXTRAS
+  0065'   7E                    	MOV	A,M			;RESTORE TERMINATING CHAR
+  0066'                         NOSEC:
+  0066'   FE 26                 	CPI	'%'+1			;NOT A TYPE INDICATOR
+  0068'   D2 0082'              	JNC	TABTYP			;THEN DONT CHECK THEM
+  006B'   11 0090'              	LXI	D,HAVTYP		;SAVE JUMPS BY USING RETURN ADDRESS
+  006E'   D5                    	PUSH	D
+  006F'   16 02                 	MVI	D,2			;CHECK FOR INTEGER
+  0071'   FE 25                 	CPI	'%'
+  0073'   C8                    	RZ	
+  0074'   14                    	INR	D			;CHECK FOR STRING
+  0075'   FE 24                 	CPI	'$'
+  0077'   C8                    	RZ	
+  0078'   14                    	INR	D			;CHECK FOR SINGLE PRECISION
+  0079'   FE 21                 	CPI	'!'
+  007B'   C8                    	RZ	
+  007C'   16 08                 	MVI	D,8			;ASSUME ITS DOUBLE PRECISION
+  007E'   FE 23                 	CPI	'#'			;CHECK THE CHARACTER
+  0080'   C8                    	RZ				;WHEN WE MATCH, SETUP VALTYP
+  0081'   F1                    	POP	PSW			;POP OFF NON-USED HAVTYP ADDRESS
+  0082'   79                    TABTYP:	MOV	A,C			;GET THE STARTING CHARACTER
+  0083'   E6 7F                 	ANI	127			;GET RID OF THE USER-DEFINED
+                                					;FUNCTION BIT IN [C]
+  0085'   5F                    	MOV	E,A			;BUILD A TWO BYTE OFFSET
+  0086'   16 00                 	MVI	D,0
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+DIMENSION & VARIABLE SEARCHING - PTRGET
+
+  0088'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  0089'   21 FFBF*              	LXI	H,DEFTBL-'A'		;SEE WHAT THE DEFAULT IS
+  008C'   19                    	DAD	D
+  008D'   56                    	MOV	D,M			;GET THE TYPE OUT OF THE TABLE
+  008E'   E1                    	POP	H			;GET BACK THE TEXT POINTER
+  008F'   2B                    	DCX	H			;NO MARKING CHARACTER
+  0090'   7A                    HAVTYP:	MOV	A,D			;SETUP VALTYP
+  0091'   32 0000*              	STA	VALTYP
+  0094'   CD 0000*              	CALL	CHRGTR			;READ PAST TYPE MARKER
+  0097'   3A 0000*              	LDA	SUBFLG			;GET FLAG WHETHER TO ALLOW ARRAYS
+  009A'   3D                    	DCR	A			;IF SUBFLG=1, "ERASE" HAS CALLED
+  009B'   CA 0223'              	JZ	ERSFIN			;PTRGET, AND SPECIAL HANDLING MUST BE DONE
+  009E'   F2 00AC'              	JP	NOARYS			;NO ARRAYS ALLOWED
+  00A1'   7E                    	MOV	A,M			;GET CHAR BACK
+  00A2'   D6 28                 	SUI	'('			;ARRAY PERHAPS (IF SUBFLG SET NEVER WILL MATCH)
+  00A4'   CA 01A7'              	JZ	ISARY			;IT IS!
+  00A7'   D6 33                 	SUI	'['-')'+1		;SEE IF LEFT BRACKET
+  00A9'   CA 01A7'              	JZ	ISARY			;IF SO, OK SUBSCRIPT
+  00AC'   AF                    NOARYS:	XRA	A			;ALLOW PARENS AGAIN
+  00AD'   32 0000*              	STA	SUBFLG			;SAVE IN FLAG LOCATION
+  00B0'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  00B1'   3A 0000*              	LDA	NOFUNS			;ARE FUNCTIONS ACTIVE?
+  00B4'   B7                    	ORA	A
+  00B5'   32 0000*              	STA	PRMFLG			;INDICATE IF PARM1 NEEDS SEARCHING
+  00B8'   CA 0100'              	JZ	SNFUNS			;NO FUNCTIONS SO NO SPECIAL SEARCH
+  00BB'   2A 0000*              	LHLD	PRMLEN			;GET THE SIZE TO SEARCH
+  00BE'   11 0000*              	LXI	D,PARM1			;GET THE BASE OF THE SEARCH
+  00C1'   19                    	DAD	D			;[H,L]= PLACE TO STOP SEARCHING
+  00C2'   22 0000*              	SHLD	ARYTA2			;SET UP STOPPING POINT
+  00C5'   EB                    	XCHG				;[H,L]=START [D,E]=END
+  00C6'   C3 00E6'              	JMP	LOPFND			;START LOOPING
+  00C9'   1A                    LOPTOP:	LDAX	D			;GET THE VALTYP OF THIS SIMPLE VARIABLE
+  00CA'   6F                    	MOV	L,A			;SAVE SO WE KNOW HOW MUCH TO SKIP
+  00CB'   13                    	INX	D
+  00CC'   1A                    	LDAX	D			;[A]=FIRST CHARACTER OF THIS VARIABLE
+  00CD'   13                    	INX	D			;POINT TO 2ND CHAR OF VAR NAME
+  00CE'   B9                    	CMP	C			;SEE IF OUR VARIABLE MATCHES
+  00CF'   C2 00DE'              	JNZ	NOTIT1
+  00D2'   3A 0000*              	LDA	VALTYP			;GET TYPE WERE LOOKING FOR
+  00D5'   BD                    	CMP	L			;COMPARE WITH OUR VALTYP
+  00D6'   C2 00DE'              	JNZ	NOTIT1			;NOT RIGHT KIND -- SKIP IT
+  00D9'   1A                    	LDAX	D			;SEE IF SECOND CHACRACTER MATCHES
+  00DA'   B8                    	CMP	B
+  00DB'   CA 0176'              	JZ	FINPTR			;THAT WAS IT, ALL DONE
+  00DE'   13                    NOTIT1:	INX	D
+  00DF'   1A                    NFINPT:	LDAX	D			;GET LENGTH OF VAR NAME IN [A]
+  00E0'                         SNOMAT:
+                                					;SKIP OVER THE
+                                					;CURRENT VARIABLE SINCE WE DIDN'T MATCH
+  00E0'   26 00                 	MVI	H,0			;[H,L]=NUMBER OF BYTES TO SKIP
+  00E2'   85                    	ADD	L			;ADD VALTYPE TO LENGTH OF VAR
+  00E3'   3C                    	INR	A			;PLUS ONE
+  00E4'   6F                    	MOV	L,A			;SAVE IN [L] TO MAKE OFFSET
+  00E5'   19                    	DAD	D			;ADD ON THE POINTER
+  00E6'   EB                    LOPFND:	XCHG				;[D,E]=POINTER INTO SIMPLE VARIABLES
+  00E7'   3A 0000*              	LDA	ARYTA2			;ARE LOW BYTES DIFFERENT
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+DIMENSION & VARIABLE SEARCHING - PTRGET
+
+  00EA'   BB                    	CMP	E			;TEST
+  00EB'   C2 00C9'              	JNZ	LOPTOP			;YES
+  00EE'   3A 0001*              	LDA	ARYTA2+1		;ARE HIGH BYTES DIFFERENT
+  00F1'   BA                    	CMP	D			;THE SAME?
+  00F2'   C2 00C9'              	JNZ	LOPTOP			;NO, MUST BE MORE VARS TO EXAMINE
+                                
+  00F5'   3A 0000*              NOTFNS:	LDA	PRMFLG			;HAS PARM1 BEEN SEARCHED
+  00F8'   B7                    	ORA	A
+  00F9'   CA 0111'              	JZ	SMKVAR			;IF SO, CREATE VARIABLE
+  00FC'   AF                    	XRA	A			;FLAG PARM1 AS SEARCHED
+  00FD'   32 0000*              	STA	PRMFLG
+  0100'   2A 0000*              SNFUNS:	LHLD	ARYTAB			;STOPPING POINT IS [ARYTA2]
+  0103'   22 0000*              	SHLD	ARYTA2
+  0106'   2A 0000*              	LHLD	VARTAB			;SET UP STARTING POINT
+  0109'   C3 00E6'              	JMP	LOPFND
+                                
+                                ; THIS IS EXIT FOR VARPTR AND OTHERS
+  010C'                         VARNOT:
+  010C'   57                    	MOV	D,A			;ZERO [D,E]
+  010D'   5F                    	MOV	E,A
+  010E'   C1                    	POP	B			;GET RID OF PUSHED [D,E]
+  010F'   E3                    	XTHL				;PUT RETURN ADDRESS BACK ON STACK
+  0110'   C9                    	RET				;RETURN FROM PTRGET
+                                
+  0111'   E1                    SMKVAR:	POP	H			;[H,L]= TEXT POINTER
+  0112'   E3                    	XTHL				;[H,L]= RETURN ADDRESS
+  0113'   D5                    	PUSH	D			;SAVE CURRENT VARIABLE TABLE POSITION
+                                	EXTRN	VARRET
+  0114'   11 0000*              	LXI	D,VARRET		;ARE WE RETURNING TO VARPTR?
+  0117'   CD 0000*              	CALL	DCOMPR			;COMPARE
+  011A'   CA 010C'              	JZ	VARNOT			;YES.
+                                	EXTRN	COMPTR,COMPT2		;RETURN HERE IF NOT FOUND
+  011D'   11 0000*              	LXI	D,COMPTR
+  0120'   CD 0000*              	CALL	DCOMPR
+  0123'   CA 010C'              	JZ	VARNOT
+  0126'   11 0000*              	LXI	D,COMPT2		;2ND ONE
+  0129'   CD 0000*              	CALL	DCOMPR
+  012C'   CA 010C'              	JZ	VARNOT
+  012F'   11 0000*              	LXI	D,RETVAR		;DID EVAL CALL US?
+  0132'   CD 0000*              	CALL	DCOMPR			;IF SO, DON'T MAKE A NEW VARIABLE
+  0135'   D1                    	POP	D			;RESTORE THE POSITION
+  0136'   CA 0191'              	JZ	FINZER			;MAKE FAC ZERO (ALL TYPES) AND SKIP RETURN
+  0139'   E3                    	XTHL				;PUT RETURN ADDRESS BACK
+  013A'   E5                    	PUSH	H			;PUT THE TEXT POINTER BACK
+  013B'   C5                    	PUSH	B			;SAVE THE LOOKS
+  013C'   3A 0000*              	LDA	VALTYP			;GET LENGTH OF SYMBOL TABLE ENTRY
+  013F'   47                    	MOV	B,A			;[B]=VALTYP
+  0140'   3A 0000*              	LDA	NAMCNT			;INCLUDE EXTRA CHARACTERS IN SIZE
+  0143'   80                    	ADD	B
+  0144'   3C                    	INR	A			;AS WELL AS THE EXTRA CHARACTER COUNT
+  0145'   4F                    	MOV	C,A			;[B,C]=LENGTH OF THIS VARIABLE
+  0146'   C5                    	PUSH	B			;SAVE THE VALTYP ON THE STACK
+  0147'   06 00                 	MVI	B,0			;[B]=0
+  0149'   03                    	INX	B			;MAKE THE LENGTH INCLUDE
+                                					;THE LOOKS TOO
+  014A'   03                    	INX	B
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+DIMENSION & VARIABLE SEARCHING - PTRGET
+
+  014B'   03                    	INX	B
+                                					;EVERYTHING UP BY
+  014C'   2A 0000*              	LHLD	STREND			;THE CURRENT END OF STORAGE
+  014F'   E5                    	PUSH	H			;SAVE THIS #
+  0150'   09                    	DAD	B			;ADD ON THE AMOUNT OF SPACE
+                                					;EXTRA NOW BEING USED
+  0151'   C1                    	POP	B			;POP OFF HIGH ADDRESS TO MOVE
+  0152'   E5                    	PUSH	H			;SAVE NEW CANDIDATE FOR STREND
+  0153'   CD 0000*              	CALL	BLTU			;BLOCK TRANSFER AND MAKE SURE
+                                					;WE ARE NOT OVERFLOWING THE
+                                					;STACK SPACE
+  0156'   E1                    	POP	H			;[H,L]=NEW STREND
+  0157'   22 0000*              	SHLD	STREND			;STORE SINCE WAS OK
+                                					;THERE WAS ROOM, AND BLOCK TRANSFER
+                                					;WAS DONE, SO UPDATE POINTERS
+  015A'   60                    	MOV	H,B			;GET BACK [H,L] POINTING AT THE END
+  015B'   69                    	MOV	L,C			;OF THE NEW VARIABLE
+  015C'   22 0000*              	SHLD	ARYTAB			;UPDATE THE ARRAY TABLE POINTER
+  015F'   2B                    ZEROER:	DCX	H			;[H,L] IS RETURNED POINTING TO THE
+  0160'   36 00                 	MVI	M,0			;END OF THE VARIABLE SO WE
+  0162'   CD 0000*              	CALL	DCOMPR			;ZERO BACKWARDS TO [D,E] WHICH
+  0165'   C2 015F'              	JNZ	ZEROER			;POINTS TO THE START OF THE VARIABLE
+  0168'   D1                    	POP	D			;[E]=VALTYP
+  0169'   72                    	MOV	M,D			;VALTYP IS IN HIGH ORDER
+  016A'   23                    	INX	H
+  016B'   D1                    	POP	D
+  016C'   73                    	MOV	M,E			;PUT DESCRIPTION
+  016D'   23                    	INX	H
+  016E'   72                    	MOV	M,D			;OF THIS VARIABLE
+                                					;INTO MEMORY
+  016F'   CD 0334'              	CALL	NPUTSB			;SAVE THE EXTRA CHARACTERS IN THE NAME
+  0172'   EB                    	XCHG				;POINTER AT VARIABLE INTO [D,E]
+  0173'   13                    	INX	D			;POINT AT THE VALUE
+  0174'   E1                    	POP	H			;RESTORE THE TEXT POINTER
+  0175'   C9                    	RET	
+  0176'   13                    FINPTR:	INX	D			;POINT AT THE EXTRA CHARACTER COUNT
+  0177'   3A 0000*              	LDA	NAMCNT			;SEE IF THE EXTRA COUNTS MATCH
+  017A'   67                    	MOV	H,A			;SAVE LENGTH OF NEW VAR
+  017B'   1A                    	LDAX	D			;GET LENGTH OF CURRENT VAR
+  017C'   BC                    	CMP	H			;ARE THEY THE SAME?
+  017D'   C2 00DF'              	JNZ	NFINPT			;SKIP EXTRAS AND CONTINUE SEARCH
+  0180'   B7                    	ORA	A			;LENGTH ZERO?
+  0181'   C2 0187'              	JNZ	NTFPRT			;NO, MORE CHARS TO LOOK AT
+  0184'   13                    	INX	D			;POINT TO VALUE OF VAR
+  0185'   E1                    	POP	H			;RESTORE TEXT POINTER
+  0186'   C9                    	RET				;ALL DONE WITH THIS VAR
+  0187'   EB                    NTFPRT:	XCHG	
+  0188'   CD 0349'              	CALL	MATSUB			;SEE IF THE CHARACTERS MATCH
+  018B'   EB                    	XCHG				;TABLE POINTER BACK INTO [D,E]
+  018C'   C2 00E0'              	JNZ	SNOMAT			;IF NOT, CONTINUE SEARCH
+  018F'   E1                    	POP	H			;GET BACK THE TEXT POINTER
+  0190'   C9                    	RET	
+                                ;
+                                ; MAKE ALL TYPES ZERO AND SKIP RETURN
+                                ;
+  0191'                         FINZER:
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+DIMENSION & VARIABLE SEARCHING - PTRGET
+
+  0191'   32 0000*              	STA	FAC			;MAKE SINGLES AND DOUBLES ZERO
+  0194'   67                    	MOV	H,A			;MAKE INTEGERS ZERO
+  0195'   6F                    	MOV	L,A
+  0196'   22 0000*              	SHLD	FACLO
+  0199'   CD 0000*              	CALL	GETYPR			;SEE IF ITS A STRING
+  019C'   C2 01A5'              	JNZ	POPHR2			;IF NOT, DONE
+  019F'   21 FFFF*              	LXI	H,REDDY-1		;MAKE IT A NULL STRING BY
+  01A2'   22 0000*              	SHLD	FACLO			;POINTING AT A ZERO
+  01A5'   E1                    POPHR2:	POP	H			;GET THE TEXT POINTER
+  01A6'   C9                    	RET				;RETURN FROM EVAL
+                                
+                                
+                                	PAGE
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+DIMENSION & VARIABLE SEARCHING - PTRGET
+
+                                
+                                	SUBTTL	MULTIPLE DIMENSION CODE
+                                
+                                ;
+                                ; FORMAT OF ARRAYS IN CORE
+                                ;
+                                ; DESCRIPTOR 
+                                ;	LOW BYTE = SECOND CHARCTER (200 BIT IS STRING FLAG)
+                                ;	HIGH BYTE = FIRST CHARACTER
+                                ; LENGTH OF ARRAY IN CORE IN BYTES (DOES NOT INCLUDE DESCRIPTOR)
+                                ; NUMBER OF DIMENSIONS 1 BYTE
+                                ; FOR EACH DIMENSION STARTING WITH THE FIRST A LIST
+                                ; (2 BYTES EACH) OF THE MAX INDICE+1
+                                ; THE VALUES
+                                ;
+  01A7'   E5                    ISARY:	PUSH	H			;SAVE DIMFLG AND VALTYP FOR RECURSION
+  01A8'   2A 0000*              	LHLD	DIMFLG
+  01AB'   E3                    	XTHL				;TEXT POINTER BACK INTO [H,L]
+  01AC'   57                    	MOV	D,A			;SET # DIMENSIONS =0
+  01AD'   D5                    INDLOP:	PUSH	D			;SAVE NUMBER OF DIMENSIONS
+  01AE'   C5                    	PUSH	B			;SAVE LOOKS
+  01AF'   11 0000*              	LXI	D,NAMCNT		;POINT AT THE AREA TO SAVE
+  01B2'   1A                    	LDAX	D			;GET LENGTH
+  01B3'   B7                    	ORA	A			;IS IT ZERO?
+  01B4'   CA 01E9'              	JZ	SHTNAM			;YES, SHORT NAME
+  01B7'   EB                    	XCHG				;SAVE THE TEXT POINTER IN [D,E]
+  01B8'   C6 02                 	ADI	2			;WE WANT SMALLEST INT .GE.(NAMCNT+1)/2
+  01BA'   1F                    	RAR	
+  01BB'   4F                    	MOV	C,A			;SEE IF THERE IS ROOM TO SAVE THIS STUFF
+  01BC'   CD 0000*              	CALL	GETSTK
+  01BF'   79                    	MOV	A,C			;RESTORE COUNT OF PUSHES
+  01C0'   4E                    LPPSNM:	MOV	C,M			;GET VALUES TO PUSH
+  01C1'   23                    	INX	H
+  01C2'   46                    	MOV	B,M
+  01C3'   23                    	INX	H
+  01C4'   C5                    	PUSH	B			;AND DO THE SAVE
+  01C5'   3D                    	DCR	A			;[A] TIMES
+  01C6'   C2 01C0'              	JNZ	LPPSNM
+  01C9'   E5                    	PUSH	H			;SAVE THE ADDRESS TO STORE TO
+  01CA'   3A 0000*              	LDA	NAMCNT			;SAVE THE NUMBER OF BYTES FOR A COUNT
+  01CD'   F5                    	PUSH	PSW
+  01CE'   EB                    	XCHG				;RESTORE THE TEXT POINTER
+  01CF'   CD 0000*              	CALL	INTIDX			;EVALUATE INDICE INTO [D,E]
+  01D2'   F1                    	POP	PSW			;COUNT TELLING HOW MUCH TO RESTORE
+  01D3'   22 0000*              	SHLD	NAMTMP			;SAVE THE TEXT POINTER
+  01D6'   E1                    	POP	H			;THE PLACE TO RESTORE TO
+  01D7'   C6 02                 	ADI	2			;CALCULATE BYTE POPS AGAIN
+  01D9'   1F                    	RAR	
+  01DA'   C1                    LPLNAM:	POP	B
+  01DB'   2B                    	DCX	H
+  01DC'   70                    	MOV	M,B
+  01DD'   2B                    	DCX	H
+  01DE'   71                    	MOV	M,C
+  01DF'   3D                    	DCR	A			;LOOP [A] TIMES POPING NAME BACK INTO NAMBUF
+  01E0'   C2 01DA'              	JNZ	LPLNAM
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+MULTIPLE DIMENSION CODE
+
+  01E3'   2A 0000*              	LHLD	NAMTMP
+  01E6'   C3 01F0'              	JMP	LNGNAM			;WAS LONG ONE
+  01E9'   CD 0000*              SHTNAM:	CALL	INTIDX			;EVALUATE IT
+  01EC'   AF                    	XRA	A			;MAKE SURE NAMCNT=0
+  01ED'   32 0000*              	STA	NAMCNT
+  01F0'                         LNGNAM:
+  01F0'   3A 0000*              	LDA	OPTVAL			;SEE WHAT THE OPTION BASE IS
+  01F3'   B7                    	ORA	A
+  01F4'   CA 01FD'              	JZ	OPTB0			;IF BASE 0 DO NOTHING
+  01F7'   7A                    	MOV	A,D			;CHECK FOR 0 SUBSCRIPT
+  01F8'   B3                    	ORA	E			;WHICH IS ILLEGAL IN BASE 1
+  01F9'   1B                    	DCX	D			;ADJUST SUBSCRIPT
+  01FA'   CA 0267'              	JZ	BSERR
+  01FD'                         OPTB0:
+  01FD'   C1                    	POP	B			;POP OFF THE LOOKS
+  01FE'   F1                    	POP	PSW			;[A] = NUMBER OF DIMENSIONS SO FAR
+  01FF'   EB                    	XCHG				;[D,E]=TEXT POINTER
+                                					;[H,L]=INDICE
+  0200'   E3                    	XTHL				;PUT THE INDICE ON THE STACK
+                                					;[H,L]=VALTYP & DIMFLG
+  0201'   E5                    	PUSH	H			;RESAVE VALTYP AND DIMFLG
+  0202'   EB                    	XCHG				;[H,L]=TEXT POINTER
+  0203'   3C                    	INR	A			;INCREMENT # OF DIMENSIONS
+  0204'   57                    	MOV	D,A			;[D]=NUMBER OF DIMENSIONS
+  0205'   7E                    	MOV	A,M			;GET TERMINATING CHARACTER
+  0206'   FE 2C                 	CPI	44			;A COMMA SO MORE INDICES FOLLOW?
+  0208'   CA 01AD'              	JZ	INDLOP			;IF SO, READ MORE
+  020B'   FE 29                 	CPI	')'			;EXPECTED TERMINATOR?
+  020D'   CA 0215'              	JZ	DOCHRT			;DO CHRGET FOR NEXT ONE
+  0210'   FE 5D                 	CPI	']'			;BRACKET?
+  0212'   C2 0000*              	JNZ	SNERR			;NO, GIVE ERROR
+  0215'   CD 0000*              DOCHRT:	CALL	CHRGTR
+  0218'   22 0000*              SUBSOK:	SHLD	TEMP2			;SAVE THE TEXT POINTER
+  021B'   E1                    	POP	H			;[H,L]= VALTYP & DIMFLG
+  021C'   22 0000*              	SHLD	DIMFLG			;SAVE VALTYP AND DIMFLG
+  021F'   1E 00                 	MVI	E,0			;WHEN [D,E] IS POPED INTO PSW, WE
+                                					;DON'T WANT THE ZERO FLAG TO BE SET, SO
+                                					;"ERASE" WILL HAVE A UNIQUE CONDITION
+  0221'   D5                    	PUSH	D			;SAVE NUMBER OF DIMENSIONS
+                                	PUBLIC	ERSFIN
+  0222'   11                    	DB	21O			;"LXI	D," OVER THE NEXT TWO BYTES
+  0223'   E5                    ERSFIN:	PUSH	H			;SAVE THE TEXT POINTER
+  0224'   F5                    	PUSH	PSW			;SAVE A DUMMY NUMBER OF DIMENSIONS
+                                					;WITH THE ZERO FLAG SET
+                                ;
+                                ; AT THIS POINT [B,C]=LOOKS. THE TEXT POINTER IS IN TEMP2.
+                                ; THE INDICES ARE ALL ON THE STACK, FOLLOWED BY THE NUMBER OF DIMENSIONS.
+                                ;
+  0225'   2A 0000*              	LHLD	ARYTAB			;[H,L]=PLACE TO START THE SEARCH
+  0228'   3E                    	DB	76O			;"MVI A," AROUND THE NEXT BYTE
+  0229'   19                    LOPFDA:	DAD	D			;SKIP OVER THIS ARRAY SINCE IT'S
+                                					;NOT THE ONE
+  022A'   EB                    	XCHG				;[D,E]=CURRENT SEARCH POINT
+  022B'   2A 0000*              	LHLD	STREND			;GET THE PLACE TO STOP INTO [H,L]
+  022E'   EB                    	XCHG				;[H,L]=SEARCH POINT
+  022F'   CD 0000*              	CALL	DCOMPR			;STOPPING TIME?
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+MULTIPLE DIMENSION CODE
+
+  0232'   CA 0281'              	JZ	NOTFDD			;YES, COULDN'T FIND THIS ARRAY
+  0235'   5E                    	MOV	E,M			;GET VALTYP IN [E]
+  0236'   23                    	INX	H
+  0237'   7E                    	MOV	A,M			;GET FIRST CHARACTER
+  0238'   23                    	INX	H
+  0239'   B9                    	CMP	C			;SEE IF IT MATCHES
+  023A'   C2 0249'              	JNZ	NMARY1			;NOT THIS ONE
+  023D'   3A 0000*              	LDA	VALTYP			;GET TYPE OF VAR WERE LOOKING FOR
+  0240'   BB                    	CMP	E			;SAME AS THIS ONE?
+  0241'   C2 0249'              	JNZ	NMARY1			;NO, SKIP THIS VAR
+  0244'   7E                    	MOV	A,M			;GET SECOND CHARACTER
+  0245'   B8                    	CMP	B			;ANOTHER MATCH?
+  0246'   CA 026D'              	JZ	CMPNAM			;MATCH, CHECK OUT REST OF NAME
+  0249'   23                    NMARY1:	INX	H			;POINT TO SIZE ENTRY
+  024A'   5E                    BNAMSZ:	MOV	E,M			;GET VAR NAME LENGTH IN [E]
+  024B'   1C                    	INR	E			;ADD ONE TO GET CORRECT LENGTH
+  024C'   16 00                 	MVI	D,0			;HIGH BYTE OF ZERO
+  024E'   19                    	DAD	D			;ADD OFFSET
+  024F'                         CNOMAT:
+  024F'   5E                    	MOV	E,M			;[D,E]=LENGTH
+  0250'   23                    	INX	H			;OF THE ARRAY BEING LOOKED AT
+  0251'   56                    	MOV	D,M
+  0252'   23                    	INX	H
+  0253'   C2 0229'              	JNZ	LOPFDA			;IF NO MATCH, SKIP THIS ONE
+                                					;AND TRY AGAIN
+  0256'   3A 0000*              	LDA	DIMFLG			;SEE IF CALLED BY "DIM"
+  0259'   B7                    	ORA	A			;ZERO MEANS NO
+                                	EXTRN	DDERR
+  025A'   C2 0000*              	JNZ	DDERR			;PRESERVE [D,E], AND DISPATCH TO
+                                					;"REDIMENSIONED VARIABLE" ERROR
+                                					;IF ITS "DIM" CALLING PTRGET
+                                ;
+                                ; TEMP2=THE TEXT POINTER
+                                ; WE HAVE LOCATED THE VARIABLE WE WERE LOOKING FOR
+                                ; AT THIS POINT [H,L] POINTS BEYOND THE SIZE TO THE NUMBER OF DIMENSIONS
+                                ; THE INDICES ARE ON THE STACK FOLLOWED BY THE NUMBER OF DIMENSIONS
+                                ;
+  025D'   F1                    	POP	PSW			;[A]=NUMBER OF DIMENSIONS
+  025E'   44                    	MOV	B,H			;SET [B,C] TO POINT AT NUMBER OF DIMENSIONS
+  025F'   4D                    	MOV	C,L
+  0260'   CA 0000*              	JZ	POPHRT			;"ERASE" IS DONE AT THIS POINT, SO RETURN
+                                					;TO DO THE ACTUAL ERASURE
+  0263'   96                    	SUB	M			;MAKE SURE THE NUMBER GIVEN NOW AND
+                                					;AND WHEN THE ARRAY WAS SET UP ARE THE
+                                					;SAME
+  0264'   CA 02EE'              	JZ	GETDEF			;JUMP OFF AND READ
+                                					;THE INDICES....
+                                
+  0267'   11 0000*              BSERR:	LXI	D,0+ERRBS		;"SUBSCRIPT OUT OF RANGE"
+  026A'   C3 0000*              	JMP	ERROR
+  026D'   23                    CMPNAM:	INX	H			;POINT TO LENGTH OF NAME
+  026E'   3A 0000*              	LDA	NAMCNT			;SEE IF COUNT MATCHES COUNT IN COMPLEX TABLE
+  0271'   BE                    	CMP	M
+  0272'   C2 024A'              	JNZ	BNAMSZ			;BAD NAME SIZE JUST SKIP AND SET NZ CC
+  0275'   23                    	INX	H			;POINT ONE BYTE AFTER LENGTH FIELD
+  0276'   B7                    	ORA	A			;LENGTH ZERO?
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+MULTIPLE DIMENSION CODE
+
+  0277'   CA 024F'              	JZ	CNOMAT			;THEN FOUND, EXIT
+  027A'   2B                    	DCX	H			;MOVE BACK ONE
+  027B'   CD 0349'              	CALL	MATSUB			;OTHERWISE TRY TO MATCH CHARACTERS
+  027E'   C3 024F'              	JMP	CNOMAT			;USING COMMON SUBROUTINE
+                                ;
+                                ; HERE WHEN VARIABLE IS NOT FOUND IN THE ARRAY TABLE
+                                ;
+                                ; BUILDING AN ENTRY:
+                                ; 
+                                ;	PUT DOWN THE DESCRIPTOR	
+                                ;	SETUP NUMER OF DIMENSIONS
+                                ;	MAKE SURE THERE IS ROOM FOR THE NEW ENTRY
+                                ;	REMEMBER VARPTR
+                                ;	TALLY=4 (VALTYP FOR THE EXTENDED)
+                                ;	SKIP 2 LOCS FOR LATER FILL IN -- THE SIZE
+                                ; LOOP:	GET AN INDICE
+                                ;	PUT NUMBER +1 DOWN AT VARPTR AND INCREMENT VARPTR
+                                ;	TALLY= TALLY * NUMBER+1
+                                ;	DECREMENT NUMBER-DIMS
+                                ;	JNZ	LOOP
+                                ;	CALL REASON WITH [H,L] REFLECTING LAST LOC OF VARIABLE
+                                ;	UPDATE STREND
+                                ;	ZERO BACKWARDS
+                                ;	MAKE TALLY INCLUDE MAXDIMS
+                                ;	PUT DOWN TALLY
+                                ;	IF CALLED BY DIMENSION, RETURN
+                                ;	OTHERWISE INDEX INTO THE VARIABLE AS IF IT
+                                ;	WERE FOUND ON THE INITIAL SEARCH
+                                ;
+  0281'                         NOTFDD:
+  0281'   3A 0000*              	LDA	VALTYP			;GET VALTYP OF NEW VAR
+  0284'   77                    	MOV	M,A			;PUT DOWN THE VARIABLE TYPE
+  0285'   23                    	INX	H
+  0286'   5F                    	MOV	E,A
+  0287'   16 00                 	MVI	D,0			;[D,E]=SIZE OF ONE VALUE (VALTYP)
+  0289'   F1                    	POP	PSW			;[A]=NUMBER OF DIMENSIONS
+  028A'   CA 0327'              	JZ	PTRRNZ			;CALLED BY CHAIN, JUST RETURN NON-ZERO
+  028D'   71                    	MOV	M,C			;PUT DOWN THE DESCRIPTOR
+  028E'   23                    	INX	H
+  028F'   70                    	MOV	M,B
+  0290'   CD 0334'              	CALL	NPUTSB			;STORE THE EXTRA CHARACTERS IN THE TABLE
+  0293'   23                    	INX	H
+  0294'   4F                    	MOV	C,A			;[C]=NUMBER OF TWO BYTE ENTRIES NEEDED
+                                					;TO STORE THE SIZE OF EACH DIMENSION
+  0295'   CD 0000*              	CALL	GETSTK			;GET SPACE FOR DIMENSION ENTRIES
+  0298'   23                    	INX	H			;SKIP OVER THE SIZE LOCATIONS
+  0299'   23                    	INX	H
+  029A'   22 0000*              	SHLD	TEMP3			;SAVE THE LOCATION TO PUT THE SIZE
+                                					;IN -- POINTS AT THE NUMBER OF DIMENSIONS
+  029D'   71                    	MOV	M,C			;STORE THE NUMBER OF DIMENSIONS
+  029E'   23                    	INX	H
+  029F'   3A 0000*              	LDA	DIMFLG			;CALLED BY DIMENSION?
+  02A2'   17                    	RAL				;SET CARRY IF SO
+  02A3'   79                    	MOV	A,C			;[A]=NUMBER OF DIMENSIONS
+  02A4'                         LOPPTA:
+  02A4'   DA 02B4'              	JC	POPDIM
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+MULTIPLE DIMENSION CODE
+
+  02A7'   F5                    	PUSH	PSW
+  02A8'   3A 0000*              	LDA	OPTVAL			;GET THE OPTION BASE
+  02AB'   EE 0B                 	XRI	11			;MAP 0 TO 11 AND 1 TO 10
+  02AD'   4F                    	MOV	C,A			;[B,C]=DEFAULT DIMENSION
+  02AE'   06 00                 	MVI	B,0
+  02B0'   F1                    	POP	PSW
+  02B1'   D2 02B6'              	JNC	NOTDIM			;DEFAULT DIMENSIONS TO TEN
+  02B4'   C1                    POPDIM:	POP	B			;POP OFF AN INDICE INTO [B,C]
+  02B5'   03                    	INX	B			;ADD ONE TO IT FOR THE ZERO ENTRY
+  02B6'   71                    NOTDIM:	MOV	M,C			;PUT THE MAXIMUM DOWN
+  02B7'   F5                    	PUSH	PSW			;SAVE THE NUMBER OF DIMENSIONS AND
+                                					;DIMFLG (CARRY)
+  02B8'   23                    	INX	H
+  02B9'   70                    	MOV	M,B
+  02BA'   23                    	INX	H
+  02BB'   CD 0000*              	CALL	UMULT			;MULTIPLY [B,C]=NEWMAX BY CURTOL=[D,E]
+  02BE'   F1                    	POP	PSW			;GET THE NUMBER OF DIMENSIONS AND
+                                					;DIMFLG (CARRY) BACK
+  02BF'   3D                    	DCR	A			;DECREMENT THE NUMBER OF DIMENSIONS LEFT
+  02C0'   C2 02A4'              	JNZ	LOPPTA			;HANDLE THE OTHER INDICES
+  02C3'   F5                    	PUSH	PSW			;SAVE DIMFLG (CARRY)
+  02C4'   42                    	MOV	B,D			;[B,C]=SIZE
+  02C5'   4B                    	MOV	C,E
+  02C6'   EB                    	XCHG				;[D,E]=START OF VALUES
+  02C7'   19                    	DAD	D			;[H,L]=END OF VALUES
+  02C8'   DA 0000*              	JC	OMERR			;OUT OF MEMORY POINTER BEING GENERATED?
+  02CB'   CD 0000*              	CALL	REASON			;SEE IF THERE IS ROOM FOR THE VALUES
+  02CE'   22 0000*              	SHLD	STREND			;UPDATE THE END OF STORAGE
+  02D1'   2B                    ZERITA:	DCX	H			;ZERO THE NEW ARRAY
+  02D2'   36 00                 	MVI	M,0
+  02D4'   CD 0000*              	CALL	DCOMPR			;BACK AT THE BEGINNING?
+  02D7'   C2 02D1'              	JNZ	ZERITA			;NO, ZERO MORE
+  02DA'   03                    	INX	B			;ADD ONE TO THE SIZE TO INCLUDE
+                                					;THE BYTE FOR THE NUMBER OF DIMENSIONS
+  02DB'   57                    	MOV	D,A			;[D]=ZERO
+  02DC'   2A 0000*              	LHLD	TEMP3			;GET A POINTER AT THE NUMBER OF DIMENSIONS
+  02DF'   5E                    	MOV	E,M			;[E]=NUMBER OF DIMENSIONS
+  02E0'   EB                    	XCHG				;[H,L]=NUMBER OF DIMENSIONS
+  02E1'   29                    	DAD	H			;[H,L]=NUMBER OF DIMENSIONS TIMES TWO
+  02E2'   09                    	DAD	B			;ADD ON THE SIZE
+                                					;TO GET THE TOTAL NUMBER OF BYTES USED
+  02E3'   EB                    	XCHG				;[D,E]=TOTAL SIZE
+  02E4'   2B                    	DCX	H			;BACK UP TO POINT TO LOCATION TO PUT
+  02E5'   2B                    	DCX	H			;THE SIZE OF THE ARRAY IN BYTES IN.
+  02E6'   73                    	MOV	M,E			;PUT DOWN THE SIZE
+  02E7'   23                    	INX	H
+  02E8'   72                    	MOV	M,D
+  02E9'   23                    	INX	H
+  02EA'   F1                    	POP	PSW			;GET BACK DIMFLG (CARRY) AND SET [A]=0
+  02EB'   DA 0323'              	JC	FINNOW
+                                ;
+                                ; AT THIS POINT [H,L] POINTS BEYOND THE SIZE TO THE NUMBER OF DIMENSIONS
+                                ; STRATEGY:
+                                ;	NUMDIM=NUMBER OF DIMENSIONS
+                                ;	CURTOL=0
+                                ; INLPNM:GET A NEW INDICE
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+MULTIPLE DIMENSION CODE
+
+                                ;	POP NEW MAX INTO CURMAX
+                                ;	MAKE SURE INDICE IS NOT TOO BIG
+                                ;	MUTLIPLY CURTOL BY CURMAX
+                                ;	ADD INDICE TO CURTOL
+                                ;	NUMDIM=NUMDIM-1
+                                ;	JNZ	INLPNM
+                                ;	USE CURTOL*4 (VALTYP FOR EXTENDED) AS OFFSET
+                                ;
+  02EE'   47                    GETDEF:	MOV	B,A			;[B,C]=CURTOL=ZERO
+  02EF'   4F                    	MOV	C,A
+  02F0'   7E                    	MOV	A,M			;[A]=NUMBER OF DIMENSIONS
+  02F1'   23                    	INX	H			;POINT PAST THE NUMBER OF DIMENSIONS
+  02F2'   16                    	DB	26Q			;"MVI D," AROUND THE NEXT BYTE
+  02F3'   E1                    INLPNM:	POP	H			;[H,L]= POINTER INTO VARIABLE ENTRY
+  02F4'   5E                    	MOV	E,M			;[D,E]=MAXIMUM FOR THE CURRENT INDICE
+  02F5'   23                    	INX	H
+  02F6'   56                    	MOV	D,M
+  02F7'   23                    	INX	H
+  02F8'   E3                    	XTHL				;[H,L]=CURRENT INDICE
+                                					;POINTER INTO THE VARIABLE GOES ON THE STACK
+  02F9'   F5                    	PUSH	PSW			;SAVE THE NUMBER OF DIMENSIONS
+  02FA'   CD 0000*              	CALL	DCOMPR			;SEE IF THE CURRENT INDICE IS TOO BIG
+  02FD'   D2 0267'              	JNC	BSERR			;IF SO "BAD SUBSCRIPT" ERROR
+  0300'   CD 0000*              	CALL	UMULT			;CURTOL=CURTOL*CURRENT MAXIMUM
+  0303'   19                    	DAD	D			;ADD THE INDICE TO CURTOL
+  0304'   F1                    	POP	PSW			;GET THE NUMBER OF DIMENSIONS IN [A]
+  0305'   3D                    	DCR	A			;SEE IF ALL THE INDICES HAVE BEEN PROCESSED
+  0306'   44                    	MOV	B,H			;[B,C]=CURTOL IN CASE WE LOOP BACK
+  0307'   4D                    	MOV	C,L
+  0308'   C2 02F3'              	JNZ	INLPNM			;PROCESS THE REST OF THE INDICES
+  030B'   3A 0000*              	LDA	VALTYP			;SEE HOW BIG THE VALUES ARE
+                                					;AND MULTIPLY BY THAT SIZE
+  030E'   44                    	MOV	B,H			;SAVE THE ORIGINAL VALUE FOR MULTIPLYING
+  030F'   4D                    	MOV	C,L			;BY THREE
+  0310'   29                    	DAD	H			;MULTIPLY BY TWO AT LEAST
+  0311'   D6 04                 	SUI	4			;FOR INTEGERS AND STRINGS
+                                					;NO MORE MULTIPLYING BY TWO
+  0313'   DA 031B'              	JC	SMLVAL
+  0316'   29                    	DAD	H			;NOW MULTIPLIED BY FOUR
+  0317'   CA 0320'              	JZ	DONMUL			;IF SINGLE ALL DONE
+  031A'   29                    	DAD	H			;BY EIGHT FOR DOUBLES
+  031B'                         SMLVAL:
+  031B'   B7                    	ORA	A			;FIX CC'S FOR Z-80
+  031C'   E2 0320'              	JPO	DONMUL			;FOR STRINGS
+  031F'   09                    	DAD	B			;ADD IN THE ORIGINAL
+  0320'                         DONMUL:
+  0320'   C1                    	POP	B			;POP OFF THE ADDRESS OF WHERE THE VALUES
+                                					;BEGIN
+  0321'   09                    	DAD	B			;ADD IT ONTO CURTOL TO GET THE
+                                					;PLACE THE VALUE IS STORED
+  0322'   EB                    	XCHG				;RETURN THE POINTER IN [D,E]
+  0323'   2A 0000*              FINNOW:	LHLD	TEMP2			;REGET THE TEXT POINTER
+  0326'   C9                    	RET	
+  0327'   37                    PTRRNZ:	STC				;RETURN WITH NON-ZERO IN [A]
+  0328'   9F                    	SBB	A			;AND CONDITION CODES SET
+  0329'   E1                    	POP	H			;RESTORE TEST POINTER
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+MULTIPLE DIMENSION CODE
+
+  032A'   C9                    	RET	
+                                
+                                ;
+                                ; LONG VARIABLE NAME SUBROUTINES. AFTER THE NORMAL 2 CHARACTER NAME
+                                ; THE COUNT OF ADDITIONAL CHARACTERS IS STORED. FOLLOWING THIS
+                                ; COMES THE CHARACTERS IN ORDER WITH THE HIGH BIT TURNED ON SO A BACKWARD
+                                ; SCAN IS POSSIBLE
+                                ;
+                                	PUBLIC	IADAHL
+  032B'   7E                    IADAHL:	MOV	A,M			;GET THE CHARACTER COUNT
+  032C'   23                    	INX	H
+  032D'   C5                    ADDAHL:	PUSH	B			;ADD [A] TO [H,L]
+  032E'   06 00                 	MVI	B,0
+  0330'   4F                    	MOV	C,A
+  0331'   09                    	DAD	B
+  0332'   C1                    	POP	B			;RESTORE THE SAVED [B,C]
+  0333'   C9                    	RET	
+  0334'   C5                    NPUTSB:	PUSH	B			;THIS ROUTINE STORE THE "LONG" NAME AT [H,L]
+  0335'   D5                    	PUSH	D
+  0336'   F5                    	PUSH	PSW
+  0337'   11 0000*              	LXI	D,NAMCNT		;POINT AT DATA TO SAVE
+  033A'   1A                    	LDAX	D			;GET THE COUNT
+  033B'   47                    	MOV	B,A
+  033C'   04                    	INR	B			;[B]= NUMBER OF BYTES TO SAVE
+  033D'   1A                    SLPLNG:	LDAX	D			;FETCH STORE VALUE
+  033E'   13                    	INX	D
+  033F'   23                    	INX	H			;MOVE UP TO STORE NAME INTO TABLE
+  0340'   77                    	MOV	M,A			;DO THE STORE
+  0341'   05                    	DCR	B			;AND REPEAT [B] TIMES
+  0342'   C2 033D'              	JNZ	SLPLNG			;FOR THE COUNT AND DATA
+  0345'   F1                    	POP	PSW
+  0346'   D1                    	POP	D
+  0347'   C1                    	POP	B
+  0348'   C9                    	RET	
+                                
+  0349'   D5                    MATSUB:	PUSH	D			;THIS ROUTINE TRIES TO PERFORM A MATCH
+  034A'   C5                    	PUSH	B
+  034B'   11 0000*              	LXI	D,NAMBUF		;POINT AT COUNT AND DATA
+  034E'   47                    	MOV	B,A			;[B]=CHARACTER COUNT
+  034F'   23                    	INX	H			;POINT AT THE DATA
+  0350'   04                    	INR	B			;START OFF LOOP
+  0351'   05                    SLPMAT:	DCR	B			;MATCHED ALL CHARACTERS YET?
+  0352'   CA 0363'              	JZ	ISMAT2			;IF SO, ITS A MATCH
+  0355'   1A                    	LDAX	D			;GET ANOTHER CHARACTER
+  0356'   BE                    	CMP	M			;SEE IF ITS THE SAME
+  0357'   23                    	INX	H			;MOVE FORWARD IN DEFINITION TABLE
+  0358'   13                    	INX	D			;MORE FORWARD IN STORED NAME
+  0359'   CA 0351'              	JZ	SLPMAT			;IF MATCH KEEP GOING UNTIL END
+  035C'   78                    	MOV	A,B			;NEED TO ADVANCE BY [B]-1 TO SKIP BAD CHARS
+  035D'   3D                    	DCR	A
+  035E'   C4 032D'              	CNZ	ADDAHL			;USE THE COMMON SUBROUTINE. [H,L]=[H,L]+[A]
+  0361'   AF                    	XRA	A			;SET CC'S NON ZERO FOR NO MATCH
+  0362'   3D                    	DCR	A			;AND RETURN [A]=FF
+  0363'   C1                    ISMAT2:	POP	B			;RESTORE SAVED REGISTERS
+  0364'   D1                    	POP	D
+  0365'   C9                    	RET	
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+MULTIPLE DIMENSION CODE
+
+                                
+                                	PAGE
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+MULTIPLE DIMENSION CODE
+
+                                
+                                	END	
+BIPTRG	BASIC Interpreter pointer get routines/WHG/PGA	MACRO-80 3.44	09-Dec-81	PAGE	S
+MULTIPLE DIMENSION CODE
+
+Macros:
+
+Symbols:
+032D'	ADDAHL          0104*	ARYTA2          0226*	ARYTAB          
+0154*	BLTU            024A'	BNAMSZ          0267I'	BSERR           
+00FF 	BUFLEN          0216*	CHRGTR          000E 	CLMWID          
+026D'	CMPNAM          024F'	CNOMAT          0127*	COMPT2          
+011E*	COMPTR          000F 	CONTO           0005 	CPMENT          
+0000 	CPMWRM          0080 	DATPSC          0000 	DBLTRN          
+02FB*	DCOMPR          025B*	DDERR           008A*	DEFTBL          
+0009I'	DIM             0000'	DIMCON          02A0*	DIMFLG          
+0215'	DOCHRT          0320'	DONMUL          0268*	ERRBS           
+0000*	ERRDD           026B*	ERROR           0223I'	ERSFIN          
+0192*	FAC             01A3*	FACLO           0000*	FCERR           
+0323'	FINNOW          0176'	FINPTR          0191'	FINZER          
+02EE'	GETDEF          0296*	GETSTK          019A*	GETYPR          
+0090'	HAVTYP          032BI'	IADAHL          01AD'	INDLOP          
+02F3'	INLPNM          01EA*	INTIDX          01A7'	ISARY           
+0014*	ISLET           0051*	ISLET2          0363'	ISMAT2          
+0038'	ISSEC           0050 	LINLN           01F0'	LNGNAM          
+0229'	LOPFDA          00E6'	LOPFND          02A4'	LOPPTA          
+00C9'	LOPTOP          01DA'	LPLNAM          01C0'	LPPSNM          
+0084 	LPTLEN          0349'	MATSUB          0003 	MD.RND          
+0001 	MD.SQI          0002 	MD.SQO          034C*	NAMBUF          
+0338*	NAMCNT          0028 	NAMLEN          01E4*	NAMTMP          
+00DF'	NFINPT          0249'	NMARY1          00ACI'	NOARYS          
+00B2*	NOFUNS          0066'	NOSEC           02B6'	NOTDIM          
+0281'	NOTFDD          00F5'	NOTFNS          00DE'	NOTIT1          
+0334'	NPUTSB          0187'	NTFPRT          001D 	NUMLEV          
+000A 	NUMTMP          02C9*	OMERR           01FD'	OPTB0           
+02A9*	OPTVAL          00BF*	PARM1           02B4'	POPDIM          
+01A5'	POPHR2          0261*	POPHRT          00FE*	PRMFLG          
+00BC*	PRMLEN          000EI'	PTRGET          0013I'	PTRGT2          
+0032'	PTRGT3          0327'	PTRRNZ          02CC*	REASON          
+01A0*	REDDY           0130*	RETVAR          01E9'	SHTNAM          
+033D'	SLPLNG          0351'	SLPMAT          0111'	SMKVAR          
+031B'	SMLVAL          0213*	SNERR           0100'	SNFUNS          
+00E0'	SNOMAT          02CF*	STREND          0003 	STRSIZ          
+00AE*	SUBFLG          0218'	SUBSOK          0006*	SYNCHR          
+0082'	TABTYP          0324*	TEMP2           02DD*	TEMP3           
+0000 	TRUROM          0301*	UMULT           030C*	VALTYP          
+010C'	VARNOT          0115*	VARRET          0107*	VARTAB          
+0050'	VMORC1          003F'	VMORCH          02D1'	ZERITA          
+015F'	ZEROER          
+
+
+
+No Fatal error(s)
+
+
+    0213*	SNERR           0100'	SNFUNS

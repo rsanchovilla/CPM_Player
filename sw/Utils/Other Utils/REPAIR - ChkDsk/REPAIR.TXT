@@ -1,0 +1,103 @@
+                         REPAIR Utility
+
+
+     The REPAIR utility is a menu system that assists in  
+recovering from a damaged directory.  It will allow the user to  
+"put together" file fragments in an attempt to recover whole  
+files.  This utility is intended for use by those who understand  
+the CP/M file system.
+
+     This utility is invoked by REPAIR <source>: <target>:, where  
+<source> is the disk with the damaged directory, and <target> is  
+the disk where recovered files can be written.  This utility will  
+not write to the <source> disk, only the <target> disk.  When the  
+utility is first invoked, there is an option to initialize.  This  
+will create two structures.  The first is a list of all available  
+data groups (the term group here is used to specify allocation  
+group).  This list is maintained in sorted order.  The first  
+level of sort is by file name.  All groups not assigned to a file  
+are assigned to the file " Unnamed".  The groups assigned to file  
+" Unnamed" are sorted in order of the CRC value of the group,  
+this will place identical groups next to one another.
+
+     The second structure is a table of file names.  This will be  
+initialized to have the two special files " Unnamed" and " junk".   
+These two files are special, and can not be written.  If the  
+directory of the <source> device contains partial information,  
+then this inforamation will be used to make entries in this  
+table, and to assign groups to the file in the proper order.
+
+     The main menu also includes options to "classify" and  
+"create files".  These will present menus with display of group  
+content to facilitate creation of "files", based on file  
+fragments.  These "files" can then be written to the target  
+device.  The intent of the "classify" option was to easily walk  
+through the groups in the " Unnamed" file and assign them to  
+named files.  The file " junk" is provided as a trash can for  
+unwanted groups.
+
+     The "create files" option will allow you to walk through the  
+file fragments, either in sort order, numerical order, or random  
+order, and place these fragments in sequence.
+
+     The other main options are self expainitory.  You can write  
+out the data structure (actually the two data structures) to a  
+file to allow the process to be interrupted and continued at a  
+later time.
+
+
+                  File Manipulation Windows
+
+     Whenever the reapir utility is in the "classify" or "create  
+files" mode, the screen is divided into three windows.  The  
+upper-most window (the command window) has two lines.  The first  
+line is used for input, the second one for error messages.  There  
+are two windows directly below this of ten lines each.  The upper  
+of these windows is defined as "window-1" and the lower, "window- 
+2".  Between the command window and window-1, there is the base  
+command input prompt.  The cursor will reside at this location  
+when waiting for a command input.
+
+     When the system is in "classify" mode, the upper window will  
+be a "file display" window, and the lower window will be a "group  
+display" window.  When the system is in "create file" mode, the  
+two windows will both be "group display", but the "file display"  
+can be toggled.  Let's look at these menus in more detail.   
+Although the menus are almost the same in the two modes, there  
+are additional capabilities in the "create file" mode of the  
+system.
+
+                        Create Mode Menu
+
+ N  Add name to this group         G  Goto Group            F  goto File
+^C  Page down one screen           +  Next Group (number)  ^F  Next Group
+^R  Page up one screen             -  Prev Group (number)  ^A  Prev Group
+^QC Page to bottom of buffer      
+^QR Page to top of buffer
+ D  toggle Display                ^W  Write file group
+ S  Switch to alternate screen     X  Return to main menu
+
+
+                       Classify Mode Menu
+
+ N  Add name to this group         G  Goto Group            F  goto File
+^C  Page down one screen           +  Next Group (number)  ^F  Next Group
+^R  Page up one screen             -  Prev Group (number)  ^A  Prev Group
+^QC Page to bottom of buffer      
+^QR Page to top of buffer
+ A  Add group 2 following group 1  P  Peruse file          ^N  File Name disp
+ D  toggle Display                ^W  Write file group
+ S  Switch to alternate screen     X  Return to main menu
+
+
+                      File Table Mode Menu
+
+ N  Add file name                  R  Remove file name
+^C  Page down
+^R  Page up
+^QC Page to last file
+^QR Page to first file
+ X  eXit                           S  Switch to alternate screen
+
+
+

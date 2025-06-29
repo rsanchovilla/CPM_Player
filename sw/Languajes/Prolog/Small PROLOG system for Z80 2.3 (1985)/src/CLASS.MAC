@@ -1,0 +1,280 @@
+
+; ===========================================================
+; CLASS.Z80
+;	predicates, classifiers and tag-movers for E-Prolog
+;	June 22, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+
+;BOOLEAN
+;atomp(p)
+;  char * p;
+;  {
+;  return (nelistp(p) && symbp(first(p)));
+;  }
+ATOMP::
+	PUSH	HL
+	CALL	NELP
+	JP	Z,POPF
+	CALL	@LEFT
+	CALL	SYMBP
+	POP	HL
+	RET
+
+;BOOLEAN
+;clausep(p)
+;  char * p;
+;  {
+;  return (nelistp(p) && atomp(first(p)));
+;  }
+CLP::
+	PUSH	HL
+	CALL	NELP
+	JP	Z,POPF
+	CALL	@LEFT
+	CALL	ATOMP
+	POP	HL
+	RET
+
+;BOOLEAN
+;listp(p)
+;  char * p;
+;  {
+;  return (p == empty || nelistp(p));
+;  }
+LISTP::
+	PUSH	HL
+	CALL	NELP
+	JP	NZ,POPT
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JP	Z,POPT
+	JP	POPF
+
+;BOOLEAN
+;nelistp(p)
+;  char * p;
+;  {
+;  return (hbot <= p && p < hfree);
+;  }
+NELP::
+	PUSH	HL
+	LD	DE,(STOP##)
+	CALL	CPHL##
+	JP	C,POPF
+	LD	DE,(HFREE##)
+	CALL	CPHL##
+	JP	NC,POPF
+	JP	POPT
+
+;BOOLEAN
+;numbp(p)
+;  char * p;
+;  {
+;  return (0 <= p && p < sbot);
+;  }
+NUMBP::
+	PUSH	HL
+	LD	DE,(SBOT)
+	CALL	CPHL##
+	JP	C,POPT
+	JP	POPF
+
+;BOOLEAN
+;substp(x)
+;  /* distinguish (SUBST *) from (SEXPR *) in SUBVAL */
+;  SUBVAL * x;
+;  {
+;  return varp(x->vname);
+;  }
+SUBSTP::
+	PUSH	HL
+	CALL	@VNAME
+	CALL	VARP
+	POP	HL
+	RET
+
+;BOOLEAN
+;symbp(p)
+;  char * p;
+;  {
+;  return (sbot <= p && p < sfree);
+;  }
+SYMBP::
+	PUSH	HL
+	LD	DE,(SBOT##)
+	CALL	CPHL##
+	JP	C,POPF
+	LD	DE,(SFREE##)
+	CALL	CPHL##
+	JP	NC,POPF
+	JP	POPT
+
+;BOOLEAN
+;varp(p)
+;  SYMBOL * p;
+;  {
+;  return (symbp(p) && (p->string[0] == '?'));
+;  }
+VARP::
+	PUSH	HL
+	CALL	SYMBP
+	JR	Z,POPF
+	CALL	@STR
+	LD	A,(HL)
+	CP	'?'
+	JR	Z,POPT
+	JR	POPF
+POPT:	LD	A,1
+	OR	A
+	POP	HL
+	RET
+POPF:	XOR	A
+	POP	HL
+	RET
+
+; ------------ indirect reference routines ----------------
+
+INDIR::
+	LD	A,(HL)
+	INC	HL
+	LD	H,(HL)
+	LD	L,A
+	RET
+@LINDIR:
+	PUSH	HL
+	ADD	HL,BC
+LINDIR::
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+	POP	HL
+	RET
+@INDIR:	ADD	HL,DE
+	JR	INDIR
+@IND0	EQU	INDIR
+@IND2:	LD	DE,2
+	JR	@INDIR
+@IND4:	LD	DE,4
+	JR	@INDIR
+@IND6:	LD	DE,6
+	JR	@INDIR
+@LIND0:	LD	BC,0
+	JR	@LINDIR
+@LIND2:	LD	BC,2
+	JR	@LINDIR
+@LIND4:	LD	BC,4
+	JR	@LINDIR
+@LIND6:	LD	BC,6
+	JR	@LINDIR
+
+; for (SYMBOL *) or VARIABLE
+	PUBLIC	@ADDR,@LPTR,@RPTR,@LADDR,@LLPTR,@LRPTR,@STR
+@ADDR	EQU	@IND0
+@LPTR	EQU	@IND2
+@RPTR	EQU	@IND4
+@LADDR	EQU	@LIND0
+@LLPTR	EQU	@LIND2
+@LRPTR	EQU	@LIND4
+@STR:	LD	DE,6	; pointer
+	ADD	HL,DE
+	RET
+
+; for (NODE *) or PAIR
+	PUBLIC	@LEFT,@RIGHT,@LLEFT,@LRIGHT
+@LEFT	EQU	@IND0
+@RIGHT	EQU	@IND2
+@LLEFT	EQU	@LIND0
+@LRIGHT	EQU	@LIND2
+
+; for (SUBST *) or LSUBST
+	PUBLIC	@VNAME,@BACK,@FORW,@LVNAME,@LBACK,@LFORW
+@VNAME	EQU	@IND0
+@BACK	EQU	@IND2
+@FORW	EQU	@IND4
+@LVNAME	EQU	@LIND0
+@LBACK	EQU	@LIND2
+@LFORW	EQU	@LIND4
+
+; for (SEXPR *)
+	PUBLIC	@EXPR,@SLIST,@LEXPR,@LSLIST
+@EXPR	EQU	@IND0
+;@BACK as above
+@SLIST	EQU	@IND4
+@LEXPR	EQU	@LIND0
+;@LBACK as above
+@LSLIST	EQU	@LIND4
+
+; for (ALPHASTATE *)
+	PUBLIC	@PRED,@XBACK
+@PRED	EQU	@IND0
+XPRED::	LD	L,(IX+0)
+	LD	H,(IX+1)
+	RET
+XGOAL::	LD	L,(IX+2)
+	LD	H,(IX+3)
+	RET
+XDATB::	LD	L,(IX+4)
+	LD	H,(IX+5)
+	RET
+XBACK::	LD	L,(IX+6)
+	LD	H,(IX+7)
+	RET
+@XBACK	EQU	@IND6
+XLPRED::
+	LD	(IX+0),L
+	LD	(IX+1),H
+	RET
+XLGOAL::
+	LD	(IX+2),L
+	LD	(IX+3),H
+	RET
+XLDATB::
+	LD	(IX+4),L
+	LD	(IX+5),H
+	RET
+XLBACK::
+	LD	(IX+6),L
+	LD	(IX+7),H
+	RET
+
+; for (BETASTATE *)
+YPRED::	LD	L,(IY+0)
+	LD	H,(IY+1)
+	RET
+YASS::	LD	L,(IY+2)
+	LD	H,(IY+3)
+	RET
+YLPRED::
+	LD	(IY+0),L
+	LD	(IY+1),H
+	RET
+YLASS::	LD	(IY+2),L
+	LD	(IY+3),H
+	RET
+YSUBST:: PUSH	IY	; pointer
+	POP	HL
+@SUBST:: INC	HL
+	INC	HL
+	INC	HL
+	INC	HL
+	RET
+
+	END
+

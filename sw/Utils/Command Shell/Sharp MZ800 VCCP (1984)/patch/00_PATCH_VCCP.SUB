@@ -1,0 +1,19 @@
+; assemble VLOAD: it loads original VCCP.COM (VCCP-ORG.COM)
+; that only runs on sharp MZ-800 personal CP/M, patches it
+; so it can be run on any VT100 generic terminal, and 
+; creates a new patched version named VCCP.COM 
+; 
+; do not include the .ASM extension in param source filename
+; initial clean up
+ERA VLOAD.REL
+ERA VLOAD.TXT
+ERA VLOAD.COM
+; assemble and generate listing file
+M80 VLOAD,VLOAD.TXT=VLOAD.ASM /Z/M
+L80 VLOAD,VLOAD/N/E
+ERA VLOAD.REL
+; build new program concatenating the loader and the original program
+; if the file to concatenate is not .COM, add the [O] option to force a binary copy
+PIP B:VCCP.COM=VLOAD.COM,C:VCCP-ORG.COM
+; delete loader, not necessary anymore
+ERA VLOAD.COM

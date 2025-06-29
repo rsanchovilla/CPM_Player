@@ -1,0 +1,511 @@
+h10092
+s 00499/00000/00000
+d D 1.1 83/03/15 21:12:35 tes 1 0
+c date and time created 83/03/15 21:12:35 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  ddadvn.rat          local   06/09/82  11:21
+subroutine ddadvn (contrl, intin, rlin, intout, rlout)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver for Northstar Advantage         #
+#                                                                      #
+#     Input Parameters:                                                #
+#            contrl(1-3) - An integer array with following information #
+#                          contrl(1) - opcode for driver function      #
+#                          contrl(2) - length of integer array intin   #
+#                          contrl(3) - length of real input array rlin #
+#                                                                      #
+#            intin   -     Array of integer input parameters           #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters:                                               #
+#            contrl(4-6) - contrl(4) - length of integer array intout  #
+#                          contrl(5) - length of integer array rlout   #
+#                          contrl(6) - count of any other control parms#
+#                                                                      #
+#             rlout  -     Array of integer output parameters          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             Dladvn - draw line on Advantage                          #
+#             Daadvn - draw dashed line on Advantage                   #
+#             Dtadvn - output text on Advantage                        #
+#             Dmadvn - output marker on Advantage                      #
+#             Dbadvn - output filled bar on Advantage                  #
+#             Deadvn - erase screen on Advantage                       #
+#             Dpadvn - draw polygon on Adbvantage                      #
+#             Diadvn - initialize Advantage                            #
+#             Dgadvn - GIN on Advantage                                #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+# local defines
+define(X_LIMITS_ADVANTAGE,639.)              # display surface width
+define(Y_LIMITS_ADVANTAGE,239.)              # display surface height
+ 
+integer contrl(1),intin(1),intout(1)
+real rlin(1),rlout(1)
+ 
+integer opcode, i, j, gimnmx, xypts(42), ix1, iy1, ix2, iy2, ymax
+real chrwid, chrhgt
+ 
+include mgscom
+ 
+equivalence (ix1, xypts(1)), (iy1, xypts(2)), (ix2, xypts(3)), (iy2, xypts(4))
+ 
+#   The Advantage character base cell is 8x10 units. The character cell
+#   includes intercharacter gap and includes interline gap.
+#   Since there are 2 pixels per vertical scanline, we must report the
+#   height to be twice the actual height.
+#
+ 
+#            chrwid = 8./X_LIMITS_ADVANTAGE
+data chrwid /0.0125/
+ 
+#            chrhgt = 20./X_LIMITS_ADVANTAGE
+data chrhgt /0.03125/
+ 
+data ymax /239/		# Maximum y-coordinate in integer space
+ 
+opcode=contrl(OPCODE)
+ 
+#
+#  opcode move
+#
+if (opcode == MOVE) {
+   zdxpos = rlin(1)      # Save the current position
+   zdypos = rlin(2) / 2.0
+   }
+ 
+#
+#  opcode draw
+#
+else if  (opcode == DRAW) {
+ 
+   if (ndlntp == 1) {      # Solid line
+      xypts(1) = zdxpos*zdlgax
+      xypts(2) = ymax - int (zdypos*zdlgax)
+      xypts(3) = rlin(1)*zdlgax
+      xypts(4) = ymax - int (rlin(2)*zdlgax / 2.0)
+      call dladvn (xypts)
+      }
+   else                  # Dashed line
+      call daadvn (rlin)
+ 
+   zdxpos = rlin(1)   # Ensure we save the current CP
+   zdypos = rlin(2) / 2.0
+ 
+   }
+ 
+#
+#  opcode text
+#
+else if (opcode == TEXT) {
+   i = zdxpos*zdlgax
+   j = ymax - int (zdypos*zdlgax)
+   call dtadvn (i, j, contrl(INTEGER_IN_LENGTH), intin)
+   }
+ 
+#
+#  opcode marker
+#
+else if (opcode == MARKER) {
+ 
+   itemp = gimnmx (intin(1), 1, 5)  # device emulates 5 markers
+ 
+   call dmadvn (itemp, rlin)  # Output marker
+   }
+ 
+#
+#  opcode filled bar
+#
+else if (opcode == BAR_FILL) {
+   xypts(1) = rlin(1)*zdlgax
+   xypts(2) = ymax - int (rlin(2)*zdlgax / 2.0)
+   xypts(3) = rlin(3)*zdlgax
+   xypts(4) = ymax - int (rlin(4)*zdlgax / 2.0)
+   call dbadvn (xypts, ndclrf)
+   }
+ 
+#
+#  opcode set polygon edge style
+#
+if (opcode == SET_POLYGON_EDGE_STYLE) {
+   ndedgs = intin(1)
+   }
+ 
+#
+#  opcode polygon
+#
+else if (opcode == POLYGON) {
+   j = intin(1)               # ptr to start of x coordinates
+   k = intin(2)               # ptr to start of y coordinates
+   m = 1
+   for (i=1; i <= contrl(3); i=i+1) {  # convert coordinates to integers
+      xypts(m) = rlin(j) * zdlgax
+      m = m + 1
+      xypts(m) = ymax - int (rlin(k) * zdlgax / 2.0)
+      m = m + 1
+      j = j + 1
+      k = k + 1
+      }
+   call dpadvn (contrl(3), xypts, ndedgs, ndclrf)  # do polygon
+   }
+ 
+#
+#  opcode set fill pattern
+#
+else if (opcode == SET_FILL_COLOR) {
+ 
+   ndclrf = gimnmx (intin(1), 0, 15) # Emulation supports 16 patterns
+   intout(1) = ndclrf
+   }
+ 
+#
+#  opcode text size
+#
+else if (opcode == TEXT_SIZE) {
+   rlout(1) = chrwid           # Device has only 1 character size
+   rlout(2) = chrhgt
+   }
+ 
+#
+#  opcode line style
+#
+else if (opcode == LINESTYLE) {
+   ndlntp = gimnmx (intin(1), 1, 5)       # Emulation supports 5 line
+                                          #   styles, 1-5
+   intout(1) = ndlntp     # Inform upper level of style selected
+   }
+ 
+#
+#    opcode new_frame
+#
+else if (opcode == NEW_FRAME) {
+ 
+   call deadvn
+   }
+ 
+#
+#    opcode get point
+#
+else if (opcode == GET_POINT) {
+   ix1 = zdxpos * zdlgax
+   iy1 = ymax - int (zdypos * zdlgax)
+   call gdevot (BELL)                                  # Ring bell
+   call dgadvn (ix1, iy1, ix2, iy2, intout(1))
+   rlout(1) = float(ix2) / zdlgax                      # Convert to NDC space
+   rlout(2) = float (ymax - iy2) * 2.0 / zdlgax
+   contrl(4) = 1
+   }
+ 
+#
+# opcode set_device_parameters
+#
+else if (opcode == SET_DEVICE_PARAMETERS) {
+ 
+      # set up device capability array
+ 
+      devcap(TEXT_CAP) = YES     # Text capability
+      devcap(LINESTYLE_CAP) = 5  # Capable of 5 different linestyle
+      devcap(TEXT_SIZE_CAP) = 1  # Capable of 6 text sizes
+      devcap(GIN_CAP) = YES      # Capable of GIN
+      devcap(MARKER_CAP) = 5     # Capable of 5 different markers
+      devcap(BAR_FILL_CAP) = 16  # Capable of 16 bar fills
+      devcap(POLYGON_FILL_CAP) = YES  # Capable of filled polygons
+ 
+      # Initialize Device Driver globals
+ 
+      zdlgax = X_LIMITS_ADVANTAGE  # Set the length of the longest axis
+      zdxlng = 1.0                 # Set x and y axis lengths in NDC units
+      zdylng = 0.750               # x = X_LIMITS_ADVANTAGE
+                                   # y = Y_LIMITS_ADVANTAGE/X_LIMITS_ADVANTAGE
+                                   # Report size as 640 x 480 even though only
+                                   # 640 x 240 addressable points, since
+                                   # Physical dimensions of screen have that
+                                   # aspect ratio.
+      ndlntp = 1
+      ndclrf = 1
+      ndedgs = 1                   # default is outlined polygons
+      zdxpos = 0.0
+      zdypos = 0.0
+ 
+      call diadvn                  # use full screen on Advantage
+      }
+ 
+#
+#     inquire screen size
+#
+else if (opcode == INQUIRE_SCREEN_SIZE) {
+      rlout(1) = zdxlng
+      rlout(2) = zdylng
+      rlout(3) = X_LIMITS_ADVANTAGE
+      }
+ 
+#
+#  opcode escape
+#
+else if (opcode == ESCAPE) {
+      j = contrl(INTEGER_IN_LENGTH)
+      }
+#
+#     stop graphics
+#
+else if (opcode == STOP_GRAPHICS) {
+      }
+ 
+return
+end
+#-t-  ddadvn.rat          local   06/09/82  11:21
+#-h-  daadvn.rat          local   03/24/82  11:21
+subroutine daadvn (rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver dash emulation for Northstar    #
+#               Advantage                                              #
+#                                                                      #
+#     Input Parameters:                                                #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             dladvn - Draw line on Northstar Advantage                #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+#local defines
+define (DASH_INCREMENT,.015625)
+ 
+real rlin(1)
+ 
+integer actary(16), action, j, k, kk, opcode
+integer ix1, ix2, iy1, iy2, xypts(4), ymax
+real dx, dy, dxinc, dyinc, px1, py1, px2, py2,
+     dr, p1(2), x, y
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       p1(1) :: x
+#       p1(2) :: y
+#       xypts(1) :: ix1
+#       xypts(2) :: iy1
+#       xypts(3) :: ix2
+#       xypts(4) :: iy2
+ 
+equivalence (p1(1), x), (p1(2), y)
+equivalence (xypts(1), ix1) , (xypts(2), iy1), (xypts(3), ix2), (xypts(4), iy2)
+ 
+ 
+#action definitions for line styles 2-5: 0=move, 1=draw, 2=point
+data actary / 2, 2, 2, 2,  2, 0, 1, 2,  0, 1, 0, 1,  0, 1, 1, 0 /
+ 
+data ymax /239/		# maximum y-coordinate
+ 
+   dx = rlin(1) - zdxpos   # determine the distance from the current position
+   dy = rlin(2) / 2.0 - zdypos
+   dr = sqrt(dx**2 + dy**2)
+   if (abs (dr) <= zeps) return     # return if already at point
+   dxinc = (dx/dr)*DASH_INCREMENT   # normalize dx and dy
+   dyinc = (dy/dr)*DASH_INCREMENT   #   and scale to incremental value
+   plngth = abs(dy)
+   pinc = abs(dyinc)
+   if (abs(dx) > abs(dy)) {
+      plngth = abs(dx)
+      pinc = abs(dxinc)
+      }
+   x2 = zdxpos
+   y2 = zdypos
+   ix1 = x2*zdlgax
+   iy1 = ymax - int (y2*zdlgax)
+   j = 0
+   k = (ndlntp-2)*4 + 1
+   for (p=0.0; p<=plngth; p=p+pinc) {
+      if (j > 3) {
+         j = 0
+         call gdevot (NEWLINE)   #flush output buffer
+         }
+      kk = k + j
+      action = actary(kk)
+      if (action == 0) {  # Move
+         ix1 = x2*zdlgax
+         iy1 = ymax - int (y2*zdlgax)
+         }
+      else {              # Draw
+         if (action != 1) {   # Action is point
+            ix1 = x2*zdlgax
+            iy1 = ymax - int (y2*zdlgax)
+            }
+         ix2 = x2*zdlgax
+         iy2 = ymax - int (y2*zdlgax)
+         call dladvn (xypts)
+         }
+      x2 = x2 + dxinc
+      y2 = y2 + dyinc
+      j = j + 1
+      }
+   if (j > 3) j = 0
+   kk = k + j
+   if (actary(kk) == 1) {
+      ix2 = rlin(1)*zdlgax
+      iy2 = ymax - int (rlin(2)*zdlgax / 2.0)
+      call dladvn (xypts)
+      }
+ 
+   return
+end
+#-t-  daadvn.rat          local   03/24/82  11:21
+#-h-  dmadvn.rat          local   03/24/82  11:21
+subroutine dmadvn (marker,rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: Place a marker at the current location on Northstar    #
+#               Advantage                                              #
+#                                                                      #
+#     Input Parameters:                                                #
+#            marker - marker symbol index (1-5)                        #
+#            rlin   - x/y location for marker                          #
+#     Output Parameters:                                               #
+#            none                                                      #
+#                                                                      #
+#     Routines Called:                                                 #
+#            dladvn - Draw line on Northstar Advantage                 #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+define (MARK_PERIOD,1)
+define (MARK_PLUS,2)
+define (MARK_STAR,3)
+define (MARK_O,4)
+define (MARK_X,5)
+define (FULLSZ,6)	# Standard marker size
+define (HALFSZ,3)	# Half of standard marker size
+define (FPERSZ,2)	# Marker size for period
+define (HPERSZ,1)	# Half of period marker size
+ 
+integer marker
+real rlin(1)
+ 
+integer xypts(4), ix1, ix2, iy1, iy2, xmax, ymax, ifsize, ihsize
+real x1, x2, y1, y2
+real rxy(2), rxy1, rxy2
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       rxy(1) :: rxy1
+#       rxy(2) :: rxy2
+ 
+equivalence (rxy(1), rxy1), (rxy(2), rxy2)
+ 
+data xmax /639/		# Maximum x-coordinate
+data ymax /239/		# Maximum y-coordinate
+ 
+   if (marker == MARK_PERIOD) {
+      ifsize = FPERSZ
+      ihsize = HPERSZ
+      }
+   else {
+      ifsize = FULLSZ
+      ihsize = HALFSZ
+      }
+ 
+   ix1 = int (rlin(1) * zdlgax) - ihsize	# clip marker to device limits
+   ix2 = ix1 + ifsize
+   iy1 = int (rlin(2) * zdlgax / 2.0) - ihsize
+   iy2 = iy1 + ifsize
+   if ((min0 (ix1,iy1) < 0) | (ix2 > xmax) | (iy2 > ymax)) return
+ 
+   iy1 = ymax - iy1
+   iy2 = ymax - iy2
+ 
+   # output appropriate marker centered on location
+ 
+   if (marker == MARK_PERIOD | marker == MARK_O) {
+      xypts(1) = ix1
+      xypts(2) = iy1
+      xypts(3) = ix2
+      xypts(4) = iy1
+      call dladvn (xypts)
+      xypts(1) = ix2
+      xypts(4) = iy2
+      call dladvn (xypts)
+      xypts(2) = iy2
+      xypts(3) = ix1
+      call dladvn (xypts)
+      xypts(1) = ix1
+      xypts(4) = iy1
+      call dladvn (xypts)
+      }
+   else {
+      if (marker == MARK_X | marker == MARK_STAR) {
+         xypts(1) = ix1
+         xypts(2) = iy1
+         xypts(3) = ix2
+         xypts(4) = iy2
+         call dladvn (xypts)
+         xypts(1) = ix2
+         xypts(3) = ix1
+         call dladvn (xypts)
+         }
+      if (marker == MARK_PLUS | marker == MARK_STAR) {
+         xypts(1) = ix1
+         xypts(2) = iy1 - ihsize
+         xypts(3) = ix2
+         xypts(4) = xypts(2)
+         call dladvn (xypts)
+         xypts(1) = ix1 + ihsize
+         xypts(2) = iy1
+         xypts(3) = xypts(1)
+         xypts(4) = iy2
+         call dladvn (xypts)
+         }
+      }
+   zdxpos = rlin(1)
+   zdypos = rlin(2) / 2.0  # Return the cursor position to the original value
+ 
+   return
+end
+#-t-  dmadvn.rat          local   03/24/82  11:21
+E 1

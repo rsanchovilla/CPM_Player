@@ -1,0 +1,468 @@
+.pl68
+..22.1.1990/ 31.1.90
+.pn121
+.op
+.po10
+.hePASCAL                        #              Sprachbeschreibung
+4.11. Sonstige Sprachelemente und Besonderheiten
+
+4.11.1. HEAP- und STACK-Manipulationen
+--------------------------------------
+
+F{ò  diå Speicherunç dynamischeò Variableî ben>tigô maî deî HEAP¬ 
+diå Halde®  Siå wirä durcè diå Standardprozedureî  NEW¬  DISPOSE¬ 
+MARË unä RELEASE¬ GETMEÍ unä FREEMEÍ gesteuert® Zuí Programmstarô 
+wirä  HEAPPTÒ auæ deî Anfanç deó freieî  Speicherbereiches¬  alsï 
+auæ  daó  erstå Bytå nacè deí Objektcodå  gestellt®  W}hrenä  deò 
+Aufl>sunç  voî Ausdr{ckeî unä f{ò diå ]bergabå voî Parameterî  aî 
+Prozedureî   unä   Funktioneî  wirä  f{ò  diå   Speicherunç   deò 
+Zwischenergebnisså  deò  CPU-Stacë  ben>tigt®  Aucè  aktivå  FOR-
+Statementó  ben>tigeî deî Stacë unä verwendeî eiî Wort®  Deò CPU-
+Stacë   wirä   zuí  Programmbeginî  auæ  daó  Endå   deó   freieî 
+Speicherbereiches gestellt.
+Deò Rekursions-Stacë wirä nuò f{ò rekursivå Prozedureî  ben>tigt¬ 
+d.h®  Prozedureî uîd Funktionen¬ diå miô deò passiveî A-Compiler-
+Direktivå   (*JA-*©  {bersetzô  werden®   Beé  Eintritô  iî  einå 
+rekursivå Prozeduò odeò Funktioî kopierô daó Unterprogramí seineî 
+Arbeitsbereicè  iî deî Rekursions-Stack¬   unä nacè R{ckkehò  auó 
+deò   Prozeduò   wirä   deò   gesamtå   Arbeitsbereicè   iî   deî 
+urspr{nglicheî Statuó zur{ckgespeichert®  Deò Standardanfangswerô 
+voî RECURPTÒ zõ Programmbeginî liegô 1K(J400© Bytå unteò deí CPU-
+Stackpointer.
+      
+Die vordeklarierten Variablen
+
+  HEAPPTR:     Heap-Pointer
+  RECURPTR:    Rekursions-Stackpointer und
+  STACKPTR:    CPU-Stackpointer
+
+erlaubeî deí Programmiereò diå Positioî deó Heağ unä deó Stacë zõ 
+steuern. Der Typ dieser Variablen ist INTEGER.
+Maî solltå beachten¬ da\ HEAPPTÒ unä RECURPTÒ ií gleicheî Kontext 
+wiå  jedå anderå Variablå verwendeô werdeî  k>nnen¬  w}hrenä  deò 
+STACKPTÒ nuò iî Ergibtanweisungeî unä Ausdr{ckeî verwendeô werdeî 
+darf.
+Werdeî dieså Variableî manipuliert¬  sï isô darauæ zõ achten¬ da\ 
+sie auch im freien Speicher liegen und
+
+  HEAPPTR    RECURPTR
+
+ist®   Beachteô   maî  dieó  nicht¬   k>nneî  Fehleò   entstehen® 
+Ver}nderungeî  deó Heağ unä deó Stacë d{rfeî niemaló durchgef{hrô 
+werden¬  wenî siå geradå verwendeô werden®  Daó Systeí pr{fô  beé 
+jedeí  Aufruæ  deò  Prozeduò  NE×  unä  jedeí  Eintritô  iî  einå 
+rekursivå  Prozeduò  odeò  Funktion¬  oâ eó  zõ  eineò  Kollisioî 
+zwischeî Heağ unä Rekursions-Stacë kommt¬  d.h.¬ eó wirä gepr{ft¬ 
+ob HEAPPTR kleiner als RECURPTR ist.
+Isô daó nichô deò Fall¬  findeô einå Kollisioî statt¬ unä eó wirä 
+ein Laufzeitfehler angezeigt.
+
+Zõ beachteî isô aber¬  da\ niemaló gepr{fô wird¬ oâ deò CPU-Stacë 
+deî Rekursions-Stacë {berschreibt®  Dieó kanî auftreten¬ wenî eiî 
+rekursives Unterprogramm sich selbst etwa 300-400 mal aufruft.
+.paŠWirä  dieó jedocè iî eineí Programí erwartet¬  mu\  daó  folgendå 
+Statemenô zõ  Beginî deó Programmblockó ausgef{hrô werden®  Damiô 
+wirä  deò Rekursions-Stackpointeò tiefeò gelegô unä eiî  gr>\ereò 
+CPU-Stacë aufgebaut.
+
+  RECURPTR:= STACKPTR - 2 * MaxTiefe - 512;
+
+MaxTiefå  isô  diå maximalå Tiefå deò  Call-Rufå  deó  rekursiveî 
+Unterprogrammes®  Zus}tzlicè  werdeî etwá 51² Byteó f{ò diå ]ber
+tragunç  deò Parameteò unä Zwischenergebnisså w}hrenä deò  Aufl>
+sunç deò Ausdruckå ben>tigt.
+
+
+4.11.2. Optimierung der ARRAY-Indizes
+-------------------------------------
+
+Diå  X-Compiler-Direktivå erlaubô deí Programmiereò  festzulegen¬ 
+oâ  deò  Aufbaõ deò  Array-Indizeó bez{glicè  deò  Ausf{hrungsge
+schwindigkeiô  odeò  deò Speicherplatzzuordnunç optimierô  werdeî 
+soll® Deò Standard-Moduó isô aktiö (*JX+*)¬ daó bedeuteô Optimie
+runç  bez{glicè Ausf{hrungsgeschwindigkeit®  Beé inaktiveí  Moduó 
+(*JX-*© wirä deò Codå minimiert.
+
+
+4.11.3. BDOS/BIOS-Rufe
+----------------------
+
+F{ò  Zweckå deó Aufrufó voî MicroDOS-Routineî benutzô PASCAÌ zweé 
+Standardprozedurenº  BDOÓ unä BIOÓ sowiå vieò Standardfunktionenº 
+BDOS¬ BDOSHL¬ BIOS¬ BIOSHL.
+
+BDOS-Prozedur und -Funktion
+
+Syntax: bdos ( n<)
+        bdos ( n<, p<)
+        bdoshl ( n<)
+
+Deò  Aufruæ isô aló Prozeduò odeò Funktioî zuò Nutzunç  deó  BDOÓ 
+voî  MicroDOÓ  m>glich®  î isô diå Funktionsnummer¬  diå  iî  daó 
+Registeò  Ã  geladeî wird¬  ğ deò  Aufrufparameter¬  deò  iî  daó 
+Registerpaaò  DÅ geladeî wird®  Diå R{ckgabewertå (meisô Registeò 
+A© werdeî durcè Aufruæ aló Funktioî verf{gbaò ií Registeò A®  Isô 
+diå R{ckgabå ií Registeò HÌ vorgesehen¬ haô deò Aufruæ miô BDOSHÌ 
+zõ erfolgen®  Diå Anwendunç dieseò vordefinierteî Funktioneî  zuò 
+Ausgabå  voî Dateinameî deò Direktorù ií aktuelleî Laufwerë zeigô 
+diå folgendå Prozedur:
+
+  PROCEDURE DisplayDirectory;
+  TYPE Block = RECORD
+        User     : BYTE;
+        Filename : ARRAY^1..8~ OF CHAR;
+        Filetyp  : ARRAY^1..3~ OF CHAR;
+        RestFCB  : ARRAY^1..20~ OF BYTE;
+       END;
+  VAR FCB    : ARRAY^0..31~ OF BYTE;     (*Muster-FCB*)
+      DMA    : ARRAY^0..3~ OF Block;    (*Puffer*)
+      Index  : BYTE;                    (*Pufferindex*)Š  BEGIN
+    fillchar(FCB,12,'?');               (*Suchmuster setzen*)
+    FCB^0~   := 0;                      (*nur akt. Userbereich*)
+    FCB^12~  := 0;                      (*ohne Extentbloecke*)
+    bdos(J1A,addr(DMA));                (*Pufferbereich festl.*)
+    Index := bdos(J11,addr(FCB));       (*erste Eintrag. suchen*)
+    IF Index  < 255 THEN
+      WHILE Index  < 255 DO BEGIN
+      WITH DMA^Index~ DO writeln(Filename,' ',Filetyp);(*Ausg*)
+      Index := bdos(J12);               (*naechst.Eintr.suchen*)          
+    END
+    ELSE writeln ('Keine Eintragung vorhanden');
+  END;                                  (*DisplayDirectory*)
+
+
+BIOS-Prozedur und -Funktion
+
+Syntax: bios ( n<)
+        bios ( n<, p<)
+        bioshl ( n<)
+
+Deò  Aufruæ  isô aló Prozeduò odeò Funktioî zuò direkteî  Nutzunç 
+der Driverroutinen des Laufzeitsystems MicroDOS m>glich.
+Diå  Erl}uterungeî  zõ  BDOÓ  gelteî  sinngem}\®   Einå  m>glichå 
+Anwendunç  zuò  Feststellunç  vorhandeneò  (logischer©  Laufwerkå 
+zeigt die folgende Prozedur:
+
+  FUNCTION LaufwerkVorhanden(Laufwerk: CHAR): BOOLEAN;
+  VAR AktuellesLaufwerk,
+      LaufwerksNummer:    INTEGER;
+      Flag:               BOOLEAN;
+  BEGIN
+    Flag := FALSE;
+    AktuellesLaufwerk := bdos(J19);
+    LaufwerksNummer   := ord(upcase(Laufwerk)) - 65;
+    IF bioshl (J08,LaufwerksNummer)  < 0 THEN Flag := TRUE;
+    bdos(J0E,AktuellesLaufwerk);
+    LaufwerkVorhanden := Flag;
+  END;   (*LaufwerkVorhanden*)
+
+Die Aufrufparameter f{r BDOS und BIOS enth}lt Anhang G.
+
+
+4.11.4. INLINE-Maschinencode
+----------------------------
+
+Daó  PASCAL-Programmiersysteí stellô miô  deî  INLINE-Anweisungeî 
+eineî  Weç zuí direkteî Einf{geî voî Maschinencodå iî deî PASCAL-
+Programmtext zur Verf{gung.
+Einå  INLINE-Anweisunç bestehô auó deí reservierteî Worô  INLINE¬ 
+deí einå odeò mehrerå Konstanten¬ Variablenbezeichneò odeò Bez{gå 
+zuí   Speicherplatzz}hler¬   getrennô  durcè  Schr}gstrichå   unä 
+eingeschlossen in Klammern, folgen.
+
+Syntax:  INLINE-Anweisung<
+
+ŠKonstanteî   aló   Bezeichneò  m{sseî  voí   Tyğ   INTEGEÒ   odeò 
+Konstantenbezeichner sein.
+Konstanteî  erzeugeî  eiî  Code-Byte¬  wenî siå  ií  Bereicè  voî 
+0...25µ (J00...JFF© liegen¬  anderenfalló zweé Byteó iî deí stan
+dardisierteî  umgekehrteî  Byte-Formaô (d.h.¬  daó  niederwertigå 
+Bytå  stehô voò deí h>herwertigeî Byte)®  Isô eiî  Zwei-Byte-Werô 
+gefordert¬  kanî  eiî Ein-Byte-Werô miô <  angepa\ô  werden®  Eiî 
+Zwei-Byte-Werô wirä durcè   auæ eineî Ein-Byte-Werô reduziert.
+Konstantenbezeichneò definiereî immeò zweé Code-Bytes®  Eiî Vari
+ablenbezeichneò  erzeugô  zweé Code-Byteó (ií  umgekehrteî  Byte-
+Format)¬ diå diå Speicheradresseî deò Variableî enthalten.
+Eiî  Bezuç  zuí Speicherplatú bestehô auó eineí  Stern¬  deí  eiî 
+Offseô  folgt¬  daó  auó eineí Plus- odeò Minuszeicheî miô  eineò 
+Integerkonstanteî  besteht®  Eiî Sterî alleiî erzeugô zweé  Code-
+Byteó (ií umgekehrteî Byte-Format)¬  diå diå aktuellå Adresså deó 
+Speicherplatzz}hleró enthalten®  Wenî deí Sterî eiî Offseô folgt¬ 
+danî  wirä  dieseó addierô odeò subtrahiert¬  bevoò  diå  Adresså 
+codierô wird.
+
+Beispiel:
+
+Daó   folgendå  Beispieì  voî  INLINE-Anweisungeî  erzeugô  eineî 
+Maschinencode¬  deò  allå  Zeicheî iî seineí  STRING-Argumenô  iî 
+Gro\buchstaben umwandelt.
+
+  TYPE str255=STRING^255~
+  PROCEDURE Grossschreibung(Var Strg:Str255);
+  BEGIN
+    INLINE (J2A/Strg/            (*     LD   HL,(Strg) *)
+            J46/                 (*     LD   B,(HL)    *)
+            J04/                 (*     INC  B         *)
+            J05/                 (* L1: DEC  B         *)
+            JCA/*+20/            (*     @P   Z,L2      *)
+            J23/                 (*     INC  HL        *)
+            J7E/                 (*     LD   A,(HL)    *)
+            JFE/J61/             (*     CP   'a'       *)
+            JDA/*-9/             (*     @P   C,L1      *)
+            JFE/J7B/             (*     CP   'z'+1     *)
+            JD2/*-14/            (*     @P   NC,L1     *)
+            JD6/J20/             (*     SUB  20H       *)
+            J77/                 (*     LD   (HL),A    *)
+            JC3/*-20);           (*     @P   L1        *)
+  END;                           (* L2: EQU  J         *)
+
+Diå @ump-Anweisunç wirä iî dieseí Beispieì nuò zuò  Demonstratioî 
+der Verwendung des Speicherplatzz}hlers benutzt.
+INLINE-Anweisungeî k>nneî iî eineí Teiì eineó Blockeó miô andereî 
+Anweisungeî  gemischô  werden®  Siå k>nneî allå Registeò deò  CPÕ 
+verwenden.
+Zõ  beachteî  isô jedoch¬  da\ deò Inhalô deó Stackpointeró  (SP© 
+beim Ausgang der gleiche wie beim Eintritt sein mu\.
+Deò  Operationscodå  f{ò  diå INLINE-Anweisunç isô  ií  Anhanç  Ã 
+zusammengestellt.
+.paŠ4.11.5. Nutzergeschriebene I/O-Driver
+-------------------------------------
+
+F{ò  einigå Anwendungeî isô eó f{ò deî  Programmiereò  praktisch¬ 
+seinå eigeneî Ein- unä Ausgabedriveò zõ schreiben¬ d.h® Routinen¬ 
+diå  Ein- unä  Ausgabå  voî Zeicheî zõ  unä  voî externen Ger}teî 
+liefern®  Diå  folgendeî Driveò sinä Teilå deó Programmiersystemó 
+unä  werdeî  voî  Standard-I/O-Driverî  verwendeô  (obgleicè  siå 
+selbsô nichô aló Standard-Prozedureî odeò -Funktioneî  aufgerufeî 
+werden d{rfen):
+
+  FUNCTION   CONST  :  BOOLEAN;
+  FUNCTION   CONIN  :  CHAR;
+  PROCEDURE  CONOUT    (Ch:CHAR);
+  PROCEDURE  LSTOUT    (Ch:CHAR);
+  PROCEDURE  AUXOUT    (Ch:CHAR);
+  FUNCTION   AUXIN  :  CHAR;
+  PROCEDURE  USROUT    (Ch:CHAR);
+  FUNCTION   USRIN  :  CHAR;
+
+Diå  CONST-Routinå wirä durcè diå Funktioî KEYPRESSEÄ aufgerufen® 
+diå CONIN- unä CONOUT-Routineî werdeî durcè diå 'CON:'-¬  'TRM:'- 
+unä 'KBD:'-Ger}te¬ diå LSTOUT-Routinå durcè daó Ger}ô 'LST:'¬ diå 
+Routineî AUXOUÔ unä AUXIÎ durcè daó Ger}ô 'AUX:§ unä diå Routineî 
+USROUT und USRIN durch das Ger}t 'USR:' verwendet.
+
+Standardm}\iç   verwendeî   dieså   Driveò   diå   entsprechendeî 
+Eintrittspunkte des BIOS, d.h.
+
+  CONST     verwendet     CONST
+  CONIN     verwendet     CONIN
+  CONOUT    verwendet     CONOUT
+  LSTOUT    verwendet     LST
+  AUXOUT    verwendet     PUNCH
+  AUXIN     verwendet     READER
+  USROUT    verwendet     CONOUT
+  USRIN     verwendet     CONIN
+              
+Dieså  Zuordnunç kanî jedocè voí Programmiereò  ge}nderô  werden¬ 
+indeí  eò  deî  folgendeî Standardvariableî diå  Adresså  eigeneò 
+Driver-Prozeduren oder Driver-Funktionen zuweist:
+
+    Variable  !  enth}lt die Adresse der Funktion
+  -------------------------------------------------
+  CONSTPTR    !  ConSt Funktion
+  CONINPTR    !  ConIn Funktion
+  CONOUTPTR   !  ConOut Prozedur
+  LSTOUTPTR   !  LstOut Prozedur
+  AUXOUTPTR   !  AuxOut Prozedur
+  AUXINPTR    !  AuxIn Funktion
+  USROUTPTR   !  UsrOut Prozedur
+  USRINPTR    !  UsrIn Funktion
+.paŠEinå voí Nutzeò geschriebenå Driver-Prozeduò odeò Driver-Funktioî 
+mu\ miô deî obeî beschriebeneî Definitioneî {bereinstimmen¬ d.h.¬ 
+eiî CONST-Driveò mu\ einå BOOLEAN-Funktion¬ eiî CONIN-Driveò einå 
+CHAR-Funktioî  seiî  usw®   (I/O-Driveò  vgl®  Handbucè  f{ò  deî 
+Programmierer).
+
+
+4.11.6. INTERRUPT-Behandlung
+----------------------------
+
+Die Einbindung von Interrupt-Routinen ist nicht zul}ssig.
+.paŠ.hePASCAL                        #                  Hilfsprogramme
+5. H i l f s p r o g r a m m e 
+
+5.1. Retten einer editierten Arbeitsdatei nach Systemabsturz
+
+Wenî  diå  Fragå nacè deò erforderlicheî  Sicherunç  eineò  Dateé 
+irrt{mlicè  miô  (N)eiî beantworteô  wurde¬  eiî  Diskettenfehleò 
+erkannô  wirä odeò eiî Sprunç auó deí Testlauæ iî  deî  Warmstarô 
+erfolgte¬  sï isô daó Retteî deó Editorpufferó nocè m>glich® Dazõ 
+dienô daó Hilfsprogramm
+
+  PASRETT.
+
+Eó  solltå  sicè aló COM-Dateé auæ deò  Systemdiskettå  befinden® 
+PASRETÔ   ermittelô  deî  Pufferanfanç  (kanî  durcè  Ladeî  odeò 
+Nichtladeî  voî PASCAL.TXÔ verschiedeî sein© unä daó  Pufferende® 
+Wirä eó nichô gefundeî (z.B®  nacè Kaltstarô odeò eineí Starô voî 
+PASRETT, ohne da\ vorher editiert wurde), erfolgt die Ausschrift
+
+  Arbeitsdatei zerst>rt.
+
+und PASRETT beendet mit 
+
+  Ende PASRETT
+
+diå Arbeit®  Anderenfalló versuchô daó Programm¬  deî  Dateinameî 
+auó  deí  Hauptspeicheò zõ lesen®  Isô deò Namå durcè  Systemein
+wirkungeî odeò deî Anwendeò fehlerhaft¬ erfolgô diå Ausschrift
+
+  Dateiname zerst>rt       
+  Neuer Name:
+
+Voò  deí Nameî kanî eiî Laufwerë angegebeî werden®  Isô deò  Namå 
+fehlerfreé  odeò wurdå neõ eingegeben¬  setzô PASRETÔ daó Disket
+tensysteí zur{cë unä versuchô auæ diå Diskettå zõ schreiben® Einå 
+vorhandene  Dateé gleicheî Namenó wirä dabeé {berschrieben®  Kanî 
+auó  technischeî Gr{ndeî (Diskettå voll¬  Laufwerë nichô  bereit© 
+nichô geschriebeî werden¬ erfolgô diå Ausschrift
+
+  Ausgabe auf Diskette nicht m>glich.
+  Anderes Laufwerk oder ^ET~ nach Diskettenwechsel.
+
+Diå   Diskettå  isô  zõ  wechselî  unä  ^ET~  odeò  eiî   andereò 
+Laufwerksname mit oder ohne Doppelpunkt einzugeben.
+Der bearbeitete Quelltext ist auf dem Bildschirm sichtbar.
+
+PASRETT quittiert die erfolgreiche Arbeit mit
+
+  Datei  Laufwerk<:  Filename< mit  Zahl< Byte gesichert
+
+und beendet die Arbeit mit 
+
+  Ende PASRETT.
+.paŠPASRETÔ  kanî  nichô unteò Steuerunç deó  Systemkernó  ausgef{hrô 
+werden®  Daó isô aucè nichô erforderlich® Zuò Rettunç eineò Dateé 
+voí  Grundmen{  auó isô nacè eineí Fehleò unä Dr{ckeî  deò  Tastå 
+^ESC~  diå  Diskettå  zõ  wechseln¬  miô  Ì  daó  Diskettensysteí 
+zur{ckzusetzen und das File mit S zu sichern.
+
+
+5.2. Installation von Systemkern und Systemservice
+
+Einigå Parameteò deó Programmiersystemó PASCAÌ 880/Ó lasseî  sicè 
+anwenderspezifiscè installieren® Daó entsprechendå Programí hei\ô 
+PASINST.COM.
+
+Beií  Starô  voî PASINST.COÍ m{sseî sicè PASCAL.COÍ unä  PLUS.COÍ 
+ohnå Schreibschutú auæ deò Diskettå befinden®  Diå  M>glichkeiteî 
+gehen aus dem Er>ffnungsbild hervor.
+
+  ------------------------------------------------
+  !  PASCAL 880/S (c) 01/08/86 VEB ROBOTRON BWS  !
+  !  Installation / Version  n<. n< / SCPX 1715  !
+  !                                              !
+  !  B-ildschirmgroesse                          !
+  !  G-eraetebezeichnung                         !
+  !  L-ABEL  /  GOTO                             !
+  !  S-PECSCR/NORMSCR                            !
+  !                                              !
+  !  D-ruckformate                               !
+  !  K-opierschutz                               !
+  !  P-rintschutz                                !
+  !  A-lphabet lateinisch / kyrillisch           !
+  !                                              !
+  !  E-nde                                       !
+  !                                              !
+  !  A-uswahl:                                   !
+  ------------------------------------------------
+
+Eó  kanî  immeò nuò einå Leistunç gew}hlô  werden®  Einå  g{ltigå 
+Antworô  wirä erzwungen®  Diå Antworteî werdeî ií Langtexô  quit
+tiert.
+G¬  Ì unä Ó }nderî PASCAL.COM»  D¬  K¬ Ğ unä Á }nderî PLUS.COM® Â 
+}ndert PASCAL.COM und PLUS.COM.
+
+Â   Eó  wirä zwischeî 16x6´ unä  24x8°  umgeschaltet®  Deò gegen-
+    w}rtigå Zustanä wirä mit
+
+      Aktueller Zustand:  Zahl< x  Zahl<
+      Aenderung (@/N)
+
+    angezeigô  unä diå Best}tigunç deò [nderunç verlangt®  Beé  @ 
+    wird die erfolgreiche [nderung mit       
+
+      Neue Bildschirmgroesse  Zahl< x  Zahl<
+
+    quittiert.
+.paŠÇ   Hieò  kanî  einå  Ger}tebezeichnunç miô  maximaì  2°  Zeicheî 
+    eingegebeî werden®  Wiå beé Â wirä deò aktuellå Zustanä ange
+    zeigt® Danacè erfolgô diå Ausschrift
+
+      Neue Geraetebezeichnung:
+
+    Nuò  ^ET~ f{hrô zuò Ablehnunç deò Funktion®  Diå erfolgreichå 
+    Ver}nderung wird wieder angezeigt.
+
+Ì   Miô  dieseò  Funktioî kanî f{ò  Ausbildungszweckå  beeinflu\ô 
+    werden¬  oâ deò Compileò Sprungbefehlå zul}\ô odeò nicht® Wiå 
+    beé  Â wirä deò aktuellå Zustanä angezeigt¬  einå  Zustimmunç 
+    odeò  Ablehnunç zuò [nderunç erzwungeî unä einå erfolgtå  [n
+    derunç quittiert.
+
+Ó   Miô  dieseò  Funktioî  kanî  deò  Anwendeò  diå  Wirkunç  deò 
+    Prozedureî  SPECSCÒ  unä NORMSCÒ miô Hilfå  voî Steuerzeicheî 
+    (z.B® INVERS EIN/AUS; FARBWECHSEL ...) neu festlegen.
+
+Ä   Miô dieseò Funktioî k>nneî f{ò deî Listeò folgendå  Parameteò 
+    festgelegt werden (in Klammern die Voreinstellung):
+
+      SL (72)  Seitenlaenge
+      RO ( 3)  Rand oben
+      RU ( 3)  Rand unten
+      RL ( 0)  Rand links
+      AT (79)  Spaltennummer f{r automatische Zeilentrennung
+
+    Deò aktuellå Zustanä wirä jeweiló angezeigô unä einå [nderunç 
+    angeboten® Dabeé wirä eiî Fehleò angezeigt¬ wenî 
+
+      SÌ  ½ RÏ « RU
+
+Ë   Diå  Leistunç  "Kopieren¢ deó  Systemservicå kanî  durcè  eiî 
+    Codewort gesch{tzt werden. Das Wort
+
+      CCCC     (Standard)
+
+    hebt den Schutz auf. 
+    PASINST antwortet nach K mit der Ausschrift
+
+      Aktueller Zustand:  Codewort<
+      Aendern (@/N):
+
+    Isô bisheò keiî Codeworô installiert¬ wirä aló  Codewort< deò 
+    Texô  "CCCC¢ geschrieben®  Beé Bejahunç deò  [nderungsabfragå  
+    erfolgô diå Aufforderung
+
+      Neues Codewort:
+
+    Das Wort ist maximal acht Zeichen lang.
+
+Ğ   Diå Leistunç "Drucken¢ deó Systemservicå kanî aî eiî Codewort 
+    gebunden werden. Das Wort
+
+      PPPP     (Standard)
+Š    hebô  deî Schutú auf®  Diå Kommunikatioî isô wiå beé  K»  diå 
+    maximale L}nge des Wortes ist ebenfalls acht Zeichen.
+
+Á   Dieså Funktioî erm>glichô eó festzulegen¬  oâ diå  Crossrefe
+    renzlistå  nacè  deí lateinischeî odeò nacè deí  kyrillischeî 
+    Alphabeô  sortierô  werdeî soll®  Diå Verwendunç  deó  latei
+    nischeî Alphabeteó isô voreingestellt.
+
+Nacè jedeò Funktioî wirä zuí Men{ zur{ckgekehrt®  Dabeé wirä einå 
+erfolgreichå [nderunç quittierô unä eventuellå Fehleò mitgeteilt® 
+Diå  Eingabå  voî  Å beendeô diå Arbeiô  voî  PASINST®  Daó  wirä 
+quittiert.
+Diå   installiertå   Funktioî   Á  isô   nuò   wirksaí   iî   deò 
+englischsprachigen Version (x.xxE).
+

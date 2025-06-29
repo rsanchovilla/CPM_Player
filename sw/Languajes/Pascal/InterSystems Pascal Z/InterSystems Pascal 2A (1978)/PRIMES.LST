@@ -1,0 +1,2176 @@
+PASCAL RUN-TIME SUPPORT LIBRARY                             PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 1
+
+                 ; PASCAL RUN-TIME SUPPORT LIBRARY
+                 ;
+                 ; COPYRIGHT 1978 BY JEFF MOSKOW
+                 ;       11/07/79
+     FFFF        R       SET     0FFFFH
+     FFFF        C       SET     0FFFFH
+     FFFF        M       SET     0FFFFH
+     FFFF        S       SET     0FFFFH
+     0000        E       SET     0
+     FFFF        F       SET     0FFFFH
+     0000        T       SET     0
+     0000        VALID   SET     0
+     0003        MAXOUT  EQU     3
+     000D        CR      EQU     13
+     000A        LF      EQU     10
+     001A        EOFMRK  EQU     1AH
+     0050        BUFLEN  EQU     80
+     0004        OUTLST  EQU     4
+     005D        TOPFRM  EQU     OUTLST+MAXOUT+MAXOUT+BUFLEN+3
+     0032        MARGIN  EQU     50
+     0000        COMPILER EQU    0
+     0010        MAXDRV  EQU     16
+0100*0100                ORG     100H
+0100 0E 19       START   MVI     C,25
+0102 CD 0005             CALL    CPM
+0105 2A 0006             LHLD    6
+0108 2B                  DCX     H
+0109 77                  MOV     M,A
+010A 01 0000             LXI     B,0
+010D 21 28EC             LXI     H,LAST
+0110 D9                  EXX
+0111 2A 0006             LHLD    6
+0114 11 FFA2             LXI     D,0-TOPFRM-1
+0117 19                  DAD     D
+0118 E5                  PUSH    H
+0119 E5                  PUSH    H
+011A DD E1               POP     X
+011C FD E1               POP     Y
+011E F9                  SPHL
+011F 06 0A               MVI     B,MAXOUT*2+OUTLST
+0121 AF                  XRA     A
+0122 77          CLRSTK  MOV     M,A
+0123 23                  INX     H
+0124 10 FC               DJNZ    CLRSTK
+0126 23                  INX     H
+0127 77                  MOV     M,A
+0128 21 0080             LXI     H,80H
+012B BE                  CMP     M
+012C 28 0A               JRZ     NOCOM
+012E 46                  MOV     B,M
+012F 05                  DCR     B
+0130 23                  INX     H
+0131 23          INITLP  INX     H
+0132 4E                  MOV     C,M
+0133 CD 03B2             CALL    TOUT
+0136 10 F9               DJNZ    INITLP
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 2
+
+0138 0E 0D       NOCOM   MVI     C,CR
+013A CD 03B2             CALL    TOUT
+013D C3 277F             JMP     L9999
+     0000                IF COMPILER
+                         DB      'Copyright 1978 by Jeff Moscow. 2a   '
+                         ENDIF
+                         LIST
+0305 C5          FILNAM  PUSH    B
+0306 D5                  PUSH    D
+0307 E5                  PUSH    H
+0308 F5                  PUSH    PSW
+0309 36 00               MVI     M,0
+030B 23                  INX     H
+030C E5                  PUSH    H
+030D 06 0B               MVI     B,11
+030F 36 20       DEFSP   MVI     M,' '
+0311 23                  INX     H
+0312 10 FB               DJNZ    DEFSP
+0314 06 15               MVI     B,33-11-1
+0316 36 00       ZEROLP  MVI     M,0
+0318 23                  INX     H
+0319 10 FB               DJNZ    ZEROLP
+031B CD 0372     SKIPSP  CALL    TIN
+031E 28 FB               JRZ     SKIPSP
+0320 38 21               JRC     FILNER
+0322 D6 41               SUI     'A'
+0324 47                  MOV     B,A
+0325 CD 0372             CALL    TIN
+0328 38 19               JRC     FILNER
+032A FE 3A               CPI     ':'
+032C 28 10               JRZ     DRVSP
+032E E5                  PUSH    H
+032F 2A 0006             LHLD    6
+0332 11 FFAC             LXI     D,-GETP
+0335 19                  DAD     D
+0336 35                  DCR     M
+0337 35                  DCR     M
+0338 2A 0006             LHLD    6
+033B 2B                  DCX     H
+033C 46                  MOV     B,M
+033D E1                  POP     H
+033E 78          DRVSP   MOV     A,B
+033F FE 10               CPI     MAXDRV
+0341 38 0C               JRC     DRVOK
+0343 E1          FILNER  POP     H
+0344 21 02D5     NAMER   LXI     H,NAMERR
+0347 CD 03DB             CALL    TXTYP
+034A F1                  POP     PSW
+034B 37                  STC
+034C C3 018B             JMP     POPHDB
+034F 77          DRVOK   MOV     M,A
+0350 E1                  POP     H
+0351 06 09               MVI     B,9
+0353 CD 0372     SKSP    CALL    TIN
+0356 38 15               JRC     NOMORE
+0358 28 F9               JRZ     SKSP
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 3
+
+035A FE 2E               CPI     '.'
+035C 28 06               JRZ     NXTPT
+035E 77                  MOV     M,A
+035F 23                  INX     H
+0360 10 F1               DJNZ    SKSP
+0362 18 E0               JMPR    NAMER
+0364 48          NXTPT   MOV     C,B
+0365 06 04               MVI     B,4
+0367 0D          NOIMAG  DCR     C
+0368 28 E9               JRZ     SKSP
+036A 23                  INX     H
+036B 18 FA               JMPR    NOIMAG
+036D F1          NOMORE  POP     PSW
+036E B7                  ORA     A
+036F C3 018B             JMP     POPHDB
+     0054        TXTBUF  EQU     BUFLEN+2+1+1
+     0054        GETP    EQU     TXTBUF
+     0053        PUTP    EQU     TXTBUF-1
+0372 C5          TIN     PUSH    B
+0373 D5                  PUSH    D
+0374 E5                  PUSH    H
+0375 2A 0006             LHLD    6
+0378 11 FFAC             LXI     D,-GETP
+037B 19                  DAD     D
+037C E5                  PUSH    H
+037D 5E                  MOV     E,M
+037E 16 00               MVI     D,0
+0380 19                  DAD     D
+0381 23                  INX     H
+0382 7E                  MOV     A,M
+0383 E1                  POP     H
+0384 FE 20               CPI     ' '
+0386 38 06               JRC     ENDL
+0388 34                  INR     M
+0389 FE 20               CPI     ' '
+038B C3 018B     EN      JMP     POPHDB
+038E 23          ENDL    INX     H
+038F 36 00               MVI     M,0
+0391 18 F8               JMPR    EN
+0393 C5          TXTIN   PUSH    B
+0394 D5                  PUSH    D
+0395 E5                  PUSH    H
+0396 2A 0006             LHLD    6
+0399 11 FFAC             LXI     D,-GETP
+039C 19                  DAD     D
+039D 36 4F               MVI     M,BUFLEN-1
+039F EB                  XCHG
+03A0 0E 0A               MVI     C,10
+03A2 CD 0005             CALL    CPM
+03A5 0E 0D               MVI     C,CR
+03A7 CD 03B2             CALL    TOUT
+03AA 0E 0A               MVI     C,LF
+03AC CD 0159             CALL    CO
+03AF C3 018B             JMP     POPHDB
+03B2 C5          TOUT    PUSH    B
+03B3 D5                  PUSH    D
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 4
+
+03B4 E5                  PUSH    H
+03B5 F5                  PUSH    PSW
+03B6 2A 0006             LHLD    6
+03B9 11 FFAC             LXI     D,-GETP
+03BC 19                  DAD     D
+03BD 36 01               MVI     M,1
+03BF 23                  INX     H
+03C0 7E                  MOV     A,M
+03C1 FE 50               CPI     BUFLEN
+03C3 28 0B               JRZ     BFULL
+03C5 34                  INR     M
+03C6 5E                  MOV     E,M
+03C7 16 00               MVI     D,0
+03C9 19                  DAD     D
+03CA 71                  MOV     M,C
+03CB F1                  POP     PSW
+03CC B7                  ORA     A
+03CD C3 018B             JMP     POPHDB
+03D0 35          BFULL   DCR     M
+03D1 0E 0D               MVI     C,CR
+03D3 CD 03B2             CALL    TOUT
+03D6 F1                  POP     PSW
+03D7 37                  STC
+03D8 C3 018B             JMP     POPHDB
+03DB 7E          TXTYP   MOV     A,M
+03DC B7                  ORA     A
+03DD C8                  RZ
+03DE F5                  PUSH    PSW
+03DF E6 7F               ANI     7FH
+03E1 4F                  MOV     C,A
+03E2 CD 0159             CALL    CO
+03E5 F1                  POP     PSW
+03E6 F8                  RM
+03E7 23                  INX     H
+03E8 18 F1               JMPR    TXTYP
+03EA 21 005C     CHAIN   LXI     H,5CH
+03ED CD 0305             CALL    FILNAM
+03F0 CD 01A5             CALL    OPNIN
+03F3 38 1E               JRC     CHERR
+03F5 11 0100             LXI     D,100H
+03F8 D5          KEEPRD  PUSH    D
+03F9 0E 1A               MVI     C,26
+03FB CD 0005             CALL    CPM
+03FE 11 005C             LXI     D,5CH
+0401 0E 14               MVI     C,20
+0403 CD 0005             CALL    CPM
+0406 D1                  POP     D
+0407 21 0080             LXI     H,128
+040A 19                  DAD     D
+040B EB                  XCHG
+040C B7                  ORA     A
+040D 28 E9               JRZ     KEEPRD
+040F AF                  XRA     A
+0410 C3 278D             JMP     L9999+14
+0413 21 0419     CHERR   LXI     H,CHMSG
+0416 C3 058D             JMP     PERROR
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 5
+
+0419 55 6E 61 62 CHMSG   DB      'Unable to chai','n'+80H
+     6C 65 20 74 
+     6F 20 63 68 
+     61 69 EE    
+                         LIST
+04AE DD F9       EXITF   SPIX
+04B0 C1                  POP     B
+04B1 C1                  POP     B
+04B2 39                  DAD     S
+04B3 FD E5               PUSH    Y
+04B5 01 0004             LXI     B,OUTLST
+04B8 FD 09               DADY    B
+04BA 06 03               MVI     B,MAXOUT
+04BC EB                  XCHG
+04BD FD 66 01    SFLT    MOV     H,1(Y)
+04C0 FD 6E 00            MOV     L,0(Y)
+04C3 7C                  MOV     A,H
+04C4 B5                  ORA     L
+04C5 28 13               JRZ     FGT
+04C7 E5                  PUSH    H
+04C8 ED 52               DSBC    D
+04CA E1                  POP     H
+04CB 30 0D               JRNC    FGT
+04CD 23                  INX     H
+04CE 23                  INX     H
+04CF 23                  INX     H
+04D0 CD 02E3             CALL    CLSOT
+04D3 AF                  XRA     A
+04D4 FD 77 00            MOV     0(Y),A
+04D7 FD 77 01            MOV     1(Y),A
+04DA FD 23       FGT     INX     Y
+04DC FD 23               INX     Y
+04DE 10 DD               DJNZ    SFLT
+04E0 AF                  XRA     A
+04E1 FD E1               POP     Y
+04E3 EB                  XCHG
+04E4 D1                  POP     D
+04E5 DD E1               POP     X
+04E7 C1                  POP     B
+04E8 F9                  SPHL
+04E9 60                  MOV     H,B
+04EA 69                  MOV     L,C
+04EB BB                  CMP     E
+04EC D9                  EXX
+04ED 47                  MOV     B,A
+04EE 4F                  MOV     C,A
+04EF D9                  EXX
+04F0 E9                  PCHL
+04F1 D9          ERROR   EXX
+04F2 78                  MOV     A,B
+04F3 B1                  ORA     C
+04F4 C4 0534             CNZ     PSTAT
+04F7 CD 0372     ERR1    CALL    TIN
+04FA 30 FB               JRNC    ERR1
+04FC 01 0004     L0      LXI     B,OUTLST
+04FF FD 09               DADY    B
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 6
+
+0501 06 03               MVI     B,MAXOUT
+0503 FD 66 01    L0A     MOV     H,1(Y)
+0506 FD 6E 00            MOV     L,0(Y)
+0509 FD 23               INX     Y
+050B FD 23               INX     Y
+050D 7C                  MOV     A,H
+050E B5                  ORA     L
+050F 23                  INX     H
+0510 23                  INX     H
+0511 23                  INX     H
+0512 C4 02E3             CNZ     CLSOT
+0515 10 EC               DJNZ    L0A
+0517 C3 0000             JMP     RESTRT
+                         LIST
+076E C5          RESET   PUSH    B
+076F FD E5               PUSH    Y
+0771 CD 083F             CALL    SCAN
+0774 30 0C               JRNC    SKIP
+0776 E5                  PUSH    H
+0777 23                  INX     H
+0778 23                  INX     H
+0779 23                  INX     H
+077A CD 02E3             CALL    CLSOT
+077D AF                  XRA     A
+077E 02                  STAX    B
+077F 0B                  DCX     B
+0780 02                  STAX    B
+0781 E1                  POP     H
+0782 FD E1       SKIP    POP     Y
+0784 C1                  POP     B
+0785 D1                  POP     D
+0786 23                  INX     H
+0787 23                  INX     H
+0788 23                  INX     H
+0789 CD 086B             CALL    MOVNAM
+078C 38 1C               JRC     YEOF
+078E CD 01A5             CALL    OPNIN
+0791 38 17               JRC     YEOF
+0793 CD 01C3             CALL    BYTIN
+0796 4F                  MOV     C,A
+0797 38 11               JRC     YEOF
+0799 FE 0D               CPI     CR
+079B 28 14               JRZ     YEOLN
+079D FE 0A               CPI     LF
+079F 28 10               JRZ     YEOLN
+07A1 2B                  DCX     H
+07A2 AF                  XRA     A
+07A3 77                  MOV     M,A
+07A4 2B                  DCX     H
+07A5 71                  MOV     M,C
+07A6 2B                  DCX     H
+07A7 77                  MOV     M,A
+07A8 EB                  XCHG
+07A9 E9                  PCHL
+07AA 2B          YEOF    DCX     H
+07AB 2B                  DCX     H
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 7
+
+07AC 2B                  DCX     H
+07AD 36 01               MVI     M,1
+07AF 18 05               JMPR    YCONT
+07B1 AF          YEOLN   XRA     A
+07B2 2B                  DCX     H
+07B3 2B                  DCX     H
+07B4 2B                  DCX     H
+07B5 77                  MOV     M,A
+07B6 23          YCONT   INX     H
+07B7 71                  MOV     M,C
+07B8 23                  INX     H
+07B9 36 01               MVI     M,1
+07BB EB                  XCHG
+07BC AF                  XRA     A
+07BD E9                  PCHL
+07BE D1          REWRITE:POP     D
+07BF C5                  PUSH    B
+07C0 CD 07DD             CALL    CHKLST
+07C3 C1                  POP     B
+07C4 23                  INX     H
+07C5 23                  INX     H
+07C6 23                  INX     H
+07C7 CD 086B             CALL    MOVNAM
+07CA 38 59               JRC     BADWRT
+07CC CD 017D             CALL    DELETE
+07CF CD 018F             CALL    OPNOT
+07D2 AF                  XRA     A
+07D3 2B                  DCX     H
+07D4 36 01               MVI     M,1
+07D6 2B                  DCX     H
+07D7 77                  MOV     M,A
+07D8 2B                  DCX     H
+07D9 36 01               MVI     M,1
+07DB EB                  XCHG
+07DC E9                  PCHL
+07DD FD E5       CHKLST  PUSH    Y
+07DF CD 083F             CALL    SCAN
+07E2 30 0C               JRNC    NOTFND
+07E4 23                  INX     H
+07E5 23                  INX     H
+07E6 23                  INX     H
+07E7 CD 02E3             CALL    CLSOT
+07EA 2B                  DCX     H
+07EB 2B                  DCX     H
+07EC 2B                  DCX     H
+07ED FD E1               POP     Y
+07EF C9                  RET
+07F0 FD E1       NOTFND  POP     Y
+07F2 FD E5               PUSH    Y
+07F4 E5                  PUSH    H
+07F5 67                  MOV     H,A
+07F6 6F                  MOV     L,A
+07F7 CD 083F             CALL    SCAN
+07FA 30 09               JRNC    ERRTMF
+07FC E1                  POP     H
+07FD 7C                  MOV     A,H
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 8
+
+07FE 02                  STAX    B
+07FF 0B                  DCX     B
+0800 7D                  MOV     A,L
+0801 02                  STAX    B
+0802 FD E1               POP     Y
+0804 C9                  RET
+0805 21 080B     ERRTMF  LXI     H,ERRMES
+0808 C3 058D             JMP     PERROR
+080B 54 6F 6F 20 ERRMES  DB      'Too many open output file','s'+80H
+     6D 61 6E 79 
+     20 6F 70 65 
+     6E 20 6F 75 
+     74 70 75 74 
+     20 66 69 6C 
+     65 F3       
+0825 21 082B     BADWRT  LXI     H,BNAM
+0828 C3 058D             JMP     PERROR
+082B 42 61 64 20 BNAM    DB      'Bad output file nam','e'+80H
+     6F 75 74 70 
+     75 74 20 66 
+     69 6C 65 20 
+     6E 61 6D E5 
+083F 01 0004     SCAN    LXI     B,OUTLST
+0842 FD 09               DADY    B
+0844 7D                  MOV     A,L
+0845 06 06               MVI     B,MAXOUT*2
+0847 FD BE 00    CONTLK  CMP     0(Y)
+084A 28 09               JRZ     FNDLOW
+084C FD 23               INX     Y
+084E FD 23               INX     Y
+0850 05                  DCR     B
+0851 10 F4               DJNZ    CONTLK
+0853 AF                  XRA     A
+0854 C9                  RET
+0855 7C          FNDLOW  MOV     A,H
+0856 FD 23               INX     Y
+0858 05                  DCR     B
+0859 FD BE 00            CMP     0(Y)
+085C 28 07               JRZ     FNDIT
+085E 7D                  MOV     A,L
+085F FD 23               INX     Y
+0861 10 E4               DJNZ    CONTLK
+0863 AF                  XRA     A
+0864 C9                  RET
+0865 FD E5       FNDIT   PUSH    Y
+0867 C1                  POP     B
+0868 AF                  XRA     A
+0869 37                  STC
+086A C9                  RET
+     0003        STAKSP  EQU     3
+086B CD 0372     MOVNAM  CALL    TIN
+086E 30 FB               JRNC    MOVNAM
+0870 E5                  PUSH    H
+0871 21 0003             LXI     H,STAKSP
+0874 39                  DAD     S
+0875 AF                  XRA     A
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 9
+
+0876 47                  MOV     B,A
+0877 09                  DAD     B
+0878 E5                  PUSH    H
+0879 41                  MOV     B,C
+087A 4E          TOTI    MOV     C,M
+087B CD 03B2             CALL    TOUT
+087E 2B                  DCX     H
+087F 10 F9               DJNZ    TOTI
+0881 0E 0D               MVI     C,CR
+0883 CD 03B2             CALL    TOUT
+0886 C1                  POP     B
+0887 E1                  POP     H
+0888 CD 0305             CALL    FILNAM
+088B 08                  EXAF
+088C CD 0372     EMPBUF  CALL    TIN
+088F FE 0D               CPI     CR
+0891 20 F9               JRNZ    EMPBUF
+0893 08                  EXAF
+0894 C5                  PUSH    B
+0895 E3                  XTHL
+0896 C1                  POP     B
+0897 E3                  XTHL
+0898 7D                  MOV     A,L
+0899 E3                  XTHL
+089A 72                  MOV     M,D
+089B 2B                  DCX     H
+089C 73                  MOV     M,E
+089D 50                  MOV     D,B
+089E 59                  MOV     E,C
+089F C1                  POP     B
+08A0 4F                  MOV     C,A
+08A1 F9                  SPHL
+08A2 EB                  XCHG
+08A3 D1                  POP     D
+08A4 C5                  PUSH    B
+08A5 3E 00               MVI     A,0
+08A7 C9                  RET
+     0005        SYSLOC  EQU     5
+08A8 DD E5       WRITEL  PUSH    X
+08AA CD 08FF             CALL    PNTR
+08AD DD E5               PUSH    X
+08AF DD 46 00            MOV     B,0(X) 
+08B2 B8                  CMP     B
+08B3 20 0E               JRNZ    CONSOL
+08B5 CD 090A             CALL    BUFADR
+08B8 36 01               MVI     M,1
+08BA 23                  INX     H
+08BB 36 01               MVI     M,1
+08BD 23                  INX     H
+08BE 36 01               MVI     M,1
+08C0 23                  INX     H
+08C1 18 02               JMPR    TEXT
+08C3 67          CONSOL  MOV     H,A
+08C4 6F                  MOV     L,A
+08C5 CD 0920     TEXT    CALL    TXTFIL
+08C8 0E 0D       ADDCR   MVI     C,CR
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 10
+
+08CA CD 0AB3             CALL    PRINT
+08CD 0E 0A               MVI     C,LF
+08CF CD 0AB3             CALL    PRINT
+08D2 E1          CLEAN   POP     H
+08D3 23                  INX     H
+08D4 DD E1               POP     X
+08D6 D1                  POP     D
+08D7 F9                  SPHL
+08D8 EB                  XCHG
+08D9 E9                  PCHL
+08DA DD E5       WRITE   PUSH    X
+08DC CD 08FF             CALL    PNTR
+08DF DD E5               PUSH    X
+08E1 DD 46 00            MOV     B,0(X)
+08E4 B8                  CMP     B
+08E5 20 11               JRNZ    CONSO2
+08E7 CD 090A             CALL    BUFADR
+08EA 36 01               MVI     M,1
+08EC 23                  INX     H
+08ED 36 01               MVI     M,1
+08EF 23                  INX     H
+08F0 77                  MOV     M,A
+08F1 23                  INX     H
+08F2 B8                  CMP     B
+08F3 C2 0A8C             JNZ     NONTXT
+08F6 18 02               JMPR    TEXT2
+08F8 67          CONSO2  MOV     H,A
+08F9 6F                  MOV     L,A
+08FA CD 0920     TEXT2   CALL    TXTFIL
+08FD 18 D3               JR      CLEAN
+08FF DD 21 0005  PNTR    LXI     X,SYSLOC
+0903 DD 39               DADX    S
+0905 DD 09               DADX    B
+0907 50                  MOV     D,B
+0908 59                  MOV     E,C
+0909 C9                  RET
+090A 1B          BUFADR  DCX     D
+090B DD 2B               DCX     X
+090D DD 46 00            MOV     B,0(X)
+0910 1B                  DCX     D
+0911 DD 2B               DCX     X
+0913 DD 66 00            MOV     H,0(X)
+0916 1B                  DCX     D
+0917 DD 2B               DCX     X
+0919 DD 6E 00            MOV     L,0(X)
+091C DD 2B               DCX     X
+091E 1B                  DCX     D
+091F C9                  RET
+0920 7A          TXTFIL  MOV     A,D
+0921 B3                  ORA     E
+0922 C8                  RZ
+0923 AF          NXTPAR  XRA     A
+0924 DD 46 00            MOV     B,0(X)
+0927 DD 2B               DCX     X
+0929 1B                  DCX     D
+092A 05                  DCR     B
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 11
+
+092B CC 099F             CZ      BOOL
+092E 05                  DCR     B
+092F CC 09D9             CZ      INTEG
+0932 05                  DCR     B
+0933 CC 0977             CZ      CHAR
+0936 05                  DCR     B
+0937 CC 093C             CZ      SCALAR
+093A 18 E4               JMPR    TXTFIL
+093C 01 FFFC     SCALAR  LXI     B,-4
+093F DD 09               DADX    B
+0941 EB                  XCHG
+0942 09                  DAD     B
+0943 E5                  PUSH    H
+0944 D5                  PUSH    D
+0945 DD 46 04            MOV     B,4(X)
+0948 DD 6E 03            MOV     L,3(X)
+094B 67                  MOV     H,A
+094C 29                  DAD     H
+094D 29                  DAD     H
+094E 29                  DAD     H
+094F DD 56 02            MOV     D,2(X)
+0952 DD 5E 01            MOV     E,1(X)
+0955 19                  DAD     D
+0956 16 08               MVI     D,8
+0958 4E          SCLR1   MOV     C,M
+0959 79                  MOV     A,C
+095A FE 20               CPI     ' '
+095C 28 0E               JRZ     SCLR2
+095E 23                  INX     H
+095F E3                  XTHL
+0960 CD 0AB3             CALL    PRINT
+0963 E3                  XTHL
+0964 15                  DCR     D
+0965 28 05               JRZ     SCLR2
+0967 10 EF               DJNZ    SCLR1
+0969 04                  INR     B
+096A 18 EC               JR      SCLR1
+096C E1          SCLR2   POP     H
+096D D1                  POP     D
+096E 0E 20               MVI     C,' '
+0970 05          SCLR2A  DCR     B
+0971 C8                  RZ
+0972 CD 0AB3             CALL    PRINT
+0975 18 F9               JR      SCLR2A
+0977 DD 46 FE    CHAR    MOV     B,-2(X)
+097A DD 7E 00            MOV     A,0(X)
+097D 90                  SUB     B
+097E 08                  EXAF
+097F DD 2B               DCX     X
+0981 DD 2B               DCX     X
+0983 1B                  DCX     D
+0984 1B                  DCX     D
+0985 DD 2B       CHAR1   DCX     X
+0987 1B                  DCX     D
+0988 DD 4E 00            MOV     C,0(X)
+098B CD 0AB3             CALL    PRINT
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 12
+
+098E 10 F5               DJNZ    CHAR1
+0990 08                  EXAF
+0991 DD 2B               DCX     X
+0993 1B                  DCX     D
+0994 F8                  RM
+0995 C8                  RZ
+0996 47                  MOV     B,A
+0997 0E 20               MVI     C,' '
+0999 CD 0AB3     CHAR2   CALL    PRINT
+099C 10 FB               DJNZ    CHAR2
+099E C9                  RET
+                 BOOL:
+     FFFF                IF      NOT COMPILER
+099F DD 2B               DCX     X
+09A1 DD 2B               DCX     X
+09A3 1B                  DCX     D
+09A4 1B                  DCX     D
+09A5 D5                  PUSH    D
+09A6 DD BE 01            CMP     1(X)
+09A9 DD 7E 02            MOV     A,2(X)
+09AC 01 0004             LXI     B,4
+09AF 11 09D0             LXI     D,TRUE
+09B2 38 04               JRC     ISTRUE
+09B4 EB                  XCHG
+09B5 09                  DAD     B
+09B6 EB                  XCHG
+09B7 0C                  INR     C
+09B8 91          ISTRUE  SUB     C
+09B9 08                  EXAF
+09BA 41                  MOV     B,C
+09BB 1A          FIT1A   LDAX    D
+09BC 4F                  MOV     C,A
+09BD CD 0AB3             CALL    PRINT
+09C0 13                  INX     D
+09C1 10 F8               DJNZ    FIT1A
+09C3 D1                  POP     D
+09C4 08                  EXAF
+09C5 D8                  RC
+09C6 C8                  RZ
+09C7 47                  MOV     B,A
+09C8 0E 20               MVI     C,' '
+09CA CD 0AB3     BLANKS  CALL    PRINT
+09CD 10 FB               DJNZ    BLANKS
+09CF C9                  RET
+09D0 54 52 55 45 TRUE    DB      'TRUE'
+09D4 46 41 4C 53         DB      'FALSE'
+     45          
+                         ENDIF
+09D9 1B          INTEG   DCX     D
+09DA 1B                  DCX     D
+09DB 1B                  DCX     D
+09DC D5                  PUSH    D
+09DD DD 56 FF            MOV     D,-1(X)
+09E0 DD 5E FE            MOV     E,-2(X)
+09E3 DD E5               PUSH    X
+09E5 C1                  POP     B
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 13
+
+09E6 DD 21 FFFA          LXI     X,-6
+09EA DD 39               DADX    S
+09EC DD F9               SPIX
+09EE E5                  PUSH    H
+09EF C5                  PUSH    B
+09F0 01 0005             LXI     B,5
+09F3 DD 09               DADX    B
+09F5 CB 7A               BIT     7,D
+09F7 28 0E               JRZ     POSNUM
+09F9 DD 36 00 2D         MVI     0(X),'-'
+09FD DD 2B               DCX     X
+09FF AF                  XRA     A
+0A00 67                  MOV     H,A
+0A01 6F                  MOV     L,A
+0A02 47                  MOV     B,A
+0A03 ED 52               DSBC    D
+0A05 18 06               JMPR    NUM
+0A07 EB          POSNUM  XCHG
+0A08 DD 77 00            MOV     0(X),A
+0A0B DD 2B               DCX     X
+0A0D 4F          NUM     MOV     C,A
+0A0E 11 2710             LXI     D,10000
+0A11 CD 0A73             CALL    FIGURE
+0A14 11 03E8             LXI     D,1000
+0A17 CD 0A73             CALL    FIGURE
+0A1A 11 0064             LXI     D,100
+0A1D CD 0A73             CALL    FIGURE
+0A20 11 000A             LXI     D,10
+0A23 CD 0A73             CALL    FIGURE
+0A26 45                  MOV     B,L
+0A27 CD 0A7B             CALL    ADIGIT
+0A2A 47                  MOV     B,A
+0A2B DD 09               DADX    B
+0A2D DD 23               INX     X
+0A2F DD 7E 00            MOV     A,0(X)
+0A32 FE 2D               CPI     '-'
+0A34 20 03               JRNZ    CHK0
+0A36 0C                  INR     C
+0A37 18 0C               JMPR    NEGA
+0A39 B9          CHK0    CMP     C
+0A3A 20 07               JRNZ    POSN
+0A3C DD 36 00 30         MVI     0(X),'0'
+0A40 0C                  INR     C
+0A41 18 02               JMPR    NEGA
+0A43 DD 2B       POSN    DCX     X
+0A45 41          NEGA    MOV     B,C
+0A46 E1                  POP     H
+0A47 7E                  MOV     A,M
+0A48 E3                  XTHL
+0A49 90                  SUB     B
+0A4A 38 0B               JRC     PERFIT
+0A4C 28 09               JRZ     PERFIT
+0A4E 57                  MOV     D,A
+0A4F 0E 20               MVI     C,' '
+0A51 CD 0AB3     PAD     CALL    PRINT
+0A54 15                  DCR     D
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 14
+
+0A55 20 FA               JRNZ    PAD
+0A57 DD 4E 00    PERFIT  MOV     C,0(X)
+0A5A CD 0AB3             CALL    PRINT
+0A5D DD 2B               DCX     X
+0A5F 10 F6               DJNZ    PERFIT
+0A61 DD E1               POP     X
+0A63 DD 2B               DCX     X
+0A65 DD 2B               DCX     X
+0A67 DD 2B               DCX     X
+0A69 EB                  XCHG
+0A6A 21 0006             LXI     H,6
+0A6D 39                  DAD     S
+0A6E F9                  SPHL
+0A6F EB                  XCHG
+0A70 D1                  POP     D
+0A71 AF                  XRA     A
+0A72 C9                  RET
+0A73 AF          FIGURE  XRA     A
+0A74 05                  DCR     B
+0A75 04          CONT    INR     B
+0A76 ED 52               DSBC    D
+0A78 30 FB               JRNC    CONT
+0A7A 19          TOOFAR  DAD     D
+0A7B B8          ADIGIT  CMP     B
+0A7C 20 02               JRNZ    NUDIG
+0A7E B9                  CMP     C
+0A7F C8                  RZ
+0A80 3E 30       NUDIG   MVI     A,30H
+0A82 80                  ADD     B
+0A83 DD 77 00            MOV     0(X),A
+0A86 DD 2B               DCX     X
+0A88 0C                  INR     C
+0A89 AF                  XRA     A
+0A8A 47                  MOV     B,A
+0A8B C9                  RET
+                 NONTXT:
+     FFFF                IF      NOT COMPILER
+0A8C E5                  PUSH    H
+0A8D 01 FFFC     NONTX1  LXI     B,-4
+0A90 DD 09               DADX    B
+0A92 EB                  XCHG
+0A93 09                  DAD     B
+0A94 EB                  XCHG
+0A95 DD 66 02            MOV     H,2(X)
+0A98 DD 6E 01            MOV     L,1(X)
+0A9B DD 4E 00    NTLP    MOV     C,0(X)
+0A9E DD 2B               DCX     X
+0AA0 2B                  DCX     H
+0AA1 1B                  DCX     D
+0AA2 E3                  XTHL
+0AA3 CD 0ABF             CALL    DIS
+0AA6 E3                  XTHL
+0AA7 7C                  MOV     A,H
+0AA8 B5                  ORA     L
+0AA9 20 F0               JRNZ    NTLP
+0AAB 7A                  MOV     A,D
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 15
+
+0AAC B3                  ORA     E
+0AAD 20 DE               JRNZ    NONTX1
+0AAF E1                  POP     H
+0AB0 C3 08D2             JMP     CLEAN
+                         ENDIF
+0AB3 AF          PRINT   XRA     A
+0AB4 BC                  CMP     H
+0AB5 20 08               JRNZ    DIS
+0AB7 BD                  CMP     L
+0AB8 20 05               JRNZ    DIS
+0ABA CD 0159             CALL    CO
+0ABD AF                  XRA     A
+0ABE C9                  RET
+0ABF CD 022F     DIS     CALL    BYTOT
+0AC2 AF                  XRA     A
+0AC3 C9                  RET
+                         LIST
+0B0D D1          MTRUE1  POP     D
+0B0E E1                  POP     H
+0B0F 18 F9               JR      MTRUE
+0B11 AF          FALSE   XRA     A
+0B12 C9                  RET
+0B13 AF          EOLN    XRA     A
+0B14 E5                  PUSH    H
+0B15 BC                  CMP     H
+0B16 20 1B               JRNZ    FEOLN
+0B18 D5                  PUSH    D
+0B19 2A 0006             LHLD    6
+0B1C 11 FFAD             LXI     D,-PUTP
+0B1F 19                  DAD     D
+0B20 7E                  MOV     A,M
+0B21 2B                  DCX     H
+0B22 BE                  CMP     M
+0B23 38 E8               JRC     MTRUE1
+0B25 5E                  MOV     E,M
+0B26 16 00               MVI     D,0
+0B28 19                  DAD     D
+0B29 23                  INX     H
+0B2A 7E                  MOV     A,M
+0B2B FE 0D               CPI     CR
+0B2D 28 DE               JRZ     MTRUE1
+0B2F D1                  POP     D
+0B30 E1                  POP     H
+0B31 18 DE               JR      FALSE
+0B33 23          FEOLN   INX     H
+0B34 23                  INX     H
+0B35 BE                  CMP     M
+0B36 E1                  POP     H
+0B37 28 D8               JRZ     FALSE
+0B39 18 CF               JMPR    MTRUE
+0B3B AF          EOF     XRA     A
+0B3C BC                  CMP     H
+0B3D 28 D2               JRZ     FALSE
+0B3F BE                  CMP     M
+0B40 20 C8               JRNZ    MTRUE
+0B42 18 CD               JMPR    FALSE
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 16
+
+0B44 67          FTXTIN  MOV     H,A
+0B45 69                  MOV     L,C
+0B46 23                  INX     H
+0B47 39                  DAD     SP
+0B48 E5                  PUSH    H
+0B49 41                  MOV     B,C
+0B4A CD 0372     FTXT2   CALL    TIN
+0B4D FE 0D               CPI     CR
+0B4F 20 F9               JRNZ    FTXT2
+0B51 4E          FTXT3   MOV     C,M
+0B52 CD 03B2             CALL    TOUT
+0B55 2B                  DCX     H
+0B56 10 F9               DJNZ    FTXT3
+0B58 0E 0D               MVI     C,CR
+0B5A CD 03B2             CALL    TOUT
+0B5D E1                  POP     H
+0B5E D1                  POP     D
+0B5F 23                  INX     H
+0B60 F9                  SPHL
+0B61 AF                  XRA     A
+0B62 EB                  XCHG
+0B63 E9                  PCHL
+     0006        Z0012   EQU      6
+0B64 CD 0B7F     SEQUL   CALL    Z0009
+0B67 C9                  RET
+0B68 CD 0B7F     SNE     CALL    Z0009
+0B6B 3F                  CMC
+0B6C C9                  RET
+0B6D CD 0BAF     SGT     CALL    Z0010
+0B70 C9                  RET
+0B71 CD 0BAF     SLE     CALL    Z0010
+0B74 3F                  CMC
+0B75 C9                  RET
+0B76 CD 0BDF     SLT     CALL    Z0011
+0B79 C9                  RET
+0B7A CD 0BDF     SGE     CALL    Z0011
+0B7D 3F                  CMC
+0B7E C9                  RET
+0B7F DD E5       Z0009   PUSH    X
+0B81 DD 21 0006          LXI     X,Z0012
+0B85 DD 39               DADX    S
+0B87 DD E5               PUSH    X
+0B89 E1                  POP     H
+0B8A DD 09               DADX    B
+0B8C DD 7E 00    Z0001   MOV     A,0(X)
+0B8F DD 23               INX     X
+0B91 ED A1               CCI 
+0B93 20 0E               JRNZ    Z0008
+0B95 EA 0B8C             JV      Z0001
+0B98 DD E3       Z0014   XTIX
+0B9A E1                  POP     H
+0B9B D1                  POP     D
+0B9C C1                  POP     B
+0B9D F9                  SPHL
+0B9E C5                  PUSH    B
+0B9F EB                  XCHG
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 17
+
+0BA0 AF                  XRA     A
+0BA1 37                  STC
+0BA2 E9                  PCHL
+0BA3 DD 09       Z0008   DADX    B
+0BA5 DD E3       Z0013   XTIX
+0BA7 E1                  POP     H
+0BA8 D1                  POP     D
+0BA9 C1                  POP     B
+0BAA F9                  SPHL
+0BAB C5                  PUSH    B
+0BAC EB                  XCHG
+0BAD AF                  XRA     A
+0BAE E9                  PCHL
+0BAF DD E5       Z0010   PUSH    X
+0BB1 DD 21 0005          LXI     X,Z0012-1
+0BB5 DD 39               DADX    S
+0BB7 DD 09               DADX    B
+0BB9 DD E5               PUSH    X
+0BBB E1                  POP     H
+0BBC DD 09               DADX    B
+0BBE DD E5               PUSH    X
+0BC0 7E          Z0002   MOV     A,M
+0BC1 DD BE 00            CMP     0(X)
+0BC4 DD 2B               DCX     X
+0BC6 2B                  DCX     H
+0BC7 38 10               JRC     Z0004
+0BC9 20 08               JRNZ    Z0006
+0BCB 0B                  DCX     B    
+0BCC AF                  XRA     A
+0BCD B8                  CMP     B
+0BCE 20 F0               JRNZ    Z0002
+0BD0 B9                  CMP     C
+0BD1 20 ED               JRNZ    Z0002
+0BD3 DD E1       Z0006   POP     X
+0BD5 DD 23               INX     X
+0BD7 18 CC               JMPR    Z0013
+0BD9 DD E1       Z0004   POP     X
+0BDB DD 23               INX     X
+0BDD 18 B9               JMPR    Z0014
+0BDF DD E5       Z0011   PUSH    X
+0BE1 DD 21 0005          LXI     X,Z0012-1
+0BE5 DD 39               DADX    S
+0BE7 DD 09               DADX    B
+0BE9 DD E5               PUSH    X
+0BEB E1                  POP     H
+0BEC DD 09               DADX    B
+0BEE DD E5               PUSH    X
+0BF0 7E          Z0003   MOV     A,M
+0BF1 DD BE 00            CMP     0(X)
+0BF4 DD 2B               DCX     X
+0BF6 2B                  DCX     H
+0BF7 38 DA               JRC     Z0006
+0BF9 20 DE               JRNZ    Z0004
+0BFB 0B                  DCX     B    
+0BFC AF                  XRA     A
+0BFD B8                  CMP     B
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 18
+
+0BFE 20 F0               JRNZ    Z0003
+0C00 B9                  CMP     C
+0C01 20 ED               JRNZ    Z0003
+0C03 18 CE               JR      Z0006
+0C05 CD 0CC0     READ    CALL    READIT
+0C08 C9                  RET
+0C09 CD 0CC0     READLN  CALL    READIT
+0C0C CD 0B13     SKCR    CALL    EOLN
+0C0F D8                  RC
+0C10 CD 0C15             CALL    INPUT
+0C13 18 F7               JR      SKCR
+0C15 7C          INPUT   MOV     A,H
+0C16 B7                  ORA     A
+0C17 20 20               JRNZ    NCONS
+0C19 CD 0372             CALL    TIN
+0C1C FA 0C22             JM      LSTCR
+0C1F 2E 00               MVI     L,0
+0C21 C9                  RET
+0C22 FE 03       LSTCR   CPI     'C'&3FH
+0C24 CA 04F1             JZ      ERROR
+0C27 2D                  DCR     L
+0C28 CC 0393             CZ      TXTIN
+0C2B CD 0372             CALL    TIN
+0C2E FE 03               CPI     'C'&3FH
+0C30 CA 04F1             JZ      ERROR
+0C33 FE 0A               CPI     LF
+0C35 C0                  RNZ
+0C36 3E 0D               MVI     A,CR
+0C38 C9                  RET
+0C39 C5          NCONS   PUSH    B
+0C3A D5                  PUSH    D
+0C3B AF                  XRA     A
+0C3C BE                  CMP     M
+0C3D 20 6C               JRNZ    RBEOF
+0C3F 54                  MOV     D,H
+0C40 5D                  MOV     E,L
+0C41 23                  INX     H
+0C42 23                  INX     H
+0C43 23                  INX     H
+0C44 CD 01C3             CALL    BYTIN
+0C47 38 56               JRC     GEOF
+0C49 FE 1A               CPI     EOFMRK
+0C4B 28 52               JRZ     GEOF
+0C4D 47                  MOV     B,A
+0C4E FE 0D               CPI     CR
+0C50 28 1C               JRZ     NCR
+0C52 FE 0A               CPI     LF
+0C54 28 3B               JRZ     NLF
+0C56 AF          FIN     XRA     A
+0C57 2B                  DCX     H
+0C58 77                  MOV     M,A
+0C59 2B          FIN1    DCX     H
+0C5A 4E                  MOV     C,M
+0C5B 70                  MOV     M,B
+0C5C 2B                  DCX     H
+0C5D 77                  MOV     M,A
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 19
+
+0C5E 79                  MOV     A,C
+0C5F FE 0D       NTXIT   CPI     CR
+0C61 28 04               JRZ     MAKBLK
+0C63 FE 0A               CPI     LF
+0C65 20 02               JRNZ    NOBLK
+0C67 3E 20       MAKBLK  MVI     A,' '
+0C69 D1          NOBLK   POP     D
+0C6A C1                  POP     B
+0C6B FE 20               CPI     ' '
+0C6D C9                  RET
+0C6E EB          NCR     XCHG
+0C6F 23                  INX     H
+0C70 7E                  MOV     A,M
+0C71 FE 0D               CPI     CR
+0C73 28 0B               JRZ     SKIPCH
+0C75 FE 0A               CPI     LF
+0C77 28 07               JRZ     SKIPCH
+0C79 EB                  XCHG
+0C7A 2B          SETEL   DCX     H
+0C7B 36 01               MVI     M,1
+0C7D AF                  XRA     A
+0C7E 18 D9               JR      FIN1
+0C80 EB          SKIPCH  XCHG
+0C81 CD 01C3             CALL    BYTIN
+0C84 38 19               JRC     GEOF
+0C86 47                  MOV     B,A
+0C87 FE 0D               CPI     CR
+0C89 28 EF               JRZ     SETEL
+0C8B FE 0A               CPI     LF
+0C8D 28 EB               JRZ     SETEL
+0C8F 18 C5               JR      FIN
+0C91 EB          NLF     XCHG
+0C92 23                  INX     H
+0C93 7E                  MOV     A,M
+0C94 FE 0D               CPI     CR
+0C96 28 E8               JRZ     SKIPCH
+0C98 EB                  XCHG
+0C99 FE 0A               CPI     LF
+0C9B 28 DD               JRZ     SETEL
+0C9D 18 B7               JMPR    FIN
+0C9F 2B          GEOF    DCX     H
+0CA0 36 01               MVI     M,1
+0CA2 2B                  DCX     H
+0CA3 4E                  MOV     C,M
+0CA4 77                  MOV     M,A
+0CA5 79                  MOV     A,C
+0CA6 2B                  DCX     H
+0CA7 36 01               MVI     M,1
+0CA9 18 B4               JR      NTXIT
+0CAB 21 0CB1     RBEOF   LXI     H,EOFMES
+0CAE C3 058D             JMP     PERROR
+0CB1 52 65 61 64 EOFMES  DB      'Read beyond EO','F'+80H
+     20 62 65 79 
+     6F 6E 64 20 
+     45 4F C6    
+     0005        RSSLOC  EQU     5
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 20
+
+0CC0 DD E5       READIT  PUSH    X
+0CC2 DD 21 0005          LXI     X,RSSLOC
+0CC6 50                  MOV     D,B
+0CC7 59                  MOV     E,C
+0CC8 DD 39               DADX    SP
+0CCA DD 19               DADX    D
+0CCC DD 19               DADX    D
+0CCE DD 19               DADX    D
+0CD0 DD 19               DADX    D
+0CD2 DD E5               PUSH    X
+0CD4 67                  MOV     H,A
+0CD5 6F                  MOV     L,A
+0CD6 DD BE FE            CMP     -2(X)
+0CD9 20 15               JRNZ    BEGIN
+0CDB DD 66 00            MOV     H,0(X)
+0CDE DD 2B               DCX     X
+0CE0 1B                  DCX     D
+0CE1 DD 6E 00            MOV     L,0(X)
+0CE4 DD 2B               DCX     X
+0CE6 DD 2B               DCX     X
+0CE8 DD 2B               DCX     X
+0CEA DD BE 01            CMP     1(X)
+0CED C2 0E52             JNZ     NTXT
+0CF0 7A          BEGIN   MOV     A,D
+0CF1 B3                  ORA     E
+0CF2 28 22               JRZ     THREW
+0CF4 AF          NEWPAR  XRA     A
+0CF5 BC                  CMP     H
+0CF6 20 01               JRNZ    NEWP1
+0CF8 2C                  INR     L
+0CF9 DD 46 FE    NEWP1   MOV     B,-2(X)
+0CFC 05                  DCR     B
+0CFD CC 0D52             CZ      BOOLE
+0D00 05                  DCR     B
+0D01 CC 0D93             CZ      RINTEG
+0D04 05                  DCR     B
+0D05 CC 0D24             CZ      CHARA
+0D08 05                  DCR     B
+0D09 05                  DCR     B
+0D0A 05                  DCR     B
+0D0B CC 1457             CZ      FLTIN
+0D0E 1B                  DCX     D
+0D0F 01 FFFC             LXI     B,-4
+0D12 DD 09               DADX    B
+0D14 18 DA               JR      BEGIN
+0D16 EB          THREW   XCHG
+0D17 E1                  POP     H
+0D18 72                  MOV     M,D
+0D19 2B                  DCX     H
+0D1A 73                  MOV     M,E
+0D1B DD E1               POP     X
+0D1D D1                  POP     D
+0D1E C1                  POP     B
+0D1F F9                  SPHL
+0D20 E1                  POP     H
+0D21 C5                  PUSH    B
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 21
+
+0D22 D5                  PUSH    D
+0D23 C9                  RET
+0D24 DD 46 FD    CHARA   MOV     B,-3(X)
+0D27 E5                  PUSH    H
+0D28 DD 66 00            MOV     H,0(X)
+0D2B DD 6E FF            MOV     L,-1(X)
+0D2E E3                  XTHL
+0D2F 18 0B               JR      CHST
+0D31 E3          STRIN   XTHL
+0D32 CD 0B3B             CALL    EOF
+0D35 38 13               JRC     FILLIN
+0D37 CD 0B13             CALL    EOLN
+0D3A 38 0E               JRC     FILLIN
+0D3C CD 0C15     CHST    CALL    INPUT
+0D3F FE 0D               CPI     CR
+0D41 28 07               JRZ     FILLIN
+0D43 E3                  XTHL
+0D44 77                  MOV     M,A
+0D45 2B                  DCX     H
+0D46 10 E9               DJNZ    STRIN
+0D48 E1                  POP     H
+0D49 C9                  RET
+0D4A E3          FILLIN  XTHL
+0D4B 36 20       FILLN1  MVI     M,' '
+0D4D 2B                  DCX     H
+0D4E 10 FB               DJNZ    FILLN1
+0D50 E1                  POP     H
+0D51 C9                  RET
+                 BOOLE:
+     FFFF                IF      NOT COMPILER
+0D52 CD 0C15             CALL    INPUT
+0D55 FE 54               CPI     'T'
+0D57 28 0B               JRZ     TRUIN
+0D59 FE 46               CPI     'F'
+0D5B 28 10               JRZ     FALIN
+0D5D FE 20               CPI     ' '
+0D5F 28 F1               JRZ     BOOLE
+0D61 C3 0E8E             JMP     ERRTYP
+0D64 06 03       TRUIN   MVI     B,3
+0D66 CD 0D80             CALL    SKIM
+0D69 06 01               MVI     B,1
+0D6B 18 07               JMPR    STOBOO
+0D6D 06 04       FALIN   MVI     B,4
+0D6F CD 0D80             CALL    SKIM
+0D72 06 00               MVI     B,0
+0D74 E5          STOBOO  PUSH    H
+0D75 DD 66 00            MOV     H,0(X)
+0D78 DD 6E FF            MOV     L,-1(X)
+0D7B 70                  MOV     M,B
+0D7C AF                  XRA     A
+0D7D 47                  MOV     B,A
+0D7E E1                  POP     H
+0D7F C9                  RET
+0D80 CD 0C15     SKIM    CALL    INPUT
+0D83 FE 45               CPI     'E'
+0D85 C8                  RZ
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 22
+
+0D86 FE 20               CPI     ' '
+0D88 C8                  RZ
+0D89 FE 2C               CPI     ','
+0D8B C8                  RZ
+0D8C CD 0B3B             CALL    EOF
+0D8F D8                  RC
+0D90 10 EE               DJNZ    SKIM
+0D92 C9                  RET
+                         ENDIF
+                 RINTEG:
+     FFFF                IF      NOT COMPILER
+0D93 DD 46 FD            MOV     B,-3(X)
+0D96 05                  DCR     B
+0D97 20 20               JRNZ    INT2
+0D99 CD 0DCA     INT1    CALL    CONV
+0D9C B8                  CMP     B
+0D9D 28 0E               JRZ     SMPOS
+0D9F BC                  CMP     H
+0DA0 C2 0E8E             JNZ     ERRTYP
+0DA3 E5                  PUSH    H
+0DA4 21 0EA7             LXI     H,REPROM
+0DA7 CD 03DB             CALL    TXTYP
+0DAA E1                  POP     H
+0DAB 18 EC               JMPR    INT1
+0DAD E5          SMPOS   PUSH    H
+0DAE DD 66 00            MOV     H,0(X)
+0DB1 DD 6E FF            MOV     L,-1(X)
+0DB4 71                  MOV     M,C
+0DB5 E1                  POP     H
+0DB6 AF                  XRA     A
+0DB7 47                  MOV     B,A
+0DB8 C9                  RET
+0DB9 CD 0DCA     INT2    CALL    CONV
+0DBC E5                  PUSH    H
+0DBD DD 66 00            MOV     H,0(X)
+0DC0 DD 6E FF            MOV     L,-1(X)
+0DC3 70                  MOV     M,B
+0DC4 2B                  DCX     H
+0DC5 71                  MOV     M,C
+0DC6 E1                  POP     H
+0DC7 AF                  XRA     A
+0DC8 47                  MOV     B,A
+0DC9 C9                  RET
+0DCA D5          CONV    PUSH    D
+0DCB E5                  PUSH    H
+0DCC 21 0000             LXI     H,0
+0DCF 44                  MOV     B,H
+0DD0 E3                  XTHL
+0DD1 CD 0C15     BLNK1   CALL    INPUT
+0DD4 FE 20               CPI     ' '
+0DD6 28 F9               JRZ     BLNK1
+0DD8 FE 2D               CPI     '-'
+0DDA 20 03               JRNZ    NMINUS
+0DDC 04                  INR     B
+0DDD 18 04               JR      GETDIG
+0DDF FE 2B       NMINUS  CPI     '+'
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 23
+
+0DE1 20 03               JRNZ    CHKDIG
+0DE3 CD 0C15     GETDIG  CALL    INPUT
+0DE6 FE 3A       CHKDIG  CPI     '9'+1
+0DE8 30 3B               JRNC    OVFMSG
+0DEA D6 30               SUI     '0'
+0DEC 38 37               JRC     OVFMSG
+0DEE E3          VALDIG  XTHL
+0DEF CD 0E3D             CALL    TIMES10
+0DF2 E3                  XTHL
+0DF3 EA 0E25             JV      OVFMSG
+0DF6 AF                  XRA     A
+0DF7 BC                  CMP     H
+0DF8 28 05               JRZ     FCONS
+0DFA 23                  INX     H
+0DFB 7E                  MOV     A,M
+0DFC 2B                  DCX     H
+0DFD 18 10               JR      CHKCHR
+0DFF 2A 0006     FCONS   LHLD    6
+0E02 11 FFAC             LXI     D,-GETP
+0E05 19                  DAD     D
+0E06 5E                  MOV     E,M
+0E07 16 00               MVI     D,0
+0E09 19                  DAD     D
+0E0A 23                  INX     H
+0E0B 7E                  MOV     A,M
+0E0C 21 0000             LXI     H,0
+0E0F FE 3A       CHKCHR  CPI     '9'+1
+0E11 30 04               JRNC    NOTDIG
+0E13 D6 30               SUI     '0'
+0E15 30 CC               JRNC    GETDIG
+0E17 AF          NOTDIG  XRA     A
+0E18 B8                  CMP     B
+0E19 C1                  POP     B
+0E1A D1                  POP     D
+0E1B C8                  RZ
+0E1C 78                  MOV     A,B
+0E1D 2F                  CMA
+0E1E 47                  MOV     B,A
+0E1F 79                  MOV     A,C
+0E20 2F                  CMA
+0E21 4F                  MOV     C,A
+0E22 03                  INX     B
+0E23 AF                  XRA     A
+0E24 C9                  RET
+0E25 AF          OVFMSG  XRA     A
+0E26 BC                  CMP     H
+0E27 20 65               JRNZ    ERRTYP
+0E29 C1                  POP     B
+0E2A D1                  POP     D
+0E2B 21 0EA7             LXI     H,REPROM
+0E2E CD 03DB             CALL    TXTYP
+0E31 CD 0372     OVF1    CALL    TIN
+0E34 FE 0D               CPI     CR
+0E36 20 F9               JRNZ    OVF1
+0E38 21 0001             LXI     H,1
+0E3B 18 8D               JR      CONV
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 24
+
+0E3D 54          TIMES10 MOV     D,H
+0E3E 5D                  MOV     E,L
+0E3F B7                  ORA     A
+0E40 ED 6A               DADC    H
+0E42 E8                  RV
+0E43 ED 6A               DADC    H
+0E45 E8                  RV
+0E46 ED 5A               DADC    D
+0E48 E8                  RV
+0E49 ED 6A               DADC    H
+0E4B E8                  RV
+0E4C 5F                  MOV     E,A
+0E4D 16 00               MVI     D,0
+0E4F ED 5A               DADC    D
+0E51 C9                  RET
+                         ENDIF
+                 NTXT:
+     FFFF                IF      NOT COMPILER
+0E52 D5                  PUSH    D
+0E53 E5                  PUSH    H
+0E54 DD 66 00            MOV     H,0(X)
+0E57 DD 6E FF            MOV     L,-1(X)
+0E5A DD 56 FE            MOV     D,-2(X)
+0E5D DD 5E FD            MOV     E,-3(X)
+0E60 E3          TXLP    XTHL
+0E61 CD 0B3B             CALL    EOF
+0E64 DA 0CAB             JC      RBEOF
+0E67 23                  INX     H
+0E68 23                  INX     H
+0E69 23                  INX     H
+0E6A CD 01C3             CALL    BYTIN
+0E6D 2B                  DCX     H
+0E6E 2B                  DCX     H
+0E6F 46                  MOV     B,M
+0E70 77                  MOV     M,A
+0E71 78                  MOV     A,B
+0E72 2B                  DCX     H
+0E73 30 02               JRNC    NTCONT
+0E75 36 01               MVI     M,1
+0E77 E3          NTCONT  XTHL
+0E78 77                  MOV     M,A
+0E79 2B                  DCX     H
+0E7A 1B                  DCX     D
+0E7B 7A                  MOV     A,D
+0E7C B3                  ORA     E
+0E7D 20 E1               JRNZ    TXLP
+0E7F 01 FFFC             LXI     B,-4
+0E82 DD 09               DADX    B
+0E84 E1                  POP     H
+0E85 D1                  POP     D
+0E86 1B                  DCX     D
+0E87 7A                  MOV     A,D
+0E88 B3                  ORA     E
+0E89 20 C7               JRNZ    NTXT
+0E8B C3 0D16             JMP     THREW
+                         ENDIF
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 25
+
+0E8E 21 0E94     ERRTYP  LXI     H,TYPMES
+0E91 C3 058D             JMP     PERROR
+0E94 54 79 70 65 TYPMES  DB      'Type error on inpu','t'+80H
+     20 65 72 72 
+     6F 72 20 6F 
+     6E 20 69 6E 
+     70 75 F4    
+0EA7 45 72 72 6F REPROM  DB      'Error in number, try again',CR,LF+80H
+     72 20 69 6E 
+     20 6E 75 6D 
+     62 65 72 2C 
+     20 74 72 79 
+     20 61 67 61 
+     69 6E 0D 8A 
+     FFFF                IF      NOT COMPILER
+     0003        CSET    MACRO   Q,OFF1,OFF2
+    -                      IF      OFF1
+    -                      LXI     H,OFF1
+    -                      CALL    CONSET
+    -                      ELSE
+    -                      LXI     H,-OFF2
+    -                      DAD     S
+    -                      SPHL
+    -                      MVI     B,OFF2
+    -              CSETCL  SET     $
+    -                      MOV     M,A
+    -                      INX     H
+    -                      DJNZ    CSETCL
+    -                      ENDIF
+                         ENDMAC
+                 CONSET:
+0EC3 0C                  INR     C
+0EC4 0D                  DCR     C
+0EC5 28 01               JRZ     LEGRNG
+0EC7 D8                  RC
+0EC8 39          LEGRNG  DAD     S
+0EC9 C5                  PUSH    B
+0ECA D5                  PUSH    D
+0ECB CB 3B               SRLR    E
+0ECD CB 3B               SRLR    E
+0ECF CB 3B               SRLR    E
+                         DSUB    D
+    +0000                    IF      0&8000H
+    +                        CALL    FSUB
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0ED1+AF                      XRA     A
+0ED2+ED 52                   DSBC    D D
+    +                        ENDIF
+0ED4 C1                  POP     B
+0ED5 79                  MOV     A,C
+0ED6 E6 07               ANI     7
+0ED8 1E 01               MVI     E,1
+0EDA 28 05               JRZ     SINIT
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 26
+
+0EDC 47                  MOV     B,A
+0EDD CB 23       SETBIT  SLAR    E
+0EDF 10 FC               DJNZ    SETBIT
+0EE1 C1          SINIT   POP     B
+0EE2 41                  MOV     B,C
+0EE3 04                  INR     B
+0EE4 7E                  MOV     A,M
+0EE5 B3          RANGE   ORA     E
+0EE6 CB 23               SLAR    E
+0EE8 30 05               JRNC    NOOVER
+0EEA 77                  MOV     M,A
+0EEB 1E 01               MVI     E,1
+0EED 2B                  DCX     H
+0EEE 7E                  MOV     A,M
+0EEF 10 F4       NOOVER  DJNZ    RANGE
+0EF1 77                  MOV     M,A
+0EF2 AF                  XRA     A
+0EF3 C9                  RET
+     0003        UNIN    MACRO   Q,OFFSET,OFF1
+    -                      LXI     H,OFF1
+    -                      LXI     D,OFFSET
+    -                      CALL    UNION
+                         ENDMAC
+                 UNION:
+0EF4 CD 0F9D             CALL    SAVREG
+0EF7 7E          ORBIT   MOV     A,M
+0EF8 EB                  XCHG
+0EF9 B6                  ORA     M
+0EFA 77                  MOV     M,A
+0EFB EB                  XCHG
+0EFC 2B                  DCX     H
+0EFD 1B                  DCX     D
+0EFE 10 F7               DJNZ    ORBIT
+0F00 E1                  POP     H
+0F01 D1                  POP     D
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0F02+39                      DAD     S D
+    +                        ENDIF
+0F03 F9                  SPHL
+0F04 EB                  XCHG
+0F05 AF                  XRA     A
+0F06 E9                  PCHL
+     0003        MEMB    MACRO   Q,OFFSET,OFF2
+    -                      LXI     D,OFF2
+    -                      LXI     H,OFFSET
+    -                      CALL    INN
+                         ENDMAC
+                 INN:
+                         DADD    S
+    +0000                    IF      0&8000H
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 27
+
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0F07+39                      DAD     S D
+    +                        ENDIF
+0F08 E5                  PUSH    H
+0F09 4E                  MOV     C,M
+0F0A 79                  MOV     A,C
+0F0B 2B                  DCX     H
+0F0C 19                  DAD     D
+0F0D CB 39               SRLR    C
+0F0F CB 39               SRLR    C
+0F11 CB 39               SRLR    C
+0F13 B7                  ORA     A
+0F14 ED 42               DSBC    B
+0F16 E6 07               ANI     7
+0F18 47                  MOV     B,A
+0F19 3E 01               MVI     A,1
+0F1B 28 03               JRZ     SET2
+0F1D 87          SET1    ADD     A
+0F1E 10 FD               DJNZ    SET1
+0F20 A6          SET2    ANA     M
+0F21 E1                  POP     H
+0F22 D1                  POP     D
+0F23 F9                  SPHL
+0F24 EB                  XCHG
+0F25 33                  INX     S
+0F26 33                  INX     S
+0F27 28 01               JRZ     NOTIN
+0F29 37                  STC
+0F2A 3E 00       NOTIN   MVI     A,0
+0F2C E9                  PCHL
+     0003        INCL    MACRO   Q,OFFSET,OFF1
+    -                      LXI     H,OFF1
+    -                      LXI     D,OFFSET
+    -                      CALL    LTEQ
+                         ENDMAC
+                 LTEQ:
+0F2D CD 0F9D             CALL    SAVREG
+0F30 EB                  XCHG
+0F31 18 03               JR      LTGTEQ
+     0003        SBST    MACRO   Q,OFFSET,OFF1
+    -                      LXI     H,OFF1
+    -                      LXI     D,OFFSET
+    -                      CALL    GTEQ
+                         ENDMAC
+                 GTEQ:
+0F33 CD 0F9D             CALL    SAVREG
+                 LTGTEQ:
+0F36 7E                  MOV     A,M
+0F37 EB                  XCHG
+0F38 B6                  ORA     M
+0F39 AE                  XRA     M
+0F3A 20 0D               JRNZ    NO
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 28
+
+0F3C 2B                  DCX     H
+0F3D 1B                  DCX     D
+0F3E EB                  XCHG
+0F3F 10 F5               DJNZ    LTGTEQ
+0F41 E1                  POP     H
+0F42 D1                  POP     D
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0F43+39                      DAD     S D
+    +                        ENDIF
+0F44 F9                  SPHL
+0F45 EB                  XCHG
+0F46 3E 80               MVI     A,80H
+0F48 E9                  PCHL
+                 NO:
+0F49 E1                  POP     H
+0F4A D1                  POP     D
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0F4B+39                      DAD     S D
+    +                        ENDIF
+0F4C F9                  SPHL
+0F4D EB                  XCHG
+0F4E AF                  XRA     A
+0F4F E9                  PCHL
+     0003        INTR    MACRO   Q,OFFSET,OFF1
+    -                      LXI     H,OFF1
+    -                      LXI     D,OFFSET
+    -                      CALL    INSECT
+                         ENDMAC
+                 INSECT:
+0F50 CD 0F9D             CALL    SAVREG
+                 ANDBIT:
+0F53 1A                  LDAX    D
+0F54 A6                  ANA     M
+0F55 12                  STAX    D
+0F56 2B                  DCX     H
+0F57 1B                  DCX     D
+0F58 10 F9               DJNZ    ANDBIT
+0F5A E1                  POP     H
+0F5B D1                  POP     D
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 29
+
+    +                          ENDIF
+    +FFFF                    ELSE
+0F5C+39                      DAD     S D
+    +                        ENDIF
+0F5D F9                  SPHL
+0F5E EB                  XCHG
+0F5F AF                  XRA     A
+0F60 E9                  PCHL
+     0003        DIFF    MACRO   Q,OFFSET,OFF1
+    -                      LXI     H,OFF1
+    -                      LXI     D,OFFSET
+    -                      CALL    ORGAN
+                         ENDMAC
+                 ORGAN:
+0F61 CD 0F9D             CALL    SAVREG
+                 SETDIF:
+0F64 7E                  MOV     A,M
+0F65 EB                  XCHG
+0F66 A6                  ANA     M
+0F67 AE                  XRA     M
+0F68 77                  MOV     M,A
+0F69 2B                  DCX     H
+0F6A 1B                  DCX     D
+0F6B EB                  XCHG
+0F6C 10 F6               DJNZ    SETDIF
+0F6E E1                  POP     H
+0F6F D1                  POP     D
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0F70+39                      DAD     S D
+    +                        ENDIF
+0F71 F9                  SPHL
+0F72 EB                  XCHG
+0F73 AF                  XRA     A
+0F74 E9                  PCHL
+     0003        MTCH    MACRO   Q,OFFSET,OFF1
+    -                      LXI     H,OFF1
+    -                      LXI     D,OFFSET
+    -                      CALL    COMP
+                         ENDMAC
+                 COMP:
+0F75 CD 0F9D             CALL    SAVREG
+0F78 0E 01               MVI     C,1
+                 QUERY:
+0F7A 1A                  LDAX    D
+0F7B AE                  XRA     M
+0F7C 20 0F               JRNZ    NOTEQ
+0F7E 2B                  DCX     H
+0F7F 1B                  DCX     D
+0F80 10 F8               DJNZ    QUERY
+0F82 B9                  CMP     C
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 30
+
+0F83 28 0C               JRZ     NEQTST
+0F85 E1          EQTST   POP     H
+0F86 D1                  POP     D
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0F87+39                      DAD     S D
+    +                        ENDIF
+0F88 F9                  SPHL
+0F89 EB                  XCHG
+0F8A 3E 80               MVI     A,80H
+0F8C E9                  PCHL
+                 NOTEQ:
+0F8D AF                  XRA     A
+0F8E B9                  CMP     C
+0F8F 28 F4               JRZ     EQTST
+0F91 E1          NEQTST  POP     H
+0F92 D1                  POP     D
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0F93+39                      DAD     S D
+    +                        ENDIF
+0F94 F9                  SPHL
+0F95 EB                  XCHG
+0F96 E9                  PCHL
+     0003        NOMT    MACRO   Q,OFFSET,OFF1
+    -                      LXI     H,OFF1
+    -                      LXI     D,OFFSET
+    -                      CALL    FUSS
+                         ENDMAC
+                 FUSS:
+0F97 CD 0F9D             CALL    SAVREG
+0F9A 4F                  MOV     C,A
+0F9B 18 DD               JR      QUERY
+                 SAVREG:
+0F9D C1                  POP     B
+0F9E E5                  PUSH    H
+0F9F C5                  PUSH    B
+0FA0 45                  MOV     B,L
+                         DADD    S
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0FA1+39                      DAD     S D
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 31
+
+    +                        ENDIF
+0FA2 23                  INX     H
+0FA3 23                  INX     H
+0FA4 23                  INX     H
+0FA5 23                  INX     H
+0FA6 23                  INX     H
+0FA7 EB                  XCHG
+                         DADD    D
+    +0000                    IF      0&8000H
+    +                        CALL    FADD
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0FA8+19                      DAD     D D
+    +                        ENDIF
+0FA9 EB                  XCHG
+0FAA C9                  RET
+                         ENDIF
+                 NEW:
+     FFFF                IF      NOT COMPILER
+0FAB C5                  PUSH    B
+0FAC D9                  EXX
+0FAD D1                  POP     D
+0FAE 19                  DAD     D
+0FAF E5                  PUSH    H
+0FB0 D9                  EXX
+0FB1 D1                  POP     D
+0FB2 72                  MOV     M,D
+0FB3 2B                  DCX     H
+0FB4 73                  MOV     M,E
+0FB5 21 FFCE             LXI     H,-MARGIN
+0FB8 39                  DAD     S
+                         DSUB    D
+    +0000                    IF      0&8000H
+    +                        CALL    FSUB
+    +                          IF      F
+    +                          JC      FLTERR
+    +                          ENDIF
+    +FFFF                    ELSE
+0FB9+AF                      XRA     A
+0FBA+ED 52                   DSBC    D D
+    +                        ENDIF
+0FBC DA 0571             JC      HPERR
+0FBF C9                  RET
+                         ENDIF
+                 MARK:
+     FFFF                IF      NOT COMPILER
+0FC0 D9                  EXX
+0FC1 E5                  PUSH    H
+0FC2 D9                  EXX
+0FC3 D1                  POP     D
+0FC4 72                  MOV     M,D
+0FC5 2B                  DCX     H
+0FC6 73                  MOV     M,E
+0FC7 C9                  RET
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 32
+
+                         ENDIF
+                 RELEASE:
+     FFFF                IF      NOT COMPILER
+0FC8 56                  MOV     D,M
+0FC9 2B                  DCX     H
+0FCA 5E                  MOV     E,M
+0FCB D5                  PUSH    D
+0FCC D9                  EXX
+0FCD E1                  POP     H
+0FCE D9                  EXX
+0FCF C9                  RET
+                         ENDIF
+     0005        nbytes  equ     5
+     0001        explen  equ     1
+     0004        fracln  equ     nbytes-explen
+     0007        sign    equ     7
+     0011        op1     equ     17
+     000B        op2     equ     11
+     0006        scr1    equ     op2-nbytes
+     000C        intflg  equ     op2+1
+     0012        dc1     equ     op1+1
+     0013        dc2     equ     op1+2
+     0000        exp     equ     0
+     FFFF        msb     equ     exp-explen
+     FFFC        lsb     equ     exp-fracln
+                 ftable:
+0FD0 00 40 42 0F         db      0,40h,42h,0fh
+0FD4 00 A0 86 01         db      0,0a0h,86h,1h
+0FD8 00 10 27 00         db      0,10h,27h,0
+0FDC 00 E8 03 00         db      0,0e8h,03,0
+0FE0 00 64 00 00         db      0,64h,0,0
+0FE4 00 0A 00 00         db      0,0ah,0,0
+0FE8 00 01 00 00         db      0,01,0,0
+                 bcd:
+0FEC 00 00 00 01         db      00,00,00,01h
+0FF0 00 00 10 00         db      00,00,10h,00
+0FF4 00 00 01 00         db      00,00,01h,00
+0FF8 00 10 00 00         db      00,10h,00,00
+0FFC 00 01 00 00         db      00,01h,00,00
+1000 10 00 00 00         db      10h,00,00,00
+1004 01 00 00 00         db      01h,00,00,00
+1008 00 00 00 50         db      0,0,0,50h
+100C 04          tentop  db      4
+     0002        rotate  macro   arg,direction
+    -                      if      'arg'-'y'
+    -                      lxi     h,op!arg+msb
+    -                      call    rotat!direction
+    -                      else
+    -                      push    y
+    -                      pop     h
+    -                      dcx     h
+    -                      ora     a
+    -                      call    rot!direction
+    -                      endif
+                         endmac
+     0002        shift   macro   arg,direction
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 33
+
+    -                      if      'arg'-'l'
+    -                      if      'arg'-'y'
+    -                      lxi     h,op!arg+exp
+    -                      dad     d
+    -                      else
+    -                      push    y
+    -                      pop     h
+    -                      endif
+    -                      inr     m
+    -                      jv      fperr
+    -                      dcx     h
+    -                      mov     a,m
+    -                      ral
+    -                      call    rotright
+    -                      else
+    -                      call    rotatel
+    -                      mvi     a,0
+    -                      rar
+    -                      xra     m
+    -                      mov     m,a
+    -                      endif
+                         endmac
+     0001        cmplmt  macro   arg
+    -                      if      'arg'-'y'
+    -                      lxi     h,op!arg+lsb
+    -                      call    compop
+    -                      else
+    -                      push    y
+    -                      pop     h
+    -                      lxi     b,lsb
+    -                      dad     b
+    -                      call    comp1
+    -                      endif
+                         endmac
+     0001        zchk    macro   arg
+    -                      if      'arg'-'y'
+    -                      lxi     h,op!arg+msb
+    -                      call    zerchk
+    -                      else
+    -                      push    y
+    -                      pop     h
+    -                      dcx     h
+    -                      call    zerck1
+    -                      endif
+                         endmac
+     0001        normfp  macro   arg
+    -                      if      'arg'-'y'
+    -                      lxi     b,op!arg
+    -                      push    x
+    -                      xtiy
+    -                      dady    b
+    -                      call    fnorm
+    -                      pop     y
+    -                      else
+    -                      call    fnorm
+                         endmac
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 34
+
+     0000        setupf  macro
+    -                      pop     b
+    -                      pop     d
+    -                      pop     h
+    -                      push    psw
+    -                      push    h
+    -                      push    d
+    -                      push    psw
+    -                      push    x
+    -                      push    y
+    -                      push    b
+    -                      lxi     h,0
+    -                      dad     s
+    -                      push    h
+    -                      pop     ix
+    -                      xchg
+    -                      xra     a
+    -                      mov     intflg(x),a
+                         endmac
+     0000        xcfp    macro
+    -                      pop     d
+    -                      pop     h
+    -                      pop     b
+    -                      xthl
+    -                      push    d
+    -                      push    h
+    -                      push    b
+                         endmac
+     0002        cvtf    macro   where,value
+    -                      if      'A'-'where'
+    -                      if      'B'-'where'
+    -                      if      'C'-'where'
+    -                      if      'D'-'where'
+    -                      if      'H'-'where'
+    -                      if      value-4
+    -                      mov     a,l
+    -                      pop     b
+    -                      pop     d
+    -                      pop     h
+    -                      mov     h,a
+    -                      push    h
+    -                      push    d
+    -                      push    b
+    -                      xra     a
+    -                      call    fout
+    -                      lxi     h,13
+    -                      dad     s
+    -                      push    h
+    -                      call    fxdcvt
+    -                      else
+    -                      call    fout
+    -                      endif
+    -                      else
+    -                      call    cvtflt
+    -                      endif
+    -                      else
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 35
+
+    -                      xchg
+    -                      call    cvtflt
+    -                      endif
+    -                      else
+    -                      pop     b
+    -                      pop     d
+    -                      pop     h
+    -                      push    d
+    -                      push    b
+    -                      call    cvtflt
+    -                      xcfp
+    -                      endif
+    -                      else
+    -                      pop     h
+    -                      call    cvtflt
+    -                      endif
+    -                      else
+    -                      lxi     h,value
+    -                      call    cvtflt
+    -                      endif
+                         endmac
+100D 44          cvtflt  mov     b,h
+100E CD 06BA             call    abs
+1011 78                  mov     a,b
+1012 E6 80               ani     80h
+1014 B4                  ora     h
+1015 67                  mov     h,a
+1016 C1                  pop     b
+1017 16 0F               mvi     d,15
+1019 D5                  push    d
+101A 33                  inx     s
+101B E5                  push    h
+101C 21 0000             lxi     h,0
+101F E5                  push    h
+1020 E5                  push    h
+1021 33                  inx     s
+1022 DD E5               push    x
+1024 FD E5               push    y
+1026 C5                  push    b
+1027 39                  dad     s
+1028 E5                  push    h
+1029 DD E1               pop     x
+102B EB                  xchg
+                         normfp  2
+    +FFB9                  if      '2'-'y'
+102C+01 000B               lxi     b,op2
+102F+DD E5                 push    x
+1031+FD E3                 xtiy
+1033+FD 09                 dady    b
+1035+CD 1095               call    fnorm
+1038+FD E1                 pop     y
+    +0000                  else
+    +                      call    fnorm
+103A E1                  pop     h
+103B FD E1               pop     y
+103D DD E1               pop     x
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 36
+
+103F D1                  pop     d
+1040 AF                  xra     a
+1041 E9                  pchl
+1042 19          compop  dad     d
+1043 06 04       comp1   mvi     b,fracln
+1045 7E                  mov     a,m
+1046 2F                  cma
+1047 C6 01               adi     1
+1049 77          compl   mov     m,a
+104A 23                  inx     h
+104B 7E                  mov     a,m
+104C 2F                  cma
+104D CE 00               aci     0
+104F 10 F8               djnz    compl
+1051 C9                  ret
+1052 19          zerchk  dad     d
+1053 06 04       zerck1  mvi     b,fracln
+1055 AF                  xra     a
+1056 B6          zchka   ora     m
+1057 2B                  dcx     h
+1058 10 FC               djnz    zchka
+105A C9                  ret
+                 rotatright
+105B 19                  dad     d
+105C B7                  ora     a
+                 rotright
+105D C5                  push    b
+105E 06 04               mvi     b,fracln
+1060 7E          rotr    mov     a,m
+1061 1F                  rar
+1062 77                  mov     m,a
+1063 2B                  dcx     h
+1064 10 FA               djnz    rotr
+1066 C1                  pop     b
+1067 C9                  ret
+                 rotatleft
+1068 19                  dad     d
+1069 B7                  ora     a
+                 rotleft
+106A 1F                  rar
+106B C5                  push    b
+106C 01 FFFC             lxi     b,lsb-msb-1
+106F 09                  dad     b
+1070 17                  ral
+1071 06 04               mvi     b,fracln
+1073 23          rotl    inx     h
+1074 7E                  mov     a,m
+1075 17                  ral
+1076 77                  mov     m,a
+1077 10 FA               djnz    rotl
+1079 C1                  pop     b
+107A C9                  ret
+107B AF          mpadd   xra     a
+107C C5                  push    b
+107D 06 04               mvi     b,fracln
+107F 1A          mpadd1  ldax    d
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 37
+
+1080 8E                  adc     m
+1081 12                  stax    d
+1082 23                  inx     h
+1083 13                  inx     d
+1084 10 F9               djnz    mpadd1
+1086 C1                  pop     b
+1087 C9                  ret
+1088 AF          mpsub   xra     a
+1089 C5                  push    b
+108A 06 04               mvi     b,fracln
+108C 1A          mpsub1  ldax    d
+108D 9E                  sbb     m
+108E 12                  stax    d
+108F 23                  inx     h
+1090 13                  inx     d
+1091 10 F9               djnz    mpsub1
+1093 C1                  pop     b
+1094 C9                  ret
+1095 AF          fnorm   xra     a
+1096 DD 77 06            mov     scr1(x),a
+1099 FD CB FF 7E         bit     sign,msb(y)
+109D 28 07               jrz     posit
+109F DD 34 06            inr     scr1(x)
+10A2 FD CB FF BE         res     sign,msb(y)
+                 posit   zchk    y
+    +0000                  if      'y'-'y'
+    +                      lxi     h,opy+msb
+    +                      call    zerchk
+    +FFFF                  else
+10A6+FD E5                 push    y
+10A8+E1                    pop     h
+10A9+2B                    dcx     h
+10AA+CD 1053               call    zerck1
+    +                      endif
+10AD 20 05               jrnz    fpanz
+10AF FD 36 00 00         mvi     exp(y),0
+10B3 C9                  ret
+10B4 FD CB FF 76 fpanz   bit     sign-1,msb(y)
+10B8 20 10               jrnz    allrot
+                         rotate  y,left
+    +0000                  if      'y'-'y'
+    +                      lxi     h,opy+msb
+    +                      call    rotatleft
+    +FFFF                  else
+10BA+FD E5                 push    y
+10BC+E1                    pop     h
+10BD+2B                    dcx     h
+10BE+B7                    ora     a
+10BF+CD 106A               call    rotleft
+    +                      endif
+10C2 FD 35 00            dcr     exp(y)
+10C5 EA 1543             jv      fperr
+10C8 18 EA               jr      fpanz
+10CA DD 35 06    allrot  dcr     scr1(x)
+10CD C0                  rnz
+10CE FD CB FF FE         bset    sign,msb(y)
+PASCAL RUN-TIME SUPPORT LIBRARY                                        ASMBLE v-3b Page 38
+
+10D2 C9                  ret
+                 fsub    setupf
+10D3+C1                    pop     b
+10D4+D1                    pop     d
+10D5+E1                    pop     h
+10D6+F5                    push    psw
+10D7+E5                    push    h
+10D8+D5                    push    d
+10D9+F5                    push    psw
+10DA+DD E5                 push    x
+10DC+FD E5                 push    y
+10DE+C5                    push    b
+10DF+21 0000               lxi     h,0
+10E2+39                    dad     s
+10E3+E5                    push    h
+10E4+DD E1                 pop     ix
+10E6+EB                    xchg
+10E7+AF                    xra     a
+10E8+DD 77 0C              mov     intflg(x),a
+10EB 3E 80               mvi     a,80h
+10ED DD AE 0A            xra     op2+msb(x)
+10F0 DD 77 0A            mov     op2+msb(x),a
+10F3 18 18               jr      fadd1
+                 fadd    setupf
+10F5+C1                    pop     b
+10F6+D1                    pop     d
+10F7+E1                    pop     h
+10F8+F5                    push  

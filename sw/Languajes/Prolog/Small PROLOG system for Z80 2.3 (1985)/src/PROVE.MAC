@@ -1,0 +1,620 @@
+
+; ===========================================================
+; PROVE.Z80
+;	prove routine for E-Prolog
+;	June 22, 1985
+
+	.Z80
+
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+FROZEN	EQU	-3
+
+DEBUG	EQU	FALSE
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+;BETASTATE * prbase;
+	DSEG
+PRBASE:	DW	0
+	CSEG
+;
+;prove(glist)
+;/* This routine is iterative rather than recursive
+;   in order to use as little heap space as possible.     */
+;  PAIR glist;	/* list of goals */	in HL
+;  {
+;  ALPHASTATE * ast;			in IX
+;  static BETASTATE * bst;		in IY
+;  static BETASTATE * bbot;
+;  static int x;
+	DSEG
+BBOT:	DW	0
+	CSEG
+;
+PROVE::
+;  bst = prbase = makebeta(empty,listone(glist));
+;#define	listone(x)	makepair((x),empty)
+	LD	DE,EMPTY
+	CALL	MKPAIR##
+	LD	IX,EMPTY
+	CALL	MKBETA##
+	LD	(PRBASE),IY
+;  freeze(bst);
+	CALL	FREEZE##
+;  goto bstart;
+	JP	BSTART
+;
+;/*==========*/
+;   astart:	/* start an alpha state here */
+;/*==========*/
+ASTART:
+;#ifdef DEBUG
+IF DEBUG
+;  printf("\nALPHA %04x: ",ast);
+	LD	HL,AS1MSG
+	CALL	MSG##
+	DSEG
+AS1MSG:	DB	CR,LF,'ALPHA ',0
+	CSEG
+	PUSH	IX
+	POP	HL
+	CALL	PRHEX
+	LD	A,' '
+	CALL	CHROUT##
+;  eprint(ast->goal->left.list,ast->pred->subst);
+	CALL	XPRED##
+	CALL	@SUBST##
+	PUSH	HL
+	CALL	XGOAL##
+	CALL	@LEFT##
+	POP	DE
+	CALL	EPRINT##
+;#endif
+ENDIF
+;
+;/*==========*/
+;   arpt:	/* repeat this alpha state */
+;/*==========*/
+ARPT:
+;  if (numbp(ast->datb))
+	CALL	XDATB##
+	CALL	NUMBP##
+	JP	Z,AR1
+;    {
+;    /* built-in command */
+;    bst = (BETASTATE *)empty;
+	LD	IY,EMPTY
+;    if (x = (*((BOOLEAN (*)())(ast->datb)))
+;               (ast->goal->left.list->right.list,ast,
+;                ast->pred->subst,&bst))
+	CALL	XPRED##
+	CALL	@SUBST##
+	PUSH	HL		; ast->pred->subst
+	CALL	XGOAL##
+	POP	DE
+	CALL	V@LEFT
+	CALL	V@RIGHT
+	PUSH	HL		; ast->goal->left.list->right.list
+	PUSH	DE
+	CALL	XDATB##		; ast->datb
+	LD	(ADDR+1),HL
+	POP	DE
+	POP	HL
+ADDR:	CALL	0		; address filled in here
+	JR	Z,AR2
+;      {
+;      if (x == EMPTY)
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	NZ,AR4
+;        {
+;        /* CUT */
+;	 bst = ast->back;
+	CALL	XBACK##
+	PUSH	HL
+	POP	IY
+;	 release(ast);
+	PUSH	IX
+	POP	HL
+	CALL	RLS##
+;	 ast = (bbot = (ast->pred))->pred;
+	CALL	XPRED##
+	LD	(BBOT),HL
+	CALL	@PRED##
+	PUSH	HL
+	POP	IX
+;        if (ast == (ALPHASTATE *)empty)
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	NZ,AR5X
+;          return FALSE;
+RETF:	XOR	A
+	RET
+; *** release from here (bst) back to there (bbot)
+AR5X:
+	CALL	BRLS##
+	LD	HL,(BBOT)
+	PUSH	IY
+	POP	DE
+	CALL	CPHL##
+	JR	Z,AR5
+	CALL	YPRED##
+	CALL	RLS##
+	CALL	@XBACK##
+	PUSH	HL
+	POP	IY
+	JR	AR5X
+;AR5: combined with the other case, below
+;
+AR4:
+;      /* A fake beta to hold temporary data for unifies */
+;      if (bst == (BETASTATE *)empty)
+	PUSH	IY
+	POP	HL
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	NZ,AR9
+;        bst = makebeta(ast,empty);
+	LD	HL,EMPTY
+	CALL	MKBETA##
+AR9:
+;      freeze(bst);
+	CALL	FREEZE##
+;      goto bstart;
+	JP	BSTART
+;      }
+AR2:
+;    if (bst != (BETASTATE *)empty)
+	PUSH	IY
+	POP	HL
+	LD	DE,EMPTY
+	JR	Z,AR6
+;      release(bst);
+	CALL	BRLS##		; ? RLS ?
+AR6:
+;    ast->datb = empty; /* failure */
+	LD	HL,EMPTY
+	CALL	XLDATB##
+;    }
+AR1:
+;  if (ast->datb == (PAIR)empty)
+	CALL	XDATB##
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	NZ,AR7
+;    {
+AR5:
+;    /* no (more) facts in the database - FAIL*/
+;    /* roll back pointer in tree-predecessor */
+;    ast->pred->assertion.list = ast->goal;
+	CALL	XGOAL##
+	PUSH	HL
+	CALL	XPRED##
+	PUSH	HL
+	POP	IY
+	POP	HL
+	CALL	YLASS##
+;    bst = ast->back;
+	CALL	XBACK##
+	PUSH	HL
+	POP	IY
+;    release(ast);
+	PUSH	IX
+	POP	HL
+	CALL	RLS##
+;    goto bafail;
+	JP	BAFAIL
+;    }
+AR7:
+;  bst = makebeta(ast,ast->datb->left.list);
+	CALL	XDATB##
+	CALL	@LEFT##
+	CALL	MKBETA##
+;  ast->datb = ast->datb->right.list;
+	CALL	XDATB##
+	CALL	@RIGHT##
+	CALL	XLDATB##
+;  if (unify(ast->goal->left.list,ast->pred->subst,
+;            bst->assertion.list->left.list,bst->subst))
+	CALL	YSUBST##
+	PUSH	HL
+	CALL	YASS##
+	CALL	@LEFT##
+	POP	DE
+	EXX
+	CALL	XPRED##
+	CALL	@SUBST##
+	PUSH	HL
+	CALL	XGOAL##
+	CALL	@LEFT
+	POP	DE
+	CALL	UNIFY##
+	JR	Z,AR8
+;    {
+;    freeze(bst);
+	CALL	FREEZE##
+;#ifdef DEBUG
+IF DEBUG
+;msg("  *** unified");
+	LD	HL,AR7MSG
+	CALL	MSG##
+	DSEG
+AR7MSG:	DB	'  *** unified',0
+	CSEG
+;#endif
+ENDIF
+;    bst->assertion.list = bst->assertion.list->right.list;
+	CALL	YASS##		; *** how about variable here?
+	CALL	@RIGHT##
+	CALL	YLASS##
+;    goto bstart;
+	JP	BSTART
+;    }
+AR8:
+;#ifdef DEBUG
+IF DEBUG
+;msg("  *** not unified");
+	LD	HL,AR8MSG
+	CALL	MSG##
+	DSEG
+AR8MSG:	DB	'  *** not unified',0
+	CSEG
+;#endif
+ENDIF
+;  brelease(bst);
+	CALL	BRLS##
+;  goto abfail;
+	JP	ABFAIL
+;
+;/*==========*/
+;   absucc:	/* return to alpha after success of beta */
+;/*==========*/
+;  fatal("\r\nabsucc not written.");
+;
+;/*==========*/
+;   abfail:	/* return to alpha after failure of beta */
+;/*==========*/
+ABFAIL	EQU	ARPT
+;  goto arpt;
+;
+;/*==========*/
+;   bstart:	/* start beta state here */
+;/*==========*/
+BSTART:
+;#ifdef DEBUG
+IF DEBUG
+;  printf("\nBETA %04x: ",bst);
+	LD	HL,BSMSG
+	CALL	MSG##
+	DSEG
+BSMSG:	DB	CR,LF,'BETA  ',0
+	CSEG
+	PUSH	IY
+	POP	HL
+	CALL	PRHEX
+	LD	A,' '
+	CALL	CHROUT##
+;  eprint(bst->assertion.list,bst->subst);
+	CALL	YSUBST##
+	PUSH	HL
+	CALL	YASS##
+	POP	DE
+	CALL	EPRINT##
+;#endif
+ENDIF
+;
+;/*==========*/
+;   brpt:	/* repeat beta state */
+;/*==========*/
+;BRPT:
+;  if (bst->assertion.list == (PAIR)empty)
+	CALL	YASS
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	NZ,BR1
+;    {
+;    /* no (more) goals - Succeed */
+;    bbot = bst;
+	LD	(BBOT),IY
+;    while (bst->assertion.list == (PAIR)empty)
+BR3:
+	CALL	YASS##
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	NZ,BR4
+;      {
+;      if (bst == prbase)
+	PUSH	IY
+	POP	HL
+	LD	DE,(PRBASE)
+	CALL	CPHL##
+	JR	NZ,BR5
+;        {
+;        if (infile == stdin && outfile == stdout)
+	LD	A,(INF##)
+	OR	A
+	JR	NZ,BR6
+	LD	A,(OUTF##)
+	OR	A
+	JR	NZ,BR6
+;          msg("Yes.");
+	LD	HL,BR6MSG
+	CALL	MSG##
+	DSEG
+BR6MSG:	DB	'Yes.',0
+	CSEG
+BR6:
+;        if (prvals())
+	CALL	PRVALS
+	JR	Z,BR7
+;          {
+;          bst = bbot;
+	LD	IY,(BBOT)
+;          goto bafail;
+	JP	BAFAIL
+;          }
+BR7:
+;        else
+;          return;
+	RET
+;        }
+BR5:
+;      bst = bst->pred->pred;
+	CALL	YPRED##
+	CALL	@PRED##
+	PUSH	HL
+	POP	IY
+;      }
+	JR	BR3
+BR4:
+;    ast = makealpha(bst,bst->assertion.list,bbot);
+	CALL	YASS##
+	LD	DE,(BBOT)
+	CALL	MKALPHA##
+;    }
+	JR	BR2
+BR1:
+;  else
+;    /* both pointers are to bst */
+;    ast = makealpha(bst,bst->assertion.list,bst);
+	CALL	YASS##
+	PUSH	IY
+	POP	DE
+	CALL	MKALPHA##
+BR2:
+;  bst->assertion.list = bst->assertion.list->right.list;
+	CALL	YASS##
+	CALL	@RIGHT##
+	CALL	YLASS##
+;  goto astart;
+	JP	ASTART
+;
+;/*==========*/
+;   basucc:	/* return to beta after success of alpha */
+;/*==========*/
+;BASUCC	EQU	BRPT
+;  goto brpt;
+;
+;/*==========*/
+;   bafail:	/* return to beta after failure of alpha */
+;/*==========*/
+BAFAIL:
+;  ast = bst->pred;
+	CALL	YPRED##
+	PUSH	HL
+	POP	IX
+;  if (ast == (ALPHASTATE *)empty)
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	NZ,BA1
+;    return FALSE;
+	XOR	A
+	RET
+BA1:
+;  brelease(bst);
+	CALL	BRLS##
+;  goto abfail;
+	JP	ABFAIL
+;  }
+;
+;prvals()
+;  {
+;  SUBST * x;
+;  int cnt;
+	DSEG
+X:	DW	0
+CNT:	DB	0
+	CSEG
+PRVALS:
+;
+;  cnt = 0;
+	XOR	A
+	LD	(CNT),A
+;  for (x = prbase->subst ; substp(x) ; x++)
+	LD	HL,(PRBASE)
+	CALL	@SUBST##
+	LD	(X),HL
+PR2:
+	CALL	SUBSTP##
+	JR	Z,PR1
+;    {
+;    chrout('\t');
+	LD	A,HT
+	CALL	CHROUT##
+;    msg(x->vname->string);
+	CALL	@VNAME##
+	CALL	@STR##
+	CALL	MSG##
+;    msg(" = ");
+	LD	HL,PR1MSG
+	CALL	MSG##
+	DSEG
+PR1MSG:	DB	' = ',0
+	CSEG
+;    prval(x);
+	LD	HL,(X)
+	CALL	PRVAL
+;    cnt = 1;
+	LD	A,1
+	LD	(CNT),A
+;    msg("\r\n");
+	CALL	CRLF##
+;    }
+	LD	HL,(X)
+	LD	DE,6
+	ADD	HL,DE
+	LD	(X),HL
+	JR	PR2
+PR1:
+;  if (! cnt)
+	LD	A,(CNT)
+	OR	A
+	JR	NZ,PR3
+;    {
+;    msg("\r\n");
+	CALL	CRLF##
+;    return FALSE;
+	XOR	A
+	RET
+;    }
+PR3:
+;  msg("More?");
+	LD	HL,PR3MSG
+	CALL	MSG##
+	DSEG
+PR3MSG:	DB	'More?',0
+	CSEG
+;  while (separp(rdchar()))
+;    ;
+PR4:
+	CALL	RDCHAR##
+	CALL	SEPARP##
+	JR	NZ,PR4
+;  if (character == 'Y' || character == 'y')
+;    return TRUE;
+;  return FALSE;
+	LD	A,(CHR##)
+	CP	'Y'
+	JR	Z,RETT
+	CP	'y'
+	JR	Z,RETT
+	XOR	A
+	RET
+RETT:	LD	A,1
+	OR	A
+	RET
+;  }
+;
+;prval(sub)
+;  SUBST * sub;
+;  {
+;  static SUBVAL as;
+	DSEG
+AS:	DW	0
+	CSEG
+PRVAL:
+;
+;  as.val = value(sub);
+	CALL	VALUE##
+	LD	(AS),HL
+;  if (substp(as.val))
+	CALL	SUBSTP##
+	JR	Z,PR6
+;    msg(as.val->vname->string);
+	CALL	@VNAME##
+	CALL	@STR##
+	CALL	MSG##
+	RET
+PR6:
+;  else
+;    eprint(as.assgn->sexp.list,as.assgn->slist);
+	CALL	@SLIST##
+	PUSH	HL
+	LD	HL,(AS)
+	CALL	@EXPR##
+	POP	DE
+	CALL	EPRINT##
+	RET
+;  }
+;
+IF DEBUG
+; display HL in hex
+PRHEX:	LD	A,H
+	CALL	HINYB
+	CALL	LONYB
+	LD	A,L
+	CALL	HINYB
+	CALL	LONYB
+	RET
+HINYB:	PUSH	AF
+	AND	0F0H
+	RRCA
+	RRCA
+	RRCA
+	RRCA
+	CALL	LONYBX
+	POP	AF
+	RET
+LONYB:	AND	00FH
+LONYBX:	ADD	A,90H
+	DAA
+	ADC	A,40H
+	DAA
+	JP	CHROUT##
+ENDIF
+
+; right (value if variable)
+; expression in HL, substs in DE
+V@RIGHT:
+	PUSH	DE
+	PUSH	HL
+	LD	HL,@RIGHT##
+	LD	(V@R+1),HL
+V@9:	POP	HL
+	CALL	VARP##
+	JR	NZ,V@0
+V@R:	CALL	0		; filled in
+	POP	DE
+	RET
+V@0:	POP	DE
+	CALL	VF##
+	CALL	VALUE##
+	PUSH	HL
+	CALL	SUBSTP##
+	JR	Z,V@1
+	LD	HL,V@ERR
+	JP	ERROR##
+	DSEG
+V@ERR:	DB	CR,LF,'Meta-variable remaining',0
+	CSEG
+V@1:	POP	HL
+	PUSH	HL
+	CALL	@SLIST##
+	POP	HL
+	PUSH	DE
+	CALL	@EXPR##
+	JR	V@R	
+
+; left (value if variable)
+; expression in HL, substs in DE
+V@LEFT:
+	PUSH	DE
+	PUSH	HL
+	LD	HL,@LEFT##
+	LD	(V@R+1),HL
+	JR	V@9
+
+	END
+

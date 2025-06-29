@@ -1,0 +1,104 @@
+                                                        14 Aug 86
+
+SILLIB.REL has been reorganized to eliminate 'backward refs'.  It  
+is no longer necessary to:  link <prgm>,SILLIB[S],SILLIB[S].
+
+
+Also, the following routines have been added to SILLIB.REL:
+
+
+int bdos(bc,de)
+int bc,de;
+
+     Does  CP/M BDOS call with approiate values in  registers  BC  
+     and DE.  Returns int.
+
+
+char putchar(c)
+char c;
+
+     Puts character 'c' to consol.  Also returns 'c'.
+
+
+char getchar()
+
+     Returns consol input character.
+
+
+puts(str)
+char *str;
+
+     Puts  string plus newline at consol.   Returns no meaningful  
+     data.
+
+
+putstr(str)
+char *str;
+
+     Same as 'puts', but without newline.
+
+
+int gets(str)
+char *str;
+
+     Fills  array at *str with consol input.   The length of  the  
+     input string is returned.
+
+     The calling program MUST provide enough space to  accomadate  
+     the  input string.   Gets() will input up to 253  characters  
+     using the CP/M BDOS function 10.
+
+     example:       char buffer[82];    /* ok for 80 chars */
+                    int bfrlen;
+                         bfrlen = gets(buffer);
+
+     'buffer' will contain string of 'bfrlen' bytes.
+
+char *itoa(i,str)
+int i;
+char *str;
+
+     Fills  array at *str with unsigned,  decimal  integer.   The  
+     pointer to *str is returned.
+
+     The calling program MUST provide a 6 byte array for *str.
+
+
+char *itoar(i,str,how)
+int i;
+char *str,*how;
+
+     Same as 'itoa',  but radix may be specified in 'how'.  Legal  
+     specifications are:   "b" (binary),  "o" (octal), "h" (hex).   
+     Any other character defaults to decimal.
+
+     The calling program MUST provide enough array space for  the  
+     radix conversion:  "b" 17, "o" 7, "h" 5, decimal is 6 bytes.
+
+     example:       char asc[17];
+                    int i;
+                              i = 7654;
+                              puts(itoar(i,asc,"b"));
+
+
+int atoi(str)
+char *str;
+
+     Converts decimal ascii at *str to an integer value.  Leading  
+     spaces are skipped.  Unary '+/-' are not allowed.
+
+
+int atoir(str,how)
+char *str,*how;
+
+     Same as 'atoi',  but radix may be specified in 'how'.  Legal  
+     specifications are:   "b" (binary),  "o" (octal), "h" (hex).   
+     Any other character defaults to decimal.
+
+     example:       char asc[20];
+                    int i;
+                              if ( gets(asc) > 0 )
+                                   i = atoir(asc,"h");
+e. Those marked 
+"Unconfirmed"  mean  that  the problem has been  reported  but  a 
+sample program with the bug is not avail

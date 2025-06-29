@@ -1,0 +1,626 @@
+	NAME RTS2
+ 
+* External globals in BCPL.
+ 
+	GLOBAL XRET
+	GLOBAL NEXT
+ 
+* Internal global.
+ 
+	GLOBAL CLOSE
+ 
+* Some locations.
+ 
+	GLOBAL INCON
+	GLOBAL OUTCON
+	GLOBAL IOAREA
+	GLOBAL IOTAB
+ 
+* Offsets from IY.
+ 
+DYNP	EQU 0
+STACKP	EQU 4
+ 
+* CPM location.
+ 
+BDOS	EQU 5
+ 
+* Disc parameters.
+ 
+NOBUFF	EQU 8
+BUFFSIZ	EQU 128+38
+ 
+* Offsets in discio blocks.
+ 
+COUNT	EQU 36		;position of byte count
+INOUT	EQU 37
+DMA	EQU 38		;offset of buffer
+ 
+BASE:	DEFW GLOBS-$
+ 
+* Console buffer.
+ 
+CBUFF:	DEFB 80H
+	DEFB 0
+	DEFS 80
+UNFLG:	DEFB 0
+UNCHR:	DEFS 1
+ 
+UNRDCH:	DEFW 2
+	DEFB 0
+	LD A,0FFH
+	LD (UNFLG),A
+	JP XRET
+ 
+RDCH:	DEFW 2
+	DEFB 0
+	PUSH HL
+	LD A,(UNFLG)
+	INC A
+	JP Z LRD9
+	LD HL,(INCON)
+	INC H
+	DEC H
+	JR NZ LRD3
+	DEC L
+	JR NZ LRD1
+	LD HL,CBUFF
+	LD A,(HL)
+	OR A
+	JP P CINP1
+	PUSH HL
+	LD (HL),80
+	EX DE,HL
+	LD C,10
+	CALL BDOS
+	LD E,0AH
+	LD C,2
+	CALL BDOS	;Output LF
+	POP HL
+	XOR A
+	LD (HL),A
+CINP1:	INC HL
+	CP (HL)
+	DEC HL
+	JR Z CINP2
+	INC (HL)
+	INC A
+	INC A
+	LD E,A
+	LD D,0
+	ADD HL,DE
+	LD A,(HL)
+	JR LRD2
+ 
+CINP2:	OR A
+	LD (HL),80H
+	LD A,0DH
+	JR LRD2
+ 
+LRD1:	LD C,3
+	CALL BDOS
+	JR LRD2
+ 
+LRD3:	PUSH HL
+	POP IX
+	CALL CHKEOF
+DINP2:	LD A,(IX+COUNT)
+	INC A
+	AND 7FH
+	LD (IX+COUNT),A
+	JR NZ DINP1
+	PUSH AF
+	PUSH HL
+	LD BC,DMA
+	ADD HL,BC
+	EX DE,HL
+	LD C,26
+	CALL BDOS
+	POP DE
+	LD C,20
+	CALL BDOS
+	OR A
+	JR NZ ERR1		;if run out of data
+	POP AF
+DINP1:	ADD A,DMA
+	LD C,A
+	LD B,0
+	PUSH IX
+	POP HL
+	PUSH HL
+	ADD HL,BC
+	LD A,(HL)
+	POP HL
+	CP 1AH
+	JR Z ERR2
+	CP 10
+	JR Z DINP2
+LRD2:	LD L,A
+	LD H,0
+	LD (UNCHR),A
+	JP XRET
+ 
+LRD9:	LD (UNFLG),A
+	LD A,(UNCHR)
+	JR LRD2
+ 
+CHKEOF:	LD B,(IX+COUNT)
+	INC B
+	RET NZ
+ERR1:	POP HL
+ERR2:	LD HL,-1
+	LD (IX+COUNT),L
+	JP XRET
+ 
+WRCH:	DEFW 3
+	DEFB 38H,2	;YDPSHDYN 2
+	DEFB 0
+	LD A,L
+	LD HL,(OUTCON)
+	INC H
+	DEC H
+	JR NZ LWR4
+	DEC L
+	JR NZ LWR1
+	LD C,2
+OUTL1:	LD E,A
+	PUSH AF
+	PUSH BC
+	CALL BDOS
+	POP BC
+	POP AF
+	CP 13		;if CR then also do a LF.
+	LD A,10
+	JR Z OUTL1
+	JR LWR2
+ 
+LWR1:	DEC L
+	LD C,5
+	JR NZ OUTL1
+	LD E,A
+	LD C,4
+	CALL BDOS
+	JR LWR2
+ 
+LWR4:	PUSH HL
+	POP IX
+	CALL CHKEOF
+	CALL DOUT
+LWR2:	JP XRET
+ 
+DOUT:	PUSH AF
+	LD D,A
+	LD A,(IX+COUNT)
+	PUSH AF
+	ADD A,DMA
+	LD C,A
+	LD B,0
+	PUSH HL
+	ADD HL,BC
+	LD (HL),D
+	POP HL
+	POP AF
+	INC A
+	AND 7FH
+	LD (IX+COUNT),A
+	JR NZ DOUT1
+	PUSH HL
+	LD BC,DMA
+	ADD HL,BC
+	EX DE,HL
+	LD C,26
+	CALL BDOS
+	POP DE
+	LD C,21
+	CALL BDOS
+	OR A
+	JR NZ ERR1	;if run out of disc
+DOUT1:	POP AF
+	PUSH IX
+	POP HL
+	CP 13		;If CR put in LF
+	LD A,10
+	JR Z DOUT
+	RET
+ 
+FINDIN:	DEFW 3
+	DEFB 38H,2	;YDPSHDYN 2
+	DEFB 0
+	CALL FIND
+	LD A,H
+	OR A
+	JP Z XRET
+	CALL ZERO
+	LD (IX+INOUT),0
+	LD C,15
+	LD A,127
+DOPN1:	LD (IX+COUNT),A	;Set byte count field
+	PUSH IX
+	POP DE
+	CALL BDOS
+	INC A
+	LD HL,0
+	JP Z XRET
+	PUSH IX
+	POP HL
+	JP XRET
+ 
+FINDOUT:DEFW 3
+	DEFB 38H,2	;YDPSHDYN 2
+	DEFB 0
+	PUSH HL
+	CALL FIND
+	LD A,H
+	OR A
+	JP Z XRET
+	PUSH IX
+	POP DE
+	LD C,19
+	CALL BDOS
+	CALL ZERO
+	LD (IX+INOUT),1
+	LD C,22
+	XOR A
+	JR DOPN1
+ 
+ZERO:	XOR A
+	LD (IX+32),A	;Clear cr field
+	LD (IX+14),A	;Clear s2 field
+	LD (IX+12),A	;Clear ex field
+	RET
+ 
+ENDWRIT:DEFW 2
+	DEFB 0
+	PUSH HL
+	LD HL,(OUTCON)
+	JR CLOS
+ 
+ENDREAD:DEFW 2
+	DEFB 0
+	PUSH HL
+	LD HL,(INCON)
+CLOS:	CALL CLOSE
+	JP XRET
+ 
+CLOSE:	LD A,H
+	OR A
+	RET Z
+	PUSH HL
+	POP IX
+	DEC (IX+INOUT)
+	JR NZ LCLOS3
+	LD A,(IX+COUNT)
+	OR A
+	JR Z LCLOS9
+	LD A,1AH
+	CALL DOUT
+	LD (IX+COUNT),127
+	LD A,1AH
+	CALL DOUT	;Ensures record is output
+LCLOS9:	PUSH IX
+	POP DE
+	LD C,16
+	CALL BDOS
+LCLOS3:	PUSH IX
+	POP DE
+	LD HL,IOTAB
+	LD B,NOBUFF
+LCLOS1:	LD A,(HL)
+	SUB E
+	INC HL
+	JR NZ LCLOS2
+	LD A,(HL)
+	SUB D
+	JR NZ LCLOS2
+	DEC HL
+	LD (HL),A
+	INC HL
+	LD (HL),A
+LCLOS2:	INC HL
+	DJNZ LCLOS1
+	RET
+	
+FIND:	ADD HL,HL
+	LD C,(HL)
+	INC HL
+	EX DE,HL
+	LD HL,MNETAB
+SCAN1:	CALL NEXTCH
+	JR C LF3	;Error if empty string
+	CP ' '
+	JR Z SCAN1	;ignore leading spaces
+	INC C
+	DEC DE		; in input string
+SCAN2:	PUSH DE		; save pointer
+	PUSH BC
+SCAN3:	CALL NEXTCH
+	JR C SCAN4
+	SUB (HL)
+	AND 7FH
+	JR NZ SCAN4
+	BIT 7,(HL)
+	INC HL
+	JR Z SCAN3
+	LD L,(HL)
+	LD H,0
+	POP DE
+	POP DE
+	RET
+ 
+SCAN4:	POP BC
+	POP DE
+SCAN5:	BIT 7,(HL)
+	INC HL
+	JR Z SCAN5
+	INC HL
+	XOR A
+	CP (HL)
+	JR NZ SCAN2
+	PUSH DE
+	LD HL,IOTAB
+	LD DE,IOAREA
+	LD B,NOBUFF
+LF1:	LD A,(HL)
+	INC HL
+	OR (HL)
+	JR Z LF2
+	INC HL
+	PUSH HL
+	LD HL,BUFFSIZ
+	ADD HL,DE
+	EX DE,HL
+	POP HL
+	DJNZ LF1
+	POP DE
+LF3:	LD HL,0
+	RET
+ 
+MNETAB:	DEFB 'C','O','N',':'+80H,1
+	DEFB 'R','D','R',':'+80H,2
+	DEFB 'P','U','N',':'+80H,2
+	DEFB 'L','S','T',':'+80H,3
+	DEFB 0
+ 
+LF2:	LD (HL),D
+	DEC HL
+	LD (HL),E
+	POP HL
+	PUSH DE
+	POP IX		;DE=IX=address of area
+	EX DE,HL
+	CALL NEXTCH
+	SUB 'A'-1	;A=1 etc.
+	LD (HL),A	;assume as drive name
+	INC HL
+	CALL NEXTCH
+	JR C DOPL2	;one char filename
+	CP ':'
+	JR Z DOPL3
+	INC C
+	DEC DE
+DOPL2:	DEC DE		;wrong assumption
+	INC C		;move back
+	LD (IX+0),0	;zero drive field
+DOPL3:	CALL NEXTCH
+	JR C LF3
+	LD (HL),A
+	INC HL
+	LD A,7
+	CALL FIELD
+	CP ' '
+	JR NZ DOPL7
+	INC C
+	DEC DE		;Move back to space
+DOPL7:	LD A,3
+	CALL FIELD
+	CP '.'
+	JR Z LF3
+	PUSH IX
+	POP HL
+	RET
+ 
+NEXTCH:	LD A,C
+	OR A
+	SCF
+	RET Z		;error if none left
+	LD A,(DE)
+	INC DE
+	DEC C
+	CP 'a'
+	CCF
+	RET NC
+	CP 'z'+1
+	RET NC
+	SUB 'a'-'A'
+	RET
+ 
+FIELD:
+ 
+* FIELD reads upto A successive characters into
+* the area pointed to by HL from the string BCDE
+* until a full stop or space. Excess characters
+* are ignored and unfilled space is filled with
+* spaces. On exit the terminating character is 
+* in A, unless end of string which is signified
+* by carry set on exit.
+* In all cases HL is moved past the area in question.
+ 
+	PUSH HL
+	LD L,A
+FIEL2:	CALL NEXTCH
+	JR C FIEL1
+	CP '.'
+	JR Z FIEL1
+	CP ' '
+	JR Z FIEL1
+	EX (SP),HL
+	LD (HL),A
+	INC HL
+	EX (SP),HL
+	DEC L
+	JR NZ FIEL2
+	POP HL
+FIEL3:	CALL NEXTCH
+	RET C
+	CP '.'
+	RET Z
+	CP ' '
+	RET Z
+	JR FIEL3
+ 
+FIEL1:	EX (SP),HL
+	LD (HL),' '
+	INC HL
+	EX (SP),HL
+	DEC L
+	JR NZ FIEL1
+	POP HL
+	RET
+ 
+INP:	DEFW 2
+	DEFB 0
+	PUSH HL
+	LD HL,(INCON)
+	JP XRET
+ 
+OUT:	DEFW 2
+	DEFB 0
+	PUSH HL
+	LD HL,(OUTCON)
+	JP XRET
+ 
+SELECI:	DEFW 3
+	DEFB 38H,2	;YDPSHDYN 2
+	DEFB 0
+	LD (INCON),HL
+	JP XRET
+ 
+SELECO:	DEFW 3
+	DEFB 38H,2	;YDPSHDYN 2
+	DEFB 0
+	LD (OUTCON),HL
+	JP XRET
+ 
+* LEVEL delivers the address of the base of the
+* current stack frame.
+ 
+LEVEL:	DEFW 2
+ 
+* YDPSHDYN 0,YRET
+ 
+	DEFB 38H,0,4BH
+ 
+* LONGJUMP(P,L) jumps to the label L at the level
+* stack frame P. 
+ 
+LONGJU:	DEFW 4
+ 
+* YPSHDYN,0,YDPSHDYN,2,YDPSHDYN,3
+ 
+	DEFB 34H,0,38H,2,38H,3
+	DEFB 0
+	LD B,L
+	LD C,H
+	POP IX
+	POP HL
+LLONG1:	LD E,(IY+STACKP)
+	LD D,(IY+STACKP+1)
+	EX DE,HL
+	DEC HL
+	LD A,(HL)
+	DEC HL
+	LD L,(HL)
+	LD H,A
+	LD SP,HL
+	EX DE,HL
+	ADD HL,HL
+	LD (IY+STACKP),L
+	LD (IY+STACKP+1),H
+	LD D,(HL)
+	INC HL
+	LD E,(HL)
+	PUSH IX
+	POP HL
+	SBC HL,DE
+	EX DE,HL
+	JR NZ LLONG1
+	LD (IY+DYNP),L
+	LD (IY+DYNP+1),H
+	JP NEXT
+ 
+* APTOVEC(F,N) is defined as: 
+* 
+* LET aptovec(F,N)=VALOF
+*  $( LET v=VEC n
+*     RESULTIS f(v,n)
+*  $)
+* 
+* This is implemented here by incrementing the
+* stack pointer to create the required vector.
+ 
+APTOVEC:DEFW 4
+	DEFB 38H,3	;YDPSHDYN 3
+	DEFB 0
+ 
+* HL=size of vector required-1.
+ 
+	ADD HL,HL
+	EX DE,HL
+	LD H,(IY+STACKP+1)
+	LD L,(IY+STACKP)
+	DEC HL
+	LD B,(HL)
+	DEC HL
+	LD C,(HL)
+	ADD HL,DE
+	LD (IY+STACKP),L
+	LD (IY+STACKP+1),H
+	DEC HL
+	LD (HL),B
+	DEC HL
+	LD (HL),C
+	LD BC,CONT
+	JP NEXT
+ 
+* The ycodes that follow are :
+* YDPSHDYN3,2 to put in the function
+* YFALSE to make way for the return address
+* YPSHDYN3,2 is the address of the vector
+* YDPSHDYN3,3 to supply the size of the vector.
+* YFCALL2 to call the routine.
+* YRET to return to caller of APTOVEC.
+ 
+CONT:	DEFB 38H,2,27H,34H,2,38H,3,3EH,4BH
+ 
+* Align on two-byte boundary.
+ 
+	IF ($.AND.1)=1
+	DEFB 0
+	ENDIF
+ 
+* The GLOBAL list for the module.
+ 
+	DEFW 13,RDCH-BASE
+	DEFW 14,WRCH-BASE
+	DEFW 15,UNRDCH-BASE
+	DEFW 11,SELECI-BASE
+	DEFW 12,SELECO-BASE
+	DEFW 16,INP-BASE
+	DEFW 17,OUT-BASE
+	DEFW 31,LEVEL-BASE
+	DEFW 32,LONGJUMP-BASE
+	DEFW 40,APTOVEC-BASE
+	DEFW 41,FINDOU-BASE
+	DEFW 42,FINDIN-BASE
+	DEFW 46,ENDREA-BASE
+	DEFW 47,ENDWRI-BASE
+	DEFW 14
+GLOBS:	DEFW 47
+ 
+* This must be the last module as it has the
+* end of modules marker at the end.
+ 
+	DEFW 0
+ 
+	END
+

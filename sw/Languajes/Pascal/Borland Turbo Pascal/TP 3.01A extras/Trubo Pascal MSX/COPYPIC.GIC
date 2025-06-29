@@ -1,0 +1,40 @@
+(*  C O P Y P I C . G I C       VRAM/VRAM-Copy      V 2.1    13-5-1987  *)
+
+
+{ COPY (x1,y1)-(x2,y2), sp TO (x3,y3), dp, LOGOPR }
+
+
+procedure CopyPic (x1, y1, x2, y2, sp, x3, y3, dp: integer);
+
+  begin
+    V9938command.sx   := x1;
+    V9938command.sy   := swap(sp) + y1;
+    V9938command.dx   := x3;
+    V9938command.dy   := swap(dp) + y3;
+    V9938command.nx   := succ(abs(x2 - x1));
+    V9938command.ny   := succ(abs(y2 - y1));
+    V9938command.arg  := (ord(x1 > x2) shl 2) + (ord(y1 > y2) shl 3);
+    V9938command.l_op := $90 + LOGOPR;
+    doV9938;
+  end;
+
+
+{ Dasselbe, aber ohne logische Verknpfung;
+  x-Koordinaten sind auf Bytegrenzen beschr„nkt }
+
+procedure HiSpeedCopyPic (x1, y1, x2, y2, sp, x3, y3, dp: integer);
+
+  begin
+    V9938command.sx   := x1;
+    V9938command.sy   := swap(sp) + y1;
+    V9938command.dx   := x3;
+    V9938command.dy   := swap(dp) + y3;
+    V9938command.nx   := succ(abs(x2 - x1));
+    V9938command.ny   := succ(abs(y2 - y1));
+    V9938command.arg  := (ord(x1 > x2) shl 2) + (ord(y1 > y2) shl 3);
+    V9938command.l_op := $D0;
+    doV9938;
+  end;
+
+
+

@@ -1,0 +1,69 @@
+(*  S Y M B O L . G I C     V 1.1     20-NOV-1988  *)
+
+type
+  _symbol_string = string[128];
+const
+  symbol_workpage: integer = $100;  { = swap(1) }
+
+procedure symbol (x, y, xsize, ysize: integer; s: _symbol_string);
+
+  var n, psave, opsave, i, w: integer;
+      dsum:                   integer;
+
+  begin
+    psave  := ACPAGE;
+    opsave := LOGOPR;
+    w      := length(s) * (8-dxGRPPRT);
+    xsize  := length(s) * xsize;
+    if x < 0 then x := (maxX - xsize) div 2;
+    SetPage (DPPAGE,swap(symbol_workpage));
+    LOGOPR := G_PSET;
+    gotoXY (0,0); write (s);
+    setpage (DPPAGE, psave);
+
+    if ysize <> 8
+    then begin
+      dsum := 0;
+      V9938command.sy   := symbol_workpage + 7;
+      V9938command.dx   := xsize;
+      V9938command.ny   := 1;
+      V9938command.arg  := $04;
+      V9938command.l_op := $E0;
+      for i := pred(ysize) downto 0 do
+        begin
+        V9938command.dy := i + symbol_workpage;
+        doV9938;
+        dsum := dsum + 8;
+        if dsum >= ysize
+        then begin
+          dsum            := dsum - ysize;
+          V9938command.sy := pred (V9938command.sy);
+          end;
+        end;
+      end;
+
+    LOGOPR := opsave;
+
+    dsum := 0;
+    V9938command.sx   := 0;
+    V9938command.sy   := symbol_workpage;
+    V9938command.dy   := y + swap(ACPAGE);
+    V9938command.nx   := 1;
+    V9938command.ny   := ysize;
+    V9938command.arg  := 0;
+    V9938command.l_op := LOGOPR + $90;
+    for i := x to x+pred(xsize) do
+      begin
+      V9938command.dx := i;
+      doV9938;
+      dsum := dsum + w;
+      if dsum >= xsize
+      then begin
+        dsum            := dsum - xsize;
+        V9938command.sx := succ (V9938command.sx);
+        end;
+      end;
+  end;
+
+
+

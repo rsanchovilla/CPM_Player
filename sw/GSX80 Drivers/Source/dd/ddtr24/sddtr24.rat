@@ -1,0 +1,288 @@
+h28906
+s 00276/00000/00000
+d D 1.1 83/03/17 15:38:32 tes 1 0
+c date and time created 83/03/17 15:38:32 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  ddtr24.rat          local   03/24/82  11:21
+subroutine ddtr24 (contrl, intin, rlin, intout, rlout)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver for Transiac TR1024             #
+#                                                                      #
+#     Input Parameters:                                                #
+#            contrl(1-3) - An integer array with following information #
+#                          contrl(1) - opcode for driver function      #
+#                          contrl(2) - length of integer array intin   #
+#                          contrl(3) - length of real input array rlin #
+#                                                                      #
+#            intin   -     Array of integer input parameters           #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters:                                               #
+#            contrl(4-6) - contrl(4) - length of integer array intout  #
+#                          contrl(5) - length of integer array rlout   #
+#                          contrl(6) - count of any other control parms#
+#                                                                      #
+#             rlout  -     Array of integer output parameters          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            dm40xx - 40xx marker emulation routine                    #
+#            dr40xx - 40xx move/draw routine                           #
+#            da40xx - 40xx dashed line emulation routine               #
+#            gdevot - put a character to device                        #
+#            gdstin - get a string from the current device             #
+#            gdstot - output a string to the current device            #
+#            gimnmx - bound an integer variable                        #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+# local defines
+define(X_LIMITS_4012,1023.)            #4012 screen width
+define(Y_LIMITS_4012,779.)             #4012 screen height
+define(TEXT_OFFSET,.00488281)          # Text offset from base of cell to
+                                       # base of character
+ 
+integer contrl(1),intin(1),intout(1)
+real rlin(1),rlout(1)
+ 
+integer opcode, x, y, i, j, gimnmx,
+        tries, ginok, bytes(4),
+        line(7), xhi, xlo, yhi, ylo,
+        booboo(2), enable(4), setup(4), setup1(6),
+        txtsiz(2), incsiz(3)
+real chrwid, chrhgt, xcoord, ycoord, xyary(2), savex, savey
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       line(2) :: xhi
+#       line(3) :: xlo
+#       line(4) :: yhi
+#       line(5) :: ylo
+ 
+equivalence (line(2), xhi), (line(3), xlo), (line(4), yhi), (line(5), ylo)
+equivalence (xcoord, xyary(1)), (ycoord, xyary(2))
+ 
+#    chrwid 8 / X_LIMITS_4012
+data chrwid /.0078125/
+ 
+#    chrhgt 10 / X_LIMITS_4012
+data chrhgt /.00976563/
+ 
+#    booboo
+data booboo /BELL, NEWLINE/
+ 
+#    enable GIN
+data enable /BELL, ESC, SUB, NEWLINE/
+ 
+#    setup - initialize device
+data setup /ESC, ESC, BIGO, NEWLINE/
+ 
+#    setup1 - set overstrike and no scroll
+data setup1 /ESC, ESC, BLANK, ESC, NAK, NEWLINE/
+ 
+#     set character size to default (smallest)
+data txtsiz /ESC, SEMICOL/
+ 
+#     increment character size
+data incsiz /ESC, ESC, SEMICOL/
+ 
+ 
+opcode=contrl(OPCODE)
+ 
+#
+#  opcode move and draw
+#
+if  ((opcode == DRAW) | (opcode == MOVE)) {
+ 
+      # Emulate dashed lines since device only has 3 hardware styles
+      if (ndlntp == 1 | opcode == MOVE) call dr40xx (opcode, rlin)
+      else                              call da40xx (rlin)
+      }
+ 
+#
+#  opcode text
+#
+else if (opcode == TEXT) {
+      savex = zdxpos
+      savey = zdypos
+      xcoord = zdxpos                        # Adjust positon to remove gap
+      ycoord = zdypos - (TEXT_OFFSET * ndtxsz)
+      call dr40xx (MOVE, xyary)
+      j = contrl(INTEGER_IN_LENGTH)
+      call gdstot (j, intin)
+      call dr40xx (MOVE, savexy)              # Restore cursor position
+      }
+ 
+#
+#  opcode marker
+#
+else if (opcode == MARKER) {
+      call dm40xx (intin, rlin)
+      }
+ 
+#
+#  opcode fill pattern
+#
+else if (opcode == SET_FILL_COLOR) {
+      ndclrf = gimnmx (intin(1), 0, 7)   # Emulation supports 8 patterns
+      intout(1) = ndclrf
+      }
+ 
+#
+#  opcode linestyle
+#
+else if (opcode == LINESTYLE) {
+      ndlntp = gimnmx (intin(1), 1, 5)   # Emulation supports 5 line styles
+      intout(1) = ndlntp                 # Return the linestyle set
+      }
+ 
+#
+#  opcode get point
+#
+else if (opcode == GET_POINT) {
+        contrl(4) = 0     # Initialize output count
+        ginok = YES
+        tries = 0
+        repeat {
+                # enable gin
+                call gdstot (4, enable)
+                call gdstin (7, line, i)
+                if (i <= 5) {  # make sure there are right number of chars
+                        for (j=2; j<=i; j=j+1) {
+                                # verify chars valid
+                                if (line(j) < SPACE | line(j) > QMARK) {
+                                        ginok = NO
+                                        call gdstot (2, booboo)
+                                        }
+                                }
+                        }
+                else {  # too many chars -- ooooops
+                        ginok = NO
+                        call gdstot (2, booboo)
+                        }
+                tries = tries + 1
+ 
+                } until (ginok == YES | tries > 3)
+ 
+        # decode the data returned
+ 
+        if (ginok == YES) {
+                # rlout(1) = x
+                # rlout(2) = y
+ 
+#                xcoord = float ((line(2)-SPACE)*SPACE + line(3)-SPACE)
+                xcoord = float ((xhi-SPACE)*SPACE + xlo-SPACE)
+ 
+#                ycoord = float ((line(4)-SPACE)*SPACE + line(5)-SPACE)
+                ycoord = float ((yhi-SPACE)*SPACE + ylo-SPACE)
+ 
+                rlout(1) = xcoord / X_LIMITS_4012
+                rlout(2) = ycoord / X_LIMITS_4012
+                intout (1) = line(1)
+                contrl (4) = 1
+                }
+        }
+ 
+#
+#   opcode text_size
+#
+else if (opcode == TEXT_SIZE) {
+      areain = rlin(1)*rlin(2)
+      j = ndtxsz                         # save old text size
+      ndtxsz = 1
+      repeat {
+         darea = chrwid * chrhgt * ndtxsz * ndtxsz
+         if (darea > areain) break
+         ndtxsz = ndtxsz + 1
+         } until (ndtxsz > 8)
+      ndtxsz = max0 (1, ndtxsz-1)
+ 
+      if (j != ndtxsz) {               # has text size changed
+         call gdstot (2, txtsiz)         # yes, set base size
+         if (ndtxsz > 1) {               # increment to proper size
+            for (i=1; i<ndtxsz; i=i+1) call gdstot (3, incsiz)
+            }
+         }
+ 
+      rlout(1) = chrwid * ndtxsz   #return actual size set
+      rlout(2) = chrhgt * ndtxsz
+      }
+ 
+#
+#    opcode new_frame
+#
+else if (opcode == NEW_FRAME) {
+      call gdevot (ESC)
+      call gdevot (FF)
+      for (i=1; i <=300; i = i + 1) call gdevot (SYN)
+      }
+ 
+#
+# opcode set_device_parameters
+#
+else if (opcode == SET_DEVICE_PARAMETERS) {
+ 
+      # set up device capability array
+ 
+      devcap(TEXT_CAP) = YES    # Text capability
+      devcap(LINESTYLE_CAP) = 3 # Capable of 3 different linestyles
+      devcap(TEXT_SIZE_CAP) = 8 # Capable of 8 different text sizes
+      devcap(GIN_CAP) = YES     # Gin capability
+      devcap(MARKER_CAP)= 5     # Capable of 5 different Markers
+ 
+      zdlgax = X_LIMITS_4012      # Set the length of the longest axis.
+      zdxlng = 1.0                # Set the length of each axis in NDCs
+      zdylng = 0.76148583         # Y_LIMITS_4012 / X_LIMITS_4012
+      zdxpos = 0.0                # Initialize the device position registers
+      zdypos = 0.0
+      ndlntp = 1                  # Set current device line style
+      ndtxsz = 1                  # Set current device text size
+ 
+      # reset device, set overstrike mode, turn scroll off
+ 
+      call gdstot (4, setup)
+      for (i=1; i<=200; i=i+1) call gdevot (SYN)  #Wait for reset
+      call gdstot (6, setup1)
+      }
+ 
+#
+#     stop graphics
+#
+else if (opcode == STOP_GRAPHICS) {
+      call gdstot (2, txtsiz)     # Reset text size to default
+      call gdevot (NEWLINE)
+      }
+ 
+#
+#     inquire screen size
+#
+else if (opcode == INQUIRE_SCREEN_SIZE) {
+      rlout(1) = zdxlng
+      rlout(2) = zdylng
+      rlout(3) = X_LIMITS_4012
+      }
+ 
+return
+end
+#-t-  ddtr24.rat          local   03/24/82  11:21
+E 1

@@ -1,0 +1,26 @@
+Echo   'This Batch file will compile and run a sample COBOL program using ISAM'
+
+maklink -f  /usr/pkg/fdc/isamdemo.cob  .
+maklink -f  /usr/pkg/fdc/cobol[1-4].ovr  .
+maklink -f  /usr/pkg/fdc/cobol.com    .
+maklink -f  /usr/pkg/fdc/cobloc  .
+maklink -f  /bin/runcob.com  .
+
+Echo   'First, the input COBOL source file is typed:'
+Ty Isamdemo.cob
+
+Echo   'Next, the source file is compiled, producing a REL object file:'
+Cobol Isamdemo,TTY:=Isamdemo
+
+Echo   'This is linked with Coblbx.rel, producing an executable file:'
+Link Isamdemo,h:Coblbx/s,Isamdemo/N/E
+
+del  cobol[1-4].ovr 
+del  cobol.com  
+del  cobloc
+del  isamdemo.rel
+
+Echo   'Finally, the compiled and linked program is executed:'
+Isamdemo
+del  runcob.com
+

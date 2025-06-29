@@ -1,0 +1,154 @@
+; { this program is to welcome a new Pascal/Z user }
+; var i: 1..10;
+; begin
+L99
+	ENTR	D,1,1
+;     for i := 1 to 10 do
+	STMT	D,1
+	MVI	0(IY),1
+	PUSH	IY
+	LXI	H,10
+	XTHL
+L158
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	L159
+;         writeln;
+	STMT	D,2
+	LXI	B,0
+	CALL	L109
+	STMT	M,2
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	L158
+L159
+	POP	D
+L166
+	POP	D
+; 
+;     writeln( 'Welcome to the land of Pascal/Z', chr( 7 ) );
+	STMT	D,3
+	JR	L174
+L173
+	DB	'Z/lacsaP fo dnal eht ot emocleW',31
+L174
+	LXI	H,769
+	PUSH	H
+	LXI	B,31
+	PUSH	B
+	LXI	H,-31
+	DADD	S
+	SPHL
+	XCHG
+	LXI	H,L173+0
+	LXI	B,31
+	LDIR
+	LXI	H,7
+	PUSH	H
+	LXI	H,769
+	XTHL
+	LXI	B,1
+	PUSH	B
+	MOV	H,L
+	PUSH	H
+	INX	S
+	LXI	B,40
+	CALL	L109
+	STMT	M,3
+;     writeln( 'Don''t forget to look at the file ''INFO.NEW''' );
+	STMT	D,4
+	JR	L194
+L193
+	DB	'',"'",'WEN.OFNI',"'",' elif eht ta kool ot tegrof t',"'",'noD',43
+L194
+	LXI	H,769
+	PUSH	H
+	LXI	B,43
+	PUSH	B
+	LXI	H,-43
+	DADD	S
+	SPHL
+	XCHG
+	LXI	H,L193+0
+	LXI	B,43
+	LDIR
+	LXI	B,47
+	CALL	L109
+	STMT	M,4
+;     writeln( 'to find out the latest and greatest about' );
+	STMT	D,5
+	JR	L202
+L201
+	DB	'tuoba tsetaerg dna tsetal eht tuo dnif ot',41
+L202
+	LXI	H,769
+	PUSH	H
+	LXI	B,41
+	PUSH	B
+	LXI	H,-41
+	DADD	S
+	SPHL
+	XCHG
+	LXI	H,L201+0
+	LXI	B,41
+	LDIR
+	LXI	B,45
+	CALL	L109
+	STMT	M,5
+;     writeln( 'Pascal/Z' );
+	STMT	D,6
+	JR	L210
+L209
+	DB	'Z/lacsaP',8
+L210
+	LXI	H,769
+	PUSH	H
+	LXI	B,8
+	PUSH	B
+	LXI	H,-8
+	DADD	S
+	SPHL
+	XCHG
+	LXI	H,L209+0
+	LXI	B,8
+	LDIR
+	LXI	B,12
+	CALL	L109
+	STMT	M,6
+; 
+;     for i := 1 to 10 do
+	STMT	D,7
+	MVI	0(IY),1
+	PUSH	IY
+	LXI	H,10
+	XTHL
+L219
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	L220
+;         writeln;
+	STMT	D,8
+	LXI	B,0
+	CALL	L109
+	STMT	M,8
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	L219
+L220
+	POP	D
+L227
+	POP	D
+; end.
+	STMT	D,9
+	FINI
+

@@ -1,0 +1,156 @@
+(*  M S X F I L E . S I C        V 1.2            29-OKT-1988     *)
+
+
+
+type
+  _MSXfilename = string[14];
+  _MSXlongint  = array[0..3] of byte;
+
+  MSXfile  = record
+             case integer of
+               0: (fcb:        file);
+               1: (flags:      byte;
+                   filler1:    array[1..11] of byte;
+                   drive:      byte;
+                   filename:   array[1..11] of char;
+                   extent:     integer;
+                   recordsize: integer;
+                   filesize:   _MSXlongint;
+                   date:       integer;
+                   time:       integer;
+                   filler2:    array[24..32] of byte;
+                   recordnr:   _MSXlongint);
+             end;
+
+
+
+
+function MSXfilepos (var fi: MSXfile): real;
+
+  var i: integer;
+      p: real;
+
+  begin
+    p := 0.0;
+    if fi.recordsize < 64 then i := 3 else i := 2;
+    for i := i downto 0 do p := p * 256.0 + fi.recordnr[i];
+    MSXfilepos := p;
+  end;
+
+
+function MSXfilesize (var fi: MSXfile): real;
+
+  var a: real;
+      i: integer;
+
+  begin
+    a := 0;
+    for i := 3 downto 0 do
+      a := 256.0 * a + fi.filesize[i];
+    MSXfilesize := int(a / fi.recordsize);
+  end;
+
+
+
+function MSXeof (var fi: MSXfile): boolean;
+
+  var i: integer;
+
+  begin
+    MSXeof := (MSXfilepos (fi) >= MSXfilesize (fi));
+  end;
+
+
+procedure _putlong (r: real; var n: _MSXlongint);
+
+  var i: integer;
+
+  begin
+    if r < 0.0 then r := 4294967295.0;
+    for i := 0 to 3 do
+      begin
+      r := r / 256.0;
+      n[i] := round (frac(r) * 256.0);
+      r := int (r);
+      end;
+  end;
+
+
+procedure MSXassign (var fi: MSXfile; n: _MSXfilename);
+
+  begin
+    assign (fi.fcb, n);
+  end;
+
+
+
+procedure MSXclose (var fi: MSXfile);
+
+  begin
+    mem[$00D0] := BDOS (16, addr (fi.drive));
+  end;
+
+
+
+procedure MSXreset (var fi: MSXfile; recordlength: integer);
+
+  begin
+    {$I-}
+    reset (fi.fcb);
+    fi.recordsize := recordlength;
+    fillchar (fi.recordnr, sizeof(fi.recordnr), 0);
+    {$I+}
+  end;
+
+
+procedure MSXrewrite (var fi: MSXfile; recordlength: integer);
+
+  begin
+    {$I-}
+    rewrite (fi.fcb);
+    fi.recordsize := recordlength;
+    fillchar (fi.recordnr, sizeof(fi.recordnr), 0);
+    {$I+}
+  end;
+
+
+
+procedure MSXseek (var fi: MSXfile; n: real);
+
+  begin
+    if n > MSXfilesize (fi)
+    then mem[$00D0] := $91
+    else _putlong (n, fi.recordnr);
+  end;
+
+
+procedure MSXblockread (var fi: MSXfile; var buffer;
+                        records: integer; var result:  integer);
+
+  begin
+    inline ($ED/$5B/buffer/$0E/$1A/$CD/$05/$00/$2A/fi/$11/$0C/$00/$19/$EB/$2A/
+            records/$0E/$27/$CD/$05/$00/$DD/$2A/result/$DD/$75/$00/$DD/$74/$01);
+  end;
+
+
+procedure MSXblockwrite (var fi: MSXfile; var buffer; records: integer);
+
+  begin
+    inline ($ED/$5B/buffer/$0E/$1A/$CD/$05/$00/$2A/fi/$11/$0C/$00/$19/$EB/$2A/
+            records/$0E/$26/$CD/$05/$00/$B7/$C8/$3E/$F0/$32/$D0/$00);
+  end;
+
+
+function MSXupcase (c: char): char;
+
+  const
+    lower: array[1..33] of char = '‚ƒ„…†‡ˆ‰Š‹Œ„‘“”•–—˜” ¡¢£¤±³µ·¹';
+    upper: array[1..33] of char = 'šEAA€EEEIII’O™OUUY™šAIOU¥°²´¶¸';
+
+  var
+    p: integer;
+
+  begin
+    p := pos (c, lower);
+    if p = 0 then MSXupcase := upcase(c) else MSXupcase := upper[p];
+  end;

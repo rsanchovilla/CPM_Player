@@ -1,0 +1,1834 @@
+
+ # Because some compilers will not compile logical expressions
+ # of the form (i .ne. -1), we have used positive values for
+ # some symbolic constants where negative values would be
+ # a better choice. (EOS, EOF, and so on are examples.)
+ # These positive values are all greater than 10000.
+
+define(ALPHA,10100)
+define(AMPER,38)   # ampersand
+define(ARB,100)
+define(ATSIGN,64)
+define(BACKSLASH,92)
+define(BACKSPACE,8)
+define(BANG,33)   # exclamation mark
+define(BAR,124)
+define(BIGA,65)
+define(BIGB,66)
+define(BIGC,67)
+define(BIGD,68)
+define(BIGE,69)
+define(BIGF,70)
+define(BIGG,71)
+define(BIGH,72)
+define(BIGI,73)
+define(BIGJ,74)
+define(BIGK,75)
+define(BIGL,76)
+define(BIGM,77)
+define(BIGN,78)
+define(BIGO,79)
+define(BIGP,80)
+define(BIGQ,81)
+define(BIGR,82)
+define(BIGS,83)
+define(BIGT,84)
+define(BIGU,85)
+define(BIGV,86)
+define(BIGW,87)
+define(BIGX,88)
+define(BIGY,89)
+define(BIGZ,90)
+define(BLANK,32)
+define(BUFSIZE,300)   # pushback buffer for ngetch and putbak
+define(COLON,58)
+define(COMMA,44)
+define(DEFTYPE,10010)
+define(DIG0,48)
+define(DIG1,49)
+define(DIG2,50)
+define(DIG3,51)
+define(DIG4,52)
+define(DIG5,53)
+define(DIG6,54)
+define(DIG7,55)
+define(DIG8,56)
+define(DIG9,57)
+define(DIGIT,2)
+define(DOLLAR,36)
+define(DQUOTE,34)
+define(EOF,10003)
+define(EOS,10002)
+define(EQUALS,61)
+define(ERR,10001)
+define(ERROUT,6)   # temporarily same as standard output
+define(GREATER,62)
+define(LBRACE,123)
+define(LBRACK,91)
+define(LESS,60)
+define(LETA,97)
+define(LETB,98)
+define(LETC,99)
+define(LETD,100)
+define(LETE,101)
+define(LETF,102)
+define(LETG,103)
+define(LETH,104)
+define(LETI,105)
+define(LETJ,106)
+define(LETK,107)
+define(LETL,108)
+define(LETM,109)
+define(LETN,110)
+define(LETO,111)
+define(LETP,112)
+define(LETQ,113)
+define(LETR,114)
+define(LETS,115)
+define(LETT,116)
+define(LETTER,1)
+define(LETU,117)
+define(LETV,118)
+define(LETW,119)
+define(LETX,120)
+define(LETY,121)
+define(LETZ,122)
+define(LEXBREAK,10264)
+define(LEXDIGITS,10260)
+define(LEXDO,10266)
+define(LEXELSE,10262)
+define(LEXFOR,10268)
+define(LEXIF,10261)
+define(LEXNEXT,10265)
+define(LEXOTHER,10267)
+define(LEXREPEAT,10269)
+define(LEXUNTIL,10270)
+define(LEXWHILE,10263)
+define(LPAREN,40)
+define(MAXCARD,80)   # card size
+define(MAXCHARS,10)   # characters for outnum
+define(MAXDEF,200)   # max chars in a defn
+define(MAXFORSTK,200)   # max space for for reinit clauses
+define(MAXLINE,81)   # must be 1 more than MAXCARD
+define(MAXNAME,30)   # file name size in gettok
+define(MAXPTR,200)   # number of defines in lookup
+define(MAXSTACK,100)   # max stack depth for parser
+define(MAXTBL,1500)   # max chars in all definitions
+define(MAXTOK,200)   # max chars in a token
+define(MINUS,45)
+define(NCHARS,33)   # number of special characters
+define(NEWLINE,10)
+define(NFILES,5)   # max depth of file inclusion
+define(NO,0)
+define(NOT,BANG)   # exclamation mark for now; change for ebcdic
+define(PERCENT,37)
+define(PERIOD,46)
+define(PLUS,43)
+define(QMARK,63)
+define(RBRACE,125)
+define(RBRACK,93)
+define(READONLY,0)
+define(RPAREN,41)
+define(SEMICOL,59)
+define(SHARP,35)
+define(SLASH,47)
+define(SQUOTE,39)
+define(STAR,42)
+define(STDIN,5)
+define(STDOUT,6)
+define(TAB,9)
+define(UNDERLINE,95)
+define(YES,1)
+define(character,integer)
+define(abs,iabs)
+# common blocks.
+#   these have been lumped into one place to minimize
+#   the operational problems of picking up several small
+#   files in an environment that doesn't support files
+#   by name. the individual routines still name as comments the
+#   actual common blocks they need, but actually include
+#   everything in this batch, with a statement:
+#      include commonblocks
+
+common /cchar/ extdig(10), intdig(10), extlet(26), intlet(26),
+   extbig(26), intbig(26), extchr(NCHARS), intchr(NCHARS),
+   extblk, intblk
+   integer extdig   # external representation of digits
+   integer intdig   # internal rep (ascii)
+   integer extlet   # external rep of letters (normal case)
+   integer intlet   # internal rep (ascii lower case)
+   integer extbig   # external rep of upper case, if used
+   integer intbig   # internal rep (upper case ascii)
+   integer extchr   # external rep of special chars
+   integer intchr   # internal rep (ascii)
+   integer extblk   # external blank
+   integer intblk   # internal blank (ascii)
+
+common /cdefio/ bp, buf(BUFSIZE)
+   integer bp      # next available character; init = 0
+   character buf   # pushed-back characters
+
+common /cfor/ fordep, forstk(MAXFORSTK)
+   integer fordep   # current depth of for statements
+   character forstk   # stack of reinit strings
+
+common /ckeywd/ sdo, sif, selse, swhile, sbreak, snext,
+   sfor, srept, suntil,
+   vdo, vif, velse, vwhile, vbreak, vnext, vfor, vrept, vuntil
+   integer sdo(3), sif(3), selse(5), swhile(6), sbreak(6), snext(5)
+   integer sfor(4), srept(7), suntil(6)
+   integer vdo(2), vif(2), velse(2), vwhile(2), vbreak(2), vnext(2)
+   integer vfor(2), vrept(2), vuntil(2)
+
+common /cline/ level, linect(NFILES), infile(NFILES)
+   integer level   # level of file inclusion; init = 1
+   integer linect   # line count on input file(level); init = 1
+   integer infile   # file number(level); init infile(1) = STDIN
+
+common /clook/ lastp, lastt, namptr(MAXPTR), table(MAXTBL)
+   integer lastp   # last used in namptr; init = 0
+   integer lastt   # last used in table; init = 0
+   integer namptr   # name pointers
+   character table   # actual text of names and defns
+
+common /coutln/ outp, outbuf(MAXLINE)
+   integer outp      # last position filled in outbuf; init = 0
+   character outbuf   # output lines collected here
+
+# block data - initialize global variables
+   block data
+   include commonblocks
+   # include coutln
+   # include cline
+   # include cdefio
+   # include cfor
+   # include clook
+   # include ckeywd
+   # include cchar
+
+   # output character pointer:
+   data outp /0/
+
+   # file control:
+   data level /1/
+   data linect(1) /1/
+   data infile(1) /STDIN/
+
+   # pushback buffer pointer:
+   data bp /0/
+
+   # depth of for stack:
+   data fordep /0/
+
+   # pointers for table lookup code:
+   data lastp /0/
+   data lastt /0/
+
+   # keywords:
+   data sdo(1), sdo(2), sdo(3) /LETD, LETO, EOS/
+   data vdo(1), vdo(2) /LEXDO, EOS/
+
+   data sif(1), sif(2), sif(3) /LETI, LETF, EOS/
+   data vif(1), vif(2) /LEXIF, EOS/
+
+   data selse(1), selse(2), selse(3), selse(4), selse(5) /LETE,
+      LETL, LETS, LETE, EOS/
+   data velse(1), velse(2) /LEXELSE, EOS/
+
+   data swhile(1), swhile(2), swhile(3), swhile(4), swhile(5),
+      swhile(6) /LETW, LETH, LETI, LETL, LETE, EOS/
+   data vwhile(1), vwhile(2) /LEXWHILE, EOS/
+
+   data sbreak(1), sbreak(2), sbreak(3), sbreak(4), sbreak(5),
+      sbreak(6) /LETB, LETR, LETE, LETA, LETK, EOS/
+   data vbreak(1), vbreak(2) /LEXBREAK, EOS/
+
+   data snext(1), snext(2), snext(3), snext(4), snext(5) /LETN,
+      LETE, LETX, LETT, EOS/
+   data vnext(1), vnext(2) /LEXNEXT, EOS/
+
+   data sfor(1), sfor(2), sfor(3), sfor(4) /LETF,
+      LETO, LETR, EOS/
+   data vfor(1), vfor(2) /LEXFOR, EOS/
+
+   data srept(1), srept(2), srept(3), srept(4), srept(5), srept(6),
+      srept(7) /LETR, LETE, LETP, LETE, LETA, LETT, EOS/
+   data vrept(1), vrept(2) /LEXREPEAT, EOS/
+
+   data suntil(1), suntil(2), suntil(3), suntil(4), suntil(5),
+      suntil(6) /LETU, LETN, LETT, LETI, LETL, EOS/
+   data vuntil(1), vuntil(2) /LEXUNTIL, EOS/
+
+   # character set definitions:
+
+   data extblk /' '/, intblk /BLANK/
+
+   data extdig(1) /'0'/, intdig(1) /DIG0/
+   data extdig(2) /'1'/, intdig(2) /DIG1/
+   data extdig(3) /'2'/, intdig(3) /DIG2/
+   data extdig(4) /'3'/, intdig(4) /DIG3/
+   data extdig(5) /'4'/, intdig(5) /DIG4/
+   data extdig(6) /'5'/, intdig(6) /DIG5/
+   data extdig(7) /'6'/, intdig(7) /DIG6/
+   data extdig(8) /'7'/, intdig(8) /DIG7/
+   data extdig(9) /'8'/, intdig(9) /DIG8/
+   data extdig(10) /'9'/, intdig(10) /DIG9/
+
+   # normal case of letters
+
+   data extlet(1) /'a'/, intlet(1) /LETA/
+   data extlet(2) /'b'/, intlet(2) /LETB/
+   data extlet(3) /'c'/, intlet(3) /LETC/
+   data extlet(4) /'d'/, intlet(4) /LETD/
+   data extlet(5) /'e'/, intlet(5) /LETE/
+   data extlet(6) /'f'/, intlet(6) /LETF/
+   data extlet(7) /'g'/, intlet(7) /LETG/
+   data extlet(8) /'h'/, intlet(8) /LETH/
+   data extlet(9) /'i'/, intlet(9) /LETI/
+   data extlet(10) /'j'/, intlet(10) /LETJ/
+   data extlet(11) /'k'/, intlet(11) /LETK/
+   data extlet(12) /'l'/, intlet(12) /LETL/
+   data extlet(13) /'m'/, intlet(13) /LETM/
+   data extlet(14) /'n'/, intlet(14) /LETN/
+   data extlet(15) /'o'/, intlet(15) /LETO/
+   data extlet(16) /'p'/, intlet(16) /LETP/
+   data extlet(17) /'q'/, intlet(17) /LETQ/
+   data extlet(18) /'r'/, intlet(18) /LETR/
+   data extlet(19) /'s'/, intlet(19) /LETS/
+   data extlet(20) /'t'/, intlet(20) /LETT/
+   data extlet(21) /'u'/, intlet(21) /LETU/
+   data extlet(22) /'v'/, intlet(22) /LETV/
+   data extlet(23) /'w'/, intlet(23) /LETW/
+   data extlet(24) /'x'/, intlet(24) /LETX/
+   data extlet(25) /'y'/, intlet(25) /LETY/
+   data extlet(26) /'z'/, intlet(26) /LETZ/
+
+   # upper case of letters
+
+   data extbig(1) /'A'/, intbig(1) /BIGA/
+   data extbig(2) /'B'/, intbig(2) /BIGB/
+   data extbig(3) /'C'/, intbig(3) /BIGC/
+   data extbig(4) /'D'/, intbig(4) /BIGD/
+   data extbig(5) /'E'/, intbig(5) /BIGE/
+   data extbig(6) /'F'/, intbig(6) /BIGF/
+   data extbig(7) /'G'/, intbig(7) /BIGG/
+   data extbig(8) /'H'/, intbig(8) /BIGH/
+   data extbig(9) /'I'/, intbig(9) /BIGI/
+   data extbig(10) /'J'/, intbig(10) /BIGJ/
+   data extbig(11) /'K'/, intbig(11) /BIGK/
+   data extbig(12) /'L'/, intbig(12) /BIGL/
+   data extbig(13) /'M'/, intbig(13) /BIGM/
+   data extbig(14) /'N'/, intbig(14) /BIGN/
+   data extbig(15) /'O'/, intbig(15) /BIGO/
+   data extbig(16) /'P'/, intbig(16) /BIGP/
+   data extbig(17) /'Q'/, intbig(17) /BIGQ/
+   data extbig(18) /'R'/, intbig(18) /BIGR/
+   data extbig(19) /'S'/, intbig(19) /BIGS/
+   data extbig(20) /'T'/, intbig(20) /BIGT/
+   data extbig(21) /'U'/, intbig(21) /BIGU/
+   data extbig(22) /'V'/, intbig(22) /BIGV/
+   data extbig(23) /'W'/, intbig(23) /BIGW/
+   data extbig(24) /'X'/, intbig(24) /BIGX/
+   data extbig(25) /'Y'/, intbig(25) /BIGY/
+   data extbig(26) /'Z'/, intbig(26) /BIGZ/
+
+   # special characters. some of these may
+   # change for your machine
+
+   data extchr(1) /'!'/, intchr(1) /NOT/   # use exclam for not-sign
+   data extchr(2) /'"'/, intchr(2) /DQUOTE/
+   data extchr(3) /"#"/, intchr(3) /SHARP/
+   data extchr(4) /'$'/, intchr(4) /DOLLAR/
+   data extchr(5) /'%'/, intchr(5) /PERCENT/
+   data extchr(6) /'&'/, intchr(6) /AMPER/
+   data extchr(7) /"'"/, intchr(7) /SQUOTE/
+   data extchr(8) /'('/, intchr(8) /LPAREN/
+   data extchr(9) /')'/, intchr(9) /RPAREN/
+   data extchr(10) /'*'/, intchr(10) /STAR/
+   data extchr(11) /'+'/, intchr(11) /PLUS/
+   data extchr(12) /','/, intchr(12) /COMMA/
+   data extchr(13) /'-'/, intchr(13) /MINUS/
+   data extchr(14) /'.'/, intchr(14) /PERIOD/
+   data extchr(15) /'/'/, intchr(15) /SLASH/
+   data extchr(16) /':'/, intchr(16) /COLON/
+   data extchr(17) /';'/, intchr(17) /SEMICOL/
+   data extchr(18) /'<'/, intchr(18) /LESS/
+   data extchr(19) /'='/, intchr(19) /EQUALS/
+   data extchr(20) /'>'/, intchr(20) /GREATER/
+   data extchr(21) /'?'/, intchr(21) /QMARK/
+   data extchr(22) /'@'/, intchr(22) /ATSIGN/
+   data extchr(23) /'['/, intchr(23) /LBRACK/
+   data extchr(24) /'\'/, intchr(24) /BACKSLASH/
+   data extchr(25) /''/, intchr(25) /RBRACK/
+   data extchr(26) /'_'/, intchr(26) /UNDERLINE/
+   data extchr(27) /'{'/, intchr(27) /LBRACE/
+   data extchr(28) /'|'/, intchr(28) /BAR/
+   data extchr(29) /'}'/, intchr(29) /RBRACE/
+   data extchr(30) /''/, intchr(30) /BACKSPACE/
+data extchr(31) /''/, intchr(31) /TAB/
+   data extchr(32) /'^'/, intchr(32) /NOT/   # use caret for not-sign
+   data extchr(33) /'~'/, intchr(33) /NOT/   # use tilde for not-sign
+   # NCHARS is last subscript in this array
+
+   end
+# ratfor - main program for Ratfor
+   call parse
+   stop
+   end
+# alldig - return YES if str is all digits
+   integer function alldig(str)
+   character type
+   character str(ARB)
+   integer i
+
+   alldig = NO
+   if (str(1) == EOS)
+      return
+   for (i = 1; str(i) ^= EOS; i = i + 1)
+      if (type(str(i)) ^= DIGIT)
+         return
+   alldig = YES
+   return
+   end
+# balpar - copy balanced paren string
+   subroutine balpar
+   character gettok
+   character t, token(MAXTOK)
+   integer nlpar
+
+   if (gettok(token, MAXTOK) ^= LPAREN) {
+      call synerr("missing left paren.")
+      return
+      }
+   call outstr(token)
+   nlpar = 1
+   repeat {
+      t = gettok(token, MAXTOK)
+      if (t==SEMICOL | t==LBRACE | t==RBRACE | t==EOF) {
+         call pbstr(token)
+         break
+         }
+      if (t == NEWLINE)      # delete newlines
+         token(1) = EOS
+      else if (t == LPAREN)
+         nlpar = nlpar + 1
+      else if (t == RPAREN)
+         nlpar = nlpar - 1
+      # else nothing special
+      call outstr(token)
+      } until (nlpar <= 0)
+   if (nlpar ^= 0)
+      call synerr("missing parenthesis in condition.")
+   return
+   end
+# brknxt - generate code for break and next
+   subroutine brknxt(sp, lextyp, labval, token)
+   integer i, labval(MAXSTACK), lextyp(MAXSTACK), sp, token
+
+   for (i = sp; i > 0; i = i - 1)
+      if (lextyp(i) == LEXWHILE | lextyp(i) == LEXDO
+        | lextyp(i) == LEXFOR | lextyp(i) == LEXREPEAT) {
+         if (token == LEXBREAK)
+            call outgo(labval(i)+1)
+         else
+            call outgo(labval(i))
+         return
+         }
+   if (token == LEXBREAK)
+      call synerr("illegal break.")
+   else
+      call synerr("illegal next.")
+   return
+   end
+# close - exceedingly temporary version for gettok
+   subroutine close(fd)
+   integer fd
+
+   rewind fd
+   return
+   end
+# ctoi - convert string at in(i) to integer, increment i
+   integer function ctoi(in, i)
+   character in(ARB)
+   integer index
+   integer d, i
+#   string digits "0123456789"
+   integer digits(11)
+   data digits(1) /DIG0/
+   data digits(2) /DIG1/
+   data digits(3) /DIG2/
+   data digits(4) /DIG3/
+   data digits(5) /DIG4/
+   data digits(6) /DIG5/
+   data digits(7) /DIG6/
+   data digits(8) /DIG7/
+   data digits(9) /DIG8/
+   data digits(10) /DIG9/
+   data digits(11) /EOS/
+
+   while (in(i) == BLANK | in(i) == TAB)
+      i = i + 1
+   for (ctoi = 0; in(i) ^= EOS; i = i + 1) {
+      d = index(digits, in(i))
+      if (d == 0)      # non-digit
+         break
+      ctoi = 10 * ctoi + d - 1
+      }
+   return
+   end
+# deftok - get token; process macro calls and invocations
+   character function deftok(token, toksiz, fd)
+   character gtok
+   integer fd, toksiz
+   character defn(MAXDEF), t, token(toksiz)
+   integer lookup
+
+   for (t=gtok(token, toksiz, fd); t^=EOF; t=gtok(token, toksiz, fd)) {
+      if (t ^= ALPHA)   # non-alpha
+         break
+      if (lookup(token, defn) == NO)   # undefined
+         break
+      if (defn(1) == DEFTYPE) {   # get definition
+         call getdef(token, toksiz, defn, MAXDEF, fd)
+         call instal(token, defn)
+         }
+      else
+         call pbstr(defn)   # push replacement onto input
+      }
+   deftok = t
+   if (deftok == ALPHA)   # convert to single case
+      call fold(token)
+   return
+   end
+
+# fold - convert alphabetic token to single case
+   subroutine fold(token)
+   character token(ARB)
+   integer i
+
+   # WARNING - this routine depends heavily on the
+   # fact that letters have been mapped into internal
+   # right-adjusted ascii. god help you if you
+   # have subverted this mechanism.
+
+   for (i = 1; token(i) ^= EOS; i = i + 1)
+      if (token(i) >= BIGA & token(i) <= BIGZ)
+         token(i) = token(i) - BIGA + LETA
+   return
+   end
+# docode - generate code for beginning of do
+   subroutine docode(lab)
+   integer labgen
+   integer lab
+#   string dostr "do"
+   integer dostr(4)
+   data dostr(1), dostr(2), dostr(3),
+      dostr(4)/LETD, LETO, BLANK, EOS/
+
+   call outtab
+   call outstr(dostr)
+   lab = labgen(2)
+   call outnum(lab)
+   call eatup
+   call outdon
+   return
+   end
+# dostat - generate code for end of do statement
+   subroutine dostat(lab)
+   integer lab
+
+   call outcon(lab)
+   call outcon(lab+1)
+   return
+   end
+# eatup - process rest of statement; interpret continuations
+   subroutine eatup
+   character gettok
+   character ptoken(MAXTOK), t, token(MAXTOK)
+   integer nlpar
+
+   nlpar = 0
+   repeat {
+      t = gettok(token, MAXTOK)
+      if (t == SEMICOL | t == NEWLINE)
+         break
+      if (t == RBRACE) {
+         call pbstr(token)
+         break
+         }
+      if (t == LBRACE | t == EOF) {
+         call synerr("unexpected brace or EOF.")
+         call pbstr(token)
+         break
+         }
+      if (t == COMMA | t == UNDERLINE) {
+         if (gettok(ptoken, MAXTOK) ^= NEWLINE)
+            call pbstr(ptoken)
+         if (t == UNDERLINE)
+            token(1) = EOS
+         }
+      else if (t == LPAREN)
+         nlpar = nlpar + 1
+      else if (t == RPAREN)
+         nlpar = nlpar - 1
+      call outstr(token)
+      } until (nlpar < 0)
+   if (nlpar ^= 0)
+      call synerr("unbalanced parentheses.")
+   return
+   end
+# elseif - generate code for end of if before else
+   subroutine elseif(lab)
+   integer lab
+
+   call outgo(lab+1)
+   call outcon(lab)
+   return
+   end
+# equal - compare str1 to str2; return YES if equal, NO if not
+   integer function equal(str1, str2)
+   character str1(ARB), str2(ARB)
+   integer i
+
+   for (i = 1; str1(i) == str2(i); i = i + 1)
+      if (str1(i) == EOS) {
+         equal = YES
+         return
+         }
+   equal = NO
+   return
+   end
+# error - print fatal error message, then die
+   subroutine error(buf)
+   integer buf(ARB)
+
+   call remark(buf)
+   stop
+   end
+# forcod - beginning of for statement
+   subroutine forcod(lab)
+   character gettok
+   character t, token(MAXTOK)
+   integer length, labgen
+   integer i, j, lab, nlpar
+   include commonblocks
+   # include cfor
+#   string ifnot "if(.not."
+   integer ifnot(9)
+      data ifnot(1) /LETI/
+      data ifnot(2) /LETF/
+      data ifnot(3) /LPAREN/
+      data ifnot(4) /PERIOD/
+      data ifnot(5) /LETN/
+      data ifnot(6) /LETO/
+      data ifnot(7) /LETT/
+      data ifnot(8) /PERIOD/
+      data ifnot(9) /EOS/
+
+   lab = labgen(3)
+   call outcon(0)
+   if (gettok(token, MAXTOK) ^= LPAREN) {
+      call synerr("missing left paren.")
+      return
+      }
+   if (gettok(token, MAXTOK) ^= SEMICOL) {   # real init clause
+      call pbstr(token)
+      call outtab
+      call eatup
+      call outdon
+      }
+   if (gettok(token, MAXTOK) == SEMICOL)   # empty condition
+      call outcon(lab)
+   else {   # non-empty condition
+      call pbstr(token)
+      call outnum(lab)
+      call outtab
+      call outstr(ifnot)
+      call outch(LPAREN)
+      nlpar = 0
+      while (nlpar >= 0) {
+         t = gettok(token, MAXTOK)
+         if (t == SEMICOL)
+            break
+         if (t == LPAREN)
+            nlpar = nlpar + 1
+         else if (t == RPAREN)
+            nlpar = nlpar - 1
+         if (t ^= NEWLINE & t ^= UNDERLINE)
+            call outstr(token)
+         }
+      call outch(RPAREN)
+      call outch(RPAREN)
+      call outgo(lab+2)
+      if (nlpar < 0)
+         call synerr("invalid for clause.")
+      }
+   fordep = fordep + 1   # stack reinit clause
+   j = 1
+   for (i = 1; i < fordep; i = i + 1)   # find end
+      j = j + length(forstk(j)) + 1
+   forstk(j) = EOS   # null, in case no reinit
+   nlpar = 0
+   while (nlpar >= 0) {
+      t = gettok(token, MAXTOK)
+      if (t == LPAREN)
+         nlpar = nlpar + 1
+      else if (t == RPAREN)
+         nlpar = nlpar - 1
+      if (nlpar >= 0 & t ^= NEWLINE & t ^= UNDERLINE) {
+         call scopy(token, 1, forstk, j)
+         j = j + length(token)
+         }
+      }
+   lab = lab + 1   # label for next's
+   return
+   end
+# fors - process end of for statement
+   subroutine fors(lab)
+   integer length
+   integer i, j, lab
+   include commonblocks
+   # include cfor
+
+   call outnum(lab)
+   j = 1
+   for (i = 1; i < fordep; i = i + 1)
+      j = j + length(forstk(j)) + 1
+   if (length(forstk(j)) > 0) {
+      call outtab
+      call outstr(forstk(j))
+      call outdon
+      }
+   call outgo(lab-1)
+   call outcon(lab+1)
+   fordep = fordep - 1
+   return
+   end
+# getch - get characters from file
+   integer function getch(c, f)
+   character inmap
+   character buf(MAXLINE), c
+   integer f, i, lastc
+   data lastc /MAXLINE/, buf(MAXLINE) /NEWLINE/
+   # note: MAXLINE = MAXCARD + 1
+
+   if (buf(lastc) == NEWLINE | lastc >= MAXLINE) {
+      read(f, 1, end=10) (buf(i), i = 1, MAXCARD)
+         1 format(MAXCARD a1)
+      for (i = 1; i <= MAXCARD; i = i + 1)
+         buf(i) = inmap(buf(i))
+      for (i = MAXCARD; i > 0; i = i - 1)
+         if (buf(i) ^= BLANK)
+            break
+      buf(i+1) = NEWLINE
+      lastc = 0
+      }
+   lastc = lastc + 1
+   c = buf(lastc)
+   getch = c
+   return
+
+ 10   c = EOF
+   getch = EOF
+   return
+   end
+# getdef (for no arguments) - get name and definition
+   subroutine getdef(token, toksiz, defn, defsiz, fd)
+   character gtok, ngetch
+   integer defsiz, fd, i, nlpar, toksiz
+   character c, defn(defsiz), token(toksiz)
+
+   if (ngetch(c, fd) ^= LPAREN)
+      call remark("missing left paren.")
+   if (gtok(token, toksiz, fd) ^= ALPHA)
+      call remark("non-alphanumeric name.")
+   else if (ngetch(c, fd) ^= COMMA)
+      call remark("missing comma in define.")
+   # else got (name,
+   nlpar = 0
+   for (i = 1; nlpar >= 0; i = i + 1)
+      if (i > defsiz)
+         call error("definition too long.")
+      else if (ngetch(defn(i), fd) == EOF)
+         call error("missing right paren.")
+      else if (defn(i) == LPAREN)
+         nlpar = nlpar + 1
+      else if (defn(i) == RPAREN)
+         nlpar = nlpar - 1
+      # else normal character in defn(i)
+   defn(i-1) = EOS
+   return
+   end
+# gettok - get token. handles file inclusion and line numbers
+   character function gettok(token, toksiz)
+   integer equal, open
+   integer junk, toksiz
+   character deftok
+   character name(MAXNAME), token(toksiz)
+   include commonblocks
+   # include cline
+#   string incl "include"
+   integer incl(8)
+   data incl(1) /LETI/
+   data incl(2) /LETN/
+   data incl(3) /LETC/
+   data incl(4) /LETL/
+   data incl(5) /LETU/
+   data incl(6) /LETD/
+   data incl(7) /LETE/
+   data incl(8) /EOS/
+
+   for ( ; level > 0; level = level - 1) {
+      for (gettok = deftok(token, toksiz, infile(level)); gettok ^= EOF;
+         gettok = deftok(token, toksiz, infile(level))) {
+         if (equal(token, incl) == NO)
+            return
+         junk = deftok(name, MAXNAME, infile(level))
+         if (level >= NFILES)
+            call synerr("includes nested too deeply.")
+         else {
+            infile(level+1) = open(name, READONLY)
+            linect(level+1) = 1
+            if (infile(level+1) == ERR)
+               call synerr("can't open include.")
+            else
+               level = level + 1
+            }
+         }
+      if (level > 1)
+         call close(infile(level))
+      }
+   gettok = EOF
+   return
+   end
+# gtok - get token for Ratfor
+   character function gtok(lexstr, toksiz, fd)
+   character ngetch, type
+   integer fd, i, toksiz
+   character c, lexstr(toksiz)
+   include commonblocks
+   # include cline
+
+   while (ngetch(c, fd) ^= EOF)
+      if (c ^= BLANK & c ^= TAB)
+         break
+   call putbak(c)
+   for (i = 1; i < toksiz-1; i = i + 1) {
+      gtok = type(ngetch(lexstr(i), fd))
+      if (gtok ^= LETTER & gtok ^= DIGIT)
+         break
+      }
+   if (i >= toksiz-1)
+      call synerr("token too long.")
+   if (i > 1) {            # some alpha seen
+      call putbak(lexstr(i))      # went one too far
+      lexstr(i) = EOS
+      gtok = ALPHA
+      }
+   else if (lexstr(1) == DOLLAR) {   # allow $( and $) for { and }
+      if (ngetch(lexstr(2), fd) == LPAREN) {
+         lexstr(1) = LBRACE
+         gtok = LBRACE
+         }
+      else if (lexstr(2) == RPAREN) {
+         lexstr(1) = RBRACE
+         gtok = RBRACE
+         }
+      else
+         call putbak(lexstr(2))
+      }
+   else if (lexstr(1) == SQUOTE | lexstr(1) == DQUOTE) {
+      for (i = 2; ngetch(lexstr(i), fd) ^= lexstr(1); i = i + 1)
+         if (lexstr(i) == NEWLINE | i >= toksiz-1) {
+            call synerr("missing quote.")
+            lexstr(i) = lexstr(1)
+            call putbak(NEWLINE)
+            break
+            }
+      }
+   else if (lexstr(1) == SHARP) {   # strip comments
+      while (ngetch(lexstr(1), fd) ^= NEWLINE)
+         ;
+      gtok = NEWLINE
+      }
+   else if (lexstr(1) == GREATER | lexstr(1) == LESS | lexstr(1) == NOT
+      | lexstr(1) == EQUALS | lexstr(1) == AMPER | lexstr(1) == BAR)
+      call relate(lexstr, i, fd)
+   lexstr(i+1) = EOS
+   if (lexstr(1) == NEWLINE)
+      linect(level) = linect(level) + 1
+   return
+   end
+# ifcode - generate initial code for if
+   subroutine ifcode(lab)
+   integer labgen
+   integer lab
+
+   lab = labgen(2)
+   call ifgo(lab)
+   return
+   end
+# ifgo - generate "if(.not.(...))goto lab"
+   subroutine ifgo(lab)
+   integer lab
+#   string ifnot "if(.not."
+   integer ifnot(9)
+      data ifnot(1) /LETI/
+      data ifnot(2) /LETF/
+      data ifnot(3) /LPAREN/
+      data ifnot(4) /PERIOD/
+      data ifnot(5) /LETN/
+      data ifnot(6) /LETO/
+      data ifnot(7) /LETT/
+      data ifnot(8) /PERIOD/
+      data ifnot(9) /EOS/
+
+   call outtab         # get to column 7
+   call outstr(ifnot)      # " if(.not. "
+   call balpar         # collect and output condition
+   call outch(RPAREN)      # " ) "
+   call outgo(lab)      # " goto lab "
+   return
+   end
+# index - find character  c  in string  str
+   integer function index(str, c)
+   character c, str(ARB)
+
+   for (index = 1; str(index) ^= EOS; index = index + 1)
+      if (str(index) == c)
+         return
+   index = 0
+   return
+   end
+# initkw - install keyword "define" in table
+   subroutine initkw
+#   string defnam "define"
+   integer defnam(7), deftyp(2)
+   data defnam(1) /LETD/, defnam(2) /LETE/, defnam(3) /LETF/
+   data defnam(4) /LETI/, defnam(5) /LETN/, defnam(6) /LETE/
+   data defnam(7) /EOS/
+   data deftyp(1), deftyp(2) /DEFTYPE, EOS/
+
+   call instal(defnam, deftyp)
+   return
+   end
+# inmap - convert left adjusted external rep to right adj ascii
+   integer function inmap(inchar)
+   integer i, inchar
+   include commonblocks
+   # include cchar
+
+   if (inchar == extblk) {
+      inmap = intblk
+      return
+      }
+   do i = 1, 10
+      if (inchar == extdig(i)) {
+         inmap = intdig(i)
+         return
+         }
+   do i = 1, 26
+      if (inchar == extlet(i)) {
+         inmap = intlet(i)
+         return
+         }
+   do i = 1, 26
+      if (inchar == extbig(i)) {
+         inmap = intbig(i)
+         return
+         }
+   do i = 1, NCHARS
+      if (inchar == extchr(i)) {
+         inmap = intchr(i)
+         return
+         }
+   inmap = inchar
+   return
+   end
+# instal - add name and definition to table
+   subroutine instal(name, defn)
+   character defn(MAXTOK), name(MAXDEF)
+   integer length
+   integer dlen, nlen
+   include commonblocks
+   # include clook
+
+   nlen = length(name) + 1
+   dlen = length(defn) + 1
+   if (lastt + nlen + dlen > MAXTBL | lastp >= MAXPTR) {
+      call putlin(name, ERROUT)
+      call remark(": too many definitions.")
+      }
+   lastp = lastp + 1
+   namptr(lastp) = lastt + 1
+   call scopy(name, 1, table, lastt + 1)
+   call scopy(defn, 1, table, lastt + nlen + 1)
+   lastt = lastt + nlen + dlen
+   return
+   end
+# itoc - convert integer  int  to char string in  str
+   integer function itoc(int, str, size)
+   integer abs, mod
+   integer d, i, int, intval, j, k, size
+   character str(size)
+#   string digits "0123456789"
+   integer digits(11)
+   data digits(1) /DIG0/
+   data digits(2) /DIG1/
+   data digits(3) /DIG2/
+   data digits(4) /DIG3/
+   data digits(5) /DIG4/
+   data digits(6) /DIG5/
+   data digits(7) /DIG6/
+   data digits(8) /DIG7/
+   data digits(9) /DIG8/
+   data digits(10) /DIG9/
+   data digits(11) /EOS/
+
+   intval = abs(int)
+   str(1) = EOS
+   i = 1
+   repeat {            # generate digits
+      i = i + 1
+      d = mod(intval, 10)
+      str(i) = digits(d+1)
+      intval = intval / 10
+      } until (intval == 0 | i >= size)
+   if (int < 0 & i < size) {      # then sign
+      i = i + 1
+      str(i) = MINUS
+      }
+   itoc = i - 1
+   for (j = 1; j < i; j = j + 1) {   # then reverse
+      k = str(i)
+      str(i) = str(j)
+      str(j) = k
+      i = i - 1
+      }
+   return
+   end
+# labelc - output statement number
+   subroutine labelc(lexstr)
+   character lexstr(ARB)
+   integer length
+
+   if (length(lexstr) == 5)   # warn about 23xxx labels
+      if (lexstr(1) == DIG2 & lexstr(2) == DIG3)
+         call synerr("warning: possible label conflict.")
+   call outstr(lexstr)
+   call outtab
+   return
+   end
+# labgen - generate  n  consecutive labels, return first one
+   integer function labgen(n)
+   integer label, n
+   data label /23000/
+
+   labgen = label
+   label = label + n
+   return
+   end
+# length - compute length of string
+   integer function length(str)
+   integer str(ARB)
+
+   for (length = 0; str(length+1) ^= EOS; length = length + 1)
+      ;
+   return
+   end
+# lex - return lexical type of token
+   integer function lex(lexstr)
+   character gettok
+   character lexstr(MAXTOK)
+   integer alldig, equal
+   include commonblocks
+   # include ckeywd
+
+   while (gettok(lexstr, MAXTOK) == NEWLINE)
+      ;
+   lex = lexstr(1)
+   if (lex==EOF | lex==SEMICOL | lex==LBRACE | lex==RBRACE)
+      return
+   if (alldig(lexstr) == YES)
+      lex = LEXDIGITS
+   else if (equal(lexstr, sif) == YES)
+      lex = vif(1)
+   else if (equal(lexstr, selse) == YES)
+      lex = velse(1)
+   else if (equal(lexstr, swhile) == YES)
+      lex = vwhile(1)
+   else if (equal(lexstr, sdo) == YES)
+      lex = vdo(1)
+   else if (equal(lexstr, sbreak) == YES)
+      lex = vbreak(1)
+   else if (equal(lexstr, snext) == YES)
+      lex = vnext(1)
+   else if (equal(lexstr, sfor) == YES)
+      lex = vfor(1)
+   else if (equal(lexstr, srept) == YES)
+      lex = vrept(1)
+   else if (equal(lexstr, suntil) == YES)
+      lex = vuntil(1)
+   else
+      lex = LEXOTHER
+   return
+   end
+# lookup - locate name, extract definition from table
+   integer function lookup(name, defn)
+   character defn(MAXDEF), name(MAXTOK)
+   integer i, j, k
+   include commonblocks
+   # include clook
+
+   for (i = lastp; i > 0; i = i - 1) {
+      j = namptr(i)
+      for (k = 1; name(k) == table(j) & name(k) ^= EOS; k = k + 1)
+         j = j + 1
+      if (name(k) == table(j)) {      # got one
+         call scopy(table, j+1, defn, 1)
+         lookup = YES
+         return
+         }
+      }
+   lookup = NO
+   return
+   end
+# ngetch - get a (possibly pushed back) character
+   character function ngetch(c, fd)
+   character getch
+   character c
+   integer fd
+   include commonblocks
+   # include cdefio
+
+   if (bp > 0)
+      c = buf(bp)
+   else {
+      bp = 1
+      buf(bp) = getch(c, fd)
+      }
+   bp = bp - 1
+   ngetch = c
+   return
+   end
+# open - exceedingly temporary version for gettok
+   integer function open(name, mode)
+   character name(MAXNAME)
+   integer ctoi
+   integer i, mode
+
+   i = 1
+   open = ctoi(name, i)
+   return
+   end
+# otherc - output ordinary Fortran statement
+   subroutine otherc(lexstr)
+   character lexstr(ARB)
+
+   call outtab
+   call outstr(lexstr)
+   call eatup
+   call outdon
+   return
+   end
+# outch - put one character into output buffer
+   subroutine outch(c)
+   character c
+   integer i
+   include commonblocks
+   # include coutln
+
+   if (outp >= 72) {   # continuation card
+      call outdon
+      for (i = 1; i < 6; i = i + 1)
+         outbuf(i) = BLANK
+      outbuf(6) = STAR
+      outp = 6
+      }
+   outp = outp + 1
+   outbuf(outp) = c
+   return
+   end
+# outcon - output "n   continue"
+   subroutine outcon(n)
+   integer n
+#   string contin "continue"
+   integer contin(9)
+   data contin(1) /LETC/
+   data contin(2) /LETO/
+   data contin(3) /LETN/
+   data contin(4) /LETT/
+   data contin(5) /LETI/
+   data contin(6) /LETN/
+   data contin(7) /LETU/
+   data contin(8) /LETE/
+   data contin(9) /EOS/
+
+   if (n > 0)
+      call outnum(n)
+   call outtab
+   call outstr(contin)
+   call outdon
+   return
+   end
+# outdon - finish off an output line
+   subroutine outdon
+   include commonblocks
+   # include coutln
+
+   outbuf(outp+1) = NEWLINE
+   outbuf(outp+2) = EOS
+   call putlin(outbuf, STDOUT)
+   outp = 0
+   return
+   end
+# outgo - output "goto  n"
+   subroutine outgo(n)
+   integer n
+#   string goto "goto"
+   integer goto(6)
+   data goto(1) /LETG/
+   data goto(2) /LETO/
+   data goto(3) /LETT/
+   data goto(4) /LETO/
+   data goto(5) /BLANK/
+   data goto(6) /EOS/
+
+   call outtab
+   call outstr(goto)
+   call outnum(n)
+   call outdon
+   return
+   end
+# outmap - convert right adj ascii to left adjusted external rep
+   integer function outmap(inchar)
+   integer i, inchar
+   include commonblocks
+   # include cchar
+
+   if (inchar == intblk) {
+      outmap = extblk
+      return
+      }
+   do i = 1, 10
+      if (inchar == intdig(i)) {
+         outmap = extdig(i)
+         return
+         }
+   do i = 1, 26
+      if (inchar == intlet(i)) {
+         outmap = extlet(i)
+         return
+         }
+   do i = 1, 26
+      if (inchar == intbig(i)) {
+         outmap = extbig(i)
+         return
+         }
+   do i = 1, NCHARS
+      if (inchar == intchr(i)) {
+         outmap = extchr(i)
+         return
+         }
+   outmap = inchar
+   return
+   end
+# outnum - output decimal number
+   subroutine outnum(n)
+   character chars(MAXCHARS)
+   integer itoc
+   integer i, len, n
+
+   len = itoc(n, chars, MAXCHARS)
+   for (i = 1; i <= len; i = i + 1)
+      call outch(chars(i))
+   return
+   end
+# outstr - output string
+   subroutine outstr(str)
+   character c, str(ARB)
+   integer i, j
+
+   for (i = 1; str(i) ^= EOS; i = i + 1) {
+      c = str(i)
+      if (c ^= SQUOTE & c ^= DQUOTE)
+         call outch(c)
+      else {
+         i = i + 1
+         for (j = i; str(j) ^= c; j = j + 1)   # find end
+            ;
+         call outnum(j-i)
+         call outch(LETH)
+         for ( ; i < j; i = i + 1)
+            call outch(str(i))
+         }
+      }
+   return
+   end
+# outtab - get past column 6
+   subroutine outtab
+   include commonblocks
+   # include coutln
+
+   while (outp < 6)
+      call outch(BLANK)
+   return
+   end
+# parse - parse Ratfor source program
+   subroutine parse
+   character lexstr(MAXTOK)
+   integer lex
+   integer lab, labval(MAXSTACK), lextyp(MAXSTACK), sp, token
+
+   call initkw   # install keywords in table
+   sp = 1
+   lextyp(1) = EOF
+   for (token = lex(lexstr); token ^= EOF; token = lex(lexstr)) {
+      if (token == LEXIF)
+         call ifcode(lab)
+      else if (token == LEXDO)
+         call docode(lab)
+      else if (token == LEXWHILE)
+         call whilec(lab)
+      else if (token == LEXFOR)
+         call forcod(lab)
+      else if (token == LEXREPEAT)
+         call repcod(lab)
+      else if (token == LEXDIGITS)
+         call labelc(lexstr)
+      else if (token == LEXELSE) {
+         if (lextyp(sp) == LEXIF)
+            call elseif(labval(sp))
+         else
+            call synerr("illegal else.")
+         }
+      if (token==LEXIF | token==LEXELSE | token==LEXWHILE
+        | token==LEXFOR | token==LEXREPEAT
+        | token==LEXDO | token==LEXDIGITS | token==LBRACE) {
+         sp = sp + 1         # beginning of statement
+         if (sp > MAXSTACK)
+            call error("stack overflow in parser.")
+         lextyp(sp) = token      # stack type and value
+         labval(sp) = lab
+         }
+      else {      # end of statement - prepare to unstack
+         if (token == RBRACE) {
+            if (lextyp(sp) == LBRACE)
+               sp = sp - 1
+            else
+               call synerr("illegal right brace.")
+            }
+         else if (token == LEXOTHER)
+            call otherc(lexstr)
+         else if (token == LEXBREAK | token == LEXNEXT)
+            call brknxt(sp, lextyp, labval, token)
+         token = lex(lexstr)      # peek at next token
+         call pbstr(lexstr)
+         call unstak(sp, lextyp, labval, token)
+         }
+      }
+   if (sp ^= 1)
+      call synerr("unexpected EOF.")
+   return
+   end
+# pbstr - push string back onto input
+   subroutine pbstr(in)
+   character in(ARB)
+   integer length
+   integer i
+
+   for (i = length(in); i > 0; i = i - 1)
+      call putbak(in(i))
+   return
+   end
+# putbak - push character back onto input
+   subroutine putbak(c)
+   character c
+   include commonblocks
+   # include cdefio
+
+   bp = bp + 1
+   if (bp > BUFSIZE)
+      call error("too many characters pushed back.")
+   buf(bp) = c
+   return
+   end
+# putch (interim version)  put characters
+   subroutine putch(c, f)
+   integer buf(MAXLINE), c
+   integer outmap
+   integer f, i, lastc
+   data lastc /0/
+
+   if (lastc >= MAXLINE | c == NEWLINE) {
+      if ( lastc <= 0 ) {
+         write(f,2)
+         2 format(/)
+         }
+      else {
+         write(f, 1) (buf(i), i = 1, lastc)
+         1 format(MAXCARD a1)
+         }
+      lastc = 0
+      }
+   if (c ^= NEWLINE) {
+      lastc = lastc + 1
+      buf(lastc) = outmap(c)
+      }
+   return
+   end
+# putlin - put out line by repeated calls to putch
+   subroutine putlin(b, f)
+   character b(ARB)
+   integer f, i
+
+   for (i = 1; b(i) ^= EOS; i = i + 1)
+      call putch(b(i), f)
+   return
+   end
+# relate - convert relational shorthands into long form
+   subroutine relate(token, last, fd)
+   character ngetch
+   character token(ARB)
+   integer length
+   integer fd, last
+#   string dotge ".ge."
+#   string dotgt ".gt."
+#   string dotlt ".lt."
+#   string dotle ".le."
+#   string dotne ".ne."
+#   string dotnot ".not."
+#   string doteq ".eq."
+#   string dotand ".and."
+#   string dotor ".or."
+   integer dotge(5), dotgt(5), dotlt(5), dotle(5)
+   integer dotne(5), dotnot(6), doteq(5), dotand(6), dotor(5)
+   data dotge(1), dotge(2), dotge(3), dotge(4), dotge(5)/ PERIOD,
+      LETG, LETE, PERIOD, EOS/
+   data dotgt(1), dotgt(2), dotgt(3), dotgt(4), dotgt(5)/ PERIOD,
+      LETG, LETT, PERIOD, EOS/
+   data dotle(1), dotle(2), dotle(3), dotle(4), dotle(5)/ PERIOD,
+      LETL, LETE, PERIOD, EOS/
+   data dotlt(1), dotlt(2), dotlt(3), dotlt(4), dotlt(5)/ PERIOD,
+      LETL, LETT, PERIOD, EOS/
+   data dotne(1), dotne(2), dotne(3), dotne(4), dotne(5)/ PERIOD,
+      LETN, LETE, PERIOD, EOS/
+   data doteq(1), doteq(2), doteq(3), doteq(4), doteq(5)/ PERIOD,
+      LETE, LETQ, PERIOD, EOS/
+   data dotor(1), dotor(2), dotor(3), dotor(4), dotor(5)/ PERIOD,
+      LETO, LETR, PERIOD, EOS/
+   data dotand(1), dotand(2), dotand(3), dotand(4), dotand(5),
+      dotand(6) /PERIOD, LETA, LETN, LETD, PERIOD, EOS/
+   data dotnot(1), dotnot(2), dotnot(3), dotnot(4), dotnot(5),
+      dotnot(6) /PERIOD, LETN, LETO, LETT, PERIOD, EOS/
+
+   if (ngetch(token(2), fd) ^= EQUALS)
+      call putbak(token(2))
+   if (token(1) == GREATER) {
+      if (token(2) == EQUALS)
+         call scopy(dotge, 1, token, 1)
+      else
+         call scopy(dotgt, 1, token, 1)
+      }
+   else if (token(1) == LESS) {
+      if (token(2) == EQUALS)
+         call scopy(dotle, 1, token, 1)
+      else
+         call scopy(dotlt, 1, token, 1)
+      }
+   else if (token(1) == NOT) {
+      if (token(2) == EQUALS)
+         call scopy(dotne, 1, token, 1)
+      else
+         call scopy(dotnot, 1, token, 1)
+      }
+   else if (token(1) == EQUALS) {
+      if (token(2) == EQUALS)
+         call scopy(doteq, 1, token, 1)
+      else
+         token(2) = EOS
+      }
+   else if (token(1) == AMPER)
+      call scopy(dotand, 1, token, 1)
+   else if (token(1) == BAR)
+      call scopy(dotor, 1, token, 1)
+   else   # can't happen
+      token(2) = EOS
+   last = length(token)
+   return
+   end
+# remark - print warning message
+   # this version is intentionally crude, and should be replaced
+   # instantaneously by something tuned for your
+   # specific environment
+   subroutine remark(buf)
+   integer buf(ARB), i
+
+   write(ERROUT, 10) (buf(i), i = 1, 5)
+      10 format(5a4)
+   return
+   end
+# repcod - generate code for beginning of repeat
+   subroutine repcod(lab)
+   integer labgen
+   integer lab
+
+   call outcon(0)   # in case there was a label
+   lab = labgen(3)
+   call outcon(lab)
+   lab = lab + 1   # label to go on next's
+   return
+   end
+# scopy - copy string at from(i) to to(j)
+   subroutine scopy(from, i, to, j)
+   character from(ARB), to(ARB)
+   integer i, j, k1, k2
+
+   k2 = j
+   for (k1 = i; from(k1) ^= EOS; k1 = k1 + 1) {
+      to(k2) = from(k1)
+      k2 = k2 + 1
+      }
+   to(k2) = EOS
+   return
+   end
+# synerr - report Ratfor syntax error
+   subroutine synerr(msg)
+   character lc(MAXLINE), msg(MAXLINE)
+   integer itoc
+   integer i, junk
+   include commonblocks
+   # include cline
+
+   call remark("error at line.")
+   for (i = 1; i <= level; i = i + 1) {
+      call putch(BLANK, ERROUT)
+      junk = itoc(linect(i), lc, MAXLINE)
+      call putlin(lc, ERROUT)
+      }
+   call putch(COLON, ERROUT)
+   call putch(NEWLINE, ERROUT)
+   call remark(msg)
+   return
+   end
+# type - return LETTER, DIGIT or character
+   # this one works with ascii alphabet
+   integer function type(c)
+   integer c
+
+   if( c >= DIG0 & c <= DIG9 )
+      type = DIGIT
+   else if( c >= LETA & c <= LETZ )
+      type = LETTER
+   else if( c >= BIGA & c <= BIGZ )
+      type = LETTER
+   else
+      type = c
+   return
+   end
+# unstak - unstack at end of statement
+   subroutine unstak(sp, lextyp, labval, token)
+   integer labval(MAXSTACK), lextyp(MAXSTACK), sp, token
+
+   for ( ; sp > 1; sp = sp - 1) {
+      if (lextyp(sp) == LBRACE)
+         break
+      if (lextyp(sp) == LEXIF & token == LEXELSE)
+         break
+      if (lextyp(sp) == LEXIF)
+         call outcon(labval(sp))
+      else if (lextyp(sp) == LEXELSE) {
+         if (sp > 2)
+            sp = sp - 1
+         call outcon(labval(sp)+1)
+         }
+      else if (lextyp(sp) == LEXDO)
+         call dostat(labval(sp))
+      else if (lextyp(sp) == LEXWHILE)
+         call whiles(labval(sp))
+      else if (lextyp(sp) == LEXFOR)
+         call fors(labval(sp))
+      else if (lextyp(sp) == LEXREPEAT)
+         call untils(labval(sp), token)
+      }
+   return
+   end
+# untils - generate code for until or end of repeat
+   subroutine untils(lab, token)
+   character ptoken(MAXTOK)
+   integer lex
+   integer junk, lab, token
+
+   call outnum(lab)
+   if (token == LEXUNTIL) {
+      junk = lex(ptoken)
+      call ifgo(lab-1)
+      }
+   else
+      call outgo(lab-1)
+   call outcon(lab+1)
+   return
+   end
+# whilec - generate code for beginning of while
+   subroutine whilec(lab)
+   integer labgen
+   integer lab
+
+   call outcon(0)    # unlabeled continue, in case there was a label
+   lab = labgen(2)
+   call outnum(lab)
+   call ifgo(lab+1)
+   return
+   end
+# whiles - generate code for end of while
+   subroutine whiles(lab)
+   integer lab
+
+   call outgo(lab)
+   call outcon(lab+1)
+   return
+   end
+# cant - print cant open file message
+   subroutine cant(buf)
+   integer buf(MAXLINE)
+
+   call putlin(buf, ERROUT)
+   call error(" : can't open.")
+   return
+   end
+# ctoi - convert string at in(i) to integer, increment i
+   integer function ctoi(in, i)
+   character in(ARB)
+   integer index
+   integer d, i
+#   string digits "0123456789"
+   integer digits(11)
+   data digits(1) /DIG0/
+   data digits(2) /DIG1/
+   data digits(3) /DIG2/
+   data digits(4) /DIG3/
+   data digits(5) /DIG4/
+   data digits(6) /DIG5/
+   data digits(7) /DIG6/
+   data digits(8) /DIG7/
+   data digits(9) /DIG8/
+   data digits(10) /DIG9/
+   data digits(11) /EOS/
+
+   while (in(i) == BLANK | in(i) == TAB)
+      i = i + 1
+   for (ctoi = 0; in(i) ^= EOS; i = i + 1) {
+      d = index(digits, in(i))
+      if (d == 0)      # non-digit
+         break
+      ctoi = 10 * ctoi + d - 1
+      }
+   return
+   end
+# equal - compare str1 to str2; return YES if equal, NO if not
+   integer function equal(str1, str2)
+   character str1(ARB), str2(ARB)
+   integer i
+
+   for (i = 1; str1(i) == str2(i); i = i + 1)
+      if (str1(i) == EOS) {
+         equal = YES
+         return
+         }
+   equal = NO
+   return
+   end
+# error - print fatal error message, then die
+   subroutine error(buf)
+   integer buf(ARB)
+
+   call remark(buf)
+   stop
+   end
+# fcopy - copy file  in  to file  out
+   subroutine fcopy(in, out)
+   character buf(MAXLINE)
+   integer getlin
+   integer in, out
+
+   while (getlin(buf, in) ^= EOF)
+      call putlin(buf, out)
+   return
+   end
+# index - find character  c  in string  str
+   integer function index(str, c)
+   character c, str(ARB)
+
+   for (index = 1; str(index) ^= EOS; index = index + 1)
+      if (str(index) == c)
+         return
+   index = 0
+   return
+   end
+
+define(abs,iabs)
+# itoc - convert integer  int  to char string in  str
+   integer function itoc(int, str, size)
+   integer abs, mod
+   integer d, i, int, intval, j, k, size
+   character str(size)
+#   string digits "0123456789"
+   integer digits(11)
+   data digits(1) /DIG0/
+   data digits(2) /DIG1/
+   data digits(3) /DIG2/
+   data digits(4) /DIG3/
+   data digits(5) /DIG4/
+   data digits(6) /DIG5/
+   data digits(7) /DIG6/
+   data digits(8) /DIG7/
+   data digits(9) /DIG8/
+   data digits(10) /DIG9/
+   data digits(11) /EOS/
+
+   intval = abs(int)
+   str(1) = EOS
+   i = 1
+   repeat {            # generate digits
+      i = i + 1
+      d = mod(intval, 10)
+      str(i) = digits(d+1)
+      intval = intval / 10
+      } until (intval == 0 | i >= size)
+   if (int < 0 & i < size) {      # then sign
+      i = i + 1
+      str(i) = MINUS
+      }
+   itoc = i - 1
+   for (j = 1; j < i; j = j + 1) {   # then reverse
+      k = str(i)
+      str(i) = str(j)
+      str(j) = k
+      i = i - 1
+      }
+   return
+   end
+# length - compute length of string
+   integer function length(str)
+   integer str(ARB)
+
+   for (length = 0; str(length+1) ^= EOS; length = length + 1)
+      ;
+   return
+   end
+
+define(MAXCHARS,10)
+
+# putdec - put decimal integer  n  in field width >= w
+   subroutine putdec(n, w)
+   character chars(MAXCHARS)
+   integer itoc
+   integer i, n, nd, w
+
+   nd = itoc(n, chars, MAXCHARS)
+   for (i = nd + 1; i <= w; i = i + 1)
+      call putc(BLANK)
+   for (i = 1; i <= nd; i = i + 1)
+      call putc(chars(i))
+   return
+   end
+# scopy - copy string at from(i) to to(j)
+   subroutine scopy(from, i, to, j)
+   character from(ARB), to(ARB)
+   integer i, j, k1, k2
+
+   k2 = j
+   for (k1 = i; from(k1) ^= EOS; k1 = k1 + 1) {
+      to(k2) = from(k1)
+      k2 = k2 + 1
+      }
+   to(k2) = EOS
+   return
+   end
+# type - determine type of character
+   character function type(c)
+   character c
+   integer index
+   integer upalf(27)
+   integer lowalf(27)
+   integer digits(11)
+#   string digits "0123456789"
+      data digits(1) /DIG0/
+      data digits(2) /DIG1/
+      data digits(3) /DIG2/
+      data digits(4) /DIG3/
+      data digits(5) /DIG4/
+      data digits(6) /DIG5/
+      data digits(7) /DIG6/
+      data digits(8) /DIG7/
+      data digits(9) /DIG8/
+      data digits(10) /DIG9/
+      data digits(11) /EOS/
+#   string lowalf "abcdefghijklmnopqrstuvwxyz"
+   data lowalf(01)/LETA/
+   data lowalf(02)/LETB/
+   data lowalf(03)/LETC/
+   data lowalf(04)/LETD/
+   data lowalf(05)/LETE/
+   data lowalf(06)/LETF/
+   data lowalf(07)/LETG/
+   data lowalf(08)/LETH/
+   data lowalf(09)/LETI/
+   data lowalf(10)/LETJ/
+   data lowalf(11)/LETK/
+   data lowalf(12)/LETL/
+   data lowalf(13)/LETM/
+   data lowalf(14)/LETN/
+   data lowalf(15)/LETO/
+   data lowalf(16)/LETP/
+   data lowalf(17)/LETQ/
+   data lowalf(18)/LETR/
+   data lowalf(19)/LETS/
+   data lowalf(20)/LETT/
+   data lowalf(21)/LETU/
+   data lowalf(22)/LETV/
+   data lowalf(23)/LETW/
+   data lowalf(24)/LETX/
+   data lowalf(25)/LETY/
+   data lowalf(26)/LETZ/
+   data lowalf(27)/EOS/
+#   string upalf "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+   data upalf(01) /BIGA/
+   data upalf(02) /BIGB/
+   data upalf(03) /BIGC/
+   data upalf(04) /BIGD/
+   data upalf(05) /BIGE/
+   data upalf(06) /BIGF/
+   data upalf(07) /BIGG/
+   data upalf(08) /BIGH/
+   data upalf(09) /BIGI/
+   data upalf(10) /BIGJ/
+   data upalf(11) /BIGK/
+   data upalf(12) /BIGL/
+   data upalf(13) /BIGM/
+   data upalf(14) /BIGN/
+   data upalf(15) /BIGO/
+   data upalf(16) /BIGP/
+   data upalf(17) /BIGQ/
+   data upalf(18) /BIGR/
+   data upalf(19) /BIGS/
+   data upalf(20) /BIGT/
+   data upalf(21) /BIGU/
+   data upalf(22) /BIGV/
+   data upalf(23) /BIGW/
+   data upalf(24) /BIGX/
+   data upalf(25) /BIGY/
+   data upalf(26) /BIGZ/
+   data upalf(27) /EOS/
+
+   if (index(lowalf, c) > 0)
+      type = LETTER
+   else if (index(upalf, c) > 0)
+      type = LETTER
+   else if (index(digits, c) > 0)
+      type = DIGIT
+   else
+      type = c
+   return
+   end
+

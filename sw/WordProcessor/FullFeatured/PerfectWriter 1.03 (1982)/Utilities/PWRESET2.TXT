@@ -1,0 +1,69 @@
+ATTENTION PERFECT WRITER USERS
+
+Ever lost something in RAM because you had changed the B-disc
+(and so couldn't write to it) and the A-disc was full?   It
+appears this is a characteristic weakness of PW:  many other word
+processors allow you to put in a new disk without checking out of
+the programe and back in again.
+
+Several Kaypro users have set their minds to this, and the
+simplest way of patching it is presented by Peter Brawley of
+Toronto.   
+
+The basic CP/M of course allows us to reset disks (Warm Boot) but
+PW has no command for this function.   All we have to do is pick
+a command we never use, and put in its address the information
+that will execute the CP/M function we need.   Then whenever we
+key the selected command, it will reset the disks for us, without
+our needing to exit the programme.
+
+Brawley has provided various ways of doing this in the KUTE disc
+library, including a fast and automatic change using ZCPR
+(upgraded CP/M) software.   The following procedure can be
+carried out by anyone with standard Kaypro software.
+
+	NB  This procedure is specifically for with version 1.20
+	of Perfect Writer (though nearly similar methods should
+	work with any.)
+
+The command chosen for the Disk Reset is Ctrl-X S (since the
+Perfect Speller is used by next to no one and its command will
+not be missed by anyone with The Word Plus.
+
+Proceed as follows:
+
+;	Get DDT.COM, PWRESET.HEX and PW.COM on one disk;
+;
+;	Key Ctrl-C, and then these commands:
+;
+;		ddt
+;		f100,9000,0
+;		ipw.com
+;		r
+;		f5ec9,5fc4,0
+;		ipwreset.hex
+;		r
+;		g0
+;		save 137 pw.com
+;
+;	Be sure to test your patch before you copy
+;	PW.COM back to your Perfect Writer disk.
+
+And it works!   You get going in PW, switch discs in the B-drive,
+key Ctrl-X S, there is the brief buzz of the drives turning, and
+the magic word Reset appears at the bottom of the screen.   You
+can now write whatever is in RAM (and the Swap file) onto the new
+disc.   Marvellous!
+
+Inventor Brawley added his personal joke to the patch--to silence
+Kaypro keyboard click, which he dislikes.   A disk reset will
+also kill the click--until the next time the bell rings (for an
+Unknown command).
+
+Just one other thing to keep in mind, if you write in both Kaypro
+II (SS,DD) and Kaypro 4 (DS,DD) formats:  be sure that the new
+disc you insert before Ctrl-X S is similar to the old one--or
+else its CP/M track will be spoiled by SS and DS formats being
+overlaid.   See our FORMAT.DOC for reasons.
+
+[Notes by Don Phillipson, 14 Jan. 1985]w.co

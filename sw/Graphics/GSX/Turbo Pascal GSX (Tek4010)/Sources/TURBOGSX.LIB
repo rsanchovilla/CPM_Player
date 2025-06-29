@@ -1,0 +1,227 @@
+(*************************************************)
+(*                                               *)
+(* GSX Turbo Library - Graphics Library for GSX  *)
+(* Retyped from ancient german computer magazine *)
+(* October 2014, Udo Munk                        *)
+(*                                               *)
+(*************************************************)
+
+Type
+  Strng            = String[255];
+  LinesType        = (Solid,Dash,Dot,DashDot,LongDash);
+  MarkersType      = (Pixel,Plus,Asteriks,Circle,XSign);
+  FillType         = (Empty,Full,Halftone,Hatch);
+  HatchType        = (Vertical,Horizontal,Deg45,Deg315,Cross,XXX);
+
+Var contrl: Array[1..30] Of Integer;
+    intin:  Array[1..200] Of Integer;
+    ptsin:  Array[1..200] Of Integer;
+    intout: Array[1..200] Of Integer;
+    ptsout: Array[1..200] Of Integer;
+    pblock: Array[1..5] Of Integer;
+
+(************************************************)
+
+Procedure GraphInit;
+Begin
+  pblock[1] := Addr(contrl[1]);
+  pblock[2] := Addr(intin[1]);
+  pblock[3] := Addr(ptsin[1]);
+  pblock[4] := Addr(intout[1]);
+  pblock[5] := Addr(ptsout[1]);
+End;
+
+(************************************************)
+
+Procedure OpenWorkstation(DriverID: Integer;
+                          LType:    LinesType;
+                          MType:    MarkersType;
+                          FType:    FillType;
+                          HType:    HatchType);
+Begin
+  contrl[1] := 1;                   (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  contrl[4] := 10;                  (* size of intin *)
+  intin[1] := DriverID;             (* number of the driver to use *)
+  intin[2] := Integer(LType);       (* line type *)
+  intin[3] := 1;                    (* line color *)
+  intin[4] := Integer(MType);       (* marker type *)
+  intin[5] := 1;                    (* marker color *)
+  intin[6] := 1;                    (* text type *)
+  intin[7] := 1;                    (* text color *)
+  intin[8] := Integer(FType);       (* fill pattern *)
+  intin[9] := Integer(HType);       (* hatch type *)
+  intin[10] := 1;                   (* fill color *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure CloseWorkstation;
+Begin
+  contrl[1] := 2;                   (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure ClearWorkstation;
+Begin
+  contrl[1] := 3;                   (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure UpdateWorkstation;
+Begin
+  contrl[1] := 4;                   (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure PlotPoint(x,y: Integer);
+Begin
+  contrl[1] := 6;                   (* function opcode *)
+  contrl[2] := 2;                   (* 2 coordinate pairs in ptsin *)
+  ptsin[1] := x;                    (* x start coordonate *)
+  ptsin[2] := y;                    (* y start coordinate *)
+  ptsin[3] := x;                    (* x end coordinate, same as start *)
+  ptsin[4] := y;                    (* y end coordinate, same as start *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure DrawLine(x,y,xend,yend: Integer);
+Begin
+  contrl[1] := 6;                   (* function opcode *)
+  contrl[2] := 2;                   (* 2 coordinate pairs in ptsin *)
+  ptsin[1] := x;                    (* x start coordinate *)
+  ptsin[2] := y;                    (* y start coordinate *)
+  ptsin[3] := xend;                 (* x end coordinate *)
+  ptsin[4] := yend;                 (* y end coordinate *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+(*$V-*)
+Procedure GraphText(Message: Strng; xcor,ycor: Integer);
+(*$V+*)
+Var i: Integer;
+Begin
+  If Length(Message) <> 0 Then
+    Begin
+      contrl[1] := 8;               (* function opcode *)
+      contrl[2] := 1;               (* always 1 in this function *)
+      contrl[4] := Length(Message); (* string length *)
+      For i := 1 to Length(Message) Do
+        intin[i] := Ord(Message[i]);
+      ptsin[1] := xcor;             (* x coordinate *)
+      ptsin[2] := ycor;             (* y coordinate *)
+      Bdos(115,Addr(pblock[1]));    (* call GSX function *)
+    End;
+End;
+
+(************************************************)
+
+Procedure CharHeight(Height: Integer);
+Begin
+  contrl[1] := 12;                  (* function opcode *)
+  contrl[2] := 1;                   (* always 1 in this function *)
+  ptsin[1] := 0;                    (* always 0 in this function *)
+  ptsin[2] := Height;               (* character height *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure CharRotate(Angle: Integer);
+Begin
+  contrl[1] := 13;                  (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  intin[1] := Angle+10;             (* character rotation angle *)
+  intin[2] := 0;
+  intin[3] := 0;
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure LineType(LType: LinesType);
+Begin
+  contrl[1] := 15;                  (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  intin[1] := Integer(LType)+1;     (* line type *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure LineWidth(LWidth: Integer);
+Begin
+  contrl[1] := 16;                  (* function opcode *)
+  contrl[2] := 1;                   (* always 1 in this function *)
+  ptsin[1] := LWidth;               (* line width *)
+  ptsin[2] := 0;                    (* always 0 in this function *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure MarkerType(MType: MarkersType);
+Begin
+  contrl[1] := 18;                  (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  intin[1] := Integer(MType)+1;     (* marker type *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure MarkerHeight(Height: Integer);
+Begin
+  contrl[1] := 19;                  (* function opcode *)
+  contrl[2] := 1;                   (* always 1 in this function *)
+  ptsin[1] := 0;                    (* always 0 in this function *)
+  ptsin[1] := Height;               (* marker height *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure TextFont(FontNr: Integer);
+Begin
+  contrl[1] := 21;                  (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  intin[1] := FontNr;               (* font number *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure FillStyle(FStyle: FillType);
+Begin
+  contrl[1] := 23;                  (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  intin[1] := Integer(FStyle);      (* fill style *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+
+Procedure HatchStyle(HStyle: HatchType);
+Begin
+  contrl[1] := 24;                  (* function opcode *)
+  contrl[2] := 0;                   (* always 0 in this function *)
+  intin[1] := Integer(Hstyle)+1;    (* hatch style *)
+  Bdos(115,Addr(pblock[1]));        (* call GSX function *)
+End;
+
+(************************************************)
+

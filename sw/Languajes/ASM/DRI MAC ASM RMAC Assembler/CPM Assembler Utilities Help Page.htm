@@ -1,0 +1,499 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0042)http://www.cpm8680.com/cpmc64/asuthelp.htm -->
+<HTML><HEAD><META content="IE=5.0000" http-equiv="X-UA-Compatible">
+	 <TITLE>CP/M Assembler Utilities Help Page</TITLE>	 
+<META http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<META name="author" content="Burton Craddock"> 
+<META name="GENERATOR" content="MSHTML 11.00.9600.18212"></HEAD> 
+<BODY text="#000000" bgcolor="#ffffff" link="#008000" alink="#008000" vlink="#008000"><A 
+name="top"></A> 
+<H1 align="CENTER">CP/M Assembler Utilities Help Page</H1><BR>This page is 
+mirrored from René van Belzen's CP/M pages on <a=href="http: "="" ~rvbelzen="" 
+members.tripod.com="">The Commodore 128 Page at Tripod. The only functional 
+changes being to remove the links not associated with CP/M. <BR><BR>The contents 
+are either (C) Copyright Burton Craddock 2007 or are derivative or direct works 
+of their various authors to which the respective Copyrights apply. It is 
+provided in the hope that it will be interesting or useful or both, but WITHOUT 
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+FOR A PARTICULAR PURPOSE. In particular, <A href="mailto:bbuckels@mts.net">Bill 
+Buckels</A> has no warranty obligations or liability resulting from its use in 
+any way whatsoever. <BR>
+<P align="CENTER"><SMALL>Return to <A href="http://www.cpm8680.com/cpmc64/index.htm">The 
+C128 and C64 CP/M 80 Links Page</A></SMALL><BR>
+<P align="CENTER"><SMALL>[ <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#dump">DUMP</A> 
+/ <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#gencom">GENCOM</A> / <A 
+href="http://www.cpm8680.com/cpmc64/asuthelp.htm#hexcom">HEXCOM</A> / <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#lib">LIB</A> 
+/ <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#link">LINK</A> / <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#mac">MAC</A> 
+/ <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#rmac">RMAC</A> / <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#sid">SID</A> 
+/ <A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#xref">XREF</A> 
+]</SMALL><BR>
+<P>
+<TABLE border="0" cellspacing="0" cellpadding="0">
+  <TBODY>
+  <TR>
+    <TD><A name="dump"></A> 
+      <H2>DUMP</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>DUMP filespec</PRE>
+      <H3>Explanation:</H3>
+      <P>DUMP displays the contents of a file in hexadecimal and ASCII format. 
+      <H3>Example:</H3>
+      <P>
+<PRE>A&gt;DUMP ABC.TEX</PRE>
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD>
+      <H2>GENCOM</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>GENCOM COM-filespec RSX-filespec ... [LOADER NULL SCB=(offset,value)]</PRE>
+      <H3>Explanation:</H3>
+      <P>The GENCOM command creates a special COM file with attached RSX files. 
+      The GENCOM command can also restore a previously GENCOMed file to the 
+      original COM file without the header and RSX's. GENCOM can also attach 
+      header records to COM files. 
+      <H2>GENCOM<BR>OPTIONS</H2>
+      <DL>
+        <DT>LOADER 
+        <DD>sets a flag to keep the program loader active. 
+        <DT>NULL 
+        <DD>indicates that only RSX files are specified. GENCOM creates a dummy 
+        COM file for the RSX files. The output COM filename is taken from the 
+        filename of the first RSX-filespec. 
+        <DT>SCB=(offset,value) 
+        <DD>sets the System Control Block from the program by using the hex 
+        values specified by (offset,value). </DD></DL>
+      <H2>GENCOM<BR>EXAMPLES</H2>
+      <P>
+<PRE>A&gt;GENCOM MYPROG PROG1 PROG2</PRE>
+      <P>Generates a new COM file MYPROG.COM with attached RSX's PROG1 and 
+      PROG2. 
+      <P>
+<PRE>A&gt;GENCOM PROG1 PROG2 [NULL]</PRE>
+      <P>Creates a COM file PROG1.COM with RSX's PROG1 and PROG2. 
+      <P>
+<PRE>A&gt;GENCOM MYPROG</PRE>
+      <P>GENCOM takes MYPROG.COM, strips off the header and deletes all attached 
+      RSX's to restore it to its original COM format. 
+      <P>
+<PRE>A&gt;GENCOM MYPROG PROG1 PROG2</PRE>
+      <P>GENCOM looks at the already-GENCOMed file MYPROG.COM to see if 
+      PROG1.RSX and PROG2.RSX are already attached RSX files in the module. If 
+      either one is already attached, GENCOM replaces it with the new RSX 
+      module. Otherwise, GENCOM appends the specified RSX files to the COM file. 
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD><A name="hexcom"></A> 
+      <H2>HEXCOM</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>HEXCOM filename</PRE>
+      <H3>Explanation:</H3>
+      <P>The HEXCOM Command generates a command file (filetype .COM) from a .HEX 
+      input file. It names the output file with the same filename as the input 
+      file but with filetype .COM. HEXCOM always looks for a file with filetype 
+      .HEX. 
+      <H3>Example:</H3>
+      <P>
+<PRE>A&gt;HEXCOM B:PROGRAM</PRE>
+      <P>Generates a command file PROGRAM.COM from the input hex file 
+      PROGRAM.HEX. 
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD><A name="lib"></A> 
+      <H2>LIB</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>LIB filespec[IMPD]
+LIB filespec[IMP]=filespecmodifier,filespecmodifier ...</PRE>
+      <H3>Explanation:</H3>
+      <P>A library is a file that contains a collection of object modules. Use 
+      the LIB utility to create libraries, and to append, replace, select or 
+      delete modules from an existing library. Use LIB to obtain information 
+      about the contents of library files. 
+      <P>LIB creates and maintains library files that contain object modules in 
+      Microsoft REL file format. These modules are produced by Digital 
+      Research's relocatable macro-assembler program, RMAC, or any other 
+      language translator that produces modules in Microsoft REL file format. 
+      <P>You can use LINK-80 to link the object modules contained in a library 
+      to other object files. LINK-80 automatically selects from the library only 
+      those modules needed by the program being linked, and then forms an 
+      executable file with a filetype of COM. 
+      <H2>LIB<BR>OPTIONS</H2>
+      <DL>
+        <DT>I 
+        <DD>The INDEX option creates an indexed library file of type .IRL. 
+        LINK-80 searches faster on indexed libraries than on non-indexed 
+        libraries. 
+        <DT>M 
+        <DD>The MODULE option displays module names. 
+        <DT>P 
+        <DD>The PUBLICS option displays module names and the public variables 
+        for the new library file. 
+        <DT>D 
+        <DD>The DUMP option displays the contents of object modules in ASCII 
+        form. </DD></DL>
+      <H2>LIB<BR>MODIFIERS</H2>
+      <P>Use modifiers in the command line to instruct LIB to delete, replace, 
+      or select modules in a library file. Angle brackets enclose the modules to 
+      be deleted or replaced. Parentheses enclose the modules to be selected. 
+      <H3>LIB Modifiers</H3>
+      <DL>
+        <DT>Delete 
+        <DD>&lt;module=&gt; 
+        <DT>Replace 
+        <DD>&lt;module=filename.REL&gt;<BR>If module name and filename are the 
+        same this shorthand can be used:<BR>&lt;filename&gt; 
+        <DT>Select 
+        <DD>(modFIRST-modLAST,mod1,mod2,...,modN) </DD></DL>
+      <H2>LIB<BR>EXAMPLES</H2>
+      <P>
+<PRE>A&gt;LIB TEST4[P]</PRE>
+      <P>Displays all modules and publics in TEST4.REL. 
+      <P>
+<PRE>A&gt;LIB TEST5[P]=FILE1,FILE2</PRE>
+      <P>Creates TEST5.REL from FILE1.REL and FILE2.REL and displays all modules 
+      and publics in TEST5.REL. 
+      <P>
+<PRE>A&gt;LIB TEST=TEST1(MOD1,MOD4), TEST2(C1-C4,C6)</PRE>
+      <P>Creates a library file TEST.REL from modules in two source files. 
+      TEST1.REL contributes MOD1 and MOD4. LIB extracts modules C1, C4, and all 
+      the modules located between them, as well as module C6 from TEST2.REL. 
+      <P>
+<PRE>A&gt;LIB FILE2=FILE3&lt;MODA=&gt;</PRE>
+      <P>Creates FILE2.REL from FILE3.REL, omitting MODA which is a module in 
+      FILE3.REL. 
+      <P>
+<PRE>A&gt;LIB FILE6=FILE5&lt;MODA=FILEB.REL&gt;</PRE>
+      <P>Creates FILE6.REL from FILE5.REL, FILEB.REL replaces MODA. 
+      <P>
+<PRE>A&gt;LIB FILE6=FILE5&lt;THISNAME&gt;</PRE>
+      <P>Module THISNAME is in FILE5.REL. When LIB creates FILE6.REL from 
+      FILE5.REL the file THISNAME.REL replaces the similarly named module 
+      THISNAME. 
+      <P>
+<PRE>A&gt;LIB FILE1[I]=B:FILE2(PLOTS,FIND,SEARCH-DISPLAY)</PRE>
+      <P>Creates FILE1.IRL on drive A from the selected modules PLOTS, FIND, and 
+      modules SEARCH through the module DISPLAY, in FILE2.REL on drive B. 
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD><A name="link"></A> 
+      <H2>LINK</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>LINK d:filespec,[options]=filespec[options],...</PRE>
+      <H3>Explanation:</H3>
+      <P>LINK combines relocatable object modules such as those produced by RMAC 
+      and PL/I-80 into a .COM file ready for execution. Relocatable files can 
+      contain external references and publics. Relocatable files can reference 
+      modules in library files. LINK searches the library files and includes the 
+      referenced modules in the output file. See the CP/M 3 Programmer's 
+      Utilities Guide for a complete description of LINK-80. 
+      <H2>LINK<BR>OPTIONS</H2>
+      <P>Use LINK option switches to control execution parameters. Link options 
+      follow the file specifications and are enclosed within square brackets. 
+      Multiple switches are separated by commas. 
+      <H3>LINK-80 Options</H3>
+      <DL>
+        <DT>A 
+        <DD>Additional memory; reduces buffer space and writes temporary data to 
+        disk 
+        <DT>B 
+        <DD>BIOS link in banked CP/M 3 system. 
+        <OL>
+          <LI>Aligns data segment on page boundary. 
+          <LI>Puts length of code segment in header. 
+          <LI>Defaults to .SPR filetype. </LI></OL>
+        <DT>Dhhhh 
+        <DD>Data origin; sets memory origin for common and data area 
+        <DT>Gn 
+        <DD>Go; set start address to label n 
+        <DT>Lhhhh 
+        <DD>Load; change default load address of module to hhhh. Default 0100H 
+        <DT>Mhhhh 
+        <DD>Memory size; Define free memory requirements for MP/M modules. 
+        <DT>NL 
+        <DD>No listing of symbol table at console 
+        <DT>NR 
+        <DD>No symbol table file 
+        <DT>OC 
+        <DD>Output .COM command file. Default 
+        <DT>OP 
+        <DD>Output .PRL page relocatable file for execution under MP/M in 
+        relocatable segment 
+        <DT>OR 
+        <DD>Output .RSP resident system process file for execution under MP/M 
+        <DT>OS 
+        <DD>Output .SPR system page relocatable file for execution under MP/M 
+        <DT>Phhhh 
+        <DD>Program origin; changes default program origin address to hhhh. 
+        Default is 0100H. 
+        <DT>Q 
+        <DD>Lists symbols with leading question mark 
+        <DT>S 
+        <DD>Search preceding file as a library 
+        <DT>$Cd 
+        <DD>Destination of console messages<BR>d can be X (console), Y 
+        (printer), or Z (zero output). Default is X. 
+        <DT>$Id 
+        <DD>Source of intermediate files; d is disk drive A-P. Default is 
+        current drive. 
+        <DT>$Ld 
+        <DD>Source of library files; d is disk drive A-P. Default is current 
+        drive. 
+        <DT>$Od 
+        <DD>Destination of of object file; d can be Z or disk drive A-P. Default 
+        is to same drive as first file in the LINK-80 command. 
+        <DT>$Sd 
+        <DD>Destination of symbol file; d can be Y or Z or disk drive A-P. 
+        Default is to same drive as first file in LINK-80 command. </DD></DL>
+      <H2>LINK EXAMPLES</H2>
+      <P>
+<PRE>A&gt;LINK b:MYFILE[NR]</PRE>
+      <P>LINK-80 on drive A uses as input MYFILE.REL on drive B and produces the 
+      executable machine code file MYFILE.COM on drive B. The [NR] option 
+      specifies no symbol table file. 
+      <P>
+<PRE>A&gt;LINK m1,m2,m3</PRE>
+      <P>LINK-80 combines the separately compiled files m1, m2, and m3, resolves 
+      their external references, and produces the executable machine code file 
+      m1.COM. 
+      <P>
+<PRE>A&gt;LINK m=m1,m2,m3</PRE>
+      <P>LINK-80 combines the separately compiled files m1, m2, and m3 and 
+      produces the executable machine code file m.COM. 
+      <P>
+<PRE>A&gt;LINK MYFILE,FILE5[s]</PRE>
+      <P>The [s] option tells LINK-80 to search FILE5 as a library. LINK-80 
+      combines MYFILE.REL with the referenced subroutines contained in FILE5.REL 
+      on the default drive A and produces MYFILE.COM on drive A. 
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD><A name="mac"></A> 
+      <H2>MAC</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>MAC filename $options</PRE>
+      <H3>Explanation:</H3>
+      <P>MAC, the CP/M 3 macro assembler, reads assembly language statements 
+      from a file of type .ASM, assembles the statements, and produces three 
+      output files with the input filename and filetypes of .HEX, .PRN, and 
+      .SYM. Filename.HEX contains INTEL hexadecimal format object code. 
+      Filename.PRN contains an annotated source listing that you can print or 
+      examine at the console. Filename.SYM contains a sorted list of symbols 
+      defined in the program. 
+      <H2>MAC<BR>EXAMPLES</H2>
+      <P>
+<PRE>A&gt;MAC SAMPLE
+
+A&gt;MAC SAMPLE $PB AA HB SX</PRE>
+      <H2>MAC<BR>OPTIONS</H2>
+      <P>Use options to direct the input and output of MAC. Use a letter with 
+      the option to indicate the source and destination drives, and console, 
+      printer, or zero output. Valid drive names are A thru O. X, P and Z 
+      specify console, printer, and zero output, respectively. 
+      <H3>Assembly Options That Direct Input/Output</H3>
+      <DL>
+        <DT>A 
+        <DD>source drive for .ASM file (A-O) 
+        <DT>H 
+        <DD>destination drive for .HEX file (A-O, Z) 
+        <DT>L 
+        <DD>source drive for macrolibrary .LIB files called by the MACLIB 
+        statement. 
+        <DT>P 
+        <DD>destination drive for .PRN file (A-O, X, P, Z) 
+        <DT>S 
+        <DD>destination drive for .SYM file </DD></DL>
+      <H3>Assembly Options That Modify Contents Of Output File</H3>
+      <DL>
+        <DT>+L 
+        <DD>lists input lines read from macrollibrary .LIB files 
+        <DT>-L 
+        <DD>suppresses listing (default) 
+        <DT>+M 
+        <DD>lists all macro lines as they are processed during assembly 
+        <DT>-M 
+        <DD>suppresses all macro lines as they are read during assembly 
+        <DT>*M 
+        <DD>lists only hex generated by macro expansions 
+        <DT>+Q 
+        <DD>lists all LOCAL symbols in the symbol list 
+        <DT>-Q 
+        <DD>suppresses all LOCAL symbols in the symbol list (default) 
+        <DT>+S 
+        <DD>appends symbol file to print file 
+        <DT>-S 
+        <DD>suppresses creation of symbol file 
+        <DT>+1 
+        <DD>produces a pass 1 listing for macro debugging in .PRN file 
+        <DT>-1 
+        <DD>suppress listing on pass 1 (default) </DD></DL>
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD><A name="rmac"></A> 
+      <H2>RMAC</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>RMAC filespec $Rd $Sd $Pd</PRE>
+      <H3>Explanation:</H3>
+      <P>RMAC, a relocatable macro assembler, assembles .ASM files of into .REL 
+      files that you can link to create .COM files. 
+      <H2>RMAC<BR>OPTIONS</H2>
+      <P>RMAC options specify the destination of the output files. Replace d 
+      with the destination drive letter for the output files. 
+      <P>
+<PRE>Option d=output option</PRE>
+      <DL>
+        <DT>R 
+        <DD>drive for REL file (A-O, Z) 
+        <DT>S 
+        <DD>drive for SYM file (A-O, X, P, Z) 
+        <DT>P 
+        <DD>drive for PRN file (A-O, X, P, Z) 
+        <DT>A-O 
+        <DD>specifies drive A-O. 
+        <DT>X 
+        <DD>means output to the console. 
+        <DT>P 
+        <DD>means output to the printer. 
+        <DT>Z 
+        <DD>means zero output. </DD></DL>
+      <H2>RMAC<BR>EXAMPLE</H2>
+      <P>
+<PRE>A&gt;RMAC TEST $PX SB RB</PRE>
+      <P>Assembles the file TEST.ASM from drive A, sends the listing file 
+      (TEST.PRN) to the console, puts the symbol file (TEST.SYM) on drive B and 
+      puts the relocatable object file (TEST.REL) on drive B. 
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD><A name="sid"></A> 
+      <H2>SID</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>SID pgm-filespec,sym-filespec</PRE>
+      <H3>Explanation:</H3>
+      <P>The SID symbolic debugger allows you to monitor and test programs 
+      developed for the 8080 microprocessor. SID supports real-time breakpoints, 
+      fully monitored execution, symbolic disassembly, assembly, and memory 
+      display and fill functions. SID can dynamically load SID utility programs 
+      to provide traceback and histogram facilities. 
+      <H2>SID<BR>COMMANDS</H2>
+      <DL>
+        <DT>Command 
+        <DD>Meaning 
+        <DT>As 
+        <DD>(Assemble)<BR>Enter assembly language statements<BR>s is the start 
+        address 
+        <DT>Csb,d 
+        <DD>(Call)<BR>Call to memory location from SID<BR>s is the called 
+        address<BR>b is the value of the BC register<BR>pair d is the value of 
+        the DE register pair 
+        <DT>DWs,f 
+        <DD>(Display)<BR>Display memory in hex and ASCII<BR>W is a 16-bit word 
+        format<BR>s is the start address<BR>f is the finish address 
+        <DT>Epgm-filespec 
+        <DD>(Load)<BR>Load program and symbol table, sym-filespec, for execution 
+        <DT>E*sym-filespec 
+        <DD>(Load)<BR>Load a symbol table file 
+        <DT>Fs,f,d 
+        <DD>(Fill)<BR>Fill memory with constant value<BR>s is the start 
+        address<BR>f is the finish address<BR>d is an eight-bit data item 
+        <DT>Gp,a,b 
+        <DD>(Go)<BR>Begin Execution<BR>p is a start address<BR>a is a temporary 
+        breakpoint 
+        <DT>H 
+        <DD>(Hex)<BR>Displays all symbols with addresses in Hex 
+        <DT>H.a 
+        <DD>Displays hex, decimal, and ASCII values of a where<BR>a is a 
+        symbolic expression 
+        <DT>Ha,b 
+        <DD>Computes hex sum and difference of a and b where<BR>a and b are 
+        symbolic expressions 
+        <DT>Icommand tail 
+        <DD>(Input)<BR>Input CCP command line 
+        <DT>Ls,f 
+        <DD>(List)<BR>List 8080 mnemonic instructions<BR>s is the start 
+        address<BR>f is the finish address 
+        <DT>Ms,h,d 
+        <DD>(Move)<BR>Move Memory Block<BR>s is the start address<BR>h is the 
+        high address of the block<BR>d is the destination start address 
+        <DT>Pp,c 
+        <DD>(Pass)<BR>Pass point set, reset, and display<BR>p is a permanent 
+        breakpoint address<BR>c is initial value of pass counter 
+        <DT>Rfilespec,d 
+        <DD>(Read)<BR>Read Code/Symbols<BR>d is an offset to each address 
+        <DT>SWs 
+        <DD>(Set)<BR>Set Memory Values<BR>s is address where value is sent<BR>W 
+        is 16 bit word 
+        <DT>Tn,c 
+        <DD>(Trace)<BR>Trace Program Execution<BR>n is the number of program 
+        steps<BR>c is the utility entry address. 
+        <DT>TWn,c 
+        <DD>(Trace)<BR>Trace Without Call<BR>W instructs SID not to trace 
+        subroutines<BR>n is the number of program steps<BR>c is the utility 
+        entry address 
+        <DT>UWn,c 
+        <DD>(Untrace)<BR>Monitor Execution without Trace<BR>n is the number of 
+        program steps<BR>c is the utility entry address<BR>W instructs SID not 
+        to trace subroutines 
+        <DT>V 
+        <DD>(Value)<BR>Display the value of the next available location in 
+        memory (NEXT), the next location after the largest file read in (MSZE), 
+        the current value of the Program counter (PC), and the address of the 
+        end of available memory (END) 
+        <DT>Wfilespec,s,f 
+        <DD>(Write)<BR>Write the contents of a contiguous block of memory to 
+        filespec.<BR>f is finish address 
+        <DT>Xfr 
+        <DD>(Examine)<BR>Examine/alter CPU state.<BR>f is flag bit C,Z,M,E or 
+        I.<BR>r is register A,B,D,H,S or P. </DD></DL>
+      <H2>SID<BR>EXAMPLES</H2>
+      <P>
+<PRE>A&gt;SID</PRE>
+      <P>CP/M 3 loads SID from drive A into memory. SID displays the # prompt 
+      when it is ready to accept commands. 
+      <P>
+<PRE>A&gt;B:SID SAMPLE.HEX</PRE>
+      <P>CP/M 3 loads SID and the program file SAMPLE.HEX into memory from drive 
+      B. 
+      <H2>SID<BR>UTILITIES</H2>
+      <P>SID utilities, HIST.UTL and TRACE.UTL are special programs that operate 
+      with SID to provide additional debugging facilities. The mechanisms for 
+      system initialization, data collection, and data display are described in 
+      the CP/M SID User's Guide. 
+      <P>The HIST utility creates a histogram (bar graph) showing the relative 
+      frequency of execution of code within selected program segments of the 
+      test program. The HIST utility allows you to monitor those sections of 
+      code that execute most frequently. 
+      <P>The TRACE utility obtains a backtrace of the instructions that led to a 
+      particular breakpoint address in a program under test. You can collect the 
+      addresses of up to 256 instructions between pass points in U or T modes. 
+      <HR>
+    </TD></TR>
+  <TR>
+    <TD><A name="xref"></A> 
+      <H2>XREF</H2>
+      <H3>Syntax:</H3>
+      <P>
+<PRE>XREF d: filename $P</PRE>
+      <H3>Explanation:</H3>
+      <P>XREF provides a cross-reference summary of variable usage in a program. 
+      XREF requires the .PRN and .SYM files produced by MAC or RMAC for input to 
+      the program. The SYM and PRN files must have the same filename as the 
+      filename in the XREF command tail. XREF outputs a file of type .XRF. 
+      <H3>Examples:</H3>
+      <P>
+<PRE>A&gt;XREF b:MYPROG
+
+A&gt;XREF b:MYPROG $P</PRE></TD></TR></TBODY></TABLE>
+<P align="CENTER"><A href="http://www.cpm8680.com/cpmc64/asuthelp.htm#top">Go to 
+Top of Document</A> </P></a=href="http:></BODY></HTML>

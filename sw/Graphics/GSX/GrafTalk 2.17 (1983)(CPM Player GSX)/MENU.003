@@ -1,0 +1,145 @@
+! MAY 6, 1983
+! FOR INTEGRATED SCREEN GRAPHICS VERSION
+
+NO ECHO
+RECOVER 1
+VARIABLE MEN1, M1, MC
+@1
+CLEARSCREEN
+!!=====================================================
+!!	PIE CHART MENU
+!!=====================================================
+
+!!1  .. HELP...........................................
+!!2  .. ERASE GRAPHICS.................................
+!!3  .. RETURN TO MAIN MENU ...........................
+!!4  .. CLEAR TEXT FROM SCREEN (CR BRINGS IT BACK) ....
+!!
+!!5  .. DISPLAY PIE PERCENTS ..........................
+!!6  .. DO NOT DISPLAY PIE PERCENTS ...................
+!!7  .. EXPLODED PIE ..................................
+!!8  .. DISABLE PIE SECTION LABELS ....................
+!!9  .. LABEL PIE SECTIONS WITH SPECIFIED LABELS ......
+!!10 .. LABEL PIE SECTIONS WITH MONTHS ................
+!!11 .. LABEL PIE SECTIONS WITH DAYS ..................
+!!12 .. LABEL PIE SECTIONS WITH YEARS .................
+!!
+!!13 .. LEGEND, TITLE AND NAME MENU ...................
+!!14 .. COLOR AND SHADING MENU ........................
+!!
+!!15 .. DRAW A PIE CHART ..............................
+!!=====================================================
+!!ENTER YOUR CHOICE >
+MENU MEN1 15 1 ^
+COMPARE MEN1 5
+IF YES PIE PERCENT
+COMPARE MEN1 3
+IF YES END
+COMPARE MEN1 6
+IF YES NO PIE PERCENT
+COMPARE MEN1 7
+IF YES JUMP 6
+COMPARE MEN1 8
+IF YES NO PIE LABELS
+COMPARE MEN1 9
+IF YES JUMP 18
+COMPAR MEN1 10
+IF YES JUMP 19
+COMPARE MEN1 11
+IF YES JUMP 20
+COMPARE MEN1 12
+IF YES JUMP 21
+COMPARE MEN1 13
+IF YES RUN MENU.005
+COMPARE MEN1 14
+IF YES RUN MENU.006
+COMPARE MEN1 15
+IF YES JUMP 3
+COMPARE MEN1 2
+IF YES ERASE
+COMPARE MEN1 1
+IF YES JUMP 2
+COMPARE MEN1 4
+IF YES JUMP 40
+JUMP 1
+
+@2
+CLEARSCREEN
+!!HELP INFORMATION FOR PIE CHARTS
+!!=================================================================
+!!
+!!A Pie Chart is made  from a row  or a column of data.	 The row or
+!!column is  summed to	represent the entire  pie.  Each element of
+!!the row or column is made into a section  of the pie.
+!!
+!!Pie charts can be made with or without the appropriate percentage
+!!percentage represented by each section displayed and either  with
+!!or without labels.  If you want to use pie labels, you may choose
+!!to label  the sections  with your  own labels, or with one of the
+!!special available  sets of labels for months, days or years.	The
+!!special labels  require you  to enter	 two things:  the nth month,
+!!day or year to be used and the beginning month, day or year.	For
+!!example an n of 2  and a beginning day of MON would result in the
+!!labels  MONDAY,  WEDNESDAY,  FRIDAY, etc.   You may also make pie
+!!charts with or without legends.
+!!
+!!Use appropriate menus to specify title, legend, color and shading.
+!!
+!!Unless you  specify otherwise, pie will have percents.  Color and
+!!shading will be sequenced.
+!!
+!!TYPE <cr> TO RETURN TO MENU >
+STOP
+JUMP 1
+
+@6
+!!ENTER	 0  FOR EACH PIE SECTION NOT EXPLODED,
+!!ENTER	 1  FOR EACH PIE SECTION TO BE EXPLODED
+SEQUENCE EMPHASIS ^
+JUMP 1
+
+@3
+!!ENTER ROW OR COLUMN FOR PIE CHART
+PIE ^
+!!ENTER	  1 TO DUMP TO PRINTER	OR   2 TO ERASE >
+MENU MC 2 3 ^
+COMPARE MC 1
+IF YES DUMP
+ERASE
+JUMP 1
+
+@18
+!!ENTER THE LABELS FOR THE PIE SECTIONS, ONE ON EACH LINE.
+!!WHEN YOU ARE THROUGH, ENTER A BLANK LINE.
+PIE LABELS \^\
+JUMP 1
+
+@19
+!!LABELS WILL USE EVERY nTH MONTH.  ENTER n >
+M1 = ^
+!!ENTER BEGINNING MONTH USING 3-LETTER ABBREVIATION >
+PIE MONTHS ^ M1
+JUMP 1
+
+@20
+!!LABELS WILL USE EVERY nTH DAY.  ENTER n >
+M1 = ^
+!!ENTER BEGINING DAY USING 3-LETTER ABBREVIATION >
+PIE DAYS ^ M1
+JUMP 1
+
+@21
+!!LABELS WILL USE VERY nTH YEAR.  ENTER n >
+M1 = ^
+!!ENTER BEGINNING YEAR >
+PIE YEARS ^ M1
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+
+L USE VERY nTH YEAR.  ENTER n >
+M1 = ^
+!!ENTER BEGI

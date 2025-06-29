@@ -1,0 +1,39 @@
+(*  J O Y S T I C K . G I C  STICK/STRIG/PAD-Funktion  V 1.1   18-AUG-1987  *)
+
+
+
+function stick(n: integer): integer;
+
+  begin
+    inline ($3A/n/$DD/$21/$D5/$00/$CD/_CALROM/$6F/$26/$00/$3A/n/$B7/$C0/$E5/
+            $DD/$21/$56/$01/$CD/_CALROM/$E1/$C9);
+  end;
+
+
+function strig(n: integer): boolean;
+
+  begin
+    inline ($3A/n/$DD/$21/$D8/$00/$CD/_CALROM/$E6/$01/$6F/$26/$00/$3A/n/$B7/
+            $C0/$E5/$DD/$21/$56/$01/$CD/_CALROM/$E1/$C9);
+  end;
+
+
+{ PAD(n) : PAD-Funktion wie unter BASIC }
+
+
+function PAD(n: byte): integer;
+
+  { Die PAD-Aufrufe mit Funktionsnummern in negset liefern Werte von }
+  { -128 .. +127; alle anderen von 0 .. 255                          }
+
+  const
+    negset: set of 0..19 = [0, 3, 4, 7, 8, 11..19];
+    value:  integer      = 0;
+
+  begin
+    if MSX2 or (n < 8) then inline ($3A/n/$DD/$21/$DB/$00/$CD/_CALROM/$32/value);
+    if (value > 127) and (n in negset)
+    then PAD := value + $FF00           { Vorzeichen expandieren }
+    else PAD := value;
+  end;
+

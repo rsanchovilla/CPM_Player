@@ -1,0 +1,16 @@
+;do not include the .C extension in param source filename
+era $1.com
+era $1.o
+era $1.s
+era $1.tm?
+pp -o $1.tm1 -x -i a:|b: utext.h $1.c
+p1 -o $1.tm2 -b0 -n8 -u $1.tm1
+p280 -o $1.s $1.tm2
+as80 $1.s
+link -eb__memory -ed__edata -htr -tb0x100 crts.80 $1.o libu.80 libc.80
+ren $1.com=xeq
+era $1.o
+era $1.s
+era $1.tm?
+$1
+

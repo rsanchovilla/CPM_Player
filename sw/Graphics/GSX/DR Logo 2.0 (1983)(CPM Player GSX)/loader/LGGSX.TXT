@@ -1,0 +1,856 @@
+	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                ;
+                                ;	GSX-80 driver for Digital Research Dr Logo v2.0
+                                ;	Copyright (C) 2024 by Roberto Sancho
+                                ;      
+                                ;       hooks BDOS function 60 (call to RSX)
+                                ;       works to populate params and jumpblock as stated in
+                                ;       http://www.seasip.info/Cpm/drlogo.html (by John Elliott, undated)
+                                ;       issue GSX calls to draw image on screen 
+                                ;
+                                	.z80
+                                	.list
+  0000'                         	CSEG
+                                
+                                ;	PRL Initialization entry point: 
+                                ;	- print welcome message
+                                ;	- hook BDOS function 60 
+                                ;	- adjust end of TPA
+                                ;
+                                ;       first 512 bytes of PRL are initialization code
+                                ;       and thus discarded after init
+                                ; 
+                                
+  0000'                         Start:	
+  0000'   2A 0006               	ld	hl,(0006)	; save real BDOS
+  0003'   22 0209'              	ld 	(BDOS+1),hl	
+  0006'   21 0200'              	ld	hl,MAIN		; hook BDOS call
+  0009'   22 0006               	ld	(0006),hl	; sets new TPA end
+                                	
+  000C'   0E 09                 	ld	c,9		; print string
+  000E'   11 002B'              	ld	de,wtext	; welcome message
+  0011'   CD 0005               	call	0005	
+                                	
+  0014'   0E 09                 	ld	c,9		; print string
+  0016'   11 0100'              	ld	de,hftxt	; Hook address report
+  0019'   CD 0005               	call	0005	
+  001C'   2A 0006               	ld	hl,(0006)
+  001F'   CD 011C'              	call 	DispHLhex	; print addr in hex
+  0022'   0E 09                 	ld	c,9		; print <CR><LF>
+  0024'   11 00FD'              	ld	de,txtend	
+  0027'   CD 0005               	call	0005	
+                                	
+  002A'   C9                    	ret			; return, end of initialization of LGGSX
+                                	
+  002B'   2D 2D 2D 2D           wtext: 	DB	'---------------------------------------------------',13,10
+  002F'   2D 2D 2D 2D           
+  0033'   2D 2D 2D 2D           
+  0037'   2D 2D 2D 2D           
+  003B'   2D 2D 2D 2D           
+  003F'   2D 2D 2D 2D           
+  0043'   2D 2D 2D 2D           
+  0047'   2D 2D 2D 2D           
+  004B'   2D 2D 2D 2D           
+  004F'   2D 2D 2D 2D           
+  0053'   2D 2D 2D 2D           
+  0057'   2D 2D 2D 2D           
+  005B'   2D 2D 2D 0D           
+	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+  005F'   0A                    
+  0060'   44 72 4C 6F           	DB	'DrLogo GSX Driver                       Version 1.0',13,10
+  0064'   67 6F 20 47           
+  0068'   53 58 20 44           
+  006C'   72 69 76 65           
+  0070'   72 20 20 20           
+  0074'   20 20 20 20           
+  0078'   20 20 20 20           
+  007C'   20 20 20 20           
+  0080'   20 20 20 20           
+  0084'   20 20 20 20           
+  0088'   56 65 72 73           
+  008C'   69 6F 6E 20           
+  0090'   31 2E 30 0D           
+  0094'   0A                    
+  0095'   43 6F 70 79           	DB	'Copyright (c) 2024 by Roberto Sancho               ',13,10
+  0099'   72 69 67 68           
+  009D'   74 20 28 63           
+  00A1'   29 20 32 30           
+  00A5'   32 34 20 62           
+  00A9'   79 20 52 6F           
+  00AD'   62 65 72 74           
+  00B1'   6F 20 53 61           
+  00B5'   6E 63 68 6F           
+  00B9'   20 20 20 20           
+  00BD'   20 20 20 20           
+  00C1'   20 20 20 20           
+  00C5'   20 20 20 0D           
+  00C9'   0A                    
+  00CA'   2D 2D 2D 2D           	DB	'---------------------------------------------------'
+  00CE'   2D 2D 2D 2D           
+  00D2'   2D 2D 2D 2D           
+  00D6'   2D 2D 2D 2D           
+  00DA'   2D 2D 2D 2D           
+  00DE'   2D 2D 2D 2D           
+  00E2'   2D 2D 2D 2D           
+  00E6'   2D 2D 2D 2D           
+  00EA'   2D 2D 2D 2D           
+  00EE'   2D 2D 2D 2D           
+  00F2'   2D 2D 2D 2D           
+  00F6'   2D 2D 2D 2D           
+  00FA'   2D 2D 2D              
+  00FD'   0D 0A 24              txtend:	DB	13,10,'$'
+  0100'   48 6F 6F 6B           hftxt:  DB	'Hook BDOS function 60 at 0x','$'
+  0104'   20 42 44 4F           
+  0108'   53 20 66 75           
+  010C'   6E 63 74 69           
+  0110'   6F 6E 20 36           
+  0114'   30 20 61 74           
+  0118'   20 30 78 24           
+                                
+                                ;
+                                ; Display a 16- or 8-bit number in hex.
+                                ; The value to be shown should be stored in HL
+                                ; code based on https://github.com/skx/z80-examples/blob/master/number-output.z80
+                                ;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  011C'                         DispHLhex:
+  011C'   E5                    	push	hl
+  011D'   7C                    	ld  	a,h
+  011E'   CD 0127'                 	call  	OutHex8		; Show the high-value
+  0121'   E1                       	pop 	hl
+  0122'   7D                    	ld  	a,l		
+  0123'   CD 0127'                 	call 	OutHex8		; Show the low-value
+  0126'   C9                    	ret
+                                
+                                	; Output 2-hex value of the 8-bit number stored in a
+  0127'                         OutHex8:
+  0127'   F5                       	push	af
+  0128'   1F                       	rra
+  0129'   1F                       	rra
+  012A'   1F                       	rra
+  012B'   1F                       	rra
+  012C'   CD 0130'                 	call  	Conv
+  012F'   F1                       	pop	af
+  0130'   E6 0F                 Conv:	and  	0fh
+  0132'   C6 90                    	add  	a,90h
+  0134'   27                       	daa
+  0135'   CE 40                    	adc  	a,40h
+  0137'   27                       	daa
+                                   	; Show the value.
+  0138'   5F                       	ld	e,a
+  0139'   0E 02                    	ld	c,2
+  013B'   CD 0005                  	call	0005	; out one char
+  013E'   C9                       	ret
+                                
+                                ; reserve storage to fill up to 512 bytes
+                                ; of discardable init space
+                                
+  013F'                         IniPad:	DS	512-(IniPad-Start)
+                                
+                                ;
+                                ; PRL BDOS Hook
+                                ;
+  0200'                         MAIN:
+  0200'   F5                    	push 	af
+  0201'   79                    	ld	a,c	
+  0202'   FE 3C                 	cp	60		; is BDOS func 60 = call to RSX ?
+  0204'   CA 020B'              	jp 	z, HookFn60
+  0207'   F1                    	pop	af
+  0208'   C3 0000               BDOS:	jp	0000		; jump to real BDOS
+                                	
+  020B'                         HookFn60:			; process RSX call
+  020B'   F1                    	pop	af
+                                
+  020C'   EB                    	ex	de,hl
+  020D'   22 022B'              	ld	(RSXPBlock),hl	; save RSX param block
+                                	
+                                	; decode RSX param block
+                                	
+  0210'   7E                    	ld	a,(hl)		; get the RSX function called
+  0211'   32 022D'              	ld	(RSXfunc),a
+  0214'   23                    	inc	hl
+	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+  0215'   7E                    	ld	a,(hl)		; get the number of words in param passed to RSX
+  0216'   32 022E'              	ld	(RSXnumwords),a
+  0219'   23                    	inc	hl
+  021A'   11 022F'              	ld	de,RSXparam0	; get the four firsts params (ignore RSXnumwords value)
+  021D'   01 0008               	ld	bc,4*2
+  0220'   ED B0                 	ldir
+                                	
+                                	; perform RSX functions
+                                	
+  0222'   3A 022D'              	ld	a,(RSXfunc)
+  0225'   FE 00                 	cp	0
+  0227'   CA 0237'              	jp	z,RSXfunc0
+                                	
+                                	; function not defined. Just return
+  022A'   C9                    	ret
+                                	
+  022B'   0000                  RSXPBlock: 	DW	0	; the BDOS func 60 Call RSX parameters block
+  022D'   00                    RSXfunc: 	DB	0	; the RSX func called
+  022E'   00                    RSXnumwords: 	DB 	0	; the number of words (=number of params)
+  022F'   0000                  RSXparam0: 	DW	0	; four first params
+  0231'   0000                  RSXparam1: 	DW	0		
+  0233'   0000                  RSXparam2: 	DW	0		
+  0235'   0000                  RSXparam3: 	DW	0		
+                                	
+                                	; RSX function 0
+  0237'                         RSXfunc0:	
+                                	; RSXfunc 	DW	0		;RSX function 0
+                                	; RSXparam0	DW	params		;Buffer to receive LOGO screen parameters
+                                	; RSXparam1	DW	jumpblock	;Buffer to receive function jumpblock	
+                                	
+  022F'                         params		EQU	RSXparam0		;equates to ease RSX func implementation
+  0231'                         jumpblock	EQU	RSXparam1
+                                
+                                	; populate params
+  0237'   2A 022F'              	ld	hl,(params)
+  023A'   EB                    	ex	de,hl
+  023B'   21 0252'              	ld	hl,LogoParams
+  023E'   01 0030               	ld	bc,30h
+  0241'   ED B0                 	ldir
+                                	; populate jumpblock
+  0243'   2A 0231'              	ld	hl,(jumpblock)
+  0246'   EB                    	ex	de,hl
+  0247'   21 0294'              	ld	hl,LogoJumpBlock
+  024A'   01 004E               	ld	bc,4eh
+  024D'   ED B0                 	ldir
+  024F'   C3 0100               	jp	0100h		; do not return, instead re-start logo interpreter
+                                
+  0252'                         LogoParams:
+  0252'   0018                  nlines:	DW	24		;params+00h	DW	* Text screen height, characters
+  0254'   0050                  	DW	80		;params+02h	DW	* Text screen width, characters
+  0256'   0018                  	DW	24		;params+04h	DW	* Text screen height, characters
+  0258'   0050                  	DW	80		;params+06h	DW	* Text screen width, characters
+  025A'   0010                  	DW	16		;params+08h	DW	* Standard split line
+  025C'   0001                  	DW	1		;params+0Ah	DW	Default foreground ink
+  025E'   0000                  	DW	0		;params+0Ch	DW	Default background ink
+  0260'   0004                  	DW	4		;params+0Eh	DW	Text X-coordinate mask for tabulation
+	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+  0262'   0008                  	DW	8		;params+10h	DW	* Maximum foreground ink number 
+  0264'   0001                  	DW	1		;params+12h	DW	Maximum R/G/B value for SETPAL
+  0266'   0000                  	DW	0		;params+14h	DW	Unknown - possibly a frequency limit for TONES?
+  0268'   FFFF                  	DW	0ffffh		;params+16h	DW	Maximum paddle number (-1 for none)
+  026A'   0400                  xdots:	DW	1024		;params+18h	DW	* Graphics screen width, pixels
+  026C'   0100                  ydots:	DW	256		;params+1Ah	DW	* Graphics screen height, pixels
+  026E'   0008                  	DW	8		;params+1Ch	DW	Unknown - possibly character height in pixels
+  0270'   000A                  	DW	10		;params+1Eh	DW	Maximum scrunch ratio (for SETSCRUNCH)
+  0272'   0000                  	DW	0		;params+20h	DW	Nonzero if separate text and graphics screens
+  0274'   0000                  	DW	0		;params+22h	DW	* Maximum background ink number
+  0276'   0018                  	DW	24		;params+24h	DW	* Maximum split line (usually = text screen height)
+  0278'   000E                  	DW	14		;params+26h	DW	* Pixel width  (for setting initial aspect ratio)	
+  027A'   0020                  	DW	32		;params+28h	DW	* Pixel height
+  027C'   0282'                 	DW	PRGTIT		;params+2Ah	DW	Address of program title, ASCIIZ, to be shown on startu screen
+  027E'   028D'                 	DW	EDTTIT		;params+2Ch	DW	Address of "Edit", ASCIIZ
+  0280'   0292'                 	DW	UNDRSC		;params+2Eh	DW	Address of "_" (used for drawing horizontal lines in	
+                                				;			text mode), ASCIIZ	
+  0282'   44 72 4C 6F           PRGTIT: DB	"DrLogo 2.0",0
+  0286'   67 6F 20 32           
+  028A'   2E 30 00              
+  028D'   45 64 69 74           EDTTIT: DB	"Edit",0
+  0291'   00                    
+  0292'   5F 00                 UNDRSC: DB	"_",0
+                                
+  0294'                         LogoJumpBlock:
+  0294'   C3 0392'              	JP	init		;+0000	Any initialisation should already have been done 
+                                				;	when the RSX was called, so this is normally a no-op.
+  0297'   C3 0591'              	JP	bye		;+0003	Terminate Logo. Undo any initialisation and jump
+                                				;	to zero rather than returning.
+  029A'   C3 034A'              	JP	txtmode		;+0006	Switch to text mode, enable cursor.
+  029D'   C3 03A0'              	JP	gfxmode		;+0009	Switch to graphics or split-screen mode. One 
+                                				;	parameter: 0 for fullscreen graphics, else split line.
+  02A0'   C3 02F9'              	JP	conin		;+000C	As the BIOS CONIN function, returning result in HL.
+  02A3'   C3 0311'              	JP	const		;+000F	As the BIOS CONST function, returning result in HL.
+  02A6'   C3 0380'              	JP	conout		;+0012	One parameter: Character to output. If not in 
+                                				;	fullscreen graphics mode, output it using the BIOS
+                                				;	CONOUT function.
+  02A9'   C3 03C0'              	JP	clrtext		;+0015	Clear some or all of the text screen. Two 
+                                				;	parameters (X,Y) giving the top / bottom line of area to clear.
+                                				;	area to clear.
+  02AC'   C3 03D7'              	JP	setcurpos	;+0018	 ;Set text cursor position. Two parameters (X,Y).
+  02AF'   C3 03F7'              	JP	scroll		;+001B	Scroll some or all of the text screen up one line. Two 
+                                				;	parameters (X,Y) giving the top / bottom line of area to scroll.
+  02B2'   C3 0437'              	JP	plot		;+001E	Plot a point. Four parameters: (X,Y,pen,colour)
+                                				;	where pen is 0 for Pen Up, 1 for Pen Down, 2 for Pen Xor, 
+                                				;       3 for Pen Erase
+  02B5'   C3 0466'              	JP	draw		;+0021	Draw a line. Six parameters: (X1,Y1,X2,Y2,pen,colour)
+  02B8'   C3 0553'              	JP	bg_set		;+0024	Set background colour. One parameter: the colour.
+  02BB'   C3 0558'              	JP	clrgfx		;+0027	Clear graphic screen. Two parameters: colour, height
+                                				;	in pixels.
+  02BE'   C3 02E2'              	JP	beep		;+002A	Sound the beeper.
+  02C1'   C3 02E3'              	JP	memtop		;+002D	Return the top of memory in HL.	
+  02C4'   C3 0585'              	JP	getpix		;+0030	Get the colour at the specified point. Two parameters
+                                				;	(X,Y). Returns the colour in HL.
+  02C7'   C3 0323'              	JP	listst		;+0033	Return printer ready status in HL.
+  02CA'   C3 0329'              	JP	list		;+0036	Send a byte to the printer. One parameter.
+	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+  02CD'   C3 02E2'              	JP	noop		;+0039	Not called.
+  02D0'   C3 02E2'              	JP	noop		;+003C	Not called.
+  02D3'   C3 02E2'              	JP	noop		;+003F	Not called.
+  02D6'   C3 02E2'              	JP	noop		;+0042	Not called.
+  02D9'   C3 02E2'              	JP	noop		;+0045	Not called.
+  02DC'   C3 058A'              	JP	savepic		;+0048	Save picture record. Two parameters; buffer address,
+                                				;	record number. Returns Z reset if buffer populated, 
+                                				;	set if no more records to be written.
+  02DF'   C3 058A'              	JP	loadpic		;+004B	Load picture record. Two parameters: buffer address,
+                                				;	record number. Returns Z reset if record was OK,
+                                				;	set if file is invalid or end of file reached.
+                                
+  02E2'                         beep:	
+  02E2'                         noop:	
+  02E2'   C9                    	ret	
+                                
+  02E3'                         memtop:	; return top of mem in HL
+  02E3'   2A 0006               	ld      hl,(0006)
+  02E6'   7C                    	ld      a,h
+  02E7'   B5                    	or      l
+  02E8'   C9                    	ret     
+                                
+  02E9'                         getarg:	; guarantees bc is preserved. Set ix to addr of funtion arg frame
+                                
+  02E9'   DD 21 0002            	ld	ix,2		
+  02ED'   DD 39                 	add	ix,sp		; sp points to arg pushed by caller before calling routine
+  02EF'   E1                    	pop	hl		; retrieve it in hl
+  02F0'   C5                    	push    bc		; save bc 
+  02F1'   CD 02F8'              	call	getar1		; call the func
+  02F4'   C1                    	pop	bc
+  02F5'   7C                    	ld      a,h
+  02F6'   B5                    	or      l
+  02F7'   C9                    	ret     
+  02F8'   E9                    getar1: jp      (hl)
+                                
+  02F9'                         conin:	
+  02F9'   CD 02E9'              	call    getarg		; preserves bc
+  02FC'   21 06C1'              	ld	hl,EscShowCursor
+  02FF'   CD 033E'              	call	PrtHL		; Show/enable cursor 
+  0302'   0E 06                 conin1:	ld	c,6		
+  0304'   1E FF                 	ld	e,255		; call BDOS func 6 read console
+  0306'   CD 0005               	call	0005		; return 0 if no char available. 
+  0309'   B7                    	or	a
+  030A'   CA 0302'              	jp	z,conin1	; wait for keypress
+  030D'   6F                    	ld      l,a
+  030E'   26 00                 	ld      h,0
+  0310'   C9                    	ret     
+                                	
+  0311'                         const:	
+  0311'   CD 02E9'              	call    getarg		; preserves bc
+  0314'   0E 0B                 	ld	c,11		; call BDOS func 11 console status
+  0316'   CD 0005               	call	0005		; return 0 if no char available. 
+  0319'   B7                    	or	a
+  031A'   CA 031F'              	jp	z,const1	
+  031D'   3E FF                 	ld	a,255		; $ff if char availble
+  031F'   6F                    const1:	ld      l,a
+	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+  0320'   26 00                 	ld      h,0
+  0322'   C9                    	ret     
+                                
+  0323'                         listst:
+  0323'   CD 02E9'              	call    getarg		; preserves bc
+  0326'   26 00                 	ld      h,0
+  0328'   C9                    	ret     
+                                
+  0329'                         list:		
+  0329'   CD 02E9'              	call    getarg		; preserves bc
+  032C'   DD 5E 02              	ld      e,(ix+2)
+  032F'   0E 05                 	ld	c,5		; call BDOS func 5 printer output
+  0331'   CD 0005               	call	0005		
+  0334'   26 00                 	ld      h,0
+  0336'   C9                    	ret     
+                                
+  0337'                         PrtA:	; print char in reg a
+  0337'   5F                    	ld	e,a
+  0338'   0E 02                 	ld	c,2		; call BDOS func 5 console output
+  033A'   CD 0005               	call	0005	
+  033D'   C9                    	ret
+                                
+  033E'                         PrtHL:	; prints stringz pointed by HL
+  033E'   7E                    	ld	a,(hl)
+  033F'   B7                    	or	a
+  0340'   C8                    	ret	z
+  0341'   E5                    	push	hl
+  0342'   CD 0337'              	call 	PrtA
+  0345'   E1                    	pop	hl
+  0346'   23                    	inc	hl
+  0347'   C3 033E'              	jp	PrtHL
+                                
+  034A'                         txtmode:
+  034A'   FD 21 0200            	ld iy,200h ; YYY
+  034E'   CD 02E9'              	call    getarg		; preserve bc
+  0351'   3E FF                 	ld	a,0ffh	
+  0353'   32 062C'              	ld	(Echo),a	; Echo=ff -> enable print chars on text screen
+  0356'   21 06C1'              	ld	hl,EscShowCursor
+  0359'   CD 033E'              	call	PrtHL		; print Show/enable cursor escape sequence
+  035C'                         CloseGsx:
+  035C'   3A 062D'              	ld	a,(GsxOpen)
+  035F'   B7                    	or	a
+  0360'   C8                    	ret	z
+                                	; now call GSX CloseWorkStation 
+  0361'   21 0002               	ld	hl,2		; gsx func 2 = CloseWorkstation
+  0364'   22 0642'              	ld	(gsxfunc),hl
+  0367'   21 0000               	ld	hl,0		
+  036A'   22 0644'              	ld	(Nptsin),hl	; num pts in = 0
+  036D'   21 0000               	ld	hl,0		
+  0370'   22 0648'              	ld	(Nintin),hl	; num int in = 0
+  0373'   11 0638'              	ld	de,pblock
+  0376'   0E 73                 	ld	c,115
+  0378'   CD 0005               	call	0005
+  037B'   AF                    	xor	a
+  037C'   32 062D'              	ld 	(GsxOpen),a	; GSX WorkStation is closed	
+  037F'   C9                    	ret
+	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+
+
+                                
+  0380'                         conout:	
+  0380'   FD 21 0220            	ld iy,220h ; YYY
+  0384'   CD 02E9'              	call    getarg		; preserve bc
+  0387'   3A 062C'              	ld	a,(Echo)
+  038A'   B7                    	or	a
+  038B'   C8                    	ret	z		; return if Echo=0
+  038C'   DD 7E 02              	ld      a,(ix+2)	; get the char to print
+  038F'   C3 0337'              	jp	PrtA
+                                
+  0392'                         init:
+  0392'   FD 21 0202            	ld iy,202h ; YYY
+  0396'   CD 02E9'              	call    getarg		; preserve bc
+  0399'   21 06D5'              	ld	hl,EscDiscardAtEOL
+  039C'   CD 033E'              	call	PrtHL		; chars at end of line does not send an auto <CR><LF>
+  039F'   C9                    	ret
+                                
+  03A0'                         gfxmode:
+                                	; Switch to graphics or split-screen mode. One 
+                                	; parameter: 0 for fullscreen graphics, else split line.
+  03A0'   FD 21 0203            	ld iy,203h ; YYY
+  03A4'   CD 02E9'              	call    getarg		
+  03A7'   DD 7E 02              	ld      a,(ix+2)	
+  03AA'   32 062C'              	ld      (Echo),a	; Set echo. Echo=$ff -> enable printing on text screen, =0 -> do not output chars to screen	
+  03AD'   6F                    	ld	l,a
+  03AE'   3A 0252'              	ld	a,(nlines)
+  03B1'   3C                    	inc	a
+  03B2'   67                    	ld	h,a
+  03B3'   CD 041F'              	call    SetRegion
+  03B6'   21 06DB'              	ld	hl,EscCls
+  03B9'   CD 033E'              	call	PrtHL		; clear text screen 
+  03BC'   CD 05CB'              	call	ChkGsxOpen	; check GSX Workstation is Open
+  03BF'   C9                    	ret
+  03C0'                         clrtext:
+                                	; Clear some or all of the text screen. Two 
+                                	; parameters (X,Y) giving the top / bottom line of area to clear.
+                                	; area to clear.	
+  03C0'   FD 21 0204            	ld iy,204h ; YYY
+  03C4'   CD 02E9'              	call    getarg		; preserve bc
+  03C7'   DD 6E 02              	ld	l,(ix+2)
+  03CA'   DD 66 04              	ld	h,(ix+4)
+  03CD'   CD 041F'              	call    SetRegion
+  03D0'   21 06DB'              	ld	hl,EscCls
+  03D3'   CD 033E'              	call	PrtHL		; clear text screen 
+  03D6'   C9                    	ret
+  03D7'                         setcurpos:
+                                	;+0018	 ;Set text cursor position. Two parameters (X,Y)
+  03D7'   FD 21 0205            	ld iy,205h ; YYY
+  03DB'   CD 02E9'              	call    getarg
+  03DE'   3A 062C'              	ld      a,(Echo)	; if Echo=0 -> do not print chars on text screen
+  03E1'   B7                    	or      a
+  03E2'   C8                    	ret     z
+  03E3'   DD 6E 04              	ld      l,(ix+4)
+  03E6'   DD 66 02              	ld      h,(ix+2)
+  03E9'   11 1F1F               	ld      de,01f1fh	; print ESC Y to set cursor at HL=rc
+  03EC'   19                    	add     hl,de
+	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+
+
+  03ED'   22 06BE'              	ld      (EscCurPos+2),hl
+  03F0'   21 06BC'              	ld      hl,EscCurPos
+  03F3'   CD 033E'              	call	PrtHL		
+  03F6'   C9                    	ret
+                                	
+  03F7'                         scroll: ; Scroll some or all of the text screen up one line. Two 
+                                	; parameters (X,Y) giving the top / bottom line of area to scroll.
+  03F7'   FD 21 0206            	ld iy,206h ; YYY
+  03FB'   CD 02E9'              	call    getarg		; preserve bc
+  03FE'   3A 062C'              	ld      a,(Echo)	; if Echo=0 -> do not print chars on text screen
+  0401'   B7                    	or      a
+  0402'   C8                    	ret     z
+  0403'   21 06F1'              	ld	hl,EscSaveCursorPos
+  0406'   CD 033E'              	call	PrtHL		
+  0409'   DD 6E 02              	ld      l,(ix+2)	; 16
+  040C'   DD 66 04              	ld      h,(ix+4)	; 24
+  040F'   CD 041F'              	call    SetRegion
+  0412'   21 06ED'              	ld	hl,EscScroll
+  0415'   CD 033E'              	call	PrtHL	
+  0418'   21 06F5'              	ld	hl,EscRestoreCursorPos
+  041B'   CD 033E'              	call	PrtHL	
+  041E'   C9                    	ret
+                                	
+  041F'                         SetRegion:	; set scroll region to HL (l=first line, h=last line of region)
+  041F'   E5                    	push	hl
+  0420'   7D                    	ld      a,l
+  0421'   21 06E2'              	ld	hl,EscSetScrollRegion+2
+  0424'   CD 05B2'              	call	saveNNdec
+  0427'   E1                    	pop	hl
+  0428'   7C                    	ld	a,h
+  0429'   3C                    	inc	a
+  042A'   21 06E5'              	ld	hl,EscSetScrollRegion+5
+  042D'   CD 05B2'              	call	saveNNdec
+  0430'   21 06E0'              	ld	hl,EscSetScrollRegion
+  0433'   CD 033E'              	call	PrtHL	
+  0436'   C9                    	ret	
+                                	
+  0437'                         plot:	; Plot a point. Four parameters: (X,Y,pen,colour)
+                                	; where pen is 0 for Pen Up, 1 for Pen Down, 2 for Pen Xor, 3 for Pen Erase
+  0437'   FD 21 0207            	ld iy,207h ; YYY
+  043B'   CD 02E9'              	call    getarg		; preserve bc
+  043E'   DD 7E 07              	ld      a,(ix+7)	; pen?
+  0441'   32 062E'              	ld	(PenMode),a
+  0444'   DD 7E 06              	ld      a,(ix+6)	; color?
+  0447'   32 062F'              	ld	(PenColor),a
+  044A'   DD 6E 02              	ld      l,(ix+2)	; x coord
+  044D'   DD 66 03              	ld      h,(ix+3)
+  0450'   22 0630'              	ld	(x0),hl	
+  0453'   22 0634'              	ld	(x1),hl	
+  0456'   DD 6E 04              	ld      l,(ix+4)	; y coord
+  0459'   DD 66 05              	ld      h,(ix+5)	
+  045C'   22 0632'              	ld	(y0),hl	
+  045F'   22 0636'              	ld	(y1),hl	
+  0462'   CD 04A1'              	call	LineGsx
+  0465'   C9                    	ret
+  0466'                         draw:	; Draw a line. Six parameters: (X1,Y1,X2,Y2,pen,colour)
+	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+
+
+  0466'   FD 21 0208            	ld iy,208h ; YYY
+  046A'   CD 02E9'              	call    getarg		; preserve bc
+  046D'   DD 7E 0B              	ld      a,(ix+11)	; pen?
+  0470'   32 062E'              	ld	(PenMode),a
+  0473'   DD 7E 0A              	ld      a,(ix+10)	; color?
+  0476'   32 062F'              	ld	(PenColor),a
+  0479'   DD 6E 06              	ld      l,(ix+6)	; x coord
+  047C'   DD 66 07              	ld      h,(ix+7)	
+  047F'   22 0630'              	ld	(x0),hl	
+  0482'   DD 6E 08              	ld      l,(ix+8)	; y coord
+  0485'   DD 66 09              	ld      h,(ix+9)	
+  0488'   22 0632'              	ld	(y0),hl	
+  048B'   DD 6E 02              	ld      l,(ix+2)	; x coord
+  048E'   DD 66 03              	ld      h,(ix+3)	
+  0491'   22 0634'              	ld	(x1),hl	
+  0494'   DD 6E 04              	ld      l,(ix+4)	; y coord
+  0497'   DD 66 05              	ld      h,(ix+5)	
+  049A'   22 0636'              	ld	(y1),hl	
+  049D'   CD 04A1'              	call	LineGsx
+  04A0'   C9                    	ret
+                                
+  04A1'                         LineGsx:
+  04A1'   CD 05CB'              	call	ChkGsxOpen	; check GSX Workstation is Open
+                                	; set pen mode
+  04A4'   3A 062E'              	ld	a,(PenMode)	; 0 for Pen Up, 1 for Pen Down, 2 for Pen Xor, 3 for Pen Erase
+  04A7'   B7                    	or	a
+  04A8'   C8                    	ret	z		; pen-up -> do not draw
+  04A9'   11 0003               	ld	de,3		; xor mode
+  04AC'   FE 02                 	cp	2
+  04AE'   CA 04BC'              	jp	z,setlnm
+  04B1'   11 0004               	ld	de,4		; erase mode
+  04B4'   FE 03                 	cp	3
+  04B6'   CA 04BC'              	jp	z,setlnm
+  04B9'   11 0001               	ld	de,1		; replace mode
+                                	; call GSX Set Writing Mode
+  04BC'   21 0020               setlnm:	ld	hl,32		; gsx func 32 = Set Set Writing Mode
+  04BF'   22 0642'              	ld	(gsxfunc),hl
+  04C2'   21 0000               	ld	hl,0		
+  04C5'   22 0644'              	ld	(Nptsin),hl	; num pts in = 0
+  04C8'   21 0001               	ld	hl,1		
+  04CB'   22 0648'              	ld	(Nintin),hl	; num int in = 1
+  04CE'   ED 53 064C'           	ld	(intin),de	; store the value
+  04D2'   11 0638'              	ld	de,pblock
+  04D5'   0E 73                 	ld	c,115
+  04D7'   CD 0005               	call	0005
+                                	; set draw color
+  04DA'   3A 062F'              	ld	a,(PenColor)
+  04DD'   16 00                 	ld	d,0
+  04DF'   5F                    	ld 	e,a
+                                	; call GSX Set Line color
+  04E0'   21 0011               	ld	hl,17		; gsx func 17 = Set Line Color
+  04E3'   22 0642'              	ld	(gsxfunc),hl
+  04E6'   21 0000               	ld	hl,0		
+  04E9'   22 0644'              	ld	(Nptsin),hl	; num pts in = 0
+  04EC'   21 0001               	ld	hl,1		
+  04EF'   22 0648'              	ld	(Nintin),hl	; num int in = 1
+	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+
+
+  04F2'   ED 53 064C'           	ld	(intin),de	; store the value
+  04F6'   11 0638'              	ld	de,pblock
+  04F9'   0E 73                 	ld	c,115
+  04FB'   CD 0005               	call	0005
+                                	; call GSX Draw polyLine
+  04FE'   21 0006               	ld	hl,6		; gsx func 6 = Draw Poly Line
+  0501'   22 0642'              	ld	(gsxfunc),hl
+  0504'   21 0002               	ld	hl,2
+  0507'   22 0644'              	ld	(Nptsin),hl	; num pts in = 2
+  050A'   21 0000               	ld	hl,0		
+  050D'   22 0648'              	ld	(Nintin),hl	; num int in = 0
+  0510'   2A 0630'              	ld	hl,(x0)
+  0513'   CD 053D'              	call	hl_x32		; mult x-coord by 32
+  0516'   22 0654'              	ld	(ptsin+0),hl	; set the line coords
+  0519'   2A 0632'              	ld	hl,(y0)	
+  051C'   CD 0543'              	call	hl_y32		; mult y-coord 
+  051F'   22 0656'              	ld	(ptsin+2),hl	
+  0522'   2A 0634'              	ld	hl,(x1)
+  0525'   CD 053D'              	call	hl_x32		; mult x-coord by 32
+  0528'   22 0658'              	ld	(ptsin+4),hl
+  052B'   2A 0636'              	ld	hl,(y1)
+  052E'   CD 0543'              	call	hl_y32		; mult coord 
+  0531'   22 065A'              	ld	(ptsin+6),hl	
+  0534'   11 0638'              	ld	de,pblock
+  0537'   0E 73                 	ld	c,115
+  0539'   CD 0005               	call	0005	
+  053C'   C9                    	ret
+                                	
+  053D'                         hl_x32:
+  053D'   29                    	add	hl,hl
+  053E'   29                    	add	hl,hl
+  053F'   29                    	add	hl,hl
+  0540'   29                    	add	hl,hl
+  0541'   29                    	add	hl,hl
+  0542'   C9                    	ret		
+  0543'                         hl_y32:
+  0543'   B7                    	or	a
+  0544'   EB                    	ex	de,hl
+  0545'   2A 026C'              	ld	hl,(ydots)
+  0548'   ED 52                 	sbc	hl,de
+  054A'   2B                    	dec	hl
+  054B'   29                    	add	hl,hl
+  054C'   29                    	add	hl,hl
+  054D'   29                    	add	hl,hl
+  054E'   29                    	add	hl,hl
+  054F'   29                    	add	hl,hl
+  0550'   29                    	add	hl,hl
+  0551'   29                    	add	hl,hl
+  0552'   C9                    	ret
+                                	
+  0553'                         bg_set:	; Set background colour. One parameter: the colour.
+  0553'   FD 21 0209            	ld iy,209h ; YYY
+  0557'   C9                    	ret
+  0558'                         clrgfx: ; Clear graphic screen. Two parameters: colour, height in pixels
+  0558'   FD 21 0210            	ld iy,210h ; YYY
+  055C'   CD 02E9'              	call    getarg		; preserve bc
+	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+
+
+  055F'   DD 6E 04              	ld      l,(ix+4)	; height of graf screen, in pixels
+  0562'   DD 66 05              	ld      h,(ix+5)	
+  0565'   DD 7E 02              	ld      a,(ix+2)	; screen color?
+  0568'   3A 062D'              ClrGsx:	ld	a,(GsxOpen)
+  056B'   B7                    	or	a
+  056C'   C8                    	ret	z
+                                	; call GSX Clear Picture
+  056D'   21 0003               	ld	hl,3		; gsx func 3 = Clear Picture
+  0570'   22 0642'              	ld	(gsxfunc),hl
+  0573'   21 0000               	ld	hl,0		
+  0576'   22 0644'              	ld	(Nptsin),hl	; num pts in = 0
+  0579'   22 0648'              	ld	(Nintin),hl	; num int in = 0
+  057C'   11 0638'              	ld	de,pblock
+  057F'   0E 73                 	ld	c,115
+  0581'   CD 0005               	call	0005
+  0584'   C9                    	ret
+  0585'                         getpix:	; Get the colour at the specified point. Two parameters
+                                	; (X,Y). Returns the colour in HL.
+  0585'   FD 21 0211            	ld iy,211h ; YYY
+  0589'   C9                    	ret	
+                                
+  058A'                         savepic:			; these functions are not implemented
+  058A'                         loadpic:	
+  058A'   CD 02E9'              	call    getarg		
+                                	;XXX retrieve second argument?
+  058D'   21 0000               	ld	hl,0
+  0590'   C9                    	ret
+                                
+  0591'                         bye:	
+  0591'   CD 0568'              	call	ClrGsx
+  0594'   CD 035C'              	call	CloseGsx
+  0597'   21 06CF'              	ld	hl,EscEnableLineWrap
+  059A'   CD 033E'              	call	PrtHL		; enable normal <CR><LF>
+  059D'   21 06E9'              	ld	hl,EscResetScrollRegion
+  05A0'   CD 033E'              	call	PrtHL	
+  05A3'   21 06DB'              	ld	hl,EscCls
+  05A6'   CD 033E'              	call	PrtHL		; clear text screen 
+  05A9'   21 06C1'              	ld	hl,EscShowCursor
+  05AC'   CD 033E'              	call	PrtHL		; Show/enable cursor 
+  05AF'   C3 0000               	jp	0000;
+                                
+  05B2'                         saveNNdec:	; saves reg A as two-digits ascii decimal number NN at addr HL
+  05B2'   16 00                 	ld	d,0
+  05B4'   FE 0A                 n0:	cp	10
+  05B6'   DA 05BF'              	jp	c,n1		; jump if a is less than 10
+  05B9'   D6 0A                 	sub	10
+  05BB'   14                    	inc	d
+  05BC'   C3 05B4'              	jp	n0
+  05BF'   5F                    n1:	ld	e,a
+  05C0'   E5                    	push 	hl
+  05C1'   21 3030               	ld	hl,3030h	; ascii 00
+  05C4'   19                    	add	hl,de		; ascii NN
+  05C5'   EB                    	ex	de,hl
+  05C6'   E1                    	pop	hl
+  05C7'   72                    	ld	(hl),d
+  05C8'   23                    	inc 	hl
+	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+
+
+  05C9'   73                    	ld	(hl),e
+  05CA'   C9                    	ret
+                                
+  05CB'                         ChkGsxOpen:	; check if GSX WorkStation is open. If not, open it
+  05CB'   3A 062D'              	ld 	a,(GsxOpen)
+  05CE'   B7                    	or	a
+  05CF'   C0                    	ret	nz		; return. WorkStation already open
+  05D0'   3E 01                 	ld	a,1
+  05D2'   32 062D'              	ld 	(GsxOpen),a	; Mark GSX WorkStation as Open
+                                	; now OpenWorkStation
+  05D5'   21 0001               	ld	hl,1		; gsx func 1 = OpenWorkstation
+  05D8'   22 0642'              	ld	(gsxfunc),hl
+  05DB'   21 0000               	ld	hl,0		
+  05DE'   22 0644'              	ld	(Nptsin),hl	; num pts in = 0
+  05E1'   21 000A               	ld	hl,10		
+  05E4'   22 0648'              	ld	(Nintin),hl	; num int in = 10
+  05E7'   21 0001               	ld	hl,1
+  05EA'   22 064C'              	ld	(INTIN + 0*2),hl	; open device number = 1
+  05ED'   21 0000               	ld	hl,0
+  05F0'   22 064E'              	ld	(INTIN + 1*2),hl	; line style
+  05F3'   21 0001               	ld	hl,1
+  05F6'   22 0650'              	ld	(INTIN + 2*2),hl	; line color (0=black, 1=white)
+  05F9'   21 0000               	ld	hl,0
+  05FC'   22 0652'              	ld	(INTIN + 3*2),hl	; marker style
+  05FF'   21 0001               	ld	hl,1
+  0602'   22 0654'              	ld	(INTIN + 4*2),hl	; marker color
+  0605'   21 0000               	ld	hl,0
+  0608'   22 0656'              	ld	(INTIN + 5*2),hl	; text style
+  060B'   21 0001               	ld	hl,1
+  060E'   22 0658'              	ld	(INTIN + 6*2),hl	; text color
+  0611'   21 0000               	ld	hl,0
+  0614'   22 065A'              	ld	(INTIN + 7*2),hl	; fill style
+  0617'   21 0000               	ld	hl,0
+  061A'   22 065C'              	ld	(INTIN + 8*2),hl	; fill index (0=solid)
+  061D'   21 0001               	ld	hl,1
+  0620'   22 065E'              	ld	(INTIN + 9*2),hl	; fill color
+  0623'   11 0638'              	ld	de,pblock
+  0626'   0E 73                 	ld	c,115
+  0628'   CD 0005               	call	0005
+  062B'   C9                    	ret
+                                
+                                ; driver variables
+                                
+  062C'   00                    Echo:		DB	0	; 0=do not print on text screen, 1=print chars
+  062D'   00                    GsxOpen:	DB	0	; 1=GSX WorkStation is open
+  062E'   00                    PenMode:	DB	0	; 0 for Pen Up, 1 for Pen Down, 2 for Pen Xor, 3 for Pen Erase
+  062F'   00                    PenColor:	DB	0
+  0630'   0000                  x0:		DW	0
+  0632'   0000                  y0:		DW	0
+  0634'   0000                  x1:		DW	0
+  0636'   0000                  y1:		DW	0
+                                	
+                                ; GSX variables
+                                	
+  0638'   0642'                 pblock:	DW	CONTRL		; Address of control array
+  063A'   064C'                 	DW	INTIN		; Address of integer input array
+	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+
+
+  063C'   0654'                 	DW	PTSIN		; Address of pixel input array
+  063E'   065C'                 	DW	INTOUT		; Address of integer output array
+  0640'   069C'                 	DW	PTSOUT		; Address of pixel output array	
+  0642'                         CONTRL:	
+  0642'   0000                  gsxfunc:	DW	0	; Input:  GSX function to call, 1-33
+  0644'   0000                  Nptsin:		DW   	0	; Input:  Number of points in PTSIN array.
+  0646'   0000                  Nptsout:	DW   	0	; Output: Number of points in PTSOUT array.
+  0648'   0000                  Nintin:		DW   	0	; Input:  Number of integers in INTIN array.
+  064A'   0000                  Nintout:	DW   	0	; Output: Number of integers in INTOUT array.	
+  064C'                         INTIN:	DS	8		; room for 4 input words
+  0654'                         PTSIN:	DS	8		; room for 4 input coords (2 points)
+  065C'                         INTOUT:	DS	64		; room for 32 output words
+  069C'                         PTSOUT:	DS	32 		; room for 16 output coords (8 points)
+                                	
+                                
+                                ; Terminal Escape sequences
+                                
+  06BC'   1B 59 00 00           EscCurPos:		DB	27,'Y',0,0,0	; Cursor positioning
+  06C0'   00                    
+  06C1'   1B 5B 3F 32           EscShowCursor:		DB	27,'[?25h',0	; Enable cursor/Cursor On
+  06C5'   35 68 00              
+  06C8'   1B 5B 3F 32           EscHideCursor:		DB	27,'[?25l',0	; Disable cursor/Cursor Off
+  06CC'   35 6C 00              
+  06CF'   1B 5B 3F 37           EscEnableLineWrap:	DB	27,'[?7h',0	; Auto <CR><LF> at end of line (normal setting)
+  06D3'   68 00                 
+  06D5'   1B 5B 3F 37           EscDiscardAtEOL:	DB	27,'[?7l',0	; Discard chars at eol instead of auto <CR><LF>
+  06D9'   6C 00                 
+  06DB'   1B 5B 32 4A           EscCls:			DB	27,'[2J',0	; Clear screen
+  06DF'   00                    
+  06E0'   1B 5B 31 36           EscSetScrollRegion:	DB	27,'[16;25r',0	; Set scroll region
+  06E4'   3B 32 35 72           
+  06E8'   00                    
+  06E9'   1B 5B 72 00           EscResetScrollRegion:	DB	27,'[r',0	; Reset set scroll region
+  06ED'   1B 5B 53 00           EscScroll:		DB	27,'[S',0	; Scroll up one line
+  06F1'   1B 5B 73 00           EscSaveCursorPos:	DB	27,'[s',0	; Save Cursor pos
+  06F5'   1B 5B 75 00           EscRestoreCursorPos:	DB	27,'[u',0	; Restore Cursor pos
+                                
+  06F9'   EEEE                  	DW      0EEEEh		; end of PRL signature
+                                	END
+	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+0208'	BDOS            02E2'	BEEP            0553'	BG_SET          
+0591'	BYE             05CB'	CHKGSXOPEN      035C'	CLOSEGSX        
+0558'	CLRGFX          0568'	CLRGSX          03C0'	CLRTEXT         
+02F9'	CONIN           0302'	CONIN1          0380'	CONOUT          
+0311'	CONST           031F'	CONST1          0642'	CONTRL          
+0130'	CONV            011C'	DISPHLHEX       0466'	DRAW            
+062C'	ECHO            028D'	EDTTIT          06DB'	ESCCLS          
+06BC'	ESCCURPOS       06D5'	ESCDISCARDATEOL 06CF'	ESCENABLELINEWRA 
+06C8'	ESCHIDECURSOR   06E9'	ESCRESETSCROLLRE 06F5'	ESCRESTORECURSOR 
+06F1'	ESCSAVECURSORPOS 06ED'	ESCSCROLL       06E0'	ESCSETSCROLLREGI 
+06C1'	ESCSHOWCURSOR   02F8'	GETAR1          02E9'	GETARG          
+0585'	GETPIX          03A0'	GFXMODE         0642'	GSXFUNC         
+062D'	GSXOPEN         0100'	HFTXT           053D'	HL_X32          
+0543'	HL_Y32          020B'	HOOKFN60        013F'	INIPAD          
+0392'	INIT            064C'	INTIN           065C'	INTOUT          
+0231'	JUMPBLOCK       04A1'	LINEGSX         0329'	LIST            
+0323'	LISTST          058A'	LOADPIC         0294'	LOGOJUMPBLOCK   
+0252'	LOGOPARAMS      0200'	MAIN            02E3'	MEMTOP          
+05B4'	N0              05BF'	N1              0648'	NINTIN          
+064A'	NINTOUT         0252'	NLINES          02E2'	NOOP            
+0644'	NPTSIN          0646'	NPTSOUT         0127'	OUTHEX8         
+022F'	PARAMS          0638'	PBLOCK          062F'	PENCOLOR        
+062E'	PENMODE         0437'	PLOT            0282'	PRGTIT          
+0337'	PRTA            033E'	PRTHL           0654'	PTSIN           
+069C'	PTSOUT          022D'	RSXFUNC         0237'	RSXFUNC0        
+022E'	RSXNUMWORDS     022F'	RSXPARAM0       0231'	RSXPARAM1       
+0233'	RSXPARAM2       0235'	RSXPARAM3       022B'	RSXPBLOCK       
+05B2'	SAVENNDEC       058A'	SAVEPIC         03F7'	SCROLL          
+03D7'	SETCURPOS       04BC'	SETLNM          041F'	SETREGION       
+0000'	START           00FD'	TXTEND          034A'	TXTMODE         
+0292'	UNDRSC          002B'	WTEXT           0630'	X0              
+0634'	X1              026A'	XDOTS           0632'	Y0              
+0636'	Y1              026C'	YDOTS           
+
+
+
+No Fatal error(s)
+
+
+    0231'	RSXPARAM1       
+023

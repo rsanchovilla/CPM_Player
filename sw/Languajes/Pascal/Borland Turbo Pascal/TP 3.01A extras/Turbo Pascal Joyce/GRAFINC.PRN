@@ -1,0 +1,195 @@
+	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                ;************************
+                                ;  PLOT / SYMBOL - MCode
+                                ;  Turbo Pascal Version
+                                ;  1987 by M.A. & E. W.
+                                ;  Vers. 10/8/87
+                                ;    (incl. DotColor)
+                                ;    (incl. Scr_Access)
+                                ;************************
+                                ;
+                                .Z80
+  0000'                         ASEG
+                                ORG 100h
+                                ;
+  F400                          START   EQU 0F400h
+  FC5A                          XBIOS   EQU 0FC5Ah
+  00E9                          RUN_SCR EQU 00E9h
+                                ;
+                                .PHASE START
+                                ;
+  F400                          _PLOT:
+                                ;
+  F400    ED 5B F410            LD DE,(_X)
+  F404    2A F412               LD HL,(_YM)
+                                ;
+  F407    01 F414               LD   BC,PLOT
+  F40A    CD FC5A               CALL XBIOS
+  F40D    00E9                  DW   RUN_SCR
+  F40F    C9                    RET
+                                ;
+                                ;
+  F410                          _X:  DS 2
+  F412                          _YM: DS 2
+                                ;
+                                ;
+  F414                          PLOT:
+  F414    3E 03                   LD   A,03
+  F416    A2                      AND  D
+  F417    57                      LD   D,A
+  F418    E5                      PUSH HL
+  F419    26 00                   LD   H,00
+  F41B    29                      ADD  HL,HL
+  F41C    01 B600                 LD   BC,0B600h
+  F41F    09                      ADD  HL,BC
+  F420    4E                      LD   C,(HL)
+  F421    23                      INC  HL
+  F422    46                      LD   B,(HL)
+  F423    79                      LD   A,C
+  F424    E6 F8                   AND  0F8h
+  F426    6F                      LD   L,A
+  F427    60                      LD   H,B
+  F428    29                      ADD  HL,HL
+  F429    19                      ADD  HL,DE
+  F42A    7D                      LD   A,L
+  F42B    E6 F8                   AND  0F8h
+  F42D    6F                      LD   L,A
+  F42E    79                      LD   A,C
+  F42F    E6 07                   AND  07
+  F431    B5                      OR   L
+  F432    6F                      LD   L,A
+  F433    7B                      LD   A,E
+  F434    E6 07                   AND  07
+  F436    3C                      INC  A
+  F437    47                      LD   B,A
+  F438    AF                      XOR  A
+  F439    37                      SCF
+  F43A                          LOOP:
+  F43A    1F                      RRA
+  F43B    10 FD                   DJNZ LOOP
+  F43D    C1                      POP  BC
+  F43E    4F                      LD   C,A
+  F43F    78                      LD   A,B
+  F440    FE 00                   CP   00
+  F442    20 04                   JR   NZ,CLEAR
+  F444    79                      LD   A,C
+  F445    B6                      OR   (HL)
+  F446    77                      LD   (HL),A
+  F447    C9                      RET
+  F448                          CLEAR:
+  F448    FE 01                   CP   01
+  F44A    20 05                   JR   NZ,REVERSE
+  F44C    79                      LD   A,C
+  F44D    2F                      CPL
+  F44E    A6                      AND  (HL)
+  F44F    77                      LD   (HL),A
+  F450    C9                      RET
+  F451                          REVERSE:
+  F451    FE 02                   CP   02
+  F453    20 04                   JR   NZ,STATUS
+  F455    79                      LD   A,C
+  F456    AE                      XOR  (HL)
+  F457    77                      LD   (HL),A
+  F458    C9                      RET
+  F459                          STATUS:
+  F459    FE 03                   CP    03
+  F45B    C0                      RET   NZ
+  F45C    79                      LD    A,C
+  F45D    A6                      AND   (HL)
+  F45E    32 F413                 LD    (_YM+1),A
+  F461    C9                      RET
+                                ;
+                                ;
+  F462                          _SYMB:
+                                ;
+  F462    01 F46B                 LD   BC,SYMBOL
+  F465    CD FC5A                 CALL XBIOS
+  F468    00E9                    DW   RUN_SCR
+  F46A    C9                      RET
+                                ;
+  F46B                          SYMBOL:
+  F46B    21 F477                 LD HL,_TABLE
+  F46E    01 0008                 LD BC,0008H
+  F471    11 0000                 LD DE,0000H
+  F474    ED B0                   LDIR
+  F476    C9                      RET
+                                ;
+  F477                          _TABLE: DS 8
+                                ;
+                                ;
+  F47F                          _GET:
+                                ;
+  F47F    01 F488                 LD   BC,GETMAT
+  F482    CD FC5A                 CALL XBIOS
+  F485    00E9                    DW   RUN_SCR
+  F487    C9                      RET
+                                ;
+  F488                          GETMAT:
+  F488    21 0000                 LD HL,0000H
+  F48B    01 0008                 LD BC,0008H
+  F48E    11 F477                 LD DE,_TABLE
+  F491    ED B0                   LDIR
+  F493    C9                      RET
+                                ;
+                                ;
+  F494                          _SCRACC:
+  F494    01 F49D                 LD BC,ACCESS
+  F497    CD FC5A                 CALL XBIOS
+  F49A    00E9                    DW RUN_SCR
+  F49C    C9                      RET
+                                ;
+  F49D                          ACCESS:
+  F49D    1E 00                   LD E,0 ; (<- Column)
+  F49F    3E 00                   LD A,0 ; (<- Row)
+  F4A1    16 00                   LD D,0
+  F4A3    07                      RLCA
+  F4A4    17                      RLA
+  F4A5    17                      RLA
+  F4A6    17                      RLA
+  F4A7    6F                      LD L,A
+  F4A8    7A                      LD A,D
+  F4A9    CE B6                   ADC A,0B6H
+  F4AB    67                      LD H,A
+  F4AC    7E                      LD A,(HL)
+  F4AD    23                      INC HL
+  F4AE    66                      LD H,(HL)
+  F4AF    6F                      LD L,A
+  F4B0    EB                      EX DE,HL
+  F4B1    29                      ADD HL,HL
+  F4B2    29                      ADD HL,HL
+  F4B3    19                      ADD HL,DE
+  F4B4    29                      ADD HL,HL
+  F4B5    01 0008                 LD BC,0008H
+  F4B8    3E 00                   LD A,0 ; (<- Access Mode)
+  F4BA    FE 00                   CP 0   ; (   = READ?)
+  F4BC    20 06                   JR NZ,WRITE
+  F4BE    11 F477                 LD DE,_TABLE
+  F4C1    ED B0                   LDIR
+  F4C3    C9                      RET
+  F4C4                          WRITE:
+  F4C4    EB                      EX DE,HL
+  F4C5    21 F477                 LD HL,_TABLE
+  F4C8    ED B0                   LDIR
+  F4CA    C9                      RET
+                                ;
+                                .DEPHASE
+                                END
+Macros:
+
+Symbols:
+F47F 	_GET            F400 	_PLOT           F494 	_SCRACC         
+F462 	_SYMB           F477 	_TABLE          F410 	_X              
+F412 	_YM             F49D 	ACCESS          F448 	CLEAR           
+F488 	GETMAT          F43A 	LOOP            F414 	PLOT            
+F451 	REVERSE         00E9 	RUN_SCR         F400 	START           
+F459 	STATUS          F46B 	SYMBOL          F4C4 	WRITE           
+FC5A 	XBIOS           
+
+
+
+No Fatal error(s)
+
+
+

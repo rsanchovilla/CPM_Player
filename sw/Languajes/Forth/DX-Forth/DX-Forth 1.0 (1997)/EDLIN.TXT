@@ -1,0 +1,159 @@
+
+Line Editor                                             97-12-28
+-----------
+
+EDLIN is a simple line-oriented screen editor.
+
+It uses the same commands as the editor in 'Starting Forth' and 
+is a slightly modified version of the editor that appeared in 
+Forth Dimensions III/3.
+
+Editing of screens with a line editor is rather tedious and is 
+best avoided (see EDITOR.SCR for a full-screen editor).  However 
+it does have the advantage that it does not need to be installed 
+and works with any video terminal.
+
+
+General screen commands:
+------------------------
+
+ EDIT  ( -- u )
+
+     Enter the EDITOR vocabulary and select screen u for editing.  
+     The cursor is positioned at the start of line 0.  All editor 
+     commands (see below) are then available for use.
+
+ WHERE  ( -- )                                         S
+
+     Used after a LOAD error, WHERE performs the same function as 
+     EDIT but the screen and the cursor position are 
+     automatically set to the location where the error occured.
+
+ L  ( -- )          List                               S
+
+     Lists the current screen.  The screen number is obtained 
+     from the variable SCR and is set by LIST, EDIT or when a 
+     LOAD error occurs.
+
+ N  ( -- )          Next                               S
+
+     Increments the screen number by one.  Typically used 
+     immediately before the L command.
+
+ B  ( -- )          Back                               S
+
+     Decrements the screen number by one.  Typically used 
+     immediately before the L command.
+
+ COPY  ( u1 u2 -- )                                    S
+
+     Copy the contents of screen u1 to screen u2.
+
+ COPIES  ( u1 u2 u3 -- )                               S
+
+     Copy a range of screens - u1 is the first source screen, u2 
+     is the first destination screen, u3 is the number of screens 
+     to be copied.  The user is prompted before copying begins.  
+     Pressing any key during copy aborts the process.  Overlap of 
+     source and destination screens is automatically handled.
+
+
+Editor commands:
+----------------
+(these commands are available only from the EDITOR vocabulary)
+
+Note: for commands that allow it, text input is not mandatory.  
+If no text follows the command then the current contents of 
+either the FIND or INSERT buffer (according to the command) will 
+be used instead.
+
+
+ ?  ( -- )                                             S
+
+     Display the current line and cursor position.
+
+ ^  ( -- )                                             S
+
+     Used as terminator for all commands allowing text input.  
+     Allows more than one command to be used on a line.
+
+ T  ( u -- )        Type                               S
+
+     Type line u from the current screen and select it as the 
+     current line.
+
+ P text  ( -- )     Put                                S
+
+     Copies any following text into the INSERT buffer and the 
+     string is put into the current line replacing its previous 
+     contents.  If P is followed by two or more blanks then the 
+     entire line will be erased.
+
+ X  ( -- )          Extract                            S
+
+     Copies the current line into the INSERT buffer and then 
+     extracts it from the block.  All following lines are moved 
+     up.
+
+ TILL text  ( -- )                                     S
+
+     Copies any following text into the FIND buffer and deletes 
+     all characters from the current cursor position up till and 
+     including the string.
+
+ I text  ( -- )     Insert                             S
+
+     Copies any following text into the INSERT buffer and inserts 
+     the string just behind the cursor.  Any text pushed off the 
+     end of the line will be lost.
+
+ F text  ( -- )     Find                               S
+
+     Copies any following text into the FIND buffer and finds the 
+     string in the remainder of the block.  The F command with no 
+     following text behaves as the N command.
+
+ E  ( -- )          Erase                              S
+
+     Erases backwards from the cursor as many characters as are 
+     currently in the FIND buffer.  To be used after the F 
+     command.
+
+ D text  ( -- )     Delete                             S
+
+     Copies any following text into the FIND buffer then finds 
+     the next occurrence of the string within the line and 
+     deletes it.  The D command is a combination of the F and E 
+     commands.
+
+ R text  ( -- )     Replace                            S
+
+     Copies any following text into the INSERT buffer.  Combines 
+     the E and I commands to replace a found string with a given 
+     string or the contents of the INSERT buffer.
+
+ U text  ( -- )     Under                              S
+
+     Copies any following text into the INSERT buffer and puts 
+     the string into the line under the current line.  All 
+     following lines are pushed down and line 15 is lost.
+
+ S text  ( u -- )   Search                             S
+
+     Copies any following text into the FIND buffer then searches 
+     from the top of current block to the end of block u-1 for 
+     the string, displaying the lines and location where a match 
+     occurs.
+
+ M  ( u1 u2 -- )    Move                               S
+
+     Copies the current line into the INSERT buffer and moves a 
+     copy of the INSERT buffer into the line UNDER the line u2 of 
+     block u1.  The current line is incremented by one.  This 
+     allows sequential lines to be moved with a minimum of 
+     keystrokes.
+
+ WIPE  ( -- )                                          S
+
+     Wipes the current screen by setting its contents to blanks.
+

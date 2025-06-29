@@ -1,0 +1,77 @@
+01.01 C From a posting to comp.os.cpm by Emmanuel Roche
+01.03 T " "!!!!!!!!!!!!!!!!!!
+01.04 T "McMaster Space Centre calling lunar module. Our computers here"!
+01.05 T "indicate that your DEC processor has malfunctioned, as was"!
+01.06 T "feared.You must land on your own.You may reset fuel rate to"!
+01.07 T "any value between 8 & 200 lbs/sec. You have an estimated 16000 lbs."!
+01.08 T "of fuel.------------RADAR CHECK FOLLOWS-----------"!!
+01.20 T " "!!!!
+01.30 T "COMMENCE LANDING PROCEDURE"!!
+01.35 D 20
+01.40 F J=0,10; T "***   ",10-J,"   ***",#; F P=1,100; S PP=1
+01.50 S L=0;S A=120;S V=1;S M=32500;S N=16500;S G=.001;S Z=1.8
+01.55 S H=20; S KH=0; S SS=0
+01.57 GOTO 10.1
+01.60 T "TIME(SEC) =",%3,L,"      ALT.(Km) =",%7.3,A," FUEL(Kg) ="
+01.62 IF ((M-N)-100) 1.63,1.63,1.64
+01.63 D 21
+01.64 T M-N,!
+01.65 T "VEL.(Km/H):     VERT. =",V*3600,"       HOR. = ",H,!!!
+01.68 IF (SS) 1.7,1.7,1.72
+01.70 A "DESCENT > (Deg.) =  "TH,"    FUEL RATE = ",RF,"  TIME ",T,!
+01.71 GOTO 1.8
+01.72 D 21; T "FUEL OUT "; D 22; F J=1,100; S X=X
+01.80 S QQ=TH*(3.14/180); S K=FSIN(1.57-QQ)*RF
+01.85 S H=FSIN(QQ)*RF*T*1.5+H
+01.87 S KK=Y(KH)
+01.90 S KH=KH+H*T*.01
+01.92 S A=A+(KK-Y(KH))
+01.95 IF (A-.0001) 5.1,5.1,2.7
+02.70 T %7.02;I (K)2.72;I (200-K)2.72;I (K-0)2.71,3.1,3.1
+02.71 I (K-0)2.72,3.1,2.72
+02.72 T "NOT POSSIBLE";F X=1,40;T "."
+02.73 A K;T "     ";A T,!;G 2.7
+03.10 I ((M-N)-.001)4.1;I (T-.001)1.57; S S=T
+03.40 I ((N+S*K)-M)3.5,3.5;S S=(M-N)/K
+03.50 D 9;I (I)7.1,7.1;I (V)3.8,3.8;I (J)8.1
+03.80 D 6;G 3.1
+04.10 D 21; T "FUEL OUT AT  ",L-SS,"    secs.";D 22
+04.40 S A=A-[V*SS+.5*G*SS^2]
+04.50 S L=L+5
+04.60 S SS=SS+5
+04.63 S V=V+G*SS
+04.65 F JJ=1,200; S Y=1
+04.70 GOTO 1.57
+05.10 T "ON THE MOON AT ",L,"  SECS"!;S W=3600*V
+05.20 T "IMPACT VELOCITY OF ",W,"  M.P.H."!,"FUEL LEFT:"
+05.30 T M-N,"  LBS."!;I (-W+1)5.5,5.5
+05.40 T "PERFECT LANDING !-(LUCKY)"!;G 5.9
+05.50 I (-W+10)5.6,5.6;T "GOOD LANDING-(COULD BE BETTER)"!;G 5.9
+05.60 I (-W+25)5.7,5.7;T "CONGRATULATIONS ON A POOR LANDING"!;G 5.9
+05.70 I (-W+60)5.8,5.8;T "CRAFT DAMAGED. GOOD LUCK"!;G 5.9
+05.80 T "SORRY,BUT THERE WERE NO SURVIVORS-YOU BLEW IT!"!"IN "
+05.81 T "FACT YOU BLASTED A NEW LUNAR CRATER ",W*.277777,"  FT. DEEP"!
+05.90 GOTO 1.2
+05.92 A "(ANS. YES OR NO)"P;I (P-0NO)5.94,5.98
+05.94 I (P-0YES)5.92,1.2,5.92
+05.98 T "CONTROL OUT";Q
+06.10 S L=L+S;S T=T-S;S M=M-S*K;S A=I;S V=J
+07.10 I (S-.005)5.1;S S=2*A/(V+FSQT(V*V+2*A*(G-Z*K/M)))
+07.30 D 9;D 6;G 7.1
+08.10 S W=(1-M*G/(Z*K))/2;S S=M*V/(Z*K*(W+FSQT(W*W+V/Z)))+.05;D 9
+08.30 I (I)7.1,7.1;D 6;I (-J)3.1,3.1;I (V)3.1,3.1,8.1
+09.10 S Q=S*K/M;S J=V+G*S+Z*(-Q-Q^2/2-Q^3/3-Q^4/4-Q^5/5)
+09.40 S I=A-G*S*S/2-V*S+Z*S*(Q/2+Q^2/6+Q^3/12+Q^4/20+Q^5/30)
+10.10 S X=FINT(2)
+10.15 F J=1,10,180-A; T !
+10.20 F J=1,KH; T " "
+10.30 T "X",!,""
+10.50 GOTO 1.6
+20.10 F J=1,80; S Y(J)=FABS(FSIN(J/9)*FRAN(0)*20)
+20.20 S X=FINT(3)
+20.30 F J=1,508; S X=FPLT(Y(J*80/508))
+20.50 RETURN
+21.10 T ""
+21.20 RETURN
+22.10 T ""
+22.20 RETURN

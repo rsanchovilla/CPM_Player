@@ -1,0 +1,408 @@
+h15901
+s 00396/00000/00000
+d D 1.1 83/03/17 15:59:43 tes 1 0
+c date and time created 83/03/17 15:59:43 by tes
+e
+u
+4
+U
+t
+T
+I 1
+ 
+	TITLE  'Setup BITMAP accessing parameters for MX-80 Printer'
+ 
+; ****************************************************************************
+; *                                                                          *
+; *  SETUPS : SETUP BITMAP ACCESSING PARAMETERS FOR EPSON MX-80 PRINTER      *
+; *           AND SUPPORT PRINTER ENTER/EXIT GRAPHIC MODE COMMANDS           *
+; *                                                                          *
+; ****************************************************************************
+;                                                                            *
+;    REVISION : Nov. 08, 1982   FILE "ZDMX80.ASM"     Version 1.1            *
+;                                                                            *
+;***** MODE NOTES :  *********************************************************
+;                                                                            *
+;      1) BITMAP BUFFER EMPTY FLAG  11/3                                     *
+;      2) SET EMPTY FLAG IN CLRBUF                                           *
+;      3) ALLOCATE 1600 BYTES FOR BITMAP & 2496 BYTES FOR OBJLST (4K Buffer) *
+;      4) GRAPHIC LINE FEED ROUTINE ADDED                                    *
+;      5) DISK FILE OVER FLOW SUPPORT ROUTINE ADDED                          *
+;         DECLARE OBJLST BUFFER IN ROLLOUT MODULE                            *
+;                                                                            *
+;***** MODE NOTES :  *********************************************************
+;                                                                            *
+;    PRINTER DEPENDENT SETUP MODULE                                          *
+;                                                                            *
+;    SET UP BITMAP ACCESSING PARAMETERS FOR MX-80 PRINTER                    *
+;    AND SUPPORT PRINTER ENTER/EXIT GRAPHIC MODE COMMANDS                    *
+;                                                                            *
+;  Setups (xmax, ymax)                                                       *
+;                                                                            *
+;  Function :                                                                *
+;                                                                            *
+;      Compute the following variables at runtime to support                 *
+;      the BITMAP buffer Access by the Vector rasterization                  *
+;      and Bitmap Scanner Routines (RASTER and SCANIT)                       *
+;                                                                            *
+;      Support Enter/Exit Printer Graphic Mode commands                      *
+;                                                                            *
+;  Input    :                                                                *
+;                                                                            *
+;      XMAX, YMAX are the Maximum Plot extents                               *
+;      zxmax  The Maximum Device Width in Pixels                             *
+;                                                                            *
+;  Program constants :                                                       *
+;                                                                            *
+;      BSIZE : The allocated BITMAP buffer size in bytes                     *
+;      PIXL  : No. of pixel wires 'Plotted' per Graphic byte sent to the     *
+;              printer                                                       *
+;                                                                            *
+;  Output   :                                                                *
+;                                                                            *
+;      XW    : No. of bytes per Horizontal Print Line                        *
+;              Line Width in pixels (XMAX) / 8                               *
+;      YW    : No. of Print lines per Vertical Plot page                     *
+;              Plot Height in pixels (YMAX) / pixels per Vertical Line (PIXL)*
+;      PLINE : No. of Print Lines per BITMAP buffer (Plot Strip)             *
+;              Buffer size / Bytes per Print Line                            *
+;      YLINE : No. of vertical Pixels per Plot Strip (PLINE * PIXL)          *
+;                                                                            *
+;      LSIZE : Offset size (bytes) to start of next Print Line in BITMAP     *
+;                                                                            *
+;      NSTRIP: No. of Plot Strips to Raster Scan per Plot                    *
+;                                                                            *
+;      YSIZE : No. of Vertical Pixels per Print line                         *
+;                                                                            *
+;      MAPEND: End of BITMAP buffer address                                  *
+;                                                                            *
+;      PSIZE : Actual Buffer Size used for each Plot Strip                   *
+;                                                                            *
+;      MPTY  : Bitmap Buffer Empty Flag, Set by SETBIT, Cleared by CLRBUF    *
+;                                                                            *
+;----------------------------------------------------------------------------+
+ 
+         PUBLIC SETUPS, GENTER, ZFORM, GEXIT, GLF, CLRBUF
+         EXTRN  NEGHL, CMPDH, MIDH, DIDH, POUT, SUBDH, MUL8
+ 
+         PUBLIC BITMAP, MAPEND, MPTY
+         PUBLIC XW, YW, NEGXW, PLINE, NSTRIP, LSIZE, YSIZE
+         PUBLIC XMAX, YMAX, XMIN, YMIN, OBJCNT
+ 
+         EXTRN  zxmax, OBJLST
+ 
+;----------------------------------------------------------------------------+
+;        PRINTER CONSTANTS (EPSON MX-80)                                     +
+;----------------------------------------------------------------------------+
+ 
+ 
+PIXL     EQU    7            ;7 pixels printed per graphic byte
+ESC      EQU    1BH          ;Escape Code
+CR       EQU    0DH          ;Carriage return
+LF       EQU    0AH          ;Linefeed
+FF       EQU    0CH          ;Form Feed
+NPIX     EQU    -7
+ 
+;----------------------------------------------------------------------------+
+;        PRINTER BUFFER CONSTANTS (Debug Version)                            +
+;----------------------------------------------------------------------------+
+ 
+BSIZE    EQU    1600         ;BITMAP Buffer Size
+ 
+;----------------------------------------------------------------------------+
+;        The following variables are computed at runtime :                   +
+;----------------------------------------------------------------------------+
+;
+;        XMAX,YMAX = Maximum Plot Extent (varys from plot to plot)
+;
+ 
+XMAX    DW      00           ;XMAX  = Pixels per Print line width (bits)
+YMAX    DW      00           ;YMAX  = Pixel per Plot height
+ 
+XMIN	DW	07FFFH
+YMIN	DW	07FFFH
+ 
+XW       DS     02           ;XW    = XMAX div 8,Print line width, ie.
+                             ;        BITMAP buffer row order (bytes)
+                             ;PIXL  = BITMAP buffer colunm order
+ 
+N1       DS     01           ;Pixel count needed by printer
+N2       DS     01           ; Extra bit of pixel count
+ 
+NEGXW    DS     02
+YW       DS     02           ;No. of Print Lines for this plot
+                             ;YW    = YMAX div PIXL
+BMIN     DS     02           ;Minimum buffer size = XW * PIXL
+PLINE    DS     02           ;No. of Graphic Print Lines per BITMAP
+                             ;PLINE = BSIZE div BMIN
+NSTRIP   DS     01           ;No. of Plot Strips to clip the plot for
+                             ;output, NSTRIP = YW div PLINE
+                             ;YW = Total no. of vertical Print Lines per
+                             ;Plot, YW = YMAX div PIXL + 1
+LSIZE    DS     02           ;BITMAP Offset to start of next Print Line
+                             ;if   addr = last byte of current print line
+                             ;            lsize = -xw*(pixl+1)
+                             ;then addr of new print line = addr + lsize
+YSIZE    DS     02           ;No. of vertical Pixels per Print Line
+                             ;PLINE * PIXL
+ 
+;----------------------------------------------------------------------------+
+;        BITMAP BUFFER and OBJECT LIST BUFFER VARIABLES                      +
+;----------------------------------------------------------------------------+
+ 
+MAPEND   DS     02           ;Address of Last Row of Actual Buffer
+                             ;MAPEND= (PLINE * BMIN) + BITMAP - XW
+PSIZE    DS     02           ;Size of Actual Buffer used for each Plot Strip
+                             ;The BITMAP buffer is not always entirely used
+MPTY     DS     01           ;If 0 : The BITMAP is Empty
+ 
+OBJCNT   DS     02           ;Total No. of Objects Stored in Object List
+ 
+;----------------------------------------------------------------------------+
+;        BITMAP Buffer Allocation                                            +
+;----------------------------------------------------------------------------+
+ 
+BITMAP   DS     BSIZE        ;Allocate BITMAP Buffer
+ 
+;----------------------------------------------------------------------------+
+         page
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                            ;
+;  This module sets up the Plot Strip variables for RASTER                   ;
+;  and SCANNER modules to access the BITMAP BUFFER properly                  ;
+;                                                                            ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 
+SETUPS
+ 
+;        xw = (xmax / 8) + 1     Print line width in bytes
+ 
+;*******
+; NOTE * Error : If bmin > bsize, Not enough buffer space allocated
+;*******
+ 
+         LHLD   ZXMAX            ;Check Xmax < ZXMAX
+         XCHG
+         LHLD   XMAX
+         CALL   CMPDH
+         JNC    SETJ06           ;Carry off, ZXMAX  > Xmax
+         XCHG
+         SHLD   XMAX             ;Xmax = ZXMAX
+SETJ06
+         MVI    B,     3
+DIV8     XRA    A                ;Clear carry
+         MOV    A,     H
+         RAR
+         MOV    H,     A         ;<hl> div 8 = right shift <hl> 3 times
+         MOV    A,     L
+         RAR
+         MOV    L,     A
+         DCR    B
+         JNZ    DIV8             ;xw = xmax / 8 + 1
+         INX    H
+         SHLD   XW               ;<hl> = xw
+ 
+;        bmin = xw * pixl         Mimimum bitmap buffer size in Bytes
+ 
+         LXI    D,     PIXL      ;<de> = pixl
+         CALL   MIDH             ;bmin = xw * pixl
+         SHLD   BMIN             ;<hl> = bmin
+ 
+;        pline = bsize / bmin     Print lines per band (PLot Strip)
+ 
+         LXI    D,     BSIZE     ;<de> = bsize
+         CALL   DIDH             ;pline = bsize / bmin
+         PUSH   H                ;Stack pline
+ 
+;        yw = (ymax / pixl) + 1   No. of Print lines for this plot
+ 
+         LHLD   YMAX             ;<hl> = ymax
+         MOV    A,     H         ;HANDLE Y = 0 CONDITION
+         ORA    L
+         JZ     SETJ05
+         MOV    A,     H
+         ORA    A                ;HANDLE Y < 0 CONDITION
+         JM     SETJ05
+         XCHG                    ;<de> = ymax
+         LXI    H,     PIXL      ;<hl> = pixl
+         CALL   DIDH             ;yw = ymax / pixl
+ 
+;        Is ymax integer multiple of pixl  ?
+ 
+         MOV    A,     C         ;check the remainder in <bc>
+         ORA    A                ;add one line if non-zero remainder
+         JZ     SETJ01
+         INX    H
+         JMP    SETJ01
+ 
+SETJ05   LXI    H,     1
+         SHLD   YMAX
+SETJ01   SHLD   YW               ;<hl> = yw
+ 
+;        No. of Print Lines per Plot Strip is the smaller value of
+;        yw and pline, If yw<pline = Plot needs less than one Strip
+ 
+         POP    D                ;Unstack <de> = pline
+         PUSH   H                ;Stack yw
+         CALL   CMPDH
+         JNC    SETJ03           ;If Carry set : Pline < Yw, no change
+         XCHG                    ;   Carry off : Pline > Yw, use Yw as Pline
+SETJ03   SHLD   PLINE            ;<hl> = Pline, No. of Print Lines per Strip
+ 
+ 
+;        nstrip = yw / pline
+ 
+         POP    D                ;Unstack <de> = yw
+         PUSH   H                ;Stack pline
+         CALL   DIDH             ;nstrip = yw / pline
+ 
+;        Is yw a multiple of pline ?
+ 
+         MOV    A,     C         ;remainder in <bc>
+         ORA    A
+         JZ     SETJ02           ;Add one strip for non-zero remainders
+         INX    H                ;
+SETJ02   SHLD   NSTRIP           ;<hl> = nstrip
+ 
+;        Mapend = (Pline * Bmin) + Bitmap - Xw , Start byte address of
+;        Last Row (Maximum Y) in Buffer
+ 
+         POP    D                ;Unstack <de> = pline
+         LHLD   BMIN
+         CALL   MIDH             ;<hl> = pline * bmin
+         SHLD   PSIZE            ;Actual Buffer size in Bytes
+ 
+         LXI    D,     BITMAP
+         DAD    D
+         XCHG                    ;<de> = (pline * bmin) + bitmap
+         LHLD   XW
+         CALL   NEGHL            ;<hl> = -xw
+         SHLD   NEGXW
+         DAD    D
+         SHLD   MAPEND
+ 
+;        Ysize = -(Pixl * Pline) + 1
+ 
+         LHLD   PLINE
+         LXI    D,     NPIX      ;npix = - pixl
+         CALL   MIDH
+         INX    H
+         SHLD   YSIZE            ;<hl> = Ysize
+ 
+;        lsize = -[xw * (pixl+1)]
+ 
+         LHLD   NEGXW
+         LXI    D,     PIXL      ;<de> = pixl
+         INX    D                ;pixl + 1
+         CALL   MIDH             ;lsize = -xw * (pixl+1)
+         SHLD   LSIZE            ;<hl> = lsize
+ 
+;        Graphic setup for the printer
+;         esc @  - initialize the printer
+;         esc 1  - Set linefeed to 7 pixels
+ 
+         MVI    A,     ESC
+         CALL   POUT
+         MVI    A,     40H
+         CALL   POUT
+         MVI    A,     ESC
+         CALL   POUT
+         MVI    A,     31H
+         CALL   POUT
+ 
+;        now set up the N1 and N2 values based on the path width
+;        number of pixels is 8*xw
+ 
+         LHLD   XW
+         CALL   MUL8            ; MULTIPY COUNT BY 8
+         MOV    A,     L        ; Store value into N1 before destroying
+                                ; it with the subtraction
+         STA    N1
+         MVI    B,     0
+         LXI    D,     0FFH
+         CALL   SUBDH            ;Check No. of bytes per Print Line
+                                 ;and setup Graphic Image Parameter n1,n2
+         JNC    SETJ04           ;No. of bytes per line < 255 ?
+         INR    B
+         CALL   NEGHL            ;No. of bytes > 255,
+         DCX    H                ;n1 = No. of bytes - 256
+         MOV    A,     L
+         STA    N1               ;No. of bytes per line
+SETJ04   MOV    A,     B
+         STA    N2               ; Extra bit indicating more than 255 points
+         RET
+ 
+;-------------------------------------------------------------------+
+;        SET Graphic Bit Mode, No. of Graphic Bytes = N1+256*N2     +
+;-------------------------------------------------------------------+
+ 
+GENTER   MVI    A,     CR
+         CALL   POUT
+         MVI    A,     LF
+         CALL   POUT
+         MVI    A,     ESC
+         CALL   POUT
+         MVI    A,     4BH
+         CALL   POUT
+         LDA    N1               ;No. of Bytes sending to Epson as Graphic
+         CALL   POUT             ;Bytes
+         LDA    N2               ;Flag, 1 = sending (N1 + 256) bytes
+         CALL   POUT
+         RET
+ 
+;----------------------------------------------------------------------------+
+;        Do a FormFeed                                                       +
+;----------------------------------------------------------------------------+
+ 
+ZFORM
+         MVI    A,     FF
+         CALL   POUT
+         RET
+ 
+;----------------------------------------------------------------------------+
+;        Exit graphic mode
+;----------------------------------------------------------------------------+
+ 
+GEXIT
+         MVI    A,     ESC
+         CALL   POUT
+         MVI    A,     40H       ;Return Printer to Cold Start Setting
+         CALL   POUT
+ 
+         RET
+ 
+ 
+;-------------------------------------------------------------------+
+;        Graphic Line Feed, ADVANCE PAPER 7 PIXELS VERTICALLY       +
+;-------------------------------------------------------------------+
+ 
+GLF      MVI    A,     CR
+         CALL   POUT
+         MVI    A,     LF
+         CALL   POUT
+         RET
+ 
+;----------------------------------------------------------------------------+
+;        Clear BITMAP Buffer for Next Plot Strip                             +
+;----------------------------------------------------------------------------+
+ 
+CLRBUF
+         LXI    H,     BSIZE      ;Get Byte count
+         XCHG
+         LXI    H,     BITMAP     ;Get Start Address
+ 
+CLRL01   MVI    M,     0          ;Clear the word
+         INX    H                 ;Next byte address
+         DCX    D                 ;Decrement byte count
+         MOV    A,     D
+         ORA    E
+         JNZ    CLRL01            ;More Bytes
+ 
+         XRA    A
+         STA    MPTY              ;Clear BITMAP buffer MPTY flag
+ 
+         RET
+ 
+         END
+ 
+E 1

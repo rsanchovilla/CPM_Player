@@ -1,0 +1,303 @@
+PROGRAM Read;
+
+{	Version history
+	- 15-Aug-2004, P. Schorn, added some more optimizations
+	- 31-Jul-2004, P. Schorn, added some optimizations
+	- 02-Jul-2004, P. Schorn, changed standard procedures
+	- 30-Mar-2002, P. Schorn, cleaned up data types
+	- 24-Mar-2002, P. Schorn, added force Z80 CPU
+	- 01-Mar-2002, P. Schorn, removed SIMH reset
+}
+
+PROCEDURE BDOS(WORD function, input);	EXTERNAL;
+PROCEDURE INPORT(WORD port);		EXTERNAL;
+PROCEDURE OUTPOR(WORD port, data);	EXTERNAL;
+PROCEDURE STPSUB;			EXTERNAL;
+
+CONST	commandLineAddress	= 80h;
+	FCBLength		= 36; { allow random access }
+	printCharCmd		= 2h;
+	printStringCmd		= 9h;
+	versionNumberCmd	= 0ch;
+	closeFileCmd		= 10h;
+	deleteFileCmd		= 13h;
+	writeSequentialCmd	= 15h;
+	makeFileCmd		= 16h;
+	setDMAAdressCmd		= 1ah;
+	cr			= 13;
+	lf			= 10;
+	crlf			= cr + 256 * lf;
+	eof			= 1ah;
+	statusPort		= 12h;
+	dataPort		= 13h;
+	SIMHPort		= 0feh;
+	resetPTR		= 3;
+	attachPTR		= 4;
+	detachPTR		= 5;
+	getVersionSIMHCmd	= 6;
+	cpmError		= 255;
+	recordSize		= 128;
+	noError			= 0;
+	directoryFullError	= 1;
+	diskFullError		= 2;
+	false			= 0;
+	true			= 1;
+
+{
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|DR|F1|F2|//|F8|T1|T2|T3|EX|S1|S2|RC|DO|//|DN|CR|R0|R1|R2|
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ 00 01 02 .. 08 09 10 11 12 13 14 15 16 .. 31 32 33 34 35
+}
+
+BYTE[FCBLength]	defaultFCB;
+BYTE 	commandLine	AT commandLineAddress;
+	dirChar = ':':[1];
+	usage=('Usage: READ <file name> Binary copy <file name> from PTR.', crlf, '$':[1]);
+	s1, s2, s3, drive, fileHasBeenCreated, fileNeedsToBeClosed;
+BYTE[recordSize]	buffer = (
+	crlf, crlf, 'For SIMH. Copyright 2004 by Peter Schorn, peter.schorn@acm.org',
+	crlf, crlf, eof:[1]);
+BYTE	done			= ('kB written.',				crlf, '$':[1]);
+	signon			= (crlf,'READ V-2.14 (15-Aug-04)  SIMH Interface V');
+	SIMHVersion		= ('XXX',					crlf, '$':[1]);
+	originalFileDeleted	= ('Previous file of same name deleted.',	crlf, '$':[1]);
+	noDirectorySpace	= ('No more directory space available.',	crlf, '$':[1]);
+	fileDoesNotExist	= ('File does not exist.',			crlf, '$':[1]);
+	fileIsEmpty		= ('File is empty.',				crlf, '$':[1]);
+	internalError		= ('Could not create directory entry.',		crlf, '$':[1]);
+	diskFull		= ('Disk full.',				crlf, '$':[1]);
+	simhrequired		= ('SIMH required.'); { must be followed by crlfString }
+	crlfString		= (crlf, '$':[1]);
+	size0 = (        '$':[1], 0:[4]); { all sizeX entries use the same number of bytes }
+	size1 = ('.125', '$':[1]);
+	size2 = ('.25',  '$':[1], 0:[1]);
+	size3 = ('.375', '$':[1]);
+	size4 = ('.5',   '$':[1], 0:[2]);
+	size5 = ('.625', '$':[1]);
+	size6 = ('.75',  '$':[1], 0:[1]);
+	size7 = ('.875', '$':[1]);
+WORD	error, byteCount, recordCount;
+
+PROCEDURE printString(WORD stringp);
+	BEGIN
+	BDOS(printStringCmd, stringp)
+	END printString;
+
+PROCEDURE printChar(WORD char);
+	BEGIN
+	BDOS(printCharCmd, char:[1])
+	END printChar;
+
+PROCEDURE printUnsignedInt(WORD int);
+	BEGIN
+	IF	int << 10
+	THEN	printChar(int + '0')
+	ELSE	printUnsignedInt(int DIV 10);
+		printChar(int MOD 10 + '0')
+	ENDIF
+	END printUnsignedInt;
+
+PROCEDURE writeBuffer;
+	BEGIN
+	error := noError;
+	recordCount := recordCount + 1;
+	IF	fileHasBeenCreated = false
+	THEN	fileHasBeenCreated := true;
+		IF	BDOS(deleteFileCmd, @defaultFCB) <> cpmError
+		THEN	printString(@originalFileDeleted)
+		ENDIF;
+		IF	BDOS(makeFileCmd, @defaultFCB) = cpmError
+		THEN	printString(@noDirectorySpace);
+			STPSUB;
+			error := directoryFullError;
+			EXIT
+		ENDIF;
+		fileNeedsToBeClosed := true;
+		BDOS(setDMAAdressCmd, @buffer)
+	ENDIF;
+	IF	BDOS(writeSequentialCmd, @defaultFCB) <> 0
+	THEN	printString(@diskFull);
+		STPSUB;
+		error := diskFullError
+	ENDIF
+	END writeBuffer;
+
+PROCEDURE fillBlanks(WORD count);
+	BEGIN
+	WHILE s2 <<= count DO
+		defaultFCB[s2]:[1] := ' ';
+		s2 := s2 + 1
+	ENDWHILE
+	END fillBlanks;
+
+PROCEDURE inport;
+	BEGIN
+	RETURN INPORT(SIMHPort)
+	END inport;
+
+LABEL	finisDetach, finisClose;
+
+BEGIN { Read }
+
+OUTPOR(SIMHPort, getVersionSIMHCmd);
+buffer[0]:[2] := inport + 256 * inport;
+buffer[2]:[2] := inport + 256 * inport;
+IF	buffer:[4] = simhrequired:[4]
+THEN	SIMHVersion[0]:[2] := inport + 256 * inport;	{ obtain three characters of version }
+	SIMHVersion[2]:[1] := inport;
+	REPEAT
+	UNTIL	inport = 0
+ELSE	printString(@simhrequired);
+	STPSUB;
+	EXIT				{ make sure we are running under SIMH }
+ENDIF;
+
+OUTPOR(statusPort, resetPTR);
+printString(@signon);
+recordCount		:= 0;
+byteCount		:= 0;
+fileHasBeenCreated	:= false;
+fileNeedsToBeClosed	:= false;
+IF	commandLine[0]:[1] = 0
+THEN	printString(@usage);
+	STPSUB;
+	EXIT
+ENDIF;
+
+s1    := 0;
+drive := 0;				{ currently logged drive is default }
+WHILE s1 << FCBLength DO		{ clear File Control Block }
+	defaultFCB[s1]:[1] := 0;
+	s1 := s1 + 1
+ENDWHILE;
+
+{ CP/M 3 treats command lines which start with ':' special }
+IF	(BDOS(versionNumberCmd, 0) >>= 30h) AND (commandLine[1]:[1] = ':')
+THEN	s1 := commandLine[0]:[1];
+	WHILE s1 >> 0 DO		{ shift command line right by one position }
+		commandLine[s1 + 1]:[1] := commandLine[s1]:[1];
+		s1 := s1 - 1
+	ENDWHILE;
+	commandLine[1]:[1] := ' ';	{ first character should be ' ' as before }
+	commandLine[0]:[1] := commandLine[0]:[1] + 1
+ENDIF;
+
+IF	commandLine[2]:[1] = dirChar	{ name starts with dirChar	}
+THEN	s1 := commandLine[0]:[1];	{ find last dirChar		}
+	WHILE commandLine[s1]:[1] <> dirChar DO
+		s1 := s1 - 1
+	ENDWHILE;
+	IF	(s1 = 2) OR (s1 = commandLine[0]:[1])
+	THEN	printString(@usage);
+		STPSUB;
+		EXIT			{ dirChar should not be first or last character }
+	ENDIF;
+	s1 := s1 + 1			{ s1 points to first character of CP/M file name }
+ELSE	IF	(commandLine[0]:[1] >>= 3) AND (commandLine[3]:[1] = ':')
+					{ destination has drive letter prefixed }
+	THEN	IF	commandLine[0]:[1] = 3
+		THEN	printString(@usage);
+			STPSUB;
+			EXIT		{ ':' should not be last character }
+		ENDIF;
+		s1 := 4;
+		drive := commandLine[2]:[1] + (1 - 'A')
+	ELSE	s1 := 2
+	ENDIF
+ENDIF;
+defaultFCB[0]:[1] := drive;
+s2 := 1;
+s3 := 0;				{ no extension so far }
+WHILE (s1 <<= commandLine[0]:[1]) AND (s2 <<= 11) DO
+	IF	commandLine[s1]:[1] = '.'
+	THEN	s1 := s1 + 1;
+		s3 := 1;		{ now we are in extension mode }
+		fillBlanks(8)
+	ENDIF;
+	IF	(s2 <<= 8) OR (s3 = 1)
+	THEN	defaultFCB[s2]:[1] := commandLine[s1]:[1];
+		s2 := s2 + 1
+	ENDIF;
+	s1 := s1 + 1
+ENDWHILE;
+fillBlanks(11);
+
+{ this is test code to show the resulting defaultFCB }
+{
+IF	defaultFCB[0]:[1] >> 0
+THEN	printChar(defaultFCB[0]:[1] + ('A' - 1));
+	printChar(':')
+ENDIF;
+s1 := 1;
+WHILE s1 << 12 DO
+	IF	defaultFCB[s1]:[1] = ' '
+	THEN	printChar('_')
+	ELSE	printChar(defaultFCB[s1]:[1])
+	ENDIF;
+	s1 := s1 + 1
+ENDWHILE;
+printString(@crlfString);
+EXIT;
+}
+
+OUTPOR(SIMHPort, attachPTR);		{ attach PTR to the external file with the same name }
+
+LOOP	IF	(INPORT(statusPort) AND 1) = 0	{ file done, file not found or file empty }
+	THEN	IF	recordCount = 0 { necessary for file not found or file empty}
+		THEN	IF	(byteCount = 1) AND (s2 = eof) { file empty }
+			THEN	printString(@fileIsEmpty);
+				STPSUB;
+				GOTO finisDetach
+			ENDIF;
+			IF	byteCount = 0 { file not found }
+			THEN	printString(@fileDoesNotExist);
+				STPSUB;
+				GOTO finisDetach
+			ENDIF
+		ENDIF;
+		EXIT
+	ENDIF;
+	buffer[byteCount]:[1] := INPORT(dataPort);
+	byteCount := byteCount + 1;
+	IF	byteCount = recordSize
+	THEN	byteCount := 0;
+		writeBuffer;
+		IF	error = directoryFullError
+		THEN	GOTO finisDetach
+		ENDIF;
+		IF	error = diskFullError
+		THEN	GOTO finisClose
+		ENDIF
+	ENDIF
+ENDLOOP;
+
+IF	byteCount >> 1			{ last char was eof, do not create record full of eof }
+THEN	WHILE byteCount << recordSize DO
+		buffer[byteCount]:[1] := eof;
+		byteCount := byteCount + 1
+	ENDWHILE;
+	writeBuffer;
+	IF	error = directoryFullError
+	THEN	GOTO finisDetach
+	ENDIF;
+	IF	error = diskFullError
+	THEN	GOTO finisClose
+	ENDIF
+ENDIF;
+
+printUnsignedInt(recordCount DIV 8);
+printString(@size0 + (@size1 - @size0) * (recordCount MOD 8));
+printString(@done);
+
+finisClose:
+IF	(fileNeedsToBeClosed <> false) AND (BDOS(closeFileCmd, @defaultFCB) = cpmError)
+THEN	printString(@internalError);
+	STPSUB
+ENDIF;
+
+finisDetach:
+OUTPOR(SIMHPort, detachPTR)
+
+END Read.
+

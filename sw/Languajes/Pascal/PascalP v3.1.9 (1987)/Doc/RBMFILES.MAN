@@ -1,0 +1,218 @@
+.macro chttl = RBM#files#and#HEX#files
+.ch .chttl
+.hl 1 General
+The fundamental relocatable binary modules are known as RBM files.  They have
+been designed to be compatible with the INTEL hex standard, and to be
+machine independant,  in that the only assumption made is
+that  the host machine addresses in units of bytes.   Modules  cannot  exceed
+32768 bytes in length,  but no restriction on final code size is made, except
+that  external  values must be expressable in two bytes for arithmetic to  be
+performed.   Limitations on name length have been expressly avoided, although
+present software truncates all names to 8 characters.
+
+The structure of RBM files is best explained by first explaining HEX files.
+
+A HEX file is made up entirely of printing characters,  and can be tranmitted
+and manipulated as a text file.  A record, in a HEX file, begins with the ":"
+character,  has several fields containing only the hexadecimal characters '0'
+through '9' and 'A' through 'F'.  The fields are as follows:
+.rem end itemize area with .res
+.macro itemize = .sav .tabs 5 15 .p -10 1 5 .lm 15 .rm $$rm-5;
+.itemize
+
+.pp     colon .t    The character ":", beginning a record.
+.pp     length .t   2 hex characters,  describing a value in the  range
+0  to  255 only.   This value specifies the  length
+of the remainder of the record.
+.pp     address .t  4  hex  characters,  describing an address  in  the
+range  0  to 65535 (under some  circumstances  this
+is  considered  a  signed integer in  the  range  -
+32768 to 32767).
+.pp     type .t     2 hex characters,  describing a value in the  range
+0  to 255 only.   The interpretation of this  value
+is central to the use of RBM files.
+.pp     data   .t   (2  times length) hex  characters.   Interpretation
+varies with use.
+.pp     checksum .t  2  hex  characters,  such that when each  character
+pair since the ":" is considered as a number in the
+range (0..255), the sum MODULO 256 will be zero.
+.pp     anything .t  except  a ":" may follow the checksum,  and may  be
+used for formatting,  comments,  etc.  It is always
+ignored.
+.res
+
+Note that every data item, after the initial colon, can be expressed as a one
+byte value, thus reducing storage requirements, transmission time, etc. by at
+least a factor of 2.
+
+The  original  INTEL  standard defined record types 0 and 1.  Type  0  is  an
+absolute load code record,  in which "address" describes the machine  address
+to be loaded with the first byte in the data field.  Type 1 is an end-of-file
+record,  with length always zero,  and address describing an address to which
+execution  control is to be transferred.   Type 0,  when length is  zero,  is
+treated  in the same manner.   By convention,  a transfer address of zero  in
+these end-of-file records signifies that no control transfer is to be made.
+
+.hl 1 RBM files
+RBM  records are exact images of HEX records,  except that the leading  colon
+and  trailing  checksum  have been discarded,  and that  the  information  is
+presented  as  8 bit bytes in place of pairs of hexadecimal  characters.   No
+trailing "anything" field is permitted,  and a new record begins  immediately
+after  the previous record ends.   Verification of storage is left up to  the
+storage  system  on which the files reside (typically CRC checksums over  the
+storage blocks).  Thus RBM records can be discussed in exactly the same terms
+as HEX records, and conversion between the systems is easy.
+
+.tp 10
+.hl 2 RBM record types
+To  preserve compatibility RBM files retain the original INTEL  definitions
+of  record types 0 and 1,  and add further types starting at type 128  (080
+hex).   In  all cases the length byte describes the number of bytes in  the
+data field, which may be zero.  Additional types are:
+
+.itemize
+
+.pp  128 .t  Relocatable  data  record.    Exactly  analogous  to  the 
+absolute data record (0), but the address field describes the 
+location with respect to the base of the current module.
+.pp  129 .t  End module record.  Address and length are zero.
+.pp  130 .t Relocatable Code Module Header.   The relocatable records 
+which  follow are to be placed in a  code  segment.   The
+address field describes the total length of the following
+code.   The  data field,  (which may be empty) may hold a
+name for the segment of up to 60 characters.
+.pp  131 .t  Entrypoint  descriptor.   Address is a value relative  to
+the base of the current segment.   Data holds the name of
+the entrypoint, in Ascii characters.
+.pp  132 .t  Absolute entry.   Address is an absolute value,  which is
+to  be used to resolve any referances to the name in  the
+data field (again in Ascii characters).
+.pp  133 .t External  referance.   Address is an index value used  by
+the linkage records which follow.  The data field holds a
+name,  in Ascii,  whose actual value is described in some
+other module.   Note that the index in the address  field
+will  never be less than 2,  because indices 0 and 1  are
+reserved  to  describe  code  and  data  module  relative
+relocation.
+.pp  134 .t  Data  module  header.   As  type  130,  except  that  the
+following  data  records  are to be placed  in  the  data
+segment.
+.pp  135 .t  Alignment  Record.   Must only occur immediately after  a
+module  header record.   Causes the module to adjust  its
+location  so  that  the  absolute  location,  modulo  the
+address field, is zero.  The data field is unused.
+.pp  136 .t  Pcd  module entry point.  At linkage time this value must
+have  the high order 8 bits set to the module  number  in
+which  it  occured,  in  the range 1 to 127 (only  31  at
+present).  The data field contains the entry name.  These
+records  are  used to describe PCD linkages in  terms  of
+segment/entry_number  pairs.   The  occurance of such  an
+entry point causes LINKER to assume that the output is to
+be a PCD program.
+.pp  137 .t  Equate names.   Not presently implemented.  Address field
+is  unused.   The  data field contains  two  Ascii  names
+separated  by  the "=" character,  as  in  "name1=name2".
+Causes   all  referances  to  name1  to  be  resolved  as
+referances to name2.  The data field should not exceed 60
+characters,  thus effectively limiting names to less than
+30 characters.
+.pp  138
+.pp  thru .t Reserved, not presently assigned.
+.pp  143
+.res
+
+Types  144 through 159 are reserved as linkage records,  in which the  type
+modulo 16 is used as an operator.   The address field (except for types 152
+through 154 below) contains an index, which refers to an external referance
+record active within this module (or 0 or 1 to specify the current code  or
+data  segment  bases),  and  the  data  field contains a  list  of  16  bit
+addresses, in high byte first format, specifying a location relative to the
+current  module beginning which is to be adjusted.   All operators  discard
+any  carrys and borrows,  and thus never cause arithmetic  overflows.   The
+operators currently assigned are:
+
+.itemize
+.pp  144 .t  Add  lobytefirst words.   The value of external referance
+is added to the two bytes of the module.
+.pp  145 .t  Subtract lobytefirst.  The value of external referance is
+subtracted from the two bytes of the module.
+.pp  146 .t  Add byte.   The value of external referance,  low order 8
+bits only, is added to the byte of the module.
+.pp  147 .t  Subtract  byte.   The value of  external  referance,  low
+order  8  bits only,  is subtracted from the byte of  the
+module.
+.pp  148 .t  Add  high byte.   The value of external  referance,  high
+order 8 bits only, is added to the byte of the module.
+.pp  149  .t Subtract  high byte.   The value of  external  referance,
+high  order  8 bits,  is subtracted from the byte of  the
+module.
+.pp  150 .t Add  hibytefirst words.   Similar to type  144,  but  the
+module  contents is treated as a high byte first integer.
+Note that this does not affect the value of the external.
+.pp  151 .t Subtract  hibytefirst  words.    As  150,   but  external
+referance is subtracted from the module content.
+
+.res
+Types 152 through 154 are anonymous linkage records.   Address contains the
+value of the "external",  rather than an index to it's entry record.  These
+records permit construction of one pass assemblers and  codegenerators,  by
+postponing "fixup" operations to linkage time.   Since modules are in their
+most compact form at linkage time, and since general code generation always
+requires  a two pass algorithm at some point,  the linkage step is the most
+efficient point at which to implement the second pass.
+
+.itemize
+.pp  152 .t Add lowbytefirst fixup linkage.
+.pp  153 .t Add hibytefirst fixup linkage.
+.pp  154 .t Add byte (8 bits only) fixup linkage.
+
+.pp  155
+.pp thru .t Unassigned operators.
+.pp  159
+
+.pp  160
+.pp  thru .t Reserved for future use.
+.pp  191
+
+.pp  192 up .t Available for system dependant  special operations  which
+cannot be handled by the existing types.   No reliance on
+portablity should be made when these types are used.
+
+.res
+.hl 1 Utility Programs
+The  utility programs HEXTORBM and RBMTOHEX perform conversions  between  RBM
+and  HEX  files,  and  are  principally  used  to  transfer  RBM  files  over
+transmission  links  (e.g.   RS232  lines).    RBM  files  are  generated  by
+assemblers,  compilers,  etc,  and linked into executable programs by LINKER.
+LINKER operation is documented separately.   RBMLOAD converts RBM files which
+contain  only absolute loader records,  into program files.   HEXLOAD is  the
+equivalent  for  HEX files,  and similar to the CPM standard  program  LOAD.
+However  HEXLOAD and RBMLOAD use the file redirection systems,  and are  thus
+much  more flexible.   RBMTOHEX also has provisions for co-operation with the
+PIP [b] option.  See the manual on FILTERS.
+
+The typical execution command is
+
+.i 10          B>runpcd hextorbm(hexfile, rbmfile) .b
+or .b
+.i 10          B>runpcd rbmtohex(rbmfile, hexfile); [parm]
+
+For example, to transfer a rbm file named MYFILE.RBM over an RS232 link, such
+as a modem,  on the PUN device,  with 10 second delays for buffer flushing by
+the receiver, enter:
+
+.i 10          B>runpcd rbmtohex(myfile.rbm, pun); [10]
+
+If  no  files  can  be found for the input files  (hexfile  or  rbmfile)  the
+programs will prompt for their names, and request confirmation before purging
+any  previous versions of the destination file.   RBMLOAD and HEXLOAD act  in
+the identical manner.
+
+BINHEX (binfile, hexfile) can be used to convert binary files to absolute load
+hex files.  By default the origin is set at 0100h.  The output may be converted
+back to a binary file by HEXLOAD.  [parm] may be used to co-operate with PIP
+operating with the [b] option.  See "FILTERS".
+
+
+See the separate documentation on LINKER and its companion SCANRBMS.
+Õ_

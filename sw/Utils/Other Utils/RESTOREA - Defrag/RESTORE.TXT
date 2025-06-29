@@ -1,0 +1,591 @@
+RESTORE.DOC - Documentation for F/RESTORE.COM
+
+Current Versions:  FRESTORE - 1.3
+                   RESTORE  - 1A
+
+Significant changes from the previous version are
+indicated by asterisks (*) in the left margin.
+
+Note that the program previously called RESTORE is now
+called FRESTORE.  The program now called RESTORE is
+completely new.  So, FRESTORE 1.3 is the updated
+version of RESTORE 1.2.  Sorry for the name change,
+but I expect the 'new' RESTORE to get the most in the
+way of development, and to be the restoration utility
+that most people use most often.  But, since the
+original version will also be used, I couldn't just
+declare a quantum revision and start over with RESTORE
+Version 2.0.  Oh well.
+
+Description:
+
+     F/RESTORE is a utility program that improves disk
+     performance by re-grouping the allocation groups
+     assigned to each file on the disk so that each
+     file is allocated to sequential sectors on the
+     disk, i.e. 'restoring' the disk to the condition
+     it was in when it was new.
+
+Discussion:
+
+     CP/M-compatible operating systems store files on
+     disk in what are called "allocation groups." The
+     size of an allocation group is determined by the
+     system's BIOS, and is typically 1K or 2K bytes
+     for floppy disks, and 2K, 4K, or 8K for hard
+     disks.  The allocation group is the smallest unit
+     of storage on the disk; if you write a one-byte
+     file to the disk, it will take up just as much
+     space (in the sense of making that space
+     unavailable for storing other files) as would a
+     file the size of one entire allocation group.
+
+     When a disk is formatted, all allocation groups
+     are free, and the first file written to the disk
+     occupies the allocation groups immediately after
+     the directory, in sequence.  The next file
+     written to the disk occupies the groups after the
+     first, and so on.  When a file is deleted, its
+     allocation groups are freed up, and may be reused
+     by the system.
+
+     As files are written and erased, later files
+     start to become 'fragmented'; i.e. they are
+     written with some allocation groups in one
+     location and other groups in other locations.
+     Thus, when these 'fragmented' files are read or
+     written, the system must position the read/write
+     head over one track for part of the file, then
+     move the head to another track for more of the
+     file.  This starts to degrade disk performance,
+     because more and more time is spent moving the
+     head around to find the various parts of the
+     file, causing access times for the files to get
+     longer and longer.  This problem affects both
+     floppy and hard disks.  The effect this has on
+     the system response is dependent on how the
+     system buffers the disk data in memory.  A system
+     that uses a 'track buffer' system, where an
+     entire track is saved in memory each time the
+     disk is read, will be VERY much slower when
+     accessing severely fragmented files than when the
+     files are stored in sequential allocation groups,
+     and thus several related groups are kept in
+     memory together.  Similarly, a system that uses
+     multiple-sector disk I/O will be seriously
+     degraded by disk fragmentation.  Conversely, an
+     unbuffered BIOS, and especially an unblocked
+     BIOS, will be less affected, because latency (the
+     time the controller has to wait for the desired
+     sector to rotate under the head) is more
+     significant in comparison to track stepping times.
+
+     The only way to recover from this situation has
+     been to copy all files on the disk to backup
+     disks, reformat the disk (or simply erase all the
+     files), and then recopy the files from the backup
+     disk(s) to the working disk.  This takes a
+     significant amount of time to do, and it is even
+     more inconvenient if files are assigned to
+     several user areas on the disk, since each user
+     area on the backup disk must be individually
+     entered and the files in that area copied to the
+     corresponding area on the work disk.
+
+     F/RESTORE is designed to make this process easier
+     by eliminating the copy to and from the backup
+     disks.  F/RESTORE works only on the disk being
+     restored, and thus may be used even in a
+     single-disk system.
+
+                  ***WARNING***
+
+Since F/RESTORE does in-place restoration of the disk,
+is has simply INCREDIBLE potential for wreaking
+havoc with your disk if something goes wrong while
+it is working, like a loss of power or a controller
+fault.  Therefore, you should ALWAYS back up the
+disk to be F/RESTOREd shortly before running the
+program.  This shouldn't be much of a problem, since
+you do a full back up of your hard disk at least
+every weekend, right?  RIGHT?  NO?!! Well, if you
+don't, you should.  It only takes one occurrence of
+having to rebuild a disk's directory one group at a
+time to make you a believer.  Just after a full
+backup is the optimum time to run F/RESTORE.
+
+Versions:
+
+*    There are two versions of RESTORE.  The version
+*    called FRESTORx, where 'x' is either 'I' or 'Z',
+     is the fully-relocating, 'brute-force' method
+     version.  It will move every group on the disk,
+     if necessary, to get all groups to be in
+     sequence.  This version is much slower than the
+     other, but will always be able to return the disk
+     to a 'like-new' condition.
+
+*    The second version, called 'RESTOREx', with 'x'
+*    again  being 'I' or 'Z', only insists on each
+*    directory entry having sequential groups
+*    allocated to it.  It will typically move many
+*    fewer groups than the fully-relocating version,
+*    and is therefore much faster.  However, since it
+*    only moves enough groups to get each directory
+*    entry back in sequence, it will leave 'holes' in
+*    the allocation map of the disk.  Over time, these
+*    'holes' may become small enough that they can not
+*    be reused by RESTORE, and it is not able to get
+*    all directory entries back in sequence.  If this
+*    happens, RESTORE will fix as many directory
+*    entries as it can, and will ask you to use
+*    FRESTORE to recover the lost space on the disk.
+
+     Throughout this documentation, any discussions
+     that apply both to FRESTORE and to RESTORE will
+     talk about 'F/RESTORE'.  Those topics that only
+     apply to one version of the program will continue
+     to refer to the name of the appropriate version,
+     either 'RESTORE' or 'FRESTORE'.
+
+Use:
+
+     NOTE:  FRESTORE (only) wants the directory of the
+     disk to be restored to be sorted first, by
+     running SAP or CLEANDIR or some similar program.
+*    If FRESTORE finds that the directory is not
+*    sorted, it will tell you so and ask if you want
+*    to restore the disk anyway.  Also note that some
+     older versions of CLEANDIR, SAP, etc. did not
+     properly sort the directory because they did not
+     include the last directory entry on the disk in
+     the sort.  FRESTORE WILL find this entry, and
+     will tell you that your directory is not sorted.
+     You can use DUU, DU3, PATCH, or your own favorite
+     disk utility to examine the directory of the disk
+     to see what is wrong.
+
+     Once you have the disk's directory sorted, if
+     required, simply start the program by typing
+     'FRESTORE' or 'RESTORE'. The program will sign
+     on, and ask you to change disks if you desire.
+     This allows single-disk users to place the disk
+     containing the program in the drive, start the
+     program, and then swap in the disk to be
+     restored.  This means you don't have to copy the
+     program to each disk you want to restore.
+
+     Note that F/RESTORE  --ALWAYS--  works on the
+     user's default disk, i.e., the one you were on
+     when you invoked the program.  So, if you want to
+     restore the disk in drive B but F/RESTORE is on
+     the disk in drive A, you MUST log onto disk B and
+     then call the program from drive A, i.e.
+
+            A>b:<cr>
+            B>a:restore<cr>   or  a:frestore<cr>
+
+     F/RESTORE reads in the directory of the default
+     disk, analyzes the directory, and prints some
+     information; how many directory entries are on
+     the disk, how many groups are allocated, how many
+     groups have to be relocated, and how many times
+     the directory will be rewritten.  This last is
+     significant since 1) directory writes usually
+     take much longer than other writes, because most
+     BIOSs immediately write their buffer to the disk
+     after a change in the directory, rather than
+     waiting until the user wants to write somewhere
+     else, and 2) the directory takes up several
+     allocation groups, and the entire directory is
+     rewritten after each directory entry has been
+     fixed.  Note that the number of directory entries
+     reported by F/RESTORE will probably not match the
+     number of files on the disk, since each extent of
+     a file takes up its own directory entry.
+
+     After F/RESTORE tells you what it is going to
+     have to do to the disk, it asks you to type 'Y'
+     to restore the disk, or anything else to abort.
+     You may enter an upper or lower case Y, or even
+     type Control-Y.  Anything else will cause
+     F/RESTORE to abort without doing anything to the
+     disk.
+
+     After you type 'y', F/RESTORE will start to fix
+     your disk.  It prints the name of the directory
+     entry is is working on, including the extent, so
+     you can keep track of how it is doing.  You may
+     type a Control-C at any time, and F/RESTORE will
+     abort after it finishes the current directory
+     entry, and tell you how many directory entries
+     are left over.  Left to itself, F/RESTORE will
+     finish the disk, then tell you it is finished and
+     terminate.
+
+     If you are using a system that does not reload
+     the directories from disk on each warm boot, like
+     ZRDOS version 1.5 and later, you will need to do
+     whatever your system needs (run DISKRST in the
+     case of ZRDOS) to restore the system's directory
+     to match the one on disk.  Remember, F/RESTORE
+     works through the BIOS, so the DOS has no idea
+*    what is going on.  The program may be patched to
+*    automatically do this disk reset if desired; see
+*    the section on user patches below.
+
+System
+Requirements:
+
+     Operating System - A CP/M-compatible operating
+     system that supports console input and output and
+     the following direct BIOS function calls:
+
+          Select Disk
+          Set Track
+          Set Sector
+          Set DMA Address
+          Disk Read
+          Disk Write
+          Sector Translation
+
+     These are the only direct BIOS calls used by
+     F/RESTORE.  Console I/O is done via the BDOS, so
+     you may use the Control-P to echo the output to
+     your printer.  If you do so, you may need to
+     install the linefeed patch discussed below.
+
+     Processor - Versions are provided for both
+     8080/8085-compatible processors (FRESTORI.COM or
+     RESTOREI.COM) and for Z80-compatible processors
+     (FRESTORZ.COM or RESTOREZ.COM).  The Z80 version
+     is about 5% smaller and runs about 1% faster than
+     the 8080 version.  Select the versions
+     appropriate for your hardware and rename them to
+     FRESTORE.COM and RESTORE.COM.
+
+*    Memory - No particular minimum required.
+*    F/RESTORE uses an incremental-read system to read
+*    in the directory, so it will handle any size
+*    disk.  The amount of memory available determines
+*    how many ACTIVE directory entries F/RESTORE can
+*    handle.  On a 48K TPA system restoring a disk
+*    with 4K allocation groups, F/RESTORE can restore
+*    a disk with about 1200 active directory entries.
+*    F/RESTORE skips over erased entries as it reads in
+*    the  directory, so the total number of directory
+*    entries on your disk (the DRM value) does not
+*    affect F/RESTORE's operation.
+
+     Note that F/RESTORE is NOT a ZCPR3 utility.  I
+     have tried to make it as nearly universal as
+     possible.  It does not use cursor-positioning
+     sequences for the terminal, or require any
+     installation.  The only thing your terminal has
+     to be able to do is receive and display standard
+     ASCII characters, including being able to do a
+     carriage return without a linefeed. This is used
+     in the display of the files being processed.  The
+     same line is rewritten as each new file is
+     started.  If your terminal can not do a carriage
+     return without a line feed (or makes a mess doing
+     so, like a TTY), or if you want to echo the
+     output of the program to your printer without
+     wearing a hole in the paper, install the linefeed
+     patch below.
+
+Patches:
+
+*    There are three and a half user patches in the
+*    program.  Each one is a flag value, where 0
+*    indicates 'NO' and a non-zero value indicates
+*    'YES'.  The patches are located at the beginning
+*    of the program.  When you look at the object code
+*    with your favorite debugger, you will see the
+*    header '==USER PATCHES==' followed by three (or
+*    four) labels.  Each label ends in an arrow ( -> )
+*    that points to the location of the flag.  The
+*    address of the patch byte is always xxxF (hex),
+*    and, on a standard sixteen-bytes-per-line display
+*    (DDT, ZDM, Z8E, etc.) the patch byte is always
+*    the last byte on the line where the label ends.
+*    Change the value at the pointed-to location as
+*    needed.  Remember, only zero or non-zero matters.
+
+*    Patch location 1 controls the disk-change wait.
+*    Its label is 'Wait for User to start?'.  As
+*    released, the program will print a message
+*    telling you to change disks if necessary, and
+*    press any key when ready.  Then it waits for you
+*    to press any key.  Later, after the statistics
+*    for the disk are printed, it asks you to press
+*    'y' to continue, or any other key to abort.  If
+*    you don't want these waits, or you want to do
+*    unattended 'batch processing' of multiple drives,
+*    you will need to patch this byte to zero.  As an
+*    alternative, the input for these two user waits
+*    is done using the BDOS 'Read Console Buffer'
+*    function, so ZEX or XSUB may be used to provide
+*    the input; note, however, that doing so will cost
+*    you about 3K of TPA (which equates to about 100
+*    active directory entries), and may cause a memory
+*    shortage problem.  Try it on your largest disk.
+*    If it works, you can have it both ways.
+
+*    The second user patch controls linefeed output.
+*    The label is 'Use Linefeed on Output?'.  To make
+*    the file display do a line feed as well as a
+*    carriage return after each filename displayed,
+*    change this value to non-zero.
+
+*    The third (and last on RESTORE) patch determines
+*    if the program resets the disk system when it
+*    finishes.  The label for this patch is 'Reset
+*    Disk when Done?'.  A non-zero value here will
+*    cause F/RESTORE to reset the disk when it
+*    completes, using function 37.
+*       THIS FLAG SHOULD NEVER BE SET NON-ZERO
+*	IF YOU ARE USING THE PLAIN CP/M BDOS!!
+*    CP/M's function 37 has some problems with
+*    reallocating space that make is unacceptable for
+*    use.  And besides, CP/M reloads the allocation map
+*    on each warm boot anyway.  If you are using a
+*    modified BDOS or early ZRDOS, you may set this
+*    flag, although it probably won't do much for you.
+*    If you are using ZRDOS 1.5 or later, or some other
+*    system that does not reload its disk allocation
+*    maps on a warm boot, you SHOULD set this flag, so
+*    that the system will find out about the modified
+*    directory immediately.  On these systems, if this
+*    flag is not set, and the appropriate disk reset
+*    utility is not used immediately after F/RESTOREing
+*    the disk, you will probably have problems with the
+*    system reallocating blocks that have been used by
+*    F/RESTORE, since it doesn't know about them yet.
+
+*    FRESTORE (only) has a fourth user patch
+*    controlling the action taken when the directory
+*    is found to be out of order.  The label is
+*    'Ignore Directory Sort?'.  If this value is
+*    patched to non-zero, RESTORE will not ask you if
+*    you want to continue if the directory is not
+*    sorted, but will just go ahead on its own.  This
+*    patch is similar to the user-wait patch, but is
+*    provided separately so that you can set up the
+*    program for batch operation in conjunction with
+*    CLEANDIR or SAP, but bail out if they are not
+*    able to properly sort the directory.
+
+Limitations:
+
+     One of the problems associated with a program of
+     this type is the handling of bad sectors on the
+     disk.  Since there is no standard way of marking
+     bad sectors, I have completely ignored the issue
+     in writing the program.  I recommend the
+     following system for those with bad sectors on
+     their hard disk:
+
+          1) You have probably used BDxx, FBAD, or
+             whatever you use to mark the bad
+             sectors on the disk.  Use DUU, DU3,
+             PATCH, or your own disk utility to
+             examine the disk's directory.  Note the
+             allocation groups that are assigned to
+             the '.BAD' (or however your utility
+             marks them) files.  Make a list of the
+             allocation groups containing the bad
+             sectors.
+
+          2) After you finish backing up your disk
+             (that IS when you use F/RESTORE, isn't
+             it?  See the WARNING above if not), run
+             F/RESTORE, then use your disk utility to
+             look at the disk's directory and see
+             what files are now assigned to the
+             allocation groups on your list of bad
+             groups.  Make a list of these files.
+
+          3) Erase the files on the list.
+
+          4) Rerun FBAD, etc. to re-mark the bad
+             groups.
+
+          5) Copy over the files on the list from
+             your backup disk.
+
+     I realize that this is somewhat cumbersome, and I
+     apologize for that.  But, since there is no
+     standardized method for handling bad sectors,
+     this is the best I have been able to come up with.
+
+Operation:
+
+     FRESTORE uses a brute-force method to relocate
+     allocation groups.  It reads in the directory
+     (which should be sorted), and decides from the
+     directory allocation data in the Disk Parameter
+     Block for the disk how many groups are allocated
+     to the directory.  The next sequential allocation
+     group should be assigned to the first file in the
+     directory.  FRESTORE looks to see if that is the
+     case.  If not, it scans the directory to find
+     what file has that group allocated to it.  If the
+     desired group is not allocated, FRESTORE copies
+     the group referenced in the directory into the
+     desired group, then changes the directory entry
+     to show the new group.  If the group is allocated
+     to another file, FRESTORE reads both groups into
+     memory, then writes them to the alternate
+     locations, effectively swapping the groups in
+     place.  Both directory entries are modified, the
+     next sequential allocation group is selected, and
+     the process repeats.  The updated directory is
+     written to the disk after each directory entry is
+     completed, not after each allocation group swap.
+     Thus, the number of directory rewrites will
+     typically be about one-half to one-fourth (on a
+     hard disk; one-fourth to one-eighth on a floppy
+     disk) of the number of group swaps required.
+
+     When I say that the method is 'brute force', I
+     mean that no intelligence is used in the sort
+     process.  Under worst-case conditions, the first
+     allocation group on a disk might be free, with
+     all other groups assigned in the desired sequence
+     to the files in the directory.  In this case, the
+     disk is really not fragmented, and nothing needs
+     to be done.  If you run FRESTORE on a disk in
+     this situation, it will tell you that EVERY GROUP
+     on the disk must be moved, and will do so if you
+     let it.  No analysis of the fragmentation of the
+     disk is done, and no optimization is used to
+     figure out how to restore the disk using the
+     least number of group swaps.
+
+*    RESTORE, by contrast, is much smarter in its
+*    operation.  After the directory is read in,
+*    RESTORE builds a table of free spaces on the
+*    disk.  Each table entry has the number of a free
+*    allocation group and a count of the contiguous
+*    free groups starting at that group. When the
+*    table is built, RESTORE starts through the
+*    directory.  It checks to see that the allocation
+*    groups assigned to each directory entry are in
+*    sequential order.  If they are, nothing is done.
+*    If a directory entry has non-sequential groups
+*    assigned, RESTORE counts the number of groups
+*    allocated to that directory entry, then goes and
+*    looks in the free-space table for a space that
+*    has at least that number of contiguous free
+*    groups.  If it finds one, the groups are copied
+*    to the new space, and the previously used groups
+*    are returned to the free-space list.  The table is
+*    rebuilt after every fourth directory entry
+*    requiring relocation is finished, and the table is
+*    kept sorted in increasing order by the size of the
+*    free space, so the search routine always returns
+*    the smallest space that will hold the data needing
+*    to be moved.
+
+*    If there is no space in the table large enough to
+*    relocate  the entry, RESTORE sets a flag to tell
+*    itself to make another pass through the
+*    directory.  The idea is that later moves may open
+*    up a space large enough, by freeing up space next
+*    to an already free area.  When the entire
+*    directory is checked, RESTORE tells you how many,
+*    if any, entries could not be relocated.  If there
+*    are any, it starts the entire process over again,
+*    starting with reading in the directory.  This
+*    process continues until all entries are fixed, or
+*    until RESTORE is unable to relocate any more
+*    entries by making another pass.  If this happens,
+*    it means that the remaining free spaces are too
+*    small and too spread out for RESTORE to be able
+*    to use them.  RESTORE will recommend that you use
+*    the fully-relocating FRESTORE version to recover
+*    these areas.
+
+*    One noticeable difference between the two
+*    versions is the length of the wait between when
+*    you 'Press any key to continue' (or the program
+*    signs on if it is set up to skip user waits) and
+*    the time it prints out the statistics.  RESTORE
+*    takes two to three times as long as FRESTORE,
+*    since it has to build the free-space table.  This
+*    extra time comes back later, though, since
+*    RESTORE will move anywhere from one-sixth to
+*    one-tenth (or less) as many groups as FRESTORE.
+
+     On the subject of speed:  F/RESTORE is, in
+     addition to being more convenient than copying
+     all the files back from a backup disk,
+     considerably faster than that method.  While
+     times vary depending on the degree of
+     fragmentation and the hardware, I have found
+     FRESTORE to be about 20% faster than a
+     NON-VERIFYING copy of files from backup floppies
+     back to my hard disk (F/RESTORE does
+     read-after-write CRC verification of all disk
+*    writes).  RESTORE, since it moves many fewer
+*    groups than FRESTORE, is more on the order of
+*    4-8 times as fast as a floppy backup.  Plus, you
+     don't have to sit around and feed your machine
+     floppies for hours.  FRESTORE will process a
+     filled 20 Meg hard disk in about 5 hours on my
+     hardware; doing the same thing, with
+     verification, from floppies takes over 9 hours
+*    and about 28 disk swaps!  Using RESTORE cuts this
+*    time to less than one hour.  With F/RESTORE,
+     simply use a multiple-command line or
+*    ZEX/XSUB/SUBMIT file, and let F/RESTORE crunch
+*    away during lunch, or while watching 'Friday the
+*    13th Part 27'.  Note that if you want to use this
+     'batch processing' of multiple drives, you must
+     patch the user-wait flag to zero as described
+*    above to disable the two user waits.  If you are
+*    using FRESTORE and don't sort your directories
+*    first, you will also need to patch the ignore-
+*    directory-sort flag to non-zero.
+
+DISCLAIMER:
+
+     This is a very useful utility, and I have tested
+     it extensively.  However, as noted above, it is
+     also very capable of lunching your disks
+     completely if the system has a problem.  Use it
+     in good health and happiness, but MAKE BACKUPS
+     BEFORE YOU USE IT!!.  Papa Wallenda ran his
+     system without a backup.  He's not around any
+     more.  'Nuff said.
+
+*    Some users of the previous version have had
+*    trouble with read errors after RESTOREing their
+*    disks.  From the discussions I saw (actually,
+*    'overheard' is more accurate--I received copies
+*    of some messages left on Chicago's 'Lillipute'
+*    ZNode; the people who had the problems never
+*    bothered to contact me to report the problem), it
+*    sounds like their drives got hot under the,
+*    admittedly, much greater than usual demands that
+*    FRESTORE places on the drive, and exceeded track-
+*    positioning tolerances.  The new RESTORE version
+*    should reduce this problem considerably, since it
+*    does much less in the way of disk reads and
+*    writes, and has longer waits in between directory
+*    rewrites while it rebuilds the free space table.
+*    PLEASE contact me if you have any problems; I
+*    want to make F/RESTORE as useful as possible to
+*    as many users as I can.
+
+
+Steve Dirickson			7 June 1987
+21145 Raintree Place NW
+Poulsbo  WA  98370-9726
+
+Voice: 206-697-1270/9311
+
+BBS: Seattle's 'downspout': 206-325-1325
+     ZNode Central: 415-948-6656
+

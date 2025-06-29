@@ -1,0 +1,261 @@
+
+; SOME CP/M addresses
+BDOS		EQU	5
+DMA		EQU	#80
+
+;CP/M function numbers
+WRITE		EQU	2	;write a character to the screen
+FINDFIRST	EQU	17	;find first matching file
+FINDNEXT 	EQU	18	;find next matching file
+ERASE		EQU	19	;erase a file
+
+;useful ASCII values
+NULL		EQU	0	;Message terminator
+LF		EQU	10	;Line feed
+CR		EQU	13	;Carriage return
+BLANK		EQU	32	;Space
+
+;the program starts here
+
+	ld	sp,(6)		;put stack under the BDOS
+	CALL	TITLE		;print a sign-on message
+ONE_TIME
+	LD	C,FINDFIRST	;look for the first file
+	JR	TIME1
+
+NEXT_TIME
+	LD	C,FINDNEXT	;look for the next file
+TIME1	CALL	CPMFCB
+	CP	#FF		;A=0, 1, 2 or 3 if a file is found
+	JR	Z,FINISH	;A=#FF if no more files
+
+	CALL	GET_TO_NAME	;get to right directory entry using A
+	CALL	PRINT_FCB	;print filename on screen
+	CALL	CHECK_NAME	;check if filename legal
+	JR	NC,NAME_OK	;NC means yes
+
+	CALL	BAD_MESSAGE	;bad filename
+	CALL	DELETE_BAD	;delete it
+	JR	ONE_TIME	;see the tutorial
+
+NAME_OK
+	CALL	GOOD_MESSAGE	;file ok
+	JR	NEXT_TIME	;do some more
+
+FINISH	CALL	CONCLUDE	;print sign-off message
+	RST	0		;return to CP/M
+
+;message-printing subroutines
+
+TITLE	PUSH	HL
+	LD	HL,TITLE_M
+	JR	OUT_MESS
+
+GOOD_MESSAGE
+	PUSH	HL
+	LD	HL,GOOD_M
+	JR	OUT_MESS
+
+BAD_MESSAGE
+	PUSH	HL
+	LD	HL,BAD_M
+	JR	OUT_MESS
+
+CONCLUDE
+	PUSH	HL
+	LD	HL,END_M
+
+OUT_MESS
+	CALL	MOUT
+	POP	HL
+	RET
+
+.comment /
+
+the relevant area of the disc directory has been copied into the DMA address
+and the value of A is 0, 1, 2 or 3. The start of the FCB of the found file
+is at DMA+(A*32) because each FCB is 32 bytes long. /
+
+GET_TO_NAME
+	LD	HL,DMA		;which is 128 in this case
+	ADD	A,A
+	ADD	A,A
+	ADD	A,A
+	ADD	A,A
+	ADD	A,A		;A=A*32
+	ADD	A,L
+	LD	L,A		;HL=DMA+(A*32)
+
+	INC	HL		;HL points at filename
+	LD	DE,workFCB	;copy FCB to safe place
+	PUSH	DE
+	INC	DE
+	LD	BC,11
+	LDIR
+
+	POP	HL
+	LD	D,H
+	LD	E,L		;HL and DE point to working FCB
+	RET
+
+;subroutine to print out filename from the FCB pointed to by HL
+PRINT_FCB
+	LD	B,8		;8 characters in a filename
+PFCBNAME
+	INC	HL
+	LD	A,(HL)
+	CALL	PUTCHAR		;print character to screen
+	DJNZ	PFCBNAME
+
+	LD	A,"."
+	CALL	PUTCHAR		;put out a period
+
+	LD	B,3 		;3 characters in filetype
+PFCBTYPE
+	INC	HL
+	LD	A,(HL)
+	CALL	PUTCHAR
+	DJNZ	PFCBTYPE
+
+	LD	A,BLANK		;finally put out a space
+	JP	PUTCHAR
+
+;subroutine that parses the filename in DE to
+;see if it's illegal. Returns C if illegal.
+CHECK_NAME
+	LD	H,D		;set HL to FCB
+	LD	L,E
+	LD	B,11		;check all 11 characters
+
+DO_NEXT	INC	HL
+	LD	A,(HL)
+	RES	7,A		;strip top bit
+
+	CALL	CHECK_CHAR	;is character illegal
+	RET	C		;yes, return C
+
+	CP	BLANK		;spaces illegal in filenames
+	RET	C
+
+	CP	"z"+1
+	JR	NC,NEXT_CHAR
+	CP	"a"
+	CCF
+	RET	C		;lower-case illegal
+
+NEXT_CHAR
+	DJNZ	DO_NEXT		;do more
+	OR	A		;set NC condition, ok
+	RET
+
+;checks the character in A against the
+;illegal characters in BAD_CHARS
+;(this routine could be coded with CPIR)
+CHECK_CHAR
+	PUSH	HL		;preserve HL
+	LD	HL,BAD_CHARS	;start of bad-character table
+	LD	C,A		;character to check in C
+CH_LOOP	LD	A,(HL)		;bad character from table
+	INC	HL
+	OR	A		;end of table?
+	JR	Z,END_CHECK	;Z means yes
+
+;if next character in table is zero then
+;filename character is ok. Previous OR A
+;will have set NC condition.
+	CP	C		;check if bad character
+	JR	NZ,CH_LOOP
+	SCF			;bad character
+
+END_CHECK
+	LD	A,C		;put character back in A
+	POP	HL
+	RET
+
+;erase bad file whose FCB is in DE
+DELETE_BAD
+	LD	C,ERASE
+	JP	BDOS
+
+;print out message addressed by HL
+;and terminated by an ASCII 0
+MOUT
+	LD	A,(HL)
+	INC	HL
+	OR	A
+	RET	Z		;end of message
+	CALL	PUTCHAR
+	JR	MOUT
+
+;Write the character in A to the screen
+;with all registers preserved
+PUTCHAR
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC
+	PUSH	AF
+	LD	E,A
+	LD	C,WRITE
+	CALL	BDOS		;use the BDOS
+	POP	AF
+	POP	BC
+	POP	DE
+	POP	HL
+	RET
+
+;C holds the desired CP/M function number on entry
+;which will be either FIND FIRST (17) or FINDNEXT(18)
+CPMFCB
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC
+	LD	DE,ambigFCB	;set up de
+	call	BDOS
+	POP	BC
+	POP	DE
+	POP	HL
+	RET
+
+;Storage Section
+
+TITLE_M
+	DEFB	CR,LF
+	DEFM	"DELETE ILLEGAL FILES (C) HISOFT"
+	DEFB	CR,LF
+	DEFM	"WRITTEN BY R. TELLER 14/2/85"
+	DEFB	CR,LF,CR,LF,NULL
+
+GOOD_M
+	DEFB	"OK",CR,LF,NULL
+
+BAD_M
+	DEFM	"ERASED"
+	DEFB	CR,LF,CR,LF,NULL
+
+END_M
+	DEFB	CR,LF
+	DEFM	"PROGRAM FINISHED. DISC FILES OK"
+	DEFB	CR,LF,NULL
+
+;table of illegal characters
+BAD_CHARS
+	DEFB	"<>.,;:=?*[]_%|()/\",NULL
+
+;the ambiguous FCB which will match all
+;files on the disc
+ambigFCB
+	DEFB	NULL		;Byte 1 is the drive number
+	DEFM	"???????????"	;11 chars. ambiguous filename
+	DEFS	20,0		;the rest
+
+;the working FCB where found filename
+;is copied to
+workFCB
+	DEFB	NULL
+	DEFM	"           "	; 11 spaces
+	defs	20,0
+est
+
+;the working FCB where found filename
+;is copied to
+work

@@ -1,0 +1,814 @@
+;
+;	14 digit decimal calculator for Write-Hand-Man
+;
+;	Copyright (c) 1985 by Poor Person Software
+;
+	org 0
+base	equ	$
+;
+bdos	equ	base+5
+conio	equ	6
+conin	equ	1
+home	equ	base+10h
+functch equ	base+16h
+functab equ	base+18h
+dropa	equ	base+1ah
+;
+	org	base+0100h
+	call	pscrn
+	mvi	a,'$'
+	sta	disacc+18
+	lxi	h,evenodd
+	mvi	c,40
+	call	zaplp 
+	mvi	a,1
+	sta	one+7
+;
+loop:
+	call	home
+	lxi	d,prompt
+	call	pstring
+lopin:
+	call	inkey
+;
+lopin1: 			; return from clear
+;
+	sta	key
+	lxi	h,table
+lookup:
+	mov	e,m
+	inx	h
+	mov	d,m
+	inx	h
+	cmp	m
+	inx	h
+	jnz	lookup
+	xchg
+	pchl
+;
+table:
+	dw	base
+	db	27
+	dw	doclr
+	db	'X'
+	dw	docut
+	db	'C'
+	dw	dosave
+	db	'S'
+	dw	dorest
+	db	'R'
+	dw	indp
+	db	'.'
+	dw	doneg
+	db	'!'
+	dw	docr
+	db	13
+	dw	doop
+	db	'+'
+	dw	doop
+	db	'-'
+	dw	doop
+	db	'*'
+	dw	doop	
+	db	'/'
+	dw	doop
+	db	'='
+	dw	trynum
+key:	ds	1
+;
+trynum:
+	cpi	030h
+	jc	bell
+	cpi	03ah
+	jnc	bell
+;
+	push   psw
+;	   
+;	check if last op was =
+;
+	lda	op
+	cpi	'='
+	jnz	lstnequ
+	xra	a
+	sta	op
+lstnequ:
+	xra	a
+	sta	showacc 	; say showing number
+	lxi	h,num
+	call	lefts		; shift to the left
+	pop	psw		  ; the number
+	ani	0fh
+	mov	b,a
+	lda	num+7
+	ora	b
+	sta	num+7
+	lda	dp		; see if decimal yet
+	ora	a
+	jnz	loope		; yes display number
+	sta	num		; no zap number of decimals
+loope:
+	lxi	d,num
+	call	dispnum
+	jmp	loop
+;
+indp:
+	sta	dp
+	jmp	loop		; mark as hit
+;
+doneg:
+	lda	showacc 	; showing acc
+	ora	a
+	jz	negnum		; negate number
+	lda	acc
+	xri	080h
+	sta	acc
+	lxi	d,acc
+	call	dispnum
+	jmp	loop
+negnum: 
+	lda	num
+	xri	080h
+	sta	num
+	jmp	loope
+doclr:
+	lxi	h,num
+	call	zapnum
+	lxi	d,num
+	call	dispnum 	; display number
+	lxi	d,prompt  
+	call	pstring
+	call	inkey		; get next character
+	cpi	'X'
+	jnz	lopin1		; next thing to do
+doclr1: 		    ; second clear
+	xra	a
+	sta	op
+	lxi	d,num
+	lxi	h,acc
+	call	movnum
+	jmp	loop
+;
+bell:
+	mvi	c,conio
+	mvi	e,7
+	call	bdos
+	jmp	loop
+;
+docr:
+	mvi	a,'+'		; cr means Plus
+doop:
+	push   psw
+	lda	op
+	ora	a
+	jnz	dooldop
+	lxi	d,num
+	lxi	h,acc
+	call	movnum
+;
+endop:
+	call	fixacc		; make sign magnitude
+	lxi	d,acc
+	call	dispnum
+	lxi	h,num
+	call	zapnum
+	xra	a
+	inr	a
+	sta	showacc 	; say showing accumulator
+;
+	pop	psw
+	sta	op
+	jmp	loop		; move to acc and loop
+;
+dooldop:
+	cpi	'+'
+	cz	doadd
+	cpi	'-'
+	cz	dosub
+	cpi	'*'
+	cz	domult
+	cpi	'/'
+	cz	dodiv
+;
+;      others here
+;
+	jmp	endop
+;
+;	the arithmetic routines   setup then doit
+;
+doadd:	 
+	call	norm	; fix up signs
+	lxi	d,num
+	lxi	h,acc
+	call	dadd		; add to accum
+	xra	a		; make sure this is only one done
+	ret	       
+;
+dosub:
+	lda	num
+	xri	080h
+	sta	num
+	jmp	doadd
+;
+domult:
+	lda	num
+	mov	c,a
+	lda	acc
+	add	c		; the first digit of result (sign correct)
+	sta	savemant	; save mantissa
+	xra	a
+	sta	num
+	sta	acc		; clear this
+	call	dmult		; do multiply
+	lda	savemant
+	sta	acc		; set sign
+	ani	07fh		; mask sign
+	sta	maxdec		; maximum number of decimal
+fixmul: 			; get rid of trailing zeros
+	lda	acc
+	ani	07fh
+	rz			; quit if zero
+	mov	c,a
+	lda	maxdec
+	cmp	c
+	jc	fixmore
+	lda	acc+7
+	ani	00fh		; last digit
+	rnz			; return we are done
+fixmore:
+	lxi	h,acc
+	call	rights
+	jmp	fixmul
+;
+dodiv:
+	lda	acc
+	mov	c,a
+	lda	num
+	xra	c
+	ani	080h		; leave only the sign
+	sta	savemant	; sign of answer
+	lda	acc
+	ani	07fh
+	sta	acc
+	mov	c,a		; save for comparison
+	lda	num
+	ani	07fh
+	sta	num		; make positive
+	cmp	c
+	jnc	setmaxd
+	mov	a,c
+setmaxd:
+	inr	a
+	inr	a
+	sta	maxdec		; max decimal is 2 greater than biggest
+	call	ddiv
+	lda	savemant
+	sta	acc
+	jmp	fixmul		; fix up answer and return
+;
+;	cut display to macro key 8
+;
+docut:
+	lhld	functab
+	lxi	d,112
+	dad	d
+	lxi	d,disacc+1
+	mvi	c,16		; move only 15 characters
+cutlp:
+	ldax	d
+	cpi	' '
+	jz	cutlpe
+	mov	m,a		; put into key
+	inx	h		; next byte in key definition
+cutlpe:  
+	inx	d		; bump source
+	dcr	c
+	jnz	cutlp
+	mvi	m,0
+	jmp	loop
+;
+;	save   accumulator
+;
+dosave:
+	lhld	dropa		; drop area 
+	lxi	d,acc
+	call	movnum
+	jmp	loop
+;
+;	restore  accumulator 
+;
+dorest:
+	lhld	dropa
+	xchg
+	lxi	h,num
+	call	movnum
+;
+	xra	a
+	sta	showacc
+	lxi	d,num
+	call	dispnum
+	lda	op
+	cpi	'='
+	jnz	loop
+	xra	a
+	sta	op
+	jmp	loop
+;
+;	move number to (d) to (h)
+;
+movnum:
+	mvi	c,8
+mvlp:
+	ldax	d
+	mov	m,a
+	inx	h
+	inx	d
+	dcr	c
+	jnz	mvlp
+	ret
+;
+;	zap number pointed to by h
+;
+zapnum:
+	mvi	c,8
+zaplp:
+	mvi	m,0
+	inx	h
+	dcr	c
+	jnz	zaplp
+	xra	a
+	sta	dp
+	ret
+;
+;	fixacc		  make acc sign magnitude
+;
+fixacc:
+	lxi	d,acc
+	ldax	d
+	ora	a
+	rm		; if has minus sign quit
+	lda	acc+1
+	ani	0f0h
+	cpi	050h
+	cnc	comp	; it is negative by definition
+	ret
+;
+;	norm		make operands 9's complement
+;
+norm:
+	lxi	d,num
+	ldax	d
+	ora	a
+	cm	comp
+	lxi	d,acc
+	ldax	d
+	ora	a
+	cm	comp	; make sure both have positive sign
+	ret
+;
+comp:			; complement  (d)
+	push	d	; save
+	ldax	d
+	xri	080h	; change sign
+	stax	d
+	inx	d
+	mvi	b,14	; this many digits
+	push	d
+	pop	h	; copy the destination to hl
+	xra	a
+	sta	evenodd
+complp:
+	call	getdigit
+	mov	c,a
+	mvi	a,9
+	sub	c
+	call	putdigit
+	dcr	b
+	jnz	complp	; finish
+	pop	h
+;
+;	must add 1 to 9's complement to get 10's complement
+;
+	mov	a,m	; get sign
+	push   psw
+	xra	a    
+	mov	m,a	; make look like integer
+	push	h
+	lxi	d,one
+	call	dadd
+	pop	h
+	pop	psw
+	mov	m,a	; correct
+	ret
+;
+dispnum:
+;
+;	de -> number
+;	hl -> disacc + 1
+;
+	lxi	h,disacc+1
+	ldax	d
+	ani	07fh	; just number of decimals
+	cpi	15
+	jc	decok
+	mvi	a,14
+decok:
+	mov	c,a
+	ldax	d
+	inx	d	; get number
+	ora	a
+	jp	dispos	; positive
+	mvi	a,'-'
+	call	dispout
+	jmp	dispcon ; continue
+dispos:
+	mvi	a,' '
+	call	dispout
+dispcon:
+	push	h	; save this
+	mvi	a,14
+	sub	c
+	mov	c,a	; number left of decimal
+	mvi	b,14	; number of digits
+	xra	a
+	sta	evenodd ; clear this
+displop:
+	call	getdigit
+	ori	030h
+	call	dispout
+	dcr	c
+	mvi	a,'.'
+	cz	dispout
+	dcr	b
+	jnz	displop ; loop
+;
+	pop	h
+	mvi	c,15
+dispbl:
+	mov	a,m
+	cpi	030h
+	jnz	dodisp
+	mvi	m,' '	; leading zeros become blanks
+	inx	h
+	dcr	c
+	jnz	dispbl
+dodisp:
+	call	pscrn
+	ret
+;
+dispout:
+	mov	m,a
+	inx	h
+	ret		; simple
+;
+getdigit:
+	lda	evenodd
+	ora	a
+	jz	get1st
+	xra	a
+	sta	evenodd
+	lda	getbyt
+	ani	0fh
+	ret
+get1st:
+	dcr	a
+	sta	evenodd
+	ldax	d
+	inx	d
+	sta	getbyt
+	rrc
+	rrc
+	rrc
+	rrc
+	ani	0fh
+	ret
+;
+putdigit:
+	mov	c,a	; this is the digit
+	lda	evenodd
+	ora	a
+	jz	put2nd	; this is opposite because get toggled it
+put1st:
+	mov	a,c
+	rlc	    
+	rlc
+	rlc
+	rlc
+	sta	putbyt
+	ret
+put2nd:
+	lda	putbyt
+	add	c
+	mov	m,a
+	inx	h
+	ret
+;
+dadd:
+;
+;	de ->  number
+;	hl ->  accumulator	(de) added to (hl)
+;
+	push	h
+	push	d
+norml:
+	ldax	d		; decimals in de
+	cmp	m		; decimals in hl
+	jz	addbeg		; begin add
+	jnc	noswap		; normalize hl
+	xchg			; must normalize de
+noswap:
+	call	lefts		; shift to left
+	jmp	norml
+addbeg:
+	pop	d
+	lxi	h,7
+	dad	d		; to last digit
+	xchg			; to de
+;
+	pop	h		; now add de to hl  
+	lxi	b,7
+	dad	b		; to last digit
+	xra	a		; clear carry
+addlp:
+	ldax	d
+	adc	m
+	daa			; adjust
+	mov	m,a
+	dcx	d
+	dcx	h
+	dcr	c
+	jnz	addlp
+	ret			; done
+;
+dmult:
+	lxi	d,acc
+	lxi	h,tempn
+	call	movnum
+	lxi	h,acc
+	call	zapnum		; clear acc
+	mvi	c,13		; do this 13 times
+dmull:				; loop for each digit
+	lda	num+7		; final digit
+	ani	00fh		; get it
+	mov	b,a		; to b
+	ora	a		; see if need to do anything
+	jz	dadd2		; no
+daddl:				; add loop for each digit
+	push	b		; save this
+	lxi	d,tempn
+	lxi	h,acc		; add it in
+	call	dadd		; add n to hl
+	pop	b
+	dcr	b		; how many
+	jnz	daddl		; this many
+dadd2:
+	push	b
+	lxi	h,num		; shift this right
+	call	rights
+	lxi	h,tempn
+	call	lefts		; this to the left
+	xra	a
+	sta	tempn		; zap this
+	pop	b
+	dcr	c
+	jnz	dmull		; and so on
+	xra	a
+	ret
+;
+ddiv:
+	lxi	h,acc		; prepare for shift
+	lda	acc+1
+	ora	a
+	jnz	dchknum
+	call	lefts		; shift to left
+	lda	acc		; see how many decimals
+	cpi	33		; this is max
+	jc	ddiv		; loop if ok   (~=0)
+	xra	a
+	sta	acc
+	ret			; leave acc = 0
+dchknum:
+	lxi	h,num
+	lda	num+1
+	ora	a
+	jnz	dcalcman
+	call	lefts
+	lda	num		; how many decimals
+	cpi	33
+	rnc			; return if equal or larger (0)
+	jmp	dchknum 	; normalize the numbers
+dcalcman:
+	lda	num		; 12 - ((13-da)-(13-dn))
+	mov	b,a		; 12 - ( 13-da+13+dn )
+	mvi	a,12		; 12 +da-dn
+	sub	b
+	mov	b,a
+	lda	acc
+	add	b
+	mov	b,a
+	lda	savemant
+	ora	b
+	sta	savemant	; the "mantissa" of answer
+	xra	a
+	sta	num
+	sta	acc		; treat as integers
+	lxi	h,tempn
+	call	zapnum		; clear this
+	mvi	b,13		; 13 digits
+divloop:
+	mvi	c,0		; count successful subtracts
+divlp1:
+	push	b
+	call	dosub		; subtract n from acc
+	lxi	d,num
+	call	comp		; make positive again
+	xra	a
+	sta	num		; with positive sign
+	lda	acc+1
+	ani	0f0h
+	jnz	addback 	; add it back
+	pop	b
+	inr	c		; add on
+	jmp	divlp1		; continue
+addback:
+	call	doadd		; add back
+	lxi	h,tempn
+	call	lefts
+	lxi	h,num
+	call	rights
+	xra	a
+	sta	num		; keep as an integer
+	pop	b		; get counters
+	lda	tempn+7
+	add	c
+	sta	tempn+7
+	dcr	b
+	jnz	divloop 	; continue
+	lxi	d,tempn
+	lxi	h,acc
+	call	movnum
+	ret			; done!
+;
+lefts:
+;
+;	shift  (hl) left by one and increase number of decimals
+;
+	push	h
+	push	d
+;
+	mov	a,m		; get sign
+	ani	080h
+	mov	c,a
+	mov	a,m
+	ani	07fh
+	inr	a
+	ora	c
+	mov	m,a		; bump number of decimals
+;
+	inx	h		; to first digit byte
+	mvi	c,7		; number of digits
+	push	h
+	pop	d		; get hl to de as well
+	inx	h		; to plus one
+shfl:
+;	  
+	mov	a,m		; get plus one
+	ani	0f0h
+	rrc 
+	rrc 
+	rrc 
+	rrc
+	mov	b,a
+;
+	ldax	d		; get this
+	ani	0fh		; clear upper
+	rlc 
+	rlc 
+	rlc 
+	rlc
+	ora	b		; combine
+	stax	d
+	inx	h
+	inx	d		; bump
+	dcr	c
+	jnz	shfl
+;
+	dcx	d	; back to last digit
+	ldax	d
+	ani	0f0h
+	stax	d
+;
+	pop	d
+	pop	h
+	ret
+;
+;      shift (hl) right one digit
+;
+rights:
+	push	h
+	push	d
+;
+	mov	a,m		; get sign
+	ani	080h
+	mov	c,a
+	mov	a,m
+	ani	07fh
+	dcr	a
+	ora	c
+	mov	m,a		; decrease number of decimals
+;
+	lxi	b,7
+	dad	b		; to last digit
+	push	h
+	pop	d		; get hl to de as well
+	dcx	h		; next to last
+shfrl:
+	ldax	d
+	ani	0f0h
+	rrc 
+	rrc 
+	rrc 
+	rrc
+	mov	b,a		; save
+	mov	a,m		; 
+	ani	00fh
+	rlc 
+	rlc 
+	rlc 
+	rlc
+	ora	b
+	stax	d		; this byte done
+	dcx	h
+	dcx	d
+	dcr	c
+	jnz	shfrl
+	inx	d		; to first digit
+	ldax	d
+	ani	00fh
+	stax	d
+	pop	d
+	pop	h		; restore
+	ret
+;
+pscrn:
+	call	home
+	lxi	d,screen
+	call	pstring
+	ret
+pstring:
+	mvi	c,9
+	call	bdos
+	ret
+inkey:
+	mvi	c,conin
+	call	bdos
+	cpi	'a'
+	rc  
+	ani	05fh
+	ret
+;
+;
+prompt: db	10,10,10,13,'  [ ]',8,8,'$'
+screen:
+disacc: db	'|                |',10,13
+	db	' ----------------|',10,13
+	db	'+ - * / = ! (neg)|',10,13
+	db	'  [ ]  X S R C   |',10,13
+	db	'_________________|'
+	db	'$'
+blot	equ	$
+	org	disacc+19
+evenodd: ds    1
+getbyt:   ds	1
+putbyt:   ds	1
+maxdec:   ds	1
+savemant: ds	1
+showacc:  ds	1
+op:	ds	1
+dp:	ds	1
+acc:	ds	8
+num:	ds	8
+tempn:	ds	8
+one:	ds	8
+	org	blot
+	end
+
+
+
+
+
+
+savemant: ds	1
+showacc:  ds	1
+op:	ds	1
+dp:	ds	1
+acc:	ds	8
+num:	ds	8
+tempn:	ds	8
+one:	ds	8
+	org	blot
+	end
+
+
+
+
+

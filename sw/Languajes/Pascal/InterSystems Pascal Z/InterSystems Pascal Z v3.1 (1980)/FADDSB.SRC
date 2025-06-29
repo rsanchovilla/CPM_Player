@@ -1,0 +1,90 @@
+;FLOATING POINT ADD AND SUBTRACT ROUTINES
+;
+	NAME FADDSB
+	ENTRY FSUB,FADD,FADD1
+	EXT MPADD,DONE2,FPERR
+	INCLUDE FPINIT.SRC
+	INCLUDE FPMAC.SRC
+;
+; fsub -- floating point subtraction routine
+;	  must be followed by addition routine
+;
+fsub:	setupf			;setup for 2 operands
+	mvi	a,80h		;complement sign bit
+	xra	op2+msb(x)	;of the second operand
+	mov	op2+msb(x),a	;and add since a + (-b) = a - b
+	jr	fadd1		;jump into add routine
+
+;
+; floating point addition routine
+;
+fadd:	setupf			;setup for 2 oerands
+fadd1:	zchk	1		;check for a zero operand
+	jrz	copdon		;yes..copy and done
+	zchk	2		;check for a zero facc
+	jz	done2		;yes...addition finished
+;check range of exponents
+	mov	a,op1(x)	;get exponent of 1st op
+	sub	op2(x)		; "	"     "  2nd "
+;				;are they equal?
+	jrz	oppos		;yes...prepare to add them
+	mov	c,a		;copy difference into c-reg
+	jp	posrlt		;otherwise make sure
+	xra	a		;that the result is +ve
+	sub	c
+posrlt:	cpi	fracln-1*8	;is difference is too small
+	jrc	oppos		;yes..go align operands
+	bit	sign,c		;test sign of difference
+	jz	done2		;if +ve then addition is done
+copdon:	lxi	h,op1		;copy op1 <- op2
+	dad	d		;point to top of op1
+	xchg
+	lxi	b,op2		;point to top of op2
+	dad	b
+	lxi	b,4		;copy 4 bytes
+	lddr			;op1 <- op2
+	jmp	done2		;and done
+oppos:	bit	sign,op1+msb(x)	;make sure args >= 0
+	jrz	op1pos
+	res	sign,op1+msb(x)	;clear sign bit
+	push 	psw		;save difference in exponents
+	push	b		;save sign of difference
+	cmplmt	1		;<0 , negate mantissa
+	pop	b
+	pop	psw
+op1pos:	bit	sign,op2+msb(x)
+	jrz	align
+	res	sign,op2+msb(x)	;clear sign bit
+	push	psw		;save difference in exponents
+	push	b		;save sign of difference
+	cmplmt	2
+	pop	b
+	pop	psw
+align:	ana	a		;are exponents equal?
+	jrz	shadd		;yes
+	bit	sign,c		;check sign of difference
+	mov	b,a		;save magnitude of difference
+	jrz	shop2		;op1 > op2, shift op2 right
+;				;op1 < op2, shift op1 right
+shop1:	shift	1,r		;shift op1 right
+	djnz	shop1		;until two operands line up
+	jr	shadd		;add them
+shop2:	shift	2,r		;shift op2 right
+	djnz	shop2
+shadd:	shift	1,r		;shift both operands right
+	shift	2,r		;one bit
+	lxi	h,op1+lsb	;get addr of bottom of op1
+	dad	d
+	xchg
+	push	h		;save base reg
+	lxi	b,op2+lsb	;get addr of bottom of op2
+	dad	b
+	call	mpadd		;add aligned fractions
+	pop	d		;restore base reg
+	bit	sign,a		;high byte of answer is in a
+	jz	done2
+	cmplmt	1		;complement fraction
+	bset	sign,op1+msb(x)	;set sign bit
+	jmp	done2		;and done
+;
+

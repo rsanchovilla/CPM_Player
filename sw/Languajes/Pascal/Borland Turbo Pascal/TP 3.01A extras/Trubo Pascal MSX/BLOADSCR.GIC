@@ -1,0 +1,40 @@
+(*  B L O A D S C R . G I C         Bilddatei laden     V 1.1  10-Mai-1987  *)
+
+
+(* Nach dem Aufruf von BLOADscreen gibt IOresult einen der
+   folgenden Funktionswerte zurÅck:
+
+     0:       Ok, Datei geladen
+   $01:       Datei nicht gefunden
+   $07:       Nicht genug freier Speicher
+   $90:       Datei ist keine Bilddatei
+   $99:       Unerwartetes Datei-Ende
+--------------------------------------------------------------- *)
+
+
+type bloadsname = string[14];
+
+procedure BLOADscreen (n: bloadsname);
+
+var scfile: file;
+    fcb:    array[0..47] of byte absolute scfile;
+
+begin
+  assign (scfile, n);
+  move   (fcb[12], scfile, 34);
+  inline ($2A/HEAPPTR/$CB/$7C/$20/$03/$21/$00/$80/$11/$07/$00/$19/$EB/$2A/
+          RECURPTR/$B7/$ED/$52/$22/*+$0069/$21/$07/$00/$7D/$DA/*+$009F/$EB/
+          $ED/$52/$22/*+$0089/$11/SCFILE/$D5/$0E/$0F/$CD/$05/$00/$DD/$E1/$B7/
+          $3E/$01/$C2/*+$0088/$DD/$36/$0E/$01/$AF/$DD/$77/$0F/$DD/$77/$21/$DD/
+          $77/$22/$DD/$77/$23/$DD/$77/$24/$ED/$5B/*+$0060/$0E/$1A/$CD/$05/$00/
+          $11/SCFILE/$21/$07/$00/$0E/$27/$CD/$05/$00/$B7/$3E/$99/$20/$59/$2A/
+          *+$0048/$3E/$FE/$BE/$3E/$90/$20/$4F/$23/$5E/$23/$56/$23/$7E/$23/$66/
+          $6F/$ED/$53/*+$002B/$ED/$52/$23/$E5/$11/$00/$00/$ED/$52/$22/*+$0032/
+          $E1/$38/$03/$EB/$18/$07/$11/$00/$00/$ED/$53/*+$0025/$11/SCFILE/$0E/
+          $27/$CD/$05/$00/$B7/$3E/$90/$20/$1C/$44/$4D/$21/$00/$00/$54/$5D/$09/
+          $22/*+$FFFA/$21/$00/$00/$DD/$21/$5C/$00/$CD/_CALROM/$21/$00/$00/$7C/
+          $B5/$20/$C1/$32/$D0/$00/$11/SCFILE/$0E/$10/$CD/$05/$00);
+end;
+
+
+

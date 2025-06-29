@@ -1,0 +1,54 @@
+(*  M O U S E . G I C         Maus-Routinen    V 1.0   14-MAI-1987   *)
+
+
+
+procedure GetMouse (n: integer; var x,y: integer);
+
+  var p: integer;
+
+  begin
+    if boolean(n)
+    then p := 12
+    else p := 16;
+
+    if boolean(pad(p)) then { nichts, nur aufrufen };
+
+    x := x + pad(succ(p));
+    y := y + pad(succ(succ(p)));
+  end;
+
+
+function LeftButton (n: integer): boolean;
+
+  begin
+    LeftButton := strig(n);
+  end;
+
+
+function RightButton (n: integer): boolean;
+
+  begin
+    RightButton := strig(succ(succ(n)));
+  end;
+
+
+function IsMouse (n: integer): boolean;
+
+  var i,x,y: integer;
+
+  begin
+    for i := 1 to 5 do
+      begin
+      x := 0;
+      y := 0;
+      GetMouse (n, x,y);
+      if (x <> 1) or (y <> 1)
+      then begin
+        IsMouse := TRUE;
+        exit;
+        end;
+      end;
+    IsMouse := FALSE;
+  end;
+
+

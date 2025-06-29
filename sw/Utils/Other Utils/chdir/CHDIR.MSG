@@ -1,0 +1,100 @@
+Date: 23 Aug 82 0:33:23-EDT (Mon)
+From: Rick Conn
+To:   All
+Re:   chdir.c
+
+        I've recently finished designing and uploading a new pro-
+gram called CHDIR.  CHDIR is an extrapolation of the CDIR concept
+to  cover  all  disks  with  a  named  directory  structure which
+supports priveledged users.  The files for this are:
+
+                CHDIR C
+                CHDIR COM
+
+        Documentation is sketchy right now ... I plan to come out
+with a HLP file on it soon.  Here is the current documentation:
+
+        CHDIR is a program which places onto a CP/M or CP/ZM sys-
+tem  a  mnemonic hierarchial directory structure.  Via CHDIR, the
+user can create named directories, each such directory supporting
+up to 64 named subdirectories accessible under it.  The subdirec-
+tory is just another directory, and, hence,  a  subdirectory  can
+have  up to 64 named subdirectories under it also.  The result is
+a hierarchial type of directory structure.
+
+        Each directory is the form of a user area on a particular
+disk.   One of the many advantages of CHDIR is that it merges all
+of the disks of a microcomputer into one logical file system.  If
+the  user, say, has a 20M byte Winchester which is divided into 4
+logical drives of 5M byte each (named C, D, E,  and  F),  and  he
+also  has  two  floppy  disks (8", 600K each) named A and B, then
+this entire system of disks and user areas can  be  placed  under
+one  file  directory  system  via CHDIR.  An example based on the
+hardware configuration above:
+
+        A0: named ROOT
+        C0: named HD-ROOT
+        D0: named SRC-PAS
+        D1: named SRC-C
+        D2: named SRC-BAS
+        D3: named SRC-ASM
+        B0: named SCRATCH
+        E0: named DEV1
+        F0: named DEV2
+
+        The user comes in on A0:, the ROOT.  He then issues CHDIR
+HD-ROOT and finds himself on C0:; he can then switch to any named
+directory accordingly, regardless of what disk or user number  it
+is in.
+
+        A second advantage is that CHDIR  provides  a  definition
+for  a  System,  or Priveledged, set of directories.  This set is
+currently defined to be any reference to a  user  number  greater
+than  9.   Whenever  a  user  in a user number 9 or less tries to
+display all the directories, all he will see is those directories
+in  user  numbers  9 or less.  He may note by the directory count
+that more directories exist.  If he knows  the  name  of  one  of
+these hidden System directories, he may issue a CHDIR to the sys-
+tem directory, at which point CHDIR will see he is coming from  a
+non-system directory and ask him for the password.  He must issue
+the correct password to enter any system directory.   Once  in  a
+system  directory,  the  user  is  priveledged  and may enter any
+directory on the machine.
+
+        Note that, with the ZCPR USER  command  removed,  leaving
+only CHDIR as a medium for changing user numbers, this provides a
+way of creating a set of relatively secure directories on a  pub-
+lic system, such as an RBBS.
+
+        Note the further documentation below, extracted from  the
+source to CHDIR.
+
+CHDIR performs three functions:
+
+                1) CHDIR allows the user to enter one of the  de-
+fined directories; this form of the CHDIR command is
+
+                        CHDIR dirname
+
+where 'dirname' is the name of the directory (up to 8 characters)
+
+                2) CHDIR allows the user to define a new directo-
+ry on the fly; this form of the command is
+
+                        CHDIR dirname du
+
+where 'dirname' is the name of the directory (up to 8 characters)
+and 'du' is a disk/user designator, like A10
+
+                   Along the same lines, the CHDIR  Setup  option
+allows  the  user  to  define or redefine a number of directories
+without invoking CHDIR a number of times; this command is of  the
+form
+
+                        CHDIR /SETUP
+
+                3) CHDIR displays the names of the  known  direc-
+tories to the user; this form of the command is
+
+                        CHDIR /DISPLAY
+

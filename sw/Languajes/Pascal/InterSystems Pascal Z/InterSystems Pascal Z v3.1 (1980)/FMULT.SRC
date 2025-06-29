@@ -1,0 +1,69 @@
+; floating point multiply routine
+;
+	NAME FMULT
+	ENTRY FMULT
+	EXT FPERR,MPADD,DONE2
+	INCLUDE FPINIT.SRC
+	INCLUDE FPMAC.SRC
+;
+fmult:
+	setupf			;setup for 2 operands
+fmult1:	mov	a,op1+msb(x)	;get sign of op1
+	xra	op2+msb(x)	;x-or with sign of op2
+	mov	scr1(x),a	;save sign of result
+	res	sign,op1+msb(x)	;clear both sign bits
+	res	sign,op2+msb(x)
+	mov	a,op1(x)	;get exponent of op1
+	add	op2(x)		;add exponent of op2
+	jv	fperr		;floating point error
+	mov	op1(x),a	;save exponent of result
+	lxi	h,-nbytes	;add extra variable to stack
+	dad	s		;for use in intermediate
+	sphl			;calculations
+	push	x		;save x-reg
+	lxi	b,op2+lsb	;make x-reg point to lsb of op2
+	dadx	b
+	xtix
+	push	h		;save addr of lsb
+	xra	a		;zero temporary variable
+	mvi	b,nbytes	;zero correct number of bytes
+zerlop:	mov	m,a		;zero this byte
+	inx	h		;bump pointer
+	djnz	zerlop		;and continue
+	dcx	h		;correct pointer
+	push	h		;make y point to this
+	pop	y		;temporary variable
+	mvi	b,fracln*8-1	;process all bits in mantissa
+muloop:	rotate	1,right		;rotate multiplier right 1 bit
+	jrnc	mult1		;carry out of lsb?
+	pop	d		;yes...
+	pop	h
+	push	h
+	push	d
+	push	b		;save counter
+	call	mpadd		;add multiplicand to result
+	pop	b		;restore counter
+	push	ix
+	pop	d		;restore d
+mult1:	rotate	y,right		;shift result right one bit
+	djnz	muloop		;...and continue
+	pop	d		;get addr of temp variable
+	pop	h		;get addr of op2
+	lxi	b,op1-op2	;calculate addr of op1
+	dad	b
+	mvi	b,fracln	;and copy to op1
+coplop:	ldax	d		;get byte from temp
+	mov	m,a		;store in op1
+	inx	h		;bump pointers
+	inx	d
+	djnz	coplop
+; fix stack
+	lxi	h,nbytes	;size of temp variable
+	dad	s		;+ stack pointer
+	sphl			;is original value of sp
+	bit	sign,scr1(x)	;fix sign of result
+	jz	done2
+	bset	sign,op1+msb(x)
+	jmp	done2
+;;
+

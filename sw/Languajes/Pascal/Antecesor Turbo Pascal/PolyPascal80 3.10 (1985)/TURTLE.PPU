@@ -1,0 +1,37 @@
+const angle:integer=0;
+
+Function Rad(x:real):real;
+begin
+  Rad:=x*1.7453292520E-02
+end;
+
+Function Deg(x:real):real;
+begin
+  Deg:=x*5.7295779513E+01
+end;
+
+Procedure Forwd(ch:byte;d:integer);
+var rd:real;
+begin
+  rd:=Rad(angle);
+  PlotRel(ch,Trunc(d*Cos(rd)),Trunc(d*Sin(rd)))
+end;
+
+procedure Back(ch:byte;d:integer);
+var rd:real;
+begin
+  rd:=Rad(angle);
+  PlotRel(ch,Trunc(-d*Cos(rd)),Trunc(-d*Sin(rd)))
+end;
+
+Procedure Right(d:integer);
+begin
+  angle:=angle-(d-(d div 360)*360);
+  if angle<0 then angle:=angle+360
+end;
+
+Procedure Left(d:integer);
+begin
+  angle:=angle+(d-(d div 360)*360);
+  if angle>=360 then angle:=angle-360
+end;

@@ -1,0 +1,125 @@
+.macro chttl = Introduction
+.ch .chttl
+This  system has been designed for maximum "friendliness",  and to  avoid
+unexpected  responses and "surprises".   The interior design is highly 
+structured,  and  easily customizable.   Close adherance to the ISO standard  (with
+slight  extension other than available standard procedures,  all compiler 
+detectable) is enforced.  The system is portable to other machines.
+
+Pascal-P  is a modification of the P4 Pascal compiler developed by Amman,
+Nori, and Jacobi at the Institut fur Informatik at the at the Eidg. Technische
+Hochschule in Zuerich.   It was adapted for use on the HP3000 by Grant Munsey,
+Jeff Eastman, and Bob Fraley of Hewlett-Packard Labs, 3500 Deer Creek Rd, Palo
+Alto,  Calif.  94304.   It has been further adapted for use with a generalized
+machine independent P-code interpreter,  and for 8080 native code  generation,
+by C.B.  Falconer, 680 Hartford Tpk., Hamden, Conn. 06517, USA.
+
+The revised compiler, interpreter,
+standard procedures,  system interfaces,  and the present 8080 and P-code code
+generators (in Pascal) are due to C.B. Falconer, as are any errors therein.
+
+At  present the system executes on the HP3000 or on CPM systems  with  a
+minimum  of 48k memory (Compilation of the compiler requires 63k under  CPM).
+Using the identical compiler it generates code for:
+
+.i 10            HP3000 .br
+.i 10            P-code interpreter (machine independent) .br
+.i 10            8080 native code .br
+.i 30                                from the same source files, controlled 
+by various compile time commands.
+
+.bb The P-code codefiles are executable under CPM, or (unchanged) without any
+disc system when interpreters are linked to appropriate device drivers.
+Similarly native code files can be linked to the same drivers, when maximum
+speed is required. Such combinations are suitable for dedicated systems, and
+are especially attractive when accuracy is critical, because of the extensive
+compile time and run-time error checking available.  In addition such
+programs can be ported to wildly differing machines and CPUs.  Contact
+C.B. Falconer for further information and licensing.
+.eb
+
+Such system features as separate compilation,  i/o  redirection,  program
+segmentation,  virtual code-memory,  debug and tracing capabilities are
+incorporated.   No  distortion of the Pascal source is required.  
+Program profiles require the addition of about 6 lines in the source text.
+
+.note Standard Pascal
+This manual is NOT an exposition of the standard Pascal language.  The
+recommended reference manual is "Programming in Pascal", by Peter Grogono.
+Further useful references are "Pascal User Manual and Report", by Jensen and
+Wirth, and the ANSI and ISO standards (which are hard reading).
+
+This system implements ISO and ANSI standard Pascal, except for GOTO out
+of procedures, and passing procedures/functions as parameters.
+.res
+
+A fairly extensive set of utilities are available, all written in Pascal,
+including  various  non-portable  CPM system programs.
+.bb
+.bdot
+.dotit UCSTOCPM  which transfers  UCSD  Pascal text files to the CPM  system.
+.dotit  DISKCOPY  which  makes complete copies of floppy disks).
+.dotit TRANSFER which copies files to and from MS/PCDOS format disks.
+.dotit ANSWER, BYE, ENDCALL which implement a remote controlled RCPM system,
+       and which can automatically limit execution to a user defined program.
+.b
+.dotit programs from PUG (Pascal Users Group) such as..
+.dotit COMPARE  which  compares  text  files and  resynchronizes  after
+       differences.
+.dotit REFRENCE which shows Pascal program structure and procedure referances.
+.dotit ID2ID which replaces identifier names from a list. 
+.b
+.dotit portable programs such as..
+.dotit RNF, the text formatter which prepared this manual.
+.dotit  BINHEX which  converts  binary  files  to  Intel  hex  format  records.
+.dotit  PAGER  which paginates, labels and dates listings.
+.dotit FILEDUMP which lists binary files in hex notation.
+.dotit PLOTPROF  which  plots profiles of program  execution.
+.dotit  XREF  which prepares  a cross-referance of Pascal programs.
+.dotit  PCDISASM which  dis-assembles "pcd" codefiles.
+.dotit WSTOTEXT which converts WordStar document files into standard formats.
+.dotit LDIR which list library directories,  including datestamps
+.dotit LSETDATE which sets datestamps in LU format libraries.
+.dotit XREFC which cross-references C programs.
+.dotit XREFASM which cross-references assembly programs, and adapts to various
+machines with an external file (available for 8080, Z80, 8086)
+.b
+.dotit system programs such as..
+.dotit ASSMPCD, the _.PCD code generator
+.dotit ASSMAP, the native code generator
+.dotit TUNE, which dynamically configures code/data space usage in _.PCD
+       programs.
+.dotit LINKER, a machine independant linker, incidentally used to link
+       _.RBM (relocatable binary modules) into _.PCD code files.
+.edot .eb
+
+This manual was written on a wide variety of text editors and finally printed
+by RNF, a text formatter analogous to the Unix Runoff, and written in Pascal.
+(The original author of RNF is unknown).
+
+P-code  codefiles can be as large as 127 (31 under CPM)  segments,  each
+containing  a  maximum of 127 procedures in a maximum of 32  Kbytes  of  code.
+Thus  the  absolute  maximum program file is approximately  4  megabytes  (992
+kbytes under CPM).  This permits large application systems to be created and
+automatically  manipulated  by the run-time  memory  management  system.   For
+comparison the compiler occupies less than .bb 42 Kbytes in 28 segments,  and  can
+execute  in approximately 6K of codespace.   Virtually full compilation speed
+is attained in approximately 20K .eb of codespace under CPM.
+
+Codefiles are automatically searched over two disks, and one library file
+under  CPM.   Since  P-code utilities tend to be small,  the  library  system
+provides  significant  improvement  in disk space utilization  by  eliminating
+allocation  fragmentation.   This  can  have dramatic effects  when  the  disk
+allocation unit is large,  e.g.  hard disks with a 4 kilobyte allocation unit.
+The  use  of  library code files under CPM has the  additional  advantage  of
+permitting date-stamping.   Upgraded programs may be tested without  affecting
+the original, since the search order prefers a file.
+
+PCD codefiles may optionally be segmented and execute in a virtual memory
+space.   The  run-time  system  automatically  performs  segment  loading  and
+unloading on demand, and chooses segments for discard on a least-recently-used
+algorithm.   Program  files  can  specify  the amount of  real  memory  to  be
+allocated for code loading.   All code is read directly from diskfiles, and is
+always  re-entrant and pure.   Thus no additional disk space need be allocated
+to the virtual memory system.
+'Ñ

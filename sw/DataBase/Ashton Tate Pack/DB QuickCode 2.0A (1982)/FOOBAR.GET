@@ -1,0 +1,117 @@
+
+*     foobar.GET     - GET PROGRAM
+STORE T TO MQ:GMORE
+STORE  'N'  TO MQ:GDEL
+DO WHILE MQ:GMORE
+ERASE
+STORE  ' GET '  TO MQ:MODE
+* DISPLAY CURRENT RECORD
+DO  foobar.OUT
+STORE  ' '  TO MQ:CMD
+@ 21,10 SAY  ' ENTER N FOR NEXT, P FOR PREVIOUS '
+@ 22,10 SAY  '     S FOR SEARCH, M FOR MORE COMMANDS '
+@ 23,10 SAY  ' PRESS RETURN WHEN DONE '  GET MQ:CMD
+READ
+IF !(MQ:CMD) =  'N'
+    SKIP
+ELSE
+IF !(MQ:CMD)= 'P'
+    SKIP -1
+ELSE
+IF !(MQ:CMD)= 'S'
+STORE T TO MQ:SMORE
+DO WHILE MQ:SMORE
+ ERASE
+ STORE  ' SEARCH '  TO MQ:MODE
+* GET FIELDS TO SEARCH FOR
+@ 01,00 SAY '--------------------'
+@ 01,20 SAY '--------------'
+@ 01,46 SAY '--------------------'
+@ 01,66 SAY '--------------'
+@ 02,00 SAY 'Name:'
+ STORE  '                                                                         '  TO  MNAME
+@ 02,06 GET MNAME
+ @ 21,10 SAY  '  PLEASE ENTER VALUES TO SEARCH FOR  '
+ READ
+* EXIT FROM LOOP IF FOUND
+ LOCATE FOR  NAME  = MNAME
+ IF .NOT. EOF
+   STORE F TO MQ:SMORE
+ ELSE
+  @ 22,10 SAY  '  NOT FOUND  '
+  @ 23,10 SAY  ' TRY AGAIN(Y/N)? '
+  SET CONSOLE OFF
+  WAIT TO MQ:DUMMY
+  SET CONSOLE ON
+  IF !(MQ:DUMMY) <>  'Y'
+  STORE F TO MQ:SMORE
+ ENDIF  Y
+ RELEASE MQ:DUMMY
+ ENDIF EOF
+ENDDO  MQ:SMORE
+RELEASE MQ:SMORE
+RELEASE MNAME
+ELSE
+ IF !(MQ:CMD)= 'M'
+ STORE T TO MQ:MMORE
+ DO WHILE MQ:MMORE
+ STORE  ' MORE '  TO MQ:MODE
+ STORE  ' '  TO MQ:MMD
+ @ 21,10 SAY  ' ENTER E TO EDIT                 '
+ @ 22,10 SAY  '       D TO DELETE                    '
+ @ 23,0 SAY  '           P TO PRINT, PRESS RETURN WHEN DONE ' GET MQ:MMD
+ READ
+ IF !(MQ:MMD) = 'E'
+    ERASE
+* EDIT RECORD
+    DO  foobar.ED
+ELSE
+IF !(MQ:MMD)= 'D'
+    STORE  'N'  TO MQ:ANS
+@ 23,10 SAY  ' ARE YOU SURE(Y/N)?                         '
+@ 23,28 GET MQ:ANS
+    READ
+IF !(MQ:ANS)= 'Y'
+    DELETE
+    STORE  'Y'  TO MQ:GDEL
+ENDIF
+RELEASE MQ:ANS
+ELSE
+IF !(MQ:MMD)= 'P'
+ @ 23,10 SAY  ' PLEASE SET UP PRINTER                          '
+ STORE '      '  TO MQ:MODE
+ SET CONSOLE OFF
+ WAIT
+ SET CONSOLE ON
+ SET FORMAT TO PRINT
+ DO  foobar.OUT
+ SET FORMAT TO SCREEN
+ ELSE
+ STORE F TO MQ:MMORE
+ENDIF  P
+ENDIF  D
+ENDIF  E
+ENDDO  MQ:MMORE
+RELEASE MQ:MMORE,MQ:MMD
+ELSE
+    STORE F TO MQ:GMORE
+ENDIF  M
+ENDIF  S
+ENDIF  P
+ENDIF  N
+ENDDO   MQ:GMORE
+IF MQ:GDEL =  'Y'
+    STORE  'N'  TO MQ:ANS
+    @ 23,10 SAY  'WANT TO PERMANENTLY DELETE RECORDS(Y/N)'
+    @ 23,49 GET MQ:ANS
+    READ
+    IF MQ:ANS =  'Y'
+        PACK
+    ELSE
+        RECALL ALL
+    ENDIF
+        RELEASE MQ:ANS
+ENDIF  MQ:GDEL
+RELEASE  MQ:CMD,MQ:GMORE:MQ:GDEL
+RELEASE MQ:MODE
+

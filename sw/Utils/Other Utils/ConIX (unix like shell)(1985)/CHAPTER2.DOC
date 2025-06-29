@@ -1,0 +1,331 @@
+
+
+
+
+			   Chapter 2 - Getting Started
+
+
+	Instructions for ConIX installation and	system configuration.
+
+
+				   - CONTENTS -
+	__________________________________________________________________
+
+
+	  2.  Getting Started........................................  2-1
+
+	    2.1	 Installing ConIX....................................  2-1
+
+	    2.2	 Loading ConIX from CP/M.............................  2-3
+
+	    2.3	 Notes...............................................  2-4
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				      -	i -
+
+
+
+
+
+	ConIX Operating	System				   Getting Started
+
+	2.  Getting Started
+
+	It is very important that you immediately make two copies of the
+	ConIX distribution files which you have	received with this manual.
+	The first copy should be kept as a backup, to be used in the
+	future in place	of the original	which should not be touched unless
+	absolutely necessary.  The second will be for use as the working
+	copy.  It should also contain a	SYSGEN of CP/M on the operating
+	system tracks.	This will allow	you to use ConIX on drive A: and
+	reboot (reset or CTRL-C) as necessary.
+
+	Next, you should put the working copy of the distribution disk
+	into drive A: and then cold boot your system (hit the reset
+	button).  Once CP/M is loaded you will be ready	to begin the
+	required installation procedure	as outlined below.
+
+
+	2.1  Installing	ConIX
+
+	Take a look at the directory of	ConIX files, if	you haven't
+	already.  You should see two files, among many,	INSTALL.COM and
+	CONIXR.COM.  INSTALL is	used to	customize a copy of ConIX to your
+	system's memory	map.  CONIXR is	the ConIX Operating System stored
+	in a page relocatable form.  It	can be executed	just as	an
+	INSTALLed ConIX, except	Memory Management will not be operational.
+	This is	an extremely important feature and must	be available when
+	you actively use ConIX as a part of your system.
+
+	The INSTALL program simply reads the relocatable ConIX file and
+	makes a	new version based upon the amount of memory available in
+	your system.  The new ConIX differs from the original in that it
+	is pre-relocated and will not have to recalculate its addresses
+	for relocation when started up (a somewhat time-consuming
+	operation).  Instead, ConIX will be moved by a built-in	loader to
+	the area in memory predetermined at the	time of	installation.
+
+	Before you install ConIX, you must be sure that	your system's
+	memory map appears exactly as it will when you will be using ConIX
+	in the future.	Some systems require patch programs to be loaded
+	which permanently relocate themselves to the top of memory to
+	perform	some special function.	Some common patches are	RAM-disk
+	and format conversion software.	 In such a case, be sure that all
+	patches	have been loaded into memory before INSTALL is executed
+	(as should also	be the case each time ConIX is initially loaded
+	into your system).
+
+	To install ConIX, type:
+
+		A>install
+
+	at which point you will	be asked for the name of the relocatable
+	ConIX data file.  You may hit <RETURN>,	and the	default	CONIXR.COM
+	on the current disk will be assumed.  You may specify a	drive only
+	(as B:)	if the file is not on the current disk.
+
+
+
+
+				       2-1
+
+
+
+
+
+	Getting	Started				    ConIX Operating System
+
+	You will then be asked to specify the filename of the INSTALLed
+	version	of ConIX.  You may hit <RETURN>	for CONIX.COM, which will
+	be created on the current drive.  (Note	that you are required to
+	use this filename since	ConIX must access it when reloading during
+	Memory Management.)  To	create the output file on another drive,
+	simply specify the disk	code alone (such as B:).
+
+	Next, you will be asked	for the	relocation address.  This value
+	will be	used to	determine the base relocation page, meaning that
+	ConIX will reside in memory from this point and	back toward
+	location 0000.	You would enter	an address here	if, for	some
+	reason,	you'd want a buffer space between CP/M and ConIX for
+	storage	of data	or machine code	routines and patches.  This memory
+	would be protected since it is unused and not part of the TPA.
+
+	You should hit <RETURN>	for the	default	location, which	is the top
+	of memory as stored in memory at 0006h.	 ConIX will then be
+	configured to reside directly next to CP/M, or any patches that
+	are present in memory.
+
+	INSTALL	will then request the name of the default startup command.
+	This command will be executed automatically whenever ConIX is
+	initially loaded from CP/M.  By	default, this is set to
+	``PROFILE'', which will	be maintained if <RETURN> is, and should
+	normally be, hit.
+
+	INSTALL	also provides the user with the	ability	to disable certain
+	ConIX functions	that may cause incompatibility problems	with non-
+	standard CP/M 2.2 systems.  The	first is BIOS patching,	which
+	refers to the internal operation of ConIX to patch the BIOS in-
+	memory jump table.  This action	facilitates the	redirection of
+	programs that perform I/O directly through the BIOS, effectively
+	bypassing CP/M or ConIX, as the	case may be.
+
+	The BIOS patching operation might cause	problems on some non-
+	conventional CP/M systems that do not fully support direct BIOS
+	access.	 In such cases,	it may be necessary to disable BIOS
+	patching by entering ``off'' in	response to the	question asked by
+	INSTALL.  If BIOS patching is to remain	enabled, simply	hit
+	<RETURN>.
+
+	The second possibly troublesome	feature	is the ExpanDisk Virtual
+	Disk System.  If BIOS patching has been	turned off, ExpanDisk will
+	automatically be disabled as well, since this feature must patch
+	the BIOS in order to work.
+
+	Some systems, however, may allow standard BIOS patching, but not
+	the interference in disk I/O system calls.  (Standard patching
+	under ConIX only affects the CONIN, CONOUT, CONST, LISTST, and
+	LIST jumps.)  On such systems, BIOS patching can be enabled, with
+	the exception of ExpanDisk, which can be disabled by typing
+	``off''	in response to the appropriate question.
+
+	Another	ConIX operation	which may cause	system incompatibility is
+	BDOS Error Vector Patching.  This feature may cause problems if
+
+
+
+				       2-2
+
+
+
+
+
+	ConIX Operating	System				   Getting Started
+
+	the target system does not implement the BDOS error vector, which
+	is a series of four addresses after the	first JMP DECODE
+	instruction at the top of the BDOS.  These addresses point to the
+	four routines that handle BDOS errors (File R/O, Disk R/O, Bad
+	Sector,	and Select).
+
+	In order for these vectors to be implemented under ConIX, they
+	must be	patched	in the BDOS to point to	the duplicate vectors
+	within ConIX.  If this feature is disabled, programs which patch
+	the error vector to trap BDOS errors will no longer be able to do
+	so (this is not	really a very common practice).
+
+	All other functions of ConIX are implemented using standard CP/M
+	conventions, and should	cause no incompatibility problems with
+	even the most complex systems.	The prime requirement is that the
+	resident operating system must support all CP/M	2.2 standard BDOS
+	operations.  If	this is	truly the case,	ConIX should be	compatible
+	with such a system.
+
+	If you are performing a	first-time installation	of ConIX, you
+	should hit <RETURN> in response	to all the questions so	as to set
+	the default parameters.	 INSTALL will then generate the	final
+	executable version of ConIX.
+
+	The next step is to test the newly installed version (see the next
+	section) to see	if it performs properly.  Should ConIX blatantly
+	fail to	execute, you probably have a system which is not truly
+	CP/M 2.2 compatible.  If this is the case, you should re-run the
+	INSTALL	program	and try	disabling various combinations of ConIX
+	features.  Once	the installation procedure has produced	a working
+	copy of	ConIX, it will not have	to be repeated,	unless your
+	system's memory	map must be changed for	some reason.
+
+
+	2.2  Loading ConIX from	CP/M
+
+	The syntax for loading ConIX from CP/M is:
+
+		A>conix	(commands)
+
+	If commands are	specified, ConIX will execute these commands
+	immediately after printing the signon message.	For example:
+
+		A>conix	dir
+
+		The ConIX Operating System Vxx.yyz
+		Copyright (C) 1985, Computer Helper Industries Inc.
+		All rights reserved worldwide!
+		   .
+		   .   directory will be listed
+		   .
+		<A:00>
+
+	where the directory command, DIR, was executed immediately after
+	ConIX was loaded.
+
+
+
+				       2-3
+
+
+
+
+
+	Getting	Started				    ConIX Operating System
+
+	If you do not specify any commands for the initial load, ConIX
+	will execute the default startup command PROFILE.COM (or whatever
+	default	was set	by INSTALL).  This program is provided on the
+	distribution disk and, in its current form, simply prints a
+	welcome	message	to the screen as:
+
+		A>conix
+
+		The ConIX Operating System Vxx.yyz
+		Copyright (C) 1985, Computer Helper Industries Inc.
+		All rights reserved worldwide!
+
+		Welcome	to ConIX System/One!
+		<A:00>
+
+	Using the ConIX	Command	Language, you could write your own startup
+	procedure which	would automatically perform any	needed tasks each
+	time ConIX is initially	loaded from CP/M.  This	is discussed
+	further	in the ConIX Programming Manual.
+
+
+	2.3  Notes
+
+	It is believed that most CP/M 3.0+ systems and,	in general,
+	systems	which do not use contiguous memory for the operating
+	system and system dependent routines (via bank-switching), require
+	some form of BIOS patching to be disabled.  Usually disabling
+	ExpanDisk is sufficient	but, in	some cases, it may be necessary	to
+	disable	all BIOS patching.
+
+	Additionally, systems that do not use standard CP/M 2.2	often do
+	not implement the BDOS error vectors.  We have also found that
+	most in-memory patches (for ramdisk, format conversion software,
+	etc.) neglect to maintain error	vector compatibility.  Error
+	vector patching	should probably	be disabled on such computers.
+	CP/M 2.2 systems which have been implemented according to the
+	guidelines presented within the	Digital	Research documentation
+	should not require any customization customization via INSTALL.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				       2-4
+
+
+
+
+åHAPTER3DOC                €€  

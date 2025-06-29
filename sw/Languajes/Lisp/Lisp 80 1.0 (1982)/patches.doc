@@ -1,0 +1,25 @@
+Patch Locations for LISP/80 1.0 (1/24/82):
+
+	Number of list cells (default 0):	08A2
+
+	Number of stack bytes (default 05DC):	08A4
+
+	Top address of user program area (0):	08A6
+
+	Screen width in columns (default 0034): 08A8
+
+Patch LISP.COM as follows: Mount the LISP disk on
+B: (or another drive, and use that drive letter
+instead of B:).  Make sure DDT.COM is on the A:
+disk. 
+
+	A>ddt b:lisp.com
+	DDT VERS 2.2
+	NEXT  PC
+	5400 0100
+	-s08a6		  (type address to change
+	08A6 34 50	  and last two digits and
+	08A7 00 00	  first two of new value.
+	08A8 00 ^c	  When done, ctrl-C.)
+	A>save 85 b:lisp.com
+	A>		  (New version is saved.)

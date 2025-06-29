@@ -1,0 +1,1283 @@
+	TITLE	'SAPP Sort & Pack Directory for CP/M 2.2 or 3.0'
+;
+;	ASEG			; Needed for M80
+;	.Z80			; Needed for M80
+;
+;-----------------------------------------------------------------------
+;
+; SAPP v2.0 Sort & Pack Directory for CP/M 2.2 & 3.0
+;  08/02/87	    By George F. Reding
+;	    Based upon (and many routines from)
+;	    SAP v44 Sort & Pack program for CP/M 2.2
+;	    A Public Domain utility program.
+;	    Not to be sold (in whole or part).
+;
+;-----------------------------------------------------------------------
+;
+; 08/02/87  CP/M 2 bug was found; where the DMA pointer was
+;   v2.0    not advanced, so the buffer under 2.2 was being
+;	    overwritten. Corrected with the move of 1 label
+;	    and addition of 1 label; e.g., DIRLOP & DIRLP1.
+;	    Thanks to David Bowerman, sysop of	Frog Hollow
+;	    RCPM System (604-937-0906),  for having located
+;	    the cause of the problem.  David then tested it
+;	    on disk with 250 of 256 directory entries used,
+;	    under CP/M 2.2 and all is now fine. <GFR>
+;
+; 07/13/87  Found that vers 1.8 clobbered the DE reg in the
+;   v1.9    XBIOS2 thus causing SECTRAN function for CP/M 2
+;	    to not work properly.		<GFR>
+;
+; 06/21/87  Added Z80 & version tests and restored CP/M 2.2
+;   v1.8    code so the program is usable under CP/M 2.2 or
+;	    3.0. Added adjustment for TPA size diffences so
+;	    this may be used, at user discretion when TPA's
+;	    are too low and/or maximum number of entries is
+;	    too large.	 User options may now be set in the
+;	    COM file using DDT, SID, or SZAP if desired.
+;						<GFR>
+;
+; 06/15/87  Reinstated disk reset in new location after the
+;   v1.7    current or specified drive is obtained. <GFR>
+;
+; 04/16/87  Removed reset disk function which forced a drive
+;   v1.6    specification to be required for other drives.
+;	    Added check for second hard drive.	<GFR>
+;
+; 01/11/87  Modified use of relative jumps to ensure they're
+;   v1.5    only used to optimize speed (faster if condition
+;	    is NOT met).  Now use alt reg in SWITCH routine.
+;	    Some more comments added.		<GFR>
+;
+; 12/10/86  Uses alt regs in COMPR1 and PRNTL routines.
+;   v1.4					<GFR>
+;
+; 11/15/86  Modified the program by removing some unused code
+;   v1.3    and by utilizing z80 code anywhere possible.  Use
+;	    ZASM or other equivilent z80 assembler.
+;						<GFR>
+;
+; SAPP (for CP/M Plus) was created from SAP (for CP/M 1.4 or 2.2)
+;
+;-----------------------------------------------------------------------
+;
+NO	EQU	0
+YES	EQU	NOT NO		; For conditional assembly
+;
+; Version number and date
+;
+VER	EQU	20		; Version number
+VERM	EQU	08		; Version month
+VERD	EQU	02		; Version day
+VERY	EQU	87		; Version year
+;
+; System equates
+;
+BASE	EQU	0		; Base of system (warm boot)
+BDOS	EQU	BASE+5		; BDOS
+FCB	EQU	5CH		; File control block
+;
+DPB2OF	EQU	10		; Offset to CP/M 2.2 DPB
+DPB2LN	EQU	15		; Length of CP/M 2.2 DPB
+DPB3OF	EQU	12		; Offset to CP/M 3.0
+DPB3LN	EQU	17		; Length of CP/M 3.0
+;
+; BDOS functions
+;
+CONOUF	EQU	2		; Console output
+RDCBUF	EQU	10		; Read console buffer
+RETVER	EQU	12		; Return version number
+RESET	EQU	13		; Reset disk
+GETDSK	EQU	25		; Get current disk
+;
+; ASCII equates
+;
+BEL	EQU	07H		; Bell
+BS	EQU	08H		; Backspace
+CR	EQU	0DH		; Carriage return
+LF	EQU	0AH		; Line feed
+;
+;-----------------------------------------------------------------------
+;
+; User configuration equates
+;
+DELZRO	EQU	NO		; Yes deletes all zero-length
+				;   files not starting with "-"
+				;   (as in SAP44).
+				; No to delete solely retains all zero-
+				;   length files
+;
+CLRS1	EQU	1AH		; To clear screen on start up
+CLRS2	EQU	00H		; Room for maximum 6 bytes
+CLRS3	EQU	00H		; Set terminating byte to 0
+CLRS4	EQU	00H		; If clear screen undesired then
+CLRS5	EQU	00H		; Set 1st (or all) bytes to 0
+CLRS6	EQU	00H		; Nul terminator is in program
+;
+; Following is set to 0E5H, except Morrow MD5 -> MD34 set to 0
+;
+RCVALU	EQU	0E5H		; Set 0 if Morrow, else 0e5h
+;
+; Following for CP/M 3.0 users only
+;
+SSCPM3	EQU	1024		; Your largest record size
+;
+;-----------------------------------------------------------------------
+;
+	ORG	100H
+;
+	JP	START		; Jump over stuff
+;
+TITLM:	DB	'SAPP v'
+	DB	VER/10+'0',VER MOD 10+'0',' '
+	DB	VERM/10+'0',VERM MOD 10+'0','/'
+	DB	VERD/10+'0',VERD MOD 10+'0','/'
+	DB	VERY/10+'0',VERY MOD 10+'0'
+	DB	' GFR',0
+	DB	1AH		; EOF in case .COM file typed
+;
+;-----------------------------------------------------------------------
+;
+; Following may be patched with DDT, SID, or SZAP
+;
+CLRCOD:	DB	CLRS1,CLRS2	; Clear screen code
+	DB	CLRS3,CLRS4
+	DB	CLRS5,CLRS6
+	DB	0
+;
+RECSIZ:	DW	SSCPM3		; Size of CP/M 3.0 rec buffer
+RFIELD:	DB	RCVALU		; Normally 0E5h, Morrow is 0
+				; Set 0E5h if not MD5, MD11, etc
+SKPWRN:	DB	0		; Zero = warning. Nonzero = none.
+				; Normally should be 0 (false)
+;
+;-----------------------------------------------------------------------
+;
+START:	SUB	A		; Z80 test
+	JP	PO,START1	; Continue if z80
+	LD	HL,NDZ80	; Need z80 msg
+	JP	PRNTL		; Print it & ret to system
+;
+; Is Z80 CPU, so get CP/M version
+;
+START1:	LD	C,RETVER	; Get version
+	CALL	BDOS
+	LD	A,L		; Version to 'A'
+	LD	(VERFLG),A	; Store it
+	CP	22H		; Must be at least 2.2
+	JP	C,BASE		; If less, then quit
+	LD	A,H
+	OR	A		; Test for 0 for CP/M
+	JP	NZ,BASE		; If not, quit as MP/M untested
+;
+; Clear screen and/or give signon message
+;
+START2:	LD	HL,CLRCOD	; Clear screen at start
+	CALL	PRNTL		; Of program
+	LD	HL,TITLM	; Program signon msg
+	CALL	PRNTL
+;
+; Now initialize the data and buffers
+;
+START3:	XOR	A		; Zero for fill
+	LD	HL,DATA		; Point to data start (source)
+	LD	(HL),A		; Fill it
+	LD	DE,DATA+1	; Point to next (destination)
+	LD	BC,DATSIZ	; Length
+	LDIR			; Zero it all
+;
+; This buffer is only used by CP/M 3.0
+;
+START4:	CALL	V3CHEK		; Check version
+	JR	C,START5	; Skip if 2.2
+	LD	(HSTBUF),HL	; Save CP/M 3.0 sec buf addr
+	LD	BC,(RECSIZ)	; Get size of rec buffer
+	LDIR			; Zero it too
+;
+; Do program buffer for directory
+;
+START5:	LD	(PRGBUF),HL	; Save program buffer addrress
+	EX	DE,HL		; Move buffer addrress to DE
+	LD	HL,(BDOS+1)	; Get BDOS address
+	DEC	H		; Make 1 lower
+	LD	(MEMTOP),HL	; Store memory top address
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; Subtract to be byte count
+	LD	B,H		; Move to BC
+	LD	C,L		; For length of our fill
+	INC	DE		; Increment buffer address (destination)
+	LD	HL,(PRGBUF)	; Get back buffer start (source)
+	LDIR			; Zero it too
+;
+; Data & buffers done so set up stack and  offset/length (3.0)
+;
+	LD	SP,STACK	; Use our own stack
+	CALL	V3CHEK		; Check version
+	JR	C,START6	; Skip if 2.2
+	LD	HL,DPB3OF	; Offset xlt address to address
+	LD	(DPBOF),HL	; Was default for CP/M 2.2
+	LD	HL,DPB3LN	; Length of CP/M 3.0  table
+	LD	(DPBLN),HL	; Was default for CP/M 2.2
+;
+;-----------------------------------------------------------------------
+;
+; Now select drive, copy DBP (make fake if needed), run program
+;
+START6:	CALL	SETUP		; Select disk, do , etc
+	CALL	RDDIR		; Read the directory
+	CALL	CLEAN		; Set erased files to all E5
+	CALL	SORT		; Sort the entries
+	CALL	PACK
+	CALL	WRDIR		; Write new directory back
+	LD	HL,DONEM	; 'Done' message
+	CALL	PRNTL
+;
+EXIT:	JP	BASE		; Go warm boot
+;
+;-----------------------------------------------------------------------
+;
+; Select disk, get translation table address and copy
+;
+SETUP:	LD	A,(FCB)		; Get any option
+	DEC	A
+	JP	P,SELDSK	; Skip if disk mentioned
+	LD	C,GETDSK	; Else get current disk
+	CALL	BDOS		; Returns 0=A,1=B,2=C,...
+;
+SELDSK:	LD	(LOGDSK),A	; Store selected disk
+	LD	(BCREG),A	; Set C reg in BIOSPB
+	LD	C,RESET		; Reset disk system
+	CALL	BDOS		; In case new disk
+	CALL	V3CHEK		; Check version
+	JR	C,SELEC2	; Skip if 2.2
+	LD	DE,1		; First call flag
+	LD	(DEREG),DE	; Set E register in BIOSPB
+	LD	A,9		; BIOS select function
+	CALL	XBIOS3		; CP/M 3.0 select
+	JP	SELEC3		; Skip over
+;
+SELEC2:	LD	A,(LOGDSK)	; Get disk back
+	LD	C,A		; To C
+	LD	A,9		; BIOS select function
+	CALL	XBIOS2		; Do it
+;
+SELEC3:	LD	A,H
+	OR	L		; Check for HL=0
+	JR	Z,EXIT		; Quit if select error
+;
+	LD	E,(HL)		; Get address of xlat table
+	INC	HL
+	LD	D,(HL)
+	DEC	HL
+	EX	DE,HL
+	LD	(RECTBL),HL	; Save xlat address
+	LD	HL,DPB2OF	; Default, CP/M 2.2 offset to
+;
+DPBOF	EQU	$-2
+	ADD	HL,DE
+	LD	A,(HL)		; Get address of
+	INC	HL
+	LD	H,(HL)
+	LD	L,A		; Into HL
+	LD	DE,DPB		; Destination - our own
+	LD	BC,DPB2LN	; Default,  size for CP/M 2.2
+;
+DPBLN	EQU	$-2
+;
+	LDIR
+;
+; Calculate memory bytes free for directory
+;
+	LD	HL,(MEMTOP)	; Get memory top
+	LD	DE,(PRGBUF)	; Get buffer start
+	OR	A		; Clear cy for subtr
+	SBC	HL,DE		; Subtr to get room (bytes) free
+	LD	(PRGMAX),HL	; Save free room available
+;
+; This portion is for Morrow computors. Should not matter to others.
+;
+	LD	HL,(AL0)	; Get dir alloc
+	INC	HL		; If hard disk, was 0FFFFh
+	LD	A,H		; Incr would make it 0000h
+	OR	L		; Test if zero now
+	JP	NZ,SELEC4	; Skip if not Morrow hard disk
+	LD	A,(RFIELD)	; Value for Morrow's rc field
+	LD	(FILLR2+1),A	; Modify value in program
+;
+; Do initial test of number of directory entries
+;
+SELEC4:	LD	HL,(DRM)	; Get real maximum number of entries
+	LD	DE,2047		; Cannot be > 2047 for 64k TPA
+	EX	DE,HL		; Limit to HL, real maximum to DE
+	OR	A		; Clear carryy for subtract
+	SBC	HL,DE		; Subtract to see if it is greater
+	JR	C,SELEC5	; Skip next if greater
+;
+; See if enough room for real number of directory entries
+;
+	EX	DE,HL		; Real maximum to HL
+	LD	DE,32		; Multiply by directory entry length
+	CALL	MULT		; To get bytes normally needed
+	LD	DE,(PRGMAX)	; Get back free room available
+	EX	DE,HL		; Swap so HL=free room DE=needed
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; Subtract to see if enough room
+	RET	NC		; Return if ok (no borrow)
+;
+; Not enough room for real maximum, so calculate the program's maximum
+;
+SELEC5:	LD	HL,(PRGMAX)	; Maximum free room
+	LD	DE,32		; Each entry is 32 bytes long
+	CALL	UDIVID		; Divide to get fake DRM value
+	DEC	HL		; Make 1 less (...to be sure)
+	LD	(DRM),HL	; For the program
+;
+; See if use set the flag for no warning (experienced users)
+;
+	LD	A,(SKPWRN)	; See if we skip this warning
+	CP	0		; If 0, will give warning message
+	RET	NZ		; If <> 0, return and continue
+;
+	LD	HL,FAK1M	; Tell user about
+	CALL	PRNTL		; Limitation of the
+	LD	HL,(DRM)	; Number of directory entries
+	CALL	PHLFDC		; That the program can handle
+	LD	HL,FAK2M	; And prompt for continue
+	CALL	PRNTL
+;
+; See if user wants to continue with fake max number or to abort
+;
+	CALL	CONBUF		; Get response
+	LD	A,(INBUF+2)
+	AND	31		; "Y", "y", and "^Y" are equiv
+	CP	'Y'-40H
+	RET	Z		; Continue if yes
+;
+	JP	BASE		; Else quit
+;
+;-----------------------------------------------------------------------
+;
+; Read/write directory routines
+;
+RDDIR:	LD	HL,READM	; Read message
+	CALL	PRNTL		; Zero last in A register (from message)
+	JP	DODIR
+;
+WRDIR:	LD	A,(NOSWAP)
+	OR	A
+	JP	NZ,WRDIR1
+	LD	HL,PRESM	; Pre-sorted message
+	CALL	PRNTL
+;
+WRDIR1:	LD	HL,WRITM	; Write message
+	CALL	PRNTL
+	LD	A,1		; Put 1 in A register
+;
+DODIR:	LD	(WRFLAG),A	; Store for read/write
+	LD	HL,(SYSTRK)	; Get number of system tracks
+	LD	(LOGTRK),HL	; Set the track
+;
+	CALL	V3CHEK		; Check version
+	JP	NC,DODIR2	; Skip if 3.0
+	LD	BC,(LOGTRK)	; Track to BC
+	LD	A,10		; BIOS SETTRK function
+	CALL	XBIOS2		; Do it for CP/M 2.2
+;
+DODIR2:	LD	HL,0
+	LD	(RECORD),HL
+	LD	HL,(DRM)	; Get number of directory entries
+	INC	HL		; Relative to 1
+	OR	A		; Clear carry for division
+	RR	H		; Divide HL by 2
+	RR	L
+	OR	A
+	RR	H		; Again makes total division by 4
+	RR	L		; To get 128-byte record count
+	LD	(DIRCNT),HL
+	LD	HL,(PRGBUF)	; Get buffer address
+	LD	(DMAADR),HL	; For DMA addr
+;
+DIRLOP:	CALL	V3CHEK		; Check version
+	JP	NC,DIRLP1	; Skip if 3.0
+	LD	BC,(DMAADR)	; Track to BC
+	LD	A,12		; BIOS SETDMA function
+	CALL	XBIOS2		; Do it for CP/M 2.2
+;
+DIRLP1:	LD	DE,(RECORD)	; Current record
+	INC	DE		; Increment it
+	LD	HL,(SPT)	; Get records per track
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; Subtract SPT - Records
+	EX	DE,HL		; Current record to HL
+	JR	NC,NOTROV
+;
+; Track overflow, bump to next
+;
+	LD	HL,(LOGTRK)	; Get current track
+	INC	HL		; Increment it
+	LD	(LOGTRK),HL	; Set the track
+	CALL	V3CHEK		; Check version
+	JP	NC,DIRLP2	; Skip if 3.0
+	LD	BC,(LOGTRK)	; Track to bc
+	LD	A,10		; Bios settrk func
+	CALL	XBIOS2		; Do it for CP/M 2.2
+;
+DIRLP2:	LD	HL,1		; Rewind record number
+;
+NOTROV:	CALL	DOREC		; Set current record
+	LD	A,(WRFLAG)	; Time to figure out
+	OR	A		; If we are reading
+	JP	NZ,DWRT		; Or writing
+;
+	CALL	V3CHEK		; Check version
+	JR	C,READ2		; Skip if 2.2
+	CALL	READ		; Do CP/M 3.0 way
+	JP	READ3		; Skip over 2.2 stuff
+;
+READ2:	LD	A,13		; BIOS READ function
+	CALL	XBIOS2		; Do it for CP/M 2.2
+;
+READ3:	OR	A		; Test flags on read
+	JR	NZ,ERREXT	; NZ=error
+	JP	MORE		; Good read, go do more
+;
+; Write
+;
+DWRT:	LD	C,1		; For CP/M 2.2 deblocking BIOSs
+;
+	CALL	V3CHEK		; Check version
+	JR	C,DWRT2		; Skip if 2.2
+	CALL	WRITE		; Do CP/M 3.0 way
+	JP	DWRT3		; Skip over 2.2 stuff
+;
+DWRT2:	LD	A,14		; BIOS WRITE function
+	CALL	XBIOS2		; Do it for CP/M 2.2
+;
+DWRT3:	OR	A		; Test flags on write
+	JR	NZ,ERREXT	; NZ=bad directory write
+;
+; Good read or write
+;
+MORE:	LD	HL,(DMAADR)	; Get DMA addr
+	LD	DE,80H		; Add 128 bytes to it
+	ADD	HL,DE		; For next pass
+	LD	(DMAADR),HL
+	LD	HL,(DIRCNT)	; Countdown entries
+	DEC	HL
+	LD	(DIRCNT),HL
+	LD	A,H		; Test for zero left
+	OR	L
+	JP	NZ,DIRLOP	; Loop till zero
+;
+	LD	HL,80H		; Directory I/O done, reset DMA address
+	LD	(DMAADR),HL	; Set DMA
+	CALL	V3CHEK		; Check version
+	RET	NC		; Return if 3.0
+;
+	LD	BC,(DMAADR)	; Track to BC
+	LD	A,12		; BIOS SETDMA function
+	CALL	XBIOS2		; Do it for CP/M 2.2
+	RET
+;
+; Come here on read/write error
+;
+ERREXT:	LD	HL,ERORM	; Error message
+	CALL	PRNTL
+	JP	BASE		; Go warm boot
+;
+;
+DOREC:	LD	(RECORD),HL	; Record update
+	LD	B,H
+	LD	C,L
+	LD	HL,(RECTBL)
+	EX	DE,HL
+	DEC	BC
+;
+	CALL	V3CHEK		; Check version
+	JR	C,DOREC2	; Skip if 2.2
+	CALL	RECTRN		; Do for CP/M 3.0
+	JP	DOREC3		; Skip 2.2 part
+;
+DOREC2:	LD	A,16		; BIOS SECTRAN function
+	CALL	XBIOS2
+;
+DOREC3:	LD	B,H		; Moved to B, but unused
+	LD	A,L
+	LD	(LOGREC),A	; Set record
+	CALL	V3CHEK		; Check version
+	RET	NC		; Return if 3.0
+;
+	LD	A,(LOGREC)	; Get recorad for CP/M 2.2
+	LD	C,A		; To register 'C'
+	LD	A,11		; BIOS SETREC function
+	CALL	XBIOS2		; Do it for CP/M 2.2
+	RET
+;
+CLEAN:	LD	HL,0		; ICT = 0
+;
+CLNLOP:	LD	(ICT),HL
+	CALL	INDEX		; HL = BUF + 16 * ICT
+	LD	A,(HL)		; Jump if this is a deleted file
+	CP	0E5H
+	JP	Z,FILLR1
+;
+	 IF	DELZRO
+	LD	DE,12
+	ADD	HL,DE		; HL = HL + 12
+	LD	A,(HL)		; Check extent field
+	OR	A
+	JP	NZ,CLBUMP	; Skip if not extent 0
+	INC	HL		; Point to record count field
+	INC	HL
+	LD	A,(HL)		; Get S2 byte (extended RC)
+	AND	0FH		; For CP/M 2.2, 0 for CP/M 1.4
+	LD	E,A
+	INC	HL
+	LD	A,(HL)		; Check record count field
+	OR	E
+	JP	NZ,CLBUMP	; Jump if non-zero
+	LD	HL,(ICT)	; Clear all 32 bytes of
+	CALL	INDEX		; Directory entry to E5
+	INC	HL
+	LD	A,(HL)		; Get first character of filename
+	DEC	HL		; MAST.CAT catalog programs
+	CP	'-'		; Have diskname of zero length
+	JP	Z,CLBUMP	; That start with "-", do not delete
+	 ENDIF			; DELZRO
+;
+	 IF	NOT DELZRO
+	JP	CLBUMP		; Do not delete this file
+	 ENDIF			; NOT DELZRO
+;
+FILLR1:	LD	(HL),0E5H	; Fill source memory with E5
+	LD	D,H		; Get HL address to DE
+	INC	DE		; Destination = source + 1
+	LD	BC,31		; Copy 31 times
+	LDIR
+	LD	DE,17		; Point to the RC
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; Adjust HL to it, by backing up
+;
+FILLR2:	LD	(HL),0E5H	; Set RC to E5 unless Morrow hard disk
+;
+CLBUMP:	LD	DE,(DRM)	; Get count of filenames
+	INC	DE		; Increment it
+	LD	HL,(ICT)	; Our current count
+	INC	HL		; Increment it
+	PUSH	HL
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; Subtract DRM from ICT
+	POP	HL
+	JP	C,CLNLOP	; Loop until all cleaned
+	RET
+;
+; Sort the directory
+;
+SORT:	XOR	A
+	LD	(NOSWAP),A	; Zero the flag in case pre-sorted
+	LD	HL,SORTM	; Sort message
+	CALL	PRNTL
+;
+; Shell-Metzner sort
+;
+	LD	HL,(ICT)
+	INC	HL
+	LD	(SNRECW),HL
+	LD	HL,(PRGBUF)	; Get buffer address
+	LD	(SSTADR),HL
+	PUSH	HL		; Save it
+	LD	HL,32
+	LD	(SRECLN),HL
+	PUSH	HL		; Save it
+;
+; Now divide number of fields by 2
+;
+DIVIDE:	LD	HL,(SNRECW)	; Get value
+	OR	A		; Clear carry for division
+	RR	H		; Divide HL by 2
+	RR	L
+	LD	(SNRECW),HL	; Save result
+	LD	A,L		; If SNRECW <> 0
+	OR	H		; Then
+	JP	NZ,NDONE	; Not done
+;
+	POP	BC		; All fields sorted
+	POP	DE		; So clean up stack
+	RET
+;
+; Not done yet
+;
+NDONE:	EX	DE,HL
+	LD	HL,(ICT)
+	INC	HL
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; HL = HL - DE
+	LD	(SRECLN),HL
+	LD	HL,1
+	LD	(SSRTV1),HL
+	LD	(SSTADR),HL
+	DEC	L
+	POP	BC
+	PUSH	BC
+;
+NDONE1:	ADD	HL,DE
+	DEC	BC
+	LD	A,B
+	OR	C
+	JP	NZ,NDONE1
+	LD	(SSRTV2),HL
+	EX	DE,HL
+	POP	BC
+	POP	HL
+	PUSH	HL
+	PUSH	BC
+;
+NDONE2:	LD	(SSRTV4),HL
+	LD	(SSRTV3),HL
+	EX	DE,HL
+	ADD	HL,DE
+	EX	DE,HL
+;
+COMPR:	POP	BC		; Get count
+	PUSH	BC		; Save count
+	PUSH	DE		; Save addresses of beginning
+	PUSH	HL		; Of these 2 directory entries
+;
+COMPR1:	LD	A,(DE)		; Get (DE) byte
+	AND	7FH		; Strip parity (in case TO, SYS, etc.)
+	PUSH	BC		; Save count
+	EX	AF,AF'          ; Use alt register - saves (DE) byte
+	LD	A,(HL)		; Get (hl) byte
+	AND	7FH		; Strip parity (for same reason)
+	LD	B,A		; Save it
+	EX	AF,AF'          ; Restore register - restores (DE) byte
+	SUB	B		; Subtract (HL) from (DE)
+	POP	BC		; Restore count
+	JP	NZ,NOTEQU	; If not equal, jump over
+	INC	HL		; Else bump
+	INC	DE		; Both addresses
+	DEC	BC		; Decr count
+	LD	A,B		; Test
+	OR	C		; For zero
+	JP	NZ,COMPR1	; Do more if <> 0, else fall into next
+;
+NSWCH:	POP	HL		; Clean up the stack
+	POP	HL		; And again
+;
+NSWCH1:	LD	DE,(SSTADR)
+	INC	DE
+	LD	(SSTADR),DE
+	LD	(SSRTV1),DE
+	LD	HL,(SRECLN)
+	OR	A		; Clear carry
+	SBC	HL,DE		; Subtract HL - DE
+	JP	C,DIVIDE
+	LD	HL,(SSRTV4)
+	POP	DE
+	PUSH	DE
+	ADD	HL,DE
+	LD	DE,(SSRTV2)
+	JP	NDONE2
+;
+; The condition at NOTEQU has to be changed for descending sort
+;
+NOTEQU:	JP	NC,NSWCH
+	LD	A,1
+	LD	(NOSWAP),A
+	POP	HL		; Get back addresses of beginning
+	POP	DE		; Of these 2 directory entries
+	POP	BC		; And the number of bytes
+	PUSH	BC		; Leave this on the stack
+;
+SWITCH:	LD	A,(HL)		; Get (HL) byte
+	EX	AF,AF'          ; Save it
+	LD	A,(DE)		; Get (DE) byte
+	LD	(HL),A		; Store in (HL)
+	EX	AF,AF'          ; Get old (HL) back
+	LD	(DE),A		; Store in (DE)
+	INC	HL		; Bump both
+	INC	DE		; Addresses
+	DEC	BC		; Decr count
+	LD	A,B		; Test
+	OR	C		; For zero
+	JP	NZ,SWITCH	; Go do more if <> 0
+	LD	HL,(SNRECW)
+	LD	A,H
+	CPL
+	LD	D,A
+	LD	A,L
+	CPL
+	LD	E,A
+	LD	HL,(SSRTV1)
+	ADD	HL,DE
+	JP	NC,NSWCH1
+	INC	HL
+	LD	(SSRTV1),HL
+	LD	DE,(SSRTV3)
+	LD	HL,(SSRTV2)
+	LD	A,E		; Subtr DE - HL
+	SUB	L
+	LD	L,A
+	LD	A,D
+	SBC	A,H
+	LD	H,A		; Result in hl, de unaffected
+	LD	(SSRTV3),HL	; Store result here
+	JP	COMPR
+;
+PACK:	LD	HL,0		; ICT = 0
+;
+PACK1:	LD	(ICT),HL
+	CALL	INDEX		; HL = BUF + 16 * ICT
+	LD	DE,9
+	ADD	HL,DE		; HL = HL + 9
+	LD	A,(HL)		; Jump if filetype not "X$$"
+	SUB	'0'
+	JP	C,PACK2
+	CP	10
+	JP	NC,PACK2
+	LD	(JCT),A
+	INC	HL
+	LD	A,(HL)
+	CP	'$'
+	JP	NZ,PACK2
+	INC	HL
+	LD	A,(HL)
+	CP	'$'
+	JP	NZ,PACK2
+	INC	HL		; Set extent number to x
+	LD	A,(JCT)
+	LD	(HL),A
+	DEC	HL		; Set filetype to "$$$"
+	LD	(HL),'$'
+	DEC	HL
+	LD	(HL),'$'
+	DEC	HL
+	LD	(HL),'$'
+;
+PACK2:	LD	HL,(ICT)
+	INC	HL		; ICT = ICT + 1
+	LD	DE,(DRM)
+	INC	DE		; DRM = DRM + 1
+	PUSH	HL
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; Subtract DRM from ICT
+	POP	HL		; Loop until ICT > DRM
+	JP	C,PACK1
+	RET
+;
+INDEX:	ADD	HL,HL
+	ADD	HL,HL
+	ADD	HL,HL
+	ADD	HL,HL
+	ADD	HL,HL
+	LD	DE,(PRGBUF)	; Get buffer address
+	ADD	HL,DE
+	RET
+;
+; Print nul terminated string pointed to by HL
+;
+PRNTL:	LD	A,(HL)		; Get char
+	OR	A		; Test for zero
+	RET	Z		; If yes, we are done
+	EXX			; Use alt primary regs
+	LD	E,A		; Get char to e for output
+	LD	C,CONOUF	; Console out func
+	CALL	BDOS
+	EXX			; Restore normal primary regs
+	INC	HL		; Point to next
+	JP	PRNTL		; Try to do more
+;
+;-----------------------------------------------------------------------
+;
+; Print HL as decimal chaacters in N-character field, floating point
+; where field size is from 1 to 5 characters.
+;
+PHLFDC:	PUSH	AF		; Save all registers
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	LD	B,1		; B=1 for leading <sp>
+	LD	DE,10000	; Print 10,000's
+	CALL	PHDC1
+	LD	DE,1000
+	CALL	PHDC1
+	LD	DE,100
+	CALL	PHDC1
+	LD	DE,10		; Print 10's
+	CALL	PHDC1
+	LD	A,L		; Print 1's
+	ADD	A,'0'		; Convert to ascii
+	CALL	COUT
+	POP	HL		; Restore all regs
+	POP	DE
+	POP	BC
+	POP	AF
+	RET
+;
+; Divide HL by DE and print quotient with leading spaces
+;
+PHDC1:	LD	C,0		; Set count
+;
+PHDC2:	OR	A		; Clear carry for Z80 way
+	SBC	HL,DE		; Subtract DE from HL with borrow
+	JR	C,PHDC3		; Done if carry set (further borrow)
+	INC	C		; Increment count
+	JP	PHDC2
+;
+PHDC3:	OR	A		; Clear carry
+	ADC	HL,DE		; Add DE to HL with carry Z80 way
+	LD	A,C		; Get result
+	OR	A		; Check for 0
+	JR	NZ,PHDC4
+	OR	B		; 0=no leading <sp>
+	RET	NZ		; (A=0, A or B = 0 means B = 0)
+;
+PHDC4:	LD	B,0		; Turn off leading space
+	LD	A,C		; Get value
+	ADD	A,'0'		; Convert to ASCII
+	JP	COUT
+;
+COUT:	EXX			; Use alt primary regs
+	PUSH	AF
+	LD	E,A
+	LD	C,CONOUF	; Console OUT function
+	CALL	BDOS
+	POP	AF
+	EXX			; Restore normal primary registers
+	RET
+;
+CONBUF:	LD	C,RDCBUF
+	LD	DE,INBUF
+	JP	BDOS
+;
+INBUF:	DB	1,0,0
+;
+; Multiply HL by DE, return result in HL
+;
+MULT:	PUSH	BC
+	PUSH	DE
+	EX	DE,HL
+	LD	B,D
+	LD	C,E
+	LD	A,B
+	OR	C
+	JP	NZ,MULCON
+	LD	HL,0		; Filter special case
+	JR	MLDONE		; Of multiply by 0
+;
+MULCON:	DEC	BC
+	LD	D,H
+	LD	E,L
+;
+MULTLP:	LD	A,B
+	OR	C
+	JR	Z,MLDONE
+	ADD	HL,DE
+	DEC	BC
+	JP	MULTLP
+;
+MLDONE:	POP	DE
+	POP	BC
+	RET
+;
+; Unsigned division.  Divide HL by DE.	Destroys register A.
+; Return HL = quotient, DE = remainder, carry clear if ok.
+; Carry set if DE > HL, or if DE = 0.
+;
+UDIVID:	PUSH	BC		; Save register
+	LD	BC,0		; Initialize quotient
+	PUSH	HL		; Save HL
+	OR	A		; Clear carry
+	SBC	HL,DE		; Test if divisor > dividend
+	POP	HL		; Restore HL
+	JR	C,DIVBAD	; If so, it is bad
+	LD	A,E		; Else test divisor
+	OR	D		; For 0
+	JP	NZ,DIVLOP	; If <> 0 continue
+;
+DIVBAD:	POP	BC		; Restore registers
+	SCF			; Set cy to show bad
+	RET
+;
+DIVLOP:	INC	BC		; Increment quotient
+	OR	A		; Clear carryy for subtract
+	SBC	HL,DE		; Division by subtract
+	JP	C,DIVOFL	; If borrow, done dividing
+	JP	NZ,DIVLOP	; If <> 0 more to do
+	JP	DIVREM		; Was 0, skip calculation of remainder
+;
+DIVOFL:	ADD	HL,DE		; HL=neg remainder, DE=divisor
+	DEC	BC		; The even division was 1 less
+;
+DIVREM:	EX	DE,HL		; Positive remainder to DE
+	LD	H,B		; Put quotient into HL
+	LD	L,C
+	POP	BC		; Restore registers
+	OR	A		; Clear carry (valid result)
+	RET
+;
+;-----------------------------------------------------------------------
+;
+; Test for CP/M 3.0, used by above routines
+;
+V3CHEK:	LD	A,(VERFLG)	; Check for version 3.0
+	CP	30H		; Carry set if not 3.0
+	RET
+;
+VERFLG:	DB	0		; Version number of CP/M
+;
+;-----------------------------------------------------------------------
+;
+; For CP/M 2.2, enter with BIOS function in A  eg.,  LD A,9  (SELDSK)
+;
+XBIOS2:	PUSH	DE		; Save DE
+	LD	HL,(BASE+1)	; Warm boot address
+	LD	L,A		; BIOS function number to 'L'
+	LD	E,L		; And to 'E'
+	LD	D,0		; Zero 'D'
+	ADD	HL,DE		; Add so that HL
+	ADD	HL,DE		;   points to BIOS function address
+	POP	DE		; Restore DE
+	JP	(HL)		; Do it an return to call addr
+;
+;-----------------------------------------------------------------------
+;
+; Following is for CP/M 3.0
+;
+; Translate records.  Records are not translated yet.  Wait until we
+; know the physical record number.  This works fine as long as a program
+; trusts the BIOS to do translation.  For programs that directly access
+; the XLAT table to do their own translation, this may give a wrong idea
+; about disk skew but it shouldn't cause harm.
+;
+RECTRN:	LD	L,C		; Return record in HL
+	LD	H,B
+	RET
+;
+; Read the selected CP/M record
+;
+READ:	LD	A,1
+	LD	(READOP),A	; Read operation
+	INC	A		; A=2 (WRUAL)
+	LD	(WRTYPE),A	; Treat as unalloc
+	JP	ALLOC		; Perform read
+;
+; Write the selected CP/M record
+;
+WRITE:	XOR	A
+	LD	(READOP),A	; Not a read operation
+	LD	A,C
+	LD	(WRTYPE),A	; Save write type
+	CP	2		; Unallocated block?
+	JP	NZ,CHKUNA
+;
+; Write to first record of unallocated block
+;
+	LD	A,(BLM)		; Get block shift mask
+	INC	A		; Adjust value
+	LD	(UNACNT),A	; Unallocated record count
+	LD	A,(LOGDSK)	; Set up values for
+	LD	(UNADSK),A	;   writing to an unallocated
+	LD	A,(LOGTRK)	; Block
+	LD	(UNATRK),A
+	LD	A,(LOGREC)
+	LD	(UNAREC),A
+;
+CHKUNA:	LD	A,(UNACNT)	; Any unallocated records
+	OR	A		; In this block
+	JP	Z,ALLOC		; Skip if not
+	DEC	A
+	LD	(UNACNT),A
+	LD	A,(LOGDSK)
+	LD	HL,UNADSK
+	CP	(HL)		; LOGDSK = UNADSK ?
+	JP	NZ,ALLOC	; Skip if not
+	LD	A,(LOGTRK)
+	CP	(HL)		; LOGTRK = UNATRK ?
+	JP	NZ,ALLOC	; Skip if not
+	LD	A,(LOGREC)
+	LD	HL,UNAREC
+	CP	(HL)		; LOGTRK = UNAREC ?
+	JP	NZ,ALLOC	; Skip if not
+	INC	(HL)		; Move to next record
+	LD	A,(HL)
+	LD	HL,SPT		; Address of SPT
+	CP	(HL)		; Record > SPT ?
+	JP	C,NOOVF		; Skip if no overflow
+	LD	HL,(UNATRK)
+	INC	HL
+	LD	(UNATRK),HL	; Bump track
+	XOR	A
+	LD	(UNAREC),A	; Reset record count
+;
+NOOVF:	XOR	A
+	LD	(RCFLAG),A	; Do not pre-read
+	JP	RWOPER		; Perform write
+;
+ALLOC:	XOR	A		; Requires pre-read
+	LD	(UNACNT),A
+	INC	A
+	LD	(RCFLAG),A	; Force pre-read
+;
+RWOPER:	XOR	A
+	LD	(ERFLAG),A	; No errors yet
+	LD	A,(PSH)		; Get physical shift factor
+	OR	A		; Set flags
+	LD	B,A
+	LD	A,(LOGREC)	; Logical record
+	LD	HL,(HSTBUF)	; Get address of buffer
+	LD	DE,128
+	JP	Z,NOBLK		; No blocking
+	EX	DE,HL		; Shuffle registers
+;
+SHIFT:	EX	DE,HL
+	RRCA
+	JP	NC,SH1
+	ADD	HL,DE		; Bump buffer address
+;
+SH1:	EX	DE,HL
+	ADD	HL,HL
+	AND	07FH		; Zero high bit
+	DJNZ	SHIFT
+	EX	DE,HL		; HL=buffer address
+;
+NOBLK:	LD	(RECHST),A
+	LD	(RECBUF),HL
+	LD	HL,HSTACT	; Buffer active flag
+	LD	A,(HL)
+	LD	(HL),1		; Set buffer active
+	OR	A		; Was it already?
+	JP	Z,FILHST	; Fill buffer if not
+	LD	A,(LOGDSK)
+	LD	HL,HSTDSK	; Same disk ?
+	CP	(HL)
+	JP	NZ,NMATCH
+	LD	A,(LOGTRK)
+	LD	HL,HSTTRK	; Same track ?
+	CP	(HL)
+	JP	NZ,NMATCH
+	LD	A,(RECHST)	; Same buffer ?
+	LD	HL,HSTSEC
+	CP	(HL)
+	JP	Z,MATCH
+;
+NMATCH:	LD	A,(HSTWRT)	; Buffer changed?
+	OR	A
+	CALL	NZ,WRTHST	; Clear buffer
+;
+FILHST:	LD	A,(LOGDSK)
+	LD	(HSTDSK),A
+	LD	HL,(LOGTRK)
+	LD	(HSTTRK),HL
+	LD	A,(RECHST)
+	LD	(HSTSEC),A
+	LD	A,(RCFLAG)	; Need to read ?
+	OR	A
+	CALL	NZ,REDHST	; Yes
+	XOR	A
+	LD	(HSTWRT),A	; No pending write
+;
+MATCH:	LD	DE,(DMAADR)
+	LD	HL,(RECBUF)
+	LD	A,(READOP)	; Which way to move ?
+	OR	A
+	JP	NZ,RWMOVE	; Skip if read
+	LD	A,1
+	LD	(HSTWRT),A	; Mark buffer changed
+	EX	DE,HL		; Hl=DMA  DE=buffer
+;
+RWMOVE:	LD	BC,128		; Byte count
+	LDIR			; Block move
+	LD	A,(WRTYPE)	; Write type
+	CP	1		; To directory ?
+	JP	NZ,RWEXIT	; Done
+	LD	A,(ERFLAG)	; Check for errors
+	OR	A
+	JP	NZ,RWEXIT	; Do not write directory if so
+	XOR	A
+	LD	(HSTWRT),A	; Show buffer written
+	CALL	WRTHST		; Write buffer
+;
+RWEXIT:	LD	A,(ERFLAG)
+	RET
+;
+; Disk read, call BIOS to fill the buffer with one physical record
+;
+REDHST:	CALL	RWINIT		; Init CP/M 3.0 BIOS
+	LD	A,13		; READ function
+	JP	DORW		; Go do it
+;
+; Disk write, call BIOS to write one phy record from buffer
+;
+WRTHST:	CALL	RWINIT		; Init CP/M 3.0 BIOS
+	LD	A,14		; WRITE function
+;
+; Call BIOS to read (or write) 1 physical record to (or from) buffer
+;
+DORW:	CALL	XBIOS3		; Go do it to the record
+	LD	(ERFLAG),A
+	RET
+;
+; Translate record, set track, record, DMA buffer and DMA bank
+;
+RWINIT:	LD	HL,(HSTTRK)	; Get physical track number
+	LD	(BCREG),HL	; Put track number in BC
+	LD	A,10		; SETTRK function
+	CALL	XBIOS3
+	LD	A,(HSTSEC)	; Get physical record number
+	LD	L,A
+	LD	H,0
+	LD	(BCREG),HL	; Put record number in BC
+	LD	HL,(RECTBL)	; Address of xlate table
+	LD	(DEREG),HL	; Xlate address in DE
+	LD	A,16		; SECTRN function
+	CALL	XBIOS3		; Get skewed record number
+	LD	A,L
+	LD	(ACTREC),A	; Actual record
+	LD	(BCREG),HL	; Record number in BC
+	LD	A,11		; SETSEC function
+	CALL	XBIOS3		; Set CP/M 3.0 record
+	LD	HL,(HSTBUF)	; Get record buffer address
+	LD	(BCREG),HL	; Buffer address in BC
+	LD	A,12		; SETDMA function
+	CALL	XBIOS3
+	LD	A,1		; DMA bank number
+	LD	(AREG),A	; Put bank number in A
+	LD	A,28		; SETBNK function
+	CALL	XBIOS3		; Set DMA bank
+	RET
+;
+; Routine to call banked BIOS routines via BDOS function 50.
+; All disk I/O calls are made through here.
+;
+XBIOS3:	LD	(BIOSPB),A	; Set BIOS function
+	LD	C,50		; Direct BIOS call function
+	LD	DE,BIOSPB	; BIOS parameter block
+	JP	BDOS		; Jump to BDOS
+;
+;-----------------------------------------------------------------------
+;
+; Messages
+;
+NDZ80:	DB	CR,LF,'Z80 needed',CR,LF,0
+;
+FAK1M:	DB	CR,LF,LF,'If MORE than ',0
+FAK2M:	DB	' directory entries exist,'
+	DB	CR,LF,'please reduce entries '
+	DB	'and/or use DU first.',BEL
+	DB	CR,LF,'Continue with MORE will'
+	DB	' destroy directory!'
+	DB	CR,LF,LF,'Press ''Y'' to '
+	DB	'continue, else aborts: ',0
+;
+DONEM:	DB	'Done',CR,LF,0
+READM:	DB	CR,LF,LF,'Read, ',0
+PRESM:	DB	'(Previously-sorted) ',0
+WRITM:	DB	'Write, ',0
+ERORM:	DB	BS,BS,' Error',BEL,CR,LF,0
+SORTM:	DB	'Sort, ',0
+;
+;-----------------------------------------------------------------------
+;
+; Data area
+;
+DATA	EQU	$
+;
+; Bios parameter block for CP/M 3.0
+;
+BIOSPB:	DS	1		; BIOS function
+AREG:	DS	1		; A  register
+BCREG:	DS	2		; BC register
+DEREG:	DS	2		; DE register
+HLREG:	DS	2		; HL register
+;
+HSTBUF:	DS	2		; Cp/m 3.0 disk I/O buffer address
+;
+;-----------------------------------------------------------------------
+;
+; Disk parameter block for CP/M 2.2 or 3.0
+;
+DPB:
+SPT:	DS	2
+BSH:	DS	1
+BLM:	DS	1
+EXM:	DS	1
+DSM:	DS	2
+DRM:	DS	2
+AL0:	DS	1
+AL1:	DS	1
+CKS:	DS	2
+SYSTRK:	DS	2
+PSH:	DS	1		; Physical shift count (CP/M 3.0)
+PSM:	DS	1		; Physical record mask (CP/M 3.0)
+;
+;-----------------------------------------------------------------------
+;
+; General data area used by the program
+;
+MEMTOP:	DS	2		; Memory top address
+PRGBUF:	DS	2		; Address of the program buffer
+PRGMAX:	DS	2		; Free bytes for program buffer
+;
+DIRCNT:	DS	2
+ICT:	DS	2
+JCT:	DS	2
+NOSWAP:	DS	1
+RECTBL:	DS	2
+RECORD:	DS	2
+WRFLAG:	DS	1
+SRECLN:	DS	2
+SSTADR:	DS	2
+SSRTV1:	DS	2
+SSRTV2:	DS	2
+SSRTV3:	DS	2
+SSRTV4:	DS	2
+SNRECW:	DS	2
+;
+;-----------------------------------------------------------------------
+;
+; Following used by the program and CP/M 3.0
+;
+LOGDSK:	DS	1		; Logical disk number
+LOGTRK:	DS	2		; Logical track number
+LOGREC:	DS	1		; Logical record number
+;
+;-----------------------------------------------------------------------
+;
+; Following used by CP/M 3.0
+;
+HSTDSK:	DS	1		; Physical disk number
+HSTTRK:	DS	2		; Physical track number
+HSTSEC:	DS	1		; Physical record number
+;
+ACTREC:	DS	1		; Skewed physical record
+RECHST:	DS	1		; Tempopary physical record
+HSTACT:	DS	1		; Buffer active flag, initially 0
+HSTWRT:	DS	1		; Buffer changed flag, initially 0
+;
+UNACNT:	DS	1		; Unallocated record count
+UNADSK:	DS	1		; Unallocated disk number
+UNATRK:	DS	2		; Unallocated track number
+UNAREC:	DS	1		; Unallocated record number
+RECBUF:	DS	2		; Logical record address in buffer
+;
+ERFLAG:	DS	1		; Error reporting
+RCFLAG:	DS	1		; Force record read
+READOP:	DS	1		; 1 if read operation
+WRTYPE:	DS	1		; Write operation type
+DMAADR:	DS	2		; Last DMA address
+;
+;-----------------------------------------------------------------------
+;
+; Stack and buffer area for the program
+;
+	DS	40		; Minimum stack (20 levels)
+EVEN	EQU	($+255)/256*256	; Start buffer on even page
+				; Also increases stack greatly
+	ORG	EVEN
+STACK	EQU	$-2
+DATSIZ	EQU	$-DATA		; Size of data area
+				; Buffers start here
+;
+	END
+

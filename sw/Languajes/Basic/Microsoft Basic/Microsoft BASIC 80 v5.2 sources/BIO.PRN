@@ -1,0 +1,520 @@
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...
+                                	SUBTTL	OUTDO, OUTCON - CHARACTER OUTPUT
+                                ; Microsoft BASIC has a number of primitive I/O routines:
+                                ;	OUTDO (either CALL or RST) prints char in [A] no registers affected
+                                ;		to either terminal or disk file or printer depending
+                                ;		flags:
+                                ;			PRTFLG if non-zero print to printer
+                                ;			PTRFIL if non-zero print to disk file pointed to
+                                ;				by PTRFIL
+                                ;
+                                ;	INCHR	input a character into [A] condiation codes destroyed.
+                                ;		input from disk file if PTRFIL non-zero.
+                                ;
+                                ;	CRDO	Print a carriage return sequence on either
+                                ;		terminal or printer or disk file depending on flags
+                                ;		See OUTDO above. See below code for register use
+                                	EXTRN	PPSWRT
+                                	PUBLIC	INCHR,OUTDO,FININL,CRFIN
+  0000'   F5                    OUTDO:	PUSH	PSW
+  0001'   E5                    	PUSH	H
+                                	EXTRN	PTRFIL
+  0002'   2A 0000*              	LHLD	PTRFIL
+  0005'                         OUTCON:
+  0005'   7C                    	MOV	A,H
+  0006'   B5                    	ORA	L
+                                	EXTRN	FILOUT
+  0007'   C2 0000*              	JNZ	FILOUT
+  000A'   E1                    	POP	H
+                                	EXTRN	PRTFLG
+  000B'   3A 0000*              LPTCOD:	LDA	PRTFLG			;SEE IF WE WANT TO TALK TO LPT
+  000E'   B7                    	ORA	A			;TEST BITS
+                                
+                                					;REGULAR OKIA DRIVER ONLY
+  000F'   CA 0087'              	JZ	TTYCHR			;IF ZERO THEN NOT
+  0012'   F1                    	POP	PSW			;GET BACK CHAR
+  0013'   F5                    	PUSH	PSW
+  0014'   FE 08                 	CPI	8			;BACKSPACE?
+  0016'   C2 0024'              	JNZ	NTBKS2			;NO
+  0019'   3A 0000*              	LDA	LPTPOS			;GET LPT POS
+  001C'   3D                    	DCR	A			;SUBTRACT ONE FROM PRINTER POSIT
+  001D'   32 0000*              	STA	LPTPOS			;CORRECT LPTPOS
+  0020'   F1                    	POP	PSW			;GET BACK BACKSPACE
+  0021'   C3 0062'              	JMP	LPTCHR			;SEND CHAR
+  0024'   FE 09                 NTBKS2:	CPI	9			;TAB
+  0026'   C2 0038'              	JNZ	NOTABL			;NO
+  0029'   3E 20                 MORSPL:	MVI	A,32			;GET SPACE
+  002B'   CD 0000'              	CALL	OUTDO			;SEND IT
+                                	EXTRN	LPTPOS
+  002E'   3A 0000*              	LDA	LPTPOS			;GET CURRENT PRINT POSIT
+  0031'   E6 07                 	ANI	7			;AT TAB STOP?
+  0033'   C2 0029'              	JNZ	MORSPL			;GO BACK IF MORE TO PRINT
+  0036'   F1                    	POP	PSW			;POP OFF CHAR
+  0037'   C9                    	RET				;RETURN
+  0038'                         NOTABL:
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+OUTDO, OUTCON - CHARACTER OUTPUT
+
+                                
+  0038'   F1                    	POP	PSW			;GET CHAR BACK
+  0039'   F5                    	PUSH	PSW			;SAVE AGAIN
+  003A'   D6 0D                 	SUI	13			;IF FUNNY CONTROL CHAR, (LF) DO NOTHING
+  003C'   CA 005E'              	JZ	ZERLP1
+  003F'   DA 0061'              	JC	LPTCH1			;JUST PRINT CHAR
+                                	EXTRN	LPTSIZ
+  0042'   3A 0000*              	LDA	LPTSIZ			;GET SIZE OF PRINTER
+  0045'   3C                    	INR	A			;IS IT INFINITE?
+  0046'   3A 0000*              	LDA	LPTPOS			;GET POSIT
+  0049'   CA 0058'              	JZ	ZERLPT			;THEN DONT FOLD
+  004C'   E5                    	PUSH	H			;SSAVE [H,L]
+  004D'   21 0000*              	LXI	H,LPTSIZ		;MAX LENGTH
+  0050'   BE                    	CMP	M			;SET CC'S
+  0051'   E1                    	POP	H			;THEN DO CRLF
+  0052'   CC 0078'              	CZ	PRINTW			;DO CRLF
+  0055'   CA 0061'              	JZ	LPTCH1			;IF FORCED CR, LEAVE LPTPOS AT ZERO
+  0058'                         ZERLPT:
+  0058'   FE FF                 	CPI	255			;MAX LENGTH?
+  005A'   CA 0061'              	JZ	LPTCH1			;THEN JUST PRINT
+  005D'   3C                    	INR	A			;INCREMENT POSIT
+  005E'   32 0000*              ZERLP1:	STA	LPTPOS
+  0061'   F1                    LPTCH1:	POP	PSW			;GET CHAR BACK
+  0062'   F5                    LPTCHR:	PUSH	PSW			;SAVE BACK AGAIN
+  0063'   C5                    	PUSH	B			;SAVE [B,C]
+  0064'   D5                    	PUSH	D			;SAVE [D,E]
+  0065'   E5                    	PUSH	H
+  0066'   4F                    	MOV	C,A			;CPM WANTS CHAR IN [C]
+                                	PUBLIC	LPTOUT
+  0067'   CD 0000               LPTOUT:	CALL	0			;PRINTER ROUTINE ADDRESS STORED HERE
+  006A'   E1                    	POP	H			;RESTORE REGS
+  006B'   D1                    	POP	D
+  006C'   C1                    	POP	B
+  006D'   F1                    	POP	PSW			;RESTORE CHAR
+  006E'   C9                    	RET				;RETURN FROM OUTCHR
+                                	PUBLIC	FINLPT
+  006F'   AF                    FINLPT:	XRA	A			;RESET PRINT FLAG SO
+  0070'   32 0000*              	STA	PRTFLG			;OUTPUT GOES TO TERMINAL
+  0073'   3A 0000*              	LDA	LPTPOS			;GET CURRENT LPT POSIT
+  0076'   B7                    	ORA	A			;ON LEFT HAND MARGIN ALREADY?
+  0077'   C8                    	RZ				;YES, RETURN
+  0078'   3E 0D                 PRINTW:	MVI	A,13			;PUT OUT CRLF
+  007A'   CD 0062'              	CALL	LPTCHR
+  007D'   3E 0A                 	MVI	A,10
+  007F'   CD 0062'              	CALL	LPTCHR
+  0082'   AF                    	XRA	A			;ZERO LPTPOS
+  0083'   32 0000*              	STA	LPTPOS
+  0086'   C9                    	RET				;DONE
+                                	PUBLIC	TTYCHR
+  0087'                         TTYCHR:
+                                	EXTRN	CNTOFL
+  0087'   3A 0000*              	LDA	CNTOFL
+  008A'   B7                    	ORA	A
+  008B'   C2 0000*              	JNZ	PPSWRT			;NO, DO OUTPUT
+  008E'   F1                    	POP	PSW			;GET THE CHARACTER
+  008F'   C5                    	PUSH	B
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+OUTDO, OUTCON - CHARACTER OUTPUT
+
+  0090'   F5                    	PUSH	PSW			;AND SAVE IT AGAIN
+  0091'   FE 08                 	CPI	8			;BACKSPACE?
+  0093'   C2 00A6'              	JNZ	NTBKS1			;NO
+  0096'   3A 0000*              	LDA	TTYPOS			;GET TTY POS
+  0099'   B7                    	ORA	A			;SET CC'S
+  009A'   CA 00B8'              	JZ	MORSPR			;RETURN
+  009D'   3D                    	DCR	A			;DECRMENT POSIT BY ONE
+  009E'   32 0000*              	STA	TTYPOS			;CORRECT TTYPOS
+                                					;CORRECT TTYPOS
+  00A1'   3E 08                 	MVI	A,8			;GET BACK BACKSPACE CHAR
+  00A3'   C3 00DC'              	JMP	TRYOUT			;SEND IT
+  00A6'   FE 09                 NTBKS1:	CPI	9			;OUTPUTTING TAB?
+  00A8'   C2 00BB'              	JNZ	NOTAB			;NO.
+  00AB'   3E 20                 MORSP:	MVI	A,32			;GET SPACE CHAR
+  00AD'   CD 0000'              	CALL	OUTDO			;CALL OUTCHR RECURSIVELY (!)
+  00B0'   3A 0000*              	LDA	TTYPOS			;GET CURRENT PRINT POS.
+  00B3'   E6 07                 	ANI	7			;AT TAB STOP YET??
+  00B5'   C2 00AB'              	JNZ	MORSP			;NO, KEEP SPACING
+  00B8'   F1                    MORSPR:	POP	PSW			;RESTORE CURRENT CHAR (TAB)
+  00B9'   C1                    	POP	B			;GET [B,C] BACK
+  00BA'   C9                    	RET				;ALL DONE
+  00BB'                         NOTAB:
+  00BB'   FE 20                 	CPI	32			;IS THIS A MEANINGFUL CHARACTER?
+  00BD'   DA 00DC'              	JC	TRYOUT			;IF IT'S A NON-PRINTING CHARACTER
+                                	EXTRN	LINLEN
+  00C0'   3A 0000*              	LDA	LINLEN
+  00C3'   47                    	MOV	B,A			;[B]=LINE LENGTH
+                                					;DON'T INCLUDE IT IN TTYPOS
+  00C4'   3A 0000*              	LDA	TTYPOS			;SEE IF PRINT HEAD IS AT THE END OF THE LINE
+  00C7'   04                    	INR	B			;IS WIDTH 255?
+  00C8'   CA 00D3'              	JZ	INCTPS			;YES, JUST INC TTYPOS
+  00CB'   05                    	DCR	B			;CORRECT [B]
+  00CC'   B8                    	CMP	B
+                                	PUBLIC	LINPT1
+  00CC'                         LINPT1	SET	$-1
+  00CD'   CC 0152'              	CZ	CRDO			;TYPE CRLF AND SET TTYPOS AND [A]=0 IF SO
+  00D0'   CA 00DC'              	JZ	TRYOUT			;IF FORCED CRLF, LEAVE TTYPOS AT ZERO
+  00D3'                         INCTPS:
+  00D3'   FE FF                 	CPI	255			;HAVE WE HIT MAX #?
+  00D5'   CA 00DC'              	JZ	TRYOUT			;THEN LEAVE IT THERE
+  00D8'   3C                    	INR	A			;INCREMENT TTYPOS SINCE WE'RE
+                                					;GOING TO PRINT A CHARACTER.
+                                	EXTRN	TTYPOS
+  00D9'   32 0000*              	STA	TTYPOS			;STORE NEW PRINT HEAD POSITION
+                                					;STORE NEW PRINT HEAD POSITION
+  00DC'                         TRYOUT:
+  00DC'   F1                    	POP	PSW			;GET CHAR OFF STACK
+  00DD'   C1                    	POP	B			;RESTORE [B,C]
+  00DE'   F5                    	PUSH	PSW			;SAVE PSW BACK
+                                	PUBLIC	NOPRIN
+  00DF'                         NOPRIN:					; END OF PHLZ80 OFF
+  00DF'   F1                    	POP	PSW			;GET CHARACTER BACK
+                                
+  00E0'   F5                    	PUSH	PSW			;THEN SAVE BACK
+  00E1'   C5                    	PUSH	B			;SAVE ALL REGS
+  00E2'   D5                    	PUSH	D
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+OUTDO, OUTCON - CHARACTER OUTPUT
+
+  00E3'   E5                    	PUSH	H
+  00E4'   4F                    	MOV	C,A			;CPM WANTS CHAR IN [C]
+                                	PUBLIC	CONOUT
+  00E5'   CD 0000               CONOUT:	CALL	0			;CPM (BIOS) ENTRY POINT
+  00E8'   E1                    	POP	H			;RESTORE REGS
+  00E9'   D1                    	POP	D
+  00EA'   C1                    	POP	B
+  00EB'   F1                    	POP	PSW			;RESTORE CHAR
+  00EC'   C9                    	RET				;RETURN FROM OUTCHR
+                                
+                                
+                                
+                                
+                                	PAGE
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+OUTDO, OUTCON - CHARACTER OUTPUT
+
+                                
+                                	SUBTTL	INCHR, TRYIN - CHARACTER INPUT ROUTINES
+                                	PUBLIC	INCHR,TRYIN
+  00ED'                         INCHR:
+  00ED'   E5                    	PUSH	H
+  00EE'   2A 0000*              	LHLD	PTRFIL
+  00F1'   7C                    	MOV	A,H
+  00F2'   B5                    	ORA	L
+  00F3'   CA 0125'              	JZ	NOTFLC			;GET CHARACTER FROM TERMINAL
+                                	EXTRN	INDSKC
+  00F6'   CD 0000*              	CALL	INDSKC			;READ A CHARACTER
+                                	EXTRN	POPHRT
+  00F9'   D2 0000*              	JNC	POPHRT			;RETURN WITH CHARACTER
+  00FC'   C5                    	PUSH	B			;SAVE ALL REGISTERS
+  00FD'   D5                    	PUSH	D
+  00FE'   E5                    	PUSH	H
+                                	EXTRN	PRGFIN
+  00FF'   CD 0000*              	CALL	PRGFIN			;CLOSE THE FILE
+  0102'   E1                    	POP	H
+  0103'   D1                    	POP	D
+  0104'   C1                    	POP	B
+                                	EXTRN	CHNRET
+                                	EXTRN	CHNFLG
+  0105'   3A 0000*              	LDA	CHNFLG			;CHAIN IN PROGRESS?
+  0108'   B7                    	ORA	A			;TEST..
+  0109'   C2 0000*              	JNZ	CHNRET			;YES, PERFORM VARIABLE BLOCK TRANSFER, ETC.
+                                	EXTRN	LSTFRE
+  010C'   3A 0000*              	LDA	LSTFRE			;RUN IT OR NOT?
+  010F'   B7                    	ORA	A
+                                	EXTRN	NEWSTT
+  0110'   21 0000*              	LXI	H,NEWSTT
+  0113'   E3                    	XTHL	
+                                	EXTRN	RUNC
+  0114'   C2 0000*              	JNZ	RUNC			;RUN IT
+  0117'   E3                    	XTHL	
+  0118'   C5                    	PUSH	B			;PRESERVE REGISTERS
+  0119'   D5                    	PUSH	D
+                                	EXTRN	REDDY
+  011A'   21 0000*              	LXI	H,REDDY			;PRINT PROMPT "OK"
+                                	EXTRN	STROUT
+  011D'   CD 0000*              	CALL	STROUT
+  0120'   D1                    	POP	D
+  0121'   C1                    	POP	B
+  0122'   AF                    	XRA	A
+  0123'   E1                    	POP	H
+  0124'   C9                    	RET	
+  0125'   E1                    NOTFLC:	POP	H
+  0126'                         TRYIN:
+                                	PUBLIC	INCHRI
+  0126'                         INCHRI:
+  0126'   C5                    	PUSH	B			;SAVE REGS
+  0127'   D5                    	PUSH	D
+  0128'   E5                    	PUSH	H
+                                	PUBLIC	CONIN
+  0129'   CD 0000               CONIN:	CALL	0			;CHANGED TO CALL CI
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+INCHR, TRYIN - CHARACTER INPUT ROUTINES
+
+  012C'   E1                    	POP	H			;RESTORE REGS
+  012D'   D1                    	POP	D
+  012E'   C1                    	POP	B
+                                	PUBLIC	CNLCB2
+  012E'                         CNLCB2	SET	$-1			;CONSOLE COMMAND CHANGE LOC
+                                
+  012F'                         INEXIT:
+  012F'   E6 7F                 	ANI	127			;GET RID OF PARITY BIT
+  0131'   FE 0F                 	CPI	CONTO			;IS IT SUPRESS OUTPUT?
+  0133'   C0                    	RNZ	
+  0134'   3A 0000*              	LDA	CNTOFL
+  0137'   B7                    	ORA	A			;ARE WE SUPRESSING OUTPUT?
+                                	EXTRN	CTROPT
+  0138'   CC 0000*              	CZ	CTROPT			;THEN PRINT CONTROL-O NOW.
+  013B'   2F                    	CMA				;COMPLEMENT ITS STATE
+  013C'   32 0000*              	STA	CNTOFL			;SAVE BACK
+  013F'   B7                    	ORA	A			;SEE IF WE ARE TURNING OUTPUT ON.
+  0140'   CA 0000*              	JZ	CTROPT			;PRINT THE ^O
+  0143'   AF                    	XRA	A			;RETURN WITH NULL WHICH IS ALWAYS IGNORED
+                                
+  0144'   C9                    	RET	
+                                
+                                					;FOR SOME REASON SBC DOENT HAVE CST
+                                					;TERMINATES RSHACK
+                                	PAGE
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+INCHR, TRYIN - CHARACTER INPUT ROUTINES
+
+                                
+                                	SUBTTL	CRDO	Put out a carriage return and associated routines
+                                ; CRDO returns with all registers except [A]
+                                ; preserved, [A]=0, Zero CC set, Carry reset.
+                                
+                                	PUBLIC	CRDONZ
+                                ; CRDONZ Only does a CR if TTYPOS is not Zero.
+                                ; In other words, only print a carriage return when not at left margin.
+  0145'                         CRDONZ:
+  0145'   3A 0000*              	LDA	TTYPOS			;GET CURRENT TTYPOS
+                                					;GET CURRENT TTYPOS
+  0148'   B7                    	ORA	A			;SET CC'S
+  0149'   C8                    	RZ				;IF ALREADY ZERO, RETURN
+  014A'   C3 0152'              	JMP	CRDO			;DO CR
+  014D'   36 00                 FININL:	MVI	M,0			;PUT A ZERO AT THE END OF BUF
+                                	EXTRN	BUFMIN
+  014F'   21 0000*              	LXI	H,BUFMIN		;SETUP POINTER
+                                					;DON'T PUT CR/LF OUT TO LOAD FILE
+                                	PUBLIC	CRDO
+  0152'                         CRDO:
+  0152'   3E 0D                 	MVI	A,13
+  0154'   CD 0000'              	CALL	OUTDO
+  0157'   3E 0A                 	MVI	A,10
+                                	PUBLIC	CRFINO
+  0159'   CD 0000'              CRFINO:	CALL	OUTDO
+  015C'                         CRFIN:
+  015C'   E5                    	PUSH	H			;SAVE [H,L]
+  015D'   2A 0000*              	LHLD	PTRFIL			;SEE IF OUTPUTTING TO DISK
+  0160'   7C                    	MOV	A,H			;IF SO, PTRFIL .NE. 0
+  0161'   B5                    	ORA	L			;...
+  0162'   E1                    	POP	H			;RESTORE [H,L]
+  0163'   CA 0168'              	JZ	CRCONT			;NOT DISK FILE, CONTINUE
+  0166'   AF                    	XRA	A			;CRFIN MUST ALWAYS RETURN WITH A=0
+  0167'   C9                    	RET				;AND CARRY=0.
+  0168'                         CRCONT:
+  0168'   3A 0000*              	LDA	PRTFLG			;GOING TO PRINTER?
+  016B'   B7                    	ORA	A			;TEST
+  016C'   CA 0174'              	JZ	NTPRTR			;NO
+  016F'   AF                    	XRA	A			;DONE, RETURN
+  0170'   32 0000*              	STA	LPTPOS			;ZERO POSITON
+  0173'   C9                    	RET	
+  0174'                         NTPRTR:
+  0174'   AF                    	XRA	A			;SET TTYPOS=0
+  0175'   32 0000*              	STA	TTYPOS
+                                	EXTRN	NULCNT
+  0178'   3A 0000*              	LDA	NULCNT			;GET NUMBER OF NULLS
+  017B'   3D                    PRTNUL:	DCR	A
+  017C'   C8                    	RZ				;ALL NULLS DONE [A]=0
+                                					;SOME ROUTINES DEPEND ON CRDO
+                                					;AND CRFIN RETURNING [A]=0 AND Z TRUE
+  017D'   F5                    	PUSH	PSW			;SAVE THE COUNT
+  017E'   AF                    	XRA	A			;[A]= A NULL
+  017F'   CD 0000'              	CALL	OUTDO			;SEND IT OUT
+  0182'   F1                    	POP	PSW			;RESTORE THE COUNT
+  0183'   C3 017B'              	JMP	PRTNUL			;LOOP PRINTING NULLS
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+CRDO	Put out a carriage return and associated routines
+
+                                	PUBLIC	ISCNTC
+  0186'                         ISCNTC:
+                                
+                                	EXTRN	CSTS
+  0186'   C5                    	PUSH	B			;SAVE REGS
+  0187'   D5                    	PUSH	D
+  0188'   E5                    	PUSH	H
+                                
+                                	PUBLIC	CONSTS
+  0189'   CD 0000*              CONSTS:	CALL	CSTS			;GET CONSOLE STATUS
+  018C'   E1                    	POP	H
+  018D'   D1                    	POP	D
+  018E'   C1                    	POP	B
+  018F'   B7                    	ORA	A			;SET CC'S
+  0190'   C8                    	RZ				;0=FALSE - NO CHARACTER TYPED
+                                					;IF NONE, RETURN
+                                	PUBLIC	CNTCCN
+  0191'                         CNTCCN:
+  0191'   CD 0126'              	CALL	INCHRI			;READ THE CHARACTER THAT WAS PRESENT
+  0194'   FE 13                 	CPI	23O			;PAUSE? (^S)
+  0196'   CC 0126'              	CZ	INCHRI			;IF PAUSE, READ NEXT CHAR
+  0199'   32 0000*              	STA	CHARC##			;SAVE CHAR IN THE BUFFER
+  019C'   FE 03                 	CPI	3			;^C?
+                                	EXTRN	CTRLPT
+  019E'   CC 0000*              	CZ	CTRLPT			;TYPE ^C
+                                	EXTRN	STOP
+  01A1'   C3 0000*              	JMP	STOP
+                                	PUBLIC	INKEY,CHARCG
+                                	EXTRN	DSCPTR,PUTNEW,REDDY,FACLO,VALTYP,STRIN1,CHARC,SETSTR
+                                	EXTRN	CHRGTR
+  01A4'                         INKEY:
+  01A4'   CD 0000*              	CALL	CHRGTR
+  01A7'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  01A8'   CD 01CE'              	CALL	CHARCG			;GET CHARC AND CLEAR IF SET
+  01AB'   C2 01B8'              	JNZ	BUFCIN
+  01AE'                         MRCHRI:
+  01AE'   CD 0000               CONST3::CALL	0
+  01B1'   B7                    	ORA	A			;SET NON-ZERO IF CHAR THERE
+  01B2'   CA 01C1'              	JZ	NULRT			;NO, RETURN NULL STRING
+                                ; GET CHAR IF ONE,
+                                ;****SOME VERSIONS ALREADY HAVE CHAR AND DONT WANT THIS CODE ***
+                                ;****SO THEY SHOULD TURN ON CHSEAT TO TURN OFF READS
+  01B5'   CD 0126'              	CALL	INCHRI
+  01B8'   F5                    BUFCIN:	PUSH	PSW
+  01B9'   CD 0000*              	CALL	STRIN1			;MAKE ONE CHAR STRING
+  01BC'   F1                    	POP	PSW
+  01BD'   5F                    	MOV	E,A			;CHAR TO [D]
+  01BE'   CD 0000*              	CALL	SETSTR			;STUFF IN DESCRIPTOR AND GOTO PUTNEW
+                                
+  01C1'   21 FFFF*              NULRT:	LXI	H,REDDY-1
+  01C4'   22 0000*              	SHLD	FACLO
+  01C7'   3E 03                 	MVI	A,3
+  01C9'   32 0000*              	STA	VALTYP
+  01CC'   E1                    	POP	H
+  01CD'   C9                    	RET	
+                                
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+CRDO	Put out a carriage return and associated routines
+
+  01CE'   3A 0000*              CHARCG::LDA	CHARC			;GET SAVED CHAR
+  01D1'   B7                    	ORA	A			;IS THERE ONE?
+  01D2'   C8                    	RZ				;NO, DONE
+  01D3'   F5                    	PUSH	PSW			;SAVE CHAR
+  01D4'   AF                    	XRA	A			;CLEAR IT
+  01D5'   32 0000*              	STA	CHARC			;BY STORING ZERO
+  01D8'   F1                    	POP	PSW			;RESTORE CHAR AND NON-ZERO CC'S
+  01D9'   C9                    	RET	
+                                	PUBLIC	OUTCH1
+  01DA'                         OUTCH1:
+  01DA'   CD 0000'              	CALL	OUTDO			;OUTPUT THE CHAR
+  01DD'   FE 0A                 	CPI	10			;WAS IT A LF?
+  01DF'   C0                    	RNZ				;NO, RETURN
+  01E0'   3E 0D                 	MVI	A,13			;DO CR
+  01E2'   CD 0000'              	CALL	OUTDO
+  01E5'   CD 015C'              	CALL	CRFIN
+  01E8'   3E 0A                 	MVI	A,10			;RESTORE CHAR (LF)
+  01EA'   C9                    	RET	
+                                	END	
+BIO BASIC Interpreter I/O routines/WHG/PGA/MBM...	MACRO-80 3.44	09-Dec-81	PAGE	S
+CRDO	Put out a carriage return and associated routines
+
+Macros:
+
+Symbols:
+01B8'	BUFCIN          00FF 	BUFLEN          0150*	BUFMIN          
+01D6*	CHARC           01CEI'	CHARCG          0106*	CHNFLG          
+010A*	CHNRET          01A5*	CHRGTR          000E 	CLMWID          
+012EI'	CNLCB2          0191I'	CNTCCN          013D*	CNTOFL          
+0129I'	CONIN           00E5I'	CONOUT          01AEI'	CONST3          
+0189I'	CONSTS          000F 	CONTO           0005 	CPMENT          
+0000 	CPMWRM          0168'	CRCONT          0152I'	CRDO            
+0145I'	CRDONZ          015CI'	CRFIN           0159I'	CRFINO          
+018A*	CSTS            019F*	CTRLPT          0141*	CTROPT          
+0080 	DATPSC          0000 	DBLTRN          0000*	DSCPTR          
+01C5*	FACLO           0008*	FILOUT          014DI'	FININL          
+006FI'	FINLPT          00EDI'	INCHR           0126I'	INCHRI          
+00D3'	INCTPS          00F7*	INDSKC          012F'	INEXIT          
+01A4I'	INKEY           0186I'	ISCNTC          00C1*	LINLEN          
+0050 	LINLN           00CCI'	LINPT1          0061'	LPTCH1          
+0062'	LPTCHR          000B'	LPTCOD          0084 	LPTLEN          
+0067I'	LPTOUT          0171*	LPTPOS          004E*	LPTSIZ          
+010D*	LSTFRE          0003 	MD.RND          0001 	MD.SQI          
+0002 	MD.SQO          00AB'	MORSP           0029'	MORSPL          
+00B8'	MORSPR          01AE'	MRCHRI          0028 	NAMLEN          
+0111*	NEWSTT          00DFI'	NOPRIN          00BB'	NOTAB           
+0038'	NOTABL          0125'	NOTFLC          00A6'	NTBKS1          
+0024'	NTBKS2          0174'	NTPRTR          0179*	NULCNT          
+01C1'	NULRT           001D 	NUMLEV          000A 	NUMTMP          
+01DAI'	OUTCH1          0005'	OUTCON          0000I'	OUTDO           
+00FA*	POPHRT          008C*	PPSWRT          0100*	PRGFIN          
+0078'	PRINTW          0169*	PRTFLG          017B'	PRTNUL          
+015E*	PTRFIL          0000*	PUTNEW          01C2*	REDDY           
+0115*	RUNC            01BF*	SETSTR          01A2*	STOP            
+01BA*	STRIN1          011E*	STROUT          0003 	STRSIZ          
+0000 	TRUROM          0126I'	TRYIN           00DC'	TRYOUT          
+0087I'	TTYCHR          0176*	TTYPOS          01CA*	VALTYP          
+005E'	ZERLP1          0058'	ZERLPT          
+
+
+
+No Fatal error(s)
+
+
+  0100*	PRGFIN          
+0078'	PRINTW          0169*	PRTFLG          017B'	PRTNUL          
+015E*	PTRFIL          0000

@@ -1,0 +1,64 @@
+
+CPM3.DOC - Installing ConIX V22.12 under CP/M 3.0
+-------------------------------------------------
+
+The  ConIX Operating System provided on the distribution diskette 
+was  designed to function optimally under the  CP/M  version  2.2 
+operating  system.   If you are installing ConIX under CP/M  Plus 
+version 3.0, there are a few general steps you should follow.
+
+INSTALL.COM  - This  program will install ConIX on  your  system.  
+CP/M  3  users will probably have to disable at least BDOS  error 
+vector  patching in order to get ConIX to work at all.   You  may 
+also  have  to  disable the ExpanDisk feature  or  BIOS  patching 
+entirely.   What  must be disabled varies from system to  system.  
+There  is  no  real scientific way of knowing what  can  be  left 
+enabled  and what should be disabled.   Only trial and error will 
+tell for sure.
+
+CPM3CCPR.COM - This program generates a replacement CCP.COM which 
+you can install into your system.  This file is not ConIX itself, 
+but simply a loader which will insure that ConIX is automatically 
+loaded each time you cold boot your system.  We felt it necessary 
+to  provide this program since the prescribed  auto-boot  patches 
+often will not work under CP/M 3.
+
+When   you  run  CPM3CCPR,   a  new  file  CPM3CCP.COM  will   be 
+automatically generated.   This new file is pre-relocated to load 
+at the top of TPA memory.    Therefore,  before running CPM3CCPR, 
+make  sure that system memory is organized as it will appear when 
+ConIX  itself  is  running  (namely,   all  TPA  region   patches 
+installed, if any).
+
+To  install  the new CCP,  copy your current CCP  to  OLDCCP.COM, 
+erase CCP.COM, and then copy CPM3CCP.COM to CCP.COM.  Reboot your 
+system to have the new CCP load.
+
+CPM3CCP  has  a  few nice features.   Firstly,  when  CPM3CCP  is 
+invoked,  it will look for the presence of a file A:NOBOOTCX.SYS.  
+If  found,  OLDCCP.COM  will be loaded and  executed  instead  of 
+CONIX.COM.  If ConIX is to be loaded, a message will be displayed 
+while it is being read off disk.   You may abort to OLDCCP.COM by 
+simply hitting CTRL-X.   Remember,  if you BYE out of ConIX,  you 
+will  get CPM3CCP.COM which will then throw you right back  where 
+you came from.  If you need the CP/M 3 CCP, be ready on the CTRL-
+X key after running BYE.
+
+CPM3FIX.XCC/COM  - Some  implementations  of CP/M 3  might  cause 
+trouble as far as BDOS error messages are concerned.  The symptom 
+is  flakey operation or a downright crash after a CP/M BDOS  disk 
+error message is printed.   If this happens,  you'll have to  run 
+CPM3FIX each time ConIX is cold loaded into your system.
+
+The  best  way  to  do this is to use MENU to set  a  program  to 
+execute  automatically when PROFILE finishes setting  the  system 
+configurations.   The command [J] CPM3FIX should do fine.  If you 
+are already executing another Command Language  program,  execute 
+CPM3FIX from within it.
+
+CP/M 3 RSX FEATURE - Since ConIX was written for CP/M 2.2,  there 
+is currently no support for Resident System Extension invocations 
+from  under ConIX.   Any RSX's which are to stay  permanently  in 
+memory should be loaded before ConIX is cold started.
+ll then throw you right back  where 
+you came from.  If you need the CP/M 3 CCP, 

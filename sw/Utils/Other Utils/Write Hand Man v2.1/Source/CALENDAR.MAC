@@ -1,0 +1,582 @@
+;
+;	Appointment Calendar application for Write-Hand-Man
+;
+;	Copyright (c) 1985 by Poor Person Software
+;
+	org	0
+base	equ	$
+bdos	equ	base+5
+home	equ	base+010h
+fcb	equ	base+05ch
+fcbcr	equ	fcb+32
+fcbr0	equ	fcb+33
+fcbr2	equ	fcb+35
+fcbs2	equ	fcb+14
+bdos	equ	base+5
+buf	equ	base+080h
+;
+open	equ	15
+close	equ	16
+ranread equ	33
+ranwrit equ	34
+pstring equ	9
+setdma	equ	26
+conio	equ	6
+;
+ctlu	equ	05	; up  CTL E
+ctld	equ	24	; down CTL X
+ctle	equ	25	; erase CTL Y
+ctll	equ	19	; left CTL S
+ctlj	equ	10	; jump CTL J
+ctlr	equ	04	; right CTL D
+ctlb	equ	2	; forward CTL B
+ctlc	equ	3	; clear CTL C
+ctls	equ	16	; plan	 CTL P
+ctlf	equ	6	; forward CTL F
+ctlh	equ	8	; destructive backspace  CTL H
+ctldel	equ	127	; delete
+ctlo	equ	15	; output to printer
+;
+	org	0100h
+;
+	jmp	go
+	org	0200h		; second/third page buffer
+go:
+	xra	a		; clear fcb fields
+	sta	fcbs2
+	sta	fcbr2
+	lxi	d,fcb		; open dat file
+	mvi	c,open
+	call	bdos
+	inr	a		; see if error
+	jz	base		; yes return
+;
+	lxi	h,0
+	shld	page		; set current page #  to 0
+	call	getpage 	; read in page
+	call	dispage 	; display page
+loop:
+	mvi	c,conio
+	mvi	e,255
+	call	bdos		; get input character
+	ora	a
+	jz	loop		; wait for a character
+	cpi	27		; an esc
+	jz	exit		; quit
+	cpi	ctldel		; delete
+	jz	loop		; skip
+	cpi	31		; a blank
+	jnc	update		; a character update screen
+	cpi	13		; cr
+	jz	doreturn
+	cpi	ctld		; down cursor
+	jz	dodwn
+	cpi	ctll		; left cursor
+	jz	doleft
+	cpi	ctlf		; forward page
+	jz	dofor
+	cpi	ctlb		; backward page
+	jz	doback
+	cpi	ctlu		; up cursor
+	jz	doup
+	cpi	ctlr		; right cursor
+	jz	dorgt
+	cpi	ctle		; erase page
+	jz	doers
+	cpi	ctlh
+	jz	dobsp		; backspace
+	cpi	ctlj		; jump to page
+	jz	dojump
+	cpi	ctls
+	jz	dosecond	; jump second weed
+	cpi	ctlc		
+	jz	doclear 	  ; clear
+	cpi	ctlo		; printer output
+	jz	doprint
+	jmp	loop		; do again
+;
+exit:
+	call	putpage 	; flush page if needed
+;
+	lxi	d,fcb
+	mvi	c,close
+	call	bdos		; close file
+	jmp	base		; return    
+;
+getpage:
+;
+	call	set1		; set first third
+	call	page3		; get CP/M record number
+	shld	fcbr0		; read record
+	call	readit		; read record
+	call	set2		; set second third
+	call	page3		; CP/M record number
+	inx	h		; plus 1
+	shld	fcbr0
+	call	readit		; read record
+	call	set3
+	call	page3		; repeat for 
+	inx	h
+	inx	h
+	shld	fcbr0
+	call	readit		; final third of page
+	lxi	h,buf+382
+	mvi	m,020h
+	inx	h
+	mvi	m,020h		; replace cr lf with blanks
+	ret
+;
+readit:
+	mvi	c,ranread	; read 
+	lxi	d,fcb
+	call	bdos
+	ora	a
+	pop	h		; rectify stack in case of error
+	jnz	blkpag
+	pchl			; return
+;
+set1:				; set dma to first part of buffer
+	lxi	d,buf
+	call	setd
+	ret
+set2:				; second part of buffer
+	lxi	d,buf+128
+	call	setd
+	ret
+set3:				; third part of buffer
+	lxi	d,buf+256
+	call	setd
+	ret
+;
+setd:				; set dma
+	mvi	c,26
+	call	bdos
+	ret
+;
+putpage:
+	lda	flush		; no changes on this page
+	ora	a
+	rz			; nothing to do
+	lxi	h,buf+382
+	mvi	m,13
+	inx	h
+	mvi	m,10
+	call	set1		; set dma
+	call	page3		; get CP/M record number
+	shld	fcbr0		  
+	call	writit		; write record
+	call	set2
+	call	page3
+	inx	h		; second part
+	shld	fcbr0
+	call	writit
+	call	set3
+	call	page3
+	inx	h
+	inx	h		; third part
+	shld	fcbr0
+	call	writit
+	xra	a
+	sta	flush		; clear changed flag
+	ret
+;
+writit: 			; actual write
+	mvi	c,ranwrit
+	lxi	d,fcb
+	call	bdos
+	ret
+;
+page3:
+	lhld	page		; get page number
+	xchg			; to de
+	lhld	page		; and hl
+	dad	d		; times 2
+	dad	d		; times 3
+	ret
+blkpag: 			; blank the whole buffer
+	lxi	b,384
+	lxi	h,buf
+blklp:
+	mvi	m,32		; store blank in memory
+	inx	h
+	dcx	b		; count
+	mov	a,b
+	ora	c
+	jnz	blklp
+	mvi	a,1		; mark as changed
+	sta	flush
+	ret
+blkpg1: 			; blank all but line 1
+	lxi	b,352
+	lxi	h,buf+32
+	jmp	blklp
+;
+dispage:			; display the page
+	call	home		; home cursor
+dispg1: 			; to printer
+	lxi	h,buf		; start of buffer
+	mvi	b,12		; 12 lines
+dloop:
+	call	dline		; display the line
+	dcr	b
+	jnz	dloop
+	mvi	b,33
+dlp1:				; put out bottom line
+	mvi	e,'-'
+	push	b
+	call	putchar
+	pop	b
+	dcr	b
+	jnz	dlp1
+;
+	lda	list
+	ora	a
+	rnz			; doing printer
+;
+	call	home		; home cursor
+	mvi	e,10
+	call	putchar 	; put on line 1
+	xra	a
+	sta	curcol		; set column to 0
+	inr	a
+	sta	curlin		; set line to 1
+	ret
+;
+dline:
+	push	b		; save b
+;
+	mvi	c,32		; characters per line
+;
+dlp:
+	mov	e,m		; get byte
+	push	h
+	push	b
+	call	putchar 	; write it to screen
+	pop	b
+	pop	h
+	inx	h		; bump pointer
+	dcr	c		; count
+	jnz	dlp
+;
+	push	h		; save buffer pointer
+	mvi	e,'|'		; put out border
+	call	putchar
+	call	crlf		; next line
+	pop	h
+	pop	b
+	ret
+;
+putchar:			; write character to console
+	mvi	c,conio
+	lda	list
+	ora	a
+	jz	putch1
+	mvi	c,5		; to printer
+putch1:
+	call	bdos
+	ret
+crlf:				; write CR/LF
+	mvi	e,13
+	call	putchar
+	mvi	e,10
+	call	putchar
+	ret
+update: 			; replace character in buffer
+	push	psw
+	mov	e,a
+	call	putchar 	; put onto screen
+	lda	curcol		; column number
+	call	getadr		; calculate address in buffer
+	pop	psw		; get character
+	mov	m,a		; to buffer
+	mvi	a,1
+	sta	flush		; mark as changed
+;
+nxtchar:			; advance pointers
+	lda	curcol
+	inr	a
+	sta	curcol		; first column
+	cpi	32		; did it pass the end of line
+	jc	loop		; no then done
+	xra	a
+	sta	curcol		; set to column 0
+	call	crlf		; move cursor on screen
+;
+nxtline:
+	lda	curlin		; advance line pointer
+	inr	a
+	sta	curlin
+;
+	cpi	12		; did it pass the window 
+	jc	loop		; no still within
+	xra	a
+	sta	curcol
+	sta	curlin		; set line 0
+	call	home		; home the cursor
+	jmp	loop
+;
+getadr: 			; calculate address in buffer
+	push	psw		; save column
+	lda	curlin		; current line
+	ani	0ffh		; clear carry
+	ral			; 2
+	ral			; 4
+	ral			; 8
+	ral			; 16
+	ral			; 32   carry here means passed line 8
+	mov	c,a
+	mvi	a,0		; capture carry
+	ral			; carry to low bit
+	mov	b,a		; set up high byte
+	pop	psw		; get column
+	add	c		; now have position
+	mov	c,a
+	lxi	h,buf		; get buffer base
+	dad	b		; add in offset
+	ret
+;
+dodwn:				; move cursor down
+	mvi	e,10
+	call	putchar 	; put line feed
+	jmp	nxtline 	; join UPDATE
+;
+doleft:
+	lda	curcol
+	ora	a
+	jz	loop		; dont do anything
+	dcr	a
+	sta	curcol		; update pointer
+	mvi	e,8
+	call	putchar 	; move cursor
+	jmp	loop
+dofor:
+	lda	page
+	cpi	13
+	jz	loop		; dont
+	call	putpage 	; put current page if needed
+	lhld	page
+	inx	h
+	shld	page		; bump page indicator
+	call	getpage
+	call	dispage
+	jmp	loop		; loop
+doback:
+	call	putpage 	; put current page if needed
+	lhld	page
+	mov	a,h
+	ora	l
+	jz	loop		; on page zero
+	dcx	h		; back up the page
+	shld	page
+	call	getpage 	; get page
+	call	dispage 	; display page
+	jmp	loop
+;
+doreturn:			; go to next line
+	mvi	a,32
+	sta	curcol
+	jmp	nxtchar 	; force new line
+;
+doers:				; erase page
+	call	blkpg1
+	call	dispage
+	jmp	loop
+;
+dobsp:
+	lda	curcol
+	ora	a		; are we at beginning
+	jz	loop		; do nothing
+	dcr	a
+	sta	curcol		; update column pointer
+	call	getadr		; get address
+	mvi	m,32		; put in blank
+	mvi	e,ctlh		; output bsp
+	call	putchar
+	mvi	e,32
+	call	putchar
+	mvi	e,ctlh
+	call	putchar
+	mvi	a,1
+	sta	flush		; note change in buffer
+	jmp	loop
+;
+dorgt:				; go right 
+	lda	curcol
+	call	getadr
+	mov	e,m		; redisplay current character
+	call	putchar
+	jmp	nxtchar 	; advance pointers
+;
+doup:				; cursor up
+	lda	curlin
+	ora	a		; at top?
+	jz	loop		; yes
+;
+	dcr	a
+	sta	curlin		; decrement
+	call	home		; start from here
+;
+	lda	curlin
+	ora	a		; are we no at top
+	jz	upcol		; skip line do column
+uplp1:
+	mvi	e,10		; output a LF
+	push	psw
+	call	putchar
+	pop	psw
+	dcr	a		; loop till correct line
+	jnz	uplp1
+upcol:
+	lda	curcol		; now position to correct column
+	ora	a
+	jz	loop		; already there
+	mvi	b,0
+uplp2:
+	push	b
+	mov	a,b
+	call	getadr		; get address of this character
+	mov	e,m
+	call	putchar 	; re display  (move cursor to right)
+	pop	b  
+	inr	b		; advance counter
+	lda	curcol
+	cmp	b		; see if returned to correct column
+	jnz	uplp2		; no
+	jmp	loop		; yep
+;
+dojump: 			; go to correct page
+	xra	a
+	sta	second		; second week flag
+jumpit:
+	call	putpage 	; put page away
+	call	getchar
+	jc	loop
+	sta	savchar
+	call	getchar
+	jc	loop
+	cpi	'O'
+	jz	monday
+	cpi	'U'
+	jz	tuorsun
+	cpi	'E'
+	jz	wednes
+	cpi	'H'
+	jz	thurs
+	cpi	'R'
+	jz	friday
+	cpi	'A'
+	jz	saturd
+	jmp	loop
+;
+tuorsun:
+	mvi	c,1		; assume tuesday
+	lda	savchar
+	cpi	'T'
+	jz	jok		; do jump
+	mvi	c,6		; sunday
+	jmp	jok
+monday:
+	mvi	c,0
+	jmp	jok   
+wednes:
+	mvi	c,2
+	jmp	jok  
+thurs:
+	mvi	c,3
+	jmp	jok  
+friday:
+	mvi	c,4
+	jmp	jok  
+saturd:
+	mvi	c,5
+jok:
+	lda	second
+	ora	a
+	jz	jumpj
+	mov	a,c
+	adi	7
+	mov	c,a
+jumpj:
+	mov	a,c
+	sta	page
+	call	getpage
+	call	dispage
+	jmp	loop
+;
+dosecond:
+	mvi	a,1
+	sta	second
+	jmp	jumpit
+;
+getchar:
+	mvi	e,255
+	mvi	c,conio
+	call	bdos		; get the letter
+	ora	a
+	jz	getchar 	; loop till typed letter
+	ani	05fh		; force upper case
+	cpi	041h		; check range
+	rc			; return if carry
+	cpi	05bh
+	jnc	badchar
+	ani	07fh		; clear carry
+	ret
+badchar:
+	stc
+	ret
+;
+doclear:
+	call	putpage 	; put current page
+;
+	mvi	a,7		; start here  (second monday)
+cllop:
+	sta	page		; set
+	push	psw		; save this
+	call	getpage 	; get this page
+	mvi	a,1
+	sta	flush		; mark as changed
+	lda	page
+	sui	7		; new number
+	sta	page
+	lxi	h,buf
+	mvi	m,49		; set to '1'
+	call	putpage 	; put it here
+	lda	page
+	adi	7
+	sta	page
+	call	blkpg1		; blank the page
+	lxi	h,buf
+	mvi	m,50		; second week
+	call	putpage 	; clear this
+	pop	psw		; get page
+	inr	a		; next
+	cpi	14		; passed the end
+	jnz	cllop
+	xra	a
+	sta	page
+	call	getpage
+	call	dispage
+	jmp	loop		; done
+doprint:
+	sta	list
+	call	crlf
+	call	dispg1
+	call	crlf
+	xra	a
+	sta	list
+	jmp	loop
+;
+list:	db	0
+second: db	0
+savchar: db	0
+curlin: db	0	; current line
+curcol: db	0	; current col
+flush:	db	0
+page:	dw	0
+	end
+
+:	db	0
+second: db	0
+savchar: db	0
+curlin: db	0	; current line
+curcol: d

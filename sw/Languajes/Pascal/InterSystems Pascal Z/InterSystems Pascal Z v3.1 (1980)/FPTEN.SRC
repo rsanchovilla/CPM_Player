@@ -1,0 +1,45 @@
+;ROUTINES TO DIVIDE AND MULTIPLY A FLOATING POINT NUMBER BY TEN
+;
+	NAME FPTEN
+	ENTRY FPTTEN,FPDTEN
+	EXT FDIVD1,FADD1,FPERR
+	INCLUDE FPINIT.SRC
+;
+; divide a floating point number by ten
+;
+fpdten:	lxi	h,op2		;get pointer to op2
+	dad	d
+	push	d		;save base reg
+	xchg			;de <- pointer to op2
+	lxi	h,tentop	;hl <- pointer to 10
+	lxi	b,nbytes
+	lddr			;op2 <- 10
+	pop	d		;restore base reg
+	jmp	fdivd1
+
+;
+; multiply a floating point number by ten
+;
+fptten:	lxi	h,op2		;get pointer to op2
+	dad	d
+	push	d		;save base reg
+	xchg			;get pointer to op1
+	lxi	b,op1
+	dad	b
+	lxi	b,nbytes	;copy op1 -> op2
+	lddr
+	pop	d		;restore base reg
+	inr	exp+op1(x)	;x2
+	jv	fperr		;overflow error
+	inr	exp+op1(x)	;x4
+	jv	fperr
+	call	fadd1		;x5
+	inr	exp+op1(x)	;x10
+	rnv			;return if no error
+;
+; the floating point constant 10, in the five byte internal
+; form
+;
+	db	0,0,0,50h	; 5/8
+tentop:	db	4		;	* 16 = 10
+

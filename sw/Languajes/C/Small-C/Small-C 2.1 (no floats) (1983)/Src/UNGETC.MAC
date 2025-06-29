@@ -1,0 +1,63 @@
+EXT Unextc
+CC1:
+ungetc::
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL Umode
+POP B
+CALL CCLNEG##
+MOV A,H
+ORA L
+JNZ CC4
+LXI H,Unextc
+XCHG;;
+POP B
+POP H
+PUSH H
+PUSH B
+DAD H
+CALL CCDDGI##
+XCHG;;
+LXI H,-1
+CALL CCNE##
+MOV A,H
+ORA L
+JNZ CC4
+LXI H,4
+CALL CCDSGI##
+XCHG;;
+LXI H,-1
+CALL CCEQ##
+MOV A,H
+ORA L
+JNZ CC4
+LXI H,0
+JMP CC5
+CC4:
+LXI H,1
+CC5:
+MOV A,H
+ORA L
+JZ CC3
+LXI H,-1
+RET
+CC3:
+LXI H,Unextc
+XCHG;;
+POP B
+POP H
+PUSH H
+PUSH B
+DAD H
+DAD D
+XCHG;;
+LXI H,4
+CALL CCDSGI##
+CALL CCPINT##
+RET
+EXT Umode
+END
+

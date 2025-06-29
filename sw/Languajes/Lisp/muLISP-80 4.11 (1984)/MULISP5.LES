@@ -1,0 +1,328 @@
+File:  MULISP5.LES  (c)            02/27/84           The Soft Warehouse
+
+CLRSCRN
+This is muLISP programming lesson #5.  This lesson introduces the primitive
+muLISP numerical functions and presents several techniques useful for writing
+efficient mathematical functions.
+
+muLISP provides the user with infinite precision integer arithmetic.  This
+means that the only limit on the size of numbers is available computer memory.
+Numbers consisting of thousands of digits are possible.  This makes muLISP
+useful for investigations in the fields of number theory and cryptography.
+
+
+CONTINUE
+We begin by discussing the primitive numerical functions muLISP provides.
+Most conventional programming languages use numerical operators like +, -, *,
+and / to denote addition, subtraction, multiplication, and division
+respectively.  These infix operators are used between their operands in
+numerical expressions.  For example:
+
+                            3*4 + 5
+
+Since muLISP is a functional programming language, function notation is more
+natural and consistent for expressing numerical expressions.  Thus rather than
+operators, the functions PLUS, DIFFERENCE, TIMES, and QUOTIENT are used to
+perform the four basic numerical operations.  For example, the above
+expression would be entered as:
+
+$ (PLUS (TIMES 3 4) 5)
+
+During this break, familiarize yourself with these four numerical functions.
+When ready to return to the lesson, type the word "RETURN" and press the
+<RETURN> key.
+
+BREAK
+CLRSCRN
+One advantage of functional notation over operator notation is that you are
+not limited to two operands for each operation.  The functions PLUS, TIMES,
+and DIFFERENCE can accept a variable number of arguments.  For example:
+
+$ (PLUS 45 -23 57)
+
+$ (TIMES 1 2 3 4 5)
+
+During this break, empirically determine what DIFFERENCE does with more than
+two arguments by using test cases.
+
+BREAK
+CLRSCRN
+If a numerical function is inadvertently called with nonnumeric arguments, the
+"Nonnumeric Argument" error message will be displayed on the console followed
+by the option prompt
+
+          Continue, Break, Executive, Restart, System?
+
+You then must select one of the five options by entering its first letter.
+The options are fully described in Section 5.18 of the muLISP Reference
+Manual.  The next screen summarizes the options available.
+
+CONTINUE
+Summary of the error break options:
+
+Continue:  continues execution with the errant function call used as the value
+    returned.
+
+Break:  temporarily suspends execution and prompts the user for input.  The
+    errant function can be determined by examining the value of the variable
+    BREAK.  To return from the break, type the word "RETURN" followed by the
+    value you want to be returned as the value of the errant function call.
+
+Executive:  aborts execution, returns control directly to the executive driver
+    loop, and prompts the user for further input.
+
+Restart:  abandons the current muLISP environment and starts up a fresh muLISP
+    system.
+
+System:  terminates muLISP and returns to the host operating system.
+
+
+CONTINUE
+Enough of errors, let's return to mathematics!  The factorial of a number is
+of great importance in probability theory.  The factorial of a nonnegative
+integer N, denoted N!, can be recursively defined as follows:
+
+              0! = 1,
+              N! = N*(N-1)!  if  N > 0
+
+The equivalent muLISP definition of FACTORIAL is:
+
+$ (DEFUN FACTORIAL (LAMBDA (N)
+    ((EQ N 0) 1)
+    (TIMES N (FACTORIAL (DIFFERENCE N 1))) ))
+
+$ (FACTORIAL 5)
+
+This is an efficient definition; however, if N is large there is the
+possibility of a memory space exhausted error because of a stack-overflow.
+During this break, write and test an iterative version of FACTORIAL.  Hint:
+you will need an accumulation variable for the result.
+
+BREAK
+An iterative definition for FACTORIAL and an example:
+
+$ (DEFUN FACTORIAL (LAMBDA (N
+      % Local: % RSLT)
+    (SETQ RSLT 1)
+    (LOOP
+      ((ZEROP N) RSLT)
+      (SETQ RSLT (TIMES N RSLT))
+      (SETQ N (DIFFERENCE N 1)) ) ))
+
+$ (FACTORIAL 100)
+
+As the example illustrates, muLISP can handle very large numbers.  In the
+definition we introduced the primitive recognizer function ZEROP.  (ZEROP N)
+is equivalent to (EQ N 0) but is slightly more efficient.
+
+CONTINUE
+A series that keeps turning up in nature in the strangest places is the
+Fibonacci Series.  The Nth Fibonacci number, denoted F(N), can be recursively
+defined as follows:
+
+               F(0) = 1,
+               F(1) = 1,
+               F(N) = F(N-1) + F(N-2)  if  N > 1.
+
+The equivalent muLISP definition of FIBONACCI is:
+
+$ (DEFUN FIBONACCI (LAMBDA (N)
+    ((ZEROP N) 1)
+    ((EQ N 1) 1)
+    (PLUS (FIBONACCI (DIFFERENCE N 1)) (FIBONACCI (DIFFERENCE N 2))) ))
+
+$ (FIBONACCI 10)
+
+During this break, gain a feel for the efficiency of the above algorithm by
+calling FIBONACCI with progressively larger arguments.
+
+BREAK
+CLRSCRN
+As you test cases should have demonstrated, this is an extremely inefficient
+algorithm.  The problem is that to compute the Nth Fibonacci number, the
+(N-2)th Fibonacci number is unnecessarily computed twice, the (N-3)th three
+times, the (N-4)th five times, and it keeps gets getting worse.
+
+Since this is a recursive algorithm, most people jump to the conclusion that
+recursion is the problem, and set about writing a messy iterative definition
+to achieve efficiency.  But the problem is not recursion but the algorithm.
+
+Rather than computing the Nth Fibonacci number by working backward toward
+zero, the efficient way is to start at zero and work up to the Nth Fibonacci
+number using two variables to store the two most recently computed Fibonacci
+numbers.
+
+During this break, use this approach to define an efficient, yet recursive,
+definition for Fibonacci numbers calling it FIB.  Compare the efficiency of
+FIB with FIBONACCI.
+
+BREAK
+An efficient, recursive definition for Fibonacci numbers:
+
+$ (DEFUN FIB (LAMBDA (N F1 F2)
+    ((ZEROP N) F1)
+    (FIB (DIFFERENCE N 1) (PLUS F1 F2) F1) ))
+
+$ (FIB 10 1 0)
+
+$ (FIBONACCI 10)
+
+FIB is a function of 3 arguments.  The first argument is N, the second must be
+1, and the third 0.  If you insist on a single argument Fibonacci function,
+you can define a "front-end" function that merely calls FIB with the
+appropriate second and third arguments.
+
+For those of you still not convinced of the elegance and efficiency of
+recursion, write an iterative definition for Fibonacci numbers and compare it
+to the above definition.  If you are a believer, you can simply continue on.
+
+CONTINUE
+Raising an expression to an integer power is certainly an important
+mathematical operation.  To raise N to Mth power all you have to do is
+multiply N times itself M times.
+
+During this break, write an iterative definition of POWER as a function of two
+arguments.
+
+BREAK
+A iterative definition of POWER:
+
+$ (DEFUN POWER (LAMBDA (N M
+      % Local: % RSLT )
+    (SETQ RSLT 1)
+    (LOOP
+      ((ZEROP M) RSLT)
+      (SETQ RSLT (TIMES N RSLT))
+      (SETQ M (DIFFERENCE M 1)) ) ))
+
+$ (POWER 2 10)
+
+Again there is a more efficient way of computing powers of numbers.  On to the
+next screen!
+
+CONTINUE
+Consider the following facts:
+
+1.  If M is an even number, then N to Mth power is equal to N squared raised
+    to the M/2th power.
+
+2.  If M is odd, then N to Mth power is N times N raised to the (M-1)th power.
+
+To implement this algorithm you will need the primitive recognizer function
+EVENP.  It returns T if and only if its argument is an even integer; otherwise
+it returns NIL.
+
+During this break, define POWER using the recursive squaring approach
+described above.
+
+BREAK
+An efficient, recursive definition of POWER:
+
+$ (DEFUN POWER (LAMBDA (N M)
+    ((ZEROP M) 1)
+    ((EVENP M)
+      (POWER (TIMES N N) (QUOTIENT M 2)) )
+    (TIMES N (POWER N (DIFFERENCE M 1))) ))
+
+$ (POWER 10 100)
+
+CONTINUE
+The function QUOTIENT returns the truncated integer quotient of its two
+arguments.  REMAINDER is another primitively defined numerical function.  It
+is used to find the remainder of a division operation.  Note that REMAINDER
+returns the same value as the MOD (modulo) function provided in some other
+computer languages.
+
+The GCD (Greatest Common Divisor) of two integers is the largest nonnegative
+integer number that evenly divides both integers.  Euclid's algorithm for the
+GCD of the integers N and M can be paraphrased as:
+
+1.  If N = 0, then GCD (N, M) = M;
+
+2.  Otherwise, GCD (N, M) = GCD (M mod N, N).
+
+During this break, define the function GCD using Euclid's algorithm and try it
+out on some examples.
+
+BREAK
+Recursive definition of GCD using Euclid's algorithm:
+
+$ (DEFUN GCD (LAMBDA (N M)
+    ((ZEROP N) M)
+    (GCD (REMAINDER M N) N) ))
+
+$ (GCD 21 56)
+
+Note: GCD is primitively defined in the 8086/8088 (i.e. MS-DOS) version of
+muLISP-83.  If you are using the 8080/Z80 (i.e. CP/M-80) version of muLISP-83
+and need a GCD function, you can now define you own.
+
+
+CONTINUE
+Finally we need to mention the two primitive numerical comparator functions:
+GREATERP and LESSP.  For example:
+
+$ (GREATERP 67 45)
+
+$ (LESSP 13 22 19)
+
+As the last example shows, these two functions can also be called with more
+than two arguments.  LESSP is frequently called with 3 arguments when
+necessary to determine if a number is between two boundaries.  For example, to
+determine if "g" is a lower case letter enter:
+
+$ (LESSP 96 (ASCII 'g) 123)
+
+The function ASCII returns the ASCII code if given a character name.  It
+returns the equivalent ASCII character if given a number between 0 and 256.
+During this break, write the recognizer function LOWERCASE that determines if
+a character is a lower case character.
+
+BREAK
+The LOWERCASE recognizer function:
+
+$ (DEFUN LOWERCASE (LAMBDA (CHAR)
+    (LESSP 96 (ASCII CHAR) 123) ))
+
+$ (LOWERCASE 'g)
+
+CONTINUE
+Let's finish off this lesson by writing a function for sorting a list of
+integers into increasing order.  We are not too concerned with efficiency so
+let's use a simple "insertion sort" algorithm that is adequate for short
+lists.
+
+First we need a function that inserts an integer in the proper place in a
+sorted list of integers.  During this break, write INSERT-NUM, a function that
+inserts NUM into LST.  Use iteration or recursion depending on your taste.
+
+BREAK
+A recursively defined INSERT-NUM function:
+
+$ (DEFUN INSERT-NUM (LAMBDA (NUM LST)
+    ((NULL LST)
+      (LIST NUM) )
+    ((LESSP NUM (CAR LST))
+      (CONS NUM LST) )
+    (CONS (CAR LST) (INSERT-NUM NUM (CDR LST))) ))
+
+$ (INSERT-NUM 12 '(5 9 11 14 19 21))
+
+During this break, use INSERT-NUM to write the function SORT that sorts a list
+of integers.
+
+BREAK
+A recursive defined SORT function:
+
+$ (DEFUN SORT (LAMBDA (LST)
+    ((NULL LST) NIL)
+    (INSERT-NUM (CAR LST) (SORT (CDR LST))) ))
+
+$ (SORT '(34 23 -14 27 56 22 83))
+
+This concludes our discussion of numerical programming techniques using
+muLISP.  Congratulations on successfully completing lesson #5.
+
+CONTINUE
+$ (RDS)
+

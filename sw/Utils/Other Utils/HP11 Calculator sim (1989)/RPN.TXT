@@ -1,0 +1,230 @@
+=================================================================
+
+
+                              R P N
+
+
+RPN Notation
+------------
+
+Reverse Polish Notation (RPN), also called postfix notation, is
+a simple but powerful stack oriented notation commonly used in
+Hewlett-Packard calculators.  You first enter the two numbers you
+wish to operate on, using the <RETURN> key to separate the two
+numbers you are entering and then you enter the function you wish
+to perform.  The numbers you enter are pushed onto a stack and
+the function performed on the numbers in the stack.  The result
+is displayed immediately after the function is entered.
+
+Within it's limits, HP11 follows the RPN conventions used by
+Hewlett-Packard in their line of RPN calculators.
+
+For example (assuming the decimal display mode):
+
+     To Solve  Function            Keystrokes   Display
+     --------  -----------------   ----------   -------
+     9+3=12    9 plus 3            9<RET>3+        12
+     9-3=6     9 minus 3           9<RET>3-         6
+     9*3=27    9 times 3           9<RET>3*        27
+     9/3=3     9 divided by 3      9<RET>3/         3
+     9^3=729   9 to the 3rd power  9<RET>3^       729
+
+
+Stack
+-----
+
+RPN is based on the stack.  A number is entered onto the stack by
+keying in the digits, ending with <RET>.  Each subsequent number
+keyed in will push the existing contents of the stack one level
+higher.
+
+The structure of HP11's 4 level stack is shown below:
+
+               T -> 0000      Stack register 4
+               Z -> 0000      Stack register 3
+               Y -> 0000      Stack register 2
+               --------------------------------------------
+               X -> 0000      Stack register 1 <- Displayed
+
+HP11 always displays the contents of the X register.  When the
+stack is lifted, the contents of each stack register are moved up
+one level, the contents of register X are copied into Y and the
+contents of register T, the topmost register, are lost.
+
+When the stack is dropped, the contents of each stack register
+are moved down one level and the contents of the T register are
+copied into register Z.  The result of the calculator operation
+is placed in register X.
+
+By entering a number 4 times to copy it into each stack register,
+that number becomes a 'constant' in the Y register for subsequent
+chain operations.  Each subsequent operation will drop the stack,
+restoring the same 'constant' value to the Y register for the
+next operation.
+
+
+Stack Functions
+---------------
+
+HP11 has several functions that affect only the stack.  In each
+of these examples, each stack register starts out loaded with the
+number of that register.
+
+
+Clearing the Stack (^X):
+     Control-X clears the entire stack.  The values contained in
+     the LAST-X and memory registers are not affected.  HP11
+     starts with a clear stack when loaded from disk.
+
+               T -> 4         T -> 0
+               Z -> 3         Z -> 0
+               Y -> 2         Y -> 0
+               -------------------------------------
+               X -> 1         X -> 0    <- Displayed
+               ------         ------
+                    Key: ^X             (Clear stack)
+
+
+Entering a number (<RET>):
+     <RET>, used as the ENTER key, terminates entry of a number
+     and places it on the stack.  It also separates two numbers
+     entered one after the other.  <RET> lifts the stack and
+     copys the number in the X register to the Y register,
+     replacing it with the number that has just been keyed in.
+     The value in the top stack register, register T, is lost.
+
+               T -> 4         T -> 3    Previous T (4) lost
+               Z -> 3         Z -> 2
+               Y -> 2         Y -> 1
+               -------------------------------------
+               X -> 1         X -> 789  <- Displayed
+               ------         --------
+                    Key: 789<RET>       (Enter 789)
+
+
+Stack drop:
+     A numeric function will drop the stack one level and replace
+     the value in X with the numeric result.  The value in
+     register T is copied down to register Z whenever the stack
+     is dropped.
+
+               T -> 4         T -> 4    Value in T copied to Z
+               Z -> 3         Z -> 4
+               Y -> 2         Y -> 3
+               -------------------------------------
+               X -> 1         X -> 3    <- Displayed
+               ------         ------
+                    Key: +              (X+Y)
+                         (2+1=3)
+
+
+Roll stack up (>) or down (<):
+     When the stack is rolled up, the stack is lifted one level
+     and the previous value of T is moved down to X.  When the
+     stack is rolled down, the stack is dropped one level and the
+     previous value of X is moved up to T.  No values are lost.
+
+               T -> 4         T -> 3    Value from T moved
+               Z -> 3         Z -> 2         down to X
+               Y -> 2         Y -> 1
+               -------------------------------------
+               X -> 1         X -> 4    <- Displayed
+               ------         ------
+                    Key: >              (Roll Up)
+
+
+               T -> 4         T -> 1    Value from X moved
+               Z -> 3         Z -> 4         up to T
+               Y -> 2         Y -> 3
+               -------------------------------------
+               X -> 1         X -> 2    <- Displayed
+               ------         ------
+                    Key: <              (Roll Down)
+
+
+Exchange contents of X and Y (=):
+     The contents of registers X and Y are exchanged.  No other
+     registers are affected.  This function is useful when you
+     need to reverse the order of the operands before you perform
+     an operation sensitive to the order of the operands, such as
+     subtraction, division, or exponentiation.
+
+               Y -> 2         Y -> 1
+               -------------------------------------
+               X -> 1         X -> 2    <- Displayed
+               ------         ------
+                    Key: =              (X<>Y)
+
+
+Last X (L):
+     When a numeric function is executed, a copy of the last
+     value in the X register before the function is executed is
+     saved in the Last-X register.  That value can be restored to
+     the X register using the 'L' key.  The stack is lifted,
+     moving the current contents of the X register to the Y
+     register, etc.  The value in the Last-X register is not
+     affected.
+
+               T -> 3         T -> 3         T -> 3
+               Z -> 2         Z -> 3         Z -> 2
+               Y -> 1         Y -> 2         Y -> 9
+               -------------------------------------------------
+     Last-X -> X -> 8         X -> 9         X -> 8 <- Displayed
+               ------         ------         -----
+                    Key: +         Key: L           (Last-X)
+                         (1+8=9)
+
+
+Numeric Functions and the Stack
+-------------------------------
+
+When you want to key in two numbers, one after the other, you use
+the <RET> key between entries to separate the numbers.  When you
+want to key in a number and execute a function that uses the
+value already in the X register as the other operand, you don't
+need to use the <RET> key.  Instead, you enter the second operand
+directly followed by the desired operation key.
+
+               T -> 4         T -> 3         T -> 3
+               Z -> 3         Z -> 2         Z -> 3
+               Y -> 2         Y -> 1         Y -> 2
+               -------------------------------------------------
+               X -> 1         X -> 5         X -> 6 <- Displayed
+               ------         ------         ------
+                    Key: 5         Key: +           (X=X+5)
+                                        (1+5=6)
+
+
+The functions <RET> and ^X (clear stack) disable the automatic
+stack lift when the next number is keyed in.  When any other
+function is used, the stack lift is enabled, causing the stack to
+automatically lift when the next number is keyed in.  This effect
+is very natural and you probably won't have to think about it.
+
+
+One-Number Function:
+     Negation (two's complement) is HP11's only one one-number
+     function.  It operates on the current value in the X
+     register, placing the result in the X register.  The rest of
+     the stack is unaffected.
+
+
+Two-Number Functions:
+     The remainder of HP11's numeric functions use the values in
+     both the X and Y registers.  In operations such as
+     subtraction or division, the last number keyed in is the
+     number you are subtracting or dividing by.  If you have the
+     numbers entered in the wrong order, use the '=' key to
+     exchange the values of the X and Y registers.
+
+               T -> 3         T -> 2         T -> 2
+               Z -> 2         Z -> 1         Z -> 2
+               Y -> 1         Y -> 8         Y -> 1
+               -------------------------------------------------
+               X -> 8         X -> 4         X -> 2 <- Displayed
+               ------         ------         ------
+     Key: 8<RET>    Key: 4         Key: /           (Y/X)
+                                        (8/4=2)
+
+=================================================================
+

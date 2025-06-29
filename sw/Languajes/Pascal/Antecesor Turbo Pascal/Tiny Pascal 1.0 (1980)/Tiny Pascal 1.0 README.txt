@@ -1,0 +1,232 @@
+
+
+Tiny Pascal 1.0
+
+
+Introduction
+------------
+
+Tiny Pascal is the inspiration for BLS Pascal, the ancestor of Turbo Pascal!!!! 
+It runs on a TRS-80 Model 1 computer, and is tape based.
+TINYPAS.COM is a port from to CP/M.
+
+ Turbo Pascal Genealogy 	Year	System
+
+ Tiny Pascal Basic		1978	NorthStar Horizon
+ Tiny Pascal 1.0		1980	TRS80 Model 1
+ BLS Pascal Version 1.0	  	1981	NasCom
+ BLS Pascal Version 1.2         1981	NasCom (Same as Nascom Pascal 2.0)
+ BLS Pascal Version 1.3	  	1982	NasCom
+ COMPAS V1.0 			1982	CP/M
+ COMPAS V2.10 			1983	CP/M
+ COMPAS V2.20 			1983	CP/M
+ COMPAS V3.02 			1983	CP/M
+ Turbo pascal 1.0               1983	CP/M, MSDOS, CPM86
+ Turbo pascal 2.00              1984	CP/M, MSDOS, CPM86
+ Turbo pascal 3.00              1985	CP/M, MSDOS, CPM86
+ Turbo pascal 3.01A             1985	CP/M, MSDOS, CPM86
+ PolyPascal-80 V3.10 		1985	CP/M, MSDOS, CPM86
+ Turbo Pascal 4.0		1987	MSDOS
+ Turbo Pascal 5.0		1988	MSDOS
+ Turbo Pascal 5.5		1989	MSDOS
+ Turbo Pascal 6.0		1990	MSDOS
+ Turbo Pascal for Windows 1.0   1991	Win16
+ Turbo Pascal for Windows 1.5   1991	Win16
+ Borland Pascal 7.0		1992	MSDOS, Win16
+ Delphi 1.0                     1995    Win16
+ Delphi 2.0                     1996    Win32
+ Delphi 3.0                     1997    Win32
+ Delphi 4.0                     1998    Win32
+ Delphi 5.0                     1999    Win32
+ 
+ 
+
+Terminal definition
+-------------------
+
+Tiny Pascal does not uses any terminal escape control sequences
+
+
+Tiny Pascal ported to CP/M
+--------------------------
+
+Example sesion
+
+	A>TINYPAS
+
+	welcome mesage
+
+	.L TEST       <-- load pascal source program
+	.E            <-- edit source 
+        ?	      <-- enter (return to editor command mode)
+	>P99	      <-- list program
+	>Q	      <-- quit editor, return to monitor
+	.C            <-- compile
+	.R            <-- run
+	.Q	      <-- quit to CP/M
+
+The editor is line based. No .COM file are generated. Only .P files, that are
+P-Code files to be run by the interpreter.
+
+Also TINYPAS write and writeln considers special meaning for the folowwing chars
+	1) 0D: a 0D 0A is send to console when 0D is printed
+	2) 0A: the char 0A is ignored and connot be sent to consolve via write
+
+TINYPAS compiler memory map:
+
+        0100 - 07FF: CP/M rutines for I/O
+        0800 - 227F: Stack for compiler/editor
+        2280 - 3FE0: PCode program for compiler/editor
+        4000 - 408F: Z80 stack
+        4090 - 498F: monitor + pcode interpreter
+        4990 - TPA: RAM available for source code
+                                      compiled pcode
+                                      runtime stack for user program execution (grows upwards to end of memory)
+
+There is no need to perform TPA size checks.
+
+Pascal program variables stack grows form low mem up to end mem. 
+If the pascal program needs memory at high ram, it can use it but it is also responsible to
+ensure than runtime stack does not overwrites.
+
+Relevant memory address (corrected from pdf doc)
+
+	4180 Start Of Pascal Source Text Code
+	4182 End of source text
+	4184 MADDR = Start of PCode program 
+	4186 EADDR = End of PCode Program (points to last byte of PCode program)
+	4188 Address of editor: Start of Editor PCode program
+	418a Address of compiler: Start of Compiler PCode program
+
+	418c (Start Of Pascal Source Text Code used by editor)  
+	418e Start of pcode runtime stack  
+	4190 End of pcode runtime stack  
+	4192 End of RAM
+	4194 Monitor Entry Point ($4743)
+
+	4196 start addr of program currently in execution (KADDR)
+	4198 on executing a PCode program, containd -End of runtime stack
+	419a 00        (Overflow flag?)    
+	41a0 JP      #41B2 ; JMP to console in (wait for key press)
+	41a3 JP      #41BC ; JMP to counsole out (print one char)
+	41a6 JP      #41C4 ; JMP to console in (nonblocking read key)
+
+
+
+
+TINYPAS usage
+-------------
+
+	A>TINYPAS        -> enter to Tiny Pascal environment
+
+
+Tiny Pascal changes
+-------------------
+
+Here is the detailed list of changes/patches for Tiny Pascal original TRS-80 
+
+
+
+	1) Lower case usage
+
+TRS80 does not have lower case chars. TRS80 TinyPascal only expect UPPERCASE chars.
+CP/M version allows lower case chars only inside string literals.
+
+	2) Default Top of RAM
+
+TRS80 has two Tiny Pascal version: PASCAL.CMD for 16K machine with top of ram at 7FFF. In the
+32K version (PAS32K.CMD), Top of RAM is defined as BFFF. The PAS32K version is the one used for 
+CP/M port. Tiny Pascal CPM version gets top of ram from TPA end address
+
+	3) Disk Usage for Load/save pascal program 
+
+The original TRS80 Tiny Pascal is tape oriented. 
+CPM version replaces tape I/O by Disk I/O. To support this, some changes
+are made in compiler commands:
+
+		L  filename   or   LS  filename
+
+		Load Pascal source code file Command. The filename is mandatory 
+		and should conform to CPM stardart. No drive letter/extension allowed.
+		Extension used is .PAS
+		During load, no progress information is shown 
+
+		W  filename   or   WS  filename
+
+	        Save Pascal source code file Command. The filename is mandatory, same
+		rules as load.
+
+		LP  filename   
+
+		Load Pascal compiled pcode file. The filename is mandatory, same
+		rules as load. Extension used is .P
+
+		WP  filename   
+
+		Saves Pascal compiled pcode file. The filename is mandatory, same
+		rules as load. 
+
+
+	4) CR and LF
+
+WRITE procedure prints a <LF> when asked to print a <CR>. WRITE(13) sends 13, 10 to screen
+
+	5) Return to CP/M
+
+New monitor command Q to return to CP/M
+
+	6) keyboard reads during execution
+
+CP/M version does not checks the keyboard during pcode program execution (except when asked for
+with INKEY or READ func). This allows TINYPAS to be part of SUBMIT file, bute prevents from
+aborting program execution with ^C
+
+	7) New memory map, more memory alvailable to programs
+
+Original TRS80 version cannot use the addr range 0000-4000 as it is the ROM. CP/M version 
+uses this addr range RAM, and moves then pcode editor/compiler to low mem (see compiler 
+memory map) to optimize memory usage. When running PASMEM.PAS the report is
+
+		CPM Player  (CPM 2.2): Available Memory: 4990-FE00: 45 Kb		
+		Amstrad PCW (CPM 3.0): Available Memory: 4990-F600: 43 Kb
+		TRS80 Tiny Pas 32K   : Available memory: 73F0-BFFF: 19 Kb
+		TRS80 Tiny Pas 16K   : Available memory: 498E-5BC0: 4,5 Kb
+
+
+	8) Disable Tiny Pascal runtime library functions tied to TRS80
+
+The original TRS80 Tiny Pascal has runtime functions and procedures
+to support TRS80 environment. These funciontions are non-sense in
+CPM environmente and thus are disabled in CP/M version
+
+		plot(x,y,f) - plot pixel on TRS80 screen 
+		point(x,y) - get pixel state from TRS80 screen 
+
+
+
+Example programs
+----------------
+
+Some example programs are provided:
+
+	HELLO.PAS 	simple test program Hello World
+	PASMEM.PAS	Displays Available RAM 
+	COMPS1.PAS	Original TRS80 compiler source
+	HILBERT.PAS	Original TRS80 sample program, PLOT function for VT52 added 
+
+source code
+-----------
+
+	TINYPAS.ASM	Source code for Tiny Pascal CP/M port
+	PAS32K.BIN	Original TINY PASCAL v1.0 code for TRS80 imported by TINYPAS.ASM
+	PAS32K.asm	Disassembled and commented (somewhat) original Tape version
+	
+	
+Other files
+-----------
+
+TinyPascal v1.0.pdf	Manual/Documentation for Tiny Pascal 
+TinyPascal v1.0.txt	Manual/Documentation for Tiny Pascal (plain ascii text version)
+
+
+

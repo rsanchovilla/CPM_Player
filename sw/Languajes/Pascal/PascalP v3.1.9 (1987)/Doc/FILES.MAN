@@ -1,0 +1,113 @@
+.macro chttl =  Runtime File Assignments
+.ch .chttl
+
+.hl 1 General
+A number of run time errors can occur while running Pascal programs.  The
+messages  are  generally accompanied by a source code line number  if  the  N+
+option was in effect on compilation.   File errors are also accompanied
+by the file name.
+
+Files  named in the Program line of the Pascal source are external to the
+Pascal program.  They may be defined .bb by the run command, .eb or may be
+temporary or
+permanent user files.   Files declared within procedures are unnamed temporary
+files (unless opened with a second parameter in the opening RESET or  REWRITE,
+as described below).  The files "input" and "output" normally connect to
+the user's console.
+
+.hl 1 On 8080/z80 under CPM:
+The program command line is normally of the form:
+
+.i 5       d>RUNPCD program (fileparameters) [parm]; _<inputfile >outputfile
+
+(with "RUNPCD" omitted for _.COM files) but is not restricted to that,
+i.e. use of the command line is entirely under
+the  control of the application program.   Any section after "program" may  be
+omitted,  and defaults apply.  The file parameters replace the files mentioned
+in  the Pascal PROGRAM heading.   If omitted the Pascal internal  filename  is
+used.   Files input and output cannot be redirected by this mechanism, but use
+the  "Unix" flavored "_<" and ">" (comesfrom and goesto) redirection  commands.
+By  default input and output connect to the users console.  Parm is an integer
+in the range 0..32767,  with a default value of 0.  Use is up to the executing
+program,  however  odd values are used to cause an initial debug trap,  and to
+enable various run-time debugging aids.  Thus it is suggested that application
+programs rely primarily on even values.
+
+.hl 2 CPM device files
+Under CPM and other systems the following device files  are
+normally  available (and their names cannot be used for other  files).  Unless
+mentioned these are text files. Any devicefile may be used interchangably with
+a disk file of the same type.
+.rem end itemize with .res
+.macro itemize = .sav .tabs 10 20 .p -10 1 5 .lm 20 .rm $$rm-10;
+.itemize
+.pp  CON .t    the system console, .bb buffered for input or output. .eb
+.pp  KBD .t   the  system console keyboard,  without  buffering  or
+echoing of input.   Correct use of this file requires
+either modification to CPM 2.2. or (interpreters 2.8
+up) prevents use of the  CNTRL-P CPM function.  This
+avoids  loss of input characters during console  output. 
+See the STATUS procedure.
+.pp  RDR .t   The system "reader" device, line buffered.
+.pp  PUN .t   The system "punch" device
+.pp  LST .t   The system "list" device
+.pp  AUX .t   Identical to RDR device with no line buffering. _<lf>s
+are translated to _<nul>.  See STATUS procedure.
+.pp  NUL .t   a null file (bit bucket).  Any type.
+.pp  CMD .t   A one line file containing the run command line.
+.res
+
+Various other device files can exist at various installations.   Examples
+are:
+.itemize
+.pp  KBB .t   Identical to KBD, except that "reset(kbb)" causes all
+console  i/o to be performed through interrupt driven
+buffers.   The  close operation on kbb (either  
+specifically  performed  or by exit  from  the  declaring
+procedure) restores the normal unbuffered drivers.
+.pp  AD1..AD8 .t  A set of 8 analog/digital converters. FILE OF real.
+.pp  RS1, RS2 .t   Direct access to RS232 i/o ports. See STATUS.
+.pp  R1B, R2B .t   As RS1 and RS2, but buffered via interrupt system.
+These  files will not cause "waits" in the  executing
+program,  unless the buffers fill or are empty.  This
+can be pre-checked with the STATUS function.
+.res
+.hl 2 File Redirection
+Under .bb CPM .eb file redirection is  available,  by
+substituting the desired files in the program header.   Files not specified by
+this  method default to the Pascal filename.   A pair of commas can skip  file
+redirection for any one file.   Note that INPUT and OUTPUT connect to "CON" by
+default and cannot be redirected by this mechanism, but that the sequence
+
+.i 10     A>RUNPCD progfile(whatever) _<inputfilename >outputfilename .b
+.i 35            will redirect INPUT and OUTPUT.
+
+.note NOTE
+The "lf" character is normally ignored .bb  on input. .eb
+However input of a lf will cause the STATUS function to return a
+2 bit (see below) because the hardware is physically loaded.   If a get is now
+performed  the system will flush the lf and perform the following get  
+automatically.   This can cause unexpected delays when performing 
+direct device I/O.
+For this reason some device drivers are modified to translate lf into nul  and
+the user must specifically discard it.   The AUX file translates all lf's into
+nulls for this reason.
+.res
+.hl 2 Under CPM the file search order is:
+.list 1
+.le            The default disk,  if  no drive  specified,
+.le         The system disk. .b
+and then, for code files (.PCD) to be executed only:
+.le            within the library file PCDS.LBR on the default disk.
+.le         within the library file PCDS.LBR on the system disk ONLY
+when no library was found on the default disk.
+.endlist
+
+If  a  drive  has been specified the search is limited to  the  specified
+drive.   If  the  modified CCP and JOB (for submit) files are  installed  this
+search order is implemented at all levels,  otherwise it is limited to  Pascal
+program executions.
+
+Files  INPUT and OUTPUT default to "CON" (the console) under  CPM.   See
+above for run-time re-direction.
+Из

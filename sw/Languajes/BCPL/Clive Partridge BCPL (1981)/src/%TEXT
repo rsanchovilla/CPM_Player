@@ -1,0 +1,163 @@
+	TITLE	Text Routines for BCPL
+
+	NAME	TEXT
+
+	GLOBAL	XRET
+        GLOBAL  STRBUF
+
+DPUSH		EQU	38H
+STRSPACE	EQU    400H
+
+
+SBASE:	DEFW	ENDMOD-SBASE
+
+; strbuffer()  returns the z80  address of the  store.
+STRING:	DEFW	2
+	DEFB	0
+	PUSH	HL
+	LD	HL,STRBUF
+	JP	XRET
+
+; fill(addr,char,bytes) - addr is a Z80 addr
+
+FILL:	DEFW	5
+	DEFB	DPUSH,2,DPUSH,3,DPUSH,4
+	DEFB	0
+	LD	(LEN),HL	;length = bytes
+	POP	DE,		;char (in E)
+	POP	HL,		;addr
+	PUSH	BC		;save PC
+        LD	BC,(LEN)
+	LD	A,C
+	OR	B
+	JR	Z,DONE		;exit if zero length
+	LD	A,E
+	LD	(HL),A		;char into first byte
+	LD	D,H
+	LD	E,L
+	INC	DE		;destination next byte
+	DEC	BC		;first already done
+        LD      A,C		;so exit if now zero
+	OR	B
+	JR	Z,DONE
+	LDIR
+DONE:	POP	BC
+	JP	XRET
+LEN:	DEFW	0000
+
+; move(A, B,Len) - A & B are Z80 addresses.
+
+MOVE:	DEFW	5
+	DEFB	DPUSH,2,DPUSH,3,DPUSH,4
+	DEFB	0
+
+	LD	(LEN),HL
+	POP	DE
+	POP	HL
+	PUSH	BC		;save PC
+	LD	BC,(LEN)
+	; is length 0 - return if it is
+	LD	A,B
+	OR	C
+	JP	Z,MOVEX
+	; is B within A+Len ?
+	EX	DE,HL
+	PUSH	HL		; save B
+	AND	A
+	SBC	HL,DE
+	AND	A
+	SBC	HL,BC
+	POP	HL
+	EX  	DE,HL
+	JR	NC, LEFT
+	; moveright  
+	ADD	HL,BC
+	DEC	HL
+	EX	DE,HL
+	ADD	HL,BC
+	DEC	HL
+	EX	DE,HL
+	LDDR
+	JP	MOVEX
+
+	; moveleft  
+
+LEFT:	LDIR
+
+MOVEX:	POP     BC
+	JP	XRET
+
+; pos(substr,string) - the strings are passed as BCPL addresses.
+
+POS:	DEFW	4
+	DEFB	DPUSH,2,DPUSH,3
+	DEFB	0
+	POP	DE	
+	PUSH	BC		;save PC
+; make the passed (bcpl) addresses into z80
+	ADD	HL,HL
+	EX	DE,HL
+	ADD	HL,HL
+	EX	DE,HL
+
+	LD	A,(DE)		;length of substr
+	LD	(SUBLEN),A
+	LD	C,A
+	LD	A,(HL)		;length of main string
+ 	CP	C		;compare to substr
+	JR	C,NOTFND	;exit if less
+	SUB	C		;less the substring
+	INC	A		;plus one
+	LD	B,A		;max searches = str-substr + 1
+	XOR	A
+	LD	(INDEX),A	;initialise to 0
+	LD	(STRADDR),HL
+	INC	DE
+	LD	(SUBADDR),DE
+
+SEARCH1:LD	HL,INDEX
+	INC	(HL)
+	LD	HL,SUBLEN
+	LD	C,(HL)
+	LD	HL,(STRADDR)
+ 	INC	HL
+	LD	(STRADDR),HL
+	LD	DE,(SUBADDR)
+
+CMP:	LD	A,(DE)
+	CP	(HL)
+	JR	NZ, SCH2
+	DEC	C
+	JR	Z, FOUND
+	INC	HL
+	INC	DE
+	JR	CMP
+
+SCH2:	DJNZ	SEARCH1
+NOTFND:	XOR	A
+	JR	POSX
+
+FOUND:	LD	A,(INDEX)
+
+POSX:	LD	L,A
+	LD	H,0
+	POP	BC
+	JP	XRET
+
+STRADDR:DEFW	0000
+SUBADDR:DEFW	0000
+SUBLEN:	DEFB	00
+INDEX:	DEFB	00
+
+	IF	($.AND.1)=1
+	DEFB	0
+	ENDIF
+
+	DEFW	131,STRING-SBASE
+	DEFW	127,FILL-SBASE
+	DEFW	126,MOVE-SBASE
+	DEFW    140,POS-SBASE
+	DEFW	4
+ENDMOD:	DEFW	140
+
+

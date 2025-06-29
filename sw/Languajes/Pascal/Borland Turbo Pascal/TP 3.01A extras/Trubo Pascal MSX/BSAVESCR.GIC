@@ -1,0 +1,47 @@
+(* B S A V E S C R . G I C      Bilddatei speichern   V 1.1  10-Mai-1987 *)
+
+
+(* Nach dem Aufruf von BSAVEscreen gibt IOresult einen der
+   folgenden Funktionswerte zurÅck:
+
+     0:       Ok
+   $07:       Nicht genug freier Speicher
+   $F0:       Diskette voll
+   $F1:       Directory voll oder unerlaubter Dateiname
+--------------------------------------------------------------- *)
+
+
+type bsavesname = string[14];
+
+procedure BSAVEscreen (n: bsavesname; start, ende: integer);
+
+var scfile: file;
+    fcb:    array[0..47] of byte absolute scfile;
+
+const
+    header: record ID: byte; start,    ende,    filler: integer;
+            end = (ID: $FE;  start: 0; ende: 0; filler: 0);
+
+
+begin
+  header.start := start;
+  header.ende  := ende;
+  assign (scfile, n);
+  move   (fcb[12], scfile, 34);
+  inline ($2A/HEAPPTR/$CB/$7C/$20/$03/$21/$00/$80/$11/$07/$00/$19/$EB/$2A/
+          RECURPTR/$B7/$ED/$52/$22/*+$006A/$21/$07/$00/$7D/$DA/*+$00A3/$EB/
+          $ED/$52/$22/*+$007E/$11/SCFILE/$D5/$0E/$16/$CD/$05/$00/$DD/$E1/$B7/
+          $3E/$F1/$C2/*+$008C/$DD/$36/$0E/$01/$AF/$DD/$77/$0F/$DD/$77/$21/$DD/
+          $77/$22/$DD/$77/$23/$DD/$77/$24/$11/HEADER/$0E/$1A/$CD/$05/$00/$11/
+          SCFILE/$21/$07/$00/$0E/$26/$CD/$05/$00/$B7/$3E/$F0/$20/$5E/$ED/$5B/
+          *+$003D/$0E/$1A/$CD/$05/$00/$21/HEADER/$23/$5E/$23/$56/$23/$7E/$23/
+          $66/$6F/$ED/$53/*+$001F/$ED/$52/$23/$E5/$11/$00/$00/$ED/$52/$22/
+          *+$0035/$E1/$38/$03/$EB/$18/$07/$11/$00/$00/$ED/$53/*+$0028/$E5/$44/
+          $4D/$21/$00/$00/$54/$5D/$09/$22/*+$FFFA/$21/$00/$00/$EB/$DD/$21/$59/
+          $00/$CD/_CALROM/$E1/$11/SCFILE/$0E/$26/$CD/$05/$00/$B7/$3E/$F0/$20/
+          $07/$21/$00/$00/$7C/$B5/$20/$BE/$32/$D0/$00/$11/SCFILE/$0E/$10/$CD/
+          $05/$00);
+end;
+
+
+

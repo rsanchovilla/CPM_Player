@@ -1,0 +1,674 @@
+                         Programming the
+
+       Performance Evaluation and Review Technique (PERT)
+
+                            in BASIC
+                              
+
+            "A method for planning complex activities 
+                   where no precedents exist."
+
+     Original program by Steven Zimmerman and Leo M. Conrad
+     Developed and modified for the Osborne 1 by Doug Hurst
+
+               Text and program listing reprinted 
+               from BYTE Magazine with permission.
+
+
+
+                        TABLE OF CONTENTS
+
+
+
+           Osborne 1 Prolog . . . . . . . . . . .    2
+           Introduction.  . . . . . . . . . . . .    3
+           Origins of PERT. . . . . . . . . . . .    3
+           The Start of PERT Analysis.  . . . . .    3
+           The Bubble Diagram.  . . . . . . . . .    4
+           The Critical Path. . . . . . . . . . .    4
+           Three Time Estimates.  . . . . . . . .    5
+           Our PERT Program.  . . . . . . . . . .    5
+           Running the Program. . . . . . . . . .    6
+           Conclusion.  . . . . . . . . . . . . .    8
+              Figure 1  . . . . . . . . . . . . .    9
+              Table 1 . . . . . . . . . . . . . .   10
+              A Glance at the Mathematics of PERT   11
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    Programming PERT in BASIC
+
+            "A method for planning complex activities 
+                   where no precedents exist."
+
+     Original program by Steven Zimmerman and Leo M. Conrad
+     Developed and modified for the Osborne 1 by Doug Hurst
+
+               Text and program listing reprinted 
+               from BYTE Magazine with permission.
+
+
+...T1
+Osborne 1 Prolog
+     The BYTE article from which this library submission was 
+extracted appears on pages 465-478 of the May 1982 issue with the 
+theme "Japanese Computers. 
+     This was a fairly easy program to convert to run on the O-1 
+as are most programs written in TRS-80 Level II or Disk 
+Basic(also by MicroSoft). Deletions to the program include all 
+tape save and load routines. Additions include a means by which 
+to designate time units used and project start dates as well as 
+their appearance on the hard copy output. Also, and most 
+important, is the inclusion of the ability to display and 
+printout a GANNT Chart of the pertinent PERT elements.
+     The program has great practical utility.  At the Marine 
+Corps Communication-Electronics School, Twentynine Palms, CA, we 
+are involved in a large number of courseware conversions (to 
+Computer Aided Instruction(CAI)) that are spread out, in some 
+cases, over periods as large as years. PERT has been instrumental 
+in both the planning and monitoring of these projects.
+     There are now 3 main programs on the diskette, PERTSAMP.COM, 
+PERT80.BAS, and PERT128.BAS. PERTSAMP.COM is something I'm really 
+proud of, although I can't take full credit for the originality. 
+I pulled a program called OSBOARD1.COM off Kelly Smith's CP/M Net 
+a while back. It was really an advertisement for a program which 
+makes the O-1's graphics easy to use. In doing so it showed the 
+program's capability. PERTSAMP.COM does much the same. Just place 
+the PERT diskette in the A drive and hit the return. 
+
+IMPORTANT ! Make sure you printer is up when you do so. 
+
+What you will get is a complete sample run of the PERT program 
+including printouts. You should do this right away even though 
+PERT hasn't even been explained yet.  The 4 pages of output are 
+Listings 2,3,4,and 5 as referred to in the article proper. 
+PERTSAMP is compiled BASIC. PERT80/128.BAS are named based on 
+their printer requirements. TEMP is merely a file which you may 
+read into the program for practice.
+     With the latest addition, that is- the GANNT Chart, this 
+PERT program is swiftly approaching the quality of MILESTONE (on 
+the Osborne Approved Software list: Organic Software, Retail 
+Price $295.00). 
+
+
+
+(Note: My friend, for the time being, Jerry Lawson, has been 
+plodding away at PERT's companion program "Programming the 
+Critical Path Method in BASIC", (BYTE, July 1982, pages 378-390) 
+for quite some time now. I forced him to do it because so much 
+can be learned about programing from the copying and debugging 
+process. It's been a slow process and besides he has a wife and 
+family to which he is more devoted than his Osborne. Can't 
+understand that. When he finishes his part, the program will be 
+cleaned up, modified and submitted. Once this is done, MILESTONE 
+will have been equaled.) 
+
+...T1
+Introduction.
+     The Performance Evaluation and Review Technique (PERT) is a 
+powerful method of planning complex activities, especially 
+pioneering projects like the creation of a new business or the 
+development of a new machine. The innovative nature of these 
+projects assures that few precedents exist to help estimate 
+performance time.
+     PERT gives managers the tools to deal with uncertainty; PERT 
+is management in action.  It plans, schedules, and controls 
+activity. Using PERT, contractors, builders, engineers, and 
+businessmen can improve planning in the midst of uncertainty and 
+save money as a result.
+     Until now, only large businesses with access to large 
+computers could use PERT. The program in listing 1 (Listing 1 may 
+be obtained by loading either PERT80.BAS or PERT128.BAS, setting 
+WIDTH LPRINT 80, and then doing a LLIST.) brings PERT's power to 
+microcomputer users. 
+     Before presenting our program, however, we'll give you a 
+glimpse at PERT's history, briefly describe the nature of PERT 
+analysis, suggest one possible PERT application for a manager, 
+and examine the mathematics behind PERT.
+
+...T1
+Origins of PERT.
+     PERT dates back to a team created by the Navy Special 
+Projects Office, Lockheed Aircraft Corporation, and management 
+consulting firm of Booz, Allen, and Hamilton. Work during World 
+War I on the Gannt scheduling chart and the Gannt milestone chart 
+should also be noted because these precipitated the development 
+of the network diagram (described later) used in PERT.
+     Managers of many different kinds of tasks have successfully 
+applied PERT. One particularly spectacular result of the PERT 
+approach is the Polaris missile, which also occasioned PERT's 
+development. (Lockheed Aircraft was the major contractor for 
+Polaris.) Completion time was critical in the Polaris program, 
+but there was considerable uncertainty about how long the 
+required activities would take.  Moreover, the start of many 
+activities depended on the completion of others. These are the 
+chief reasons why PERT employs a network scheme and focuses on 
+the probability of various activities finishing at specified 
+times.
+
+...T1
+The Start of PERT Analysis.
+     PERT analysis begins by reducing a project description to a 
+list of events and activities.  An activity is a part of a 
+project that consumes resources or time and has a definable 
+beginning and end. An event is a point in time, instant. The 
+beginning and ending points of an activity are events. To apply 
+PERT to a complex project, you must identify all the events 
+needed to complete the project and all the activities that result 
+in the identified events.
+     As an example, we'll use a simplified version of an actual 
+construction project that we just completed. To simplify, we'll 
+end our example with the completion of the building's foundation. 
+We identified 18 activities needed to complete this foundation. 
+Table 1 lists the activities, assigned letters A through Q and Z. 
+Each of the nine events in the project consists of the completion 
+of one or more activities.
+
+...T1
+The Bubble Diagram.
+     The second stage in PERT analysis is the layout of a 
+"bubble" diagram that shows how the necessary activities and 
+events form a sequence of steps. Figure 1 is the bubble diagram 
+of our foundation-building example. With or without PERT, 
+specifying the sequence of a project's steps is obviously an 
+important planning activity. Most contractors lay out the 
+sequence of tasks in a project in some fashion, but PERT makes 
+task sequencing a formal activity. Formalizing this process lends 
+valuable structure to essential planning. In particular, making a 
+bubble diagram forces the planner to specify which activities 
+depend on the completion of others.
+
+
+     Diagrams like that shown in figure 1 are also called 
+networks. A PERT network has one initial event, at the extreme 
+left, and one terminal event, at the extreme right. the circles 
+in figure 1 (after you perform a little artwork) are numbered and 
+represent events. The lines are lettered and represent 
+activities; each line has an arrow indicating its direction in 
+time from beginning to completion. The network as a whole shows 
+the series of activities that must be performed to complete the 
+project. the arrows show which activities and events logically 
+precede others.
+     An event that results from completion of more than one 
+activity is called a merge event; an event that represents the 
+joint beginning of more than one activity is called a burst 
+event. Before any activity can start, all preceding activities 
+must be completed (but not all simultaneously). An arrow's length 
+and its compass direction are insignificant.
+     Dashed lines in network diagrams represent 
+"dummy"activities. A dummy activity exists when the completion of 
+one event depends on the completion of another but requires no 
+additional work or activity. PERT handles dummy activities like 
+any others but assigns the activity zero time and zero costs.
+
+...T1
+The Critical Path.
+     The longest route from the beginning of the network on the 
+left to its end on the right determines the time required to 
+complete the project. this line is the critical path, which 
+determines the minimum time required to complete a job. Although 
+the concept of a critical path may sound complex, it is simple 
+once you've laid a project out in a bubble diagram.
+     Critical-path analysis can reveal ways to shorten the 
+critical path and to control the total length of a job. Because 
+of the size of our computer, this program analyzes the critical 
+path but does not attempt to shorten it.
+
+...T1
+Three Time Estimates.
+     Along each activity line in figure 1, you see three decimal 
+numbers. These numbers represent an optimistic, likely and 
+pessimistic estimate of the time required to complete the 
+activity. Each time the activity is not on the critical path, a 
+manager's decision to authorize expenditures for overtime would 
+be foolish and wasteful. All activities not on the critical path 
+have "slack time," the difference between the earliest and latest 
+expected finish. By definition, only the activities on the 
+critical path have zero slack time. We'll elaborate later.
+
+...T1
+Our PERT Program.
+Our PERT Program is shown in listing 1. A dimension (DIM) 
+statement at line 160 provides places to store data on 
+activities. The same DIM statement also provides storage for a 
+dummy variable,SV, to be used later during sorts.
+     On a system with 32K (remember the article was written for a 
+TRS-80) bytes of memory and two disk drives, our program can 
+handle more than 200 activities. We have yet to need more than 
+100 activities. Your machine's memory capacity and the limits of 
+your DIM statement will determine the size of the problem that 
+our program can handle for you. You can find the limits by 
+experimentation.
+     One way to save memory is to carefully omit remark (REM) 
+statements(These statements are left in in fn.ft PERTSAMP.BAS but 
+have been removed from PERT80.BAS and PERT128.BAS in the Osborne 
+1 version). 
+     As noted before, the critical path consists of a series of 
+activities that have zero slack time. To find the critical path, 
+you must identify activities that have zero slack time. The 
+program output, consisting of two tables, is designed to identify 
+these activities.
+     The first table (see listing 2) shows the program's input, 
+listing all the activities in the project, their beginning and 
+ending events, and the three estimates of the time each activity 
+requires. You should check your input whenever you use this 
+program because otherwise you may get crazy results.
+     The second table (see listing 3) is the program's output. 
+Notice the last column, "Slack Time." Zeros in this column 
+identify the critical path. You can, of course, trace the 
+activities in the critical path by looking in the first column, 
+"Code," for each activity with zero slack time. But our program 
+also provides a menu option CRITICAL PATH AND TIME, which permits 
+both the critical path and the time required to complete it. 
+     Familiarity with the project and the program will probably 
+make listings 2 and 3 all you will need to fully monitor you 
+program.  Unfortunately, many times there will be a need to make 
+the scheduling of your project understandable to supervisors or 
+others without detailed explanation. This is where listing 4 
+becomes invaluable. Listing 4 is a GANNT chart for the project. 
+This chart can be headed in either one of two ways depending on 
+the time estimates in your DATA statements. This will be either 
+WEEKS or MONTHS. The GANNT chart header is triggered by you input 
+on line 150. If you enter WEEKS your header will show 15 months 
+of 4 weeks each on PERT80 and 2 years of weeks on PERT128. If you 
+pick MONTHS, you get 5 years of months on either PERT80 or 
+PERT128. The GANNT Chart lists each activity similar to listings 
+2 and 3 and actually merely provides a graphic representation of 
+listing 3.  The E represents the early start time. The @ and/or C 
+symbol represent the expected time for the activity (C's if the 
+activity is on the Critical Path). The L is for the last finish. 
+By  default, any space between the last @ for an activity and the 
+L represents slack time if the activity is started at the early 
+start and is finished in the expected time. There will be no 
+space between the last C and the L for any activity. As stated, 
+these lie on the critical path and there is no slack time. 
+     A word of caution about using the program: round-off 
+problems in calculation the critical path forced us to define 
+zero slack time as 0.001 instead of true zero. Where small 
+differences are important, this approximation of zero can cause 
+problems. The value 0.001 is entered in line 1490; perhaps you 
+can change the value to true zero for some of your applications. 
+Furthermore, since we used statistical methods to determine the 
+probability of a project's being completed on time, given a 
+scheduled completion date, you should remember that data 
+generated by the program is based on estimates and is itself an 
+estimate.
+
+...T1
+Running the Program.
+     The easiest way to input data is to use DATA statements at 
+the end of the program starting always at line number 4000. 
+Entering data from the keyboard takes time and increases the 
+number of errors.  The best way do the DATA statements is to boot 
+up WordStar in drive A and the PERT diskette in drive B. Create a 
+file on drive B in the "N" non-document mode that pretty well 
+discribes your project. Like "BUILDING.BAS". Simply start using 
+line 4000 with the number of activities and the number of events. 
+Then add each activity letter, description,starting and ending 
+event and lastly the optimistic, likely, and pessimestic times, 
+as below:
+
+4000 DATA 18,9
+4010 DATA A,ACCT. PAPERS,1,2,1,2,3
+4020 DATA B,SHOP BANKERS,1,3,2,4,6
+4030 DATA C,SHOP REAL EST.,1,4,1,13,17
+ETC......
+
+Once this is done, save the program. Now boot up MBASIC and LOAD 
+"x:PERT80" or "x:PERT128". MERGE "x:BUILDING" to append your DATA 
+lines to the program then SAVE "x:BUILDING" (x: = the disk drive 
+of choice). This saves the entire program under the name formerly 
+used by your DATA lines and leaves PERT80/128 intact without data 
+lines and available for future projects. The following 
+description of a program run assumes that DATA statements were 
+used for input.
+     Whether you input data from DATA statements or the keyboard, 
+the program begins by giving the identification message and then 
+displays:
+
+                  *** NOTE BEGINNING EVENTS 
+                      WILL BE SORTED INTO                       
+NUMERICAL ORDER ***
+
+when asking
+
+                   DIMENSIONS FOR ACTIVITIES?_
+(NOTE: This will only appear if data is to be entered from 
+keyboard or disk file.)
+
+                    TIME UNITS WILL BE MEASURED IN?_
+and
+                    PROJECT START DATE?_
+
+     As you see in listing 2, events are arranged according to 
+the earliest starting event in each activity, and ties are broken 
+by reference to the earliest ending event for each activity.
+     Now the program presents the input menu:
+
+                           INPUT MENU
+ 
+                           K KEYBOARD
+                           D DISK FILE
+
+     Option R causes the program to read DATA statements at the 
+end of the program. After a brief delay, the program will display 
+for verification the input of what was read.
+     The video display of the input will look slightly different 
+than the table in listing 2 because of the differences in the 
+screen and printer sizes. If a single screen won't accommodate 
+all the input, the program will ask you to page through.
+     After listing all the input, the program will say:
+
+          -2 ADD, -1 TO CONTINUE OR NUMBER TO CHANGE?_
+
+The number referred to is the number of any activity that you 
+wish to change.  Assuming you want to continue and enter -1, the 
+program will ask:
+
+                 HARD COPY OF INPUT DATA (Y/N)?_
+
+If you request hard copy, the program will print 3 lines of EGO 
+data and then asks:
+                             TITLE?_
+                             DATE?_
+
+and will print your responses, as well as the measure of time 
+units at the top of the page. Our sample set of data used the 
+title PERT SAMPLE and the date 11/26/82.
+     After the input is printed, the screen will display the 
+results, as shown in listing 3. For each activity, you will see 
+computations of how long it should be expected to take, the 
+earliest week (you may use months also) it can start, the 
+earliest it can finish, and the slack time (the difference 
+between the earliest and latest possible finish). You may have to 
+page through a screen display of this data. The program will 
+again ask if you want hard copy.
+     Next the GANNT Chart will be displayed with paging again if 
+necessary and a prompt for hard copy. Lines 85 and 90 set screen 
+and printer width to accomodate all requirements.
+
+     Then you will see:
+                              OUTPUT MENU
+
+                          C CRITICAL PATH AND TIME
+                          D DISK
+                          E END
+                          R RECYCLE
+
+                          SELECTION?_
+
+Option C, for our example, results in a display like the 
+following:
+
+CRITICAL PATH
+
+C I K N P
+
+TIME OF CRITICAL PATH
+42.33
+SCHEDULED PROJECT TIME (USE SAME TIME UNITS AS DATA)?_
+
+     For our example, the critical path consists of shopping for 
+a real-estate agent, obtaining land, getting architectural plans, 
+getting a detailed layout for construction, and actually building 
+the foundation. The time of the critical path is expected to be 
+42.33 weeks. 
+     You can now input the scheduled time for the project, and 
+the program will use the Z calculations explained in the textbox 
+"A Glance at the Mathematics of PERT" to tell you a probability 
+of meeting the schedule. As shown in listing 3, there is a 
+0.0123852 probability of finishing in 35 weeks and a 0.990536 
+probability of finishing in 50 weeks. As noted earlier, there is 
+also a .500 probability of finishing in the expected time of the 
+critical path - 42.33 weeks.
+
+...T1
+Conclusion.
+     If you need help planning and scheduling complex projects, 
+this PERT program can provide it. You can use it without knowing 
+how to perform the calculations involved. Although we repeat our 
+caution about relying on estimate-based estimates, we still 
+believe PERT has proved itself a valuable managerial tool and 
+that our program accurately represents PERT.
+
+           _                                  _
+          |2|                                |7|
+                                                      _ 
+                                                     |8|  
+
+                                                              _
+  _                _                  _                      |9|
+ |1|              |3|                |5|
+  
+
+
+                          _                     _
+                         |4|                   |6|   
+
+
+(NOTE: Since it is impossible to draw a full fledged bubble diagram with 
+WordStar, perform the following upon printing this documentation. Connect the 
+bubbles and label the resultant lines as shown below.
+
+             1-2  A-1,2,3             4-5  I-8,11,13
+             1-3  B-2,4,6             5-6  J-2,3,4
+             1-4  C-2,13,17           5-7  K-2,5,12
+             2-3  D-2,4,5             5-8  L-1,2,4
+             2-5  G-1.4,2.2,6.7       6-8  M-2,3,4
+             2-6  F-.4,1.3,1.5        6-9  O-1,2,5
+             2-7  Z-4,5,8             7-8  N-9,11,12
+             3-4  E-3,4,5             7-9  Q-1,2,3
+             3-5  H-2,4,6             8-9  P-1,3,6
+ 
+...T2
+Figure 1
+     The PERT network diagram of the activities required to build a foundation. 
+Each circle represents an event and each line between circles represents one of 
+the activities listed in table 1. The three numbers given for each activity 
+represent human estimates of the optimistic(minimum), likely, and 
+pessimistic(maximum) time in weeks that each activity will take. The network has 
+one initial event, event 1 at the extreme left and one terminal event, event 9 
+at the extreme right. The critical path is the one that takes the most time to 
+get from event 1 to event 9.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Letter    Activity                   Beginning     End
+                                       Event      Event
+
+   
+  A       assemble accounting data      1           2
+  B       look for bank                 1           3
+  C       look for real-estate agent    1           4
+  Z       seek permits                  2           7
+  D       make market study of area     2           3
+  G       look for contractor           2           5
+  F       seek insurance for con-       2           6
+          struction
+  H       get basic architectural plans 3           5
+  E       make cost study               3           4
+  I       buy land                      4           5
+  J       list materials                5           6
+  K       get more detailed architec-   5           7
+          tural plans
+  L       have survey made              5           8
+  M       buy first batch of materials  6           8
+  O       buy second batch of           6           9
+          materials
+  N       complete detailed internal    7           8
+          layout of foundation
+  Q       hire crew                     7           9
+  P       build foundation              8           9
+
+...T2
+Table 1
+The activities required to build a foundation. the program in listing 1 uses the 
+letters at left to identify the activities. The two columns at right list the 
+first and last event during each activity. An event is the completion of one or 
+more activities.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+...T2
+A Glance at the Mathematics of PERT
+
+     The mathematics of PERT involves some interesting 
+statistical concepts. You don't have to understand the 
+mathematics to use PERT, but it helps you to understand how our 
+program works.
+     First, we must refresh your recollection of some basic 
+statistical terms. the mean of a set of occurences of some 
+variable is the arithmetic average of the values of the 
+occurences; the standard deviation is the square root of the mean 
+of the squares of the deviations of individual occurences from 
+the mean); the variance is the square of the standard deviation.
+     For example, if we have three values 9.12 and 15, their mean 
+is 36/3=12, their variance is
+
+(9-12)2 + (12-12)2 + (15-12)2 = 18
+
+and the standard deviation is the square root of 18, which is 
+approximately 4.24.
+     It is a common statistical assumption that the standard 
+deviation in unimodal distributions (distributions that have only 
+a single most-likely occurring value) is roughly a sixth of the 
+range of distribution lies with three standard deviations of the 
+mean; and for the normal distribution, 99.7 percent of the 
+distribution lies within three standard deviations of the mean.
+     Since we have estimates of the minimum time  a  and the 
+maximum time  b  required to complete an activity, we have 
+established an estimated range of actual times. We can estimate 
+the standard deviation of the actual time as
+
+                              (b-a)
+                                6
+
+     Since PERT assumes that chance, or random factors will 
+influence the actual time needed to complete an activity, we can 
+expect the actual times to be distributed along some curve. PERT 
+assumes that the mean actual time will follow the distribution 
+known as the beta distribution, which is contained in a finite 
+interval and may be either symmetric or skewed. Our most likely 
+time of completion  m  is the mode of the curve for each 
+activity. the following equation, based on the assumption that 
+our formula for the standard deviation is correct, is linear 
+approximation of the value of the expected value, EV, of the mean 
+time:
+
+                              (a+4xm+b)
+                         EV = ----------
+                                  6
+
+As you can see, this is just a weighted average, counting the 
+minimum and maximum each once and the mode four times, then 
+dividing the total by 6. On line 990 of listing 1, same equation 
+is expressed as:
+
+                A(I,6)=(A(I,3)+4*A(I,4)+A(I,5)/6
+
+     The following equation gives the variance of the beta 
+distribution for each activity:
+
+                         VAR =((b-a)/6)2
+
+     For each activity, the program applies the statistical 
+principles described above and calculates the time the activity 
+should last, the earliest time at which it can start, the 
+earliest finish, the latest start, and the latest finish. 
+Calculation of the earliest start and finish times is called the 
+"forward pass" and takes place in our program at lines 970 to 
+1080. Calculation of the latest start and finish is called the 
+"backward pass" and takes place at lines 1090 to 1230.
+     The difference between the earliest and latest projected 
+finish for each activity is called "slack time". At lines 1240 to 
+1290, the program calculates slack time for each activity. The 
+event that have zero slack time form the critical path.
+     To obtain the approximate variance for the critical path, 
+add the variances of the activities on the path:
+
+               VAR(Path)=VAR(1)+VAR(2) ....+VAR(n)
+
+It happens that the Central Limit theorem enables us, based on 
+the foregoing, to assume that the distribution of the time 
+required to complete the critical path is normal. Based on this 
+assumption, we can calculate the probability of the project's 
+being on time, given some specified target completion time. The 
+calculation's basis is the deviation of the scheduled completion 
+time from the estimated mean completion with the deviation 
+measured in units of standard deviations. This deviation is 
+called Z. The Z calculation for the standard normal table is:
+
+                 (scheduled             time of  )
+                 (   time           critical path)
+             Z = ----------------------------------
+                            VAR(Path)
+
+     Rather than require you to use normal tables with our 
+program, we have built in a Taylor series to approximate the 
+tables. (A Taylor series is a power series that gives the 
+expansion of a function  f(x)  in the neighborhood of a point a, 
+provided all derivatives exist and a series converges.) The 
+Taylor series is located at line 2440 and following in our 
+program.
+     The expected time of the critical path is the sum of the 
+expected times of all the activities on the path. If the 
+scheduled time of the project equals the expected time of the 
+critical path, you have a 50 percent chance of completing the 
+project on time.
+
+
+
+
+t equals the expected time of the 
+critical path, you have a

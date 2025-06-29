@@ -1,0 +1,180 @@
+
+		VALGOL I INFORMATION
+		--------------------		G. A. Edgar
+
+This file contains a description of the language VALGOL I, a
+(very) small derivative of ALGOL-60.  It is intended to
+explain the compiler VALGOL.PRO on this disk.
+
+This language was published in a paper by D. V. Schorre
+in 1964 as a sample language for META II.  His paper was
+reprinted in Dr. Dobb's Journal, April, 1980.
+
+First, we will go through a description of the language.
+Then we will take a sample file and see what is involved in
+getting it to run.
+
+-----------------------------------------------------------
+
+VALGOL I is basically a subset of ALGOL-60.  The main
+peculiarities are these:
+     (1)  The key words that are usually typeset in boldface
+are preceded by a period.  ( .begin .end .if .then .else .until
+.do .integer )  This also applies to the equal sign for
+comparing two expressions.  ( .= )
+     (2)  There is only one data type, namely .integer .
+This is a 16 bit two's-complement number in the compiler
+supplied. Thus you go from 0 up to 65535, and then back to 0.
+     (3)  The assignment statement is reverse from the normal
+order.  (  5 =: x  assigns the value 5 to x )
+     (4)   Arithmetic allows addition ( + ) subtraction ( - )
+and multiplication ( * ) .  There is no unary minus sign,
+so if you want -2 you can write either 0-2 or else 65534 (or,
+for that matter, 196606) .
+
+Let's walk through some of the syntax of the language.
+
+A program consists of the keyword ".begin", 
+followed by an optional declaration, followed by one or more
+statements, separated by semicolons ( ; ) , followed by the
+keyword ".end".
+
+A declaration consists of the keyword ".integer" followed
+by a list of identifiers, separated by commas.
+
+A statement is one of the following:
+
+(1) an I/O statement.  This is either of the form
+     edit( expression , 'string')
+which will send (expression) spaces and then the (string) to
+the console, or of the form
+     print
+which will send an end-of-line to the console.
+
+(2) an assignment statement, which has the form
+     expression =: variable
+
+(3) a loop, of the form
+     .until expression .do statement
+A value of 0 for the expression is considered false, and a
+nonzero value is true.
+
+(4) a conditional statement of the form
+     .if expression .then statement .else statement
+The .else is not optional.
+
+(5) a block, which consists of the keyword ".begin",
+followed by an optional declaration, followed by zero
+or more statements, separated by semicolons, followed by the
+keyword ".end".  Notice that the null statement in the form
+     .begin .end
+is allowed.  It is important that the semicolon is a
+statement separator, and not a statement terminator (as in
+some other languages, such as PL/I and C).  You will get
+a syntax error message if you put a semicolon just before
+the ".end" in a block.
+
+A test for equality is allowed:
+    2 + x .= y * y
+This has value 1 if true and 0 if false.  Expressions can be
+built up from variables, numbers, the operations + , - ,
+*, and parentheses "(" , ")".
+
+
+--------------------------------------------------
+
+Now we will go through a compile and run of a VALGOL program.
+
+Let's use this sample program:
+
+.begin
+.integer x ;
+0 =: x ;
+.until x .= 15 .do
+	.begin
+	edit ( 1 + 14*x - x*x , '+' ) ;
+	print ;
+	x + 1 =: x
+	.end
+.end
+
+Suppose it is in a file called P.VAL.  We compile it:
+
+B>EPRO
+
+E-Prolog   ver. 2.3      (August 1, 1985)
+> (LOAD VALGOL)
+
+> (compile P)
+VALGOL 1 compiler - translates VALGOL to ASM
+P.VAL -> P.ASM
+
+*** Compilation complete ***
+Yes.
+> ^C
+
+This creates an ASM-compatible assembly-language file that
+begins like this:
+
+VBDOS	EQU	5
+VTPA	EQU	256
+VCR	EQU	13
+VLF	EQU	10
+	ORG	VTPA
+	LXI	SP,VSTACK
+	JMP	V1
+Vx:	DW	0
+V1:
+	LXI	H,0
+	SHLD	Vx
+V2:
+	LHLD	Vx
+	PUSH	H
+	LXI	H,9
+	...
+and so on.
+
+Next, the program can be compiled and run as normal:
+
+B>ASM P.BBZ
+
+CP/M ASSEMBLER - VER 2.0
+01F5
+001H USE FACTOR
+END OF ASSEMBLY
+
+B>LOAD P
+
+
+FIRST ADDRESS 0100
+LAST  ADDRESS 01B8
+BYTES READ    00B7
+RECORDS WRITTEN 02
+
+B>P
+ +
+               +
+                         +
+                                  +
+                                        +
+                                              +
+                                                 +
+                                                  +
+                                                 +
+                                              +
+                                        +
+                                  +
+                         +
+               +
+ +
+
+And there it is.
+
+
+-------------------------------
+G. A. Edgar
+
+	May 21, 1984     [CompuServe release]
+revised October 21, 1984 [for Meta4 material, SIG/M vol. 208]
+revised August 1, 1985   [for E-Prolog release]
+

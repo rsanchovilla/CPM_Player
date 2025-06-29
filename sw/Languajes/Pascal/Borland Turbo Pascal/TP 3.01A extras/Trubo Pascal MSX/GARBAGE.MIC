@@ -1,0 +1,52 @@
+procedure MapGarbage;
+
+  var
+    prevp, prevtp, workp, testp, savep: MapPointer;
+    size:                               integer;
+
+
+  function cellsize (p: MapPointer): real;
+    begin
+      cellsize := (MapSizeof(p) + $8000) + 32768.0;
+    end;
+
+  begin
+    prevp := MapNIL;
+    workp := MapFreechain;
+    while MapNotEqual (workp, MapNIL) do
+      begin
+      savep := workp;
+      MapIncrement (workp, MapSizeof(workp)+2);
+      prevtp := MapNIL;
+      testp  := MapFreechain;
+      while MapNotEqual (testp, MapNIL) and MapNotEqual (testp, workp) do
+        begin
+        prevtp := testp;
+        readMap (testp, testp, sizeof(testp));
+        end;
+      if MapEqual (testp, workp)
+      then if cellsize (testp) + cellsize (workp) < 65530.0
+        then begin
+          readMap (testp, workp, sizeof(workp));
+          if MapEqual (prevtp, MapNIL)
+          then MapFreechain := workp
+          else writeMap (prevtp, workp, sizeof(workp));
+
+          size := MapSizeof(savep) + MapSizeof (testp) + sizeof (size);
+          workp := savep;
+          MapDecrement (workp, sizeof(size));
+          writeMap (workp, size, sizeof(size));
+
+          savep := prevp;
+          end;
+
+      prevp := savep;
+      if MapEqual (savep, MapNIL)
+      then workp := MapFreechain
+      else readMap (savep, workp, sizeof(workp));
+      end;
+  end;
+
+
+
+

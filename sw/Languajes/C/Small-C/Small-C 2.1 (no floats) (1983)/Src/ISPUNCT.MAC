@@ -1,0 +1,34 @@
+CC1:
+ispunct::
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL isalnum
+POP B
+CALL CCLNEG##
+MOV A,H
+ORA L
+JZ CC3
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL iscntrl
+POP B
+CALL CCLNEG##
+MOV A,H
+ORA L
+JZ CC3
+LXI H,1
+JMP CC4
+CC3:
+LXI H,0
+CC4:
+RET
+EXT isalnum
+EXT iscntrl
+END
+

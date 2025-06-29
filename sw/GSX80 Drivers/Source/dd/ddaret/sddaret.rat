@@ -1,0 +1,336 @@
+h08595
+s 00324/00000/00000
+d D 1.1 83/03/15 21:12:59 tes 1 0
+c date and time created 83/03/15 21:12:59 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  ddaret.rat          local   03/24/82  11:21
+subroutine ddaret (contrl, intin, rlin, intout, rlout)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver for ADM Retrographics           #
+#                                                                      #
+#     Input Parameters:                                                #
+#            contrl(1-3) - An integer array with following information #
+#                          contrl(1) - opcode for driver function      #
+#                          contrl(2) - length of integer array intin   #
+#                          contrl(3) - length of real input array rlin #
+#                                                                      #
+#            intin   -     Array of integer input parameters           #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters:                                               #
+#            contrl(4-6) - contrl(4) - length of integer array intout  #
+#                          contrl(5) - length of integer array rlout   #
+#                          contrl(6) - count of any other control parms#
+#                                                                      #
+#             rlout  -     Array of integer output parameters          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             Da40xx - emulate dash patterns for 4012                  #
+#             Dr40xx - move/draw for 40xx type of devices              #
+#             Gdevin - get a character from the current graphic device #
+#             Gdevot - put a character to device                       #
+#             Gdstot - output a string to the device                   #
+#             gimnmx - bound an integer variable                       #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+# local defines
+define(X_LIMITS_4012,1023.)            #4012 screen width
+define(Y_LIMITS_4012,779.)             #4012 screen height
+define(UP,VT)                             # Up arrow key
+define(DOWN,LF)                     # Down arrow key
+define(LEFT,BS)                     # Left arrow key
+define(RIGHT,FF)                    # Right arrow key
+define(CHANGE_RATE,RS)              # Home key toggles rate of cursor movement
+#      SLOWX,2./1024.               # X-increment for slow movement
+define(SLOWX,.00195313)
+#      FASTX,10./1024.              # X-increment for fast movement
+define(FASTX,.00976563)
+#      SLOWY,3./1024.               # Y-increment for slow movement
+define(SLOWY,.00292969)
+#      FASTY,15./1024.              # Y-increment for fast movement
+define(FASTY,.01464844)
+ 
+integer contrl(1),intin(1),intout(1)
+real rlin(1),rlout(1)
+ 
+integer opcode, x, y, i, j, gimnmx,
+        tries, rate, setup(6),
+        admrow, admcol, poscur(8),
+        txtcap, lstcap, tszcap, gincap, mrkcap, bflcap
+real admgrx, admgry, chrwid, chrhgt, xincr(2), yincr(2), xtemp, ytemp,
+     savex, savey, savexy(2),
+     xcoord, ycoord, xypos(2)
+logical qdone, qfirst
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       devcap(TEXT_CAP)         :: txtcap
+#       devcap(LINESTYLE_CAP)    :: lstcap
+#       devcap(TEXT_SIZE_CAP)    :: tszcap
+#       devcap(GIN_CAP)          :: gincap
+#       devcap(BAR_FILL_CAP)     :: bflcap
+#       devcap(MARKER_CAP)       :: mrkcap
+#
+#       savexy(1) :: savex
+#       savexy(2) :: savey
+#
+#       xypos(1) :: xcoord
+#       xypos(2) :: ycoord
+#
+#       poscur(5) :: admrow
+#       poscur(6) :: admcol
+#
+ 
+equivalence (devcap(TEXT_CAP), txtcap), (devcap(LINESTYLE_CAP), lstcap),
+            (devcap(TEXT_SIZE_CAP), tszcap), (devcap(GIN_CAP), gincap),
+            (devcap(MARKER_CAP), mrkcap), (devcap(BAR_FILL_CAP), bflcap),
+            (savex, savexy(1)), (savey, savexy(2)),
+            (xcoord, xypos(1)), (ycoord, xypos(2)),
+            (admrow, poscur(5)), (admcol, poscur(6))
+ 
+#   The character cell on the ADM retro graphics is a 14x22 cell. The actual
+#   character size is something like 12x18 but this cannot be confirmed in
+#   writing. We use a value of 2 in calculating the height for interline gap.
+ 
+# character width = 14.0274/1024. ....there are 73 characters across the
+#                                       screen
+data chrwid /0.0136986/
+ 
+# character height = (18+2)/1024.....we use 18 here for actual character size,
+#                                      the TEK documented cell size is 22
+data chrhgt /0.01953125/
+ 
+data xincr /SLOWX,FASTX/
+data yincr /SLOWY,FASTY/
+ 
+#    poscur - position cursor for GIN
+data poscur /CAN, NEWLINE, ESC, EQUALS, 0, 0, BELL, NEWLINE/
+ 
+#    setup - initialize
+data setup /CAN, RS, NEWLINE, GS, US, NEWLINE/
+ 
+ 
+opcode=contrl(OPCODE)
+ 
+#
+#  opcode move and draw
+#
+if  ((opcode == DRAW) | (opcode == MOVE)) {
+ 
+   if (ndlntp == 1 | opcode == MOVE) {
+      call dr40xx (opcode, rlin)
+      }
+   else {
+      call da40xx (rlin)     # Emulate dashed lines
+      }
+   }
+ 
+#
+#  opcode text
+#
+else if (opcode == TEXT) {
+      j = contrl(INTEGER_IN_LENGTH)
+      call gdstot (j, intin)
+      }
+ 
+#
+#  opcode marker
+#
+else if (opcode == MARKER) {
+      call dm40xx (intin, rlin)
+      }
+ 
+#
+#  opcode line style
+#
+else if (opcode == LINESTYLE) {
+      ndlntp = gimnmx (intin(1), 1, 5)   # Emulation supports 5 styles
+      intout(1) = ndlntp
+      }
+ 
+#
+#  opcode fill pattern
+#
+else if (opcode == SET_FILL_COLOR) {
+      ndclrf = gimnmx (intin(1), 0, 7)   # Emulation supports 8 patterns
+      intout(1) = ndclrf
+      }
+ 
+#
+#  opcode polygon edge style
+#
+else if (opcode == SET_POLYGON_EDGE_STYLE) {
+      ndedgs = intin(1)
+      }
+ 
+#
+#  opcode get point
+#
+else if (opcode == GET_POINT) {
+ 
+   # convert location of last point to adm grid coordinates
+ 
+   xcoord = zdxpos*zdlgax
+   ycoord = zdypos*zdlgax
+ 
+   savex = zdxpos   # Save the current cursor position
+   savey = zdypos
+ 
+   admgrx = xcoord / 2.0
+   admgry = ycoord / 3.1219512     # 3.1219512 = 256.0 * 82.0
+ 
+   # now compute adm alpha cursor location, put up alpha cursor
+   # and ring the bell to indicate that gin is enabled
+ 
+   admcol = int ((admgrx + 6.4) / 6.4) + 31
+   admrow = 56 - int ((admgry + 10.4) / 10.4)    # 56 = 25 + 31
+ 
+   # position cursor
+ 
+   call gdstot (8, poscur)
+ 
+   # now update cursor as user hits arrow keys
+   # stop when a non-cursor movement key is hit
+ 
+   rate = 2
+   qdone = .false.
+   qfirst = .true.
+   xcoord = zdxpos
+   ycoord = zdypos
+ 
+   repeat {
+      if (~qfirst) {
+         xcoord = amax1 (0., amin1 (xcoord, zdxlng)) # Insure left/right edge
+         ycoord = amax1 (0., amin1 (ycoord, zdylng)) # Insure top/bottom
+         call dr40xx (MOVE, xypos)   # move to current location
+         }
+      call GDEVIN (ichar)
+      if (qfirst) {
+         call gdevot (RS)
+         call gdevot (NEWLINE)
+         qfirst = .false.
+         }
+ 
+      xtemp = 0.
+      ytemp = 0.
+      if      (ichar == UP)          ytemp = yincr(rate)
+      else if (ichar == DOWN)        ytemp = - yincr(rate)
+      else if (ichar == LEFT)        xtemp = - xincr(rate)
+      else if (ichar == RIGHT)       xtemp = xincr(rate)
+      else if (ichar == CHANGE_RATE) rate = mod (rate,2) + 1
+      else                           qdone = .true.
+ 
+      xcoord = xcoord + xtemp
+      ycoord = ycoord + ytemp
+ 
+      } until (qdone)
+ 
+   # put cursor back in original position
+   call dr40xx (MOVE, savexy)
+ 
+   rlout(1) = xcoord      # Return the x/y coordinate and the character struck
+   rlout(2) = ycoord
+   intout (1) = ichar
+   contrl(4) = 1          # Inform GETPT2 that we got a point
+   }
+#
+#    opcode new_frame
+#
+else if (opcode == NEW_FRAME) {
+      call gdevot (ESC)
+      call gdevot (FF)
+      for (i=1; i <=100; i = i + 1) call gdevot (SYN)
+      }
+ 
+#
+# opcode set_device_parameters
+#
+else if (opcode == SET_DEVICE_PARAMETERS) {
+ 
+      # set up device capability array. This array is set to NO in routines
+      #    TCINI and NEWSRF, so we only need to set those items which this
+      #    device can do.
+ 
+      txtcap = YES   # Text capability
+      lstcap = 5     # Capable of 5 different linestyles
+      tszcap = 1     # Capable of 1 text size
+      gincap = YES   # Gin capability
+      mrkcap = 5     # Capable of 5 different Markers
+ 
+      zdlgax = X_LIMITS_4012      # Set the length of the longest axis.
+                                  # This global is used by 'xy40xx' to
+                                  #    convert from NDC space to device
+                                  #    dependent coordinates
+      zdxlng = 1.0                # Set the length of each axis in NDCs
+      zdylng = 0.76148583         # Y_LIMITS_4012 / X_LIMITS_4012
+      zdxpos = 0.0                # Initialize the device position registers
+      zdypos = 0.0
+      ndlntp = 1                  # Set current device line style
+      ndtxsz = 1                  # Set current device text size
+ 
+      # put device in adm mode, home adm cursor, and then put device in
+      # retrographics mode
+ 
+      call gdstot (6, setup)
+      }
+ 
+#
+#     text size and inquire text size
+#
+else if (opcode == TEXT_SIZE) {
+      rlout(1) = chrwid
+      rlout(2) = chrhgt
+      }
+ 
+#
+#     inquire screen size
+#
+else if (opcode == INQUIRE_SCREEN_SIZE) {
+      rlout(1) = zdxlng
+      rlout(2) = zdylng
+      rlout(3) = X_LIMITS_4012
+      }
+ 
+#
+#  opcode escape
+#
+else if (opcode == ESCAPE) {
+      j = contrl(INTEGER_IN_LENGTH)
+      call gdstot (j, intin)
+      }
+ 
+#
+#     stop graphics
+#
+else if (opcode == STOP_GRAPHICS) {
+      call gdevot (CAN)
+      call gdevot (NEWLINE)
+      }
+ 
+return
+end
+#-t-  ddaret.rat          local   03/24/82  11:21
+#-h-  ddvret.rat          local   03/24/82  11:21
+E 1

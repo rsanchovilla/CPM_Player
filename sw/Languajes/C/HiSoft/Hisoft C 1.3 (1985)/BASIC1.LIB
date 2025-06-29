@@ -1,0 +1,737 @@
+
+/* * * * * *   B A S I C 1 . L I B   * * * * * */
+/*                                             */
+/*        Copyright (C) 1985 by HISOFT         */
+/*                                             */
+/* * * * * * * * * * * * * * * * * * * * * * * */
+
+#list-
+
+/* * * * * *   SOUND FUNCTIONS   * * * * * */
+
+#define MAXCHAN    3   /* number of channels */
+#define CHIP_QUEUE 5   /* The chip can queue 5 notes */
+#define SOFT_QUEUE 100 /* Max length of play string for each channel
+                          Alter to suit but MAKE ENOUGH ROOM */
+
+
+typedef
+struct {
+  char     _sp_status;
+  char     _sp_amp_env;
+  char     _sp_ton_env;
+  unsigned _sp_note;
+  char     _sp_noise;
+  char     _sp_volume;
+  unsigned _sp_duration; /* A standard sound block up to here as BASIC */
+  char     _sp_octave;
+  char     _sp_tempo;
+       }
+sound_program, *_sp_ptr;
+
+typedef
+struct {
+  int      _q_in_pointer;
+  int      _q_out_pointer;
+  unsigned _q_free_space;
+  unsigned _q_newly_added;
+  char     _q_buffer[SOFT_QUEUE];
+       }
+_queue_data, *_queue_ptr;
+
+typedef
+struct {
+  char        _se_event[12];
+  _queue_data _se_q_data;
+  sound_program _s_prog;
+       }
+_se_block, *_seb_ptr; /* The whole event block + data */
+
+
+int _s_q_char;
+
+
+setup_sound()
+{
+  extern int _sound_event();
+  extern _seb_ptr _get_seb_addr();
+  static char i;
+  static _queue_ptr qp;
+  static _sp_ptr    sp;
+  static _seb_ptr   sebi;
+
+  inline(CALL, 0xBCA7); /* SOUND RESET */
+
+  for (i=0; i<3; i++)
+  {
+    sebi = _get_seb_addr(i);
+
+    qp = & sebi->_se_q_data;
+    qp->_q_in_pointer  =
+    qp->_q_out_pointer =
+    qp->_q_newly_added = 0;
+    qp->_q_free_space  = SOFT_QUEUE;
+
+    sp = & sebi->_s_prog;
+    sp->_sp_status   = (1 << i);
+    sp->_sp_amp_env  =
+    sp->_sp_ton_env  =
+    sp->_sp_note     =
+    sp->_sp_noise    =
+    sp->_sp_duration = 0;
+    sp->_sp_volume   = 15;
+    sp->_sp_octave   = 3;
+    sp->_sp_tempo    = 25;
+
+    init_event(sebi, _sound_event);
+  }
+}
+
+
+play(control_string,status)
+  char *control_string,status;
+{
+  extern _seb_ptr _get_seb_addr();
+  static _queue_ptr ptr;
+  static int channel, c;
+  static _seb_ptr this_seb;
+
+  for (channel=2; channel>=0; --channel)
+    if (status & (1 << channel))
+      {
+        this_seb = _get_seb_addr(channel);
+        ptr = &this_seb->_se_q_data;
+        _s_putq('S',ptr); _s_putq(status,ptr);
+
+        while (c = (*control_string++))
+          _s_putq(c,ptr); /* Put the string into the buffer */
+        _s_syncq(this_seb);    /* Tell the event routine about the string */
+      }
+}
+
+
+/* Put a character into the play string if there's space */
+
+_s_putq(c,ptr)
+  _queue_ptr ptr;
+{
+  while ( ! (ptr->_q_free_space - ptr->_q_newly_added));
+
+  ptr->_q_buffer[ptr->_q_in_pointer] = c;
+  ptr->_q_in_pointer = (ptr->_q_in_pointer + 1) % SOFT_QUEUE;
+  ptr->_q_newly_added++;
+}
+
+
+/* Set the pointers after adding characters to the string and
+re-arm the sound event if the queue was empty to start with */
+
+_s_syncq(this_seb)
+  _seb_ptr this_seb;
+{
+  static _queue_ptr ptr;
+  static unsigned free;
+
+  ptr = &this_seb->_se_q_data;
+
+  inline(DI);
+  free = ptr->_q_free_space;
+  ptr->_q_free_space = free - ptr->_q_newly_added;
+  ptr->_q_newly_added = 0;
+  inline(EI);
+
+  if (free == SOFT_QUEUE)
+    S_arm_event(this_seb->_s_prog._sp_status, this_seb);
+}
+
+
+/* event routine gets the next note and puts it on the queue */
+
+_sound_event(event_address)
+  unsigned event_address;
+{
+  _queue_ptr ptr;
+  _sp_ptr    sp;
+  _seb_ptr   this_seb;
+  int       ti, got;
+
+  this_seb = cast(_seb_ptr) (event_address - 4);
+  ptr = &this_seb->_se_q_data;
+  sp  = &this_seb->_s_prog;
+  got = 1;
+  sp->_sp_status &= 7;
+
+  _s_getq(ptr);
+  while (_s_q_char != '.')
+  {
+    if (got) got = 0; else _s_getq(ptr);
+    switch (_s_q_char)
+    {
+      case 'S' : sp->_sp_status |= _s_getq(ptr) & 0xF8; break;
+      case 'V' : sp->_sp_volume  = _s_getq(ptr); break;
+      case 'N' : sp->_sp_noise   = _s_getq(ptr); break;
+      case 'Y' : sp->_sp_amp_env = _s_getq(ptr); break;
+      case 'Z' : sp->_sp_ton_env = _s_getq(ptr); break;
+      case 'O' : sp->_sp_octave  = _s_getq(ptr) & 7 ; break;
+      case 'T' : sp->_sp_tempo   = (1500 / _s_getq(ptr)); break;
+      default  : if ((ti = _getnote(this_seb)) == 1) break;
+                 sp->_sp_note = ti;
+                 if (_s_q_char < ' ') ti = _s_q_char;
+                 else                {ti = 4; got = 1;}
+                 sp->_sp_duration = sp->_sp_tempo * ti;
+    }
+  }
+  _do_queue(sp);
+  if (ptr->_q_free_space != SOFT_QUEUE)
+    S_arm_event(sp->_sp_status & 7, this_seb);
+}
+
+
+_getnote(this_seb)
+  _seb_ptr this_seb;
+{
+  int      note,t_octave;
+  _queue_ptr ptr;
+  static unsigned period[] =  /* The values for the periods of the notes */
+{0,2551,2408,2273,2145,2025,1911,1804,1703,1607,1517,1432,1351,1276,1204,1136};
+/*            A         B    C         D         E    F         G  */
+
+  ptr      = &this_seb->_se_q_data;
+  t_octave = this_seb->_s_prog._sp_octave;
+
+  if (_s_q_char == '\'') t_octave -= _oct_factor(ptr);
+  switch(_s_q_char)
+  {
+    default  : return 1; /* an error */
+    case 'W' : note = 0; break;
+    case 'A' : note = 3; break; 
+    case 'B' : note = 5; break;
+    case 'C' : note = 6; break;
+    case 'D' : note = 8; break;
+    case 'E' : note =10; break;
+    case 'F' : note =11; break;
+    case 'G' : note =13;
+  }
+  _s_getq(ptr);
+  do
+    if      (_s_q_char == '#') {note++; _s_getq(ptr);}
+    else if (_s_q_char == 'b') {note--; _s_getq(ptr);}
+    else break;
+  while (1);
+
+  if (_s_q_char == '\'')  t_octave += _oct_factor(ptr);
+  return period[note] >> t_octave;
+}
+
+
+_do_queue(sp)
+  _sp_ptr sp;
+{
+  int    channel,qpos,chanbit;
+  _sp_ptr dest_q;
+  static char q_flag[] = {4,4,4};
+  static sound_program spra[MAXCHAN][CHIP_QUEUE];
+
+  chanbit = sp->_sp_status & 7;
+  if      (chanbit > 3) {channel = 2; chanbit = 4;}
+  else if (chanbit > 1) {channel = 1; chanbit = 2;}
+  else                   channel = 0;
+
+  qpos   = ++q_flag[channel] % CHIP_QUEUE;
+  dest_q = &spra[channel][qpos];
+
+  while ( ! (sound_check(chanbit) & 7));
+  blt(dest_q, sp, sizeof(sound_program)-2);
+  S_queue(dest_q);
+}
+
+
+_oct_factor(ptr)
+  _queue_ptr ptr;
+{
+  int oct;
+
+  oct = 1;
+  while (_s_getq(ptr) == '\'')  ++oct;
+  return oct;
+}
+
+
+_s_getq(ptr)
+  _queue_ptr ptr;
+{
+  _s_q_char = ptr->_q_buffer[ptr->_q_out_pointer];
+  ptr->_q_out_pointer = (ptr->_q_out_pointer + 1) % SOFT_QUEUE;
+  ptr->_q_free_space++;
+  return _s_q_char;
+}
+
+
+_seb_ptr _get_seb_addr(i)
+{
+  static _se_block s_event_block[MAXCHAN];
+
+  return  &s_event_block[i];
+}
+
+
+
+S_arm_event(channel_bit,seb_add)
+{
+  reg_a  = channel_bit;
+  reg_hl = seb_add;
+  inline(
+    LD_A_from, &reg_a,
+    LD_HL_from,&reg_hl,
+    CALL,      0xBCB0); /* SOUND_ARM_EVENT */
+}
+
+
+S_queue(sp)
+{
+  reg_hl = sp;
+  inline(
+    LD_HL_from, &reg_hl,
+    PUSH_IX,
+    CALL,       0xBCAA, /* SOUND_QUEUE */
+    POP_IX,
+    LD_HL_with, 0,0,
+    RL_L);
+}
+
+
+sound_check(chanbit)
+  char chanbit;
+{
+  reg_a = chanbit;
+  inline(
+    LD_A_from, &reg_a,
+    CALL,      0xBCAD, /* SOUND_CHECK */
+    LD_A_into, &reg_a);
+  return reg_a;
+}
+
+
+S_release(channel_bits)
+{
+  reg_a = channel_bits;
+  inline(
+    LD_A_from, &reg_a,
+    PUSH_IX,
+    CALL,      0xBCB3, /* SOUND_RELEASE */
+    POP_IX);
+}
+
+
+S_ampl_envelope(number, envelope)
+{
+  reg_a  = number;
+  reg_hl = envelope;
+  inline(
+    LD_A_from,  &reg_a,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBCBC); /* SOUND_AMPL_ENVELOPE */
+}
+
+
+S_tone_envelope(number, envelope)
+{
+  reg_a  = number;
+  reg_hl = envelope;
+  inline(
+    LD_A_from,  &reg_a,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBCBF); /* SOUND_TONE_ENVELOPE */
+}
+
+
+S_hold()
+{
+  inline(
+    CALL,       0xBCB6, /* SOUND_HOLD */
+    LD_HL_with, 0,0,
+    RL_L);
+}
+
+
+S_continue()
+{
+  inline(
+    PUSH_IX,
+    CALL,   0xBCB9, /* SOUND_CONTINUE */
+    POP_IX);
+}
+
+
+/* The next function cures a ROM problem and should be called if and only if:
+    the program is being compiled on a CPC464,
+    and it uses "play()",
+    and it is being #translated.
+*/
+
+fix_464_sound_interrupts()
+{
+  static char tick_block[13],
+    sync_q[] = {
+    0xF5, 0xC5, 0xD5, 0xE5,
+    0xCD, 0x21, 0xB9,
+    0x30, 0x11,
+    0xCD, 0xFB, 0xBC,
+    0x30, 0x0C,
+    0xE5, 0xF5,
+    0xCD, 0xFE, 0xBC,
+    0xF1, 0xE1,
+    0xCD, 0x01, 0xBD,
+    0x18, 0xEF,
+    0xE1, 0xD1, 0xC1, 0xF1,
+    0xC9};
+
+  inline(
+    0x21, tick_block,
+    0xCD, 0xBCEC,
+    0x21, 6+cast(int)tick_block,
+    0x01, 0x80FF,
+    0x11, sync_q,
+    0xCD, 0xBCEF,
+    0x21, tick_block,
+    0x11, 2,0,
+    0x01, 5,0,
+    0xCD, 0xBCE9);
+}
+
+
+after(delay_in_ticks, control_block, function_name)
+{
+  add_ticker(control_block, delay_in_ticks, 0, function_name);
+}
+
+
+every(period_in_ticks, control_block, function_name)
+{
+  add_ticker(control_block, period_in_ticks, period_in_ticks, function_name);
+}
+
+
+add_ticker(ctrl_block, initial_time_delay, recharge_delay, function_name)
+{
+  init_event(ctrl_block + 6,  function_name);
+
+  reg_hl = ctrl_block;
+  reg_de = initial_time_delay;
+  reg_bc = recharge_delay;  /*  0 is one-shot  */
+  inline(
+    LD_HL_from, &reg_hl,
+    LD_DE_from, &reg_de,
+    LD_BC_from, &reg_bc,
+    CALL,       0xBCE9); /* KL_ADD_TICKER */
+}
+
+
+init_event(event_block, function_name)
+{
+  typedef char *cp;
+  typedef unsigned *up;
+  static up p;
+
+  reg_hl = event_block;     /*  start of event block  */
+  reg_bc = 0x80FF;          /*  asynchronous, all RAM  */
+  reg_de = reg_hl + 7;      /*  event routine at end of block  */
+  p      = cast(up) reg_de; /*  to poke code for routine  */
+  *p     = 0xCDE5;          /*  PUSH_HL;  CALL ...     */
+  *++p   = function_name;   /*  ... the real function     */
+  *cast(cp)++p = 0xC9;      /*  and return to interrupted code  */
+  inline(
+    LD_HL_from, &reg_hl,
+    LD_DE_from, &reg_de,
+    LD_BC_from, &reg_bc,
+    CALL,       0xBCEF); /* KL_INIT_EVENT */
+}
+
+
+border(colour1, colour2)
+{
+  reg_bc = (colour1 << 8) + colour2;
+  inline(
+    LD_BC_from, &reg_bc,
+    CALL,       0xBC38); /* SCR_SET_BORDER */
+}
+
+
+cass_speed(speed)
+{
+  if ( ! speed)
+    inline(
+      LD_HL_with, 333,
+      LD_A_with,   25,
+      CALL,       0xBC68); /* CAS_SET_SPEED */
+  if (speed == 1)
+    inline(
+      LD_HL_with, 167,
+      LD_A_with,   50,
+      CALL,       0xBC68); /* CAS_SET_SPEED */
+}
+
+
+catalog()
+{
+  char cas_buffer[2048];
+
+  reg_de = cast(unsigned) cas_buffer;
+  inline(
+    LD_DE_from, &reg_de,
+    PUSH_IX,
+    CALL,       0xBC9B,  /* CAS_CATALOG */
+    POP_IX);
+}
+
+
+cls()
+{
+  rawout('\f');
+}
+
+
+event_disable()
+{
+  inline(CALL, 0xBD04); /* KL_EVENT_DISABLE */
+}
+
+
+event_enable()
+{
+  inline(CALL, 0xBD07); /* KL_EVENT_ENABLE */
+}
+
+
+flash_speed(time1, time2)
+{
+  reg_hl = (time1 << 8) + time2;
+  inline(
+    LD_HL_from, &reg_hl,
+    CALL,       0xBC3E); /* SCR_SET_FLASHING */
+}
+
+
+ink(ink_to_setup, colour1, colour2)
+{
+  reg_a  = ink_to_setup;
+  reg_bc = (colour1 << 8) + colour2;
+  inline(
+    LD_A_from,  &reg_a,
+    LD_BC_from, &reg_bc,
+    CALL,       0xBC32); /* SCR_SET_INK */
+}
+
+
+int inkey(key_number)
+{
+  reg_a = key_number;
+  inline(
+    LD_A_from,  &reg_a,
+    CALL,       0xBB1E, /* KM_TEST_KEY */
+    LD_B_with, 0,
+    JR_Z, 1,
+    INC_B,
+    LD_BC_into, &reg_bc);
+
+  return  (reg_bc & 0x100)  ?  (reg_bc & 0xA0)  :  -1;
+}
+
+
+char *instr(main_string, sub_string)
+  char *main_string, *sub_string;
+{
+  static int  length;
+
+  length = strlen(sub_string);
+
+  do  if ( ! strncmp(main_string, sub_string, length))  return main_string;
+  while (*++main_string);
+
+  return 0;  /*  == NULL  */
+}
+
+
+itob(n, string, precision)
+  char *string;
+{
+  static int i, c;
+  static char *s;
+
+  s = string;
+  for (i=precision; i; )
+    *s++ = n & (1 << --i)  ?  '1'  :  '0';
+  *s = 0;
+  return cast(int)string;
+}
+
+
+joy(joystick_number)
+{
+  inline(
+    CALL,       0xBB24, /* KM_GET_JOYSTICK */
+    LD_HL_into, &reg_hl);
+
+  return  (joystick_number  ?  reg_hl  :  (reg_hl >> 8)) & 0xFF  ;
+}
+
+
+int key_function(translated_key_number, expansion_string)
+{
+  reg_bc = (translated_key_number << 8) + (strlen(expansion_string) & 0xFF);
+  reg_hl = expansion_string;
+  inline(
+    LD_BC_from, &reg_bc,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBB0F,  /* KM_SET_EXPAND */
+    LD_A_with,  0,
+    RLA,
+    LD_A_into,  &reg_a);
+  return reg_a;
+}
+
+
+key_speed(start_up_delay, time_between_repeats)
+{
+  reg_hl = (start_up_delay << 8) + time_between_repeats;
+  inline(
+    LD_HL_from, &reg_hl,
+    CALL,       0xBB3F); /* KM_SET_DELAY */
+}
+
+
+key_translation(key_number, translated_key_number)
+{
+  reg_a  = key_number;
+  reg_bc = translated_key_number << 8;
+  inline(
+    LD_A_from,  &reg_a,
+    LD_BC_from, &reg_bc,
+    CALL,       0xBB27); /* KM_SET_TRANSLATE */
+}
+
+
+K_arm_breaks(event_routine, ROM_select)
+{
+  reg_de = event_routine;
+  reg_bc = ROM_select;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_BC_from, &reg_bc,
+    CALL,       0xBB45); /* KM_ARM_BREAKS */
+}
+
+
+K_disarm_break()
+{
+  inline(CALL, 0xBB48); /* KM_DISARM_BREAK */
+}
+
+
+read_file(filename, address)
+  char *filename, *address;
+{
+  int  c;
+  FILE *file_pointer;
+
+  if ( ! (file_pointer = fopen(filename,"r")))
+  {
+    fprintf(stderr,"\nERROR - Cannot open file :%s:\n",filename);
+    return ERROR;
+  }
+  while ((c = getc(file_pointer)) != EOF)
+    *address++ = c;
+
+  fclose(file_pointer);
+  return TRUE;
+}
+
+
+char *strlower(string)
+  char *string;
+{
+  static char *s;
+  static int  c;
+
+  for (s = string; c = *s; ++s) *s = tolower(c);
+  return string;
+}
+
+
+char *strupper(string)
+  char *string;
+{
+  static char *s;
+  static int  c;
+
+  for (s = string; c = *s; ++s) *s = toupper(c);
+  return string;
+}
+
+
+symbol(character_number, matrix)
+{
+  reg_a  = character_number;
+  reg_hl = matrix;
+  inline(
+    LD_A_from,  &reg_a,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBA8); /* TXT_SET_MATRIX */
+}
+
+
+symbol_after(number, table_memory)
+{
+  reg_de = number;
+  reg_hl = table_memory;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBAB); /* TXT_SET_M_TABLE */
+}
+
+
+time(array)
+  int array[2];
+{
+  inline(
+    CALL,       0xBD0D, /* KL_TIME_PLEASE */
+    LD_DE_into, &reg_de,
+    LD_HL_into, &reg_hl);
+  array[0] = reg_hl;
+  array[1] = reg_de;
+}
+
+
+write_file(filename, address, length)
+  char    *filename, *address;
+  unsigned length;
+{
+  FILE *file_pointer;
+
+  if ( ! (file_pointer = fopen(filename, "w")))
+    {
+      fprintf(stderr, "\nERROR - Cannot open file :%s:\n", filename);
+      return ERROR;
+    }
+
+  while (length--)
+    putc(*address++, file_pointer);
+
+  fclose(file_pointer);
+  return TRUE;
+}
+
+#list+
+
+/* * * * * *   E N D   O F   B A S I C 1 . L I B   * * * * * */
+
+
+
+  fclose(file_pointer);
+  return TRUE;
+}
+
+#list+
+
+/* * * * * 

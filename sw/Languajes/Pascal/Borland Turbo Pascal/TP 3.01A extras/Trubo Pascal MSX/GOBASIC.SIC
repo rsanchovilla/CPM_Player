@@ -1,0 +1,22 @@
+(* G O B A S I C . S I C  ---  Turbo ruft BASIC     V 1.1 6-DEZ-1987 *)
+
+
+type
+  goBASIC_filename = string[20];
+
+procedure goBASIC (s: goBASIC_filename);
+
+  type
+    arr = array [0..$0005] of byte;
+  var
+    SWPTMP: arr absolute $F7BC;            { 8-Byte-Scratchbereich }
+    prog:   goBASIC_filename absolute $80; { MSXDOS-Kommandozeile  }
+  const
+    GOCODE: arr = ($CD,$68,$F3,            {    CALL 0F368H        }
+                   $C3,$22,$40);           {    JP   04022H        }
+  begin
+    prog   := s;
+    SWPTMP := GOCODE;
+    inline ($C3/SWPTMP);
+  end;
+

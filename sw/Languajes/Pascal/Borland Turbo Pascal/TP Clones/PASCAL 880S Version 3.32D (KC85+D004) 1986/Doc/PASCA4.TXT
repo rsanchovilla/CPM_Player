@@ -1,0 +1,765 @@
+.pl68
+..17.01.1990/ 29.1.90
+.pn65
+.op
+.po10
+.hePASCAL                         #              Sprachbeschreibung
+4.4. Operatoren und Ausdr{cke
+
+4.4.1. Operatoren
+-----------------
+
+Operatoreî werdeî zuí Verkn{pfeî bzw®  Vergleicheî voî Ausdr{ckeî 
+verwendet®  Operatoreî  k>nneî  iî  sechó  Kategorieî  eingeteilô 
+werden:
+   
+ 1) Minusvorzeichen
+ 2) NOT Operator
+ 3) Multiplikationsoperatoren: *,/,DIV,MOD,AND,SHL,SHR
+ 4) Additionsoperatoren: +,-,OR,XOR
+ 5) Vergleichsoperatoren: =, <, ,<, =,<=
+ 6) Mengenoperatoren
+
+Sinä   beidå  Operandeî  eineó  Multiplikations- odeò  Additions
+operatoró  voí Tyğ INTEGER¬  danî isô aucè daó Ergebnió  voí  Tyğ 
+INTEGER® Wenî eineò odeò beidå Operatoreî voí Tyğ REAÌ sind¬ danî 
+isô aucè daó Ergebinó voí Tyğ REAL®  Vergleichsoperatoreî lieferî 
+immeò  deî  Tyğ  BOOLEAN®  Diå Priorit}ô deò Operatoreî  wirä  iî 
+Ziffeò 4.4.1.7® dargestellt.
+
+
+4.4.1.1. Minusvorzeichen
+- - - - - - - - - - - - -
+
+Daó  Minusvorzeicheî bezeichneô diå Negatioî deó  Operanden¬  deò 
+vom Typ INTEGER oder REAL sein mu\.
+
+
+4.4.1.2. Operator NOT
+- - - - - - - - - - -
+
+Deò  Operatoò NOÔ kanî auæ Operandeî voí Tyğ  BOOLEAÎ  angewendeô 
+werden und dr{ckt die Negation aus:
+
+  NOT TRUE  = FALSE
+  NOT FALSE = TRUE
+
+PASCAÌ erlaubô aucè diå Anwendunç deó Operatoró NOÔ auæ Operandeî 
+voí Tyğ INTEGEÒ unä BYTE® Iî dieseí Falì erfolgô diå Negatioî deò 
+einzelnen Bits.
+
+Beispiele:
+
+  NOT 0      = -1
+  NOT -15    = 14
+  NOT J2345  = JDCBA
+.paŠ4.4.1.3. Multiplikationsoperatoren
+- - - - - - - - - - - - - - - - - -
+
+Syntax:  Multiplikationsoperator<
+
+Es bedeuten:
+
+-----------------------------------------------------------------
+! Operator ! Operation      ! Typ der Operanden ! Typ Ergebnis  !
+!          !                !                   !               ! 
+!---------------------------------------------------------------!
+!    *     ! Multiplikation ! REAL,REAL         ! REAL          !
+!    *     ! Multiplikation ! INTEGER,INTEGER   ! INTEGER       !
+!    *     ! Multiplikation ! REAL,INTEGER      ! REAL          !
+!    *     ! Durchschnitt   ! Mengen            ! Menge         !
+!    /     ! Division       ! REAL,REAL         ! REAL          !
+!    /     ! Division       ! REAL,INTEGER      ! REAL          !
+!   DIV    ! Division       ! INTEGER           ! INTEGER       !
+!   MOD    ! Rest (Modulus) ! INTEGER           ! INTEGER       ! 
+!   AND    ! logisches UND  ! BOOLEAN           ! BOOLEAN       !  
+!   AND    ! arithmetisches !                   !               !
+!          ! UND            ! INTEGER           ! INTEGER       !  
+!   SHL    ! Shift links    ! INTEGER           ! INTEGER       !
+!   SHR    ! Shift rechts   ! INTEGER           ! INTEGER       !
+-----------------------------------------------------------------
+
+BYTÅ  gilô aló echtå Teilmengå voî INTEGER®  Beé deî  Operationeî 
+m{sseî sicè danî abeò BYTE/BYTÅ gegen{berstehen.
+
+Beispiele:
+
+  123 * 456      = 492 falsch, ]berlauf der Integerzahl!
+  123 DIV 4      = 30
+  12 MOD 5       = 2
+  TRUE AND FALSE = FALSE
+  12 AND 22      = 4
+  2 SHL 7        = 256 (*verschiebt das Bitmuster des
+                         INTEGER-Typs 2 um 7 Positionen
+                         nach links*)
+  256 SHR 7      = 2
+
+Diå  bitweiså  AND-Operatioî f{ò deî Tyğ BYTÅ zeigô daó  folgendå 
+Schema:
+
+-----------------------------------------------------------------
+!                   ! Zahl  ! hexadezimal  ! Bitmuster          !
+!                   !       !              !                    ! 
+!---------------------------------------------------------------!
+!                   !       !              !                    !
+! 1. Operand        !  12   !     J0C      !  0000 1100         !
+! 2. Operand        !  22   !     J16      !  0001 0110         !
+!                   !       !              !                    !
+!---------------------------------------------------------------!
+! Ergebnis bei AND  !   4   !     J04      !  0000 0100         !
+-----------------------------------------------------------------
+.paŠ4.4.1.4. Additionsoperatoren
+- - - - - - - - - - - - - - -
+
+Syntax:  Additionsoperator<
+
+Es bedeuten:
+
+-----------------------------------------------------------------
+! Operator ! Operation      ! Typ der Operanden ! Typ Ergebnis  !
+!----------------------------------------------------------------
+!    +     ! Addition       ! REAL,REAL         ! REAL          !
+!    +     ! Addition       ! INTEGER,INTEGER   ! INTEGER       !
+!    +     ! Addition       ! INTEGER,REAL      ! REAL          !
+!    +     ! Vereiningung   ! Mengen            ! Menge         !  
+!    -     ! Subtraktion    ! REAL,REAL         ! REAL          ! 
+!    -     ! Subtraktion    ! INTEGER,INTEGER   ! INTEGER       ! 
+!    -     ! Subtraktion    ! INTEGER,REAL      ! REAL          !
+!    -     ! Differenz      ! Mengen            ! Menge         ! 
+!    OR    ! logisches ODER ! BOOLEAN           ! BOOLEAN       !
+!    OR    ! arithmetisches !                   !               !
+!          ! ODER           ! INTEGER,INTEGER   ! INTEGER       !
+!   XOR    ! logisches XOR  ! BOOLEAN,BOOLEAN   ! BOOLEAN       !
+!   XOR    ! arithmetisches !                   !               !
+!          ! XOR            ! INTEGER,INTEGER   ! INTEGER       !
+-----------------------------------------------------------------
+
+BYTÅ gilô wiedeò aló Teilbereichstyğ 0..25µ voî INTEGER®  
+Beidå Operatoreî m{sseî danî voí Typ BYTE sein.
+
+Beispiele:
+
+  456 - 123.0     =  333.0
+  TRUE OR FALSE   =  TRUE
+  12 OR 22        =  30
+  TRUE XOR FALSE  =  TRUE
+  12 XOR 22       =  26
+.paŠ4.4.1.5. Vergleichsoperatoren
+- - - - - - - - - - - - - - -
+
+Syntax:  Vergleichsoperator<
+
+Es bedeuten:
+
+-----------------------------------------------------------------
+! Operator ! Operation       ! Typ der Operanden ! Typ Ergebnis !
+!---------------------------------------------------------------!
+!  =,  <   ! gleich,         ! einfacher Typ,    ! BOOLEAN      !
+!          ! ungleich        ! Mengen, Zeiger,   !              !
+!          !                 ! Zeichenketten     !              !
+!    , <   ! kleiner,        ! einfacher Typ,    ! BOOLEAN      !
+!          ! gr>\er          ! Zeichenkette      !              !
+!   =, <=  ! kleiner gleich  ! einfacher Typ     ! BOOLEAN      !
+!          ! gr>\er gleich   ! Zeichenkette      !              !
+!    =     ! Inklusion       ! Mengen            ! BOOLEAN      !
+!          ! "ist enthalten  !                   !              !
+!          !  in"            !                   !              !
+!   <=     ! Inklusion       ! Mengen            ! BOOLEAN      !
+!          ! "enth}lt"       !                   !              !
+!   IN     ! Enthaltensein   ! ordinaler Typ/    ! BOOLEAN      !      
+!          !                 ! Menge             !              !
+-----------------------------------------------------------------
+  
+Beé  Vergleicheî voî Zeichenketteî wirä voî linkó  begonnen¬  unä 
+diå  Zeicheî werdeî byteweiså entsprechenä ihreò Ordnunç ií  Zei
+chensatú  verglichen® K{rzerå Zeichenkettån werdeî durcè Leerzei
+cheî erg}nzt.
+Bei Vergleichen der Ordinalwerte von booleanschen Gr>\en gilt:
+
+FALSE   TRUE
+ord(FALSE) = 0
+ord(TRUE)  = 1
+
+
+4.4.1.6. Mengenoperatoren
+- - - - - - - - - - - - -
+
+Diå  Mengenoperationeî  werdeî entsprechenä  ihreò  Rangfolgå  iî 
+folgende drei Klassen eingeteilt:
+
+ 1)  * Mengendurchschnitt
+ 
+ 2)  + Mengenvereinigung 
+     - Mengendifferenz 
+
+ 3)  = Test auf Gleichheit
+     < Test auf Ungleichheit
+    <= Wahr, wenn der zweite Operand im ersten enthalten ist.
+     = Wahr, wenn der erste Operand im zweiten enthalten ist.
+    IN Tesô auæ  Mitgliedschafô iî eineò Menge®  Deò zweitå  Ope
+       ranä isô eiî Mengentyğ unä deò  erstå eiî   Mengenausdrucë 
+       voí gleicheî Tyğ wiå deò Basistyğ deò Menge®  Daó Ergebnió 
+       isô  wahr¬  wenî deò erstå Operanä eiî Elemenô deó zweiteî 
+       Operandeî ist¬ anderenfalì isô eó falsch.ŠDiå  Pr{funç  auæ einå leerå Durchschnittsmengå kanî maî  iî  deò 
+Forí  A*Â  ½ Ş ~ f{ò zweé Mengeî programmieren»  ^~  kennzeichneô 
+einå  leerå Menge®  Diå Relationeî   unä < sinä f{ò Mengeî  nichô 
+definiert.
+
+Bespiele:
+
+  x:= ^1,2~;
+  y:= ^2,3~;
+  e:= x * y;     (* e = ^2~ *)
+  e:= x + y;     (* e = ^1,2,3~ *)
+  e:= x - y;     (* e = ^1~ *)
+
+
+4.4.1.7. Priorit}t
+- - - - - - - - - -
+
+Iî  mehrgliedrigeî  Ausdr{ckeî werdeî diå  einzelneî  Operationeî 
+entsprechend ihrer Priorit}t ausgef{hrt:
+
+  NOT                          (* h>chste Priorit}t *)
+  Multiplikationsoperatoren
+  Additionsoperatoren
+  Vergleichsoperatoren         (* niedrigste Priorit}t *)
+
+Sinä  iî  eineí Ausdrucë mehrerå Operatoreî  gleicheò  Priorit}t¬ 
+dann werden diese von links beginnend ausgef{hrt.
+Diå  Priorit}ô kanî durcè Setzeî voî Klammerî  ver}nderô  werden® 
+Dabeé werdeî Klammern¬  voî linkó unä voî inneî beginnend¬ zuersô 
+aufgel>st.
+Innerhalb der Klammer gelten wieder die o.g. Regeln.
+
+Beispiele:
+
+  5 + 6 * 10                   = 65
+  (5 + 6) * 10                 = 110
+  (5 * (3 + 6) -8) +10         = 47
+  (5 + 6)   (3 * 5)            = TRUE
+  NOT (8 < 4)                  = FALSE
+  (7 < 3) AND ( 5 < 1)         = TRUE
+
+Diå  Klammerunç iî logischeî Ausdr{cken¬  wiå iî (· < 3© ANÄ (µ < 
+1)¬  isô notwendig¬ uí deî durcè diå Priorit}ô sonsô entstehendeî 
+Typkonflikt zu vermeiden.
+
+
+4.4.2. Ausdr{cke
+----------------
+
+Ausdr{ckå sinä Konstruktionen¬  welchå diå Regelî f{ò daó Rechneî 
+miô  Werteî  voî Variableî unä diå Erzeugunç  neueò  Wertå  durcè 
+Anwendung von Operatoren ausdr{cken.
+
+Ausdr{ckå   besteheî  auó  Operandeî   (Variablen¬   Konstanten)¬ 
+Operatoren und Funktionsaufrufen.
+
+Syntax:  Ausdruck<ŠAusdr{cke¬  diå Elementå deò gleicheî Mengå sind¬ m{sseî allå voí 
+gleichen Typ sein (= Basistyp der Menge).
+^~ kennzeichneô einå leerå Menge¬ unä ^x..y~ bezeichneô diå Mengå 
+aller Werte aus dem Intervall x bis y.
+
+Beispiele:
+
+  100.76
+  x
+  x + y^12~
+  (x * Artikel.Preise^1,4~ / 100)
+  ^Montag, Dienstag, Mittwoch~
+  (x   y^2~) AND (Zeiger1 .Wert1  < 0)
+  x = 12.3456
+
+--------------------------------------------
+! Wert des Operanden "a"    !  T  T  F  F  !
+! Wert des Operanden "b"    !  T  F  T  F  !
+!------------------------------------------!
+! NOT a    (Negation)       !  F  F  T  T  !
+! NOT b    (Negation)       !  F  T  F  T  !
+! a AND b  (Konjunktion)    !  T  F  F  F  !
+! a OR  b  (Disjunktion)    !  T  T  T  F  !
+! a XOR b  (Exklusion)      !  F  T  T  F  !
+--------------------------------------------
+
+
+4.4.3. Funktionsaufruf
+----------------------
+
+Durcè eineî Funktionsaufruæ wirä eiî Unterprogramí aktiviert® Deò 
+Aufruæ  bestehô  auó  deí  Funktionsbezeichneò  unä  eineò  Listå 
+aktueller Parameter.
+Diå  aktuelleî Parameteò (Variableî unä Ausdr{cke© werdeî f{r diå 
+korrespondierendeî  formaleî Parameteò substituierô (vgl®  Ziffeò 
+4.6.).
+
+Daó  Auftreteî  eineó Funktionsaufrufeó ií Programí  bewirkô  diå 
+Aktivierunç deò Funktion¬ diå durcè ihî bezeichneô wird® Wenî diå 
+Funktioî  keinå  Standardfunktioî ist¬  mu\ siå  voò  deí  Aufruæ 
+deklariert sein.
+
+Syntax:  Funktionsaufruf<
+
+Beispiele:
+
+  Volumen(Radius,Hoehe)
+  Durchschnitt (x,y^j~)
+  sin(x)
+  eof(f)
+  sqrt(x)
+.paŠ4.5. Anweisungen
+
+4.5.1. ]bersicht
+----------------
+
+Anweisungeî  beschreibeî  auszuf{hrendå Operationen®  Siå  k>nneî 
+durcè   Markeî   (Label©  gekennzeichneô   sein¬   auæ   diå   iî 
+Sprunganweisungeî  (GOTO© Bezuç genommeî wird®  Davoî solltå  auó 
+softwaretechnologischeî  Gr{ndeî  nuò  ií  Ausnahmefalì  Gebraucè 
+gemacht werden.
+
+Syntax:  Anweisung<
+
+Anweisungeî  werdeî durcè Semikoloî getrennt®  Eiî Semikoloî  voò 
+ENÄ  unä  UNTIÌ  kanî entfallen¬  dá dieså Wortsymbolå  nocè  zuò 
+Anweisunç geh>ren®  Wirä eó gesetzt¬  spezifizierô daó  Semikoloî 
+eine Leeranweisung.
+
+
+4.5.2. Einfache Anweisungen
+---------------------------
+
+Einå  einfachå Anweisunç isô einå Anweisung¬  iî deò keinå anderå 
+Anweisung enthalten ist.
+
+Syntax:  einfache Anweisung<
+
+
+4.5.2.1. Ergibtanweisung
+- - - - - - - - - - - - -
+
+Durcè  diå  Ergibtanweisunç  wirä  deò  rechtó  voî  :½  stehendå 
+Ausdrucë  deò Variableî linkó voî :½ zugewiesen® Innerhalâ  eineò 
+Funktion kann links der Funktionsbezeichner stehen.
+
+Syntax:  Ergibtanweisung<
+
+Deò  Tyğ  deò Variableî bzw®  deò Funktioî mu\ miô  deí  Tyğ  deó 
+Ausdruckes zuweisungsvertr}glich sein.
+
+Beispiele:
+
+  BestandsWert    := Artikel.Bestand * Artikel.Preise^j,8~;
+  y^66~           := BestandsWert;
+  y^j~            := 47.88;
+  Matrix^4,41~    := Satz.I;
+  Text1           := 'Zuweisung';
+  Zeiger1         := Zeiger2 ;
+  Zeiger1         := Zeiger2;
+  Zeiger2         := NIL;
+  Zeiger1 .Wert1  := 234.645;
+  i               := succ(i);
+.paŠ4.5.2.2. Prozeduranweisung
+- - - - - - - - - - - - - -
+
+Durcè  einå Prozeduranweisunç wirä diå Aktivierunç deò  Prozedur¬ 
+diå  durcè deî Prozedurbezeichneò gekennzeichneô ist¬  veranla\t® 
+Diå  Prozeduranweisunç kanî einå Listå voî  aktuelleî  Parameterî 
+enthalten¬  diå  f{ò  diå korrespondierendeî  formaleî  Parameteò 
+substituierô werden®  Dieså formaleî Parameteò wurdeî iî deò Pro
+zedurvereinbarunç deklariert.
+Diå  Korrespondenú  isô durcè diå Stellunç deò Parameteò  iî  deî 
+Listen der aktuellen und formalen Parameter gegeben.
+Eó werdeî Wert-¬  Variablen- unä nichttypisiertå Parameteò unter
+schiedeî (vgl® Ziffeò 4.6.2.2.).
+
+Syntax:  Prozeduranweisung<
+
+Beispiele:
+
+  read (x);
+  write ('Bildschirmausgabe');
+
+
+4.5.2.3. Sprunganweisung
+- - - - - - - - - - - - -
+
+Durcè    diå    Sprunganweisunç   wirä    erreicht¬    da\    diå 
+Programmausf{hrunç miô deò Anweisunç fortgesetzô wird¬  diå durcè 
+die entsprechende Marke gekennzeichnet ist.
+
+Syntax:  Sprunganweisung<
+
+Deò  G{ltigkeitsbereicè  eineò Markå isô deò  Anweisungsteiì  deò 
+Programmeinheit¬ iî desseî Vereinbarungsteiì diå Markå deklarierô 
+ist.
+
+Beispiel:
+
+  PROGRAM xyz;
+  LABEL 10;
+  VAR i,j: INTEGER;
+  BEGIN
+  10: read(i);
+      j:= i * 21 + 5;
+       :
+       .
+      GOTO 10;
+       :
+       .
+  END.
+
+Diå  Markeî  gelteî  nichô  iî  Unterprogrammeî  deó   jeweiligeî 
+Blockes®   GOTO-Anweisungeî  solleî  auó  softwaretechnologischeî 
+Gr{nden nur im Notfall eingesetzt werden.
+.paŠ4.5.2.4. Leeranweisung
+- - - - - - - - - - - -
+
+Diå   Leeranweisunç  enth}lô  keinerleé  Symbolå  unä  haô  keinå 
+Wirkung.
+
+Syntax:  Leeranweisung<
+
+Einå  Leeranweisunç  kanî {beralì ií  Programí  stehen¬  wï  einå 
+Anweisung geschrieben werden kann.
+
+Beispiel:
+  :
+  .
+    IF x   0 THEN GOTO Stop;
+    writeln ('Das Ergebnis ist ',x);
+  Stop:END.
+
+Die Leeranweisung befindet sich zwischen Doppelpunkt und END.
+
+
+4.5.3. Strukturierte Anweisungen
+--------------------------------
+
+Strukturiertå   Anweisungeî   sinä   auó   mehrereî   Anweisungeî 
+zusammengesetzte  Konstruktionen, die entweder
+
+- nacheinander (Verbundanweisung),
+- bedingt (bedingte Anweisungen) oder
+- wiederholt (Zyklusanweisungen)
+
+auszuf{hren sind.
+
+Syntax:  Strukturierte Anweisung<
+
+
+4.5.3.1. Verbundanweisung
+- - - - - - - - - - - - -
+
+Durcè  diå  Verbundanweisunç  wirä  einå  Folgå  voî  Anweisungeî 
+zusammengefa\t®   Diå  Ausf{hrunç  deò  geklammerteî  Anweisungeî 
+erfolgt in der gleichen Reihenfolge, wie sie geschrieben sind.
+
+Syntax:  Verbundanweisung<
+
+Einå  Verbundanweisunç kanî {beralì dorô geschriebeî  werden¬  wï 
+einå  Anweisunç  steheî  darf¬  abeò einå  Folgå  voî Anweisungeî 
+erforderlich ist.
+
+Beispiel:
+
+  BEGIN
+    x:= 2.678;
+    y^i~ := x + 2.71;
+    i := i + 1
+  END
+.paŠ4.5.3.2. Bedingte Anweisungen
+- - - - - - - - - - - - - - -
+
+Bedingtå  Anweisungeî erm>glicheî diå Steuerunç deò  Programmaus
+f{hrunç iî Abh}ngigkeiô voî Bedingungen®       
+Diå Bedingung¬ aló Alternativå (IF-Anweisung© odeò aló Fallunter
+scheidunç  (CASE-Anweisung© formuliert¬  steuerô diå Auswahì  deò 
+auszuf{hrendeî Anweisung.
+
+Syntax:  bedingte Anweisung<
+
+
+4.5.3.2.1. IF-Anweisung
+- - - - - - - - - - - -
+
+Durcè  diå  IF-Anweisunç  wirä  festgelegt¬  da\  diå  nacè  THEÎ 
+folgendå Anweisunç nuò danî ausgef{hrô wird¬  wenî deò  booleschå 
+Ausdruck nach IF den Wert TRUE hat.
+Wenî  dieseò Ausdrucë deî Werô FALSÅ annimmt¬  danî wirä diå nacè 
+ELSE folgende Anweisung ausgef{hrt.
+Isô  keiî  ELSE-Zweiç  vorhanden¬   wirä  diå  n}chstå  Anweisunç 
+ausgef{hrt.
+
+Syntax:  IF-Anweisung<
+
+Beé geschachtelteî IF-Anweisungeî isô zõ beachten¬  da\ eiî ELSE-
+Zweiç immeò zuò letzteî IF-Anweisunç geh>rt¬ diå nocè nichô durcè 
+eineî  ELSE-Zweiç abgeschlosseî wurde®  Gegebenenfalló  isô  einå 
+Leeranweisung erforderlich.
+
+Nachfolgende IF-Anweisungen sind }quivalent:
+
+  (1)  IF  Ausdruck1< THEN
+         IF  Ausdruck2< THEN  Anweisung1<
+                        ELSE  Anweisung2<;
+
+  (2)  IF  Ausdruck1< THEN BEGIN
+         IF  Ausdruck2< THEN  Anweisung1<
+                        ELSE  Anweisung2<
+       END;
+
+Voò  ELSÅ daræ keiî Semikoloî stehen¬  dá sonsô diå  IF-Anweisunç 
+vorzeitig abgeschlossen wird.
+
+Beispiele:
+
+  (a)  IF  x   2.74 THEN y^i~:=x;
+  (b)  IF (x < 0) AND (x  = 100) THEN BEGIN
+         y^i~:=x;
+         x:=0;
+         i:=i + 1
+       END ELSE writeln ('Fehler');
+  (c) IF Zeiger1 .Nachfolger  < NIL THEN x:= Zeiger1 .Wert1;
+.paŠ4.5.3.2.2. CASE-Anweisung
+- - - - - - - - - - - - -
+
+F{ò Programmabl}ufe¬  beé deneî unteò mehò aló zweé M>glichkeiteî 
+zõ w}hleî ist¬  stehô iî PASCAÌ diå CASE-Anweisunç zuò Verf{gung® 
+Diå  Anweisunç  bestehô auó eineí Ausdrucë (Selektor©  unä  eineò 
+Listå  voî  Anweisungen¬  voî  deneî jedå durcè  einå  Listå  voî 
+Fallkonstanteî  voí  Tyğ deó Selektoró markierô  ist®  Diå  CASE-
+Anweisunç legô fest¬  da\ diå Anweisunç ausgef{hrô wird¬  beé deò 
+einå Fallkonstantå miô deí Ausdrucë (Selektor© {bereinstimmt.
+
+Syntax:  CASE-Anweisung<
+
+Diå  Selektorvariablå  (hinteò CASE© mu\ voí ordinaleî Tyğ  sein® 
+Entsprichô  deò Werô deó Ausdruckó  keineò  Fallkonstanten¬  danî 
+wirä  nacè  ELSÅ  (wenî  vorhanden)¬   sonsô  diå  CASÅ  folgendå 
+Anweisung ausgef{hrt.
+
+Beispiele:
+
+ (a) (*Programmauswahl entsprechend eines Programm-Kennzeichens*)
+     VAR Programmkennzeichen : CHAR;
+     BEGIN
+       :
+       .
+       read (Programmkennzeichen);
+       CASE Programmkennzeichen OF
+         'D','d' : Datenerfassung;
+         'F','f' : Fakturierung;
+         'B','b' : Buchung;
+         'S','s' : Statistik
+       ELSE writeln ('Falsches Programm-Kennzeichen!')
+       END;
+        :
+        .
+
+ (b) (*Summierung von Betraegen zur Quartalssumme*)
+     (*(1 bis 4), in Abhaengigkeit von der
+       Monats-Nummer (Monat)*)
+     VAR QuartalsSumme1,QuartalsSumme2,
+         QuartalsSumme3,QuartalsSumme4,
+         Betrag: REAL;
+         Monat: INTEGER;
+     BEGIN
+        :
+        .
+       CASE Monat OF
+         1..3:   QuartalsSumme1:= QuartalsSumme1 + Betrag;
+         4..6:   QuartalsSumme2:= QuartalsSumme2 + Betrag;
+         7..9:   QuartalsSumme3:= QuartalsSumme3 + Betrag;
+         10..12: QuartalsSumme4:= QuartalsSumme4 + Betrag
+         ELSE writeln ('Ungueltige Monats-Nummer!')
+       END;
+        :
+        .
+.paŠ4.5.3.3. Zyklusanweisungen
+- - - - - - - - - - - - - -
+
+Zyklusanweisungeî  erm>glicheî  diå  wiederholtå  Ausf{hrunç  voî 
+bestimmteî  Anweisungsfolgen®  Wenî diå Anzahì deò Wiederholungeî 
+vorheò  bekannô ist¬  danî isô diå FOR-Anweisunç  diå  schnellstå 
+Konstruktion¬  uí  dieseó Probleí zõ programmieren®  Anderenfalló 
+solltå diå REPEAT- odeò WHILE-Anweisunç verwendeô werden.
+
+Syntax:  Zyklusanweisung<
+
+
+4.5.3.3.1. WHILE-Anweisung
+- - - - - - - - - - - - - -
+
+Diå  WHILE-Anweisunç  dienô  zuí Aufbaõ voî  Schleifen¬  diå  diå 
+Ausf{hrunç eineò Anweisunç bereitó abweisen¬  wenî diå  Bedingunç 
+am Anfang nicht erf{llt ist.
+
+Syntax:  WHILE-Anweisung<
+
+Diå  Anweisunç  nacè  DÏ  wirä  sï  langå  wiederholt¬   wiå  deò 
+booleschå  Ausdrucë nacè WHILÅ deî Werô TRUÅ liefert®  Beé  FALSÅ 
+wirä  diå  Schleifå verlassen®  Diå Anweisunç nacè DÏ wirä  nichô 
+ausgef{hrt¬  wenî bereitó beií Schleifeneintritô deò Ausdrucë deî 
+Werô  FALSÅ liefert®  Deò Ausdrucë mu\ ií Schleifenk>rpeò  beein
+flu\ô werden¬ sonsô erfolgô einå unendlichå Ausf{hrunç deò Anwei
+sungeî nacè DO.
+
+Beispiele:
+
+ (a) i:= 1; x:= 0
+      WHILE (x   10000.00) AND (i  = 100) DO BEGIN
+        i:= i+1;
+        x:= x+y^i~
+      END;
+
+ (b) WHILE(Kette^1~=' ')AND(length(Kette)<0) DO delete(Kette,1,1)
+     (*Streicheî fuehrendeò Leerzeicheî iî eineò Zeichenkette*)
+
+Diå  WHILE-Anweisunç isô iî deò Ausf{hrunç langsameò aló diå FOR- 
+und die REPEAT-Anweisung.
+
+
+4.5.3.3.2. REPEAT-Anweisung
+- - - - - - - - - - - - - -
+
+Miô  deò REPEAT-Anweisunç bestehô diå M>glichkeiô zuò Programmie
+runç voî Schleifen¬  diå iî jedeí Fallå mindestenó einmaì  durch
+laufeî werden.
+
+Syntax:  REPEAT-Anweisung<
+
+Diå  zwischeî REPEAÔ unä UNTIÌ stehendeî Anweisungeî werdeî  wie
+derholt¬ bió deò Ausdrucë nacè UNTIÌ deî Werô TRUÅ liefert.
+Ií  Gegensatú zuò WHILE-Anweisunç wirä diå  REPEAT-Schleifå  alsï 
+verlassen¬ wenî deò booleschå Ausdrucë deî Werô TRUÅ liefert® ŠBeé FALSÅ erfolgô einå weiterå Wiederholung.
+Diå  REPEAT-Anweisunç  wirä  mindestens  einmaì  ausgef{hrt®  Deò 
+Ausdrucë mu\ ií Schleifenk>rpeò beeinflu\ô werden¬  sonsô erfolgô 
+einå  unendlichå  Ausf{hrunç deò Anweisungeî zwischeî REPEAÔ  unä 
+UNTIL.
+Einå Klammerunç voî mehrereî Anweisungeî ií Schleifenk>rpeò durcè 
+BEGIN und END ist nicht notwendig.
+
+Beispiel:
+  (*Erzwingen einer gueltigen Antwort*)
+  REPEAT
+     write ('Waehlen Sie (@/N):');
+     readln (Antwort);
+     Antwort:=upcase (Anwort)
+  UNTIL (Antwort='@') OR (Antwort='N');
+
+Diå  REPEAT-Anweisunç  isô iî deò Ausf{hrunç  schnelleò  aló  diå 
+WHILE-, aber langsamer als die FOR-Anweisung.
+
+
+4.5.3.3.3. FOR-Anweisung
+- - - - - - - - - - - - -
+
+Diå  FOR-Anweisunç  wirä  zuò  Programmierunç  voî  Z}hlschleifeî 
+verwendet. 
+
+Syntax:  FOR-Anweisung<
+
+Beií  Schleifeneintritô bekommô diå Laufvariablå deî  Anfangswerô 
+zugewiesen®  Voò  Ausf{hrunç deò Anweisunç nacè DÏ wirä deò  Werô 
+deò  Laufvariableî miô deí vorgegebeneî Endwerô  verglichen®  Beé 
+]berschreitunç  deó Endwerteó wirä diå Schleifå verlassen¬  sonsô 
+werdeî diå Anweisungeî ausgef{hrt.
+Nacè  Ausf{hrunç deò Anweisunç wirä diå Laufvariablå uí ±  erh>hô 
+(bei TO) oder verringert (bei DOWNTO).
+Isô deò Endwerô beé Schleifeneintritô bereitó {berschritteî  (beé 
+TO©   bzw®   unterschritteî   (beé   DOWNTO)¬   danî   wirä   diå 
+Schleifenanweisung nicht ausgef{hrt.
+Deò  Anfangswerô  unä  deò  Endwerô  deò  Laufvariableî  mu\  voí 
+gleicheî  ordinaleî  Tyğ  sein®  Siå  k>nneî  ií  Schleifenk>rpeò 
+wertm}\ig genutzt, d{rfen aber nicht ver}ndert werden.
+Deò  Werô  deò  Laufvariableî nacè  vollst}ndigeí  Durchlauæ  deò 
+Schleifå beé Schleifenaustritô isô undefiniert® F{ò Laufvariableî 
+d{rfen nur lokale Variablen verwendet werden.
+
+Beispiele:
+
+  (a) VAR Summe    : ARRAY ^1..100~ OF REAL;
+          Artikel  : INTEGER;
+        :
+        .
+      FOR Artikel:=1 to 100 DO
+      writeln ('ART-GRUPPE:',Artikel:3,'=',Summe^Artikel~:8:2);
+.paŠ  (b) VAR Kette : STRING^30~;
+           i    : INTEGER;
+       :
+       .
+      writeln (Kette);
+      FOR i:=1 to length (Kette) DO write ('-');
+      writeln;
+
+  (c) VAR c: (rot, gelb, gruen, blau);
+       :
+       .
+      FOR c:= rot TO blau DO Proz(c);
+
+  (d) x:= 0; j:= 100;
+      FOR i:= j DOWNTO 1 DO BEGIN
+        x:= x+y^i~;
+        IF x < 1000 THEN exit       (*vorzeitiger Austritt aus
+      END;                            einer Programmeinheit*)
+
+
+4.5.3.4. WITH-Anweisung
+- - - - - - - - - - - -
+
+Innerhalâ  deò  WITH-Anweisunç k>nneî diå  Recordkomponentenvari
+ablen¬ diå durcè WITH-Klauseì spezifizierô sind¬ alleiî durcè deî 
+Recordkomponentenbezeichneò  angegebeî  werden¬   d.h®  ohnå  diå 
+Angabe der Recordvariablen voranzustellen.
+
+Syntax:  WITH-Anweisung<
+
+Beispiele:
+
+  (a) TYPE Daten=RECORD
+                   Adresse : STRING ^100~;
+                   Konto   : STRING ^15~;
+                   Umsatz  : REAL;
+                   Datum   : STRING ^8~
+                 END;
+      VAR Kunde:Daten;
+
+  Die nachfolgenden Anweisungen sind }quivalent:
+
+  (1) Kunde.Adresse:= 'Lampen-Mueller, 50 Erfurt, Am Hang 4';
+      Kunde.Konto  := '4444-46-1100';
+      Kunde.Umsatz := 6000.;
+      Kunde.Datum  := '12.12.84';
+
+  (2) WITH Kunde DO BEGIN
+        Adresse:= 'Lampen-Mueller, 50 Erfurt, Am Hang 4';
+        Konto  := '4444-46-1100';
+        Umsatz := 6000.;
+        Datum  := '12.12.84'
+      END;
+.paŠ  (b) TYPE Person=RECORD
+                    Mitarbeiter= RECORD
+                                   Name,Ort    :STRING^20~;
+                                   Strasse     :STRING^20~;
+                                   Geburt      :STRING^8~;
+                                   Verheiratet :BOOLEAN
+                                 END;
+                  :
+                  .
+                  END;
+
+      VAR Angestellter, Arbeiter, Lehrling:  Person;
+                    :
+                    .
+      WITH Angestellter.Mitarbeiter DO BEGIN
+        Name        := 'Paul Meyer';
+        Ort         := '5700 Muehlhausen';
+        Strasse     := 'Garten-Str. 5';
+        Geburt      := '12.10.46';
+        Verheiratet := TRUE
+      END;
+
+Beé  eineò Schachtelunç voî WITH-Anweisungeî gr>\eò aló zweé  isô 
+ein Compilerschalter erforderlich ((*JW ZAHL<*)).
+               

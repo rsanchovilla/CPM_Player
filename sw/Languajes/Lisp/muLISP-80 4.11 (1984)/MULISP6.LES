@@ -1,0 +1,646 @@
+File:  MULISP6.LES  (c)            03/04/84           The Soft Warehouse
+
+CLRSCRN
+This is muLISP programming lesson #6.  In this lesson we will provide muLISP
+with both line-drawing and "turtle" graphics capabilities.
+
+First we will define a function for plotting points on the computer screen.
+Next we will write a routine for drawing straight lines accros the screen.
+Finally, we will use a polynomial approximation to define functions for
+finding the sine and cosine of an angle.  Once these steps have been
+accomplished, it is relatively easy to implement turtle graphics.
+
+The LOGO computer language has popularized the idea of using turtle graphics
+to teach children to program.  LOGO was first implemented in LISP and it
+remains a close cousin.  Turtle graphics is based on the idea of a "turtle"
+that has a heading and a position on the graphics screen.  Figures are drawn
+by issuing commands to the turtle, which draws a line as it moves around the
+screen.
+
+
+CONTINUE
+muLISP is available for a variety of computers and terminals, many of which do
+not support high resolution graphics.  The systems that do support graphics
+have widely varying graphics protocols.  Consequently, to make this lesson
+applicable to the greatest possible number of systems, the lesson begins by
+implementing "character graphics" using only ASCII characters positioned using
+the cursor addressing function (CURSOR row column).
+
+If you are running muLISP on an IBM PC or an APPLE II, the definition for the
+function CURSOR is built-in.  Otherwise, as described in Section 6.3 of the
+muLISP Reference Manual, the CURSOR.??? files distributed with muLISP contain
+cursor positioning functions including the function CURSOR for other computer
+systems.
+
+If CURSOR is not built-in, during this break determine which of the CURSOR
+files is appropriate for your computer and/or terminal.  Then read in the file
+by issuing the following command  (RDS CURSOR extension drive)  where <drive>
+is the drive containing the file CURSOR.<extension>.  Type "RETURN" to
+continue the lesson.
+
+BREAK
+If CURSOR is correctly defined, the command
+
+                          (CURSOR 0 0)
+
+will position the cursor at the upper left corner of the screen.  During this
+break, make sure that CURSOR is working correctly.
+
+BREAK
+CLRSCRN
+We will assign the global variable ROWS to be the number of rows of characters
+on the computer screen.  COLUMNS is the number of columns.  Thus the command
+
+         (CURSOR (DIFFERENCE ROWS 1) (DIFFERENCE COLUMNS 1))
+
+should position the cursor at the lower right corner of the screen.  If the
+following assignments are inappropriate for your computer screen, correct them
+during this break:
+
+$ (SETQ COLUMNS 80)
+
+$ (SETQ ROWS 24)
+
+BREAK
+CLRSCRN
+Rather than using rows and columns, the position of a point on a graphics
+screen is specified by giving it X and Y coordinates relative to an origin.
+The X-coordinate of a point is the horizontal distance from the origin to the
+point; it is positive if the point is to the right of the origin, negative if
+to the left.  The Y-coordinate of a point is the vertical distance from the
+origin to the point; it is positive if the point is above the origin, negative
+if below.
+
+                             Y
+                             |
+                             |
+                        -----+-----  X
+                             |
+                             |
+
+Coordinates are normally written as a pair of numbers between square brackets;
+the first is the X-coordinate, the second is the Y-coordinate.  For example
+the origin of the coordinate system is the point at [0 0].  Generally, the
+center of the screen is chosen as the origin for graphics routines.
+
+
+CONTINUE
+Unfortunately, CURSOR uses the upper left corner of the screen as its origin
+and it is called with coordinates in the opposite order to that used in a
+graphics coordinate system.  Thus we define the function DOT that plots a
+character at a specified coordinate on the screen:
+
+$ (DEFUN DOT (LAMBDA (X-COORD Y-COORD
+      % Local: % LINELENGTH )
+    ((AND (LESSP (MINUS X-MAX) X-COORD X-MAX)
+          (LESSP (MINUS Y-MAX) Y-COORD Y-MAX) )
+      (CURSOR (DIFFERENCE Y-MAX Y-COORD) (PLUS X-MAX X-COORD))
+      (PRIN1 DOT) ) ))
+
+$ (SETQ X-MAX (QUOTIENT (PLUS COLUMNS 1) 2))
+
+$ (SETQ Y-MAX (QUOTIENT (PLUS ROWS 1) 2))
+
+LINELENGTH is included in DOT's formal argument list to temporarily set this
+control variable to NIL, thus defeating muLISP's automatic line termination
+feature while plotting points.
+
+CONTINUE
+The character that is displayed when plotting a point is determined by the
+value of the control variable DOT.
+
+$ (SETQ DOT '*)
+
+Computers that have extended the ASCII character set may have a more
+appropriate character to use for plotting points.  For example, (ASCII 2) is
+a "smiley" circle on the IBM PC.  During this break you can reassign DOT, if
+you so desire.
+
+BREAK
+CLRSCRN
+When using high-resolution graphics rather than character graphics, you must
+switch the screen between the graphics mode and the text mode.  In
+anticipation of implementing high-resolution graphics at the end of this
+lesson, we define the functions GRAPHICS and TEXT for switching between these
+two screen modes:
+
+$ (DEFUN GRAPHICS (LAMBDA ()
+    (CLRSCRN) ))
+
+$ (DEFUN TEXT (LAMBDA ()
+    (CURSOR 0 0) ))
+
+
+CONTINUE
+The function DRAW is a convenient means of switching to graphics mode,
+performing several graphics operations, and then returning to text mode.
+
+$ (DEFUN DRAW (NLAMBDA COMMANDS
+    (GRAPHICS)
+    (LOOP
+      ((NULL COMMANDS))
+      (EVAL (POP COMMANDS)) )
+    (TEXT)
+    "" ))
+
+During this break, test out DOT by issuing the command
+
+         (DRAW (DOT 15 8) (DOT 15 -8) (DOT -15 -8) (DOT -15 8))
+
+BREAK
+CLRSCRN
+Now that we can plot points, the next step is to implement a line-drawing
+routine.  But first we must define a couple of helper functions that are
+required by the line-drawing algorithm.
+
+During this break, define the ABS function that returns the absolute value of
+its integer argument.
+
+BREAK
+The absolute value function:
+
+$ (DEFUN ABS (LAMBDA (N)
+    ((MINUSP N)
+      (MINUS N) )
+    N ))
+
+$ (ABS 24)
+
+$ (ABS -16)
+
+$ (ABS 0)
+
+
+CONTINUE
+Next we need the following SIGN function that returns 1 if its argument is
+positive, -1 if its argument is negative, and 0 if its argument is zero:
+
+$ (DEFUN SIGN (LAMBDA (N)
+    ((PLUSP N) 1)
+    ((MINUSP N) -1)
+    N ))
+
+$ (SIGN -7)
+
+$ (SIGN 5)
+
+
+CONTINUE
+Bresenham's algorithm is a particularly fast line-drawing algorithm because it
+involves only addition and subtraction.  It is described in books on graphics
+such as "Principles of Computer Graphics" by William M. Newman and Robert F.
+Sproull (McGraw-Hill Book Company, 1979).  We will use it to define the
+function LINE that draws a line from [x1 y1] to [x2 y2].
+
+
+CONTINUE
+If a line segment has a gradual slope (i.e. less than 45 degrees), the line-
+drawing routine must plot several adjacent points with the same Y-coordinate.
+Thus, for lines with a gradual slope, Bresenham's algorithm plots points as a
+function of the X-coordinate.  On the other hand, if a line is steep, adjacent
+points are plotted as a function of the Y-coordinate.  LINE calls STEEP-SLOPE
+or GRADUAL-SLOPE depending on the steepness of the line being drawn:
+
+$ (DEFUN LINE (LAMBDA (X1 Y1 X2 Y2
+      % Local: % DELTA-X DELTA-Y ABS-DELTA-X ABS-DELTA-Y
+                 SIGN-DELTA-X SIGN-DELTA-Y)
+    (SETQ DELTA-X (DIFFERENCE X2 X1))
+    (SETQ DELTA-Y (DIFFERENCE Y2 Y1))
+    (SETQ SIGN-DELTA-X (SIGN DELTA-X))
+    (SETQ SIGN-DELTA-Y (SIGN DELTA-Y))
+    (SETQ ABS-DELTA-X (ABS DELTA-X))
+    (SETQ ABS-DELTA-Y (ABS DELTA-Y))
+    ((GREATERP ABS-DELTA-X ABS-DELTA-Y)
+      (STEEP-SLOPE) )
+    (GRADUAL-SLOPE) ))
+
+
+CONTINUE
+The steep slope line-drawing function:
+
+$ (DEFUN STEEP-SLOPE (LAMBDA (
+    % Local: % ERR COUNT)
+  (SETQ COUNT ABS-DELTA-X)
+  (SETQ ABS-DELTA-Y (TIMES 2 ABS-DELTA-Y))
+  (SETQ ERR (DIFFERENCE ABS-DELTA-Y ABS-DELTA-X))
+  (SETQ ABS-DELTA-X (DIFFERENCE ABS-DELTA-Y (TIMES 2 ABS-DELTA-X)))
+  (LOOP
+    (DOT X1 Y1)
+    ( ((PLUSP ERR)
+        (SETQ Y1 (PLUS Y1 SIGN-DELTA-Y))
+        (SETQ ERR (PLUS ERR ABS-DELTA-X)))
+      (SETQ ERR (PLUS ERR ABS-DELTA-Y)))
+    (SETQ COUNT (DIFFERENCE COUNT 1))
+    ((MINUSP COUNT))
+    (SETQ X1 (PLUS X1 SIGN-DELTA-X)) )))
+
+
+CONTINUE
+The gradual slope line-drawing function:
+
+$ (DEFUN GRADUAL-SLOPE (LAMBDA (
+    % Local: % ERR COUNT )
+  (SETQ COUNT ABS-DELTA-Y)
+  (SETQ ABS-DELTA-X (TIMES 2 ABS-DELTA-X))
+  (SETQ ERR (DIFFERENCE ABS-DELTA-X ABS-DELTA-Y))
+  (SETQ ABS-DELTA-Y (DIFFERENCE ABS-DELTA-X (TIMES 2 ABS-DELTA-Y)))
+  (LOOP
+    (DOT X1 Y1)
+    ( ((PLUSP ERR)
+        (SETQ X1 (PLUS X1 SIGN-DELTA-X))
+        (SETQ ERR (PLUS ERR ABS-DELTA-Y)))
+      (SETQ ERR (PLUS ERR ABS-DELTA-X)))
+    (SETQ COUNT (DIFFERENCE COUNT 1))
+    ((MINUSP COUNT))
+    (SETQ Y1 (PLUS Y1 SIGN-DELTA-Y)) )))
+
+
+CONTINUE
+The line-drawing function LINE is now complete.  For example, the command
+
+      (DRAW (LINE -20 -5 0 10) (LINE 0 10 20 -5) (LINE 20 -5 -20 -5))
+
+should draw a triangle on the screen.  During this break, try drawing a box
+using LINE.
+
+BREAK
+CLRSCRN
+Rather than using an absolute coordinate system to draw figures, turtle
+graphics uses polar coordinates (i.e. line segments are specified by giving a
+distance and an angle from a starting point).  To use our LINE function we
+must convert from polar to absolute coordinates using sine and cosine
+functions.  Thus we will now define functions for finding the sine and cosine
+of an angle.
+
+muLISP provides infinite precision integer arithmetic, but the sine and
+cosine of angles are generally irrational.  However, we can easily represent
+fractions as a node; the CAR of which is the numerator, the CDR of which is
+the denominator.  Then using least-squares polynomials, we can compute
+sufficiently accurate rational approximations for the sine and cosine of an
+angle.
+
+
+CONTINUE
+It is always possible to reduce sines and cosines to equivalent ones in the
+range 0 through 45 degrees.  Thus, we shall begin by defining sine and cosine
+functions restricted to that range.
+
+No matter how accurately the sine (or cosine) is computed, when multiplied by
+the length of a line segment and the result rounded to the nearest integer,
+the resulting coordinate can differ by one from what it would be if an exact
+sine (or cosine) were used.  Hence, our goal will be to make sure that the
+error never exceeds one "pixel" (i.e. a graphics point).  In fact, an error of
+one pixel is relatively unlikely for even the longest line segment that will
+fit on our screen.
+
+Throughout the 0 through 45 degree range, a least-squares fitted quintic
+polynomial differs from sine by less than 1 part per 3000, while  a least-
+squares fitted quartic polynomial differs from cosine by less than 1 part per
+2000.  The diagonal of an 80 by 24 screen is less than 84 units, so if the
+maximum truncation error occurred at this particular bearing and if we move a
+distance equal to the entire diagonal, there would be about 84 chances out of
+2000 for an error of one pixel.
+
+
+CONTINUE
+
+$ (DEFUN REDUCED-SIN (LAMBDA (DEG)
+    (CONS (TIMES DEG (PLUS 1324959969 (TIMES (SETQ DEG (TIMES DEG DEG))
+      (PLUS -67245 DEG)))) 75914915920) ))
+
+$ (DEFUN REDUCED-COS (LAMBDA (DEG)
+    (SETQ DEG (TIMES DEG DEG))
+    (CONS (PLUS 266153374 (TIMES DEG (PLUS -40518 DEG))) 266153374) ))
+
+$ (REDUCED-SIN 45)
+
+$ (REDUCED-COS 45)
+
+CONTINUE
+Now for the somewhat tricky angle reduction functions:
+
+$ (DEFUN SIN (LAMBDA (ANGLE)
+    (SETQ ANGLE (DIVIDE (REMAINDER ANGLE 360) 45))
+    (SIN-COS (CAR ANGLE) (CDR ANGLE)) ))
+
+$ (DEFUN COS (LAMBDA (ANGLE)
+    (SETQ ANGLE (DIVIDE (REMAINDER ANGLE 360) 45))
+    (SIN-COS (PLUS 2 (CAR ANGLE)) (CDR ANGLE)) ))
+
+$ (DEFUN SIN-COS (LAMBDA (N45DEG RESID)
+    ((GREATERP N45DEG 3)
+      (SETQ RESID (SIN-COS (DIFFERENCE N45DEG 4) RESID))
+      (CONS (MINUS (CAR RESID)) (CDR RESID)))
+    ((ZEROP N45DEG) (REDUCED-SIN RESID))
+    ((EQ N45DEG 1) (REDUCED-COS (DIFFERENCE 45 RESID)))
+    ((EQ N45DEG 2) (REDUCED-COS RESID))
+    (REDUCED-SIN (DIFFERENCE 45 RESID)) ))
+
+$ (SIN -390)
+
+CONTINUE
+Now that we have a line-drawing routine and functions for finding the sine and
+cosine of an angle, we are ready to start implementing turtle graphics.
+
+The current position of the turtle on the screen is stored by the integer
+global variables X-POS and Y-POS.  Rather than using SETQ directly to assign
+values to X-POS and Y-POS, you can use the SETPOS command, defined as follows:
+
+$ (DEFUN SETPOS (LAMBDA (X Y)
+    (SETQ X-POS X)
+    (SETQ Y-POS Y) ))
+
+
+CONTINUE
+In turtle graphics, the turtle always has a heading.  The heading is measured
+in degrees measured clockwise from a line pointing straight up on the screen.
+The following shows the angles associated with the four major directions:
+
+                            0
+                            |
+                            |
+                  270  <----+---->  90
+                            |
+                            |
+                           180
+
+
+CONTINUE
+The current heading of the turtle is the integer value of the global variable
+HEADING.  The following TURN command is used to change the turtle's heading
+clockwise a given number of degrees relative to the current heading.  To keep
+the heading within bounds, the heading is computed modulo 360 degrees.
+
+$ (DEFUN TURN (LAMBDA (ANGLE)
+    (SETQ HEADING (REMAINDER (PLUS HEADING ANGLE) 360)) ))
+
+During this break, define the SETHEADING command.  This is similar to the TURN
+command except that the heading is simply set to the absolute heading given as
+an argument to the command.
+
+BREAK
+Our definition for the absolute SETHEADING command:
+
+$ (DEFUN SETHEADING (LAMBDA (ANGLE)
+    (SETQ HEADING (REMAINDER ANGLE 360)) ))
+
+
+CONTINUE
+We can control whether or not the turtle's "pen" is marking on the screen as
+it moves.  If the control variable PENDOWN is T, the turtle marks as it moves;
+if PENDOWN is NIL, the turtle does not mark.  Although we could use SETQ to
+make assignments to PENDOWN, it is more convenient to have functions for this
+purpose.  During this break define the functions PENDOWN and PENUP:
+
+BREAK
+Here are definitions for PENDOWN and PENUP:
+
+$ (DEFUN PENDOWN (LAMBDA ()
+    (SETQ PENDOWN T) ))
+
+$ (DEFUN PENUP (LAMBDA ()
+    (SETQ PENDOWN NIL) ))
+
+
+CONTINUE
+TURTLE is a convenient means of performing several successive turtle graphics
+commands.  TURTLE first positions the turtle in the center of the screen
+pointing North (i.e. heading 0) and puts the pen down.  DRAW is then called to
+switch to graphics mode and actually execute the commands.
+
+$ (DEFUN TURTLE (NLAMBDA COMMANDS
+    (SETPOS 0 0)
+    (SETHEADING 0)
+    (PENDOWN)
+    (APPLY 'DRAW COMMANDS) ))
+
+
+CONTINUE
+Since FORWARD will multiply an integer distance times a fractional
+approximation of the sine and cosine of an angle, we will need a function that
+multiplies an integer by a fraction and rounds to the nearest integer:
+
+$ (DEFUN ROUND-TIMES (LAMBDA (INTEGER FRAC)
+    (QUOTIENT (PLUS (TIMES INTEGER (CAR FRAC)) (QUOTIENT (CDR FRAC) 2))
+              (CDR FRAC)) ))
+
+$ (ROUND-TIMES 10 '(783 . 1000))
+
+
+CONTINUE
+Finally, here is the definition for the FORWARD command:
+
+$ (DEFUN FORWARD (LAMBDA (DISTANCE
+      % Local: % X-OLD Y-OLD )
+    (SETQ X-OLD X-POS)
+    (SETQ Y-OLD Y-POS)
+    (SETQ X-POS (PLUS X-POS (ROUND-TIMES DISTANCE (SIN HEADING))))
+    (SETQ Y-POS (PLUS Y-POS (ROUND-TIMES DISTANCE (COS HEADING))))
+    ((NOT PENDOWN))
+    (LINE X-OLD Y-OLD X-POS Y-POS) ))
+
+During this break, draw an equilateral triangle using the TURTLE command:
+
+     (TURTLE (FORWARD 10) (TURN 120) (FORWARD 20) (TURN 120) (FORWARD 20)
+          (TURN 120) (FORWARD 10))
+
+BREAK
+CLRSCRN
+We have ignored the fact that "aspect-ratio" of the width to height of a
+character is not 1 on most sceens.  For example, it is about 5/12 on the IBM
+PC in 80-character mode or about 5/6 on the IBM-PC in 40-character mode.  For
+this reason, you may prefer the lower angular distortion of 40-column mode if
+available.  (24 lines is the most severe cause of low-resolution, so half of
+the 80 columns is not much of a sacrifice.)
+
+Character graphics tends to be most satisfactory if you ignore the aspect
+ratio.  (You can always look at the screen from a compensatory slant!)
+However, we leave it as an exercise to account for the aspect ratio in the
+turtle graphics routines.
+
+
+CONTINUE
+Now we can begin a library of useful figures from which to compose more
+complicated figures.  As a simple start, it is convenient to have a command
+for advancing a given distance then turning a given angle:
+
+$ (DEFUN FORWARD-THEN-TURN (LAMBDA (DISTANCE ANGLE)
+    (FORWARD DISTANCE)
+    (TURN ANGLE) ))
+
+
+CONTINUE
+Next, it is useful to have a function that makes a polygon, ending up at the
+starting point and initial heading.  A theorem that the resulting total turn
+of a closed figure is 0 modulo 360 helps us know when to stop:
+
+$ (DEFUN POLY (LAMBDA (SIDE ANGLE
+      % Local: % TOT-TURN)
+    (SETQ TOT-TURN 0)
+    (LOOP
+      (FORWARD-THEN-TURN SIDE ANGLE)
+      (SETQ TOT-TURN (REMAINDER (PLUS TOT-TURN ANGLE) 360))
+      ((ZEROP TOT-TURN)) ) ))
+
+During this break, experiment with POLY using various sides and angles.  For
+example, try
+
+          (TURTLE (SETPOS -5 -10) (POLY 20 144))
+
+BREAK
+CLRSCRN
+Here is a challenging problem:  See if you can write a CORNER-POLY function
+which draws a polygon that recursively has a similar half-sized polygon
+outside each corner until the sides are reduced to one pixel.
+
+BREAK
+$ (DEFUN CORN-POL (LAMBDA (SIDE ANGLE
+      % Local: % TOT-TURN)
+    ((GREATERP SIDE 1)
+      (SETQ TOT-TURN 0)
+      (LOOP
+        (FORWARD SIDE)
+        (CORN-POL (QUOTIENT SIDE 2) (MINUS ANGLE))
+        (TURN ANGLE)
+        (SETQ TOT-TURN (REMAINDER (PLUS TOT-TURN ANGLE) 360))
+        ((ZEROP TOT-TURN)) ) ) ))
+
+Try this for starters:
+
+          (TURTLE (SETPOS -5 -5) (CORN-POL 8 90))
+
+BREAK
+CLRSCRN
+A spiral is another useful component.  Here is a definition that shrinks by
+subtracting a fixed increment from the side until the side becomes less than
+the increment:
+
+$ (DEFUN SPIRAL (LAMBDA (SIDE ANGLE INCR)
+    (LOOP
+      ((LESSP SIDE INCR))
+      (FORWARD-THEN-TURN SIDE ANGLE)
+      (SETQ SIDE (DIFFERENCE SIDE INCR)) ) ))
+
+During this break, try
+
+          (TURTLE (SETPOS 0 -5) (SPIRAL 23 90 1))
+
+BREAK
+CLRSCRN
+If SPIRAL is repeatedly called until the total turning reaches 0 modulo 360,
+then we will have a closed figure called a spirolateral.  Define the function
+SPIROLATERAL and experimentally determine some attractive spirolaterals.
+
+BREAK
+The spirolateral function:
+
+$ (DEFUN SPIROLAT (LAMBDA (SIDE ANGLE INCR
+      % Local: % TOT-TURN)
+    (SETQ TOT-TURN 0)
+    (LOOP
+       (SPIRAL SIDE ANGLE INCR)
+       (SETQ TOT-TURN
+         (REMAINDER (PLUS TOT-TURN (TIMES ANGLE (QUOTIENT SIDE INCR))) 360))
+       ((ZEROP TOT-TURN)) ) ))
+
+Try this:
+
+          (TURTLE (SETPOS 0 -6) (SPIROLAT 11 90 1))
+
+BREAK
+CLRSCRN
+Up till now we have been doing very low resolution, character "graphics".  If
+you have a computer capable of higher resolution graphics, you may want to
+take advantage of this capability.
+
+The graphics functions defined in this lesson work perfectly well for high
+resolution graphics if you make the following changes:
+
+1.  Redefine the point plotting function (DOT X-COORD Y-COORD) so it will
+    properly interface with your graphics hardware.
+
+2.  Redefine the functions GRAPHICS and TEXT to properly switch the screen
+    between text and graphics modes.
+
+3.  If your computer is capable of color graphics, you can define a SETCOLOR
+    command.
+
+
+CONTINUE
+The following definitions are for the IBM PC and IBM "look-alikes":
+
+$ (DEFUN IBM-DOT (LAMBDA (X-COORD Y-COORD)
+    ((AND (LESSP -161 X-COORD 160)
+          (LESSP -101 Y-COORD 100) )
+      (REGISTER 2 (PLUS 160 X-COORD))
+      (REGISTER 3 (DIFFERENCE 100 Y-COORD))
+      (REGISTER 0 COLOR)
+      (INTERRUPT 16) ) ))
+
+$ (DEFUN COLOR (LAMBDA (NEW-COLOR)
+    (SETQ COLOR (PLUS 3071 (LENGTH (MEMBER NEW-COLOR
+          '(WHITE BROWN MAGENTA RED CYAN GREEN BLUE BLACK))))) ))
+
+$ (COLOR GREEN)
+
+
+CONTINUE
+The following definitions are for the IBM PC and IBM PC "look-alikes":
+
+$ (DEFUN IBM-GRAPHICS (LAMBDA ()        ;Sets up 320 x 200 graphics mode
+    (REGISTER 0 5)
+    (INTERRUPT 16) ))
+
+$ (DEFUN EIGHTY-COLUMN (LAMBDA ()       ;Sets up 25 X 80 text mode
+    (REGISTER 0 2)
+    (INTERRUPT 16) ))
+
+If you want to use the IBM graphics functions, issue the following commands:
+
+        (MOVD 'IBM-DOT 'DOT)
+        (MOVD 'IBM-GRAPHICS 'GRAPHICS)
+
+BREAK
+CLRSCRN
+If you have modified DOT, GRAPHICS, and TEXT for high resolution graphics, try
+the following TURTLE command :
+
+           (TURTLE (SPIROLAT 99 90 3))
+
+BREAK
+CLRSCRN
+The use of recursion opens the door to really interesting designs and elegant
+graphics functions.  The following function makes an intricate pattern:
+
+$ (DEFUN C-CURVE (LAMBDA (LENGTH)
+    ((LESSP LENGTH MIN-LEN)
+      (FORWARD LENGTH) )
+    (SETQ LENGTH (ROUND-TIMES LENGTH SQRT-TWO))
+    (TURN 45)
+    (C-CURVE LENGTH)
+    (TURN -90)
+    (C-CURVE LENGTH)
+    (TURN 45) ))
+
+$ (SETQ MIN-LEN 4)
+
+$ (SETQ SQRT-TWO '(169 . 239))
+
+Try this pattern:  (TURTLE (TURN 270) (SETPOS 60 -50) (C-CURVE 150))
+
+BREAK
+CLRSCRN
+We have barely scratched the surface of what can be accomplished with turtle
+graphics.  If you would like to learn more, there are many good books on LOGO
+and turtle graphics.  One of the more advanced and thorough is "Turtle
+Graphics" by Harold Abelson and Andrea A. diSessa, (MIT Press, 1980).
+
+As a convenience to you, all the functions defined in this lesson have been
+included in the muLISP source file GRAPHICS.LIB.
+
+This concludes muLISP lesson #6.
+
+
+CONTINUE
+$ (RDS)
+

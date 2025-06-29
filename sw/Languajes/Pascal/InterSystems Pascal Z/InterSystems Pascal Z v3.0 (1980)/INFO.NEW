@@ -1,0 +1,125 @@
+
+*******************************************************************
+*                                                                 *
+*                                                                 *
+*                   PASCAL/Z HOT NEWS                             *
+*                                                                 *
+*                                                                 *
+*******************************************************************
+This is a collection of items which are in no particular order
+but concern changes, additions and clarification of Pascal/Z.
+
+1) WARNING -- Pascal/Z uses the console input buffer to build
+              filenames when opening a disk file. Therefore,
+              if there is some information in the console input buffer
+              which you would like to read, read it before opening
+              any files.
+
+2) CHANGE --- The console output during a Pascal/Z compilation has
+              been changed from what is described on page 31 of the
+              manual. The new format is :
+                    a) every time a procedure/function declaration is
+                       encountered, its name and the present line number
+                       are printed.
+                    b) a '-' is output every time that a new procedure
+                       or function declaration is encountered and every
+                       time that 10 lines have been compiled.
+                    c) an 'E' is output instead of a '-' if there was
+                       an error in the last group of lines (not
+                       necessarily 10 lines depending on
+                       procedure/function declarations).
+
+3) CLARIFICATION -- All filenames passed to CP/M through the run-time
+                    support library (using reset/rewrite) must be
+                    terminated with a cr or space padded.
+
+4)  NOTE ----- Once a file has been randomly accessed all
+               subsequent sequential writes will be much slower
+               (due to CP/M's aversion to mixing random and
+               sequential access) until the file has been closed and
+               re-opened.
+
+               Sequential reads are always more efficient than
+               random reads.
+
+5) NOTE ------ Pascal/Z limits variable declarations to 32K/group
+               (i.e., no procedure/function or main program can
+               declare more than 32K of local storage).
+
+6) NOTE ------ When using the J option to create a CASE statement
+               with a jump table, there is NO range checking
+               done on the case selector.
+
+7) CHANGE ---- Page 6, the compiler is available in two versions,
+               one is the 48K version with the small symbol table
+               and the other is a 54K (not 52K as is stated on page 6)
+               version which has a larger symbol table. Both of
+               these compilers are shipped to you on the distribution
+               diskette (with the 54K version being shipped as
+               PASCAL54.COM and PAS254 ( these must be renamed to
+               PASCAL.COM and PAS2 before being used).
+
+8) NEW FILE -- A commented version of MAIN.SRC called CMAIN.SRC has
+               been included on the distribution diskette.
+
+9) NOTE ------ Random access is supported only with CP/M 2.0 or
+               higher.
+
+10) NOTE ----- Because CP/M does not keep any information regarding
+               partially filled blocks at the end of a non-text file it is
+               impossible to make EOF( <non-text file> ) work correctly unless
+               the recorddsize used is a multiple of 128. The suggested way
+               of working around this problem is to either know how many
+               records are in the file or to have a special end-of-file record
+               configuration.
+
+11) NOTE ----- When using EXTERNAL routines, they should be written with
+               the routine name (as used in your Pascal program) declared
+               as an ENTRY point (only the first six letters will be
+               significant). Then your external routine is bound to your
+               Pascal program at LINK time.
+
+               If you desire to use a Pascal routine as an external routine
+               for other Pascal programs then you must assemble it with
+               EMAIN.SRC (a new file on the distribution disk included for
+               this purpose) in order to create a REL file which can be
+               linked with a Pascal program at a future time. Assemble as
+               and link as follows:
+                        A>ASMBL EMAIN,<myprog>/REL
+                        A>LINK /N:<com file name> <Pasprog> <myprog> /G
+
+                                 myprog.src it is first necessary to
+               add an ENTRY statement to identify the name (for the linker)
+               of the module. It is also advisable (although not necessary)
+               to remove any code which may have been generated as part of
+               the main program since you are only concerned with extracting
+               one or more procedures/functions.
+
+
+12) NOTE ----- While we advise against overlays and chaining, we realize
+               that in some instances there is no choice. In Pascal/Z there
+               is a way for one program to chain to another with the same
+               global declarations (programs must chain at the main program
+               level). In the Pascal program the following is used to do the
+               chain:
+                        FTXTIN( <name of program to call> );
+                        CHAIN;
+
+               The <name of program to call> may be either a quoted string
+               or an ARRAY[ 1..N ] of char. Then both programs must be
+               re-linked with the chain module (shipped in source on the
+               library diskette) as follows:
+
+                        LINK /N:<com file name> CHAIN <Pascal rel file> /E
+
+               For CHAIN to work correctly it is imperative that it be the
+               first file linked.
+
+
+
+
+
+
+
+
+

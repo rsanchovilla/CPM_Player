@@ -1,0 +1,1189 @@
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.
+                                	EXTRN	MOVRM
+                                	EXTRN	ARYTAB,BLTUC,CONINT,CRFIN,DSCTMP,ERRLS,ERROR,ERRSO,ERRST
+                                	EXTRN	EVAL,FACLO,FCERR,FOUT,FRETOP,FRMEQL,FRMEVL,FRMPRN
+                                	EXTRN	GETBYT,MEMSIZ,OUTDO,POPHRT,PTRGET,SIGNS,SNERR
+                                	EXTRN	STREND,TEMPPT,TEMPST,TSTOP,VALTYP,VARTAB,SNGFLT,TEMP8
+                                	EXTRN	GIVDBL,FIN,ARYTA2,CHKSTR
+                                	PUBLIC	LHSMID
+                                	EXTRN	ARYTA2,FINDBL,GETBCD,PRMPRV,TEMP9,VMOVE
+                                	EXTRN	GETYPR
+                                	EXTRN	CHRGTR,DCOMPR,SYNCHR
+                                	EXTRN	IADAHL
+                                	PUBLIC	CHR$,STRPRT,STROUI,LEN,FRESTR,STRCMP,VAL,ASC,ASC2,STRLTI
+                                	PUBLIC	STROUT,FRETMS,FRETMP,RIGHT$,LEFT$,GARBA2,STR$
+                                	PUBLIC	FRE,STRLIT,STRCPY,CAT,STRLT3,MID$
+                                	PUBLIC	STRINI,STRIN1,STRAD1,PUTDEI
+                                ;
+                                ; THE FOLLOWING ROUTINE COMPARES TWO STRINGS
+                                ; ONE WITH DESC IN [D,E] OTHER WITH DESC. IN [FACLO, FACLO+1]
+                                ; A=0 IF STRINGS EQUAL
+                                ; A=377 IF B,C,D,E .GT. FACLO
+                                ; A=1 IF B,C,D,E .LT. FACLO
+                                ;
+  0000'   CD 0249'              STRCMP:	CALL	FRESTR			;FREE UP THE FAC STRING, AND GET THE
+                                					;POINTER TO THE FAC DESCRIPTOR IN [H,L]
+  0003'   7E                    	MOV	A,M			;SAVE THE LENGTH OF THE FAC STRING IN [A]
+  0004'   23                    	INX	H
+  0005'   4E                    	MOV	C,M			;SAVE THE POINTER AT THE FAC STRING
+                                					;DATA IN [B,C]
+  0006'   23                    	INX	H
+  0007'   46                    	MOV	B,M
+  0008'   D1                    	POP	D			;GET THE STACK STRING POINTER
+  0009'   C5                    	PUSH	B			;SAVE THE POINTER AT THE FAC STRING DATA
+  000A'   F5                    	PUSH	PSW			;SAVE THE FAC STRING LENGTH
+  000B'   CD 0250'              	CALL	FRETMP			;FREE UP THE STACK STRING AND RETURN
+                                					;THE POINTER TO THE STACK STRING DESCRIPTOR
+                                					;IN [H,L]
+  000E'   D1                    	POP	D			;[D]=LENGTH OF FAC STRING
+  000F'   5E                    	MOV	E,M			;[E]=LENGTH OF STACK STRING
+  0010'   23                    	INX	H
+  0011'   4E                    	MOV	C,M			;[B,C]=POINTER AT STACK STRING
+  0012'   23                    	INX	H
+  0013'   46                    	MOV	B,M
+  0014'   E1                    	POP	H			;GET BACK 2ND CHARACTER POINTER
+  0015'   7B                    CSLOOP:	MOV	A,E			;BOTH STRINGS ENDED
+  0016'   B2                    	ORA	D			;TEST BY OR'ING THE LENGTHS TOGETHER
+  0017'   C8                    	RZ				;IF SO, RETURN WITH A ZERO
+  0018'   7A                    	MOV	A,D			;GET FACLO STRING LENGTH
+  0019'   D6 01                 	SUI	1			;SET CARRY AND MAKE [A]=255 IF [D]=0
+  001B'   D8                    	RC				;RETURN IF THAT STRING ENDED
+  001C'   AF                    	XRA	A			;MUST NOT HAVE BEEN ZERO, TEST CASE
+  001D'   BB                    	CMP	E			;OF B,C,D,E STRING HAVING ENDED FIRST
+  001E'   3C                    	INR	A			;RETURN WITH A=1
+  001F'   D0                    	RNC				;TEST THE CONDITION
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+Common file for BASIC interpreter
+
+                                ;HERE WHEN NEITHER STRING ENDED
+  0020'   15                    	DCR	D			;DECREMENT BOTH CHARACTER COUNTS
+  0021'   1D                    	DCR	E
+  0022'   0A                    	LDAX	B			;GET CHARACTER FROM B,C,D,E STRING
+  0023'   03                    	INX	B
+  0024'   BE                    	CMP	M			;COMPARE WITH FACLO STRING
+  0025'   23                    	INX	H			;BUMP POINTERS (INX DOESNT CLOBBER CC'S)
+  0026'   CA 0015'              	JZ	CSLOOP			;IF BOTH THE SAME, MUST BE MORE TO STRINGS
+  0029'   3F                    	CMC				;HERE WHEN STRINGS DIFFER
+  002A'   C3 0000*              	JMP	SIGNS			;SET [A] ACCORDING TO CARRY
+                                	SUBTTL	STRING FUNCTIONS
+                                	EXTRN	FOUTO,FOUTH
+                                	PUBLIC	STRO$,STRH$
+                                ; THE STRO$ FUNCTION TAKES A NUMBER AND GIVES
+                                ; A STRING WITH THE CHARACTERS THE NUMBER WOULD GIVE IF
+                                ; OUTPUT IN OCTAL
+                                ;
+  002D'   CD 0000*              STRO$:	CALL	FOUTO			;PUT OCTAL NUMBER IN FBUFFR
+  0030'   C3 003C'              	JMP	STR$1			;JUMP INTO STR$ CODE
+                                
+                                ; STRH$ SAME AS STRO$ EXCEPT USES HEX INSTEAD OF OCTAL
+  0033'   CD 0000*              STRH$:	CALL	FOUTH			;PUT HEX NUMBER IN FBUFFR
+  0036'   C3 003C'              	JMP	STR$1			;JUMP INTO STR$ CODE
+                                ;
+                                ; THE STR$ FUNCTION TAKES A NUMBER AND GIVES
+                                ; A STRING WITH THE CHARACTERS THE OUTPUT OF THE NUMBER
+                                ; WOULD HAVE GIVEN
+                                ;
+  0039'                         STR$:
+                                					;IS A NUMERIC
+  0039'   CD 0000*              	CALL	FOUT			;DO ITS OUTPUT
+  003C'   CD 006A'              STR$1:	CALL	STRLIT			;SCAN IT AND TURN IT INTO A STRING
+  003F'   CD 024C'              	CALL	FREFAC			;FREE UP THE TEMP
+  0042'   01 02A0'              	LXI	B,FINBCK
+  0045'   C5                    	PUSH	B			;SET UP ANSWER IN NEW TEMP
+                                ;
+                                ; STRCPY CREATES A COPY OF THE STRING
+                                ; WHOSE DESCRIPTOR IS POINTED TO BY [H,L].
+                                ; ON RETURN [D,E] POINTS TO DSCTMP
+                                ; WHICH HAS THE STRING INFO (LENGTH,WHERE COPIED TO)
+                                ;
+  0046'   7E                    STRCPY:	MOV	A,M			;GET LENGTH
+  0047'   23                    	INX	H			;MOVE UP TO THE POINTER
+  0048'   E5                    	PUSH	H			;GET POINTER TO POINTER OF ARG
+  0049'   CD 00DF'              	CALL	GETSPA			;GET THE SPACE
+  004C'   E1                    	POP	H			;FIND OUT WHERE STRING TO COPY
+  004D'   4E                    	MOV	C,M
+  004E'   23                    	INX	H
+  004F'   46                    	MOV	B,M
+  0050'   CD 005F'              	CALL	STRAD2			;SETUP DSCTMP
+  0053'   E5                    	PUSH	H			;SAVE POINTER TO DSCTMP
+  0054'   6F                    	MOV	L,A			;GET CHARACTER COUNT INTO [L]
+  0055'   CD 023F'              	CALL	MOVSTR			;MOVE THE CHARS IN
+  0058'   D1                    	POP	D			;RESTORE POINTER TO DSCTMP
+  0059'   C9                    	RET				;RETURN
+                                
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+STRING FUNCTIONS
+
+  005A'   3E 01                 STRIN1:	MVI	A,1			;MAKE ONE CHAR STRING (CHR$, INKEY$)
+  005C'   CD 00DF'              STRINI:	CALL	GETSPA			;GET SOME STRING SPACE ([A] CHARS)
+  005F'   21 0000*              STRAD2:	LXI	H,DSCTMP		;GET DESC. TEMP
+  0062'   E5                    STRAD1:	PUSH	H			;SAVE DESC. POINTER
+  0063'   77                    	MOV	M,A			;SAVE CHARACTER COUNT
+  0064'   23                    PUTDEI:	INX	H			;STORE [D,E]=POINTER TO FREE SPACE
+  0065'   73                    	MOV	M,E
+  0066'   23                    	INX	H
+  0067'   72                    	MOV	M,D
+  0068'   E1                    	POP	H			;AND RESTORE [H,L] AS THE DESCRIPTOR POINTER
+  0069'   C9                    	RET	
+                                ;
+                                ; STRLT2 TAKES THE STRING LITERAL WHOSE FIRST CHARACTER
+                                ; IS POINTED BY [H,L]+1 AND BUILDS A DESCRIPTOR FOR IT.
+                                ; THE DESCRIPTOR IS INITIALLY BUILT IN DSCTMP, BUT PUTNEW
+                                ; TRANSFERS IT INTO A TEMPORARY AND LEAVES A POINTER
+                                ; AT THE TEMPORARY IN FACLO. THE CHARACTERS OTHER THAN
+                                ; ZERO THAT TERMINATE THE STRING SHOULD BE SET UP IN [B]
+                                ; AND [D]. IT THE TERMINATOR IS A QUOTE, THE QUOTE IS SKIPPED
+                                ; OVER. LEADING QUOTES SHOULD BE SKIPPED BEFORE CALL. ON RETURN
+                                ; THE CHARACTER AFTER THE STRING LITERAL IS POINTED TO
+                                ; BY [H,L] AND IS IN [A], BUT THE CONDITION CODES ARE
+                                ; NOT SET UP.
+                                ;
+                                	PUBLIC	STRLT2
+  006A'   2B                    STRLIT:	DCX	H
+  006B'   06 22                 STRLTI:	MVI	B,34			;ASSUME STR ENDS ON QUOTE
+  006D'   50                    STRLT3:	MOV	D,B
+  006E'   E5                    STRLT2:	PUSH	H			;SAVE POINTER TO START OF LITERAL
+  006F'   0E FF                 	MVI	C,255			;INITIALIZE CHARACTER COUNT
+  0071'   23                    STRGET:	INX	H
+  0072'   7E                    	MOV	A,M			;GET CHAR
+  0073'   0C                    	INR	C			;BUMP CHARACTER COUNT
+  0074'   B7                    	ORA	A			;IF 0, (END OF LINE) DONE
+  0075'   CA 0080'              	JZ	STRFIN			;TEST
+  0078'   BA                    	CMP	D
+  0079'   CA 0080'              	JZ	STRFIN
+  007C'   B8                    	CMP	B			;CLOSING QUOTE
+  007D'   C2 0071'              	JNZ	STRGET			;NO, GO BACK FOR MORE
+  0080'   FE 22                 STRFIN:	CPI	34			;IF QUOTE TERMINATES THE STRING
+  0082'   CC 0000*              	CZ	CHRGTR			;SKIP OVER THE QUOTE
+  0085'   E5                    	PUSH	H			;SAVE POINTER AT END OF STRING
+  0086'   78                    	MOV	A,B			;WERE WE SCANNING AN UNQUOTED STRING?
+  0087'   FE 2C                 	CPI	44
+  0089'   C2 0098'              	JNZ	NTTRLS			;IF NOT, DON'T SUPPRESS TRAILING SPACES
+  008C'   0C                    	INR	C			;FIX [C] WHICH IS THE CHARACTER COUNT
+  008D'   0D                    LPTRLS:	DCR	C			;DECREMENT UNTIL WE FIND A NON-SPACE CHARACTER
+  008E'   CA 0098'              	JZ	NTTRLS			;DON'T GO PAST START (ALL SPACES)
+  0091'   2B                    	DCX	H			;LOOK AT PREVIOUS CHARACTER
+  0092'   7E                    	MOV	A,M
+  0093'   FE 20                 	CPI	' '
+  0095'   CA 008D'              	JZ	LPTRLS			;IF SO CONTINUE LOOKING
+  0098'   E1                    NTTRLS:	POP	H
+  0099'   E3                    	XTHL	
+  009A'   23                    	INX	H
+  009B'   EB                    	XCHG				;GET POINTER TO TEMP
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+STRING FUNCTIONS
+
+  009C'   79                    	MOV	A,C			;GET CHARACTER COUNT IN A
+  009D'   CD 005F'              	CALL	STRAD2			;SAVE STR INFO
+                                ;
+                                ; SOME STRING FUNCTION IS RETURNING A RESULT IN DSCTMP
+                                ; WE WANT TO SETUP A TEMP DESCRIPTOR WITH DCSTMP IN IT
+                                ; PUT A POINTER TO THE DESCRIPTOR IN FACLO AND FLAG THE 
+                                ; RESULT AS TYPE STRING
+                                ;
+                                	PUBLIC	PUTNEW
+  00A0'   11 0000*              PUTNEW:	LXI	D,DSCTMP		;[D,E] POINT AT RESULT DESCRIPTOR
+                                	PUBLIC	PUTTMP
+  00A3'   3E                    	DB	76Q			;SKIP THE NEXT BYTE ("MVI AL,")
+  00A4'   D5                    PUTTMP:	PUSH	D			;SAVE A POINTER TO THE START OF THE STRING
+  00A5'   2A 0000*              	LHLD	TEMPPT			;[H,L]=POINTER TO FIRST FREE TEMP
+  00A8'   22 0000*              	SHLD	FACLO			;POINTER AT WHERE RESULT DESCRIPTOR WILL BE
+  00AB'   3E 03                 	MVI	A,3
+  00AD'   32 0000*              	STA	VALTYP			;FLAG THIS AS A STRING
+  00B0'   CD 0000*              	CALL	VMOVE			;AND MOVE THE VALUE INTO A TEMPORARY
+  00B3'   11 0003*              	LXI	D,DSCTMP+3		;IF THE CALL IS TO PUTTMP, [D,E]
+                                					;WILL NOT EQUAL DSCTMP +3
+  00B6'   CD 0000*              	CALL	DCOMPR			;DSCTMP IS JUST BEYOND THE TEMPS
+                                					;AND IF TEMPPT POINTS AT IT THERE
+                                					;ARE NO FREE TEMPS
+  00B9'   22 0000*              	SHLD	TEMPPT			;SAVE NEW TEMPORARY POINTER
+  00BC'   E1                    	POP	H			;GET THE TEXT POINTER
+  00BD'   7E                    	MOV	A,M			;GET CURRENT CHARACTER INTO [A]
+  00BE'   C0                    	RNZ	
+  00BF'   11 0000*              	LXI	D,0+ERRST		;"STRING TEMPORARY" ERROR
+  00C2'   C3 0000*              	JMP	ERROR			;GO TELL HIM
+                                ;
+                                ; PRINT THE STRING POINTED TO BY [H,L] WHICH ENDS WITH A ZERO
+                                ; IF THE STRING IS BELOW DSCTMP IT WILL BE COPIED INTO STRING SPACE
+                                ;
+  00C5'   23                    STROUI:	INX	H			;POINT AT NEXT CHARACTER
+  00C6'   CD 006A'              STROUT:	CALL	STRLIT			;GET A STRING LITERAL
+                                ;
+                                ; PRINT THE STRING WHOSE DESCRIPTOR IS POINTED TO BY FACLO.
+                                ;
+  00C9'   CD 024C'              STRPRT:	CALL	FREFAC			;RETURN TEMP POINTER BY FACLO
+  00CC'   CD 0000*              	CALL	GETBCD			;[D]=LENGTH [B,C]=POINTER AT DATA
+  00CF'   14                    	INR	D			;INCREMENT AND DECREMENT EARLY
+                                					;TO CHECK FOR NULL STRING
+  00D0'   15                    STRPR2:	DCR	D			;DECREMENT THE LENGTH
+  00D1'   C8                    	RZ				;ALL DONE
+  00D2'   0A                    	LDAX	B			;GET CHARACTER TO PRINT
+  00D3'   CD 0000*              	CALL	OUTDO
+  00D6'   FE 0D                 	CPI	13
+  00D8'   CC 0000*              	CZ	CRFIN
+  00DB'   03                    	INX	B			;POINT TO THE NEXT CHARACTER
+  00DC'   C3 00D0'              	JMP	STRPR2			;AND PRINT IT...
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+STRING FUNCTIONS
+
+                                
+                                	SUBTTL	STRING GARBAGE COLLECTION - GETSPA, GARBAG
+                                ;
+                                ; GETSPA - GET SPACE FOR CHARACTER STRING
+                                ; MAY FORCE GARBAGE COLLECTION.
+                                ;
+                                ; # OF CHARS (BYTES) IN [A]
+                                ; RETURNS WITH POINTER IN [D,E] OTHERWISE IF CANT GET SPACE
+                                ; BLOWS OFF TO "OUT OF STRING SPACE" TYPE ERROR.
+                                ;
+                                	PUBLIC	GETSPA
+  00DF'   B7                    GETSPA:	ORA	A			;MUST BE NON ZERO. SIGNAL NO GARBAG YET
+  00E0'   0E                    	DB	16Q			;"MVI C" AROUND THE NEXT BYTE 
+  00E1'   F1                    TRYGI2:	POP	PSW			;IN CASE COLLECTED WHAT WAS LENGTH?
+  00E2'   F5                    	PUSH	PSW			;SAVE IT BACK
+  00E3'   2A 0000*              	LHLD	STREND
+  00E6'   EB                    	XCHG				;IN [D,E]
+  00E7'   2A 0000*              	LHLD	FRETOP			;GET TOP OF FREE SPACE IN [H,L]
+  00EA'   2F                    	CMA				;-# OF CHARS
+  00EB'   4F                    	MOV	C,A			;IN [B,C]
+  00EC'   06 FF                 	MVI	B,255
+  00EE'   09                    	DAD	B			;SUBTRACT FROM TOP OF FREE
+  00EF'   23                    	INX	H
+  00F0'   CD 0000*              	CALL	DCOMPR			;COMPARE THE TWO
+  00F3'   DA 00FD'              	JC	GARBAG			;NOT ENOUGH ROOM FOR STRING, OFFAL TIME
+  00F6'   22 0000*              	SHLD	FRETOP			;SAVE NEW BOTTOM OF MEMORY
+  00F9'   23                    	INX	H			;MOVE BACK TO POINT TO STRING
+  00FA'   EB                    	XCHG				;RETURN WITH POINTER IN [D,E]
+                                	PUBLIC	PPSWRT
+  00FB'   F1                    PPSWRT:	POP	PSW			;GET CHARACTER COUNT
+  00FC'   C9                    	RET				;RETURN FROM GETSPA
+                                
+  00FD'   F1                    GARBAG:	POP	PSW			;HAVE WE COLLECTED BEFORE?
+  00FE'   11 0000*              	LXI	D,0+ERRSO		;GET READY FOR OUT OF STRING SPACE ERROR
+  0101'   CA 0000*              	JZ	ERROR			;GO TELL USER HE LOST
+  0104'   BF                    	CMP	A			;SET ZERO FLAG TO SAY WEVE GARBAGED
+  0105'   F5                    	PUSH	PSW			;SAVE FLAG BACK ON STACK
+  0106'   01 00E1'              	LXI	B,TRYGI2		;PLACE FOR GARBAG TO RETURN TO.
+  0109'   C5                    	PUSH	B			;SAVE ON STACK
+  010A'   2A 0000*              GARBA2:	LHLD	MEMSIZ			;START FROM TOP DOWN
+  010D'   22 0000*              FNDVAR:	SHLD	FRETOP			;LIKE SO
+  0110'   21 0000               	LXI	H,0			;GET DOUBLE ZERO
+  0113'   E5                    	PUSH	H			;SAY DIDNT SEE VARS THIS PASS
+  0114'   2A 0000*              	LHLD	STREND			;FORCE DVARS TO IGNORE STRINGS
+                                					;IN THE PROGRAM TEXT (LITERALS, DATA)
+  0117'   E5                    	PUSH	H			;FORCE FIND HIGH ADDRESS
+  0118'   21 0000*              	LXI	H,TEMPST		;GET START OF STRING TEMPS
+  011B'   EB                    TVAR:	XCHG				;SAVE IN [D,E]
+  011C'   2A 0000*              	LHLD	TEMPPT			;SEE IF DONE
+  011F'   EB                    	XCHG				;FLIP
+  0120'   CD 0000*              	CALL	DCOMPR			;TEST
+                                					;CANNOT RUN IN RAM SINCE IT STORES TO MESS UP BASIC
+  0123'   01 011B'              	LXI	B,TVAR			;FORCE JUMP TO TVAR
+  0126'   C2 01B6'              	JNZ	DVAR2			;DO TEMP VAR GARBAGE COLLECT
+                                
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+STRING GARBAGE COLLECTION - GETSPA, GARBAG
+
+  0129'   21 0000*              	LXI	H,PRMPRV		;SETUP ITERATION FOR PARAMETER BLOCKS
+  012C'   22 0000*              	SHLD	TEMP9
+  012F'   2A 0000*              	LHLD	ARYTAB			;GET STOPPING POINT IN [H,L]
+  0132'   22 0000*              	SHLD	ARYTA2			;STORE IN STOP LOCATION
+  0135'   2A 0000*              	LHLD	VARTAB			;GET STARTING POINT IN [H,L]
+                                
+  0138'   EB                    SVAR:	XCHG	
+  0139'   2A 0000*              	LHLD	ARYTA2			;GET STOPPING LOCATION
+  013C'   EB                    	XCHG	
+  013D'   CD 0000*              	CALL	DCOMPR			;SEE IF AT END OF SIMPS
+  0140'   CA 015C'              	JZ	ARYVAR
+  0143'   7E                    	MOV	A,M			;GET VALTYP
+  0144'   23                    	INX	H			;BUMP POINTER TWICE
+  0145'   23                    	INX	H			;
+  0146'   23                    	INX	H			;POINT AT THE VALUE
+  0147'   F5                    	PUSH	PSW			;SAVE VALTYP
+  0148'   CD 0000*              	CALL	IADAHL			;AND SKIP OVER EXTRA CHARACTERS AND COUNT
+  014B'   F1                    	POP	PSW
+  014C'   FE 03                 	CPI	3			;SEE IF ITS A STRING
+  014E'   C2 0155'              	JNZ	SKPVAR			;IF NOT, JUST SKIP AROUND IT
+  0151'   CD 01B7'              	CALL	DVARS			;COLLECT IT
+  0154'   AF                    	XRA	A			;AND DON'T SKIP ANYTHING MORE
+  0155'   5F                    SKPVAR:	MOV	E,A
+  0156'   16 00                 	MVI	D,0			;[D,E]=AMOUNT TO SKIP
+  0158'   19                    	DAD	D
+  0159'   C3 0138'              	JMP	SVAR			;GET NEXT ONE
+  015C'   2A 0000*              ARYVAR:	LHLD	TEMP9			;GET LINK IN PARAMETER BLOCK CHAIN
+  015F'   7E                    	MOV	A,M			;GO BACK ONE LEVEL
+  0160'   23                    	INX	H
+  0161'   66                    	MOV	H,M
+  0162'   6F                    	MOV	L,A
+  0163'   B4                    	ORA	H			;WAS THAT THE END?
+  0164'   EB                    	XCHG				;SETUP TO START ARRAYS
+  0165'   2A 0000*              	LHLD	ARYTAB
+  0168'   CA 017F'              	JZ	ARYVA4			;OTHERWISE GARBAGE COLLECT ARRAYS
+  016B'   EB                    	XCHG	
+  016C'   22 0000*              	SHLD	TEMP9			;SETUP NEXT LINK IN CHAIN FOR ITERATION
+  016F'   23                    	INX	H			;SKIP CHAIN POINTER
+  0170'   23                    	INX	H
+  0171'   5E                    	MOV	E,M			;PICK UP THE LENGTH
+  0172'   23                    	INX	H
+  0173'   56                    	MOV	D,M
+  0174'   23                    	INX	H
+  0175'   EB                    	XCHG				;SET [D,E]= ACTUAL END ADDRESS BY
+  0176'   19                    	DAD	D			;ADDING BASE TO LENGTH
+  0177'   22 0000*              	SHLD	ARYTA2			;SET UP STOP LOCATION
+  017A'   EB                    	XCHG	
+  017B'   C3 0138'              	JMP	SVAR
+                                
+  017E'   C1                    ARYVA2:	POP	B			;GET RID OF STACK GARBAGE
+  017F'   EB                    ARYVA4:	XCHG				;SAVE ARYVAR IN [D,E]
+  0180'   2A 0000*              	LHLD	STREND			;GET END OF ARRAYS
+  0183'   EB                    	XCHG				;FLIP BACK
+  0184'   CD 0000*              	CALL	DCOMPR			;SEE IF DONE WITH ARRAYS
+  0187'   CA 01DB'              	JZ	GRBPAS			;YES, SEE IF DONE COLLECTING
+  018A'   7E                    	MOV	A,M			;GET THE VALUE TYPE INTO [A]
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+STRING GARBAGE COLLECTION - GETSPA, GARBAG
+
+  018B'   23                    	INX	H
+  018C'   F5                    	PUSH	PSW			;SAVE THE VALTYP
+  018D'   23                    	INX	H			;SKIP THE NAME CHARACTERS
+  018E'   23                    	INX	H
+  018F'   CD 0000*              	CALL	IADAHL			;SKIP THE EXTRA CHARACTERS
+  0192'   4E                    	MOV	C,M			;PICK UP THE LENGTH
+  0193'   23                    	INX	H
+  0194'   46                    	MOV	B,M
+  0195'   23                    	INX	H
+  0196'   F1                    	POP	PSW			;RESTORE THE VALTYP
+  0197'   E5                    	PUSH	H			;SAVE POINTER TO DIMS
+  0198'   09                    	DAD	B			;ADD TO CURRENT POINTER POSITION
+  0199'   FE 03                 	CPI	3			;SEE IF ITS A STRING
+  019B'   C2 017E'              	JNZ	ARYVA2			;IF NOT JUST SKIP IT
+  019E'   22 0000*              	SHLD	TEMP8			;SAVE END OF ARRAY
+  01A1'   E1                    	POP	H			;GET BACK CURRENT POSITION
+  01A2'   4E                    	MOV	C,M			;PICK UP NUMBER OF DIMS
+  01A3'   06 00                 	MVI	B,0			;MAKE DOUBLE WITH HIGH ZERO
+  01A5'   09                    	DAD	B			;GO PAST DIMS
+  01A6'   09                    	DAD	B			;BY ADDING ON TWICE #DIMS (2 BYTE GUYS)
+  01A7'   23                    	INX	H			;ONE MORE TO ACCOUNT FOR #DIMS.
+  01A8'   EB                    ARYSTR:	XCHG				;SAVE CURRENT POSIT IN [D,E]
+  01A9'   2A 0000*              	LHLD	TEMP8			;GET END OF ARRAY
+  01AC'   EB                    	XCHG				;FIX [H,L] BACK TO CURRENT
+  01AD'   CD 0000*              	CALL	DCOMPR			;SEE IF AT END OF ARRAY
+  01B0'   CA 017F'              	JZ	ARYVA4			;END OF ARRAY, TRY NEXT ARRAY
+  01B3'   01 01A8'              	LXI	B,ARYSTR		;ADDR OF WHERE TO RETURN TO
+  01B6'   C5                    DVAR2:	PUSH	B			;GOES ON STACK
+  01B7'                         DVAR:
+  01B7'   AF                    DVARS:	XRA	A
+  01B8'   B6                    	ORA	M			;SEE IF ITS THE NULL STRING
+  01B9'   23                    	INX	H
+  01BA'   5E                    	MOV	E,M
+  01BB'   23                    	INX	H
+  01BC'   56                    	MOV	D,M
+  01BD'   23                    	INX	H			;[D,E]=POINTER AT THE VALUE
+  01BE'   C8                    	RZ				;NULL STRING, RETURN
+  01BF'   44                    	MOV	B,H			;MOVE [H,L] TO [B,C]
+  01C0'   4D                    	MOV	C,L
+  01C1'   2A 0000*              	LHLD	FRETOP			;GET POINTER TO TOP OF STRING FREE SPACE
+  01C4'   CD 0000*              	CALL	DCOMPR			;IS THIS STRINGS POINTER .LT. FRETOP
+  01C7'   60                    	MOV	H,B			;MOVE [B,C] BACK TO [H,L]
+  01C8'   69                    	MOV	L,C
+  01C9'   D8                    	RC				;IF NOT, NO NEED TO MESS WITH IT FURTHUR
+  01CA'   E1                    	POP	H			;GET RETURN ADDRESS OFF STACK
+  01CB'   E3                    	XTHL				;GET MAX SEEN SO FAR & SAVE RETURN ADDRESS
+  01CC'   CD 0000*              	CALL	DCOMPR			;LETS SEE
+  01CF'   E3                    	XTHL				;SAVE MAX SEEN & GET RETURN ADDRESS OFF STACK
+  01D0'   E5                    	PUSH	H			;SAVE RETURN ADDRESS BACK
+  01D1'   60                    	MOV	H,B			;MOVE [B,C] BACK TO [H,L]
+  01D2'   69                    	MOV	L,C
+  01D3'   D0                    	RNC				;IF NOT, LETS LOOK AT NEXT VAR
+  01D4'   C1                    	POP	B			;GET RETURN ADDR OFF STACK
+  01D5'   F1                    	POP	PSW			;POP OFF MAX SEEN
+  01D6'   F1                    	POP	PSW			;AND VARIABLE POINTER
+  01D7'   E5                    	PUSH	H			;SAVE NEW VARIABLE POINTER
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+STRING GARBAGE COLLECTION - GETSPA, GARBAG
+
+  01D8'   D5                    	PUSH	D			;AND NEW MAX POINTER
+  01D9'   C5                    	PUSH	B			;SAVE RETURN ADDRESS BACK
+  01DA'   C9                    	RET				;AND RETURN
+                                ;
+                                ; HERE WHEN MADE ONE COMPLETE PASS THRU STRING VARS
+                                ;
+  01DB'   D1                    GRBPAS:	POP	D			;POP OFF MAX POINTER
+  01DC'   E1                    	POP	H			;AND GET VARIABLE POINTER
+  01DD'   7D                    	MOV	A,L			;GET LOW IN
+  01DE'   B4                    	ORA	H			;SEE IF ZERO POINTER
+  01DF'   C8                    	RZ				;IF END OF COLLECTION,
+                                					;THEN MAYBE RETURN TO GETSPA
+  01E0'   2B                    	DCX	H			;CURRENTLY JUST PAST THE DESCRIPTOR
+  01E1'   46                    	MOV	B,M			;[B]=HIGH BYTE OF DATA POINTER
+  01E2'   2B                    	DCX	H
+  01E3'   4E                    	MOV	C,M			;[B,C]=POINTER AT STRING DATA
+  01E4'   E5                    	PUSH	H			;SAVE THIS LOCATION SO THE POINTER
+                                					;CAN BE UPDATED AFTER THE STRING IS
+                                					;MOVED
+  01E5'   2B                    	DCX	H
+  01E6'   6E                    	MOV	L,M			;[L]=STRING LENGTH
+  01E7'   26 00                 	MVI	H,0			;[H,L] GET CHARACTER COUNT
+  01E9'   09                    	DAD	B			;[H,L]=POINTER BEYOND STRING
+  01EA'   50                    	MOV	D,B
+  01EB'   59                    	MOV	E,C			;[D,E]=ORIGINAL POINTER
+  01EC'   2B                    	DCX	H			;DON'T MOVE ONE BEYOND STRING
+  01ED'   44                    	MOV	B,H			;GET TOP OF STRING IN [B,C]
+  01EE'   4D                    	MOV	C,L
+  01EF'   2A 0000*              	LHLD	FRETOP			;GET TOP OF FREE SPACE
+  01F2'   CD 0000*              	CALL	BLTUC			;MOVE STRING
+  01F5'   E1                    	POP	H			;GET BACK POINTER TO DESC.
+  01F6'   71                    	MOV	M,C			;SAVE FIXED ADDR
+  01F7'   23                    	INX	H			;MOVE POINTER
+  01F8'   70                    	MOV	M,B			;HIGH PART
+  01F9'   69                    	MOV	L,C
+  01FA'   60                    	MOV	H,B			;[H,L]=NEW POINTER
+  01FB'   2B                    	DCX	H			;FIX UP FRETOP
+  01FC'   C3 010D'              	JMP	FNDVAR			;AND TRY TO FIND HIGH AGAIN
+                                
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+STRING GARBAGE COLLECTION - GETSPA, GARBAG
+
+                                
+                                	SUBTTL	STRING CONCATENATION
+                                ;
+                                ; THE FOLLOWING ROUTINE CONCATENATES TWO STRINGS
+                                ; THE FACLO CONTAINS THE FIRST ONE AT THIS POINT,
+                                ; [H,L] POINTS BEYOND THE + SIGN AFTER IT
+                                ;
+  01FF'   C5                    CAT:	PUSH	B			;PUT OLD PRECEDENCE BACK ON
+  0200'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  0201'   2A 0000*              	LHLD	FACLO			;GET POINTER TO STRING DESC.
+  0204'   E3                    	XTHL				;SAVE ON STACK & GET TEXT POINTER BACK
+  0205'   CD 0000*              	CALL	EVAL			;EVALUATE REST OF FORMULA
+  0208'   E3                    	XTHL				;SAVE TEXT POINTER, GET BACK DESC.
+  0209'   CD 0000*              	CALL	CHKSTR
+  020C'   7E                    	MOV	A,M
+  020D'   E5                    	PUSH	H			;SAVE DESC. POINTER.
+  020E'   2A 0000*              	LHLD	FACLO			;GET POINTER TO 2ND DESC.
+  0211'   E5                    	PUSH	H			;SAVE IT
+  0212'   86                    	ADD	M			;ADD TWO LENGTHS TOGETHER
+  0213'   11 0000*              	LXI	D,0+ERRLS		;SEE IF RESULT .LT. 256
+  0216'   DA 0000*              	JC	ERROR			;ERROR "LONG STRING"
+  0219'   CD 005C'              	CALL	STRINI			;GET INITIAL STRING
+  021C'   D1                    	POP	D			;GET 2ND DESC.
+  021D'   CD 0250'              	CALL	FRETMP
+  0220'   E3                    	XTHL				;SAVE POINTER TO IT
+  0221'   CD 024F'              	CALL	FRETM2			;FREE UP 1ST TEMP
+  0224'   E5                    	PUSH	H			;SAVE DESC. POINTER (FIRST)
+  0002                          INCSTR	SET	2
+                                
+  0001                          INCSTR	SET	1
+  0225'   2A 0001*              	LHLD	DSCTMP+INCSTR		;GET POINTER TO FIRST
+  0228'   EB                    	XCHG				;IN [D,E]
+  0229'   CD 0237'              	CALL	MOVINS			;MOVE IN THE FIRST STRING
+  022C'   CD 0237'              	CALL	MOVINS			;AND THE SECOND
+  022F'   21 0000*              	LXI	H,TSTOP			;CAT REENTERS FORMULA EVALUATION AT TSTOP
+  0232'   E3                    	XTHL	
+  0233'   E5                    	PUSH	H			;TEXT POINTER OFF FIRST
+  0234'   C3 00A0'              	JMP	PUTNEW			;THEN RETURN ADDRESS OF TSTOP
+                                
+                                
+  0237'   E1                    MOVINS:	POP	H			;GET RETURN ADDR
+  0238'   E3                    	XTHL				;PUT BACK, BUT GET DESC.
+  0239'   7E                    	MOV	A,M			;[A]=STRING LENGTH
+  023A'   23                    	INX	H
+  023B'   4E                    	MOV	C,M			;[B,C]=POINTER AT STRING DATA
+  023C'   23                    	INX	H
+  023D'   46                    	MOV	B,M
+  023E'   6F                    	MOV	L,A			;[L]=STRING LENGTH
+  023F'   2C                    MOVSTR:	INR	L
+  0240'   2D                    MOVLP:	DCR	L			;SET CC'S
+  0241'   C8                    	RZ				;0, NO BYTE TO MOVE
+  0242'   0A                    	LDAX	B			;GET CHAR
+  0243'   12                    	STAX	D			;SAVE IT
+  0244'   03                    	INX	B			;MOVE POINTERS
+  0245'   13                    	INX	D
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+STRING CONCATENATION
+
+  0246'   C3 0240'              	JMP	MOVLP			;KEEP DOING IT
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+STRING CONCATENATION
+
+                                
+                                	SUBTTL	FREE UP STRING TEMPORARY - FRESTR, FREFAC, FRETMP, FRETMS
+                                ;
+                                ; FRETMP IS PASSED A POINTER TO A STRING DESCRIPTOR IN [D,E]
+                                ; THIS VALUE IS RETURNED IN [H,L]. ALL THE OTHER REGISTERS ARE MODIFIED.
+                                ; A CHECK TO IS MADE TO SEE IF THE STRING DESCRIPTOR [D,E] POINTS
+                                ; TO IS THE LAST TEMPORARY DESCRIPTOR ALLOCATED BY PUTNEW.
+                                ; IF SO, THE TEMPORARY IS FREED UP BY THE UPDATING OF TEMPPT.
+                                ; IF A TEMPORARY IS FREED UP, A FURTHER CHECK IS MADE TO SEE IF THE
+                                ; STRING DATA THAT THAT STRING TEMPORARY POINTED TO IS THE
+                                ; THE LOWEST PART OF STRING SPACE IN USE.
+                                ; IF SO, FRETMP IS UPDATED TO REFLECT THE FACT THAT THAT SPACE IS NO
+                                ; LONGER IN USE.
+                                ;
+                                	PUBLIC	FREFAC
+  0249'   CD 0000*              FRESTR:	CALL	CHKSTR			;MAKE SURE ITS A STRING
+  024C'   2A 0000*              FREFAC:	LHLD	FACLO
+                                	PUBLIC	FRETM2
+  024F'   EB                    FRETM2:	XCHG				;FREE UP THE TEMP IN THE FACLO
+  0250'   CD 026A'              FRETMP:	CALL	FRETMS			;FREE UP THE TEMPORARY
+  0253'   EB                    	XCHG				;PUT THE STRING POINTER INTO [H,L]
+  0254'   C0                    	RNZ	
+  0255'   D5                    	PUSH	D			;SAVE [D,E] TO RETURN IN [H,L]
+  0256'   50                    	MOV	D,B			;[D,E]=POINTER AT STRING
+  0257'   59                    	MOV	E,C
+  0258'   1B                    	DCX	D			;SUBTRACT ONE
+  0259'   4E                    	MOV	C,M			;[C]=LENGTH OF THE STRING FREED UP
+  025A'   2A 0000*              	LHLD	FRETOP			;SEE IF ITS THE FIRST 
+                                					;ONE IN STRING SPACE
+  025D'   CD 0000*              	CALL	DCOMPR
+  0260'   C2 0268'              	JNZ	NOTLST			;NO SO DON'T ADD
+  0263'   47                    	MOV	B,A			;MAKE [B]=0
+  0264'   09                    	DAD	B			;ADD
+  0265'   22 0000*              	SHLD	FRETOP			;AND UPDATE FRETOP
+  0268'   E1                    NOTLST:	POP	H			;GET POINTER AT CURRENT DESCRIPTOR
+  0269'   C9                    	RET	
+  026A'   2A 0000*              FRETMS:	LHLD	TEMPPT			;GET TEMP POINTER
+  026D'   2B                    	DCX	H			;LOOK AT WHAT IS IN THE LAST TEMP
+  026E'   46                    	MOV	B,M			;[B,C]=POINTER AT STRING
+  026F'   2B                    	DCX	H			;DECREMENT TEMPPT BY STRSIZ
+  0270'   4E                    	MOV	C,M
+  0271'   2B                    	DCX	H
+  0272'   CD 0000*              	CALL	DCOMPR			;SEE IF [D,E] POINT AT THE LAST 
+  0275'   C0                    	RNZ				;RETURN NOW IF NOW FREEING DONE
+  0276'   22 0000*              	SHLD	TEMPPT			;UPDATE THE TEMP POINTER SINCE
+                                					;ITS BEEN DECREMENTED BY 4
+  0279'   C9                    	RET	
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+FREE UP STRING TEMPORARY - FRESTR, FREFAC, FRETMP, FRETMS
+
+                                
+                                	SUBTTL	STRING FUNCTIONS - LEN, ASC, CHR$
+                                ;
+                                ; THE FUNCTION LEN($) RETURNS THE LENGTH OF THE
+                                ; STRING PASSED AS AN ARGUMENT
+                                ;
+  027A'   01 0000*              LEN:	LXI	B,SNGFLT		;CALL SNGFLT WHEN DONE
+  027D'   C5                    	PUSH	B			;LIKE SO
+  027E'   CD 0249'              LEN1:	CALL	FRESTR			;FREE UP TEMP POINTED TO BY FACLO
+  0281'   AF                    	XRA	A			;FORCE NUMERIC FLAG
+  0282'   57                    	MOV	D,A			;SET HIGH OF [D,E] TO ZERO FOR VAL
+  0283'   7E                    	MOV	A,M
+  0284'   B7                    	ORA	A			;SET CONDITION CODES ON LENGTH
+  0285'   C9                    	RET				;RETURN
+                                ;
+                                ; THE FOLLOWING IS THE ASC($) FUNCTION. IT RETURNS AN INTEGER
+                                ; WHICH IS THE DECIMAL ASCII EQUIVALENT
+                                ;
+  0286'                         ASC:
+  0286'   01 0000*              	LXI	B,SNGFLT		;WHERE TO GO WHEN DONE
+  0289'   C5                    	PUSH	B			;SAVE RETURN ADDR ON STACK
+  028A'   CD 027E'              ASC2:	CALL	LEN1			;SET UP ORIGINAL STR
+  028D'   CA 0000*              	JZ	FCERR			;NULL STR, BAD ARG.
+  0290'   23                    	INX	H			;BUMP POINTER
+  0291'   5E                    	MOV	E,M			;[D,E]=POINTER AT STRING DATA
+  0292'   23                    	INX	H
+  0293'   56                    	MOV	D,M
+  0294'   1A                    	LDAX	D			;[A]=FIRST CHARACTER
+  0295'   C9                    	RET	
+                                ;
+                                ; CHR$(#) CREATES A STRING WHICH CONTAINS AS ITS ONLY
+                                ; CHARACTER THE ASCII EQUIVALENT OF THE INTEGER ARG (#)
+                                ; WHICH MUST BE .LE. 255.
+                                ;
+  0296'   CD 005A'              CHR$:	CALL	STRIN1			;GET STRING IN DSCTMP
+  0299'   CD 0000*              	CALL	CONINT			;GET INTEGER IN RANGE
+  0002                          INCSTR	SET	2
+                                
+  0001                          INCSTR	SET	1
+                                	PUBLIC	SETSTR,FINBCK
+  029C'   2A 0001*              SETSTR:	LHLD	DSCTMP+INCSTR		;GET ADDR OF STR
+  029F'   73                    	MOV	M,E			;SAVE ASCII BYTE
+  02A0'   C1                    FINBCK:	POP	B			;RETURN TO HIGHER LEVEL &
+                                					;SKIP THE CHKNUM CALL.
+  02A1'   C3 00A0'              	JMP	PUTNEW			;GO CALL PUTNEW
+                                
+                                	PUBLIC	STRNG$
+  02A4'   CD 0000*              STRNG$:	CALL	CHRGTR			;GET NEXT CHAR FOLLOWING "STRING$"
+  02A7'   CD 0000*              	CALL	SYNCHR
+  02AA'   28                    	DB	'('			;MAKE SURE LEFT PAREN
+  02AB'   CD 0000*              	CALL	GETBYT			;EVALUATE FIRST ARG (LENGTH)
+  02AE'   D5                    	PUSH	D			;SAVE IT
+  02AF'   CD 0000*              	CALL	SYNCHR
+  02B2'   2C                    	DB	54O			;COMMA
+  02B3'   CD 0000*              	CALL	FRMEVL			;GET FORMULA ARG 2
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+STRING FUNCTIONS - LEN, ASC, CHR$
+
+  02B6'   CD 0000*              	CALL	SYNCHR
+  02B9'   29                    	DB	')'			;EXPECT RIGHT PAREN
+  02BA'   E3                    	XTHL				;SAVE TEXT POINTER ON STACK, GET REP FACTOR
+  02BB'   E5                    	PUSH	H			;SAVE BACK REP FACTOR
+  02BC'   CD 0000*              	CALL	GETYPR			;GET TYPE OF ARG
+  02BF'   CA 02C8'              	JZ	STRSTR			;WAS A STRING
+  02C2'   CD 0000*              	CALL	CONINT			;GET ASCII VALUE OF CHAR
+  02C5'   C3 02CB'              	JMP	CALSPA			;NOW CALL SPACE CODE
+  02C8'   CD 028A'              STRSTR:	CALL	ASC2			;GET VALUE OF CHAR IN [A]
+  02CB'   D1                    CALSPA:	POP	D			;GET REP FACTOR IN [E]
+  02CC'   CD 02D4'              	CALL	SPACE2			;INTO SPACE CODE, PUT DUMMY ENTRY
+                                					;ON STACK POPPED OFF BY FINBCK
+                                	PUBLIC	SPACE$
+  02CF'   CD 0000*              SPACE$:	CALL	CONINT			;GET NUMBER OF CHARS IN [E]
+  02D2'   3E 20                 	MVI	A,32			;GET SPACE CHAR
+  02D4'   F5                    SPACE2:	PUSH	PSW			;SAVE CHAR
+  02D5'   7B                    	MOV	A,E			;GET NUMBER OF CHARS IN [A]
+  02D6'   CD 005C'              	CALL	STRINI			;GET A STRING THAT LONG
+  02D9'   47                    	MOV	B,A			;COUNT OF CHARS BACK IN [B]
+  02DA'   F1                    	POP	PSW			;GET BACK CHAR TO PUT IN STRING
+  02DB'   04                    	INR	B			;TEST FOR NULL STRING
+  02DC'   05                    	DCR	B
+  02DD'   CA 02A0'              	JZ	FINBCK			;YES, ALL DONE
+  02E0'   2A 0001*              	LHLD	DSCTMP+INCSTR		;GET DESC. POINTER
+  02E3'   77                    SPLP$:	MOV	M,A			;SAVE CHAR
+  02E4'   23                    	INX	H			;BUMP PTR
+                                					;DECR COUNT
+  02E5'   05                    	DCR	B
+  02E6'   C2 02E3'              	JNZ	SPLP$			;KEEP STORING CHAR
+  02E9'   C3 02A0'              	JMP	FINBCK			;PUT TEMP DESC WHEN DONE
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+STRING FUNCTIONS - LEN, ASC, CHR$
+
+                                
+                                	SUBTTL	STRING FUNCTIONS - LEFT$, RIGHT$, MID$
+                                ;
+                                ; THE FOLLOWING IS THE LEFT$($,#) FUNCTION.
+                                ; IT TAKES THE LEFTMOST # CHARS OF THE STR.
+                                ; IF # IS .GT. THAN THE LEN OF THE STR, IT RETURNS THE WHOLE STR.
+                                ;
+  02EC'   CD 0365'              LEFT$:	CALL	PREAM			;TEST THE PARAMETERS
+  02EF'   AF                    	XRA	A			;LEFT NEVER CHANGES STRING POINTER
+  02F0'   E3                    LEFT3:	XTHL				;SAVE TEXT POINTER
+  02F1'   4F                    	MOV	C,A			;OFFSET NOW IN [C]
+  02F2'   3E                    	DB	76Q			;SKIP THE NEXT BYTE WITH "MVI A,"
+                                ;
+                                ; THIS IS PRINT USINGS ENTRY POINT INTO LEFT$
+                                ;
+                                	PUBLIC	LEFTUS
+  02F3'   E5                    LEFTUS:	PUSH	H			;THIS IS A DUMMY PUSH TO OFFSET
+                                					;THE EXTRA POP IN PUTNEW
+  02F4'   E5                    LEFT2:	PUSH	H			;SAVE DESC. FOR  FRETMP
+  02F5'   7E                    	MOV	A,M			;GET STRING LENGTH
+  02F6'   B8                    	CMP	B			;ENTIRE STRING WANTED?
+  02F7'   DA 02FC'              	JC	ALLSTR			;IF #CHARS ASKED FOR.GE.LENGTH,YES
+  02FA'   78                    	MOV	A,B			;GET TRUNCATED LENGTH OF STRING
+  02FB'   11                    	DB	21Q			;SKIP OVER MVI USING "LXI D,"
+  02FC'   0E 00                 ALLSTR:	MVI	C,0			;MAKE OFFSET ZERO
+  02FE'   C5                    	PUSH	B			;SAVE OFFSET ON STACK
+  02FF'   CD 00DF'              	CALL	GETSPA			;GET SPACE FOR NEW STRING
+  0302'   C1                    	POP	B			;GET BACK OFFSET
+  0303'   E1                    	POP	H			;GET BACK DESC POINTER.
+  0304'   E5                    	PUSH	H			;BUT KEEP ON STACK
+  0305'   23                    	INX	H			;MOVE TO STRING POINTER FIELD
+  0306'   46                    	MOV	B,M			;GET POINTER LOW
+  0307'   23                    	INX	H			;
+  0308'   66                    	MOV	H,M			;POINTER HIGH
+  0309'   68                    	MOV	L,B			;GET LOW IN  L
+  030A'   06 00                 	MVI	B,0			;GET READY TO ADD OFFSET TO POINTER
+  030C'   09                    	DAD	B			;ADD  IT
+  030D'   44                    	MOV	B,H			;GET OFFSET POINTER IN [B,C]
+  030E'   4D                    	MOV	C,L
+  030F'   CD 005F'              	CALL	STRAD2			;SAVE INFO IN DSCTMP
+  0312'   6F                    	MOV	L,A			;GET#  OF CHARS TO  MOVE IN L
+  0313'   CD 023F'              	CALL	MOVSTR			;MOVE THEM IN
+  0316'   D1                    	POP	D			;GET BACK DESC. POINTER
+  0317'   CD 0250'              	CALL	FRETMP			;FREE IT UP.
+  031A'   C3 00A0'              	JMP	PUTNEW			;PUT TEMP IN TEMP LIST
+                                
+  031D'   CD 0365'              RIGHT$:	CALL	PREAM			;CHECK ARG
+  0320'   D1                    	POP	D			;GET DESC. POINTER
+  0321'   D5                    	PUSH	D			;SAVE BACK FOR LEFT
+  0322'   1A                    	LDAX	D			;GET PRESENT LEN OF STR
+  0323'   90                    	SUB	B			;SUBTRACT 2ND PARM
+  0324'   C3 02F0'              	JMP	LEFT3			;CONTINUE WITH LEFT CODE
+                                ;
+                                ; MID ($,#) RETURNS STR WITH CHARS FROM # POSITION
+                                ; ONWARD. IF # IS GT LEN($) THEN RETURN NULL STRING.
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+STRING FUNCTIONS - LEFT$, RIGHT$, MID$
+
+                                ; MID ($,#,#) RETURNS STR WITH CHARS FROM # POSITION
+                                ; FOR #2 CHARS. IF #2 GOES PAST END OF STRING, RETURN
+                                ; AS MUCH AS POSSIBLE.
+                                ;
+  0327'   EB                    MID$:	XCHG				;PUT THE TEXT POINTER IN [H,L]
+  0328'   7E                    	MOV	A,M			;GET THE FIRST CHARACTER
+  0329'   CD 036A'              	CALL	PREAM2			;GET OFFSET OFF STACK AND MAKE
+  032C'   04                    	INR	B
+  032D'   05                    	DCR	B			;SEE IF EQUAL TO ZERO
+  032E'   CA 0000*              	JZ	FCERR			;IT MUST NOT BE 0
+                                					;SURE DOES NOT = 0.
+  0331'   C5                    	PUSH	B			;PUT OFFSET ON TO THE STACK
+  0332'   CD 0487'              	CALL	MIDRST			;DUPLICATE OF CODE CONDITIONED OUT
+                                					;BELOW
+  0335'   F1                    	POP	PSW			;GET OFFSET BACK IN A
+  0336'   E3                    	XTHL				;SAVE TEXT POINTER, GET DESC.
+  0337'   01 02F4'              	LXI	B,LEFT2			;WHERE TO RETURN TO.
+  033A'   C5                    	PUSH	B			;GOES ON STACK
+  033B'   3D                    	DCR	A			;SUB ONE FROM OFFSET
+  033C'   BE                    	CMP	M			;POINTER PAST END OF STR?
+  033D'   06 00                 	MVI	B,0			;ASSUME NULL LENGTH STR
+  033F'   D0                    	RNC				;YES, JUST USE NULL STR
+  0340'   4F                    	MOV	C,A			;SAVE OFFSET OF CHARACTER POINTER
+  0341'   7E                    	MOV	A,M			;GET PRESENT LEN OF STR
+  0342'   91                    	SUB	C			;SUBTRACT INDEX (2ND ARG)
+  0343'   BB                    	CMP	E			;IS IT TRUNCATION
+  0344'   47                    	MOV	B,A			;GET CALCED LENGTH IN B
+  0345'   D8                    	RC				;IF NOT USE PARTIAL STR
+  0346'   43                    	MOV	B,E			;USE TRUNCATED LENGTH
+  0347'   C9                    	RET				;RETURN TO LEFT2
+                                ;
+                                ; THE VAL FUNCTION TAKES A STRING AND TURN IT INTO
+                                ; A NUMBER BY INTERPRETING THE ASCII DIGITS. ETC..
+                                ; EXCEPT FOR THE PROBLEM THAT A TERMINATOR MUST BE SUPPLIED
+                                ; BY REPLACING THE CHARACTER BEYOND THE STRING, VAL
+                                ; IS MERELY A CALL TO FLOATING INPUT (FIN).
+                                ;
+  0348'   CD 027E'              VAL:	CALL	LEN1			;DO SETUP, SET RESULT=REAL
+  034B'   CA 0000*              	JZ	SNGFLT			;MAKE SURE TYPE SET UP OK IN EXTENDED
+  034E'   5F                    	MOV	E,A			;GET LENGTH OF STR
+  034F'   23                    	INX	H			;TO HANDLE THE FACT THE IF
+  0350'   7E                    	MOV	A,M
+  0351'   23                    	INX	H
+  0352'   66                    	MOV	H,M			;TWO STRINGS "1" AND "2"
+  0353'   6F                    	MOV	L,A			;ARE STORED NEXT TO EACH OTHER
+  0354'   E5                    	PUSH	H			;AND FIN IS CALLED POINTING TO
+  0355'   19                    	DAD	D			;THE FIRST TWELVE WILL BE RETURNED
+  0356'   46                    	MOV	B,M			;THE IDEA IS TO STORE 0 IN THE
+  0357'   72                    	MOV	M,D			;STRING BEYOND THE ONE VAL
+  0358'   E3                    	XTHL				;IS BEING CALLED ON
+  0359'   C5                    	PUSH	B			;THE FIRST CHARACTER OF THE NEXT STRING
+  035A'   2B                    	DCX	H			;***CALL CHRGET TO MAKE SURE
+  035B'   CD 0000*              	CALL	CHRGTR			;VAL(" -3")=-3
+  035E'   CD 0000*              	CALL	FINDBL			;IN EXTENDED, GET ALL THE PRECISION WE CAN
+  0361'   C1                    	POP	B			;GET THE MODIFIED CHARACTER OF THE NEXT
+                                					;STRING INTO [B]
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+STRING FUNCTIONS - LEFT$, RIGHT$, MID$
+
+  0362'   E1                    	POP	H			;GET THE POINTER TO THE MODIFIED CHARACTER
+  0363'   70                    	MOV	M,B			;RESTORE THE CHARACTER
+                                					;IF STRING IS HIGHEST IN STRING SPACE
+                                					;WE ARE MODIFYING [MEMSIZ] AND
+                                					;THIS IS WHY [MEMSIZ] CAN'T BE USED TO STORE
+                                					;STRING DATA BECAUSE WHAT IF THE
+                                					;USER TOOK VAL OFF THAT HIGH STRING
+  0364'   C9                    	RET	
+                                ;USED BY RIGHT$ AND LEFT$ FOR PARAMETER CHECKING AND SETUP
+  0365'   EB                    PREAM:	XCHG				;PUT THE TEXT POINTER IN [H,L]
+  0366'   CD 0000*              	CALL	SYNCHR
+  0369'   29                    	DB	')'			;PARAM LIST SHOULD END
+                                ;USED BY MID$ FOR PARAMETER CHECKING AND SETUP
+  036A'   C1                    PREAM2:	POP	B			;GET RETURN ADDR OFF STACK
+  036B'   D1                    	POP	D			;GET LENGTH OF ARG OFF STACK
+  036C'   C5                    	PUSH	B			;SAVE RETURN ADDR BACK ON
+  036D'   43                    	MOV	B,E			;SAVE INIT LENGTH
+  036E'   C9                    	RET	
+                                
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+STRING FUNCTIONS - LEFT$, RIGHT$, MID$
+
+                                
+                                	SUBTTL	STRING FUNCTIONS - INSTR
+                                
+                                ; THIS IS THE INSTR FUCNTION. IT TAKES ONE OF TWO
+                                ; FORMS: INSTR(I%,S1$,S2$) OR INSTR(S1$,S2$)
+                                ; IN THE FIRST FORM THE STRING S1$ IS SEARCHED FOR THE
+                                ; CHARACTER S2$ STARTING AT CHARACTER POSITION I%.
+                                ; THE SECOND FORM IS IDENTICAL, EXCEPT THAT THE SEARCH
+                                ; STARTS AT POSITION 1. INSTR RETURNS THE CHARACTER
+                                ; POSITION OF THE FIRST OCCURANCE OF S2$ IN S1$.
+                                ; IF S1$ IS NULL, 0 IS RETURNED. IF S2$ IS NULL, THEN
+                                ; I% IS RETURNED, UNLESS I% .GT. LEN(S1$) IN WHICH
+                                ; CASE 0 IS RETURNED.
+                                
+                                	PUBLIC	INSTR
+  036F'   CD 0000*              INSTR:	CALL	CHRGTR			;EAT FIRST CHAR
+  0372'   CD 0000*              	CALL	FRMPRN			;EVALUATE FIRST ARG
+  0375'   CD 0000*              	CALL	GETYPR			;SET ZERO IF ARG A STRING.
+  0378'   3E 01                 	MVI	A,1			;IF SO, ASSUME, SEARCH STARTS AT FIRST CHAR
+  037A'   F5                    	PUSH	PSW			;SAVE OFFSET IN CASE STRING
+  037B'   CA 0391'              	JZ	WUZSTR			;WAS A STRING
+  037E'   F1                    	POP	PSW			;GET RID OF SAVED OFFSET
+  037F'   CD 0000*              	CALL	CONINT			;FORCE ARG1 (I%) TO BE INTEGER
+  0382'   B7                    	ORA	A			;DONT ALLOW ZERO OFFSET
+  0383'   CA 0000*              	JZ	FCERR			;KILL HIM.
+  0386'   F5                    	PUSH	PSW			;SAVE FOR LATER
+  0387'   CD 0000*              	CALL	SYNCHR
+  038A'   2C                    	DB	44			;EAT THE COMMA
+  038B'   CD 0000*              	CALL	FRMEVL			;EAT FIRST STRING ARG
+  038E'   CD 0000*              	CALL	CHKSTR			;BLOW UP IF NOT STRING
+  0391'   CD 0000*              WUZSTR:	CALL	SYNCHR
+  0394'   2C                    	DB	44			;EAT COMMA AFTER ARG
+  0395'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  0396'   2A 0000*              	LHLD	FACLO			;GET DESCRIPTOR POINTER
+  0399'   E3                    	XTHL				;PUT ON STACK & GET BACK TEXT PNT.
+  039A'   CD 0000*              	CALL	FRMEVL			;GET LAST ARG
+  039D'   CD 0000*              	CALL	SYNCHR
+  03A0'   29                    	DB	')'			;EAT RIGHT PAREN
+  03A1'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  03A2'   CD 0249'              	CALL	FRESTR			;FREE UP TEMP & CHECK STRING
+  03A5'   EB                    	XCHG				;SAVE 2ND DESC. POINTER IN [D,E]
+  03A6'   C1                    	POP	B			;GET TEXT POINTER IN B
+  03A7'   E1                    	POP	H			;DESC. POINTER FOR S1$
+  03A8'   F1                    	POP	PSW			;OFFSET
+  03A9'   C5                    	PUSH	B			;PUT TEXT POINTER ON BOTTOM
+  03AA'   01 0000*              	LXI	B,POPHRT		;PUT ADDRESS OF POP H, RET ON
+  03AD'   C5                    	PUSH	B			;PUSH IT
+  03AE'   01 0000*              	LXI	B,SNGFLT		;NOW ADDRESS OF [A] RETURNER
+  03B1'   C5                    	PUSH	B			;ONTO STACK
+  03B2'   F5                    	PUSH	PSW			;SAVE OFFSET BACK
+  03B3'   D5                    	PUSH	D			;SAVE DESC. OF S2
+  03B4'   CD 024F'              	CALL	FRETM2			;FREE UP S1 DESC.
+  03B7'   D1                    	POP	D			;RESTORE DESC. S2
+  03B8'   F1                    	POP	PSW			;GET BACK OFFSET
+  03B9'   47                    	MOV	B,A			;SAVE UNMODIFIED OFFSET
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-18
+STRING FUNCTIONS - INSTR
+
+  03BA'   3D                    	DCR	A			;MAKE OFFSET OK
+  03BB'   4F                    	MOV	C,A			;SAVE IN C
+  03BC'   BE                    	CMP	M			;IS IT BEYOND LENGTH OF S1?
+  03BD'   3E 00                 	MVI	A,0			;IF SO, RETURN ZERO. (ERROR)
+  03BF'   D0                    	RNC	
+  03C0'   1A                    	LDAX	D			;GET LENGTH OF S2$
+  03C1'   B7                    	ORA	A			;NULL??
+  03C2'   78                    	MOV	A,B			;GET OFFSET BACK
+  03C3'   C8                    	RZ				;ALL IF S2 NULL, RETURN OFFSET
+  03C4'   7E                    	MOV	A,M			;GET LENGTH OF S1$
+  03C5'   23                    	INX	H			;BUMP POINTER
+  03C6'   46                    	MOV	B,M			;GET 1ST BYTE OF ADDRESS
+  03C7'   23                    	INX	H			;BUMP POINTER
+  03C8'   66                    	MOV	H,M			;GET 2ND BYTE
+  03C9'   68                    	MOV	L,B			;GET 1ST BYTE SET UP
+  03CA'   06 00                 	MVI	B,0			;GET READY FOR DAD
+  03CC'   09                    	DAD	B			;NOW INDEXING INTO STRING
+  03CD'   91                    	SUB	C			;MAKE LENGTH OF STRING S1$ RIGHT
+  03CE'   47                    	MOV	B,A			;SAVE LENGTH OF 1ST STRING IN [B]
+  03CF'   C5                    	PUSH	B			;SAVE COUNTER, OFFSET
+  03D0'   D5                    	PUSH	D			;PUT 2ND DESC (S2$) ON STACK
+  03D1'   E3                    	XTHL				;GET 2ND DESC. POINTER
+  03D2'   4E                    	MOV	C,M			;SET UP LENGTH
+  03D3'   23                    	INX	H			;BUMP POINTER
+  03D4'   5E                    	MOV	E,M			;GET FIRST BYTE OF ADDRESS
+  03D5'   23                    	INX	H			;BUMP POINTER AGAIN
+  03D6'   56                    	MOV	D,M			;GET 2ND BYTE
+  03D7'   E1                    	POP	H			;RESTORE POINTER FOR 1ST STRING
+                                
+  03D8'   E5                    CHK1:	PUSH	H			;SAVE POSITION IN SEARCH STRING
+  03D9'   D5                    	PUSH	D			;SAVE START OF SUBSTRING
+  03DA'   C5                    	PUSH	B			;SAVE WHERE WE STARTED SEARCH
+  03DB'   1A                    CHK:	LDAX	D			;GET CHAR FROM SUBSTRING
+  03DC'   BE                    	CMP	M			; = CHAR POINTER TO BY [H,L]
+  03DD'   C2 03F9'              	JNZ	OHWELL			;NO
+  03E0'   13                    	INX	D			;BUMP COMPARE POINTER
+  03E1'   0D                    	DCR	C			;END OF SEARCH STRING?
+  03E2'   CA 03F0'              	JZ	GOTSTR			;WE FOUND IT!
+  03E5'   23                    	INX	H			;BUMP POINTER INTO STRING BEING SEARCHED
+                                					;DECREMENT LENGTH OF SEARCH STRING
+  03E6'   05                    	DCR	B
+  03E7'   C2 03DB'              	JNZ	CHK			;END OF STRING, YOU LOSE
+  03EA'   D1                    RETZER:	POP	D			;GET RID OF POINTERS
+  03EB'   D1                    	POP	D			;GET RID OF GARB
+  03EC'   C1                    	POP	B			;LIKE SO
+  03ED'   D1                    RETZR1:	POP	D
+  03EE'   AF                    	XRA	A			;GO TO SNGFLT.
+  03EF'   C9                    	RET				;RETURN
+                                
+  03F0'   E1                    GOTSTR:	POP	H
+  03F1'   D1                    	POP	D			;GET RID OF GARB
+  03F2'   D1                    	POP	D			;GET RID OF EXCESS STACK
+  03F3'   C1                    	POP	B			;GET COUNTER, OFFSET
+  03F4'   78                    	MOV	A,B			;GET ORIGINAL SOURCE COUNTER
+  03F5'   94                    	SUB	H			;SUBTRACT FINAL COUNTER
+  03F6'   81                    	ADD	C			;ADD ORIGINAL OFFSET (N1%)
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-19
+STRING FUNCTIONS - INSTR
+
+  03F7'   3C                    	INR	A			;MAKE OFFSET OF ZERO = POSIT 1
+  03F8'   C9                    	RET				;DONE
+                                
+                                
+  03F9'   C1                    OHWELL:	POP	B
+  03FA'   D1                    	POP	D			;POINT TO START OF SUBSTRING
+  03FB'   E1                    	POP	H			;GET BACK WHERE WE STARTED TO COMPARE
+  03FC'   23                    	INX	H			;AND POINT TO NEXT CHAR
+                                					;DECR. # CHAR LEFT IN SOURCE STRING
+  03FD'   05                    	DCR	B
+  03FE'   C2 03D8'              	JNZ	CHK1			;TRY SEARCHING SOME MORE
+  0401'   C3 03ED'              	JMP	RETZR1			;END OF STRING, RETURN 0
+                                
+                                	PAGE
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-20
+STRING FUNCTIONS - INSTR
+
+                                
+                                	SUBTTL	STRING FUNCTIONS - LEFT HAND SIDE MID$
+  0404'   CD 0000*              LHSMID:	CALL	SYNCHR
+  0407'   28                    	DB	'('			;MUST HAVE ( 
+  0408'   CD 0000*              	CALL	PTRGET			;GET A STRING VAR
+  040B'   CD 0000*              	CALL	CHKSTR			;MAKE SURE IT WAS A STRING
+  040E'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  040F'   D5                    	PUSH	D			;SAVE DESC. POINTER
+  0410'   EB                    	XCHG				;PUT DESC. POINTER IN [H,L]
+  0411'   23                    	INX	H			;MOVE TO ADDRESS FIELD
+  0412'   5E                    	MOV	E,M			;GET ADDRESS OF LHS IN [D,E]
+  0413'   23                    	INX	H			;BUMP DESC. POINTER
+  0414'   56                    	MOV	D,M			;PICK UP HIGH BYTE OF ADDRESS
+  0415'   2A 0000*              	LHLD	STREND			;SEE IF LHS STRING IS IN STRING SPACE
+  0418'   CD 0000*              	CALL	DCOMPR			;BY COMPARING IT WITH STKTOP
+  041B'   DA 0431'              	JC	NCPMID			;IF ALREADY IN STRING SPACE
+                                					;DONT COPY.
+                                
+                                					;9/23/79 Allow MID$ on field strings
+                                	EXTRN	TXTTAB
+  041E'   2A 0000*              	LHLD	TXTTAB
+  0421'   CD 0000*              	CALL	DCOMPR			;Is this a fielded string?
+  0424'   D2 0431'              	JNC	NCPMID			;Yes, Don't copy!!
+  0427'   E1                    	POP	H			;GET BACK DESC. POINTER
+  0428'   E5                    	PUSH	H			;SAVE BACK ON STACK
+  0429'   CD 0046'              	CALL	STRCPY			;COPY THE STRING LITERAL INTO STRING SPACE
+  042C'   E1                    	POP	H			;GET BACK DESC. POINTER
+  042D'   E5                    	PUSH	H			;BACK ON STACK AGAIN
+  042E'   CD 0000*              	CALL	VMOVE			;MOVE NEW DESC. INTO OLD SLOT.
+  0431'   E1                    NCPMID:	POP	H			;GET DESC. POINTER
+  0432'   E3                    	XTHL				;GET TEXT POINTER TO [H,L] DESC. TO STACK
+  0433'   CD 0000*              	CALL	SYNCHR
+  0436'   2C                    	DB	54O			;MUST HAVE COMMA
+  0437'   CD 0000*              	CALL	GETBYT			;GET ARG#2 (OFFSET INTO STRING)
+  043A'   B7                    	ORA	A			;MAKE SURE NOT ZERO
+  043B'   CA 0000*              	JZ	FCERR			;BLOW HIM UP IF ZERO
+  043E'   F5                    	PUSH	PSW			;SAVE ARG#2 ON STACK
+  043F'   7E                    	MOV	A,M			;RESTORE CURRENT CHAR
+  0440'   CD 0487'              	CALL	MIDRST			;USE MID$ CODE TO EVALUATE POSIBLE THIRD ARG.
+  0443'   D5                    	PUSH	D			;SAVE THIRD ARG ([E]) ON STACK
+                                					;MUST HAVE = SIGN
+  0444'   CD 0000*              	CALL	FRMEQL			;EVALUATE RHS OF THING.
+  0447'   E5                    	PUSH	H			;SAVE TEXT POINTER.
+  0448'   CD 0249'              	CALL	FRESTR			;FREE UP TEMP RHS IF ANY.
+  044B'   EB                    	XCHG				;PUT RHS DESC. POINTER IN [D,E]
+  044C'   E1                    	POP	H			;TEXT POINTER TO [H,L]
+  044D'   C1                    	POP	B			;ARG #3 TO C.
+  044E'   F1                    	POP	PSW			;ARG #2 TO A.
+  044F'   47                    	MOV	B,A			;AND [B]
+  0450'   E3                    	XTHL				;GET LHS DESC. POINTER TO [H,L]
+                                					;TEXT POINTER TO STACK
+  0451'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  0452'   21 0000*              	LXI	H,POPHRT		;GET ADDR TO RETURN TO
+  0455'   E3                    	XTHL				;SAVE ON STACK & GET BACK TXT PTR.
+  0456'   79                    	MOV	A,C			;GET ARG #3
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-21
+STRING FUNCTIONS - LEFT HAND SIDE MID$
+
+  0457'   B7                    	ORA	A			;SET CC'S
+  0458'   C8                    	RZ				;IF ZERO, DO NOTHING
+  0459'   7E                    	MOV	A,M			;GET LENGTH OF LHS
+  045A'   90                    	SUB	B			;SEE HOW MANY CHARS IN EMAINDER OF STRING
+  045B'   DA 0000*              	JC	FCERR			;CANT ASSIGN PAST LEN(LHS)!
+  045E'   3C                    	INR	A			;MAKE PROPER COUNT
+  045F'   B9                    	CMP	C			;SEE IF # OF CHARS IS .GT. THIRD ARG
+  0460'   DA 0464'              	JC	BIGLEN			;IF SO, DONT TRUNCATE
+  0463'   79                    	MOV	A,C			;TRUNCATE BY USING 3RD ARG.
+  0464'   48                    BIGLEN:	MOV	C,B			;GET OFFSET OF STRING IN [C]
+  0465'   0D                    	DCR	C			;MAKE PROPER OFFSET
+  0466'   06 00                 	MVI	B,0			;SET UP [B,C] FOR LATER DAD B.
+  0468'   D5                    	PUSH	D			;SAVE [D,E]
+  0469'   23                    	INX	H			;POINTER TO ADDRESS FIELD.
+  046A'   5E                    	MOV	E,M			;GET LOW BYTE IN [E]
+  046B'   23                    	INX	H			;BUMP POINTER
+  046C'   66                    	MOV	H,M			;GET HIGH BYTE IN [H]
+  046D'   6B                    	MOV	L,E			;NOW COPY LOW BYTE BACK TO [L]
+  046E'   09                    	DAD	B			;ADD OFFSET
+  046F'   47                    	MOV	B,A			;SET COUNT OF LHS IN [B]
+  0470'   D1                    	POP	D			;RESTORE [D,E]
+  0471'   EB                    	XCHG				;MOVE RHS. DESC. POINTER TO [H,L]
+  0472'   4E                    	MOV	C,M			;GET LEN(RHS) IN [C]
+  0473'   23                    	INX	H			;MOVE POINTER
+  0474'   7E                    	MOV	A,M			;GET LOW BYTE OF ADDRESS IN [A]
+  0475'   23                    	INX	H			;BUMP POINTER.
+  0476'   66                    	MOV	H,M			;GET HIGH BYTE OF ADDRESS IN [H]
+  0477'   6F                    	MOV	L,A			;COPY LOW BYTE TO [L]
+  0478'   EB                    	XCHG				;ADDRESS OF RHS NOW IN [D,E]
+  0479'   79                    	MOV	A,C			;IS RHS NULL?
+  047A'   B7                    	ORA	A			;TEST
+  047B'   C8                    	RZ				;THEN ALL DONE.
+                                ; NOW ALL SET UP FOR ASSIGNMENT.
+                                ; [H,L] = LHS POINTER
+                                ; [D,E] = RHS POINTER
+                                ; C = LEN(RHS)
+                                ; B = LEN(LHS)
+                                
+  047C'   1A                    MID$LP:	LDAX	D			;GET BYTE FROM RHS.
+  047D'   77                    	MOV	M,A			;STORE IN LHS
+  047E'   13                    	INX	D			;BUMP RHS POINTER
+  047F'   23                    	INX	H			;BUMP LHS POINTER.
+  0480'   0D                    	DCR	C			;BUMP DOWN COUNT OF RHS.
+  0481'   C8                    	RZ				;IF ZERO, ALL DONE.
+                                					;IF LHS ENDED, ALSO DONE.
+  0482'   05                    	DCR	B
+  0483'   C2 047C'              	JNZ	MID$LP			;IF NOT DONE, MORE COPYING.
+  0486'   C9                    	RET				;BACK TO NEWSTT
+                                
+  0487'   1E FF                 MIDRST:	MVI	E,255			;IF TWO ARG GUY, TRUNCATE.
+  0489'   FE 29                 	CPI	')'
+  048B'   CA 0495'              	JZ	MID2			;[E] SAYS USE ALL CHARS
+                                					;IF ONE ARGUMENT THIS IS CORRECT
+  048E'   CD 0000*              	CALL	SYNCHR
+  0491'   2C                    	DB	44			;COMMA? MUST DELINEATE 3RD ARG.
+  0492'   CD 0000*              	CALL	GETBYT			;GET ARGUMENT  IN  [E]
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-22
+STRING FUNCTIONS - LEFT HAND SIDE MID$
+
+  0495'   CD 0000*              MID2:	CALL	SYNCHR
+  0498'   29                    	DB	')'			;MUST BE FOLLOWED BY )
+  0499'   C9                    	RET				;ALL DONE.
+                                
+                                	SUBTTL	FRE  FUNCTION AND INTEGER TO FLOATING  ROUTINES
+  049A'                         FRE:
+  049A'   CD 0000*              	CALL	GETYPR
+  049D'   C2 04A6'              	JNZ	CLCDIF
+  04A0'   CD 024C'              	CALL	FREFAC			;FREE UP ARGUMENT AND SETUP
+                                					;TO GIVE FREE STRING SPACE
+  04A3'   CD 010A'              	CALL	GARBA2			;DO GARBAGE COLLECTION
+  04A6'   2A 0000*              CLCDIF:	LHLD	STREND
+  04A9'   EB                    	XCHG	
+  04AA'   2A 0000*              	LHLD	FRETOP			;TOP OF FREE AREA
+  04AD'   C3 0000*              	JMP	GIVDBL			;RETURN [H,L]-[D,E]
+                                	END	
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	S
+FRE  FUNCTION AND INTEGER TO FLOATING  ROUTINES
+
+Macros:
+
+Symbols:
+02FC'	ALLSTR          01A8'	ARYSTR          0178*	ARYTA2          
+0166*	ARYTAB          017E'	ARYVA2          017F'	ARYVA4          
+015C'	ARYVAR          0286I'	ASC             028AI'	ASC2            
+0464'	BIGLEN          01F3*	BLTUC           00FF 	BUFLEN          
+02CB'	CALSPA          01FFI'	CAT             03DB'	CHK             
+03D8'	CHK1            040C*	CHKSTR          0296I'	CHR$            
+0370*	CHRGTR          04A6'	CLCDIF          000E 	CLMWID          
+0380*	CONINT          000F 	CONTO           0005 	CPMENT          
+0000 	CPMWRM          00D9*	CRFIN           0015'	CSLOOP          
+0080 	DATPSC          0000 	DBLTRN          0422*	DCOMPR          
+02E1*	DSCTMP          01B7'	DVAR            01B6'	DVAR2           
+01B7'	DVARS           0214*	ERRLS           0217*	ERROR           
+00FF*	ERRSO           00C0*	ERRST           0206*	EVAL            
+0397*	FACLO           045C*	FCERR           0000*	FIN             
+02A0I'	FINBCK          035F*	FINDBL          010D'	FNDVAR          
+003A*	FOUT            0034*	FOUTH           002E*	FOUTO           
+049AI'	FRE             024CI'	FREFAC          0249I'	FRESTR          
+024FI'	FRETM2          0250I'	FRETMP          026AI'	FRETMS          
+04AB*	FRETOP          0445*	FRMEQL          039B*	FRMEVL          
+0373*	FRMPRN          010AI'	GARBA2          00FD'	GARBAG          
+00CD*	GETBCD          0493*	GETBYT          00DFI'	GETSPA          
+049B*	GETYPR          04AE*	GIVDBL          03F0'	GOTSTR          
+01DB'	GRBPAS          0190*	IADAHL          0001 	INCSTR          
+036FI'	INSTR           02ECI'	LEFT$           02F4'	LEFT2           
+02F0'	LEFT3           02F3I'	LEFTUS          027AI'	LEN             
+027E'	LEN1            0404I'	LHSMID          0050 	LINLN           
+0084 	LPTLEN          008D'	LPTRLS          0003 	MD.RND          
+0001 	MD.SQI          0002 	MD.SQO          010B*	MEMSIZ          
+0327I'	MID$            047C'	MID$LP          0495'	MID2            
+0487'	MIDRST          0237'	MOVINS          0240'	MOVLP           
+0000*	MOVRM           023F'	MOVSTR          0028 	NAMLEN          
+0431'	NCPMID          0268'	NOTLST          0098'	NTTRLS          
+001D 	NUMLEV          000A 	NUMTMP          03F9'	OHWELL          
+00D4*	OUTDO           0453*	POPHRT          00FBI'	PPSWRT          
+0365'	PREAM           036A'	PREAM2          012A*	PRMPRV          
+0409*	PTRGET          0064I'	PUTDEI          00A0I'	PUTNEW          
+00A4I'	PUTTMP          03EA'	RETZER          03ED'	RETZR1          
+031DI'	RIGHT$          029CI'	SETSTR          002B*	SIGNS           
+0155'	SKPVAR          0000*	SNERR           03AF*	SNGFLT          
+02CFI'	SPACE$          02D4'	SPACE2          02E3'	SPLP$           
+0039I'	STR$            003C'	STR$1           0062I'	STRAD1          
+005F'	STRAD2          0000I'	STRCMP          0046I'	STRCPY          
+04A7*	STREND          0080'	STRFIN          0071'	STRGET          
+0033I'	STRH$           005AI'	STRIN1          005CI'	STRINI          
+006AI'	STRLIT          006EI'	STRLT2          006DI'	STRLT3          
+006BI'	STRLTI          02A4I'	STRNG$          002DI'	STRO$           
+00C5I'	STROUI          00C6I'	STROUT          00D0'	STRPR2          
+00C9I'	STRPRT          0003 	STRSIZ          02C8'	STRSTR          
+0138'	SVAR            0496*	SYNCHR          01AA*	TEMP8           
+016D*	TEMP9           0277*	TEMPPT          0119*	TEMPST          
+0000 	TRUROM          00E1'	TRYGI2          0230*	TSTOP           
+011B'	TVAR            041F*	TXTTAB          0348I'	VAL             
+BISTRS	BASIC Interpreter String  routines/WHG/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+FRE  FUNCTION AND INTEGER TO FLOATING  ROUTINES
+
+00AE*	VALTYP          0136*	VARTAB          042F*	VMOVE           
+0391'	WUZSTR          
+
+
+
+No Fatal error(s)
+
+
+96*	SYNCHR          01A

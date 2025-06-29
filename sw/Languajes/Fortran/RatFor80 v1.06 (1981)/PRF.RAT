@@ -1,0 +1,143 @@
+
+#########################################################
+#							#
+#	     RATFOR TEXT FILE PRINT UTILITY		#
+#							#
+#=======================================================#
+#							#
+#   Purpose:						#
+#	This program will produce a neatly paginated	#
+#	listing of one or more text files at the CP/M	#
+#	list device.					#
+#							#
+#   Usage:						#
+#	prf file1 file2 file3 [etc]			#
+#							#
+#   Special considerations:				#
+#   1.	If no file extension is supplied with a file	#
+#	name, ".RAT" is assumed.			#
+#   2.	Tabs are expanded into equivalent blanks.	#
+#							#
+#########################################################
+
+include rfglbls		# standard definitions
+
+define(NAMESIZE,15)
+define(TOPMARGIN,2)
+define(BOTTOM,58)
+define(PAGEWIDTH,80)
+define(TOF,12)
+define(BUFFERS,64)	# number of 128 character buffers for input
+
+
+# print - print files with headings
+   program print
+   character name(NAMESIZE)
+   integer getarg, openr
+   integer i, junk
+   character slist(5)
+   data slist_
+      /BIGC, BIGO, BIGN, COLON, EOS/
+
+   for (i = 1; getarg(i, name, NAMESIZE) != EOF; i = i + 1) {
+      if (openr(STDIN, READONLY, BUFFERS, name, "RAT") == NO)
+	 call cant(name)
+      junk = openr(STDOUT, WRITEONLY, 0, slist)	 # never an error here
+      call fprint(name, STDIN)
+      }
+end # print
+
+
+# fprint - print file "name" from  fin
+   subroutine fprint(name, fin)
+   character name(NAMESIZE), c
+   character getch, map
+   integer mod
+   integer fin, lineno, pageno, col
+
+   pageno = 0
+   lineno = 0
+   col = 1
+   while (getch(c, fin) != EOF) {
+      if (lineno == 0) {
+	 pageno = pageno + 1
+	 call head(name, pageno)
+	 call skip(TOPMARGIN)
+	 lineno = TOPMARGIN + 1
+	 }
+      if (c == TOF)		# force page eject
+	 lineno = BOTTOM
+      else if (c == TAB) {	# expand tabs to blanks
+	 repeat {
+	    call putc(BLANK)
+	    col = col + 1
+	    } until (mod(col, 8) == 1)
+	 }
+      else if (c == NEWLINE) {
+	 call putc(NEWLINE)
+	 col = 1
+	 lineno = lineno + 1
+	 }
+      else {
+	 call putc(c)		# output char
+	 col = col + 1
+	 }
+      if (col > PAGEWIDTH) {	# form new line
+	 call putc(NEWLINE)
+	 col = 1
+	 lineno = lineno + 1
+	 }
+      if (lineno >= BOTTOM) {	# form new page
+	 call putc(TOF)
+	 lineno = 0
+	 }
+      }
+   if (lineno > 0)
+      call putc(TOF)
+   return
+end # fprint
+
+
+# skip - output  n  blank lines
+   subroutine skip(n)
+   integer i, n
+
+   for (i = 1; i <= n; i = i + 1)
+      call putc(NEWLINE)
+   return
+end # skip
+
+
+# head - print top of page header
+   subroutine head(name, pageno)
+   character name(NAMESIZE)
+   integer length, index
+   integer pageno, i, n
+#   string sfnam "Filename: "
+#   string dft ".RAT"
+#   string page "Page  "
+   character sfnam(11)
+   character dft(5)
+   character page(6)
+   data sfnam_
+      /BIGF, LETI, LETL, LETE, LETN, LETA, LETM, LETE, COLON, BLANK, EOS/
+   data dft_
+      /PERIOD, BIGR, BIGA, BIGT, EOS/
+   data page_
+      /BIGP, LETA, LETG, LETE, BLANK, EOS/
+
+   call putlin(sfnam, STDOUT)	# print "Filename: <name>"
+   call putlin(name, STDOUT)
+   n = length(name)
+   if (index(name, PERIOD) == 0) {
+      call putlin(dft, STDOUT)
+      n = n + 4
+      }
+   for (i = n+10; i < PAGEWIDTH-15; i = i + 1)
+      call putc(BLANK)
+   call putlin(page, STDOUT)	# print page number
+   call putdec(pageno, 1)
+   call putc(NEWLINE)
+   return
+end # head
+

@@ -1,0 +1,22 @@
+   subroutine remark(buf)
+#  remark - print warning message
+   CHARACTER buf(CRTLINE)
+#  find position of period in input string
+   for (k = 1; buf(k) ^= PERIOD & k < CRTLINE; k = k + 1)
+      ;
+   if (buf(k) ^= PERIOD)
+      write (CRT, 10)
+   if (k > 1)
+      k = k - 1
+   if (buf(1) == MINUS | buf(1) == BLANK | buf(1) == PLUS
+      | buf(1) == DIG0)
+      write (CRT, 11) (buf(i), i = 1, k)
+   else
+      write (CRT, 12) (buf(i), i = 1, k)
+   return
+#
+10 format (' ', 'no period in remark')
+11 format (CRTLINE a1)
+12 format (' ',CRTLINE a1)
+   end
+

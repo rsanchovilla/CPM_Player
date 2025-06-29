@@ -1,0 +1,358 @@
+
+
+
+                       BDS C Version 1.3  Notes
+                       ========================
+                       Leor Zolman, BD Software
+                         (November 17, 1979)
+
+
+     ************************************************************
+     **    Summary of the neat new features of version 1.3:    **
+     **                                                        **
+     **    1) New functions:  exec, execl, rename, srand1,     **
+     **                       putch, sprintf, fprintf,         **    
+     **                       sscanf, fscanf, fgets, fputs,    **
+     **                       and new versions of printf and   **
+     **                       scanf.                           **
+     **    2) New CC1 options: p, v, w, x, y, z                **
+     **    3) #include preprocessor command implemented        **
+     **    4) Auto-chaining from CC1 to CC2		       **
+     **    5) Floating point function package included         **
+     **    6) New, super-powerful TELNET.C		       **
+     **    7) And the bug count plummets...                    **
+     ************************************************************
+
+
+
+Special thanks to Bob Mathias for his floating point package, to Earl  
+T. Cohen for the .COM-to-.CRL file conversion program (and Jack	Wierda  
+for modifications to the program), to Leo Kenen for immense amounts of  
+assistance developing the new TELNET and I/O functions, and to Lauren  
+Weinstein and Jerry Pournelle for lots of moral	support!
+
+Soon I hope some kind of software exchange can get set up;  
+unfortunately, I don't have the time or the equipment to handle such  
+an enterprise. Here are some names and numbers of avid BDS C users who  
+would love to talk about/work on C software exchange ideas:
+
+		Lauren Weinstein.....(213) 397-6213
+		Phil Apley or
+		Scott Layson.........(617) 494-8320
+		Ward Christensen.....(312) 849-6279
+
+
+
+Here is a list of bug fixes/enhancements in 1.3:
+
+  0.    This version (1.3) is the first one in which the source file  
+        going in to CC1.COM can be bigger than 16K in length. This was  
+        a serious bug that managed to not show up for a long time  
+        because no one had tried to compile a source file bigger than  
+        16K!!! There were also various and sundry bugs in CC1 that  
+        caused it to bomb under certain conditions. Each time this  
+        happens I fix the responsible bug...but there's a lot of code  
+        there. If you manage to bomb CC1, CC2, or CLINK, please let me  
+        know and I'll try to get you a fix.
+ 
+        program, the data in memory may get wiped out following the  
+        call to "write" that actually performs the disk I/O. This  
+        applies to prior versions of BDS C (1.2 and earlier) running  
+        under any version of CP/M prior to 2.0. The reason for this  
+        bug was that I wasn't aware of CP/M's habit of using the  
+        current DMA address for temporary scratch space during  
+        directory operations; thus, whenever the last sector  of an  
+        extent was written to disk, it would get wiped out by CP/M  
+        within memory (although it would write to disk OK.) The  
+        problem was solved by making sure that BDS C performs all disk  
+        writing functions from tbuff (by copying the required data to  
+        RAM+80h before each disk write, instead of dynmaically  
+        changing the DMA address to point to the only copy of the data  
+        to be written.)
+
+
+  1.    The expression evaluator has been completely torn apart and  
+        rewritten, so that some obscure expressions that didn't work  
+        with previous versions will now work. This covers expressions  
+        such as 	
+                    (expression)[subscript]
+
+        and pointer arithmetic on pointers-to-pointers: 
+        With 1.2, let's say you declared argv as
+
+                    char **argv;
+
+        and then assigned it the value 1000 with
+
+                    argv = 1000;
+
+        Now, if you wrote an expression such as
+
+                    (argv + 1)
+
+        the value of the expression would have been 1001 instead of  
+        the CORRECT value 1002, according to the rules of pointer  
+        arithmetic, which state that math on a pointer is always  
+        scaled by the length of the object pointed to by the pointer.  
+        Thus, since argv points to a pointer-to-characters, and  
+        pointers-to-characters are two bytes long, (argv+1) or  
+        (argv++) SHOULD increment argv by a value of 2; only the  
+        latter worked correctly, though, in 1.2. This kind of stuff  
+        seems to work correctly in v1.3...
+
+        Other results of the new expression evaluator: it doesn't  
+        matter anymore whether you write foo++;
+        or
+                    ++foo;
+
+        since the evaluator will automatically convert the former to  
+        the latter if the value isn't used as part of a more complex  
+        expression. The reason for this is that it takes less code to  
+        perform a pre-increment or pre-decrement than it does to do a  
+        post-increment or post-decrement, because the old value of the
+        variable doesn't have to be saved.
+  2.    Labels are now processed intelligently. Each function is  
+        treated separately, so label references across function  
+        boundaries are no longer ignored. The way I did label  
+        processing before was stupid; even though they needn't be used  
+        very often, at least now labels will act the way one might  
+        expect them to.
+
+
+  3.    By popular demand (mainly from Ward Christensen), each of CC1,  
+        CC2 and CLINK now prints out a memory usage diagnostic after  
+        completing its chore. The number displayed is the amount of  
+        memory left unused by the command, rounded down to the nearest  
+        K. When this value approaches 0K, it's time to get more  
+        memory; if you already have 64K, you've just outgrown BDS C.
+        Go get an 11/70.
+
+
+  4.    I finally got myself MAC and SID, so all compiler messages  
+        come out in nice upper/lower case as they SHOULD have all  
+        along. Oh well; ASM had its bugs, but at least it was cost  
+        effective.
+
+
+  5.    Structures and unions which start off with the sametypes of  
+        elements may now use the same member names, provided that the  
+        offsets and types are exactly the same for each occurrence of  
+        a member name within a structure or union definition. Note  
+        that the compiler may not always detect a mismatch in TYPE  
+        when this option is used, due to internal kludgery, but at  
+        least consistency in the offsets will always be checked for.  
+        By the way, you still can't have a regular (non-member)  
+        variable with the same name as a structure element. Oh well.  
+        To illustrate, the following sequence of declarations is legal  
+        in 1.3 but would have drawn a "redeclaration" error in  
+        previous versions:
+
+        	struct foo {
+        		int a;
+        		char b;	
+        		unsigned c;
+        	};
+
+        	struct bar {
+        		int a;
+        		char b;
+        		int d;
+        	};
+
+        The variables "a" and "b" have the same characteristics in  
+        both structure definitions, so they are allowed to appear  
+        twice. Note that if the declaration of member "d" were changed  
+        to "int c;" then an error would occur, since "c" cannot be  
+        redeclared as a different type of member.
+
+ 
+        entered in the interactive mode. Also, the interactive mode  
+        was buggy for the TRS-80, Heath, etc. (4200h origin) versions;  
+        If you know anyone who has a 1.xT version older than 1.3, urge  
+        them to get an update. In an unrelated triviality, the CLIB  
+        program did bizarre things when told to RENAME a function  
+        wherethe new name was longer than the old name; this has been  
+        fixed in 1.3.
+
+
+  7.    The old "exec" function, written in C and included with the  
+        version 1.2 package, has been scrapped. A new "exec" has been  
+        written in assembler and included for compatibility. But  
+        better yet: A new function, "execl", has now been provided to  
+        handle chaining from one C-generated COM file to another, WITH  
+        PARAMETER PASSING, so that the net effect of execl is the same  
+        as if the chained COM file were invoked directly from CP/M.  
+        Execl, in addition to allowing parameter passing, is also much  
+        faster than the old "exec" was since the COM file needed is  
+        loaded directly into RAM instead of operating through a  
+        hacked-up "SUBMIT" file.
+
+        The format of an execl call is:
+
+        		execl(fname,arg1,arg2,...,0);
+        		char *fname, *arg1, *arg2, ...
+
+        where fname points to the name of the COM file to be chained  
+        to, and arg1, arg2, etc., are pointers to character string  
+        arguements. A null argument MUST follow the last arg, or  
+        follow fname if there are no arguments. Execl sets up a  
+        command line buffer at location RAM+80h (just as the CCP does)  
+        containing the list of specified strings ( ** NO ** lower-to- 
+        upper case mapping is performed,  so be careful when using  
+        programs which expect their  "main" arguments to be upper case  
+        only!), loads in the program fname.COM at ram+100h, and  
+        executes it. Note that the CLINK option "-c" need no longer be  
+        given when you link a program that is to be chained to by  
+        execl. In fact, "-c" shouldn't be used for anything at all; it  
+        was only there to prevent argc & argv processing in an exec-ed  
+        program when using the old "exec". The "-e" option, though,  
+        must still be given if external data is to be shared between  
+        the execl-ing and execl-ed programs. Final note: execl sets up  
+        the command line buffer just like the CCP, but it does NOT set  
+        up the default fcb (at location RAM+5ch). Thus, execl should  
+        not be used with non C-generated COM files that expect their  
+        argument(s) pre-installed in the default fcb. 
+
+        Examples:        execl("stone",0);
+                    (or) exec("stone");
+
+        loads and executes the command "STONE.COM";
+
+                         execl("pressup","-D","4","-B",0);
+
+        acts as if you had typed, to CP/M,
+
+                         A>pressup -d 4 -b        	
+  8.    As suggested by Lauren Weinstein, a new form of the "srand"  
+        function has been included to allow "hiding" the random seed  
+        initialization.
+        The new function has the form:
+
+                         srand1(s)
+                         char *s;
+
+        It works by printing out the given string, then looping  
+        internally (just like "srand(0)") until a character is typed,  
+        at which point it uses the internal counter value as seed and  
+        returns without sampling the input character. The typical use  
+        of srand1 might be something like:
+
+               srand1("Do you need instructions (y/n)? ");
+               if (toupper(getchar()) == 'Y') ... 
+
+        Thanx to Lauren for suggesting this (and many other fine  
+        improvements, such as "execl".)
+
+
+  9.    To make life easier for text editor writers, and because it is  
+        difficult to do with BDOS calls, a "rename" function has been  
+        added to allow the renaming of CP/M files. The format is:
+
+                         rename(old,new)
+                         char *old, *new;
+
+        where the arguments are self-explanatory. The file extensions,  
+        if needed, must be present explicitly (i.e., extensions will  
+        not be tacked on automatically in the same way as "exec" and  
+        "execl" append ".COM" to their first argument strings.)  
+        "rename" is supposed to return 0 if no error, or -1 on error,  
+        but... BECAUSE OF A BUG IN CP/M, THE RENAME FUNCTION  MAY  
+        ALWAYS RETURN A VALUE OF -1 ON YOUR SYSTEM.
+
+
+ 10.    All those hairy formatted I/O functions described in Kernighan  
+        & Ritchie have been written (after a fashion) and included in  
+        the source file STDLIB2.C. Note that not all have been  
+        compiled and put into DEFF.CRL, due to lack of directory space  
+        in DEFF.CRL. Rather than create another CRL file (as if there  
+        weren't enough in the package already), I invite you to  
+        compile STDLIB2.C yourself if you need any of those obscure  
+        functions. Also, read STDLIB2.C carefully for some  
+        implementation differences between my versions and the ones in  
+        the book. By the way, the printf function now accepts the %o  
+        (octal) conversion character. Oh boy. 
+
+
+ 11.    If you've made it this far, your patience shall be rewarded:  
+        After CC1 finishes processing of the first pass of  
+        compilation, it will now attempt to bypass the writing of the  
+        CCI file to disk by loading in CC2 immediately and continuing  
+        with pass 2. A new set of options has been added to CC1 for  
+        the purpose of controlling this new feature; if none of them  
+        are specified, the default action of CC1 will be to attempt to  
+        load in CC2 from the currently logged-in disk (if there were  
+        no errors during CC1.) 
+        Other options are:
+
+               V:	Always write the .CCI file to disk
+               W:	auto-loads CC2 from disk A always
+               X:	auto-loads CC2 from disk B
+               Y:	auto-loads CC2 from disk C
+               Z:	auto-loads CC2 from disk D
+
+        Note that all options to CC1 must be specified (following a  
+        dash) by a single string (no spaces.) For example, a simple  
+        compile-with-auto-load-of-CC2-from-the-currently-logged-disk  
+        of LIFE.C would be:
+
+                 A>cc1 life.c
+
+        To set the symbol table size to 5K bytes and write the .CCI  
+        file to disk, you'd say:
+
+                         A>cc1 life.c -v5
+                    (or) A>cc1 life.c -5v	etc. etc.
+
+        If CC2 isn't found where you tell CC1 to get it from, then the  
+        CCI file will be written to disk.
+
+
+ 11.5   Another new option to CC2 is the "p" option, as suggested by  
+        Mike Bentley. This causes a printout, on the CP/M console, of  
+        the result of the preprocessor phase of CC1. That is, the way  
+        the text looks after all #define and #include statements have  
+        been processed. The line numbers for "#included" files will  
+        appear indented 2 spaces to the right, but multiply-nested  
+        #include files will not yield multiple-indentations. (See  
+        below for details on the #include preprocessor  command.)
+
+
+ 12.    A new version of "putchar" has been added to the package.  
+        Called "putch", this routine also outputs its character  
+        argument to the CP/M console output device, but it does NOT  
+        check the CP/M console INPUT for control-C.
+        "putch" is intended for applications such as the TELNET.C  
+        program, in which the program must explicitly check for  
+        keyboard input, and would not tolerate having "putchar" read  
+        and clear the console status at random times. Normally, this  
+        is no big deal, and in fact "putchar" is nice in that whenever  
+        you get stuck in some kind of output loop, you can always  
+        abort by typing control-C. But users of the "TELNET.C" program  
+        from BDS C version 1.2 or earlier might notice that every once  
+        in a while, a character they type is not seen by the TELNET  
+        program, even though it is echoed to the screen! This is the  
+        kind of  problem "putch" is meant to fix.
+
+
+
+                    #include "filename"
+               (or) #include <filename>
+
+        will now cause the named file to be substituted for the  
+        "#include" line at compile time. If the file cannot be found,  
+        compilation will abort. Error messages for statements which  
+        came from within an included file will have the form:
+        Include @ nnnnn: xxxxx: error where nnnnn is the line at which  
+        the #include tatement was encountered, and xxxxx is the line  
+        number relative to the start of the FIRST nested include file.  
+        Note that whenever an #include file is encountered, normal  
+        line numbering is suspended ("pushed") until ALL of the  
+        include file has been read in...if the included file itself  
+        contains #include statements, though, the line numbers remain  
+        contiguous. This "pushing" only works for the highest level.  
+        Thus, although #include nesting will work for many levels, it  
+        is not recommended that more than one level be used.
+
+
+
+                               *** The End ***

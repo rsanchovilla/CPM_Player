@@ -1,0 +1,149 @@
+
+	   How to Automate Boot-Up of a CP/M Computer
+	by Donald Phillipson, Ottawa, rev. 13 March, 1988
+
+While written for Kaypro users, this information ought to be
+usable on any computer using CP/M 2.2;  if CP/M 3.0 differs in
+any of its addresses, the adaptation should be simple.
+
+CP/M computers can be instructed to perform a whole series of
+commands on boot-up by:
+	1 	a .SUB file of commands,
+	2 	executed by an autoload command.
+
+The autoload command can be written in either of two ways:
+
+	1	By an appropriate option in a disc preparation
+	programme such as option C = Command of the Kaypro
+        COPY.COM or option #8 of the Advent TURBOCFG command.  
+        These options invite you to key in the command string you
+        like and write it correctly in the right place.
+
+	2	The command may also be written directly on the
+        system tracks of a disc by DU or any other byte editor
+        that can reach those tracks.   (File-oriented byte
+        editors such as EDFILE cannot do this.)  The command can
+        be moved from one disc to another by SYSGEN or an
+        equivalent programme.
+
+If you prefer method two, you must first find the address where
+your version of CP/M writes autoload commands that execute
+themselves on booting.   This can be done in one of two ways:
+
+    1  By using a byte editor to look directly at the system
+    tracks, or
+
+    2  By writing a file of the system code (by SYSGENing to a
+    filename) and inspecting that file with DDT or some other
+    file tool.
+
+    In either case, what one is looking for is Digital Research
+Co's copyright notice, which may be safely overwritten without
+affecting the system code.   In the Kaypro computer it is between
+addresses 0200 and 0280 (hex of course), on Track 0, Sector 5 (as
+counted by DU).   The autoload location starts at the 8th byte
+(counting from the first, address ???0) of this particular
+128-byte record, i.e. address 0207 for Kaypros.  The command
+string starts at the next byte, address 0208.
+
+    If in doubt where the autoboot command is located, reformat a
+blank disc and, at the appropriate menu prompt, add a special
+string you can recognize, like TARGET.   Then search for it in
+the appropriate way, using DU or DDT or whatever tool you wish.  
+You should find TARGET immediately preceded by hex byte 06,
+indicating its length.
+
+    The command string can theoretically be up to 128 characters
+long.  Its first byte is the length (in hex, hence max. FF = 128
+decimal) of the command string.   The string may contain ordinary
+spaces (hex 20) for example:
+
+			  sub start $f
+
+This is my normal autoload command, used for nearly all discs
+with the feature.   On my WordStar disc, the START.SUB file it
+reads is:
+
+smartk2 control.ws
+b:
+;  Enter Date and/or control-Z
+pip b:sd.dir=con:
+sd $1
+ws
+
+What this does, line by line, is:
+
+Load SmartKey2 with keypad macros for WS commands
+Log to the B: drive
+On-screen message inviting you to
+Write (or not) today's date to a
+Disc directory in a file on the B: disc
+And then start WS
+
+I prefer to write the command string directly on the disc system
+tracks, using DU, because I find it easier than DDT, preferred by
+Green, see below.   Beginners should probably use COPY or
+TURBOCFG to prepare a new disc, to which everything else can be
+copied.
+
+Different .SUB files are prepared for different needs.   For
+example that for Perfect Filer ends by displaying on screen a
+chart of the keypad showing which keys have been assigned to
+special functions and which are available for temporary SmartKey2
+assignments (since I do not use this programme on a daily basis.)
+
+SUBMIT.COM and EX.COM both execute .SUB files but differently: 
+SUBMIT writes a temporary workfile to disc (i.e. cannot be used
+from a write-protected disc) and EX uses high memory instead (and
+so will not run if SmartKey or other high memory software has
+already been loaded.   Although for other purposes I prefer EX I
+usually use SUBMIT to run almost every autobooting START.SUB. 
+
+My own system has Advent speed-up and Turbo-ROM kits installed,
+which allow me to run almost all programmes (but not P.Filer)
+from the B: drive.   (When any programme is invoked, if BIOS
+does not find it on the B: disc it automatically looks for it on
+the A: drive).   So I usually log automatically to B.   Secondly,
+I usually have the numerical keypad configured to the same
+numbers, but in the high-bit range of ASCII codes, B0 through BC
+(all but the ENTER key).   This provides 13 keys available for
+Smartkey definitions, without also reassigning the number and
+punctuation keys on the main keyboard.
+
+Many Kaypro owners like to move their reset (cold boot) button
+from the back to the front of the computer, so as to allow faster
+rebooting and reconfiguration.   Not being an electrician, I use
+software instead, viz. a RESET programme (written by Bob Balkwill
+of Ottawa about four years ago) of which the Z80 code is:
+
+;	Reset the Kaypro
+
+	org 100h
+
+	ld	hl,reloc
+	ld	bc,endrel-reloc
+	ld	de,4000h
+	ldir
+	jp	4000h
+
+reloc:	in	a,(1ch)
+	set	7,a
+	out	(1ch),a
+	jp	0
+
+endrel:	end
+
+If there is room in your disc directories, RESET.COM can be kept
+on any disc from which you are likely to want to reboot.
+
+Another document on the "secret" of autoloading utilities on
+booting is AUTOGO.TXT by Dave Green, KUAFC, September 1987.   The
+only book I know to deal with the topic is Dwyer and
+Critchfield's CP/M AND THE PERSONAL COMPUTER (Addison-Wesley,
+1983), the best single book on CP/M I know.
+
+		  --Ottawa, 12th March, 1988--
+lso reassigning the number and
+punctuation keys on the main keyboard.
+
+Many Kaypro owner

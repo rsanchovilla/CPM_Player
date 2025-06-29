@@ -1,0 +1,505 @@
+	TITLE	Pro Fortran housekeeping library (1)
+;
+	NAME	('G1LIB')
+;
+;	Date	18 January 1983
+;
+;	Copyright (C) 1982   Prospero Software
+;
+;	This module contains the essential housekeeping
+;	routines for program start and termination,
+;	and for error reporting.
+;
+;
+	.Z80
+;
+	ENTRY	$GINIT,$STOP,$ENDLN,$STOPS,$PAUSE,$PAUSS
+	ENTRY	$MVAIL
+	ENTRY	$GVAIL,$WVAIL,$GROVR,$WROVR
+	ENTRY	$HPLM,$STKLM,$GALOC
+	ENTRY	$UCHN,$FNSEQ,$HCPMV
+	ENTRY	$BDOS,$PERR,$HERR
+	ENTRY	$MEMRY,$INIX,$PFLAG
+	ENTRY	$DCLN,$DPRST,$DNLGT,$DSLFL
+;
+;
+	EXT	$FINTX,$FTXLS,$FCLAC
+;
+;
+;	===============
+;
+;
+BASE	EQU	0		; CP/M base address
+BOOT	EQU	BASE+0
+BDOS	EQU	BASE+5		; BDOS entry point
+DEFBUF	EQU	BASE+80H	; default buffer
+;
+FINDVN	EQU	0CH		; "find version" code
+SETDMA	EQU	1AH		; "set DMA" code
+;
+;
+FCASIZ	EQU	36
+FCBSIZ	EQU	36
+;
+;
+	DSEG
+;
+$GVAIL:				; for heap manager
+GAVLNK:	DS	2
+GAVSIZ:	DS	2
+;
+$WVAIL:
+WAVLNK:	DS	2
+;
+$GROVR:	DS	2
+;
+$WROVR:	DS	2
+;
+$HPLM:	DS	2
+;
+$STKLM:	DS	2		; for stack limit check
+;
+$INIX:	DS	2		; IX value at outer level
+;
+$UCHN:	DS	2		; chain of i/o units
+;
+$FNSEQ:	DS	2		; for sequential file naming
+;
+$HCPMV:	DS	2		; for CP/M version number
+;
+$DCLN:	DS	2		; for source line number
+$DPRST:	DS	2
+$DNLGT:	DS	2
+$DSLFL:	DS	1
+;
+;
+;	===================
+;
+	CSEG
+;
+;
+$MEMRY:	DW	0		; filled in by linker
+;
+$PFLAG:	DB	0		; 0 for Fortran
+;
+;
+;	Routine	$GINIT		Initial program startup.
+;
+;	Calling sequence is:
+;		LD	HL,$+6
+;		JP	$GINIT
+;
+INITHP	EQU	16		; initial heap size
+GAP	EQU	256		; minimum gap between heap & SP
+NIL	EQU	80H
+;
+;
+;
+$GINIT:
+	LD	SP,(BDOS+1)		; set SP
+;
+	LD	B,6			; start of BDOS is 6 bytes
+DECSP:	DEC	SP			; .. below entry address
+	DJNZ	DECSP
+;
+	LD	IX,126
+	ADD	IX,SP			; IX for program
+	LD	($INIX),IX
+;
+	PUSH	HL			; link for return
+;
+;	Initial heap space
+;
+	LD	HL,($MEMRY)	; start of workspace
+	LD	($HPLM),HL
+	LD	(GAVLNK),HL
+;
+	LD	HL,0
+	LD	(GAVSIZ),HL	; "gavail.size := 0"
+;
+	LD	BC,INITHP	; initial heap allocation
+	CALL	$GALOC
+;
+	LD	HL,(GAVLNK)
+	LD	BC,NIL
+	LD	(HL),C		; "WITH gavail.link^ DO
+	INC	HL		;    BEGIN
+	LD	(HL),B		;      link := NIL;
+	INC	HL		;      size := 1024;
+	LD	BC,INITHP	;    END"
+	LD	(HL),C
+	INC	HL
+	LD	(HL),B
+;
+	LD	HL,NIL
+	LD	(WAVLNK),HL	; "wavail.link := NIL"
+;
+	LD	HL,$GVAIL
+	LD	($GROVR),HL	; "grover := addr(gavail)"
+	LD	HL,$WVAIL
+	LD	($WROVR),HL	; "wrover := addr(wavail)"
+;
+;	Set up default FCAs for units 1 and 2
+;
+	LD	HL,0			; end of chain
+	PUSH	HL
+	INC	HL			; unit 1
+	PUSH	HL
+	LD	HL,($HPLM)		; FCA will be at this address
+	LD	($UCHN),HL
+	PUSH	HL
+;
+	LD	BC,FCASIZ+FCBSIZ
+	CALL	$GALOC
+	CALL	$FINTX
+;
+;
+	LD	HL,($UCHN)
+	PUSH	HL
+	LD	HL,2			; unit 2
+	PUSH	HL
+	LD	HL,($HPLM)
+	LD	($UCHN),HL
+	PUSH	HL
+;
+	LD	BC,FCASIZ+FCBSIZ
+	CALL	$GALOC
+	CALL	$FINTX
+;
+	LD	HL,($UCHN)
+	PUSH	HL
+	CALL	$FTXLS			; set for LST:
+;
+	LD	HL,0
+	LD	($FNSEQ),HL		; file name sequence
+	LD	($DCLN),HL		; source line number
+;
+	LD	HL,NULSUB
+	LD	($DPRST),HL		; overwritten by l.n. module
+	LD	($DNLGT),HL		; .. (if present)
+	XOR	A
+	LD	($DSLFL),A
+;
+	LD	C,FINDVN		; find CP/M version
+	CALL	$BDOS
+	LD	L,1			; for CP/M 1.x
+	CP	20H
+	JR	C,FVN2
+	INC	L			; for CP/M 2.x
+FVN2:
+	LD	($HCPMV),HL
+;
+	LD	C,SETDMA		; set "DMA address" to ..
+	LD	DE,DEFBUF		; default buffer at base+80H
+	CALL	$BDOS
+;
+NULSUB:
+	RET
+;
+;
+;
+;	Take space from free area
+;
+;	Entry	BC	Size required
+;
+$GALOC:
+	LD	HL,($HPLM)
+	ADD	HL,BC		; new limit
+	LD	($HPLM),HL
+;
+	LD	BC,GAP		; set $STKLM to complement
+	ADD	HL,BC		; of new limit + gap
+	LD	A,H
+	CPL
+	LD	H,A
+	LD	A,L
+	CPL
+	LD	L,A
+	LD	($STKLM),HL
+;
+	ADD	HL,SP		; check against SP
+	RET	C
+;
+	LD	A,'S'		; space not sufficient
+	LD	C,0
+	CALL	$HERR
+;
+;
+;	====================
+;
+;
+;	Program termination
+;
+;
+$STOP:
+	LD	C,0
+	JR	STOP
+;
+$STOPS:
+	LD	C,1
+STOP:
+	LD	DE,STMESS		; 'FSTOP '
+	JR	STPS
+;
+;
+$PAUSE:
+	LD	C,2
+	JR	PAUSE
+;
+$PAUSS:
+	LD	C,3
+PAUSE:
+	LD	DE,PAMESS		; 'FPAUSE '
+;
+STPS:
+	PUSH	BC
+	LD	C,9
+	CALL	$BDOS			; output FSTOP or FPAUSE
+;
+	POP	BC
+	RR	C
+	JR	NC,STPS4		; no additional string
+;
+	POP	HL
+	EX	(SP),HL			; address of string
+;
+	LD	B,5			; string length
+STPS2:
+	LD	E,(HL)
+	CALL	CHOUT			; output string
+	INC	HL
+	DJNZ	STPS2
+;
+STPS4:
+$ENDLN:
+	LD	E,0DH			; c/r
+	CALL	CHOUT
+	LD	E,0AH			; l/f
+	CALL	CHOUT
+;
+	RR	C
+	JP	C,RESTRT		; for PAUSE
+;
+STPS6:
+	LD	HL,($UCHN)
+	PUSH	HL
+	CALL	$FCLAC			; close all active files
+;
+	JP	BOOT
+;
+;
+STMESS:	DB	0DH,0AH,'STOP $'
+PAMESS:	DB	0DH,0AH,'PAUSE $'
+;
+;
+;	==================
+;
+;
+;	Routine	$MVAIL  -  memory available between top of heap and stack
+;
+;	(Called from the Pascal-coded function memavail, in H7LIB.)
+;
+;	Entry	no arguments
+;
+;	Exit	HL,BC = result (in bytes) (always positive)
+;
+$MVAIL:
+	POP	IY		; link
+	LD	HL,($STKLM)	; complement of ($HPLM + GAP)
+	ADD	HL,SP
+	LD	C,L
+	LD	B,H
+	LD	HL,0		; 32-bit integer result
+	JP	(IY)		; return
+;
+;
+;
+;	===================
+;
+;
+;	$BDOS  -  preserve IX and IY through BDOS calls
+;
+$BDOS:
+	PUSH	IX
+	PUSH	IY
+	CALL	BDOS
+	POP	IY
+	POP	IX
+	RET
+;
+;
+;
+;	===============
+;
+;
+;	Subroutine to output char in E to console.
+;
+CHOUT:
+	PUSH	BC		; preserve BC,HL
+	PUSH	HL
+	LD	C,2
+	CALL	$BDOS
+	POP	HL
+	POP	BC
+	RET
+;
+;
+;	Subroutine to convert byte in A to
+;	two hex digits and output to the
+;	console.  (Uses A, B, C, E.)
+;
+CAHEX:
+	LD	C,A
+	LD	B,2
+;
+	RRA
+	RRA
+	RRA
+	RRA
+;
+CAHXLP:
+	AND	0FH
+	ADD	A,30H		; digit 0
+	CP	3AH
+	JP	M,GT9
+	ADD	A,7		; make A-F
+;
+GT9:
+	LD	E,A
+	CALL	CHOUT
+	LD	A,C		; original
+	DJNZ	CAHXLP
+;
+	RET
+;
+;
+;	=================
+;
+;
+;	$PERR		Error call from Pascal-coded library
+;
+$PERR:
+	POP	HL		; return address
+	POP	AF		; A := error code
+	LD	C,2		; restartable
+	PUSH	HL
+	CALL	$HERR
+	RET
+;
+;
+;
+;	$HERR	Run-time error handling routine.
+;
+;	Entry	A	Error code letter
+;		C	Bit 0 = 1 if extra display
+;			Bit 1 = 1 if optional restart
+;		B,DE	Count & address of extra display (if present)
+;		(SP+2)	Address to be included in message
+;
+;
+$HERR:
+	PUSH	AF
+;
+	RR	C
+	JR	NC,EMOUT	; no extra display
+	EX	DE,HL
+;
+CHLOOP:
+	LD	E,(HL)		; char from message
+	INC	HL
+	CALL	CHOUT
+	DJNZ	CHLOOP
+;
+;	Output error code
+;
+EMOUT:
+	PUSH	BC
+	LD	C,9
+	LD	DE,ERRMES	; 'Error '
+	CALL	$BDOS
+;
+	POP	BC
+	POP	AF
+	PUSH	BC
+	LD	E,A		; code letter
+	CALL	CHOUT
+;
+	LD	C,9
+	LD	DE,ATADDR	; ' at address '
+	CALL	$BDOS
+;
+;
+;	Convert address to hex
+;
+	POP	BC
+	POP	DE
+	POP	HL		; address for display
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC
+;
+	LD	A,H
+	CALL	CAHEX
+	LD	A,L
+	CALL	CAHEX
+;
+	LD	E,0DH		; c/r
+	CALL	CHOUT
+	LD	E,0AH		; l/f
+	CALL	CHOUT
+;
+	LD	HL,($DPRST)
+	CALL	VIAHL		; print line number stack
+;
+	POP	BC
+	RR	C
+	JP	NC,BOOT		; terminate program
+;
+RESTRT:
+	LD	DE,RESMES
+;
+PUTMES:
+	LD	C,9H
+	CALL	$BDOS
+;
+GETYN:
+	LD	C,1
+	CALL	$BDOS		; read console
+	CP	'Y'
+	JR	Z,RESUME
+	CP	'y'
+	JR	Z,RESUME
+;
+	CP	'N'
+	JP	Z,STPS6
+	CP	'n'
+	JP	Z,STPS6
+;
+	LD	DE,BACKSP		; if not Y or N ..
+	CP	20H			; erase from screen
+	JR	NC,PUTMES
+	JR	GETYN
+;
+;
+RESUME:
+	LD	E,0DH		; c/r
+	CALL	CHOUT
+	LD	E,0AH		; l/f
+	CALL	CHOUT
+;
+	RET
+;
+;
+VIAHL:	JP	(HL)
+;
+;
+ERRMES:	DB	0DH,0AH,'Error $'
+ATADDR:	DB	' at address $'
+RESMES:	DB	'Continue ? (Y/N) $'
+BACKSP: DB	08,' ',08,'$'
+;
+;
+;
+	END
+
+

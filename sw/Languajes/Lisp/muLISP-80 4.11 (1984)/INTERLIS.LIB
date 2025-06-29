@@ -1,0 +1,1065 @@
+;File:  INTERLIS.LIB		12/06/83	The Soft Warehouse
+
+
+;		 Equivalent muLISP definitions
+; 		of the basic Interlisp functions
+
+;This file is primarily for those users familiar with the Interlisp
+;dialect of LISP.  It is partitioned in sections corresponding to
+;the chapters in the 1978 edition of the Interlisp Reference Manual,
+;by Warren Teitelman, published by the Xerox Palo Alto Research Center
+;and Bolt, Beranek & Newman.  Each function definition is preceded by
+;a brief description of its affect and value.  See the Interlisp
+;Reference Manual for a more complete description of the function.
+
+
+
+;	Section 5:  Primitive Functions and Predicates
+
+;The following functions described in this section are primitively
+;defined in muLISP:
+;CAR, CDR, CAAR, CADR, CDAR, CDDR, CAAAR, CAADR, etc.,
+;CONS, RPLACD, RPLACA, QUOTE, COND, PROG1, SET, SETQ,
+;ATOM, NUMBERP, EQ, NULL, NOT, EQUAL, AND, OR, MEMBER, ASSOC.
+
+
+(PUTD 'DEFUN '(NLAMBDA (NAM$ EXP$)
+  (PUTD NAM$ EXP$)
+  NAM$ ))
+
+
+(DEFUN CAAAAR (LAMBDA (OBJ)
+  (CAR (CAAAR OBJ)) ))
+
+(DEFUN CAAADR (LAMBDA (OBJ)
+  (CAR (CAADR OBJ)) ))
+
+(DEFUN CAADAR (LAMBDA (OBJ)
+  (CAR (CADAR OBJ)) ))
+
+(DEFUN CAADDR (LAMBDA (OBJ)
+  (CAR (CADDR OBJ)) ))
+
+(DEFUN CADAAR (LAMBDA (OBJ)
+  (CAR (CDAAR OBJ)) ))
+
+(DEFUN CADADR (LAMBDA (OBJ)
+  (CAR (CDADR OBJ)) ))
+
+(DEFUN CADDAR (LAMBDA (OBJ)
+  (CAR (CDDAR OBJ)) ))
+
+(DEFUN CADDDR (LAMBDA (OBJ)
+  (CAR (CDDDR OBJ)) ))
+
+
+(DEFUN CDAAAR (LAMBDA (OBJ)
+  (CDR (CAAAR OBJ)) ))
+
+(DEFUN CDAADR (LAMBDA (OBJ)
+  (CDR (CAADR OBJ)) ))
+
+(DEFUN CDADAR (LAMBDA (OBJ)
+  (CDR (CADAR OBJ)) ))
+
+(DEFUN CDADDR (LAMBDA (OBJ)
+  (CDR (CADDR OBJ)) ))
+
+(DEFUN CDDAAR (LAMBDA (OBJ)
+  (CDR (CDAAR OBJ)) ))
+
+(DEFUN CDDADR (LAMBDA (OBJ)
+  (CDR (CDADR OBJ)) ))
+
+(DEFUN CDDDAR (LAMBDA (OBJ)
+  (CDR (CDDAR OBJ)) ))
+
+(DEFUN CDDDDR (LAMBDA (OBJ)
+  (CDR (CDDDR OBJ)) ))
+
+
+;RPLNODE [object1, object2, object3]  replaces the car of <object1>
+;with <object2> and replaces the cdr of <object1> with <object3>.
+
+(DEFUN RPLNODE (LAMBDA (OBJ1 OBJ2 OBJ3)
+  (RPLACA OBJ1 OBJ2)
+  (RPLACD OBJ1 OBJ3) ))
+
+
+;RPLNODE2 [object1, object2]  replaces the car of <object1> with the
+;car of <object2> and replaces the cdr of <object1> with the cdr of
+;<object2>.
+
+(DEFUN RPLNODE2 (LAMBDA (OBJ1 OBJ2)
+  (RPLACA OBJ1 (CAR OBJ2))
+  (RPLACD OBJ1 (CDR OBJ2)) ))
+
+
+;KWOTE [object]  returns an expression that when evaluated is <object>.
+
+(DEFUN KWOTE (LAMBDA (OBJ)
+  ((OR (NULL OBJ) (NUMBERP OBJ)) OBJ)
+  (LIST 'QUOTE OBJ) ))
+
+
+;SELECTQ [object, clause1, clause2, ..., default]  based on <object>,
+;selects a clause list to be sequentially evaluated.
+
+(DEFUN SELECTQ (NLAMBDA LST$
+  (SELECTQ-AUX (EVAL (CAR LST$)) (CDR LST$)) ))
+
+(DEFUN SELECTQ-AUX (LAMBDA (OBJ LST)
+  ((NULL LST) NIL)
+  (LOOP
+    ((NULL (CDR LST))
+      (EVAL (CAR LST)) )
+    ((OR (EQ OBJ (CAAR LST))
+	(AND (NOT (ATOM (CAAR LST))) (MEMBER OBJ (CAAR LST))) )
+      (SETQ LST (CDAR LST))
+      (LOOP
+	((NULL (CDR LST))
+	  (EVAL (CAR LST)) )
+	(EVAL (POP LST)) ) )
+    (POP LST) ) ))
+
+
+;PROG [var-list, expn1, expn2, ..., expnm]  sets the local variables
+;in <var-list> to NIL and sequentially evaluates <expn1> through <expnm>,
+;unless the functions GO or RETURN are encountered.  This PROG interpreter
+;is included for completeness.  We strongly recommend that Interlisp
+;functions using PROG be translated into equivalent muLISP functions
+;using the LOOP construct, since the resulting function will be much
+;more efficient.
+
+(DEFUN PROG (NLAMBDA LST$
+  (EVAL (LIST (CONS 'LAMBDA (LIST (CAR LST$) (LIST 'PROG-AUX
+      '(CDR LST$)))))) ))
+
+(DEFUN PROG-AUX (LAMBDA (BDY$
+    % Local: % LST$ GO-LABEL$ ANS$)
+  (SETQ LST$ BDY$)
+  (CATCH 'RETURN (LOOP
+    ((NULL LST$) ANS$)
+    (SETQ ANS$ (EVAL (POP LST$)))
+    ( ((NULL GO-LABEL$))
+      (SETQ LST$ (CDR (MEMBER GO-LABEL$ BDY$)))
+      (SETQ GO-LABEL$) ) )) ))
+
+
+;GO [label]  if within a PROG, transfers control to the expression in
+;the PROG body immediately following <label>.
+
+(DEFUN GO (NLAMBDA (LABEL$)
+  (SETQ GO-LABEL$ LABEL$) ))
+
+
+;RETURN [object]  if within a PROG, terminates evaluation of the PROG
+;and returns <object> as the value of the PROG.
+
+(DEFUN RETURN (LAMBDA (OBJ)
+  (THROW 'RETURN OBJ) ))
+
+
+;SETQQ [name, expression]  a no-eval function that sets <name> to
+;<expression>.
+
+(DEFUN SETQQ (NLAMBDA (NAM$ EXP$)
+  (SET NAM$ EXP$)
+  EXP$ ))
+
+
+(MOVD 'NAME 'LITATOM)			;Literal atom predicate
+
+(DEFUN LISTP (LAMBDA (OBJ)		;List predicate
+  (NOT (ATOM OBJ)) ))
+
+(MOVD 'ATOM 'NLISTP)			;No list predicate
+
+(DEFUN NEQ (LAMBDA (OBJ1 OBJ2)		;Not EQ predicate
+  (NOT (EQ OBJ1 OBJ2)) ))
+
+(DEFUN NILL (LAMBDA NIL			;Returns NIL
+  NIL ))
+
+(MOVD 'EQ 'EQP)				;EQP not needed in muLISP
+
+
+;EQLENGTH [list, n]  is equivalent to EQ [LENGTH[list], n].
+
+(DEFUN EQLENGTH (LAMBDA (LST NUM)
+  (LOOP
+    ((ATOM LST)
+      (ZEROP NUM) )
+    ((ZEROP NUM) NIL)
+    (POP LST)
+    (SETQ NUM (DIFFERENCE NUM 1)) ) ))
+
+
+;EQUALN [object1, object2, n]  is equivalent to EQUAL except that the
+;comparison is limited to a depth of <n> levels of recursion.  If that
+;depth is exceeded, '? is returned instead.
+
+(DEFUN EQUALN (LAMBDA (OBJ1 OBJ2 NUM TEMP)
+  (LOOP
+    ((ATOM OBJ1)
+      (EQ OBJ1 OBJ2) )
+    ((ATOM OBJ2) NIL)
+    ((NOT (PLUSP NUM))
+      '? )
+    (SETQ NUM (DIFFERENCE NUM 1))
+    (SETQ TEMP (EQUALN (POP OBJ1) (POP OBJ2) NUM))
+    ((OR (NULL TEMP) (EQ TEMP ?)) TEMP) ) ))
+
+
+;EVERY [list, function1, function2]  returns T if the result of applying
+;<function1> to every element of <list> is nonNIL.  Otherwise, NIL.  If
+;<function2> is nonNIL, it is used to step through <list>.
+
+(DEFUN EVERY (LAMBDA (LST FUN1 FUN2)
+  ((NULL FUN2)
+    (LOOP
+      ((ATOM LST))
+      ((NOT (FUN1 (CAR LST) LST)) NIL)
+      (POP LST) ) )
+  (LOOP
+    ((ATOM LST))
+    ((NOT (FUN1 (CAR LST) LST)) NIL)
+    (SETQ LST (FUN2 LST)) ) ))
+
+
+;SOME [list, function1, function2]  returns the tail of <list> beginning
+;with the first element for which <function1> is nonNIL.  Otherwise, it
+;returns NIL.  If <function2> is nonNIL, it is used to step through <list>.
+
+(DEFUN SOME (LAMBDA (LST FUN1 FUN2)
+  ((NULL FUN2)
+    (LOOP
+      ((ATOM LST) NIL)
+      ((FUN1 (CAR LST) LST) LST)
+      (POP LST) ) )
+  (LOOP
+    ((ATOM LST) NIL)
+    ((FUN1 (CAR LST) LST) LST)
+    (SETQ LST (FUN2 LST)) ) ))
+
+
+;NOTANY [list, function1, function2]  is equivalent to
+;NOT [SOME [list, function1, function2]].
+
+(DEFUN NOTANY (LAMBDA (LST FUN1 FUN2)
+  (NOT (SOME LST FUN1 FUN2)) ))
+
+
+;NOTEVERY [list, function1, function2]  is equivalent to
+;NOT [EVERY [list, function1, function2]].
+
+(DEFUN NOTEVERY (LAMBDA (LST FUN1 FUN2)
+  (NOT (EVERY LST FUN1 FUN2)) ))
+
+
+;MEMB [atom, list]  is equivalent to MEMBER [atom, list] except that an
+;EQ test is used instead of EQUAL.  In muLISP, MEMBER is faster since
+;it is defined in machine language.
+
+(DEFUN MEMB (LAMBDA (ATM LST)
+  (LOOP
+    ((ATOM LST) NIL)
+    ((EQ ATM (CAR LST)) LST)
+    (POP LST) ) ))
+
+
+;EQMEMB [atom, list]  returns T if EQ [atom, list] or MEMB [atom, list].
+;Otherwise, it returns NIL.
+
+(DEFUN EQMEMB (LAMBDA (ATM LST)
+  ((EQ ATM LST))
+  (MEMB ATM LST) ))
+
+
+;TAILP [object, list]  returns <object> if <object> is EQ to some 0 or
+;more cdrs of <list>.  Otherwise, it returns NIL.
+
+(DEFUN TAILP (LAMBDA (OBJ LST)
+  (LOOP
+    ((EQ OBJ LST) OBJ)
+    ((ATOM LST) NIL)
+    (POP LST) ) ))
+
+
+;The primitive muLISP ASSOC function uses an EQUAL test when searching
+;for a nonatomic key on an association list.  This makes it equivalent
+;to the Interlisp SASSOC function.  Using the machine language ASSOC
+;function is faster than writing a LAMBDA defined ASSOC that uses an
+;EQ test.
+
+
+;PUTASSOC [key, object, a-list]  replaces the value associated with
+;<key> on <a-list> with <object>.
+
+(DEFUN PUTASSOC (LAMBDA (KEY OBJ ALST
+    % Local: % TEMP )
+  (SETQ TEMP (ASSOC KEY ALST))
+  ((NULL TEMP) 
+    (NCONC ALST (LIST (CONS KEY OBJ)))
+    OBJ )
+  (RPLACD TEMP OBJ)
+  OBJ ))
+
+
+
+;	Section 6:  List Manipulation and Concatenation
+
+;The following functions described in this section are primitively
+;defined in muLISP:
+;LIST, APPEND, NCONC, TCONC, LCONC, REVERSE, LAST, NTH, and LENGTH.
+
+
+;NCONC1 [list, object]  adds <object> to the end of <list> by modifying
+;the last cons of <list>.
+
+(DEFUN NCONC1 (LAMBDA (LST OBJ)
+  (NCONC LST (CONS OBJ)) ))
+
+
+;DOCOLLECT [object, list]  efficiently adds <object> to the end of
+;<list> which is maintained as a pointer to a circular list.
+
+(DEFUN DOCOLLECT (LAMBDA (OBJ LST)
+  ((ATOM LST)
+    (CONS OBJ) )
+  ((ATOM (CDR LST))
+    ((NULL (CAR LST))
+      (RPLACA LST OBJ) )
+    (RPLACD LST (CONS OBJ))
+    (RPLACD (CDR LST) (CDR LST))
+    LST )
+  (RPLACD (CDR LST) (CONS OBJ (CDDR LST)))
+  (RPLACD LST (CDDR LST)) ))
+
+
+;ENDCOLLECT [list, tail]  replaces the tail of <list> with <tail> making
+;<list> no longer circular and returns the resulting list.
+
+(DEFUN ENDCOLLECT (LAMBDA (LST TAIL)
+  ((ATOM LST) TAIL)
+  ((ATOM (CDR LST))
+    ((NULL (CAR LST))
+      ((ATOM TAIL) TAIL)
+      (RPLNODE2 LST TAIL) )
+    (RPLACD LST TAIL) )
+  (RPLACD LST (PROG1 (CDDR LST) (RPLACD (CDR LST) TAIL))) ))
+
+
+;ATTACH [object, list]  adds <object> to the front of <list> by
+;modifying the first cons of <list>.
+
+(DEFUN ATTACH (LAMBDA (OBJ LST)
+  ((NULL LST)
+    (CONS OBJ) )
+  ((ATOM LST) NIL)
+  (RPLACA (RPLACD LST (CONS (CAR LST) (CDR LST))) OBJ) ))
+
+
+;REMOVE [object, list]  returns a top-level copy of <list> with all
+;elements EQUAL to <object> removed.
+
+(DEFUN REMOVE (LAMBDA (OBJ LST)
+  ((NULL LST) NIL)
+  ((EQUAL OBJ (CAR LST))
+    (REMOVE OBJ (CDR LST)) )
+  (CONS (CAR LST) (REMOVE OBJ (CDR LST))) ))
+
+
+;DREMOVE [atom, list]  removes <atom> from <list> by modifying <list>.
+
+(DEFUN DREMOVE (LAMBDA (ATM LST
+    % Local: % TEMP )
+  ((ATOM LST) NIL)
+  ((EQ ATM (CAR LST))
+    ((ATOM (CDR LST)) NIL)
+    (RPLACA LST (CADR LST))
+    (RPLACD LST (CDDR LST))
+    (DREMOVE ATM LST) )
+  (SETQ TEMP LST)
+  (LOOP
+    ((ATOM (CDR TEMP)) LST)
+    ( ((EQ ATM (CADR TEMP))
+	(RPLACD TEMP (CDDR TEMP)) )
+      (POP TEMP) ) ) ))
+
+
+;MKLIST [object]  returns (LIST object) if <object> is a nonNIL atom;
+;otherwise, it returns <object>.
+
+(DEFUN MKLIST (LAMBDA (OBJ)
+  ((NULL OBJ) OBJ)
+  ((ATOM OBJ)
+    (CONS OBJ) )
+  OBJ ))
+
+
+;COPY [object]  copies <object> down to the atomic level.
+
+(DEFUN COPY (LAMBDA (OBJ)
+  ((ATOM OBJ) OBJ)
+  (CONS (COPY (CAR OBJ)) (COPY (CDR OBJ))) ))
+
+
+;DREVERSE [list]  reverses <list> without consing by modifying <list>.
+
+(DEFUN DREVERSE (LAMBDA (LST1
+    % Local: % LST2 )
+  (LOOP
+    ((ATOM LST1) LST2)
+    (SETQ LST2 (RPLACD LST1 LST2 (POP LST1))) ) ))
+
+
+;SUBST [new, old, object]  copies <object> using consing and replaces
+;all sub-expressions EQUAL to <old> with <new>.
+
+(DEFUN SUBST (LAMBDA (NEW OLD OBJ)
+  ((EQUAL OLD OBJ) NEW)
+  ((ATOM OBJ) OBJ)
+  (CONS (SUBST NEW OLD (CAR OBJ)) (SUBST NEW OLD (CDR OBJ))) ))
+
+
+;DSUBST [new, old, object]  substitutes <new> for all sub-expressions
+;EQUAL to <old> in <object> without consing.
+
+(DEFUN DSUBST (LAMBDA (NEW OLD OBJ)
+  ((EQUAL OLD OBJ) NEW)
+  ((ATOM OBJ) OBJ)
+  (RPLACD (RPLACA OBJ (DSUBST NEW OLD (CAR OBJ)))
+	(DSUBST NEW OLD (CDR OBJ))) ))
+
+
+;SUBLIS [a-list, object, flag]  substitutes in <object> for each key in
+;<a-list> the associated value.  If <flag> is NIL, a new structure is
+;created only if necessary.  If <flag> is nonNIL, new structure is always
+;created.
+
+(DEFUN SUBLIS (LAMBDA (ALST OBJ FLG
+    % Local: % TEMP1 TEMP2 )
+  ((ATOM OBJ)
+    (SETQ TEMP1 (ASSOC OBJ ALST))
+    ((NULL TEMP1) OBJ)
+    (CDR TEMP1) )
+  (SETQ TEMP1 (SUBLIS ALST (CAR OBJ) FLG))
+  (SETQ TEMP2 (SUBLIS ALST (CDR OBJ) FLG))
+  ((AND (NOT FLG) (EQ (CAR OBJ) TEMP1) (EQ (CDR OBJ) TEMP2)) OBJ)
+  (CONS TEMP1 TEMP2) ))
+
+
+;NLEFT [list, n, tail]  returns <n> more elements from the end of <list>
+;than <tail>.  <tail> should be NIL or a tail of <list>.
+
+(DEFUN NLEFT (LAMBDA (LST NUM TAIL)
+  ((OR (NULL LST) (EQ LST TAIL))
+    ((OR (NOT (NUMBERP NUM)) (ZEROP NUM)) LST)
+    1 )
+  (SETQ TAIL (NLEFT (CDR LST) NUM TAIL))
+  ((NUMBERP TAIL)
+    ((EQ TAIL NUM) LST)
+    (PLUS TAIL 1) )
+  TAIL ))
+
+
+;LASTN [list, n]  returns CONS[list1,list2] where <list2> is the last
+;<n> elements of <list> and <list1> is the remaining elements of <list>.
+
+(DEFUN LASTN (LAMBDA (LST NUM
+    % Local: % TAIL )
+  ((NULL (SETQ TAIL (NLEFT LST NUM))) NIL)
+  (CONS (LDIFF LST TAIL) TAIL) ))
+
+
+;EQLENGTH [list, n]  was defined earlier.
+
+
+;COUNT [object]  returns the number of nodes in <object>.
+
+(DEFUN COUNT (LAMBDA (OBJ
+    % Local: % NUM )
+  (SETQ NUM 0)
+  (LOOP
+    ((ATOM OBJ) NUM)
+    (SETQ NUM (PLUS NUM 1 (COUNT (POP OBJ)))) ) ))
+
+
+;COUNTDOWN [object, n]  returns the larger of 0 or <n> minus the number
+;of nodes in <object>.
+
+(DEFUN COUNTDOWN (LAMBDA (OBJ NUM)
+  ((ZEROP NUM) NUM)
+  ((PLUSP NUM)
+    (LOOP
+      ((ATOM OBJ) NUM)
+      (SETQ NUM (COUNTDOWN (POP OBJ) (DIFFERENCE NUM 1)))
+      ((ZEROP NUM) NUM) ) ) ))
+
+
+;LDIFF [list1, tail, list2]  returns a list of the elements of <list1>
+;up to <tail> nconced onto <list2>.
+
+(DEFUN LDIFF (LAMBDA (LST1 TAIL LST2)
+  ((ATOM TAIL)
+    (NCONC LST2 LST1) )
+  (NCONC LST2 (LDIFF-AUX LST1)) ))
+
+(DEFUN LDIFF-AUX (LAMBDA (LST)
+  ((OR (ATOM LST) (EQ LST TAIL)) NIL)
+  (CONS (CAR LST) (LDIFF-AUX (CDR LST))) ))
+
+
+;LDIFFERENCE [list1, list2]  returns a list of the elements in <list1>
+;that are not a MEMBER of <list2>.
+
+(DEFUN LDIFFERENCE (LAMBDA (LST1 LST2)
+  ((ATOM LST1) NIL)
+  ((MEMBER (CAR LST1) LST2)
+    (LDIFFERENCE (CDR LST1) LST2) )
+  (CONS (CAR LST1) (LDIFFERENCE (CDR LST1) LST2)) ))
+
+
+;INTERSECTION [list1, list2]  returns a list of the elements that are
+;MEMBERs of both <list1> and <list2>.  The resulting list will not have
+;any duplicate elements.
+
+(DEFUN INTERSECTION (LAMBDA (LST1 LST2)
+  ((ATOM LST1) NIL)
+  ((AND (MEMBER (CAR LST1) LST2)
+	(NOT (MEMBER (CAR LST1) (CDR LST1))))
+    (CONS (CAR LST1) (INTERSECTION (CDR LST1) LST2)) )
+  (INTERSECTION (CDR LST1) LST2) ))
+
+
+;UNION [list1, list2]  returns a list of the elements in <list1> and in
+;<list2>.
+
+(DEFUN UNION (LAMBDA (LST1 LST2)
+  ((ATOM LST1) LST2)
+  ((MEMBER (CAR LST1) LST2)
+    (UNION (CDR LST1) LST2) )
+  (CONS (CAR LST1) (UNION (CDR LST1) LST2)) ))
+
+
+;SORT [list, function]  returns a sorted list version of <list> based on
+;the compare <function>.  If <function> is NIL, ALPHORDER is used for
+;the sorting function.
+
+(DEFUN SORT (LAMBDA (LST FUN
+    % Local: % LST1 LST2 LST3)
+  (LOOP
+    (SETQ LST3 LST)
+    (LOOP
+      ((EQ LST3 LST2))
+      ((NULL (CDR LST3)))
+      ( ((COND
+	  ((NOT FUN)
+	    (ALPHORDER (CADR LST3) (CAR LST3)) )
+	  ((FUN (CADR LST3) (CAR LST3))) )
+	    (SETQ LST1 (CADR LST3))
+	    (RPLACA (CDR LST3) (CAR LST3))
+	    (RPLACA LST3 LST1)
+	    (SETQ LST1 LST3) ) )
+      (POP LST3) )
+    ((NULL LST1) LST)
+    (SETQ LST2 LST1)
+    (SETQ LST1) ) ))
+
+
+;ALPHORDER [atom1, atom2]  a predicate for alphabetizing atoms.  Numbers
+;come before names and are sorted numerically.
+
+(DEFUN ALPHORDER (LAMBDA (ATM1 ATM2)
+  ((NUMBERP ATM1)
+    ((NUMBERP ATM2)
+      (LESSP ATM1 ATM2) )
+    T )
+  ((NUMBERP ATM2) NIL)
+  (SETQ ATM1 (UNPACK ATM1))
+  (SETQ ATM2 (UNPACK ATM2))
+  (LOOP
+    ((NULL ATM1))
+    ((NULL ATM2) NIL)
+    ((NOT (EQ (CAR ATM1) (CAR ATM2)))
+      (LESSP (ASCII (CAR ATM1)) (ASCII (CAR ATM2))) )
+    (POP ATM1)
+    (POP ATM2) ) ))
+
+
+
+;	Section 7:  Property Lists and Hash Links
+
+;In muLISP, property lists are association lists of the form:
+;	((KEY.VALUE) (KEY.VALUE) ... (KEY.VALUE)).
+
+;In Interlisp, property lists are lists of the form:
+;	(KEY VALUE KEY VALUE ... KEY VALUE).
+
+
+;GETPROPLIST [name]  returns <name>'s p-list (property list).
+
+(DEFUN GETPROPLIST (LAMBDA (NAM)
+  ((NAME NAM)
+    (CDR NAM) ) ))
+
+
+;SETPROPLIST [name, list]  replaces the p-list of <name> with <list>
+;and returns <list>.
+
+(DEFUN SETPROPLIST (LAMBDA (NAM LST)
+  ((AND NAM (NAME NAM))
+    (RPLACD NAM LST)
+    LST ) ))
+
+
+;GETPROP [name, key]  returns the property value on <name>'s p-list under
+;the indicator <key>.  NIL is returned if no such property exists.
+;GETPROP is equivalent to the muLISP function GET.
+
+(MOVD 'GET 'GETPROP)
+
+
+;PUTPROP [name, key, object]  puts on <name>'s p-list under the indicator
+;<key> the property value <object>.  PUTPROP is equivalent to the muLISP
+;function PUT.
+
+(MOVD 'PUT 'PUTPROP)
+
+
+;PUTPROPS [name, key1, object1, ..., keyn, objectn]  an NLAMBDA, no-spread
+;function that puts properties on <name>'s p-list.
+
+(DEFUN PUTPROPS (NLAMBDA LST$
+  (PUTPROPS-AUX (CAR LST$) (CDR LST$)) ))
+
+(DEFUN PUTPROPS-AUX (LAMBDA (NAM LST)
+  (LOOP
+    ((ATOM LST) NAM)
+    (PUT NAM (POP LST) (POP LST)) ) ))
+
+
+;PUTQQ [name, key, object]  a no-eval function that puts on <name>'s
+;p-list under <key> the property value <object>.  If a PUTQQ command is
+;issued from the muSTAR editor, the property is flagged for saving,
+;making PUTQQ roughly equivalent to the Interlisp SAVEPUT function.
+
+
+;ADDPROP [name, key, object, flag]  nconcs <object> to the <key>
+;property on <name>'s p-list if <flag> is NIL.  If <flag> is nonNIL,
+;<object> is consed onto the front of the property.
+
+(DEFUN ADDPROP (LAMBDA (NAM KEY OBJ FLG
+    % Local: % TEMP )
+  (SETQ TEMP (ASSOC KEY (CDR NAM)))
+  ((NULL TEMP)
+    (PUTPROP NAM KEY (LIST OBJ)) )
+  ((NULL FLG)
+    (CDR (NCONC TEMP (LIST OBJ))) )
+  (CDR (RPLACD TEMP (CONS OBJ (CDR TEMP)))) ))
+
+
+;REMPROP [name, key]  removes the property <key> from <name>'s p-list.
+;REMPROP is a primitively defined muLISP function.
+
+
+;REMPROPLIST [name, list]  removes from <name>'s p-list the properties
+;whose keys are members of <list>.
+
+(DEFUN REMPROPLIST (LAMBDA (NAM LST)
+  (LOOP
+    ((ATOM LST) NIL)
+    (REMPROP NAM (POP LST)) ) ))
+
+
+;CHANGEPROP [name, key1, key2]  replaces the key for the <key1> property
+;on <name>'s p-list with <key2>.
+
+(DEFUN CHANGEPROP (LAMBDA (NAM KEY1 KEY2)
+  ((SETQ KEY1 (ASSOC KEY1 (CDR NAM)))
+    (RPLACA KEY1 KEY2)
+    NAM ) ))
+
+
+;PROPNAMES [name]  returns a list of the keys on <name>'s p-list.
+
+(DEFUN PROPNAMES (LAMBDA (NAM
+    % Local: % LST )
+  (LOOP
+    (SETQ NAM (CDR NAM))
+    ((NULL NAM)
+      (REVERSE LST) )
+    ( ((ATOM (CAR NAM)))
+      (PUSH (CAAR NAM) LST) ) ) ))
+
+
+;GETLIS [name, list]  returns <name>'s p-list beginning with the first
+;key that is a member of <list>.
+
+(DEFUN GETLIS (LAMBDA (NAM LST)
+  ((NULL NAM) NIL)
+  ( ((NAME NAM)
+      (SETQ NAM (CDR NAM)) ) )
+  (LOOP
+    ((NULL NAM) NIL)
+    ((AND (NOT (ATOM (CAR NAM))) (MEMBER (CAAR NAM) LST))
+      NAM )
+    (POP NAM) ) ))
+
+
+;DEFLIST [list, key]  for each element of <list>, puts on the p-list of
+;the car of the element under the indicator <key> the cadr of the element.
+
+(DEFUN DEFLIST (LAMBDA (LST KEY)
+  (LOOP
+    ((NULL LST) NIL)
+    (PUTPROP (CAAR LST) KEY (CADAR LST))
+    (POP LST) ) ))
+
+
+
+;	Section 8:  Function Definition and Evaluation
+
+;The following functions described in this section are primitively
+;defined in muLISP:
+;GETD, PUTD, MOVD, EVAL, APPLY.
+
+
+;DEFINE [definition-list]  defines the functions on <definition-list>
+;where each element of <definition-list> is a list of the form:
+;	(name (LAMBDA (arg-list) body)),
+;or of the form:
+;	(name (arg-list) body).
+
+(DEFUN DEFINE (LAMBDA (LST
+    % Local: % OBJ )
+  (LOOP
+    ((ATOM LST) NIL)
+    (SETQ OBJ (POP LST))
+    ( ((OR (ATOM OBJ) (NOT (NAME (CAR OBJ)))))
+      ((OR (EQ (CAADR OBJ) 'LAMBDA) (EQ (CAADR OBJ) 'NLAMBDA))
+	(PUTD (CAR OBJ) (CADR OBJ)) )
+      (PUTD (CAR OBJ) (CONS 'LAMBDA (CDR OBJ))) ) ) ))
+
+
+;DEFINEQ [list1, list2, ..., listn]  a no-eval function that applies
+;DEFINE to each element of <list1> through <listn>.
+
+(DEFUN DEFINEQ (NLAMBDA LST$
+  (DEFINE LST$) ))
+
+
+;BOUNDP [name]  returns T if <name> currently has a value other than
+;itself or NOBIND.  Otherwise it returns NIL.
+
+(DEFUN BOUNDP (LAMBDA (NAM)
+  (NOT (OR (EQ NAM (CAR NAM)) (EQ (CAR NAM) 'NOBIND))) ))
+
+
+;APPLY* [function, arg1, arg2, ..., argn]  applies <function> to the
+;arguments <arg1> through <argn>.  The <function> argument in a call
+;to APPLY* is not evaluated.
+
+(DEFUN APPLY* (NLAMBDA ARGS
+  (APPLY (CAR ARGS) (MAPCAR (CDR ARGS) 'EVAL)) ))
+
+
+;RPT [n, expression]  evaluates <expression> <n> times.
+
+(DEFUN RPT (LAMBDA (NUM EXP)
+  ((PLUSP NUM)
+    (LOOP
+      ((EQ NUM 1)
+	(EVAL EXP) )
+      (EVAL EXP)
+      (SETQ NUM (DIFFERENCE NUM 1)) ) ) ))
+
+
+;RPTQ [n, expression]  is equivalent to RPT except <expression> is not
+;evaluated before the function is called.
+
+(DEFUN RPTQ (NLAMBDA (NUM$ EXP$)
+  (RPT (EVAL NUM$) EXP$) ))
+
+
+
+;	Section 11:  Functions with Functional Arguments
+
+
+;MAP [list, function1, function2]  if <function2> is NIL, it applies
+;<function1> to successive cdrs of <list> beginning with the whole list.
+;If <function2> is nonNIL, it uses <function2> instead of cdr to step
+;through <list>.
+
+(DEFUN MAP (LAMBDA (LST FUN1 FUN2)
+  ((NULL FUN2)
+    (LOOP
+      ((ATOM LST) NIL)
+      (FUN1 LST)
+      (POP LST) ) )
+  (LOOP
+    ((ATOM LST) NIL)
+    (FUN1 LST)
+    (SETQ LST (FUN2 LST)) ) ))
+
+
+;MAPC [list, function1, function2]  if <function2> is NIL, it applies
+;<function1> to successive elements of <list> beginning with the whole
+;list.  If <function2> is nonNIL, it uses <function2> instead of cdr
+;to step through <list>.
+
+(DEFUN MAPC (LAMBDA (LST FUN1 FUN2)
+  ((NULL FUN2)
+    (LOOP
+      ((ATOM LST) NIL)
+      (FUN1 (POP LST)) ) )
+  (LOOP
+    ((ATOM LST) NIL)
+    (FUN1 (CAR LST))
+    (SETQ LST (FUN2 LST)) ) ))
+
+
+;MAPLIST [list, function1, function2]  returns a list of the same values
+;computed by MAP [list, function1, function2].
+
+(DEFUN MAPLIST (LAMBDA (LST FUN1 FUN2)
+  ((ATOM LST) NIL)
+  ((NULL FUN2)
+    (CONS (FUN1 LST) (MAPLIST (CDR LST) FUN1)) )
+  (CONS (FUN1 LST) (MAPLIST (FUN2 LST) FUN1 FUN2)) ))
+
+
+;MAPCAR [list, function1, function2]  returns a list of the same values
+;computed by MAPC [list, function1, function2].
+
+(DEFUN MAPCAR (LAMBDA (LST FUN1 FUN2)
+  ((ATOM LST) NIL)
+  ((NULL FUN2)
+    (CONS (FUN1 (CAR LST)) (MAPCAR (CDR LST) FUN1)) )
+  (CONS (FUN1 (CAR LST)) (MAPCAR (FUN2 LST) FUN1 FUN2)) ))
+
+
+;MAPCON [list, function1, function2]  concatenates the values computed
+;by MAP [list, function1, function2] using NCONC.
+
+(DEFUN MAPCON (LAMBDA (LST FUN1 FUN2
+    % Local: % RSLT ANS )
+  (LOOP
+    ((ATOM LST) RSLT)
+    (SETQ RSLT (FUN1 LST))
+    (SETQ LST (COND
+	(FUN2 (FUN2 LST))
+	((CDR LST)) ))
+    ((NOT (ATOM RSLT))
+      (SETQ ANS RSLT)
+      (LOOP
+	((ATOM LST) ANS)
+	(SETQ RSLT (LAST RSLT))
+	(RPLACD RSLT (FUN1 LST))
+	(SETQ LST (COND
+	  (FUN2 (FUN2 LST))
+	  ((CDR LST)) )) ) ) ) ))
+
+
+;MAPCONC [list, function1, function2]  concatenates the values computed
+;by MAPC [list, function1, function2] using NCONC.
+
+(DEFUN MAPCONC (LAMBDA (LST FUN1 FUN2
+    % Local: % RSLT ANS )
+  (LOOP
+    ((ATOM LST) RSLT)
+    (SETQ RSLT (FUN1 (CAR LST)))
+    (SETQ LST (COND
+	(FUN2 (FUN2 LST))
+	((CDR LST)) ))
+    ((NOT (ATOM RSLT))
+      (SETQ ANS RSLT)
+      (LOOP
+	((ATOM LST) ANS)
+	(SETQ RSLT (LAST RSLT))
+	(RPLACD RSLT (FUN1 (CAR LST)))
+	(SETQ LST (COND
+	  (FUN2 (FUN2 LST))
+	  ((CDR LST)) )) ) ) ) ))
+
+
+;SUBSET [list, function1, function2]  applies <function1> to the elements
+;of <list> and returns a list of the elements for which the results were
+;nonNIL.  If <function2> is nonNIL, it is used for stepping through <list>.
+
+(DEFUN SUBSET (LAMBDA (LST FUN1 FUN2)
+  ((ATOM LST) NIL)
+  ((FUN1 (CAR LST))
+    (CONS (CAR LST) (SUBSET (COND
+	  (FUN2 (FUN2 LST))
+	  ((CDR LST)) ) FUN1 FUN2)) )
+  (SUBSET (COND
+      (FUN2 (FUN2 LST))
+      ((CDR LST)) ) FUN1 FUN2) ))
+
+
+;MAP2C [list1, list2, function1, function2]  if <function2> is NIL, it
+;applies <function1> to successive elements of <list1> and <list2>.  If
+;<function2> is nonNIL, it uses <function2> instead of cdr to step
+;through <list>.
+
+(DEFUN MAP2C (LAMBDA (LST1 LST2 FUN1 FUN2)
+  ((NULL FUN2)
+    (LOOP
+      ((OR (ATOM LST1) (ATOM LST2)) NIL)
+      (FUN1 (POP LST1) (POP LST2)) ) )
+  (LOOP
+    ((OR (ATOM LST1) (ATOM LST2)) NIL)
+    (FUN1 (CAR LST1) (CAR LST2))
+    (SETQ LST1 (FUN2 LST1))
+    (SETQ LST2 (FUN2 LST2)) ) ))
+
+
+;MAP2CAR [list1, list2, function1, function2]  returns a list of the
+;same values computed by MAP2C [list1, list2, function1, function2].
+
+(DEFUN MAP2CAR (LAMBDA (LST1 LST2 FUN1 FUN2)
+  ((OR (ATOM LST1) (ATOM LST2)) NIL)
+  ((NULL FUN2)
+    (CONS (FUN1 (CAR LST1) (CAR LST2))
+	  (MAP2CAR (CDR LST1) (CDR LST2) FUN1)) )
+  (CONS (FUN1 (CAR LST1) (CAR LST2))
+	(MAP2CAR (FUN2 LST1) (FUN2 LST2) FUN1 FUN2)) ))
+
+
+
+;	Section 13:  Numbers and Arithmetic Functions
+
+;muLISP supports exact, infinite precision integer arithmetic.
+;The following functions are primitively defined in muLISP and will
+;cause a "Non-numeric argument" trap if called non-numeric arguments:
+;PLUS, MINUS, DIFFERENCE, TIMES, QUOTIENT, REMAINDER, DIVIDE, GCD,
+;GREATERP, and LESSP.
+
+;The following muLISP functions are considered recognizer functions
+;and, therefore, can NOT cause a "Non-numeric argument" trap:
+;ZEROP, PLUSP, MINUSP, and EVENP.
+
+
+(DEFUN ADD1 (LAMBDA (NUM)			;Add one
+  (PLUS NUM 1) ))
+
+(DEFUN SUB1 (LAMBDA (NUM)			;Subtract one
+  (DIFFERENCE NUM 1) ))
+
+(DEFUN GEQ (LAMBDA (NUM1 NUM2)			;Greater than or equal
+  (OR (GREATERP NUM1 NUM2) (EQ NUM1 NUM2)) ))
+
+(DEFUN LEQ (LAMBDA (NUM1 NUM2)			;Less than or equal
+  (OR (LESSP NUM1 NUM2) (EQ NUM1 NUM2)) ))
+
+
+;MIN [n1, n2, ..., nm]  returns the minimum of <n1> through <nm>.
+
+(DEFUN MIN (LAMBDA LST
+  (MIN-AUX (CAR LST) (CDR LST)) ))
+
+(DEFUN MIN-AUX (LAMBDA (NUM LST)
+  (LOOP
+    ((ATOM LST) NUM)
+    ( ((LESSP NUM (CAR LST)))
+      (SETQ NUM (CAR LST)) )
+    (POP LST) ) ))
+
+
+;MAX [n1, n2, ..., nm]  returns the maximum of <n1> through <nm>.
+
+(DEFUN MAX (LAMBDA LST
+  (MAX-AUX (CAR LST) (CDR LST)) ))
+
+(DEFUN MAX-AUX (LAMBDA (NUM LST)
+  (LOOP
+    ((ATOM LST) NUM)
+    ( ((GREATERP NUM (CAR LST)))
+      (SETQ NUM (CAR LST)) )
+    (POP LST) ) ))
+
+
+(DEFUN ABS (LAMBDA (NUM)			;Absolute value
+  ((MINUSP NUM)
+    (MINUS NUM) )
+  NUM ))
+
+
+;EXPT [n, m]  returns the <n> raised to the <m>th power.
+
+(DEFUN EXPT (LAMBDA (NUM1 NUM2
+    % Local: % NUM3 )
+  (SETQ NUM3 1)
+  (LOOP
+    (SETQ NUM2 (DIVIDE NUM2 2))
+    ( ((EQ (CDR NUM2) 1)
+	(SETQ NUM3 (TIMES NUM1 NUM3)) ) )
+    (SETQ NUM2 (CAR NUM2))
+    ((ZEROP NUM2) NUM3)
+    (SETQ NUM1 (TIMES NUM1 NUM1)) ) ))
+
+
+;SQRT [n]  returns the truncated integer square root of <n>.
+
+(DEFUN SQRT (LAMBDA (NUM
+    % Local: % ANS DELTA)
+  ((ZEROP NUM) NUM)
+  ((PLUSP NUM)
+    (SETQ ANS NUM)
+    (LOOP
+      (SETQ DELTA (QUOTIENT (DIFFERENCE NUM (TIMES ANS ANS))
+			       (PLUS ANS ANS)))
+      ((NOT (MINUSP DELTA)) ANS)
+      (SETQ ANS (PLUS ANS DELTA)) ) ) ))
+
+
+
+;	Section 14:  Input/Output Functions
+
+;The following I/O functions are primitively defined in muLISP:
+;READCH, RATOM, READ, READP, CHARTYPE, PRIN1, PRINT, TERPRI, SPACES,
+;RADIX, and LINELENGTH.
+
+
+;READLINE []  reads a line from the terminal and returns it as a list.
+
+(DEFUN READLINE (LAMBDA (
+    % Local: % READCH RDS )
+  (SETQ READCH T)			;Set line edit mode
+  (READLINE-AUX (READCH T)) ))
+
+(DEFUN READLINE-AUX (LAMBDA (CHAR)
+  ((EQ CHAR (ASCII 13)) NIL)
+  ((EQ CHAR '"]") NIL)
+  ((EQ CHAR '")") NIL)
+  ((EQ CHAR '" ")
+    (SETQ CHAR (READCH T))
+    ((EQ CHAR (ASCII 13))
+      (PRIN1 '"...")
+      (READLINE-AUX (READCH T)) )
+    (READLINE-AUX CHAR) )
+  (CONS (READ) (READLINE-AUX (READCH T))) ))
+
+
+;PRIN2 [object]  outputs <object> to the COS putting double quote marks
+;around names containing special characters.
+
+(DEFUN PRIN2 (LAMBDA (OBJ
+    % Local: % PRIN1 )
+  (SETQ PRIN1)
+  (PRIN1 OBJ) ))
+
+
+;TAB [n, m]  outputs <m> spaces (1 if <m> is NIL) and then outputs
+;enough spaces to move to column <n>.
+
+(DEFUN TAB (LAMBDA (NUM1 NUM2)
+  ( ((NULL NUM2)
+      (SPACES 1) )
+    (SPACES NUM2) )
+  (SPACES (DIFFERENCE NUM1 (SPACES))) ))
+
+(RDS)
+

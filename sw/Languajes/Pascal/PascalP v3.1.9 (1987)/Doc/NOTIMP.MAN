@@ -1,0 +1,55 @@
+.macro chttl = Features Not Implemented
+.ch Standard Pascal Features Not Implemented
+At present the following features of ANSI standard Pascal have not been
+implemented.  All except "GOTO"s are planned for eventual inclusion.
+
+.list 1
+.le    Procedures/functions as parameters.
+.le     GOTO's leading out of procedure/function bodies.
+.le     Read/write for non-text files.
+.endlist
+
+
+.hl 1 Packing
+"PACKED" variables may or may not necessarily be packed.  .bb At present
+no items are packed no more than one item per byte. .eb
+
+The  standard procedures PACK and UNPACK may be used,  but  may  actually
+simply transfer variables.
+
+PACKED and UNPACKED variables are not distinguished at present, although the
+parameters to PACK and UNPACK must be correctly declared.  Thus standard
+Pascal errors in usage of such variables probably will be undetected.
+.hl 1 Set of Char
+A  set of char is available,  but any attempt to include  graphics  
+characters  in  that  set 
+{e.g.  chars with ordinal values larger than  127}  will
+result in a run-time error (if checking is enabled) or compilation errors  for
+constants.
+.hl 1 Separate Compilation
+The  compiler  will handle partial source programs for separate  
+compilation.   This  facility is described in the chapter on Language
+Extensions  under
+"Procedure Calls".  S- mode is required.
+
+The PROGRAM statement is optional under S- mode.  If it is omitted, INPUT
+and OUTPUT files are still available.  
+
+.hl 1 Files in Structured Variables
+The user must give special consideration to ARRAYS OF FILE,  RECORDS with
+file  components,  and pointers to FILE types or other types with FILE 
+components.   Before any programmatic reference to these items it 
+is necessary to call the  standard procedure 
+FILEINIT(f) for each and every file component.   After this the
+system  will  function normally,  except that no automatic file close on  exit
+from the block in which the file was declared will occur.   Again the user must
+specifically execute the standard procedure CLOSE(f) for each file opened (via
+reset/rewrite and equivalent procedures).  Under CP/m, if the file has only
+been used for reading (opened via RESET or EXISTS) the final close is not
+necessary.  However inclusion of the close statement will avoid portability
+problems, and possible problems if program modifications are made later.
+.hl 1 Reads of Real Variables
+On input,  reads of real variables do not insist on a leading digit,  but
+will accept values starting with ".".  This is deliberate, and avoids nuisance
+run-time errors.
+#u

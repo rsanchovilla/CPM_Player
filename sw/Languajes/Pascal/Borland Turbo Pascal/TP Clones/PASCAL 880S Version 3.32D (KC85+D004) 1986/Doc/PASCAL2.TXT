@@ -1,0 +1,527 @@
+
+           1.5.1. Definition der elementaren Standardroutinen fuer Files
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         1) $ kennzeichnet die leere Sequenz
+         2) <x0> bezeichnet die aus der einzelnen Komponente x0 bestehende
+            Sequenz.
+         3) Seien X = <x0 x1 ... xm> und Y = <yo y1 ... yn> Sequenzen, dann  
+            ist X & Y nach Definition <x0 x1 ...  xm y0 y1 ... yn> die Ver- 
+            kettung von X und Y.
+         4) Bei einer nichleeren Sequenz X = <x0 x1 ... xm> bezeichnet
+                first(X) = x0 das erste Element von X;
+         5)     rest(X) = <x1 ... xm> die Sequenz ohne ihr erstes Element.
+
+         Es werden zwei Zustaende eines Files unterschieden:
+         1. der Schreibzustand
+         2. der Lesezustand.
+
+         Veraenderungen  am Wert eines Files sind nur auf zwei Arten  moeg- 
+         lich:
+         1. Vollstaendiges Loeschen des Files
+         2. Anfuegen eines Elements an das Ende des Files.
+
+         Seien XP und XM die Teile eines Files X so, dass gilt: XP & XM = X
+         Ausserdem gilt first(XM) ist die aktuelle Fileposition.
+         X ist ein File     VAR X:FILE OF T;
+
+         Wir  definieren nun die Wirkung der fuenf PASCAL-Standardroutinen  
+         fuer Files:
+
+         1) Loeschen eines Files (Initialisiert den Schreibzustand)
+            REWRITE(X)        X:=$; XP:=$; XM:=$;
+
+         2) Ausdehnen eines Files
+            PUT(X)            IF XM=$ THEN 
+                               BEGIN
+                                X:=X & <X^>;
+                                XP:=X;
+                               END ELSE ERROR;
+
+            Nach PUT ist der Wert von X^ undefiniert.
+
+         3) Initialisieren des Lesens
+            RESET(X)          XP:=$; XM:=X;
+                              IF X<>$ THEN X^:= first(X);
+
+         4) Im Lesezustand fortschreiten zum folgenden Element
+            GET(X)            IF XM <> $ THEN
+                               BEGIN
+                                XP:=XP & <first(XM)>;
+                                XM:=rest(XM);
+                                IF XM <> $ THEN X^:=first(XM);
+                               END ELSE ERROR
+
+         5) Fileenderkennung: Standardfunktion mit Resultat von Typ BOOLEAN
+            EOF(X)             EOF(X):= TRUE wenn XM = $
+                               EOF(X):= FALSE sonst.
+         Satz: PUT(X) ist nur zulaessig, wenn EOF(X) den Wert TRUE hat.
+         Satz: GET(X) ist nur zulaessig, wenn EOF(X) den Wert FALSE hat.
+
+         Als Abkuerzungen sind fuer beliebige Files folgende zwei Standard- 
+         prozeduren definiert:
+              WRITE(F,A)                     F^:=A; PUT(F);
+              READ(F,X)                      X:=F^; GET(F);
+
+         F ist Filevariable, A ein Ausdruck, X eine Variable
+
+                                 1.5.2.   Textfiles
+                                 ~~~~~~~~~~~~~~~~~~
+         In  PASCAL  gibt es eine Standardfiletyp TEXT.  Variablen vom  Typ  
+         TEXT nennt man Textfiles.  Die Komponenten von Textfiles sind Zei- 
+         chen (d. h. vom Grundtyp CHAR). Gegenueber einem gewoehnlichen 
+                     FILE OF CHAR
+         hat ein Textfile folgende Besonderheiten:
+
+         1) Textfiles haben eine Zeilenstruktur
+         2) es existieren drei zusaetzliche Standardroutinen
+              EOLN(X)           - eine BOOLEAN-wertige Funktion;
+                                  liefert den Wert TRUE, wenn das Textfile
+                                  F im Lesezustand ist und sich die aktu-
+                                  elle Fileposition auf einem Zeilenende-
+                                  kennzeichen befindet;
+              WRITELN(F)        - erzeugt ein Zeilenende;
+              READLN(F)         - stellt die aktuelle Fileposition auf den 
+                                  Anfang der naechsten Zeile, d. h. 
+                                  READLN(F) ist aequivalent zu
+                                   WHILE NOT EOLN(F) DO GET(F);
+                                   GET(F)
+         3) WRITE,WRITELN,READ,READLN erlauben eine  beliebige  Parameter- 
+           zahl.  Man  kann mitihnen gemaess der Diagramme (3) und (4) auf- 
+           gebaute Zahlen einlesen sowie Zahlen und Zeichenketten ausgeben.
+
+         In  jedem PASCAL-Programm koennen zwei Standardfiles,  die  formal  
+         als
+                       VAR INPUT,OUTPUT:TEXT;
+         vordefiniert sind, benutzt werden. 
+         RESET(INPUT) und REWRITE(OUTPUT) werden automatisch bei  Programm- 
+         start abgearbeitet und duerfen nicht programmiert werden.  Die Ar- 
+         beitsmoeglichkeiten  mit  diesen Files  sind  eingeschraenkt:  Von  
+         INPUT kann man nur lesen, auf OUTPUT kann man nur schreiben.
+         Fuer Textfiles hat die READ-Prozeduranweisung entweder die Gestalt
+         READ(F,V1,...,VN) oder READ(V1,...,VN). 
+         Die Anweisung READ(V1,...,VN) ist identisch zu READ(INPUT,V1,..VN)
+         Die Anweisung READ(F,V1,...,VN) ist identisch zu
+         BEGIN READ(F,V1); ... ;READ(F,VN); END
+
+         Zu  definieren bleibt die Wirkung von READ(F,V) auf die drei  mog- 
+         lichen Typen von V:
+         1. CHAR         in diesem Fall gilt die angegebene Definition
+                         V:= F^;GET(F)
+         2. INTEGER      in  diesem Falle wird solange  gelesen,  bis  eine  
+                         Zeichenkette  gefunden ist,  deren erstes  Element  
+                         eine  Ziffer  oder  ein  Vorzeichen  ist  und  die  
+                         nachfolgenden  Zeichen bis zum naechsten  Leerzei- 
+                         chen als eine Integer-Zahl interpretiert werden 
+                         koennen.
+         3. REAL         Analog zu 2.
+
+         Waehrend in 1.  genau ein Zeichen eingelesen wird,  ist die Anzahl  
+         der  bei  der  Eingabe  einer Zahl  "verbrauchten"  Zeichen  nicht  
+         vorhersagbar.  Fest  steht  nur,  dass  der  Filepuffer  nach  der  
+         Zahleingabe das erste auf die Zahl folgende  Zeichen enthaelt.
+         WRITE-Parameter
+
+         (45) write-parameter
+              ~~~~~~~~~~~~~~~
+         ---> ausdruck --->|---> : ---> ausdruck --->|---> : ausdruck --|->
+                           |                         |----------------->|
+                           |------------------------------------------->|
+
+         Dabei bedeuten
+         1. Ausdruck: auszugebender Wert
+         2. Ausdruck: wenn vorhanden, wieviele Zeichen ausgegeben werden 
+                      sollen. Ist der zweite ausdruck nicht vorhanden,dann
+                      gelten fogende Standardwerte:
+            Typ von ausdruck             Standardwert fuer zweiten ausdruck
+            INTEGER                      10
+            REAL                         20
+            BOOLEAN                       5
+            CHAR                          1
+            ARRAY [...] OF CHAR           echt Laenge
+         3. Ausdruck: nur fuer REAL-Werte, Dezimale Festpunktdarstellung 
+                      mit ausdruck vielen Stellen.
+
+         Bemerkungen                   A:L1(:L2)
+
+         1. Ist A von Typ CHAR oder ARRAY [...] OF CHAR, dann wird der Wert
+            von A geschrieben.
+         2. Ist A von Typ INTEGER, so wird eine Dezimaldarstellung der Zahl
+            geschrieben (eventuell mit Vorzeichen).
+         3. Ist A vom Typ REAL und der WRITE-Parameter lautet A:L1:L2, so
+            wird eine dezimale Festkommadarstellung mit L2 Ziffern hinter
+            dem Komma geschrieben.
+         4. Sonst dezimale Gleitkommadarstellung
+         5. Ist A vom Typ BOOLEAN, dann ist WRITE(F,A:L1) aequivalent zu
+            IF A THEN WRITE(F,'TRUE':L1) ELSE WRITE(F,'FALSE':L1);
+          
+         Im  allgemeinen  wird  bei  der Ausgabe von  Textfiles  das  erste  
+         Zeichen jeder Zeile als Steuerzeichen verwendet. Die Bedeutung der  
+         Steuerzeichen ist folgender Tabelle zu entnehmen.
+
+           Steuerzeichen           Wirkung beim Druck
+              ' '                    einzeiliger Vorschub
+              '0'                    zweizeiliger Vorschub
+              '-'                    dreizeiliger Vorschub
+              '+'                    kein Vorschub
+              '1'                    Uebergang zum Anfang der naechsten 
+                                     Seite
+
+         Fuer  Textfiles F gibt es die zusaetzliche Prozedur  PAGE(F).  Sie  
+         ist aequivalent zu WRITELN(F);WRITELN(F,'1');
+         PAGE(OUTPUT) ist dabe aequivalent zu PAGE.
+
+                           1.6. Strukturierte Datentypen
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+         Die  Elemente strukturierter Datentypen sind strukturierte  Werte.  
+         Ein  strukturierter Wert setzt sich aus  sogenannten  Komponenten- 
+         werten  zusammen.  Dieser  Zusasmmenhang erfolgt  nach  bestimmten  
+         Strukturierungsmethoden.  PASCAL  stellt  vier  Strukturierungsme- 
+         thoden bereit.  Die strukturierten Datentypen werden dementsprech- 
+         end benannt.
+         1. FILE   - Werte sind beliebig lange Folgen von Werten des Grund- 
+                     typs
+         2. SET    - Werte sind Mengen von Werten des Grundtyps
+         3. ARRAY  - Werte sind Tupel von Werten des Grundtyps
+         4. RECORD - Werte sind Tupel von Werten aus moeglicherweise  ver- 
+                     schiedener Komponententypen
+
+         Bemerkungen
+
+         1. Bei FILE-, ARRAY- und RECORD-Strukturen koennen die Komponenten
+            selbst strukturiert sein.
+         2. Bei SET-, ARRAY- und RECORD-Strukturen wird es moeglich sein,
+            sowohl mit dem strukturierten Wert als Gesamtheit zu operieren,
+            als auch auf einzelne Komponenten Bezug zu nehmen .
+         3. PACKED   besitzt  keine Wirkung auf das Programm,  bewirkt  nur  
+            oekonomische Nutzung des Speicherplatzes.
+
+                                  1.6.1. SET-Typen
+                                  ~~~~~~~~~~~~~~~~
+         (46) set-typ
+              ~~~~~~~
+                           ---> SET ---> OF ---> typ --->
+         
+         "typ" ist Aufzaehlungstyp
+
+         -der  hinter  OF anggebene Typ wird als Grund- oder  Basistyp  des  
+          SET-Typs bezeichnet
+
+         - Beispiele          TYPE   TAGE=SET OF 0..31;
+                                    ZEICHEN=SET OF CHAR;
+                                    ZUSTAND=SET OF (AKTIV,BEREIT,WARTEND);
+
+         Sind  MAX und MIN zwei Werte eines Aufzaehlungstyps,  so  genuegen  
+         sie folgender Bedingung :
+           0 <= ORD(MIN) <= ORD(MAX) <= setmax ,
+         setmax ist implementationsabhaengige Konstante.
+
+         Einzelne Werte aus SET-Typen heissen Mengenkonstruktionen.
+         (47) mengenkonstruktion
+              ~~~~~~~~~~~~~~~~~~
+                      |------------------------------------>|
+             ---> [ --|--> ausdruck ---> .. ---> ausdruck --|--> ] --->
+                      |<----------------- , <---------------|
+
+         Fuer Werte aus SET-Typen sind folgende Operatoren erklaert:
+         :=                 Wertzuweisung an Variable
+         * + -              Durchschnitt, Vereinigung, Mengendifferenz
+         = <> <= >=         Mengenvergleiche (Resultattyp : BOOLEAN)
+         IN                 Enthaltensein  eines  Elementes  (zweistellige  
+                            Operation, Resultattyp : BOOLEAN)
+
+                                1.6.2.  ARRAY-Typen
+                                ~~~~~~~~~~~~~~~~~~~
+         (48) array-typ
+              ~~~~~~~~~
+              ---> ARRAY ---> [ -|-> typ --|-> ] ---> OF ---> typ --->
+                                 |<-- , <--|
+
+         "typ"   zwischen  den  eckigen  Klammern  muss  ein  von   INTEGER  
+         verschiedener  Aufzaehlungstyp oder ein Bezeichner  eines  solchen  
+         Typs sein.         Die  innerhalb der eckigen Klammern stehenden Typen bezeichnet man  
+         als Indextypen.
+         Wie  jedem  Typ koennen auch dem  ARRAY-Typ  Variablen  zugeordnet  
+         werden. Man spricht dann von ARRAY-Variablen oder Feldvariablen.
+
+         Folgende Operationen sind fuer ARRAY-Variablen definiert :
+         :=                 Wertzuweisung an Variable
+         = <>               Vergleich vertraeglicher ARRAY-Werte
+
+         (49) array-komponente
+              ~~~~~~~~~~~~~~~~
+                  ---> variable ---> [ -|-> ausdruck --|-> ] --->
+                                        |<---- , <-----|
+
+         "variable"  ist  von einem ARRAY-Typ,  anzahl des  Auftretens  von  
+         "ausdruck"  und  der Typ der Werte entsprechen den  Indextypen  im  
+         ARRAY-Typ von "variable".
+
+
+                                1.6.3. RECORD-Typen
+                                ~~~~~~~~~~~~~~~~~~~
+         (50) record-typ
+              ~~~~~~~~~~
+                   ---> RECORD ---> datenfeldliste ---> END --->
+
+
+         (51) datenfeldliste
+              ~~~~~~~~~~~~~~
+                                       |------------------>|
+                     --|--> festteil --|--> variantenteil -|->
+                       |-------------->|
+
+         (52) festteil
+              ~~~~~~~~
+                      --|-|-> bezeichner --|-> : ---> typ -|->
+                        | |<----- , <------|               |
+                        |<------------- ; <----------------|
+
+         Wir betrachten erst einmal nur RECORD-Typen ohne Variantenteil.
+         Die auftretenden Bezeichner nennt man Datenfeldbezeichner.
+         Die  Werte von RECORD-Typen sind Datenstrukturen,  die aus den  in  
+         der  Datenfeldliste aufgefuehrten Komponenten bestehen.  Zur  Ver- 
+         anschaulichung stelle man sich einen solchen Wert als Tabelle vor,  
+         deren Zeilen mit den einzelnen Datenfeldbezeichnern markiert  sind  
+         und je ein Element des entsprechenden Typs enthalten.
+
+         Beispiel :        DATUM
+                      TAG   1..31
+                    MONAT   1..12
+                     JAHR   1800..2000
+
+         Ausgehend von dieser Vorstellung ist es naheliegend, die Komponen- 
+         tenauswahl durch Angabe eines Datenfeldbezeichners zu realisieren.
+
+         (53) record-komponente
+              ~~~~~~~~~~~~~~~~~
+                     ---> variable ---> . ---> bezeichner --->
+
+         "variable" ist von einem record-typ.
+         "bezeichner"  muss  in der Datenfeldliste des Typs von  "variable"  
+         auftauchen.         Wenn eine Komponente selbst wieder Strukturiert ist,  dann koennen  
+         mehrere Sektoren aufeinanderfolgen.
+         P.NAME  [1] bezeichnet den ersten Buchstaben des Datenfeldes  NAME  
+         der Variablen P;
+         P.GEBURT.JAHR  bezeichnet das Datenfeld JAHR im  Datenfeld  GEBURT  
+         der Variablen P.
+
+         Folgende Operationen sind definiert :
+         :=                 Wertzuweisung an Variable
+         = <>               Vergleich vertraeglicher RECORD-Werte
+
+
+         Zur  Vereinfachung  der Scheibweise bei gehaeuften  Zugriffen  auf  
+         Komponenten  der  gleichen  RECORD-Variablen  gibt  es  die  WITH- 
+         Anweisung.
+
+
+         (54) with-anweisung
+              ~~~~~~~~~~~~~~
+                ---> WITH -|-> variable -|-> DO ---> anweisung --->
+                           |<---- , <----|
+ 
+
+         Jede auftretende "variable" muss eine RECORD-Typ-Variable sein.
+
+
+         (55) variantenteil
+              ~~~~~~~~~~~~~
+         -->CASE-|->bezeichner--> : -|->bezeichner-->OF-|->variante--|-->
+                 |------------------>|                  |<--- ; <----|
+
+         Der  Bezeichner zwischen CASE und :  ist der Name des  sogenannten  
+         Anzeigefeldes   (tag  field).   Nach  dem  Doppelpunkt  folgt  die  
+         Typangabe  fuer  das Anzeigefeld.  Hier sind nur  Bezeichner  fuer  
+         Aufzaehlungstypen zulaessig. Nach OF folgt die Variantenliste.
+
+         (56) variante
+              ~~~~~~~~
+         -|-> aufzaehlungskonstante -|-> : -> ( -> datenfeldliste -> ) -->
+          |<---------- , <-----------|
+
+         "auzaehlungskonstante" muss vom Typ des zugehoerigen Anzeigefeldes  
+         sein.
+
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         Die   im  Variablendeklarationsteil  eines  Blockes   festgelegten  
+         Variablen nennt man statische Variablen.  Ihre Menge ist eindeutig  
+         festgelegt.
+         Weiss  man nicht genau,  wieviele davon man  benoetigen  wird,  so  
+         bleibt einem nur, eine Maximalanzahl festzulegen.
+         Waehlt  man diese Zahl zu gross,  wird unnuetz viel  Speicherplatz  
+         blockiert.  Waehlt  man diese Zahl zu klein,  stoesst man waehrend  
+         der Abarbeitung oft an ihre Grenzen.
+         Aus  dieser Situation heraus entsteht der Wunsch  nach  Variablen,  
+         die  bei Bedarf zur Programmlaufzeit erzeugt und nach Moeglichkeit  
+         auch wieder vernichtet werden koennen. (dynamische Variablen)
+
+         (57) pointertyp
+              ~~~~~~~~~~
+                            ---> ^ ---> bezeichner ---> 
+
+         "bezeichner" ist der Name eines Typs, der keine FILE-Typ-Komponen- 
+         te enthaelt. Hier darf ein Typbezeichner stehen, der erst spaeter,  
+         aber im gleichen Block definiert wird.
+         Statt "^" ist im urspruenglichen PASCAL das Zeichen "@" verwendet.
+         Die Werte von Pointertypen sind Pointer auf dynamisch erzeugte Ob- 
+         jekte.
+         Sei  T  ein geeigneter Typbezeichner.  Der durch  ^T  beschriebene  
+         Pointertyp ist an den Typ T "gebunden" : Seine Werte verweisen auf  
+         Objekte des Typs T.  Es gibt eine Pointerkonstante, sie wird durch  
+         NIL bezeichnet.  Der Wert NIL verweist auf kein Objekt. Er gehoert  
+         zu allen Pointertypen.
+         Fuer Pointer-Werte sind folgende Operationen definiert :
+         :=                 Wertzuweisung an Variable
+         = <>               Wertvergleich (Resultattyp : BOOLEAN)
+         In  allen  Faellen muessen die Operanden zu  vertraeglichen  Typen  
+         gehoeren.  Pointertypen  sind vertraeglich,  wenn  die  Grundtypen  
+         vertraeglich sind.
+         Zur  Erzeugung  dynamischer  Variablen gibt es die  auf  beliebige  
+         Pointervariablen X anwendbare Standardprozedur
+                                      NEW (X)
+         Gegeben sei :        VAR  P:^T;
+         Die Abarbeitung von NEW(P) bewirkt :
+         1. Erzeugung einer Variablen vom Typ T 
+         2. Erweiterung  des  Typs ^T um einen Pointer  auf  die  erzeugte  
+            Variable
+         3. Der neu entstandende Pointer wird dann zum Wert der Variablen P  
+            gemacht.
+         Variablen,  die  ueber  die NEW-Prozedur erzeugt  werden,  heissen  
+         dynamische  Variablen.  Pointerwerte entstehen,  mit Ausnahme  von  
+         NIL, nur durch die Abarbeitung der NEW-Prozedur.
+
+         (58) dynamische variable
+              ~~~~~~~~~~~~~~~~~~~
+                             ---> variable ---> ^ --->
+
+         "variable" ist von einem Pointertyp
+
+         Ausgehend von        VAR  P:^T;
+         bedeuten             P  eine  statische Variable,  die  als  Werte  
+                                 Pointer  auf dyn.  Variablen vom Typ T an- 
+                                 nehmen kann und
+                              P^ die dynamische Variable vom Typ T, auf die  
+                                 P verweist, wenn P <> NIL.         Bemerkungen : - P^ muss nicht existieren. Notwendige Voraussetzung  
+                         des Zugriffs auf P^ ist,  das P einen definierten,  
+                         von NIL verschiedenen Wert hat.
+                       - Interessant werden Pointertypen dann, wenn sie als  
+                         Komponenten  dynamischer,   strukturierter   Werte  
+                         auftreten.
+         Standardprozeduren :
+         DISPOSE  (X)    P  sei Pointervariable und  P^  existiert,  dann  
+                         bewirkt DISPOSE(P) die Freigabe des von P^  beleg- 
+                         ten Speicherplatzes.
+         Diese Prozedur wird jedoch oft ersetzt durch
+         RELEASE (X)     saemtliche  seit der Erzeugung von X^ neu mit dyn.  
+                         Variablen belegten Speicherplaetze werden  freige- 
+                         geben.
+         Notwendige Voraussetzung ist die Existenz von P^ bzw. X^.
+
+
+
+                       1.8. Ergaenzungen zum Routinenkonzept
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                            1.8.1. FORWARD-Deklarationen
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         Der   Gueltigkeitsbereich  von  Bezeichnern  beginnt  in   PASCAL- 
+         Programmen  von der Stelle ihres Auftretens in Deklarationen  bzw.  
+         Definitionen. (vgl. 1.2.2.)
+         Diese   Festlegung  kann  zu  Komplikationen  beim   Programmieren  
+         fuehren,  wenn  in  dem eine Prozedur oder Funktion  darstellenden  
+         Block weitere, global definierte Routinen aufgerufen werden.
+         Da  Rekursion erlaubt ist,  koennte die Procedur A die Prozedur  B  
+         aufrufen, B ruft C auf, und in C wird A aufgerufen.
+         Es muesste dann B vor A,  C vor B und A vor C deklariert sein, was  
+         sich offensichtlich widerspricht.
+         FORWARD nun ersetzt den die Routine darstellenden Block,  so  dass  
+         die  Routinenvereinbarung  auf  den Routinenkopf und  eben  dieses  
+         Wortsymbol  schrumpft.  Die Bedeutung von FORWARD  besteht  darin,  
+         dass   fixiert  wird,   dass  die  Vereinbarung  des  die  Routine  
+         beschreibenden Blockes an spaeterer Stelle im Programm erfolgt.
+         An  dieser  "spaeteren Stelle",  wo also der  durch  die  Prozedur  
+         definierte  Algorithmus  codiert ist,  darf der Parameterteil  der  
+         Kopfzeile nicht wiederholt werden.  Der Compiler identifiziert den  
+         Namen mit dem aus der FORWARD-Deklaration bekannten und  verwendet  
+         die dort angegebene Liste der formalen Parameter.
+
+
+
+                             1.8.2. Rekursive Routinen
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~
+         Prozeduren  und  Funktionen koennen in PASCAL  rekursiv  definiert  
+         werden.  Diese Feststellung sagt aus, dass im Anweisungsteil einer  
+         Prozedur-/Funktionsdeklaration   diese  Prozedur/funktion   selbst  
+         aufgerufen werden kann.
+
+
+
+                              1.8.3. Formale Routinen
+                              ~~~~~~~~~~~~~~~~~~~~~~~
+         Wie kann man Verfahren formulieren, die ihrerseits andere, selbst- 
+         staendig formulierbare Verfahren benutzen.
+
+         Drei Moeglichkeiten wurden bereits besprochen :
+         1. Das  von  einer  Routine zu benutzende  Verfahren  wird  lokal  
+            definiert
+         2. Das  untergeordnete  Verfahren  wird vor  der  uebergeordneten  
+            Prozedur deklariert
+         3. Der  Bezeichner  der  untergeordneten Routine  wird  in  einer  
+            FORWARD-Deklaration eingefuehrt.
+         Eine weitere Methode besteht in der Vermittlung von Prozeduren und  
+         Funtionen  ueber den Mechanismus der Parametervermittlung an  eine  
+         uebergeordnete Routine.
+
+
+
+
+         (59) formale routine
+              ~~~~~~~~~~~~~~~
+         -|->FUNCTION->bezeichner->fparameterliste-> : ->bezeichner-|->
+          |->PROCEDURE->bezeichner->fparameterliste---------------->|
+
+         Bemerkungen :
+         1. (59) zeigt,  dass die Typen der Parameter der formalen Routinen  
+            durch   Typbezeichner   angegeben  werden   muessen   und   das  
+            insbesondere  die Parameter formaler Routinen wiederum  formale  
+            Routinen  sein koennen.  Die Namen der "formalen Parameter" der  
+            formalen Routinen sind dabei belanglos.
+         2. In Bezug auf die Vertraeglichkeit formaler und korrespondieren- 
+            der aktueller Routinen sind folgende Bedingungen zu beachten :
+            1. Die  Parameterlisten  muessen  die  gleichen  Anzahlen  von  
+               Parametern enthalten,  und korrespondierende Parameter mues- 
+               sen  vom gleichen Typ sein;  das gilt auch fuer formale  und  
+               aktuelle Routinen.
+            2. Die Parametervermittlung muss fuer korrespondierende Parame- 
+               ter gleich sein.
+            3. Ist  der  Parameter  einer formalen  Routine  wiederum  eine  
+               formale Routine, so gelten auch die Bedingungen 1. und 2..
+
+                          1.9. Marken und GOTO-Anweisungen
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         In  aehnlicher Weise wie Variablen benannt werden und  dann  ueber  
+         den  Namen symbolisch adressierbar sind,  koennen auch Anweisungen  
+         symbolisch  benannt  werden.  Diese  Bezeichner  fuer  Anweisungen  
+         heissen Marken. Sie sind syntaktisch vorzeichenlose, ganze Zahlen.
+
+         (60) marke
+              ~~~~~
+                                 ---> ziffern --->
+
+         Im Programm benutzte Marken muessen vereinbart werden. Die Marken- 
+         vereinbarungen haben die Form :
+
+         (61) markenvereinbarungsteil
+              ~~~~~~~~~~~~~~~~~~~~~~~
+                         ---> LABEL -|-> marke -|-> ; --->
+                                     |<-- , <---|
+
+         Der  Markenvereinbarungsteil  legt alle Marken fest,  die  in  dem  
+         Block lokal sind.
+         Er steht am Anfang eines Blockes (siehe (10))
+
+         (62) goto-anweisung
+              ~~~~~~~~~~~~~~
+                             ---> GOTO ---> marke --->
+         Die GOTO-Anweisung darf nur lokal in dem Block benutzt werden,  in  
+         dem die Marke deklariert ist.

@@ -1,0 +1,64 @@
+E.ES
+27 65 12
+.JY
+.LL#69
+.LM#5
+.ES
+27 56
+.PG#0
+.PL#80
+--------------------------------------------------------------
+
+          ----   NOTES  ON  WHM  SOURCE  CODE  ----
+
+
+1) Unsqueeze the chosen .MQC file to produce a .MAC file e.g. :-
+
+            B>USQ PHONEBOO.MQC
+
+Owners of the Mitek Assembler Package can then
+
+2) Convert the .MAC file to a .Z80 file:-
+
+            B>ZCON PHONEBOO.MAC
+
+3) Rename the .Z80 file so ZAS won't overwrite the original .REL
+   file:-
+
+            B>REN PHANEBOO.Z80=PHONEBOO.Z80
+                    ^
+
+4) Assemble the .Z80 file to a .REL file using ZAS e.g.:-
+            B>ZAS PHANEBOO
+   and find errors (aaaghh) in KEYS, NOTEPAD, CALENDAR and
+   PHONEBOO (now he tells us !).
+
+5) Fix appropriate errors by editing them from the .Z80 file using
+ say EDIT.COM and reassemble with ZAS.COM until you have NO errors.
+  The result will be a .REL file which WHM can load and run.
+
+ * The most common error is a duplicate line for BDOS EQU BASE+5  .
+   Solution - remove ONE of these lines.
+ * Where the line in error is JP NZ,BLKPAGE remove the "E" from
+   BLKPAGE to give JP NZ,BLKPAG.
+ * Where the line in error is LD 3,255 change the "3" to "E" to
+   give LD E,255   (good luck).
+
+6) Rename the appropriate .DAT file where necessary to the SAME
+   spelling as for your renamed  .Z80 file e.g.:-
+
+          B>REN PHANEBOO.DAT=PHONEBOO.DAT
+                  ^
+
+ 7) Enable WHM or WHMT or WHMF if not already enabled:-
+
+          B>WHM B:ON
+
+8) Trigger WHM with CRTL\. Select "O" for other, enter the name
+   "PHANEBOO" (8-character names don't require a <CR>; if the name
+   is less than 8 characters long terminate it with a <CR>)
+   and, if all is going well, you will see PHANEBOO
+   (alias PHONEBOO) leap into action !
+
+--------------------------------------------------------------
+   

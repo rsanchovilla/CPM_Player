@@ -1,0 +1,54 @@
+; truncate and round functions (used to convert float -> integer)
+;
+	NAME ROUND
+	ENTRY ROUND,TRUNC,L129,L130
+	EXT FADD
+	INCLUDE FPINIT.SRC
+;
+L130:
+round:	pop	h		;get return address
+	pop	d		;get low word
+	xthl			;get high word
+	push	h		;save high word
+	push	d		;save low word
+	mov	d,a		;set op2 = .5
+	mov	e,a
+	mov	h,a
+	mvi	a,80h		;make sign of op2 = sign of op1
+	ana	l
+	ori	40h		;set bit to the right of the binary pt
+	mov	l,a		;save as high byte of mantissa
+	push	h		;save op2
+	push	d
+	call	fadd		;increase the magnitude of op1 by .5
+	pop	d		;get number to truncate
+	pop	h
+	jr	trunc2		;...and go truncate
+L129:
+trunc:	pop	h		;get return address
+	pop	d		;get low word of #
+	xthl			;get high word
+trunc2:	mov	e,d		;throw away low 8 bits
+	mov	d,l
+	bit	sign,h		;check for negative exponent
+	jrnz	zeroi		;return zero integer
+	mvi	a,15		;# of shifts assuming zero exponent
+	sub	h		;get actual # of shifts
+	jrc	zeroi		;number too big return zero
+	jrz	dones		;done shifting
+	res	sign,d		;clear sign bit
+	mov	b,a		;install counter
+shft:	srlr	d		;shift high byte
+	rrar	e		;rotate low byte
+	djnz	shft		;continue until done
+dones:	xra	a		;clear acc, carry
+	bit	sign,l		;check sign bit
+	rz			;sign is +ive, return now!
+	lxi	h,0		;negate de
+	dsbc	d		;by subtracting
+dntngt:	xchg			;return integer in de
+	ret
+zeroi:	lxi	d,0		;return a value of zero
+	xra	a		;clear acc
+	ret
+

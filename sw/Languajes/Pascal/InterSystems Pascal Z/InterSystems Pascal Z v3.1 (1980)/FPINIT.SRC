@@ -1,0 +1,26 @@
+$CVTFLT	SET	0
+$FNORM	SET	0
+$FOUT	SET	0
+;
+; All calculations are done with a 31 bit mantissa and
+; are then truncated to 24 bits
+;
+nbytes:	equ	5	;number of bytes in floating pt number
+explen:	equ	1	;number of bytes in exponent
+fracln:	equ	nbytes-explen	;number of bytes in mantissa
+sign:	equ	7	;position of mantissa sign bit
+
+;		these positions are relative to ix
+op1:	equ	17		;position of exponent of first operand
+op2	equ	11		;position of exponent of second operand
+scr1:	equ	op2-nbytes	;scratch byte 1
+intflg:	equ	op2+1		;is operation internal?
+dc1:	equ	op1+1		;for digit counting in cvtsfp
+dc2:	equ	op1+2
+
+;		these positions are relative to op1, op2
+exp:	equ	0		;position of exponent byte
+msb:	equ	exp-explen	;high byte of fraction
+lsb:	equ	exp-fracln	;low   "    "     "
+
+

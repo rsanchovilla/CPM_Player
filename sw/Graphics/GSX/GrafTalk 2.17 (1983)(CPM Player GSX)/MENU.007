@@ -1,0 +1,132 @@
+! June 3, 1983
+
+@1
+VARIABLE MEN1 MENU1
+CLEARSCREEN
+RECOVER 1
+!!===================================================
+!!	DATA ENTRY AND VIEW MODE MENU
+!!===================================================
+!!
+!!1  .. HELP ........................................
+!!2  .. ERASE GRAPHICS ..............................
+!!3  .. RETURN TO MAIN MENU .........................
+!!4  .. CLEAR TEXT FROM SCREEN (CR BRINGS IT BACK) ..
+!!
+!!5  .. ENTER VIEW MODE .............................
+!!
+!!6  .. ENTER DATA FROM KEYBOARD.....................
+!!7  .. ENTER DATA FROM DISK FILE ...................
+!!
+!!8  .. CREATE NEW ROWS..............................
+!!9  .. CREATE NEW COLUMNS ..........................
+!!
+!!10 .. SAVE CURRENT DATA IN DISK FILE ..............
+!!11 .. SEND CURRENT DATA TO PRINTER ................
+!!
+!!===================================================
+!!ENTER YOUR CHOICE >
+MENU MEN1 11 1 ^
+COMPARE MEN1 1
+IF YES JUMP 2
+COMPARE MEN1 2
+IF YES ERASE
+COMPARE MEN1 3
+IF YES END
+COMPARE MEN1 4
+IF YES JUMP 40
+COMPARE MEN1 5
+IF YES VIEW
+COMPARE MEN1 6
+IF YES JUMP 5
+COMPARE MEN1 7
+IF YES JUMP 6
+COMPARE MEN1 8
+IF YES JUMP 7
+COMPARE MEN1 9
+IF YES JUMP 8
+COMPARE MEN1 10
+IF YES JUMP 9
+COMPARE MEN1 11
+IF YES OUTPUT PRINTER
+JUMP 1
+
+@2
+CLEARSCREEN
+!!HELP FOR DATA ENTRY AND VIEW MODE
+!!=============================================================================
+!!
+!!GrafTalk data tables are tables of ordinary numbers.	The data may be treated
+!!as rows or as columns.  All rows must have the same number of elements as one
+!!another and all columns must have the same number of elements as one another.
+!!
+!!You may enter data for use by GrafTalk in one of three ways:
+!!    AT THE KEYBOARD - Simply follow the instructions displayed when you
+!!			 type this menu choice.
+!!    FROM A DISK FILE - Specify the name of the file in which data is to
+!!			 be found when you are prompted to do so.
+!!    IN VIEW MODE - You can view the current data set and change entries
+!!			 as well  as the names	of rows or columns.  Unas-
+!!			 signed values are represented by asterisks.
+!!
+!!GrafTalk will ignore the characters $ % , in data sets.  You may change these
+!!characters, change other  characteristics of	the data set and use arithmetic
+!!operators on data by using GrafTalk in command mode. See the Reference Manual.
+!!
+!!ENTER <cr> TO RETURN TO THE MENU >
+STOP
+JUMP 1
+
+@5
+CLEARSCREEN
+!!=========================================================
+!!DATA ENTRY
+!!
+!!Enter data  as lines	of numbers  with an equal number of
+!!entries in  each row.  Separate  numbers from one another
+!!by one or more spaces.   When you are through, type  @END
+!!instead of a line of numbers.
+!!
+!!GrafTalk names rows  R1,  R2 etc and columns	C1,  C2 etc.
+!!You may refer  to the rows  and columns  of data by these
+!!names.  You may also assign names to the rows and columns
+!!in VIEW mode.
+!!
+!!=========================================================
+@DATA
+^
+@END
+CLEARSCREEN
+JUMP 1
+
+@6
+!!ENTER drive:filename >
+DATAFILE ^
+JUMP 1
+
+@7
+!!ENTER THE NUMBER OF ROWS TO CREATE >
+CREATE ^ ROWS
+NO SUBSET
+JUMP 1
+
+@8
+!!ENTER THE NUMBER OF COLUMNS TO CREATE >
+CREATE ^ COLUMNS
+NO SUBSET
+JUMP 1
+
+@9
+!!ENTER drive:filename IN WHICH DATA IS TO BE SAVED >
+OUTPUT DISK ^
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+
+JUMP 1
+
+@9
+!!ENTER drive:filename IN WHICH

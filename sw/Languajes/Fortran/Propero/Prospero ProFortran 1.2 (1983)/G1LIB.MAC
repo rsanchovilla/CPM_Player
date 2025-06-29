@@ -1,0 +1,152 @@
+	TITLE	ProFortran housekeeping library (1)
+;
+	NAME	('G1LIB')
+;
+;	Date	05 June 1983
+;
+;	Copyright (C) 1983   Prospero Software
+;
+;	This module contains the routine called at program
+;	startup, which initialises the stack pointer, sets
+;	up an empty heap, and establishes units 1 and 2.
+;
+;
+	.Z80
+;
+	ENTRY	$GINIT
+	ENTRY	$GVAIL,$WVAIL,$GROVR,$WROVR
+	ENTRY	$FNSEQ,$HCPMV
+	ENTRY	$MEMRY,$INIX,$PFLAG
+	ENTRY	$DCLN,$DNLGT,$DSLFL
+;
+;
+	EXT	$EUN12
+	EXT	$HPLM,$FACT,$UCHN,$HALOC
+	EXT	$BDOS,$DPRST
+;
+;
+;	===============
+;
+;
+BASE	EQU	0		; CP/M base address
+BOOT	EQU	BASE+0
+BDOS	EQU	BASE+5		; BDOS entry point
+DEFBUF	EQU	BASE+80H	; default buffer
+FINDVN	EQU	0CH		; find CP/M version number
+SETDMA	EQU	1AH		; "set DMA" code
+;
+;
+;
+	DSEG
+;
+$GVAIL:				; heap administration
+GAVLNK:	DS	2
+GAVSIZ:	DS	2
+;
+$WVAIL:
+WAVLNK:	DS	2
+;
+$GROVR:	DS	2
+$WROVR:	DS	2
+;
+$INIX:	DS	2		; IX value at outer level
+;
+$FNSEQ:	DS	2		; for sequential file naming
+;
+$HCPMV:	DS	2		; for CP/M version number
+;
+$DCLN:	DS	2		; source line number
+$DNLGT:	DS	2		; for non-local GOTO
+$DSLFL:	DS	1		; flag source line facility active
+;
+;
+;	===================
+;
+;
+	CSEG
+;
+;
+$MEMRY:	DW	0		; filled in by linker
+$PFLAG:	DB	0		; 0 = Fortran main program
+;
+;
+;
+;	Routine	$GINIT		Initial program startup.
+;
+;	Calling sequence is:
+;		LD	HL,$+6
+;		JP	$GINIT
+;
+NIL	EQU	80H
+;
+;
+$GINIT:
+	LD	SP,(BDOS+1)		; set SP
+;
+	LD	B,6			; start of BDOS is 6 bytes
+DECSP:	DEC	SP			; .. below entry address
+	DJNZ	DECSP
+;
+	PUSH	HL			; link for return
+;
+	LD	IX,128
+	ADD	IX,SP			; IX for program
+	LD	($INIX),IX
+;
+;	Initialise heap
+;
+	LD	HL,($MEMRY)
+	LD	($HPLM),HL
+;
+	LD	BC,0
+	CALL	$HALOC		; to initialise $STKLM
+;
+	LD	HL,0
+	LD	(GAVSIZ),HL	; "gavail.size := 0"
+;
+	LD	HL,NIL
+	LD	(GAVLNK),HL	; "gavail.link := NIL"
+	LD	(WAVLNK),HL	; "wavail.link := NIL"
+;
+	LD	HL,$GVAIL
+	LD	($GROVR),HL	; "grover := addr(gavail)"
+	LD	HL,$WVAIL
+	LD	($WROVR),HL	; "wrover := addr(wavail)"
+;
+;	Establish units 1 and 2
+;
+	LD	HL,0
+	LD	($UCHN),HL	; for chain of active units
+	LD	($FACT),HL	; mixed-language provision
+;
+	LD	($FNSEQ),HL	; file name sequence
+	LD	($DCLN),HL	; source line number
+;
+	CALL	$EUN12		; establish default units
+;
+	LD	HL,NULSUB	; address of null subroutine ..
+	LD	($DPRST),HL	; .. into "print line stack" ..
+	LD	($DNLGT),HL	; .. and "non-local GOTO"
+;
+	XOR	A
+	LD	($DSLFL),A
+;
+	LD	C,FINDVN	; find CP/M version
+	CALL	$BDOS
+	LD	L,1		; for CP/M 1.x
+	CP	20H
+	JR	C,FVN2
+	INC	L		; for CP/M 2.x
+FVN2:	LD	($HCPMV),HL
+;
+	LD	C,SETDMA	; set "DMA address" to ..
+	LD	DE,DEFBUF	; default buffer at base+80H
+	CALL	$BDOS
+;
+NULSUB:
+	RET
+;
+;
+	END
+
+

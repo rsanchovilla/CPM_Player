@@ -1,0 +1,310 @@
+{ E V E N T . S I C     OnInterval-Routinen  V 1.2    19-DEZ-1987    }
+
+{$A+,W0,U-}
+
+const
+  MaxEvent = 18;  { 19 = COM0:, 20 = COM1:, ..., maximal 26 }
+
+type
+  eventinfo = record
+                eventflag: byte;
+                eventproc: integer;
+              end;
+  fknumber = 1..10;
+  fkdef    = array[1..16] of char;
+  fkeys    = array[fknumber] of fkdef;
+  fkstring = string[15];
+
+  _fksptr   = ^_fksave;
+  _fksave   = record
+               kdef: fkeys;
+               kptr: _fksptr;
+              end;
+
+
+var
+  fkey:   fkeys absolute $F87F;
+  _fkptr: _fksptr;
+  TRPTBL: array[1..26] of eventinfo absolute $FC4C;
+  FNKFLG: array[1..10] of boolean absolute $FBCE;
+
+
+
+
+{$R+}
+procedure KeyOff (n: integer);
+  begin
+    TRPTBL[n].eventflag := 0;
+    if n in [1..10] then FNKFLG[n] := FALSE;
+  end;
+
+procedure KeyOn (n: integer);
+  var
+    CURLIN: integer absolute $F41C;
+
+  begin
+    TRPTBL[n].eventflag := TRPTBL[n].eventflag and $FC or 1;
+    if n in [1..10] then begin
+      FNKFLG[n] := TRUE;
+      CURLIN    := 0;
+      end;
+  end;
+
+procedure KeyStop (n: integer);
+  begin
+    TRPTBL[n].eventflag := TRPTBL[n].eventflag or 2;
+  end;
+
+procedure OnKey (n, adr: integer);
+
+var
+  SoftwareInterrupt: ^integer absolute $378; { nur gÅltig fÅr Turbo 3.0 }
+
+{$R-,W1}
+  procedure intproc;
+    var i,j:    integer;
+        c:      char;
+        INTFLG: byte absolute $FC9B;
+        PUTPNT: integer absolute $F3F8;
+        GETPNT: integer absolute $F3FA;
+        STPKEY: byte absolute $FBEC;
+
+    begin
+      if INTFLG = 3
+      then begin
+        delay (300);
+        TRPTBL[11].eventflag := TRPTBL[11].eventflag or 4;
+        while (STPKEY and 16)=0 do;
+        INTFLG := 0; GETPNT := PUTPNT;
+        end;
+      for i := 1 to MaxEvent do
+        if TRPTBL[i].eventflag = 5
+        then with TRPTBL[i] do
+          begin
+          eventflag := eventflag or 2;
+          j         := eventproc;
+          inline ($2A/j/$7D/$B4/$C4/$99/$F3);
+          eventflag := eventflag and $F9;
+          end;
+    end;
+
+  begin
+    SoftwareInterrupt^  := addr(intproc);
+    TRPTBL[n].eventproc := adr;
+  end;
+
+{$W0}
+
+procedure IntervalOff;
+
+  begin
+    KeyOff (18);
+  end;
+
+
+procedure IntervalOn;
+
+  begin
+    KeyOn (18);
+  end;
+
+
+procedure IntervalStop;
+
+  begin
+    KeyStop (18);
+  end;
+
+
+
+procedure OnInterval (time, adr: integer);
+
+  var
+    intval:            integer absolute $FCA0;
+    intcnt:            integer absolute $FCA2;
+
+  begin
+    intval := time; intcnt := intval;
+    OnKey (18, adr);
+  end;
+
+
+
+procedure StopOff;
+
+  begin
+    KeyOff (11);
+  end;
+
+
+procedure StopOn;
+
+  begin
+    KeyOn (11);
+  end;
+
+procedure StopStop;
+
+  begin
+    KeyStop (11);
+  end;
+
+procedure OnStop (adr: integer);
+  begin
+    OnKey (11, adr);
+  end;
+
+
+
+procedure SpriteOff;
+
+  begin
+    KeyOff (12);
+  end;
+
+
+procedure SpriteOn;
+
+  begin
+    KeyOn (12);
+  end;
+
+procedure SpriteStop;
+
+  begin
+    KeyStop (12);
+  end;
+
+procedure OnSprite (adr: integer);
+  begin
+    OnKey (12, adr);
+  end;
+
+
+
+procedure StrigOff (n: integer);
+
+  begin
+    KeyOff (n + 13);
+  end;
+
+
+procedure StrigOn (n: integer);
+
+  begin
+    KeyOn (n + 13);
+  end;
+
+procedure StrigStop (n: integer);
+
+  begin
+    KeyStop (n + 13);
+  end;
+
+procedure OnStrig (n, adr: integer);
+  begin
+    OnKey (n + 13, adr);
+  end;
+
+
+
+procedure AllEventsOff;
+  begin
+    fillchar (TRPTBL, sizeof(TRPTBL), 0);
+    fillchar (FNKFLG, sizeof(FNKFLG), 0);
+  end;
+
+
+procedure fnksb;
+
+  var fnkswi: byte absolute $FBCD;
+      sftkey: byte absolute $FBEB;
+
+  begin
+    fnkswi := (sftkey xor 1) and 1; BIOS(1);
+  end;
+
+
+
+procedure savekeys;
+
+  var
+    p: _fksptr;
+
+  begin
+    p := _fkptr;
+    new (_fkptr);
+    _fkptr^.kptr := p;
+    _fkptr^.kdef := fkey;
+  end;
+
+
+
+
+procedure restorekeys;
+
+  var
+    p: _fksptr;
+
+  begin
+    if _fkptr <> NIL
+    then begin
+      p    := _fkptr^.kptr;
+      fkey := _fkptr^.kdef;
+      dispose (_fkptr);
+      _fkptr := p;
+      fnksb;
+      end;
+  end;
+
+
+
+
+
+procedure key (n: fknumber; s: fkstring);
+
+  var
+    length: byte absolute s;
+
+  begin
+    fillchar (fkey[n], 16, 0);
+    if length>15
+    then length:=15;
+    move (s[1], fkey[n], length);
+    fnksb;
+  end;
+
+
+
+
+function getkey (n: fknumber): fkstring;
+
+  var s: fkstring;
+
+  begin
+    s[0]:=#0;
+    while fkey[n][succ(ord(s[0]))] <> #0 do
+      begin
+      s[0]         := succ(s[0]);
+      s[ord(s[0])] := fkey[n][ord(s[0])];
+      end;
+    getkey := s;
+  end;
+
+
+
+procedure ShowKeys;
+
+  begin
+    inline ($DD/$21/$CF/$00/$FD/$2A/$C0/$FC/$C3/$1C/$00);
+  end;
+
+
+procedure HideKeys;
+
+  begin
+    inline ($DD/$21/$CC/$00/$FD/$2A/$C0/$FC/$C3/$1C/$00);
+  end;
+
+
+

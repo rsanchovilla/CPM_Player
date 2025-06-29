@@ -1,0 +1,39 @@
+%  This file is used to install the enclosed CDOS software on a Cromix disk.
+%  To do this, boot up Cromix version 11 as a privileged user, place this
+%  disk into drive x, and execute the intall program by typing:
+%	  install fdx .
+
+echo The Cobol version 04.64 software will be loaded into /usr/pkg/fdc.
+
+makd /usr/pkg >* /dev/null
+makd /usr/pkg/fdc >* /dev/null
+chowner bin /usr/pkg /usr/pkg/fdc
+
+dir /usr/pkg/fdc
+cdoscopy -f  #1 callroot.cob callroot.crx  "cd3102.*"  coblbx.rel  coblib.rel
+cdoscopy -f  #1 cobloc  cobol.com  cobol[1-4].ovr  crtest.cob  crtest.crx
+cdoscopy -f  #1 cvisam.com  debug.rel  isamdemo.cob  isamdemo.crx  lib.com  
+cdoscopy -f  #1 link.com linkd.com  rcisam.com  root.cob  runcob.com 
+cdoscopy -f  #1 seqcvt.com  testisam.com  cobol.crx  fdc.doc
+
+del cobol.cmd callroot.cmd isamdemo.cmd crtest.cmd >* /dev/null
+ren  cobol.crx     cobol.cmd
+ren  callroot.crx  callroot.cmd
+ren  isamdemo.crx  isamdemo.cmd
+ren  crtest.crx    crtest.cmd
+
+chowner bin  callroot.cob  callroot.cmd  cd3102.*  coblbx.rel  coblib.rel
+chowner bin  cobloc  cobol.com  cobol[1-4].ovr  crtest.cob  crtest.cmd
+chowner bin  cvisam.com  debug.rel  isamdemo.cob  isamdemo.cmd  lib.com  
+chowner bin  link.com  linkd.com  rcisam.com  root.cob  runcob.com  
+chowner bin  seqcvt.com  testisam.com  cobol.cmd  fdc.doc
+
+makd /h >* /dev/null
+maklink  -f  coblbx.rel  coblib.rel  debug.rel  /h
+maklink  -f  cvisam.com  lib.com  link.com  linkd.com  rcisam.com  /bin
+maklink  -f  seqcvt.com  testisam.com  /bin
+maklink  -f  cobol.cmd  /cmd
+
+echo The installation of Cobol version 04.64 is complete.
+
+

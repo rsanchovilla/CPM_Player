@@ -1,0 +1,47 @@
+     A bug was discovered in the original release
+     of RESTORE.LBR.
+
+     This library now contains corrected versions of
+     RESTOREI and RESTOREZ.  The problem was that
+     they did not correctly handle small drives,
+     specifically those with DSM < 256.  This value
+     is typically found on SSSD floppies (and some
+     40 track DS 5-1/4" floppies) and on small to
+     medium RAM disks.
+
+     The symptoms of the problem are that, after
+     running RESTORE, the files are all still on the
+     disk, but they are only ONE allocation group
+     long, no matter what the original length was.
+     However, the size reported by DIR, XDIR, or CRC
+     will match the length of the original file!  In
+     addition, if you dump out an allocation map of
+     the disk after RESTOREing it, you will find the
+     files listed, in the proper order, at the
+     beginning of the map, then (usually, but not
+     always), some ++Free++ allocation groups, then
+     more pieces of the files that are listed at the
+     start of the map (if they are more than one
+     group long), in the same locations as before
+     you RESTOREd the disk.
+
+     All that is fixed now, at least on the disk
+     sizes and formats I have available to test.
+     Thanks to John Lorimer of Denver for reporting
+     the problem, and especially for providing
+     mapping info that let me track down the problem
+     quickly.  If anyone else has any other
+     problems, particularly if your disk format is
+     unusual, send bug reports to the BBS's listed
+     below, or call direct.
+
+     Happy RESTOREing!
+
+
+Steve Dirickson                   4 February 1987
+21145 Raintree Place NW
+Poulsbo  WA  98370-9726
+Voice: 206-697-1270/9311
+BBS: Seattle's 'downspout': 206-325-1325
+     ZNode Central: 415-489-9005
+

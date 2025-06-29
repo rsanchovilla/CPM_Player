@@ -1,0 +1,24 @@
+ title	'NOVERLAY Runpcd 2.4.4/3.1 Removes overlays (84/11/15)'
+;
+; This removes any timer overlays that may have been installed, and
+; ensures that RUNPCD and RUNPCDI are portable.  Only valid for
+; version 2.4.4 (CPM installation 3.1) at present.
+;
+; Assemble to .HEX file and overlay.  CPMLINK must be first
+; module of .COM file linked to use this.
+;
+	org	0124h
+dotime:	xra	a;		Remove time of day
+	stc
+	ret
+;
+timer:	stc;			Remove interval/time set
+	ret
+	nop
+;
+; The overlay area at location 0139h (for 64 bytes) is normally
+; zeroed with an initial 040h (length) byte.  This overlay does
+; not alter that area.
+;
+	end
+пу

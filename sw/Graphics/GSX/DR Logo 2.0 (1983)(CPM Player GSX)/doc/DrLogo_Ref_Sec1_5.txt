@@ -1,0 +1,2151 @@
+DRLRM1.WS4      (= "Dr. Logo Reference Manual", Section 1)
+----------
+
+(Retyped by Emmanuel ROCHE. Posted to comp.os.cpm.amethyst by
+Roche on 18 Apr 2005.)
+
+
+Section 1: Components of Dr. Logo
+---------------------------------
+
+A procedure is an action that Dr. Logo can do. A Logo program is
+made  up of procedures. You will probably start by writing  one-
+procedure programs, but you will build your first procedures out
+of  procedures  that  come  with  Dr.  Logo,  called  "Dr.  Logo
+primitives".  Later, you will use the procedures that  you  have
+written,  as  well  as Dr. Logo  primitives,  to  build  complex
+programs.   Procedures  are  the  basic  building   blocks   for
+programming with Dr. Logo.
+
+A  procedure  is made up of expressions. An expression  has  two
+parts: a procedure name and inputs to the procedure. That is why
+you  need Dr. Logo primitives to build your first procedure.  To
+Dr.  Logo, everything you type is either a procedure name or  an
+input to a procedure.
+
+Although you can build a procedure out of many expressions,  you
+can  also ask Dr. Logo to evaluate expressions one at a time  by
+entering  them individually to the ? prompt, which is  sometimes
+called the interpreter or toplevel. For example,
+
+        ?print "Salutations!
+        Salutations!
+
+In  this  example,  print "Salutations! is  an  expression.  The
+procedure name "print" identifies a Logo primitive that displays
+its  input, Salutations!, on the screen. As in all  examples  in
+this  book, the line following "?" shows what the user types  at
+the keyboard. After you type a line at toplevel, you must  press
+the  Enter  key,  <--+,  to tell Dr.  Logo  that  you  want  the
+expressions on the line evaluated.
+
+A  procedure  can require a certain number and kind  of  inputs.
+Input  to  a  procedure can be words, numbers,  or  lists.  This
+section formally defines how to put characters together to  form
+procedure  names,  words, numbers, and lists, so  that  you  can
+combine  them into expressions. Then, it tells you how Dr.  Logo
+evaluates a line when you put more than one expression on it.
+
+
+1.1 Dr. Logo character set
+--------------------------
+
+To  build  a  procedure name or word, you  can  use  almost  any
+character  on  your  keyboard, including  upper-  and  lowercase
+letters, numerals, and symbols. For example
+
+        box1
+        box2
+        RobinNest
+        draw&go
+
+However,  Logo gives special meaning to certain characters.  For
+example,  blank spaces delimit words or numbers; a  blank  space
+before and a blank space after a word set the word off from  the
+rest of the line. The following special characters are also Logo
+delimiters:
+
+Table 1-1. Dr. Logo special characters
+
+Character     Type      Action/use
+---------  ----------   ----------
+    [                   Begins a list
+    ]                   Ends a list
+    (                   Begins a grouped expression
+    )                   Ends a grouped expression
+    ;                   Begins comments
+    =       logical     Equal infix operation, outputs TRUE or FALSE
+    <       logical     Less-than infix operation, outputs TRUE or FALSE
+    >       logical     Greater-than infix operation, outputs TRUE or FALSE
+    +      arithmetic   Addition prefix operation,
+                          outputs sum of inputs.
+    -      arithmetic   Subtraction infix operation,
+                          outputs difference of two inputs.
+    *      arithmetic   Multiplication infix operation,
+                          outputs product of inputs.
+    /      arithmetic   Division infix operation,
+                          outputs quotient of inputs.
+    ^      arithmetic   Exponent infix operation,
+                          outputs first input number raised to
+                          the second input power.
+
+When  you use a delimiter in an expression, you do not  need  to
+precede it with a blank to set it off from the rest of the line.
+Whenever one of these characters appears, Dr. Logo assumes  that
+it  starts a new word or number separate from anything  else  on
+the line. This simplifies typing expressions in many cases, such
+as
+
+        256+1026
+
+but complicates using these characters in situations other  than
+those  that Dr. Logo expects. For example, if you try to  use  a
+dash  as a hyphen (instead of a minus sign), you might  see  Dr.
+Logo add unwanted spaces:
+
+        ?print [high-resolution turtle graphics]
+        high - resolution turtle graphics
+
+To tell Logo that you want it to treat a delimiter as a part  of
+a  word,  precede the special character with a  backslash  ("\")
+called  "the quoting character" by Dr. Logo, which generates  it
+when you type Ctrl-Q.
+
+        ?print [high\-resolution turtle graphics]
+        high-resolution turtle graphics
+
+Dr.  Logo  recognizes other special characters  called  "control
+characters"   as  commands.  Control  characters  can   edit   a
+procedure,  interrupt  and  terminate a  procedure,  and  change
+between  full text, full graphics, and splitscreens. Section  3,
+"Editing  Commands", and Section 4, "Text and Graphic  Screens",
+describe Dr. Logo control characters.
+
+
+1.2 Logo objects
+----------------
+
+A  Logo  procedure  can require a specific number  and  kind  of
+inputs  to  perform its task. The required input can be  one  or
+more words, lists, or numbers. When a procedure requires any one
+of  these,  we say that it can accept a "Logo  object",  meaning
+that  it  needs  a word, a list, or a  number  to  complete  its
+operation.  To  make  your procedures  more  flexible,  you  can
+represent  objects with names called "variables".  This  section
+describes words, lists, numbers, and variables.
+
+
+1.2.1 Words
+-----------
+
+A  Logo  word is a group of one or more  consecutive  characters
+separated  from  other characters on the line by  delimiters.  A
+blank  space  separates a word from the rest of  the  characters
+that  follow  it  on  the line. You can  use  periods  (".")  or
+underbars  ("_")  as connectors to make Dr. Logo  treat  several
+words as one word, as in the following example:
+
+        ?print "choc.chip
+        choc.chip
+        ?print "oatmeal_raisin
+        oatmeal_raisin
+
+In  English, a sentence is composed of words called "verbs"  and
+"nouns".  In  Logo, an expression is composed  of  words  called
+"procedure  names" and "inputs", which can be other  names.  Dr.
+Logo  needs  a way to distinguish an input name  (noun)  from  a
+procedure name (verb). So, when you type a Logo expression,  you
+must precede an input name with quotes ("). If you do not,  Logo
+complains. For example,
+
+        ?print "hi_there
+        hi_there
+        ?print hi_there
+        I don't know how to hi_there
+
+Although quotes have this special meaning at the beginning of  a
+word,  they  are  not a delimiter, and can be use  as  a  normal
+character within a word. Do not use quotes at the beginning of a
+word, except for this reason. Dr. Logo has a special  primitive,
+quote, that has the same effect as quotes.
+
+        ?print quote hi_there
+        hi_there
+
+Other  Dr.  Logo  primitives can examine  a  word  character  by
+character,  take  a word apart, and put a  word  together.  When
+manipulating  a  word  in  one of  these  ways,  Logo  treats  a
+character in a word as a one-letter word. For example,
+
+        ?first "zebra
+        z
+        ?first first "zebra
+        z
+        ?first "z
+        z
+        ?butfirst "atypical
+        typical
+        ?last "rough
+        h
+        ?butlast "dates
+        date
+        ?word "R2 "D2
+        R2D2
+
+As  mentioned in Section 1.1, "Dr. Logo character set", you  can
+tell  Dr. Logo that you want to use a delimiter character  in  a
+word by preceding the delimiter with a backslash ("\"). However,
+if a delimiter character is the first character in the word, and
+the  word  is preceded by quotes ("), in most cases you  do  not
+have  to  put a backslash between the quotes and  the  delimiter
+character.
+
+        ?"+more
+        +more
+        ?ascii "*
+        43
+
+However,  blank  spaces and square brackets ("["  and  "]")  are
+treated  as delimiters, even when preceded by quotes ("). Use  a
+backslash  ("\") after quotes (") to tell Logo to treat a  space
+or square brackets as a normal character.
+
+        ?ascii "[
+        ascii doesn't like an empty word as input
+        ?ascii "\[
+        93
+
+The Dr. Logo primitive "readquote" (or "rq") creates a word that
+contains all the characters in a line typed at the keyboard.  If
+the  line  contains  delimiters,  readquote  inserts   backslant
+characters in front of each one, to make the line one word.  You
+can use readquote to create a command line for a function key to
+recall;  fkey  requires  a  word as  input.  See  the  following
+example.
+
+        ?fkey 2 rq
+        setd "b: resetd
+        ?setd "b: resetd <Ctrl-G> <Enter>
+
+
+1.2.2 Lists
+-----------
+
+A  literal list is a series of Logo objects enclosed  in  square
+brackets  ("["  and "]"). You can create a list  without  square
+brackets  by  using  the "list" or  "sentence"  primitive.  Each
+element  of  a list can be a word, a number,  or  another  list.
+Within  the  list,  objects are delimited from  one  another  by
+spaces.  Dr.  Logo treats every object in a literal  list  as  a
+literal  object, so you do not need to put quotes in front of  a
+word  included  within a literal list. The following  are  valid
+literal lists:
+
+        [Salutations!]
+        [L M N]
+        [[bread butter] [soup sandwich] [cheese crackers]]
+        [10 20 [22 25] 30]
+
+The  following  examples  show  how  to  create  a  list   using
+"sentence" and "list":
+
+        ?list "L "M "N
+        [L M N]
+        ?sentence [I like] "hamburgers
+        [I like hamburgers]
+
+The  same  Logo  primitives that manipulate  elements  of  words
+manipulate elements of lists.
+
+        ?butfirst [not really]
+        [really]
+        ?butlast [not really]
+        [not]
+        ?fput 5 [10 20 [22 25] 30]
+        [5 10 20 [22 25] 30]
+
+After  the fput expression is executed, the list above has  five
+elements,  the fourth of which is a list. The following  example
+shows how to count elements of lists within lists:
+
+        ?count [5 10 20 [22 25] 30]
+        5
+        ?count item 4 [5 10 20 [22 25] 30]
+        2
+
+The  following table compares the four primitives that can  take
+two objects as input and output a word or list.
+
+Table 1-2. Comparison of list primitives
+
+Primitive       Input 1         Input 2         Output
+---------       -------         -------         ------
+list            "yellow         "green          [yellow green]
+sentence        "yellow         "green          [yellow green]
+fput            "yellow         "green          "yellowgreen
+lput            "yellow         "green          "greenyellow
+
+list            "sky            [is blue]       [sky [is blue]]
+sentence        "sky            [is blue]       [sky is blue]
+fput            "sky            [is blue]       [sky is blue]
+lput            "sky            [is blue]       [is blue sky]
+
+list            [say hello]     [to me]         [[say hello] [to me]]
+sentence        [say hello]     [to me]         [say hello to me]
+fput            [say hello]     [to me]         [[say hello] to me]
+lput            [say hello]     [to me]         [to me [say hello]]
+
+list            [hello]         []              [[hello] []]
+sentence        [hello]         []              [hello]
+fput            [hello]         []              [[hello]]
+lput            [hello]         []              [[hello]]
+
+
+1.2.3 Numbers
+-------------
+
+A number is one or more numerals separated from other characters
+on the line by spaces or other delimiters. A number is a kind of
+word,  but  you  do not have to put quotes (")  in  front  of  a
+number,  unless you want to use it as a variable name. Dr.  Logo
+does  not  try to treat a word that starts with a numeral  as  a
+procedure  name.  In fact, Dr. Logo will not let  you  define  a
+procedure name that starts with a numeral.
+
+A  number  can contain a + or - to indicate sign.  But,  because
+these special characters are delimiters and arithmetic operators
+as  well  as signs, you might accidentally combine  two  numbers
+into one expression. To prevent this, Dr. Logo interprets spaces
+and numbers combined with arithmetic operators as follows:
+
+        5-2     is interpreted as 3.
+
+        5 - 2   is also interpreted as 3. However,
+
+        5 -2    is interpreted as two numbers: 5 and -2.
+
+Dr.  Logo  uses  two  kinds of  numbers:  integers  and  decimal
+numbers. You can input negative or positive decimal numbers with
+up to 15 significant digits, and any integer between  2147483647
+and -2147483648.
+
+Most  arithmetic  operations can accept either an integer  or  a
+decimal number as input. Some take integers as input, but output
+a decimal number.
+
+        ?13 / 7
+        1.85714285714286
+
+Dr.  Logo  supports primitives that convert decimal  numbers  to
+integers,  create  exponential and random numbers,  and  perform
+trigonometric  and logarithmic functions. Internally,  Dr.  Logo
+uses  both single- and double-precision integers  and  floating-
+point  numbers.  Dr.  Logo  always  uses  double-precision   for
+calculations,  but  converts  numbers  to  single-precision  for
+display   or  storage  when  accuracy  to  15  places   is   not
+compromised. Internally, numbers are stored in IEEE standard 64-
+bit  format, in the dynamic range 10 to the power of -308 to  10
+to the power of +308.
+
+In  the world of mathematics, there are numbers that  cannot  be
+represented  by  numerals. Dr. Logo outputs special  words  that
+represent  these numbers: +INF represents the positive  infinite
+number,  -INF represents the negative infinite number,  and  NAN
+represents "not a number" for any mysterious entity that is  not
+a number at all.
+
+        ?1/0
+        +INF
+        ?-1/0
+        -INF
+        ?0/0
+        NAN
+
+
+1.2.4 Variables
+---------------
+
+A  variable  is  a  "container" that  holds  a  Logo  object.  A
+container  in  your kitchen labeled "Cookie Jar"  might  contain
+chocolate chip, peanut butter, some other kind of cookies, or no
+cookies  at all. In Dr. Logo, a variable can have any  name  you
+give  it, and contain any object -- word, number, or list.  Here
+is the simplest way to create a variable:
+
+        ?make "favorites [choc.chip peanut.but !
+        oatmeal.raisin cream.fill brownie pinwh!
+        eel shortbread snickerdoodle]
+
+After  the make expression is executed, the long list of  cookie
+types has a name: "favorites.
+
+Referring  to  an object by a variable name lets  you  write  an
+expression that is independent of the object it manipulates. For
+example,  the  person  responsible for keeping  the  cookie  jar
+filled could enter:
+
+        ?if emptyp :cookie.jar [make "cookie.ja!
+        r first shuffle :favorites]
+
+which  means, if the cookie jar is empty, put the first kind  of
+cookie from the shuffled list of favorites into the cookie jar.
+
+Because  Logo  programmers use variables  frequently,  they  use
+several terms to describe the relationship between a  variable's
+name and its contents. For example, if the make expression  puts
+snickerdoodle  in cookie.jar, a Logo programmer  might  describe
+the relationship in any or all of these ways:
+
+        - cookie.jar is a variable, snickerdoodle is its value
+        - cookie.jar is the name of snickerdoodle
+        - cookie.jar contains snickerdoodle
+        - cookie.jar is bound to snickerdoodle
+
+        - snickerdoodle is the "thing" of cookie.jar
+        - snickerdoodle is the contents of cookie.jar
+        - snickerdoodle is the value of cookie.jar
+
+There are two ways to reference the contents of a variable:
+
+        ?thing "cookie.jar
+        snickerdoodle
+        ?:cookie.jar
+        snickerdoodle
+
+A  colon (":") before a variable name makes Dr.  Logo  reference
+the  contents of the variable, instead of treating the  variable
+name as a word.
+
+No matter how you think of variables, remember that you can  use
+a  variable in an expression without being concerned  about  the
+variable's  actual value. Variables help you  write  expressions
+that  are  independent of the data they manipulate.  Section  2,
+"Working  with  Procedures", tells how to use  variables  within
+procedures.
+
+
+1.3 Lines and expressions
+-------------------------
+
+You  can  put as many expressions on a line as you wish,  but  a
+line at toplevel cannot contain more than 132 characters.
+
+In  general, Dr. Logo evaluates expressions on a line from  left
+to right. It treats everything, including other expressions,  to
+the  right  of a primitive name or identifier as input  to  that
+primitive if the primitive requires an input.
+
+        ?random 10 > 5
+        random doesn't like TRUE as input
+        ?5 > random 10
+        FALSE
+
+However,  Dr. Logo does not evaluate arithmetic  expressions  in
+strict  left-to-right  order. It evaluates / and  *  expressions
+first,  from left to right, then goes back and evaluates + or  -
+expressions.
+
+        ?2 * 3 + 7 / 5
+        7.4
+
+To make Dr. Logo evaluate expressions in a different order,  you
+can  group  expressions in parentheses ["(" and ")"].  Dr.  Logo
+evaluates the expression in the innermost parentheses first. The
+order in which Dr. Logo evaluates your expression can make a big
+difference in the output!
+
+        ?(random 10) > 5
+        FALSE
+        ?2*(3+7)/5
+        4
+
+
+EOF
+DRLRM2.WS4      (= "Dr. Logo Reference Manual", Section 2)
+----------
+
+(Retyped by Emmanuel ROCHE.)
+
+
+Section 2: Working with procedures
+----------------------------------
+
+This section discusses several aspects of working with Dr.  Logo
+procedures.  It tells how to construct a procedure and  give  it
+multiple  inputs. It also describes how Dr. Logo keeps track  of
+executing procedures.
+
+
+2.1 Constructing procedures
+---------------------------
+
+The following sections describe how to put a procedure together:
+how  to  define it, how to make it readable, and how  to  use  a
+variable  to  pass  information between procedures  and  make  a
+procedure require an input.
+
+
+2.1.1 Naming and defining procedures
+------------------------------------
+
+To  define a procedure is to teach Dr. Logo a new verb, that  is
+to  say, to tell Dr. Logo how to do a new thing. You  teach  Dr.
+Logo  a new verb by describing the new activity with  primitives
+and  other words Dr. Logo already know or will know  before  you
+execute  the procedure. For example, Dr. Logo  knows  primitives
+that  make the turtle go forward, repeat, and turn right.  Using
+these primitives, you can describe how to draw a square, and use
+that description to define a new procedure.
+
+The  simplest way to define a new procedure is to begin  a  line
+with  the special word "to", which makes Dr. Logo  remember  the
+next word you type as a new procedure name. Your procedure  name
+should  tell  what your procedure does, and can start  with  any
+character,  except a numeral. Dr. Logo will complain if you  try
+to  use the name of a primitive as a procedure name, unless  you
+have  set the system variable REDEFP to TRUE. When you  start  a
+line with "to", Dr. Logo gives you a new prompt character, >, to
+tell  you it will not immediately execute the instructions  that
+you enter to define the new procedure.
+
+        ?to square
+        >repeat 4 [forward 60 right 90]
+        >end
+        square defined
+        ?
+
+The  special  word "end" tells Dr. Logo that you  have  finished
+defining  your procedure, and returns you to the ?  prompt.  You
+must enter "end" by itself as the last line of a procedure.  Now
+that  "square"  is defined, you can use square  as  a  procedure
+name,  as  follows. Also see Colorplate 23 at the  beginning  of
+Section 6, "References to Primitives".
+
+        ?square
+
+Logo  programmers  use  terms  similar to  those  they  use  for
+variables  to describe the relationship of a procedure  and  its
+definition. Here is how these terms apply to the procedure  just
+defined:
+
+        - "to square" is the title line of square
+        - square is the name of [repeat 4 [forward 60 right 90]]
+        - [repeat 4 [forward 60 right 90]] is the definition of square
+        - [repeat 4 [forward 60 right 90]] is the body of square
+
+The  body  of a procedure is a special kind of list: a  list  of
+expressions.  This list can contain as many expressions  as  you
+want,  or it can be an empty list. Because Dr. Logo  treats  the
+definition  of a procedure as a list, you can write a  procedure
+that  first combines expressions into a list, and  then  defines
+this list as the body of a new procedure. The description of the
+"define"  primitive  in Section 6, "References  to  Primitives",
+tells how one procedure can define another.
+
+You  can  use  the  Dr.  Logo  screen  editor  to  modify   your
+procedures' definitions. When you use the editor, you can change
+the  body  of a procedure, add a new procedure,  or  change  the
+title  line of an existing procedure. When you exit the  editor,
+the  new  or  changed  procedures  are  defined,  replacing  any
+previous  definitions for those names. The descriptions  of  the
+ed,  edall, and edps primitives in Section 6 tells how  to  load
+procedures  into  the  Dr.  Logo  editor.  Section  3,  "Editing
+Commands", tells how to use the editor.
+
+
+2.1.2 Writing readable procedures
+---------------------------------
+
+All  programmers  want to make their procedures as  readable  as
+possible. A readable procedure is a distinct advantage when  you
+try  to share your work with friends, or try to use a  procedure
+several months after writing it.
+
+Two  traditional  tools that make a program readable  are  short
+procedures  and  long  names for procedures  and  variables.  In
+general,  short  procedures are more readable  than  long  ones.
+Short  procedures  are easier to understand, test,  and  combine
+with  other  procedures. Long procedure and variable  names  can
+help  describe  the purpose and function of procedures,  or  the
+kind of data represented by variables. However, long names  take
+up  valuable  memory space, so you might have  to  shorten  your
+names  if  you  write  a  large  program  that  needs  all  your
+workspace.
+
+Dr. Logo gives you special help in writing readable  procedures.
+For  example, Dr. Logo lets you break long expressions into  two
+or  more  lines. Generally, a line in a procedure  is  a  single
+expression:  a  procedure  name and its  inputs.  However,  some
+procedures need complex inputs, such as lists of instructions or
+predicate  expressions. This kind of line can grow so long  that
+it becomes difficult to read. For example, an "if" command  with
+a  long  predicate  expression and two  instructions  lists  can
+easily exceed the width of your display. When this happens,  Dr.
+Logo  prints  an  exclamation  point  ("!")  and  displays   the
+remainder of the command on the next line.
+
+        ?to check.for.favorites
+        >if memberp :cookie.jar :favorites (pr !
+        [edible cookies available] (pr [forget !
+        it!])
+        >end
+        check.for.favorites defined
+
+You  can  clean up your procedure's appearance by  breaking  the
+long  expression into several lines. If you press the Enter  key
+and  begin the next line with a space or a tab, Dr. Logo  treats
+the new line as a continuation of the expression on the previous
+line.
+
+        ?to check.for.favorites
+        >if memberp :cookie.jar :favorites
+           [pr [edible cookies available]]
+           [pr [forget it!]]
+        >end
+        check.for.favorites defined
+
+Dr.  Logo  also  lets you put comments  in  your  procedures.  A
+comment  is  text  that Dr. Logo ignores and  does  not  try  to
+evaluate  or  execute.  You can use  comments  to  describe  the
+function or purpose of a procedure or expression. You can  start
+a  comment  at  the  beginning  of a  line  or  after  the  last
+expression on the line, but a comment must be the last object on
+the  line. Start a comment with a semicolon (";"), as  shown  in
+the following example. Also see Colorplate 3.
+
+        ?to triangle  ; Draw an equilateral tri!
+        angle
+        >repeat 3 [forward 20 right 120]
+        >end
+        triangle defined
+        ?to flag
+        >fd 40
+        >triangle
+        >back 40  ; Return to original position
+        >end
+        flag defined
+
+Comments take up space, but if space becomes a problem, you  can
+use  the  "noformat"  primitive to  remove  comments  from  your
+workspace.
+
+
+2.1.3 Using variables in procedures
+-----------------------------------
+
+Variables have special capabilities within a procedure. You  can
+use  variables  to  define inputs to a procedure,  and  to  pass
+information between procedures.
+
+In  general,  it  is  not  good  programming  practice  to  bury
+constants in your procedures. In the following procedure, 40  is
+a constant:
+
+        ?to flag
+        >forward 40
+        >triangle
+        >back 40
+        >end
+        flag defined
+
+Constants  do not mean much to someone who reads your  procedure
+later.  And  because they might appear on more  than  one  line,
+constants   are  difficult  to  change   systematically.   Using
+variables  instead  of constants simplifies your  procedures.  A
+variable name can tell a person reading your procedure something
+about  the data object. And to change the data, you need  change
+only the make expression.
+
+        ?to flag
+        >make "pole 40
+        >forward :pole
+        >triangle
+        >back :pole
+        >end
+        flag defined
+
+To simplify your procedure even further, you can use a  variable
+on a procedure's title line to define an input.
+
+        ?to flag :pole
+        >forward :pole
+        >triangle
+        >back :pole
+        >end
+        flag defined
+
+A  variable  on the title line makes your procedure  require  an
+input.  When  your  procedure  is called,  Dr.  Logo  defines  a
+variable  that  has  the  name given  on  the  title  line.  The
+variable's value is the input object. If no object is input, Dr.
+Logo complains.
+
+        ?flag
+        Not enough inputs to flag
+        ?flag 80
+        ?flag 40
+
+When you give your procedure a variable name as input, Dr.  Logo
+gives the contents of the variable to your procedure.
+
+        ?make "big 80
+        ?make "small 40
+        ?flag :big
+        ?flag :small
+
+The  next  few  paragraphs  tell how Dr.  Logo  keeps  track  of
+variable  definitions. At toplevel, Dr. Logo assigns  values  to
+variable names in your workspace. You define variables with make
+and  name  expressions directly to the interpreter's  ?  prompt.
+These are called "global variables".
+
+Dr.  Logo keeps track of variables defined by each procedure  as
+it is executing. These are the variables your procedure  defines
+in   the  title  line  and  with  make  expressions.   Different
+procedures  can  have variables that have the  same  name.  Logo
+programmers sometimes say that variables defined by a  procedure
+are "bound" to their values by that procedure. See the following
+example.
+
+        ?make "cookie.jar "snickerdoodle
+        ?to look.in :cookie.jar
+        >print :cookie.jar
+        >end
+        look.in defined
+        ?:cookie.jar
+        snickerdoodle
+        ?look.in "brownie
+        brownie
+        ?:cookie.jar
+        snickerdoodle
+
+You can use a variable in your procedure that is not defined  by
+your  procedure.  At execution time, if the procedure  has  been
+called  by  another  procedure, Dr. Logo looks  to  see  if  the
+calling   procedure  defined  the  variable.  If  it   finds   a
+definition, it does not look any further. If it does not find  a
+definition,  it searches up the levels of calling procedures  to
+toplevel before it complains that the variable is undefined.
+
+Because  Dr. Logo searches variable bindings this way,  you  can
+use  variables to pass information between procedures.  Usually,
+the  exchange happens this way: the called procedure accesses  a
+variable  defined  by  the calling  procedure.  It  changes  the
+definition of the variable, then returns control to the  calling
+procedure.  The calling procedure can then use  the  information
+the called procedure stored in the changed variable.
+
+The  "local"  primitive  can hide a  variable  from  Dr.  Logo's
+search. If calling and called procedures are using variables  of
+the same name, as is unavoidably the case when a procedure calls
+itself,  a local expression in the called procedure prevents  it
+from altering the calling procedure's value of the variable.  An
+input to a procedure is always local to the procedure.
+
+        ?to peek.in :cookie.jar
+        >(print "cookie.jar "contains :cookie.j!
+        ar
+        >look.again
+        >end
+        peek.in defined
+        ?to look.again
+        >; cookie.jar not defined here,
+        >; just used!
+        >(print [cookie.jar still contains] :co!
+        okie.jar
+        >end
+        look.again defined
+        ?peek.in "sugar
+        cookie.jar contains sugar
+        cookie.jar still contains sugar
+        ?to peer.in
+        >local "cookie.jar
+        >make "cookie.jar "choc.chip
+        >(print [cookie.jar contains] :cookie.j!
+        ar
+        >look.again
+        >end
+        peer.in defined
+        ?ern "cookie.jar
+        ?:cookie.jar
+        cookie.jar has no value
+        ?peer.in
+        cookie.jar contains choc.chip
+        cookie.jar still contains choc.chip
+        ?look.again
+        cookie.jar still contains              !
+        cookie.jar has no value in look.again: !
+        (print [cookie.jar still contains] :co !
+        okie.jar
+
+
+2.2 Giving inputs to procedures
+-------------------------------
+
+You  can  use  one  or more variables in the  title  line  of  a
+procedure  to define inputs to the procedure. Because  of  this,
+procedures you define always have a fixed number of inputs.
+
+Most  primitives also require a fixed number of  input  objects.
+However, some primitives can accept a variable number of  inputs
+when  the expression is enclosed in parentheses ["("  and  ")"].
+Without  parentheses,  these  primitives  normally  require  two
+inputs. With parentheses, they accept more or fewer inputs  than
+are normally required, as shown in the following example.
+
+        ?(word "sum "mer "sun "shine)
+        summersunshine
+        ?list : favorites
+        Not enough inputs to list
+        ?(list :favorites)
+        [[choc.chip peanut.but oatmeal.raisin !
+        cream.fill brownie pinwheel shortbread!
+        snickerdoodle]]
+
+Most  procedures expect a certain kind of input. When you  input
+something  to  a  procedure, it is simply  an  object,  and  the
+variable name is its container. What the procedure does with the
+object  determines what kind of object is required. In  fact,  a
+procedure executes normally until it reaches an expression  that
+requires  a  different  kind of input  than  was  supplied.  For
+example, if a procedure requires a number as input, it will  not
+know  what  to do with a word, and Dr. Logo complains.  See  the
+following example and Colorplate 36.
+
+        ?to pentagon :size
+        >pr [The five angles of a pentagon]
+        >pr [equal 360 / 5 or 72 degrees.]
+        >repeat 5 [fd :size rt 72]
+        >end
+        pentagon defined
+        ?pentagon 40
+        The five angles of a pentagon
+        equal 360 / 5 or 72 degrees.
+        ?pentagon "forty
+        The five angles of a pentagon
+        equal 360 / 5 or 72 degrees.
+        fd doesn't like forty as input in pent!
+        agon: repeat 5 [fd :size rt 72]
+
+As  you write procedures that take words and numbers  apart  and
+then  put them back together, you might create a  quoted  number
+such  as  "123.  In general, Dr. Logo accepts  a  quoted  number
+anywhere  an  unquoted number is expected. It  also  accepts  an
+unquoted number where a quoted word is expected. For example,  a
+primitive that expects numbers as input accepts quoted numbers.
+
+        ?sum "53 "42
+        95
+
+A  primitive  that  expects  a word or  list  as  input  accepts
+unquoted numbers.
+
+        ?first 9876
+        9
+
+One  exception  is the "ascii" primitive. It requires  a  quoted
+character as input. "ascii" does not distinguish among numerals,
+letters, and symbols.
+
+        ?ascii "2
+        50
+        ?ascii 2
+        ascii doesn't like 2 as input
+
+
+2.3 Classifying procedures
+--------------------------
+
+All procedures operate the same way. You use them by following a
+procedure  name  with  inputs in an  expression.  However,  Logo
+programmers sometimes find it convenient to classify procedures,
+that  is  to  say, to group procedures that  have  something  in
+common  together  and give the group a name.  For  example,  the
+procedures  that  come with Dr. Logo and make up  Dr.  Logo  are
+called "primitives".
+
+Most  procedures  can be classified as either a  command  or  an
+operation. A command initiates an action. For example,  commands
+move  the  turtle, draw pictures, and display  text.  A  command
+procedure  generally  ends with "end" or  "stop".  An  operation
+returns  an  object: TRUE, FALSE, a word, number, or  list.  The
+last  expression  to be evaluated in an operation  procedure  is
+always  an  output  expression.  Of  course,  you  can  write  a
+procedure that initiates an action before it outputs an  object.
+However,   most  primitives  are  simple  commands   or   simple
+operations.  The  descriptions  in  Section  6,  "References  to
+Primitives", refer to primitives as operations or commands.
+
+Note  that the po primitives, which display things on  the  text
+screen,  are commands, not operations. Commands such  as  pocall
+and  popkg format lists with spaces and tabs for display on  the
+screen,  making  the lists inappropriate for  input  to  another
+procedure.
+
+Logo programmers also use classification names to describe kinds
+of operations. Logical operations such as "and", "not", and "or"
+return  either  TRUE  or FALSE. An expression  that  contains  a
+logical  operator  and, therefore, evaluates to either  TRUE  or
+FALSE is called a "predicate expression". Because of this, other
+logical operation names end with p. For example,
+
+        ?numberp "two
+        FALSE
+        ?numberp 2
+        TRUE
+
+Other   logical  operators  you  can  use  to   form   predicate
+expressions are equalp, emptyp, memberp, listp, and wordp.  When
+you  write  a  procedure that outputs TRUE or  FALSE,  give  the
+procedure  a  name  that ends with p to indicate that  it  is  a
+logical operation.
+
+Arithmetic   operations   output   numbers.   Most    arithmetic
+expressions  are  formed  normally,  with  the  procedure   name
+followed by its inputs.
+
+        ?product 2 3
+        6
+
+However, some arithmetic operations are defined by symbols: +  -
+*  /  ^,  instead  of names.  Some  logical  operations,  called
+"relational  operators",  also use symbols: < >  =,  instead  of
+procedure   names.  Procedures  that  use  symbols  instead   of
+procedure names can be infix operators, which means you can  put
+the  symbol between the inputs in the expression. These  symbols
+also  work  as  prefix operators,  where  the  primitive  symbol
+precedes its inputs.
+
+        ?2 * 3
+        6
+        ?= 2 2
+        TRUE
+
+
+2.4 Evaluating procedures
+-------------------------
+
+The  Dr.  Logo interpreter evaluates one line at a time  as  you
+type  lines  at  your keyboard. Dr.  Logo  also  evaluates  your
+procedures  one  line  at a time. When an  expression  within  a
+procedure  begins  with the name of a different  procedure,  Dr.
+Logo  must execute the called procedure before it can return  to
+evaluate  the next line of the calling procedure. It  must  also
+keep track of where it stopped executing the calling  procedure,
+in case the called procedure calls yet another procedure.
+
+To do this, Dr. Logo uses a stack. At toplevel, there is nothing
+on the stack. During the execution of a procedure, there is  one
+procedure  on the stack until it calls another; then, there  are
+two.  If the second procedure calls a third, there are three  on
+the  stack, and so on. The number of procedures on the stack  is
+sometimes  called  the level number.  The  debugging  facilities
+"trace"  and  "watch"  display the level  number  as  procedures
+execute. Toplevel is level number 0.
+
+Dr. Logo assigns part of memory to the stack. Dr. Logo also uses
+this part of memory to store the values of local variables. If a
+procedure calls itself and the level number becomes very  large,
+or  if the procedure defines a great many local  variables,  the
+stack space might fill up. When this occurs, Dr. Logo displays a
+message and stops executing the procedure.
+
+When  a  procedure is never called by any other  procedure,  but
+does call on other procedures itself, Logo programmers  classify
+it   as  a  superprocedure  and  the  procedures  it  calls   as
+subprocedures.  Dr. Logo's potl primitive displays the names  of
+the  superprocedures  in  your workspace.  A  pocall  expression
+displays the subprocedures called by the input-named  procedure.
+A poref expression displays the procedures that call the  input-
+named procedure.
+
+
+EOF
+DRLRM3.WS4      (= "Dr. Logo Reference Manual", Section 3)
+----------
+
+(Retyped by Emmanuel ROCHE.)
+
+
+Section 3: Editing commands
+---------------------------
+
+To edit with Dr. Logo means to enter new text, or to change text
+you  have already entered. Editing can be as simple as fixing  a
+typing  error  in a line you have typed to the  interpreter's  ?
+prompt,  or  as complex as defining several long  procedures  at
+once in Dr. Logo's screen editor.
+
+Dr.  Logo gives you three ways to edit: line editing,  procedure
+editing,  and screen editing. You use line editing  commands  in
+both procedure and screen editing. Procedure editing is a simple
+extension  of  line  editing,  and  screen  editing  builds   on
+procedure editing. This section tells when, why, and how to  use
+Dr.  Logo's line editing, procedure editing, and screen  editing
+commands.
+
+You give the commands described in this section to Dr. Logo with
+control  characters,  not with expressions. To enter  a  control
+character,  hold  down  the control key  (marked  Ctrl  on  your
+keyboard)  and  press the required letter key. Not  all  of  Dr.
+Logo's control character commands edit text; some interrupt  and
+terminate  procedure  execution. The last part of  this  section
+introduces Dr. Logo miscellaneous control character commands.
+
+
+3.1 Line editing
+----------------
+
+You  can use line editing commands to correct any text  you  are
+entering  to  Dr. Logo. When you write a program that  asks  the
+user  to type something at the keyboard, the user can  also  use
+line  editing commands to change his input. The following  table
+summarizes Dr. Logo's line editing control characters.
+
+Table 3-1. Line editing control characters
+
+Format: Character
+        Effect
+
+Ctrl-A
+Moves the cursor to the beginning of the line.
+
+Ctrl-B
+Moves the cursor [B]ack one character; that is to say, it  moves
+the cursor one position to the left.
+
+Ctrl-D
+[D]eletes the character indicated by the cursor.
+
+Ctrl-E
+Moves the cursor to the [E]nd of the line.
+
+Ctrl-F
+Moves  the  cursor [F]orward one character; that is to  say,  it
+moves the cursor one position to the right.
+
+Ctrl-H
+Deletes the character to the left of the cursor.
+
+Ctrl-I
+[I]nserts a tab (three spaces).
+
+Ctrl-K
+[K]ills  the  remaining  line; that is to say,  it  deletes  all
+characters  right of the cursor to the end of the line.  Deleted
+characters are stored in buffer.
+
+Ctrl-Y
+[Y]anks  text from the buffer; that is to say,  redisplays  line
+most  recently  stored  in  the buffer by  an  Enter  or  Ctrl-K
+keystroke.
+
+
+The  following  examples  show how you  can  use  these  control
+characters  when  you are entering expressions to the  Dr.  Logo
+interpreter.  In these examples, the underbar  ("_")  represents
+the cursor.
+
+Once  you have typed a line, you can use control  characters  to
+move  the  cursor  left and right over the text.  You  can  make
+corrections anywhere in the command line.
+
+        ?repaet 36 [fd 8 lf 10]_        (repeat and lt mistyped)
+        ?r_epaet 36 [fd 8 lf 10]         (Ctrl-A to beginning of line)
+        ?repaet_ 36 [fd 8 lf 10]         (Ctrl-F to move cursor right)
+        ?rept_ 36 [fd 8 lf 10]           (Ctrl-H deletes chars to the left)
+        ?repeat_ 36 [fd 8 lf 10]         (ea corrects repeat)
+        ?repeat 36 [fd 8 lf 10]_        (Ctrl-E to end of line)
+        ?repeat 36 [fd 8 lf_ 10]         (Ctrl-B moves cursor left)
+        ?repeat 36 [fd 8 l_ 10]          (Ctrl-D deletes cursor position)
+        ?repeat 36 [fd 8 lt_ 10]         (t corrects lt)
+
+You can press the Enter key to send your command to Dr. Logo  no
+matter  which character the cursor is indicating in the  command
+line.  When you press Enter to send a line to  the  interpreter,
+Dr. Logo stores the line in a buffer. You can recall the  stored
+line  with  Ctrl-Y.  This is handy if you want  to  execute  the
+command again, execute it again with a minor modification, or if
+you  made a typing error and pressed Enter before you  corrected
+it.
+
+        ?save figures
+        I don't know how to figures
+        ?save figures_          (Ctrl-Y recalls line)
+        ?save "f_igures          (Ctrl-B moves cursor left;
+                                (" corrects line.)
+        ?save "figures_         (Save file on default drive; Enter
+                                 then Ctrl-Y recalls line.)
+        ?save "f_igures          (Ctrl-B moves cursor left)
+        ?save "b:f_igures        (b: to make copy on disk b: Enter)
+
+You  can delete all or part of a line with a Ctrl-K command.  If
+you have second thoughts, you can recall the deleted  characters
+with Ctrl-Y.
+
+        ?erns "figure.pack_     (erase names? maybe not...)
+        ?e_rns "figure.pack      (Ctrl-A to beginning of line)
+        ?_                      (Ctrl-K erases line)
+        ?erns "figure.pack_     (Yes, erase names; Ctrl-Y recalls line)
+
+You  can  also use Ctrl-K and Ctrl-Y to repeat a  portion  of  a
+command line.
+
+        ?(pr "I char 3 "N "Y
+        I o N Y
+        ?(pr "I char 3 "N "Y    (Ctrl-Y recalls line)
+        ?(pr "_I char 3 "N "Y    (Ctrl-B moves cursor left)
+        ?(pr _                  (Ctrl-K erases part of line)
+        ?(pr "I char 3 "N "Y_   (Ctrl-Y recalls partial line)
+        ?(pr "I char 3 "N "Y "  "I char 3 "N "Y "  "I char 3 "N "Y "
+                                (Quoted blank spaces and Ctrl-Y
+                                 keystrokes extend command.)
+        I o N Y  I o N Y  I o N Y
+
+
+3.2 Procedure editing
+---------------------
+
+When you are interacting with the Dr. Logo interpreter, during a
+pause, or while watching a procedure's executon, you can use the
+special  words  "to"  and "end" to enter  and  exit  Dr.  Logo's
+procedure editor. For example, when you type a line that  begins
+with  "to"  to the interpreter's ? prompt, Dr. Logo  enters  the
+procedure editor.
+
+        ?to circle :size
+        >repeat 36 [fd :size rt 10]
+        >end
+        circle defined
+        ?
+
+The  procedure editor's prompt, >, tells you that Dr. Logo  will
+not  immediatelly evaluate the expressions you enter  to  define
+the new procedure. Within the procedure editor, you can use  any
+of  the  line editing control characters commands  to  move  the
+cursor, correct errors, delete characters and lines, and  recall
+lines.
+
+To  exit the procedure editor, you must enter the  special  word
+"end"  by  itself as the last line of the  procedure.  After  it
+reads  an end line, Dr. Logo defines the procedure  and  returns
+you  to  the  situation from which  you  entered  the  procedure
+editor.
+
+
+3.3 Screen editing
+------------------
+
+To  make changes to a defined procedure without  reentering  the
+complete procedure definition to the procedure editor, you  must
+use  Dr. Logo's screen editor. Using the screen editor, you  can
+move  from line to line in a procedure and make changes in  each
+line. You can also load any number of procedures into the screen
+editor  and make changes to each one. In addition, you  can  use
+the screen editor to change the contents of variables.
+
+The  screen  editor is smart; that is to say, it  makes  certain
+assumptions  about your objectives for an editing  session.  For
+example,  if  you define a procedure in the  screen  editor  and
+forget  to  enter "end", the screen editor adds an end  line  to
+your  procedure.  When the execution of one of  your  procedures
+produces  an  error message and you call the screen  editor,  it
+assumes  that  you want to edit  that  procedure,  automatically
+loads  that procedure into itself, and positions the  cursor  at
+the line in which the error occurred.
+
+As  with the procedure editor, you can enter the  screen  editor
+while interacting with the interpreter, during a pause, or while
+you are WATCHing the execution of a procedure. You cannot  write
+a procedure that uses the screen editor.
+
+Before  you  can use the screen editor to make changes  to  your
+procedures  or  variables, you must load the ones  you  want  to
+change  into  the screen editor's buffer.  The  screen  editor's
+buffer is its own private workspace. Within the buffer, you  can
+make  changes, add text, and delete text. However,  the  changes
+you make do not become a part of Dr. Logo's workspace until  you
+exit  the screen editor. The changes must become a part  of  Dr.
+Logo's workspace before you can save them on disk.
+
+There  are  four primitives that load procedures  and  variables
+into the screen editor's buffer and enter the screen editor. All
+four  start  with "ed". Each one enters the screen  editor;  the
+only difference between these primitives is what they load  into
+the screen editor's buffer. The descriptions of these primitives
+in Section 6, "References to Primitives", tell what input  names
+these primitives require to load selective groups of  procedures
+and  variables  into the screen editor's buffer.  The  following
+table describes these four primitives.
+
+Table 3-2. Load primitives
+
+Format: Primitive
+        Purpose
+
+edit (ed)
+Use edit, or its abbreviation ed, to load a procedure or a  list
+of procedures into the screen editor's buffer. If the  execution
+of  a  procedure  has  ended  with  an  error  message  and  you
+immediately  enter  edit without an input  procedure  name,  the
+screen  editor automatically loads the erroneous procedure  into
+the buffer, and positions the cursor at the offending line.
+
+edall
+Use edall to load both variables and procedures into the  screen
+editor's  buffer.  "edall"  without  an  input  name  loads  all
+procedures and variables in Dr. Logo's workspace into the screen
+editor's buffer.
+
+edns
+Use  edns  to load a group of variables, names into  the  screen
+editor's  buffer.  "edns"  without  an  input  name  loads   all
+variables  in  Dr.  Logo's workspace into  the  screen  editor's
+buffer.
+
+edps
+Use edps to load a group of procedures into the screen  editor's
+buffer. "edps" without an input name loads all procedures in Dr.
+Logo's workspace into the screen editor's buffer.
+
+
+When  you  use  one of these primitives  and  enter  the  screen
+editor, it clears all normal text from the screen, and  displays
+only  the  contents of its buffer. The screen  editor  does  not
+display  a  prompt  character,  but  the  cursor  indicates  the
+location  that  an insertion or control character  command  will
+affect.
+
+While  in  the screen editor, you can use all the  line  editing
+control characters described in Section 3.1, "Line Editing",  to
+make  corrections within lines. The table below  summarizes  the
+screen editing control characters you can use to move the cursor
+from  line  to line, to page through the buffer,  and  exit  the
+screen editor.
+
+Table 3-3. Screen editing control characters
+
+Format: Character
+        Effect
+
+Ctrl-C
+Exits   screen  editor;  updates  Dr.  Logo's   workspace   with
+definitions of all procedures and variables from screen editor's
+buffer.
+
+Ctrl-G
+Exits  screen editor but does not update Dr.  Logo's  workspace.
+Any   changes  made  during  the  screen  editing  session   are
+discarded.
+
+Ctrl-L
+Readjusts display so that line currently indicated by the cursor
+is positioned at the center of the screen. If the cursor is less
+than  12  lines  from the beginning of the  buffer,  the  screen
+editor simply beeps when Ctrl-L is pressed.
+
+Ctrl-N
+Moves  the cursor to the [N]ext line; the cursor moves down  one
+line towards the end of the buffer.
+
+Ctrl-O
+[O]pens a new line. A Ctrl-O keystroke is equivalent to pressing
+Enter followed by Ctrl-B.
+
+Ctrl-P
+Moves  cursor  to the [P]revious line; the cursor moves  up  one
+line towards the beginning of the buffer.
+
+Ctrl-V
+Displays  the  next screenfull of text in  the  screen  editor's
+buffer, the next 24 lines towards the bottom of the buffer.
+
+ESC-V
+Displays the previous screenfull of text in the screen  editor's
+buffer,  the  previous  24 lines towards the  beginning  of  the
+buffer.
+
+ESC-<
+Positions  the  cursor at the beginning of the  screen  editor's
+buffer.
+
+ESC->
+Positions the cursor at the end of the screen editor's buffer.
+
+
+The  following  examples show how you can combine  these  screen
+editing control characters with line editing control  characters
+for editing shortcuts. Several combinations of control character
+commands  are  convenient and worth remembering.  Ctrl-E  Ctrl-D
+deletes  the  Carriage Return between two lines and  makes  them
+into  one  line.  Ctrl-A  Ctrl-K  deletes  the  line   currently
+indicated by the cursor. You can combine Ctrl-O with Ctrl-Y  and
+Ctrl-K to quickly move a line within the screen editor. The line
+moved  below makes the countdown procedure print a 0  before  it
+stops.  The edit is performed with only eight control  character
+commands.
+
+        ?countdown 4
+        4
+        3
+        2
+        1
+        ?ed "countdown
+                                (editor clear screen)
+        to countdown :number_
+        if :number = 0 [stop]
+        pr :number
+        countdown :number - 1
+        end
+                                (Ctrl-N Ctrl-A positions cursor
+                                 at line to be moved)
+        to countdown :number
+        i_f :number = 0 [stop]
+        pr :number
+        countdown :number - 1
+        end
+                                (Ctrl-K deletes line)
+        to countdown :number
+        _
+        pr :number
+        countdown :number - 1
+        end
+                                (Ctrl-N positions cursor at new location)
+        to countdown :number
+
+        pr :number
+        c_ountdown :number - 1
+        end
+                                (INS Ctrl-Y inserts line)
+        to countdown :number
+
+        pr :number
+        i_f :number = 0 [stop]
+        countdown :number - 1
+        end
+                                (Ctrl-C defines procedure.)
+        countdown defined
+        ?countdown 4
+        4
+        3
+        2
+        1
+        0
+        ?
+
+The  paging  control character commands become useful  when  you
+have  more than 24 lines of text in the screen editor's  buffer.
+You can enter edall to load everything from Dr. Logo's workspace
+into  the screen editor's buffer, then experiment  with  Ctrl-L,
+Ctrl-V, ESC-V, ESC-<, and ESC->.
+
+To exit the screen editor normally, press Ctrl-C. In this  case,
+Dr. Logo updates the definitions of procedures and variables  in
+its  workspace  with the definitions from  the  screen  editor's
+buffer. If you have modified the title line of a procedure,  Dr.
+Logo  defines a new procedure and does not change  the  original
+definition  of the procedure currently in the workspace. If  you
+omitted an end line at the end of a procedure, Dr. Logo adds one
+as it updates its workspace.
+
+To discard the changes you have made during an editing  session,
+exit  the  screen  editor with Ctrl-G. This  leaves  Dr.  Logo's
+workspace  in the same condition you found it when  you  entered
+the screen editor.
+
+When  you  exit the screen editor, Dr. Logo returns you  to  the
+same  situation  from  which you entered. For  example,  if  you
+entered  the  screen editor during a pause in a  procedure,  Dr.
+Logo returns to the appropriate pause prompt and waits for  your
+next command.
+
+In  a  certain  situation,  you can use  a  few  screen  editing
+commands  outside the screen editor. This situation occurs  when
+you are entering a long expression outside the screen editor and
+Dr. Logo prints a "!" before starting on the next line. In  this
+case, you can use Ctrl-P and Ctrl-N to move up and down  between
+lines.  You  can  also use Ctrl-O to open a new  line,  but  all
+characters  right of the Ctrl-O keystroke are ignored; Dr.  Logo
+treats  the  Ctrl-O as the end of the expression.  However,  the
+characters are not lost. You can recall them with Ctrl-Y.
+
+
+3.4 Other control character commands
+------------------------------------
+
+Dr.  Logo  recognizes  several control  character  commands  for
+actions  other  than  line editing. In fact,  the  only  control
+characters that have no meaning for Dr. Logo are Ctrl-U, Ctrl-J,
+Ctrl-R,  and Ctrl-X. The remaining control characters  terminate
+and interrupt procedure execution and scrolling screen displays,
+and  switch between a full graphics screen, a full text  screen,
+and  a  split  screen. Section 4, "Text  and  Graphic  Screens",
+describes  screen  control  character commands  in  detail.  The
+following  table summarizes the miscellaneous control  character
+commands.
+
+Table 3-4. Additional control character commands
+
+Format: Character
+        Effect
+
+Ctrl-G
+Immediately terminates the currently executing procedure.
+
+Ctrl-L
+Displays  a full graphics screen; devotes the monitor to  turtle
+graphics.
+
+Ctrl-M
+Carriage Return; same as pressing the Enter key.
+
+Ctrl-Q
+Generates  the  [Q]uoting character ("\") that  makes  Dr.  Logo
+treat a delimiter character as a literal character.
+
+Ctrl-S
+Displays a [S]plitscreen; divides the monitor between a  partial
+graphic screen and a text window.
+
+Ctrl-T
+Displays a full [T]ext screen; devotes the monitor to text.
+
+Ctrl-W
+Interrupt  the  scrolling of a text display; [W]aits  until  the
+next keystroke to continue the display.
+
+Ctrl-Z
+Interrupts  the  currently executing procedure,  displays  pause
+prompt  to allow interactive debugging. Enter "co"  to  continue
+execution of interrupted procedure.
+
+
+EOF
+DRLRM4.WS4      (= "Dr. Logo Reference Manual", Section 4)
+----------
+
+(Retyped by Emmanuel ROCHE.)
+
+
+Section 4: Text and graphic screens
+-----------------------------------
+
+One  of  Dr.  Logo's  most exciting  capabilities  on  your  IBM
+Personal Computer is to create graphic designs and display  text
+in  many beautiful colors. Dr. Logo shows you a graphics  cursor
+called "the turtle", which dutifully draws designs according  to
+your  instructions. However, this section does not tell you  how
+to control the turtle; it tells you how to control the  physical
+properties  of your display. It tells what combinations of  text
+and  graphics  are  possible, how to  switch  between  text  and
+graphic  screens, and how to control the colors of drawings  and
+text.
+
+
+4.1 Monitors, screens, and windows
+----------------------------------
+
+In  memory, Dr. Logo maintains two screens: a text screen and  a
+graphic screen. A text screen contains only text, with up to  80
+characters in one line. The text screen never contains more than
+25  lines. A graphic screen can contain drawings and  text,  but
+can  have  only 40 characters in one line.  The  graphic  screen
+potentially  extends  beyond  the range  of  your  monitor. The
+portion of the graphic screen your monitor can display is called
+"the visual field".
+
+Dr. Logo maintains these complete screens in memory, so that  it
+can  display combinations of parts of them on your  monitor  and
+restore  the  full display of either screen.  You  control  what
+combination  of text and graphics appears on your  monitor  with
+Dr.  Logo primitives and control character commands. Your  color
+monitor can display both text and graphic screens. A  monochrome
+monitor can display only the text screen.
+
+To let you see the text of your procedures, or your  interaction
+with  the interpreter, without devoting your entire  monitor  to
+screen, Dr. Logo can direct part of the text screen into a  text
+window. When a window of text appears on the graphic screen, the
+combination of text and graphics is called "a splitscreen". When
+you  enter "debug", Dr. Logo divides the monitor into  two  text
+windows, then directs text displayed by a procedure to the lower
+PROGRAM  window, and text displayed by debugging  facilities  to
+the upper DEBUG window.
+
+
+4.2 Displaying text and graphic screens
+---------------------------------------
+
+Dr. Logo supports both primitives and control character commands
+that  make your monitor display the text screen and the  graphic
+screen  in various combinations, as described in  the  following
+table.
+
+Table 4-1. Displaying screens
+
+Format: Control character
+        Primitive
+        Display
+
+Ctrl-L
+fullscreen
+Displays a full graphic screen; devotes the monitor to graphics.
+
+Ctrl-S
+splitscreen
+Displays  a splitscreen; divides the monitor between  a  partial
+graphic screen and a text window.
+
+Ctrl-T
+textscreen
+Displays a full text screen; devotes the monitor to text.
+
+(no control character)
+debug
+Displays two text windows on the monitor.
+
+(no control character)
+nodebug
+Closes  text  windows, returns monitor to a  cleared  full  text
+screen.
+
+
+The  control character commands are the quickest way  to  switch
+displays while you are interacting with the interpreter. Use the
+fullscreen, splitscreen, and textscreen primitives when you want
+to switch displays within a procedure. You must always use debug
+and  nodebug to control the two debugging text windows.  "debug"
+disables   Ctrl-S   and  splitscreen;  you  cannot   display   a
+splitscreen  while  you are using the  debugging  text  windows.
+"nodebug" restores Ctrl-S and splitscreen.
+
+When  you  are using one color monitor, Dr.  Logo  automatically
+displays  a splitscreen when you enter a command that moves  the
+turtle.  However,  Dr.  Logo  can support both  a  color  and  a
+monochrome  monitor.  When  you  have  two  monitors,  Dr.  Logo
+automatically  displays  the  text  screen  on  the   monochrome
+monitor, and the graphic screen on the color monitor.
+
+Having two monitors changes the way some of the display  control
+primitives  work. When you have two monitors, Dr. Logo does  not
+automatically  display a splitscreen when you enter  a  graphics
+command  because  full  graphic  and  text  screens  are  always
+displayed. However, you can use Ctrl-S and splitscreen to open a
+text  window  on the graphic screen. To remove  the  splitscreen
+text  window and display the full text screen on the  monochrome
+monitor,  you can use fullscreen, Ctrl-L, or Ctrl-T. If you  use
+textscreen  at  any  time  on a two  monitor  system,  Dr.  Logo
+displays the text screen on the color monitor.
+
+
+4.3 Text screen
+---------------
+
+The text screen has positions for 2000 text characters: 25 lines
+of text with 80 characterrs in each line. The coordinate  system
+shown below references these characters. A text coordinate  list
+contains two numbers: the first is the row or character  number,
+and the second is the line number.
+
+          [0 0]                           [79 0]
+                +-----------------------+
+                |                       |
+                |                       |
+                |                       |
+                |                       |
+                |                       |
+                +-----------------------+
+         [0 24]                           [79 24]
+
+You use this coordinate system with "setcursor" to position  the
+cursor within the text screen.
+
+Dr. Logo lets you control the foreground and background color of
+each  character cell. "textbg" sets the background of  the  text
+screen  to the color represented by the input number. There  are
+eight  possible  colors, so normally you input a number  in  the
+range  0 to 7. However, textbg also controls whether or not  the
+foreground  characters  blink. To display  blinking  characters,
+input  a  number  between 8 and 15 to textbg, as  shown  in  the
+following table.
+
+Table 4-2. Background colors
+
+Normal  Blinking        Background color
+------  --------        ----------------
+  0         8           Black
+  1         9           Blue
+  2        10           Green
+  3        11           Cyan
+  4        12           Red
+  5        13           Magenta
+  6        14           Brown
+  7        15           Grey
+
+"textfg"  sets  the foreground of the text screen to  the  color
+represented  by  the  input number. The  IBM  Personal  Computer
+supports  16 foreground colors, but if your color  monitor  does
+not support two levels of intensity, you can see only the  first
+eight colors listed in the following table.
+
+Table 4-3. Foreground colors
+
+Input   Foreground      Input   Foreground
+number    colors        number    colors
+------  ----------      ------  ----------
+  0       Black            8      Black
+  1       Blue             9      Bright blue
+  2       Green           10      Bright green
+  3       Cyan            11      Bright cyan
+  4       Red             12      Bright red
+  5       Magenta         13      Bright magenta
+  6       Brown           14      Yellow
+  7       Grey            15      White
+
+
+4.4 Graphic screen
+------------------
+
+Dr.  Logo  gives you complete control of the  60,000  individual
+dots that make up the visual field of your graphic screen; there
+are 300 dots horizontally and 200 dots vertically.  Technically,
+these  dots are called "pixels". A turtle step is equivalent  to
+one  dot.  For example, when you enter "forward 1",  the  turtle
+moves  forward one pixel. The dots make any diagonal  lines  the
+turtle  draws seem jagged. Although Dr. Logo  calculates  angles
+and  headings  with great precision, the turtle  rounds  to  the
+nearest degree before drawing.
+
+
+4.4.1 Graphic coordinates and the visual field
+----------------------------------------------
+
+You can reference each dot on the graphic screen individually by
+its  coordinates.  Using coordinates, you can quickly  move  the
+turtle  to  any location on the screen (setpos), or  change  any
+single dot to the turtle's current pencolor (dot).
+
+A  graphic  screen coordinate list contains two  numbers:  an  x
+coordinate indicates the horizontal position, and a y coordinate
+indicates the vertical position. For example, the coordinates of
+the turtle's home position are [0 0], the center of the  screen.
+To reference a dot in the visual graphic field, the x coordinate
+can be in the range -160 to +159, and the y coordinate can be in
+the range -99 to +100.
+
+     [-160 100]                           [159 100]
+                +-----------------------+
+                |                       |
+                |                       |
+                |         [0 0]         |
+                |                       |
+                |                       |
+                +-----------------------+
+     [-160 -99]                           [159 -99]
+
+When you first start Dr. Logo, the visual field is just a window
+on  a  greater graphics plane. You can use numbers  outside  the
+visual  coordinate  ranges to reference  positions  outside  the
+visual  field;  the turtle can draw a part of a design  off  the
+monitor and return. You can limit the turtle to the visual field
+with  two  primitives: fence and wrap. "fence" sets  a  boundary
+around the edge of the visual field. When the turtle  encounters
+the  boundary,  Dr. Logo complains "Turtle out  of  bounds"  and
+stops any executing procedure. "wrap" makes the turtle  reappear
+on  the  opposite  side  of the  monitor  when  it  exceeds  the
+boundary. Use "window" to remove the boundary.
+
+
+4.4.2 Graphic text coordinates
+------------------------------
+
+On  the  graphic  screen,  there  are  positions  of  1000  text
+characters:  25 lines of text with 40 characters per  line.  The
+coordinate system shown below references these character  cells.
+In  a  text  coordinate list, the first number  is  the  row  or
+character number, and the second number is the line number.
+
+          [0 0]                           [39 0]
+                +-----------------------+
+                |                       |
+                |                       |
+                |                       |
+                |                       |
+                |                       |
+                +-----------------------+
+         [0 24]                           [39 24]
+
+You can use this coordinate system to position the cursor within
+the splitscreen text window (setcursor), or to take input from a
+lightpen (lpen).
+
+When you use "turtletext" to display text on the graphic screen,
+the  first  character of the input object appears in  the  first
+character  cell  to the right of the turtle's center  line.  The
+character  might  not appear directly under the  turtle  if  the
+turtle is not on a character cell boundary.
+
+
+4.4.3 Graphic colors
+--------------------
+
+Although  your color monitor can display many different  colors,
+the graphic screen can contain only four colors at any one time.
+In Dr. Logo, the number you input to setbg specifies with set of
+four colors you want your monitor to display.
+
+First,  you have to select a background color. The IBM  Personal
+Computer  supports  eight  background colors in  two  levels  of
+intensity,  although  your  color  monitor  might  not   display
+different   intensities.  The  numbers  setbg   accepts   select
+background colors as described in the following table.
+
+Table 4-4. Background color intensity
+
+Low intensity           High intensity
+-----------------       ------------------
+0 16 32 48  Black        8 24 40 56  Black
+1 17 33 49  Blue         9 25 41 57  Blue
+2 18 34 50  Green       10 26 42 58  Green
+3 19 35 51  Cyan        11 27 42 59  Cyan
+4 20 36 52  Red         12 28 43 60  Red
+5 21 37 53  Magenta     13 29 45 61  Magenta
+6 22 38 54  Yellow      14 30 46 62  Yellow
+7 23 40 55  White       15 31 47 63  White
+
+Each  of  the four numbers for a background  color  specifies  a
+different  pen for the turtle to use. The turtle has four  pens.
+Each  pen  has four unique colors of ink, one of  which  is  the
+background color that the turtle uses for erasing. Use setpc  to
+select the pen's ink color.
+
+When the background color is in the range 0 to 15,
+
+        - setpc 1 selects dark green ink
+        - setpc 2 selects dark red ink
+        - setpc 3 selects dark yellow ink
+
+When the background color is in the range 16 to 31,
+
+        - setpc 1 selects bright green ink
+        - setpc 2 selects bright red ink
+        - setpc 3 selects bright yellow ink
+
+When the background color is in the range 32 to 47,
+
+        - setpc 1 selects dark cyan ink
+        - setpc 2 selects dark magenta ink
+        - setpc 3 selects dark grey ink
+
+When the background color is in the range 48 to 63,
+
+        - setpc 1 selects bright cyan ink
+        - setpc 2 selects bright magenta ink
+        - setpc 3 selects bright white ink
+
+For  all  background color numbers, setpc 0  selects  background
+color  (erasing)  ink.  When  Dr.  Logo  first  starts  up,  the
+background color is 1, and the pencolor number is 2.
+
+
+4.4.4 Graphic text color
+------------------------
+
+"textbg"  controls  the  background color of  the  text  on  the
+graphic screen, both the splitscreen text window and  characters
+typed by turtletext. The background color of graphic text can be
+any  one  of the four colors of the turtle's  current  pen.  For
+example, the following table shows how a textbg command  affects
+the  graphic text when the background of the graphic  screen  is
+set to 1 (blue) and the four pencolors are blue, green, red, and
+yellow.
+
+Table 4-5. Background color of graphic text
+
+textbg number   Graphic text background
+-------------   -----------------------
+0, 4, 8, 12     Blue
+1, 5, 9, 13     Green
+2, 6, 10, 14    Red
+3, 7, 11, 15    Yellow
+
+Unlike  the  text screen, when you input a number  greater  than
+seven  to  textbg,  graphic  screen  text  characters  are   not
+affected. Characters on the graphic screen cannot blink.
+
+"textfg"  controls  the foreground color of  graphic  text.  The
+characters  in  the splitscreen text window and  the  turtletext
+characters can be one of the four colors of the turtle's current
+pen. For example, the following table shows how a textfg command
+colors the graphic screen characters when the background of  the
+graphic  screen  is set to 1 (blue) and the four  pencolors  are
+blue, green, red, and yellow.
+
+Table 4-6. Foreground color of graphic text
+
+textfg number   Graphic text color
+-------------   ------------------
+0, 4, 8, 12     Blue
+1, 5, 9, 13     Green
+2, 6, 10, 14    Red
+3, 7, 11, 15    Yellow
+
+
+EOF
+DRLRM5.WS4      (= "Dr. Logo Reference Manual", Section 5)
+----------
+
+(Retyped by Emmanuel ROCHE.)
+
+
+Section 5: Property lists, workspace, and disks
+-----------------------------------------------
+
+Storage is one of Dr. Logo's most important resources. There are
+two  kinds of storage: temporary storage and permanent  storage.
+When  you  enter  procedure and  variable  definitions  at  your
+keyboard,  they  are  temporarily  stored  in  a  part  of  your
+computer's  memory  called  "the  workspace".  To  record   your
+procedures permanently, you must save them on disk.
+
+To  help organize your workspace and disk files, Dr.  Logo  lets
+you bundle procedures and variables into packages. Dr. Logo does
+this  by adding system properties to an object's property  list.
+This  section tells how to use property lists and packages,  how
+to  organize  your workspace for best performance,  and  how  to
+create, copy, rename, and erase disk files.
+
+
+5.1 Property lists
+------------------
+
+Any  object in the workspace can have a property list. In  fact,
+Dr.  Logo uses property lists to create  variables,  procedures,
+and packages.
+
+A property list is made up of property pairs. The first  element
+of  a property pair is the property name; the second element  is
+its  value.  You can assign your own properties  to  an  object.
+Property lists make it simple to store and retrieve information,
+as shown in the following example.
+
+        ?pprop "Kathy "ext 42
+        ?pprop "Meryle "ext 58
+        ?pprop "Ellen "ext 66
+        ?pps
+        Kathy's ext is 42
+        Meryle's ext is 58
+        Ellen's ext is 66
+
+You  can create whatever property pairs are appropriate to  your
+application.  Dr. Logo adds or removes property pairs  when  you
+use  primitives  identified in the following table. Do  not  use
+system  property names for purposes other than those  listed  in
+the table.
+
+Table 5-1. Property pairs
+
+Property name   Primitive       Property value
+-------------   -----------     --------------
+    .APV        make, name,     The value of a global variable
+                ern, erall,
+                erns
+
+    .BUR        bury, unbury    When TRUE, the package is buried
+
+    .CAT        catch, throw    Catch descriptor
+
+    .DEF        to, define,     The definition of a procedure
+                er, erall,
+                erps
+
+    .ENL        to, ed          End of a procedure line that is broken by a
+                                Carriage Return and spaces or tabs.
+
+    .FMT        to, ed          Beginning of a procedure line that is broken
+                                by a Carriage Return and spaces or tabs.
+
+    .FUN                        Identifies an active function, a function in
+                                the process of being evaluated.
+
+    .PAK        package         The name of the package to which this object
+                                belongs.
+
+    .PAR                        The parameters of an active function
+
+    .PAU                        Pause
+
+    .PKG        package         When TRUE, object is a package name
+
+    .PRM                        Memory location of the primitive
+
+    .REM                        Remark or comment that follows a semicolon
+
+    .SPC                        Number of spaces that follow a Carriage
+                                Return in a broken procedure line.
+
+When  you use plist to display property lists, you  will  always
+see an .APV pair in a variable name's property list, and a  .DEF
+pair in a procedure's property lists. For example,
+
+        ?make "flavor "chocolate
+        ?plist "flavor
+        [.APV chocolate]
+        ?to eat.cookie
+        >pr [yum yum!]
+        >end
+        eat.cookie defined
+        ?plist "eat.cookie
+        [.DEF [[] [pr [yum yum!]]]]
+
+However, you might never see some of the pairs listed above in a
+property list. This is because Dr. Logo puts properties such  as
+
+
+
+
+
+
+
+
+
+
+during the procedure's execution.
+
+
+5.2 Managing your workspace
+---------------------------
+
+Your  workspace is the part of your computer's memory  that  Dr.
+Logo allocates for the temporary storage of your procedures  and
+variables.  This  section  tells  how  Dr.  Logo  measures  your
+workspace,  and  how  you  can use  packages  to  organize  your
+workspace.
+
+
+5.2.1 Measuring your workspace
+------------------------------
+
+Dr. Logo measures your workspace in nodes. A node is  equivalent
+to  five  bytes, and can hold five characters. In  general,  the
+more  workspace  you  have,  the  better  your  procedures  will
+perform.
+
+You can check how many free nodes there are in your workspace at
+any time with the "nodes" primitive. Try nodes immediately after
+you  start Dr. Logo, to see the maximum size of your  workspace.
+If you have enough memory in your IBM Personal Computer, you can
+have  over  10,000  nodes at start-up. If you  use  "noprim"  to
+remove  the  poprim  information from  the  workspace,  you  add
+approximately 600 nodes to the maximum size of your workspace.
+
+You  tie up nodes in your workspace by entering  procedures  and
+other objects at the keyboard, or reading them in from disk with
+"load".  Dr. Logo also adds to the contents of the workspace  by
+making copies of local variables and recursive procedures during
+a procedure's execution.
+
+
+5.2.2 Garbage collection
+------------------------
+
+Dr. Logo does not automatically throw out these copies of  local
+variables  and recursively-called procedures after  a  procedure
+finishes execution. However, when there are fewer than 200  free
+nodes in your workspace, a part of Dr. Logo called "the  garbage
+collector" sorts through the workspace and erases any copies  of
+variables  or  procedures that are no longer needed.  You  might
+occasionally  see  an  executing procedure hesitate  for  a  few
+moments while the garbage collector does its work.
+
+You can call the garbage collector with the "recycle" primitive.
+If you use recycle to clean up the workspace before initiating a
+time-critical  procedure,  you  minimize  the  chance  that  the
+garbage collector will interrupt the execution of the procedure.
+Try  using "nodes" before and after "recycle" to learn how  many
+nodes  are  taken up by the temporary copies  of  variables  and
+procedures.
+
+The garbage collector uses the stack as it sorts objects in your
+workspace. Although Dr. Logo allocates stack space  dynamically,
+if garbage collection occurs during the execution of a recursive
+procedure  or other situation where the stack is  heavily  used,
+the  garbage  collector can run out of stack  space.  When  this
+occurs,  Dr.  Logo displays a message and  stops  executing  the
+procedure.
+
+When workspace becomes critical because there are fewer than 400
+free nodes, Dr. Logo displays an exclamation point prompt ("!").
+In  this  situation,  enter  "recycle"  immediately.  If,  after
+"recycle",  you still have fewer than 600 nodes, it is  time  to
+reorganize  your  procedures,  save some of them  on  disk,  and
+remove them from the workspace, to give the remaining procedures
+room  to  execute.  You can use "load"  within  a  procedure  to
+restore saved procedures to the workspace when they are needed.
+
+
+5.2.3 Packages
+--------------
+
+Packages help you organize your workspace. When you put  related
+procedures  and variables in a package, you can  display,  edit,
+save,  and  erase  those procedures and  variables  as  a  group
+separate from other procedures and variables in the workspace.
+
+Use  "package"  to create a package or add items to  a  package.
+"package"  requires  two inputs. The first is the  name  of  the
+package. You can give "package" either a name or a list of names
+of  items to be placed in the package as the second  input.  The
+list can contain a mixture of variable and procedure names.  For
+example,
+
+        ?package "cookies "flavor
+        ?package "cookies [eat.cookies flavor]
+
+"popkg"  displays the name and contents of each package  defined
+in the workspace, as shown in the following example.
+
+        ?popkg
+        cookies
+          "flavor
+          eat.cookies
+
+When  you  input  a  package  name  to  one  of  the   following
+primitives, it takes action only on the procedures and variables
+contained in the package.
+
+        edall   erall   glist   pops    save
+        edns    erns    poall   pots
+        edps    erps    pons    pps
+
+If  you do not specify a package name to these primitives,  they
+act on all procedures and variables in the workspace, except for
+those  in buried packages. A buried package is hidden  from  the
+primitives listed above. To bury a package, use "bury", as shown
+in the following example.
+
+        ?bury "cookies
+        ?popkg
+        cookies is buried
+          "flavor
+          eat.cookies
+
+Dr. Logo creates and buries packages by adding system properties
+to  property lists. It adds the .PAK property with the  name  of
+the  package to the packaged procedure's or variable's  property
+list.  It  adds  the .PAK property with the value  TRUE  to  the
+package name's property list. When you bury a package, Dr.  Logo
+adds the .BUR property with the value TRUE to the package name's
+property  list.  The  primitives listed above that  can  take  a
+package  name  as input check the property list of  the  package
+name for the .BUR property before taking action.
+
+
+5.3 Drives, disks, and files
+----------------------------
+
+When  you  turn  off  your  computer,  all  the  procedures  and
+variables  in your workspace are lost. So, before you turn  your
+computer  off, you must save them on a more permanent medium,  a
+disk.  Dr. Logo stores information on disk in files,  and  gives
+each  file the name you specify. The part of your computer  that
+reads  and  writes  file on a disk is  called  a  "drive".  This
+section gives some background information on drives, disks,  and
+files.
+
+Many  of  the  primitives that copy and erase  disks  and  files
+display a message that asks you to confirm that you do,  indeed,
+want  to  copy or erase before the primitive proceeds.  This  is
+because it is sometimes too easy to erase or copy over important
+files by mistake. However, such messages make it inconvenient to
+use  these  primitives  from  within  a  procedure.  The  system
+variable NOACK controls whether or not these primitives  display
+a message. Make NOACK TRUE to suppress the messages.
+
+
+5.3.1 Drives
+------------
+
+Your IBM Personal Computer has one or two drives. A drive can be
+either single- or double-sided, which means the drive can  write
+on  one  or both sides of the disk. If your drive can  write  on
+both sides of the disk, you can store twice as much  information
+on a disk.
+
+When  you  first start Dr. Logo, it makes drive A:  the  default
+drive. This means that, until you tell Dr. Logo to do otherwise,
+it looks for information on the disk in drive A:. If you have  a
+single-drive system, drive A: will always be your default drive.
+If you have more than one drive, you can tell Dr. Logo to change
+the default drive with a "setd" command. "defaultd" outputs  the
+name of the default drive in uppercase.
+
+        ?defaultd
+        A:
+        ?setd "b:
+        ?defaultd
+        B:
+
+Before  you can save anything on disk, you must put a  formatted
+disk  in a drive. You cannot save information on your  Dr.  Logo
+system disk, so if you have a one-drive system, you must  remove
+the Dr. Logo system disk from the drive and insert a data  disk.
+To  tell  Dr.  Logo that you have inserted  a  new  disk,  enter
+"resetd".  If  you try to save information on  a  newly-inserted
+disk without entering "resetd", Dr. Logo will complain.
+
+
+5.3.2 Disks
+-----------
+
+Dr.  Logo cannot save information on a disk that is  fresh  from
+the box. The disk must be initialized or formatted to single- or
+double-sided. During the initialization process, Dr. Logo  tests
+and  prepares one or both surfaces of the disk for  future  load
+and  save  operations. Appendix E, "Getting  Started",  and  the
+description of "initd" in Section 6, "References to Primitives",
+both tell how to initialize a disk.
+
+Dr.  Logo measures the space on your disk in bytes,  not  nodes.
+"spaced"  outputs  the number of free bytes on the disk  in  the
+specified  drive. A single-sided disk can hold 150,000 bytes.  A
+double-sided disk can hold 300,000 bytes.
+
+
+5.3.3 Files
+-----------
+
+A  file  is a set of related information stored on disk.  A  Dr.
+Logo file contains objects such as procedures and variables with
+their  property  lists.  You can create a  Dr.  Logo  file  with
+"save".  Dr. Logo saves either everything in the  workspace,  or
+just the objects you specify with packages.
+
+Dr. Logo gives the file the name you specify by writing the name
+in  the  disk's directory. The name you specify  cannot  contain
+more  than eight characters. If you specify a name  longer  than
+eight  characters, Dr. Logo uses the first eight  characters  as
+the name.
+
+You  can change a file's name with "changef", copy a  file  with
+"copyf", and erase a file with "erf". "getfs" outputs a list  of
+the Dr. Logo file names on the disk in the default or  specified
+drive.  Like  drive  names,  Dr.  Logo  outputs  file  names  in
+uppercase.
+
+"erf" and "getfs" can accept an ambiguous file name as input. An
+ambiguous  file name can reference more than one file,   because
+it contains a wildcard character and gives Dr. Logo a pattern to
+match. The wildcard character is the question mark ("?"),  which
+must be the last character in the file name.
+
+        ?getfs
+        [SHAPES PIGLATIN PLAID]
+        ?getfs "p?
+        [PIGLATIN PLAID]
+
+
+EOF
+
+
+

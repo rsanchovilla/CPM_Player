@@ -1,0 +1,65 @@
+Commands:
+
+* BYE
+Causes a jump to location 0000 in memory.  Example:  BYE
+
+* CADD <variable name>
+Causes the program on cassette tape designated by the first character 
+of <string expression> to be loaded into memory in addition to any
+programs already in memory.  This will allow the user to build a
+library of subroutines and use them in various programs without
+forever having to re-enter them.  Other features, such as procedures,
+assist in this function.  Example:  CADD T
+
+CLEAR [<expression>]
+Sets all program variables to zero.  Sets all strings to nulls.
+Releases all string and array space.  In ALTAIR BASIC,
+"CLEAR <<expression>>" defines the amount of space to allot
+for strings.  TARBELL BASIC will automatically allot all space not
+being used for actual programs to strings and arrays.  To maintain
+compatability with ALTAIR BASIC, "CLEAR <expression>" will be
+processed identically to the CLEAR command.
+Examples:  CLEAR		CLEAR 2000  (does the same thing)
+
+CLOAD <variable name>
+If TARBELL BASIC is in command mode, the program on tape defined
+by the first letter of <variable name> is loaded into memory.  A
+"NEW" command is automatically issued before the program is loaded.
+If TARBELL BASIC is in the program mode, that is, a program is
+running, this command causes the data comming from the recorder
+to be assigned to <variable name>.  The type of the variable
+name must match the type of data being read.
+Examples:  CLOAD I	CLOAD PROGRAM		CLOAD DATA
+NOTE:  If a syntax error is discovered in a line being read in
+       from cassette, the line will be stored as a REMark.
+
+CLOAD? <variable name>
+Compares the program or data in memory with the program or data
+on cassette tape with the same name.  If they are the same, 
+"FILE OK" is printed.  If not, "BAD FILE" is printed.
+Examples:  CLOAD? I	CLOAD? PROGRAM		CLOAD? DATA
+
+CONT
+Continues program execution after a control/C has been input or
+after a "STOP" or "END" statement has been executed.  Execution
+resumes at the statement following the break, unless an input
+from the terminal was interrupted.  In the latter case, execution
+resumes with the interrupted statement.  Execution cannot be
+continued if the program or variables were modified by direct
+mode entries.  Example:    CONT
+
+CSAVE <variable name>
+If TARBELL BASIC is in command mode, this command saves the
+program currently in memory, on cassette tape, under the name
+specified by the first character of <variable name>.  If TARBELL
+BASIC is running a program, the value of <variable name> is saved.
+Examples:	CSAVE I		CSAVE PROGRAM	CSAVE DATA
+
+
+			    3
+
+
+
+
+
+

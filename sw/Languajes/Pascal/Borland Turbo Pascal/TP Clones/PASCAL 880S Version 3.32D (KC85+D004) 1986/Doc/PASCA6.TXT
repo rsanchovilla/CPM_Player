@@ -1,0 +1,1092 @@
+.pl68
+..19.1.1990/ 31.1.90
+.pn101
+.op
+.po10
+.hePASCAL                        #              Sprachbeschreibung
+4.8. Mengenkonstruktionen und -zuweisungen
+
+4.8.1. Mengenkonstruktionen
+---------------------------
+
+Einå  Mengenkonstruktioî bestehô auó eineò odeò mehrereî  Elemen
+tenspezifikationen¬  diå  durcè Kommá voneinandeò getrennô unä iî 
+eckigå Klammerî eingeschlosseî sind®  Einå Elementenspezifikatioî 
+isô eiî Ausdrucë voí gleicheî Tyğ wiå deò Basistyğ deò Menge® Siå 
+kanî   aucè   eiî   Bereicè  sein¬   deò   durcè   zweé   solcheò 
+Ausdr{ckå  dargestellô wird¬  getrennô durcè zweé aufeinanderfol
+gendå Punkte.
+
+Beispiele:
+
+  ^'T','U','R','B','O'~
+  ^'X','Y'~
+  ^X..Y~
+  ^1..5~
+  ^'A'..'Z','a'..'z','0'..'9'~
+  ^1,3..10,12~
+  ^~
+
+Daó  letztå Beispieì stellô diå leerå Mengå dar®  Dá  siå  keineî 
+Ausdrucë enth}lt¬  deò ihreî Basistyğ festlegt¬ isô siå miô alleî 
+Mengentypeî   kompatibel®   Diå   Mengå  ^1..5~  isô  deò   Mengå 
+^1,2,3,4,5~ }quivalent®  Wenî deò unterå begrenzendå Werô  gr>\eò 
+isô aló deò oberå begrenzendå Wert¬  danî bezeichneô z.B®  ^5..1~ 
+eine leere Menge.
+
+
+4.8.2. Mengenzuweisungen
+------------------------
+
+Mengenvariableî  wirä daó Ergebnió voî Mengenausdr{ckeî durcè daó 
+Ergibtzeichen ':=' zugewiesen.
+
+Beispiele:
+
+     .
+     :
+  TYPE Attribut = (braun,grau,karo,beige,rot);
+  VAR Farbe:SET OF Attribut;
+  BEGIN
+    Farbe:= ^braun~;
+     :
+     .
+.paŠ4.9. Zeiger und Listen
+
+Zeigeò  erm>glicheî  einå dynamischå Speicherverwaltunç  unä  deî 
+Zugriff zu beliebigen Adressen.
+
+
+4.9.1. Dynamische Variablen
+---------------------------
+
+Dynamischå   Variableî  werdeî  w}hrenä  deò   Programmausf{hrunç 
+geschaffen und wieder vernichtet.
+
+Beispiel:
+
+  TYPE Zeiger    =  Struktur;   (*  = Zeigertyp*)
+                                (*Struktur noch nicht definiert*)
+       Struktur  = RECORD
+                     Nummer     : STRING^6~;
+                     Name       : STRING^40~;
+                     Menge      : INTEGER;
+                     Naechster  : Zeiger
+                   END;
+  VAR Artikel : Zeiger;
+  BEGIN
+    :
+    .
+    (* Speicheradresse durch den Programmierer *)
+    Artikel := ptr(J8000);
+    (* Speicheradresse durch das System *)
+    new(Artikel);
+
+Diå obigå Vereinbarunç reservierô zun}chsô nuò ² Byteó  Speicher
+platú  f{ò 'Artikel§ aló Zeigeò auæ einå Struktur®  Diå Zeigerva
+riablå unterscheideô sicè wesentlicè voî andereî  Variablen®  Siå 
+enth}lô  diå Speicheradresså eineò einfacheî odeò  strukturierteî 
+Variablen®  Deò  Speicherplatú  f{ò einfachå  odeò  strukturiertå 
+dynamischå  Variableî wirä geschaffen¬  wenî deò  Zeigervariableî 
+einå  (freie© Adresså zugewieseî wird®  Daó kanî direkô odeò  miô 
+NE×  geschehen®  Deò Zugrifæ zuí Inhalô deò  Adresså  erfolgt miô 
+nachgesetzteí  .
+
+
+4.9.2. Erzeugung und Vernichtung dynamischer Variablen
+------------------------------------------------------
+
+Miô deò Prozeduò NE× isô eó m>glich¬  Speicherplatú f{ò Variableî 
+vom definierten Typ zu reservieren.
+
+Syntax: new ( Zeiger<)
+
+Beispiel: (Fortsetzung von Ziffer 4.9.1.):
+
+  new(Artikel);
+
+Artikeì  zeigô ií Beispieì auæ eineî dynamiscè erzeugteî Satú voí 
+Typ Struktur. Auf diese Variable wird wie folgt zugegriffen:
+Š  readln (Artikel .Nummer);
+  readln (Artikel .Name);
+
+Deò  erneutå  Aufruæ voî NE× f{hrô zõ  neueò  Speicherplatzreser
+vierung® Diå Gesamtheiô deó belegteî Speicherbereiches¬ deò nichô 
+zusammenh}ngenä seiî mu\¬  wirä aló Halde (HEAP© bezeichnet®  Deò 
+Zeigerwerô  NIÌ  geh>rô jedeí Zeigertyğ an®  Eò zeigô  auæ  keinå 
+dynamischå  Variablå  unä  wirä  Zeigervariableî  zugewiesen¬  uí 
+anzuzeigen, da\ sie keine verwertbare Adresse enthalten.
+Diå  Freigabå deó Speicherplatzeó voî gel>schteî Elementeî  eineò 
+Liste erfolgt mit der Prozedur DISPOSE.
+
+Syntax: dispose ( Zeiger<)
+
+Hiermiô  wirä  bewirkt¬  da\ deò Speicherplatz¬  auæ welcheí  deò  
+ Zeiger< zeigt, f{r andere Belegungen verwendet werden kann.
+Zuò   Verwaltunç  dynamischeò  Variableî  werdeî  nocè   folgendå 
+Funktionen bereitgestellt:
+
+  memavail
+  maxavail
+
+Diå  Funktion MEMAVAIÌ  lieferô  deî  f{ò  dynamischå   Variableî 
+verf{gbaren Speicherraum als INTEGER-Wert (Anzahl der Bytes).
+Diå  Funktioî  MAXAVAIÌ  lieferô  deî  f{ò  dynamischå  Variableî 
+verf{gbareî  Speicherrauí (ausschlie\licè gel>schteò  dynamischeò 
+Variablen) als INTEGER-Wert.
+
+
+4.9.3. Mark und Release
+-----------------------
+
+Eó  gibô statô DISPOSÅ einå weiterå M>glichkeiô zuò Freigabå  deó 
+Speicherplatzeó dynamischeò Variablen®  Daó sinä diå Standardpro
+zedureî MARK und RELEASE.
+
+Syntax: mark ( Zeiger<)
+
+Miô  MARË  kanî auæ eineò Zeigervariableî deò aktuellå Stanä  deò 
+Haldå festgehalteî werden¬  miô deí Zieì deò sp}tereî Freigabe aâ 
+dieser Position.
+
+Syntax: release ( Zeiger<)
+
+Miô  RELEASÅ kanî einå Haldå aâ deò Positioî freigegebeî  werden¬ 
+diå vorheò miô MARË fixierô wurde® Dabeé daræ diå Pointervariablå 
+zwischeî  deî Rufeî MARË unä RELEASÅ nichô ver}nderô werden®  Miô 
+RELEASÅ wirä deò Zustanä wiederhergestellt¬ deò zuí Zeitpunkô deó 
+vorhergehenden Prozeduraufrufes MARK existierte.
+
+
+4.9.4. GETMEM und FREEMEM
+-------------------------
+
+Eó gibô nocè einå weiterå Methodå deò dynamischeî Verwaltunç  voî 
+Speicherplatz®  NE×  reservierô stetó deî Speicherplatz¬  deò f{ò 
+diå  Struktuò  erforderlicè  ist¬  auæ deî deò  iî  deò  Prozeduò Šangegebenå Zeigeò zeigt®  Daó kanî hinderlicè sein®  Deshalâ gibô 
+eó  diå  M>glichkeit¬   diå  Gr>\å  deó  dynamiscè   reservierteî 
+Speicherplatzes selbst zu bestimmen.
+Syntax: getmem ( Zeiger<, Anzahl<)
+
+ Anzahl<  gibô  deî Speicherplatú iî Byteó aî (Ausdrucë deó  Typó 
+INTEGER)®  Entsprechenä kanî deò Speicherplatú wiedeò freigegebeî 
+werden.
+
+Syntax: freemem ( Zeiger<, Anzahl<)
+
+Unteò  Nutzunç voî  MAXAVAIL/MEMAVAIÌ  erm>glicht daó  einå   deí 
+Probleí    unä   deò   Speicherkapazit}ô   angepa\tå   dynamischå 
+Speicherverwaltung.
+
+
+4.9.5. Programmierung dynamischer Listen am Beispiel
+----------------------------------------------------
+
+(1© Deklaratioî deò dynamischeî Struktuò (hieò einå Struktur¬ diå 
+    aló    Nutzerinformatioî   eineî   REAL-Werô  enth}lt©    unä 
+    Initialisieren der dynamischen Liste
+      TYPE Zeiger =  Objekt;
+           Objekt = RECORD
+                      Wert      : REAL;
+                      Naechster : Zeiger;
+                    END;
+      VAR Anfang,Laufzeiger: Zeiger;
+      BEGIN
+        Anfang := NIL;  Laufzeiger := NIL;
+
+(2) Anf{gen eines Listenelementes am Ende der dynamischen Liste
+      PROCEDURE Anfuegen(Zuspeichern:REAL);
+      VAR Zwischenspeicher:Zeiger;
+      BEGIN
+        Zwischenzeiger:=Laufzeiger;
+        new (Laufzeiger);
+        Laufzeiger .Wert:=Zuspeichern;
+        Laufzeiger .Naechster:= NIL;
+        IF Anfang = NIL THEN Anfang:=Laufzeiger
+        ELSE Zwischenspeicher .Naechster := Laufzeiger;
+      END;
+
+(3) Suchen und Bereitstellen einer Adresse eines Listenelementes
+      FUNCTION Finden(Suchwert:REAL):Zeiger;
+      BEGIN
+        Laufzeiger:=Anfang;
+        Finden:= NIL;
+        WHILE Laufzeiger  < NIL DO
+           IF Laufzeiger .Wert = Suchwert THEN BEGIN
+              Finden:=Laufzeiger;
+              Laufzeiger:= NIL;
+           END ELSE Laufzeiger:=Laufzeiger .Naechster
+      END;
+.paŠDiå   Funktioî  gibô  diå  Adresså  deò  gefundeneî   dynamischeî 
+Variableî  zur{ck®  Wirä daó Suchmusteò nichô gefunden¬  isô  deò 
+Funktionswert NIL.
+
+(4© Einf{geî  eineó  Werteó iî einå dynamischå Listå miô  monotoî 
+    steigendeî Werôen (Einsortiereî - gegebenenfalló aucè aî  deî  
+    Anfang)
+
+      PROCEDURE Einfuegen(Einfuegewert:REAL);
+      VAR Suchzeiger,Zwischenzeiger:Zeiger;
+      BEGIN 
+        new (Laufzeiger);
+        Laufzeiger .Wert:=Einfuegewert;
+        Laufzeiger .Naechster:= NIL;
+        Suchzeiger:= Anfang; Zwischenzeiger:= NIL;
+        WHILE Suchzeiger  < Laufzeiger .Naechster DO
+          IF Laufzeiger .Wert < Suchzeiger .Wert THEN BEGIN
+             Zwischenzeiger:=Suchzeiger;
+             Suchzeiger:=Suchzeiger .Naechster
+          END ELSE Laufzeiger .Naechster:= Suchzeiger;
+          IF Zwischenzeiger = NIL THEN Anfang:= Laufzeiger
+          ELSE Zwischenzeiger .Naechster:= Laufzeiger
+      END;
+
+(5© L>scheî  eineó  vorhandeneî   Listenelementeó  miô  bekannteò 
+    Adresse (z.B. ermittelt mit FINDEN)
+
+      PROCEDURE Loeschen(Loeschadresse:Zeiger);
+      VAR Zwischenzeiger : Zeiger;
+      BEGIN
+        Laufzeiger:= Anfang; Zwischenzeiger:= NIL;
+        WHILE Laufzeiger  < Loeschadresse DO BEGIN
+          Zwischenzeiger:= Laufzeiger;
+          Laufzeiger:=Laufzeiger .Naechster;
+        END;
+        IF Zwischenzeiger = NIL THEN Anfang:=
+                            Loeschadresse .Naechster
+        ELSE Zwischenspeicher .Naechster:=
+                            Loeschadresse .Naechster;
+        dispose(Loeschadresse);
+      END;
+
+(6© Ausgabå alleò  Elementå eineò dynamischeî Listå miô  Freigabå 
+    des Speicherplatzes
+
+      PROCEDURE Ausgabe;
+      VAR Zwischenspeicher : Zeiger; Anzeigewert:REAL;
+      BEGIN
+        Laufzeiger:=Anker;
+        WHILE Laufzeiger  < NIL DO BEGIN
+          Anzeigewert:=Laufzeiger .Wert;
+          writeln(Anzeigewert);
+          Zwischenzeiger:= Laufzeiger .Naechster;
+          dispose (Laufzeiger);
+          Laufzeiger:= Zwischenzeiger;
+        END;
+      END;Š4.10. Ein- und Ausgabe von Dateien
+
+4.10.1. Begriffe
+----------------
+
+Einå  Dateé isô eiî Datenbestand¬  welcheò auó logiscè geglieder
+ten¬  ií allgemeineî gleichgro\eî Dateikomponenteî  besteht®  
+Deò  Zugrifæ  erfolgô  {beò eineî Zeigeò  wahlweiså  direkô  odeò 
+sequentiell.
+PASCAÌ unterscheideô zwischeî Ger}te- unä Diskettendateien®  Dis
+kettendateieî werdeî unteò deí voí Nutzeò vereinbarteî Dateinameî 
+(Prozeduò ASSIGN© auæ Diskettå abgelegt.
+Deò  Namå  eineò  Diskettendateé  wirä  durcè  einå  Zeichenkettå 
+dargestellt.
+
+Syntax:  MicroDOS-Dateiname<
+
+F{ò deî Basisnameî sinä maximaì achô, f{ò diå Erweiterunç maximaì 
+dreé Zeicheî zugelassen®  Eó k>nneî gleichzeitiç 1¶ Dateieî bear
+beiteô werden®  Durcè deî  Tyğ eineò Dateé (vgl®  Zifæeò  4.3.4.© 
+wirä diå Gr>\å unä daó Formaô deò Dateikomponenteî spezifiziert.
+
+Folgender Standardtyp ist vordefiniert:
+
+  TEXT = FILE OF CHAR.
+
+F{ò    jedå    Dateé    wirä    w}hrenä    deò    Laufzeiô    eiî 
+Dateiinformationsblocë   angelegô  (File-Interface-Block©   (vgl® 
+Ziffeò  F.1.5.)®   Dieseò  isô  deí  Programmiereò  nichô  direkô 
+zug}nglich.
+Beispiel f{r die Spezifikation einer Dateivariablen:
+
+  PROGRAM Beispiel(Datei);
+  TYPE Struktur=RECORD
+                  a: INTEGER;
+                  b: REAL;
+                END;
+  VAR Datei: FILE OF Struktur;
+
+Iî  PASCAÌ steheî deí Nutzeò folgendå Zugriffsroutineî  f{ò  einå 
+Datei zur Verf{gung:
+
+a) Sequentieller und wahlfreier Zugriff zu Bin}rdateien
+
+   - READ
+   - WRITE
+
+b) Sequentieller Zugriff zu Textdateien
+
+   - READLN
+   - WRITELN
+
+c) Blockweiser Zugriff zu Dateien beliebigen Typs
+
+   - BLOCKREAD
+   - BLOCKWRITE
+ŠVoò  eineí  wahlfreieî  Zugrifæ zõ Bin}rdateieî  odeò  ungetypteî 
+Dateieî kanî daó Dateifensteò miô deò Prozeduò SEEË  positionierô 
+werden.
+Au\erdeí steheî weiterå Funktionen/Prozedureî zuò Verf{gung¬  diå 
+die Dateiarbeit unterst{tzen.
+Daó Endå eineò Textdateé wirä durcè daó Steuerzeicheî J1Á gekenn
+zeichnet® Wirä dieseó Zeicheî gelesen¬ danî lieferô diå Standard
+funktioî  EOÆ ½ TRUE®  Bin}rdateieî enthalteî iî deî ersteî  vieò 
+Byteó Informationeî {beò Anzahì unä Umfanç deò Dateikomponenten.
+
+
+4.10.2. Dateiprozeduren
+-----------------------
+
+ASSIGN
+
+Syntax: assign ( Dateivariable<, MicroDOS-Dateiname<)
+
+MicroDOS-Dateiname siehe Anhang H.
+Diå Prozeduò haô diå Aufgabe¬ deò Variableî  Dateivariable< eineî 
+externeî  Dateinameî  zuzuweisen®  Diå Dateivariablå  kanî  jedeî 
+beliebigen Typ annehmen.
+Solleî  MicroDOS-Ger}tenameî  zugewieseî  werden¬  danî  mu\  diå   
+ Dateivariable< voí Tyğ TEXÔ sein.
+Eiî erneuteó Anwendeî voî ASSIGÎ auæ einå Dateivariable¬  welcheò 
+bereitó eiî physischeò Dateinamå zugeordneô wurdå unä miô welcheò 
+bereits gearbeitet wurde, ist unzul}ssig.
+
+INPUT¬ OUTPUT¬ LST¬ KBD¬ AUX¬ USR¬ COÎ unä TRÍ sinä vordefiniertå 
+Textdateien¬  sï  da\  einå Spezifikatioî nuò  iî  Ausnahmef}lleî 
+erforderlich ist (vgl. Ziffer 4.10.6.).
+
+Beispiel:
+
+  VAR Drucker : Text;
+  BEGIN
+    assign (Drucker,'LST:');
+    rewrite (Drucker);
+    write (Drucker,'Ausgabe erfolgt auf Drucker');
+      :
+      .
+
+
+REWRITE
+
+Syntax: rewrite ( Dateivariable<)
+
+Diå  REWRITE-Prozeduò  erzeugô  auæ Diskettå einå Dateé  miô  deí 
+Namen, welcher mit ASSIGN zugewiesen wurde.
+Gleichzeitiç  wirä diå Dateé f{ò daó Schreibeî  freigegeben®  Daó 
+Dateifensteò wirä dabeé auæ diå Dateikomponentå miô deò Nummeò  ° 
+gesetzt®  Ií  Fall¬  da\  auæ  deò Diskettå bereitó  deò  gleichå 
+physischå   Namå  existierô,   wirä   diå   dazugeh>rigå    Dateé 
+{berschrieben.
+
+Zõ  Beginî enth}lô einå miô REWRITÅ erzeugtå Dateé keiî  Element® 
+Die Funktion EOF ist TRUE.ŠBeispiel:
+
+  PROGRAM Ausgabe;
+      :
+  BEGIN
+    assign (Kunde,'A:Kunden.DAT');
+    rewrite (Kunde);
+         :
+         .
+
+
+RESET
+
+Syntax: reset ( Dateivariable<)
+
+Diå RESET-Prozeduò er>ffneô einå existierendå Datei®  Einå Bin}r
+dateé  isô  zugleicè offeî zuí Leseî unä Schreibeî  miô  direkteí 
+Zugriff®  Deò Dateizeigeò wirä auæ diå erstå Dateikomponentå (miô 
+deò Nummeò 0© gesetzt® Diå Funktioî EOÆ isô FALSE.
+
+Beispiel:
+
+  PROGRAM Ausgabe (Kunde);
+  BEGIN
+    assign (Kunde, 'A: Kunden.DAT');
+    reset(Kunde);
+     :
+  END.
+
+
+READ
+
+Syntax: read ( Dateivariable<, Variable<)
+
+Diese Prozedur realisiert das Lesen einer Dateikomponente.
+
+Beispiel:
+
+  read (Kunde,Name);
+
+Eó  wird¬  dá  diå Zugriffsanzahì zõ  Diskettendateieî  minimierô 
+wird¬  nichô  beé  jedeí  REAÄ  aucè wirklicè  voî  deò  Diskettå 
+gelesen. Anders ist das, wenn es sich um die Tastatur handelt.
+
+
+WRITE
+
+Syntax: write ( Dateivariable<, Variable<)
+
+Dieså  Prozeduò realisierô diå Ausgabå deò Inhaltå deò  Variableî 
+iî Dateikomponenteî deò Datei¬ welcheò  Dateivariable< zugeordneô 
+wurde.
+
+Beispiel:
+
+  write (Kunde,Name);
+.paŠSEEK
+
+Syntax: seek ( Dateivariable<, Nummer<)
+
+Daó  Dateifensteò eineò Bin}rdateé wirä durcè dieså Prozeduò  auæ 
+diå  Komponentå  miô deò Nummeò  Nummer<-±  eingestellô  (diå  1® 
+Komponentå haô diå Nummeò 0)® Solì diå Dateé erweiterô werden¬ sï 
+isô  eó  m>glich¬  diå letztå Dateikomponentå einzustelleî  (vgl® 
+FILESIZE) und danach WRITE zu benutzen. 
+Auæ  dieså  Weiså kanî sehò einfacè zuí direkteî Zugrifæ  {berge
+gangeî werden.
+
+Beispiel:
+
+  seek (Kunde,20);
+
+Auf Textdateien kann diese Prozedur nicht angewendet werden.
+       
+
+FLUSH
+
+Syntax: flush ( Dateivariable<)
+
+Dieså  Prozeduò wirä iî Multi-User-Systemeî  ben>tigt¬  iî  deneî 
+mehrerå  Nutzeò  zuò  gleicheî  Diskettendateé  zugreifen®  Dabeé 
+schreibô  diå  Prozeduò  FLUSÈ soforô deî Update-Puffeò  auæ  diå 
+Diskettå zur{cë unä sicherô damit¬ da\ diå folgendå Leseoperatioî 
+aló eiî physischeó Leseî ausgef{hrô wird®  FLUSÈ daræ niemaló auæ 
+eine geschlossene Datei angewendet werden.
+
+
+CLOSE
+
+Syntax: close ( Dateivariable<)
+
+Miô  dieseò Prozeduò wirä deò Disketten-FCÂ  aktualisiert¬  indeí 
+diå  entsprechendeî Byteó deó Speicher-FCÂ  kopierô  werden®  Diå 
+Datei¬  welcheò  diå   Dateivariablen<  zugeordneô  wurden¬  wirä 
+geschlosseî  unä deò aktuellå Zustanä iî daó Diskettenverzeichnió 
+geschrieben.
+Wirä diå Prozeduò CLOSÅ nichô aufgerufen¬  tritô eiî Datenverlusô 
+ein.
+
+Beispiel:
+
+  assign (Kunde,'Kunde.dat');
+  rewrite (Kunde);
+      :
+      .
+  write (Kunde,Name);
+  close (Kunde);
+.paŠERASE
+
+Syntax: erase ( Dateivariable<)
+
+Diå  Prozeduò  ERASÅ l>schô diå  Datei¬  welcheò   Dateivariable< 
+zugeordneô wurde¬  ií Diskettenverzeichnis®  Solltå diå Dateé miô 
+RESEÔ  odeò REWRITÅ bereitó er>ffneô sein¬  mu\ siå voò ERASÅ miô 
+CLOSE geschlossen werden. 
+
+Beispiel:
+
+  VAR x: FILE;
+  BEGIN
+    assign (x,'Beispiel.Dat');
+    erase (x);
+   
+
+RENAME
+
+Syntax: rename ( Dateivariable<, Dateiname<)
+
+Diå  Prozeduò  RENAMÅ wirä genutzt¬  uí diå  deò   Dateivariable< 
+zugeordnetå  Dateé  umzubenennen®   Deò  neuå Namå  wirä  iî  daó 
+Diskettenverzeichnió  eingetragen¬  unä diå weitereî  Operationeî 
+voî   Dateivariable< werdeî danî miô dieseò Dateé unteò deí neueî 
+Nameî  ausgef{hrt®  Nacè deò Er>ffnunç deò Dateé miô  RESEÔ  odeò 
+REWRITE ist das Umbenennen nicht mehr erlaubt.
+Eó isô zõ sichern¬  da\ deò neuå Dateinamå auæ deò Diskettå nichô 
+bereitó existiert¬ uí eiî Entsteheî doppelteò Nameî iî deò Direk
+torù  zõ vermeiden®  Daó kanî gepr{fô werden¬  wenî diå  Ein- unä 
+Ausgabe{berwachunç  deó Systemó miô (*JI-*) abgeschalteô unä  miô 
+deí neueî Nameî einå Er>ffnunç durcè RESEÔ versuchô wird.
+Ist danach IORESULT gleich Null, so existiert die Datei bereits.
+   
+Beispiel:
+
+  VAR x:FILE;
+  BEGIN
+    assign (x,'Alt.Dat');
+    rename (x,'Neu.Dat');
+    reset (x);
+
+
+4.10.3. Dateifunktionen
+-----------------------
+
+EOF
+
+Syntax: eof ( Dateivariable<)
+
+Ií Fall¬  da\ deò Dateizeigeò daó Dateiendå erreichô hat¬ lieferô 
+diå Funktioî EOÆ deî Werô TRUE®  Anderenfalló isô deò zur{ckgege
+benå Werô FALSE.
+.paŠFILEPOS
+
+Syntax: filepos ( Dateivariable<)
+
+Miô  dieseò  Funktioî  wirä deò Werô deò aktuelleî  Positioî  deó 
+Dateifensteró  eineò Bin}rdateé aló eiî INTEGER-Werô  zur{ckgege
+ben. Dabei besitzt die erste Komponente den Wert Null.
+Auf Textdateien kann diese Funktion nicht angewendet werden.
+
+
+FILESIZE
+
+Syntax: filesize ( Dateivariable<)
+
+Miô  dieseò  Funktioî wirä diå Gr>\å deò   Dateivariablen<  eineò 
+Bin}rdateé  zugeordneteî Dateé zur{ckgegeben®  Eó wirä diå Anzahì 
+deò Komponenteî deò Dateé bestimmt®  Ergibô diå Funktioî deî Werô 
+Null¬  sï isô diå Dateé leer®  
+Auæ Textdateieî daræ dieså Funktioî nichô angewendeô werden.
+
+
+4.10.4. Nutzung von Bin}rdateien
+--------------------------------
+
+Bevoò einå Dateé benutzô werdeî kann¬ mu\ deò Dateivariableî eine 
+physischå Dateé zugeordneô werden® Dieó geschiehô miô ASSIGN® Voò 
+eineò  E/A-Operatioî mu\ diå Dateé durcè Aufruæ voî REWRITÅ  odeò 
+RESEÔ  er>ffneô  werden®  Danacè zeigô daó Dateifensteò  auæ  diå 
+erstå  Komponentå  deò Datei®  Nacè REWRITÅ  isô  stetó  FILESIZÅ 
+(Dateivariable©  gleicè Null®  Einå Diskettendateé kanî nuò durcè 
+Anf{geî  voî weitereî Komponenteî hinteò diå letztå  existierendå 
+Komponentå deò Dateé erweiterô werden® Eó isô m>glich¬ daó Datei
+fensteò aî daó Dateiendå zõ positionieren.
+
+Beispiel:
+
+  seek( Dateivariable<,filesize Dateivariable<);
+
+Nacè  Beendigunç  alleò  I/O(Input/Output)-Operationeî  mu\   diå 
+er>ffnetå  Dateé  durcè  CLOSÅ  geschlosseî  werden¬   damiô  deò 
+Disketten-FCB aktualisiert wird.
+
+
+4.10.5. Textdateien und Textdateioperationen
+--------------------------------------------
+
+Textdateieî sinä Dateieî auó Elementeî deó g{ltigeî Zeichensatzeó 
+(vgl®  Anhanç A.2)®  Nichô allå Byteó repr}sentiereî dabeé druck
+barå  Zeichen®  Diå Komponenteî eineò Textdateé sinä Zeileî  ver
+schiedeneò L}nge¬  diå durcè Steuerzeicheî CR/LÆ getrennô werden® 
+Einå Textvariablå wirä erkl}rt¬  indeí maî ihò deî Standardtypbe
+zeichneò TEXÔ zuweist:
+
+  VAR  Dateivariable< : TEXT;
+
+Zeichenweiså  E/A-Operationeî  werdeî  f{ò  Textdateieî  miô  deî 
+Standardprozedureî  REAÄ unä WRITÅ ausgef{hrt®  Zeileî werdeî miô Šdeî  spezielleî  Textdateioperationeî  READLN¬   WRITELN¬   EOLN¬ 
+SEEKEOF und SEEKEOLN behandelt. Es gilt:
+
+readln¨ Dateivariable<©   Springô  zuí  Beginî deò n}chsteî Text-
+                          zeile¬  d.h®  {berspringô  allå Zeicheî 
+                          bió einschlie\licè deò n}chsteî  CR/LF-
+                          Folge.
+
+writeln¨ Dateivariable<©  Schreibô  diå Zeilenendemarke¬ d.h® diå                        
+                          CR/LF-Folgå auæ diå Textdatei.
+
+eoln¨  Dateivariable<©    Isô  einå Boolesche-Funktion¬  diå  deî 
+                          Werô TRUÅ zur{ckgibt¬ wenî daó Endå deò                          
+                          aktuelleî Zeilå erreichô ist¬ d.h® wenî                          
+                          daó CR-Zeicheî deò CR/LF-Folgå erreichô                          
+                          ist®  Isô  EOÆ  (Dateivariable©  gleicè 
+                          TRUE¬  sï isô EOLÎ (Dateivariable© aucè 
+                          TRUE.
+   
+seekeof¨ Dateivariable<©  Haô diå gleichå Wirkunç wiå EOF®  Tabu
+                          lator-¬ Leer- unä  EOLN-Zeicheî  werdeî                          
+                          {bergangen.
+
+seekeoln¨ Dateivariable<© Haô diå gleichå Wirkunç wiå EOLN® Tabu
+                          lator- unä  Leerzeicheî  werdeî   {ber
+                          gangen.
+
+Wendeô  maî diå EOF-Funktioî auæ einå Textdateé an¬  danî lieferô 
+dieså  Funktioî  deî Werô TRUE¬  wenî diå  Dateiendemarkå  CTRL-Ú 
+erreichô  ist®  Auæ Textdateieî sinä diå Funktioneî SEEK¬  FLUSH¬ 
+FILEPOÓ  unä  FILESIZÅ nichô anwendbar¬  dá  keinå   gleichgro\eî 
+Dateikomponenteî existieren.
+
+
+4.10.6. Logische Ger}te
+-----------------------
+
+Logischå  Ger}tå  sinä  iî PASCAÌ Nameî f{ò  externå  Ger}tå  wiå 
+Terminals¬   Druckeò  unä  Modems®  Siå  werdeî  wiå  Textdateieî 
+behandelt.
+
+'CON:§  Console® Ausgabeî werdeî aî eiî Bildschirmger}ô gesendet¬ 
+        unä Eingabeî werdeî voî deò Tastatuò gelesen®  REAÄ  odeò         
+        READLÎ {beò COÎ leseî einå ganzå Zeilå auó deí Zeilenpuf        
+        fer®  Diå  {beò Tastatuò eingegebeneî Zeicheî  erscheineî         
+        auæ  deí Bildschirí aló Echo®  Control-Zeicheî werdeî bió         
+        auæ  CÒ nichô auæ den Bildschirí gesendet®  CÒ  wirkô  iî         
+        Forí voî CR/LÆ auæ deí Bildschirm®  Deò Nutzeò kann¬  bió         
+        zuò  Eingabå voî CÒ {beò diå ^ET~-Taste¬  diå Editierm>g
+        lichkeiteî deó Systemó f{ò Eingabeî nutzen.
+  
+'TRM:§  Terminal®  Ausgabeî  werdeî aî eiî Bildschirmger}ô gesen
+        det¬ unä Eingabeî werdeî voî deò Tastatuò gelesen® Einge
+        gebenå Zeichen¬ au\eò Control-Zeichen¬ werdeî aló Echï aî 
+        daó Konsolenausgabeger}ô gesendet®  Daó einzigå  Control-
+        Zeichen¬  daó aló Echï gesendeô wird¬  isô daó Zeicheî CÒ 
+        unä zwaò iî Forí deò Folgå CR/LF.Š'KBD:§  Keybord® Eingabeî  werdeî voî deò Tastatuò  gelesen®  Eiî 
+        Echï  erfolgô  nicht®  Isô diå Variablå iî REAÄ  voí  Tyğ 
+        CHAR¬ sï isô keiî ^EÔ~ erforderlich.
+
+'LST:'  Lister. Die Ausgaben erfolgen an einen Drucker.
+
+'AUX:§  Auxiliary® Ausgabeî werdeî aî eineî Stanzeò gesendet¬ unä 
+        Eingabeî  werdeî voí Leseò gelesen®  Beií KC8µ miô  D004-
+        Erweiterung isô das die V24-Schnittstelle.
+
+'USR:§  Userger}t®  Ausgabeî geheî aî daó Nutzerausgabeger}t¬ unä 
+        Eingaben werden {ber die Nutzereingaberoutine gelesen.
+
+Eó isô m>glich¬  da\ diå logischeî Ger}tå durcè vorheò definiertå 
+Dateieî   odeò  wiå  einå  Diskettendateé  eineò   Dateivariableî 
+zugewieseî werden® Beé Zuweisunç eineó logischeî Ger}teó zõ eineò 
+Dateé  bestehô zwischeî REWRITÅ unä RESEÔ keiî  Unterschied®  Diå 
+Prozeduò  CLOSÅ f{hrô danî keinå Funktioî aus¬  unä ERASÅ lieferô 
+einen E/A-Fehler.
+
+Diå  Standardfunktioneî  EOÆ  unä  EOLÎ  arbeiteî  beé  logischeî 
+Ger}teî anderó aló beé Diskettendateien® Beé eineò Diskettendateé 
+lieferô EOÆ deî Werô TRUÅ zur{ck¬ wenî daó n}chstå Zeicheî iî deò 
+Dateé  daó Zeicheî CTRL-Ú ist®  EOLÎ gibô deî Werô  TRUÅ  zur{ck¬ 
+wenn das n}chste Zeichen CR oder CTRL-Z ist.
+Diese beiden Prozeduren sind vorausschauende Routinen.
+
+Wirä  SEEKEOÆ odeò SEEKEOLÎ statô EOF/EOLÎ verwendet¬  sï  werdeî 
+Leerzeicheî  unä  Tabulatormarkeî  (unä beé SEEKEOÆ  aucè  CR/LF© 
+{bersprungen.
+Beé   logischeî   Ger}teî  gibô  eó  jedocè   keinå   M>glichkeiô 
+vorauszusehen¬  welchå  Zeicheî aló n}chstå  kommeî  werden®  Auó 
+dieseí  Grundå  lieferî  EOÆ unä EOLÎ beé logischeî  Ger}teî  daó 
+Ergebnió  immeò  voí letzteî behandelteî Zeicheî  unä  nichô  voí 
+n}chsten®  EOÆ lieferô TRUE¬  wenî daó letztå Zeicheî CTRL-Ú war¬ 
+unä EOLÎ lieferô TRUE¬ wenî CR oder CTRL-Z war:
+
+               !      Diskettendateien      !    Logische Ger}te
+-----------------------------------------------------------------
+EOLN ist TRUE  ! wenn aktuelles Zeichen CR  ! wenn aktuelles 
+               ! und n}chstes LF ist oder   ! Zeichen CR oder
+               ! wenn n}chstes Zeichen      ! CTRL-Z ist.
+               ! CRTL-Z ist                 !
+-----------------------------------------------------------------
+EOF ist TRUE   ! wenn n}chstes Zeichen      ! wenn aktuelles
+               ! CTRL-Z ist.                ! Zeichen CTRL-Z ist.
+
+
+4.10.7. Standarddateien
+-----------------------
+
+PASCAÌ 880/Ó stellô einigå Standardtextdateieî zuò Verf{gung¬ diå 
+bereitó logischeî Ger}teî zugewieseî sinä unä unmittelbaò genutzô 
+werdeî  k>nnen®  Sï isô eó m>glich¬  Speicherplatú unä deî Aufruæ 
+von ASSIGN, RESET, REWRITE und CLOSE zu sparen.
+.paŠFolgende Standardtextdateien sind implementiert:
+
+  INPUÔ   Prim}rå Eingabedatei® Dieså Dateé isô entwedeò deí CON- 
+          oder TRM-Ger}t zugewiesen.
+  OUTPUÔ  Prim}rå Ausgabedatei® Dieså Dateé isô entwedeò deí CON- 
+          oder TRM-Ger}t zugewiesen.
+  CON     Zugewiesen dem Consolger}t 'CON:'.
+  TRM     Zugewiesen dem Terminalger}t 'TRM:'.
+  KBD     Zugewiesen dem Keybord 'KBD:'.
+  LST     Zugewiesen dem Listger}t 'LST:'.
+  AUX     Zugewiesen dem Auxiliaryger}t 'AUX:'.
+  USR     Zugewiesen dem Userger}t 'USR:'.
+
+Diå  Verwendunç voî RESET¬  REWRITÅ unä CLOSÅ isô untersagt®  Diå 
+Zuweisunç deó logischeî Ger}teó zõ deî Standardtextdateieî  INPUÔ 
+und OUTPUT erfolgt durch die Compilerdirektive JB.
+
+  (*JB+*)  weist  'CON:' zu,
+  (*JB-*)  weist  'TRM:' zu.
+
+Beé Zuweisunç voî CONº  werdeî diå Eingabeî gepufferô unä  k>nneî 
+iî  dieseí Puffeò beé deò Eingabå editierô werden®  Beé Zuweisunç 
+voî TRMº  isô eiî Editiereî deò Eingabeî nichô m>glich®  Beé  deî 
+Ausgabeoperationeî  existiereî  f{ò CONº  unä TRMº  keinå  Unter
+schiede.
+Diå  Compilerdirektivå  JÂ mu\ voò deí Programmblocë  steheî  unä 
+daræ  aló  globalå  Direktivå  ií  Programmblocë  nichô  ge}nderô 
+werden®  Wenî  iî eineí Programí sowohì CON- aló aucè  TRM-Ger}tå 
+verwendeô  werden¬  isô  diå  Direktivå JÂ  entsprechenä  deî  aí 
+h}ufigsteî verwendeteî Ger}ô zõ setzen¬  unä iî deî andereî  E/A-
+Operationen ist das andere Ger}t explizit anzugeben.
+
+Beispiel:
+
+  (*JB-*)
+  PROGRAM LesenSchreiben(OUTPUT);
+  ...
+  ...
+  readln (INPUT,Var1);              (*Lesen von TRM:*)
+  readln (CON,Var2);                (*Lesen von CON:*)
+
+Aî  deî  Stellen¬  wï  auæ deí Bildschirí keiî Echï  deò  Eingabå 
+erscheinen soll, mu\ man die Stadardtextdatei KBD zuweisen:
+
+  read (KBD,Antwort);
+
+Dá diå Standardtextdateieî INPUÔ unä OUTPUÔ sehò h}ufiç verwendeô 
+werden¬  wurdå  implementiert¬  da\  siå  automatiscè  zugewieseî 
+werden¬ wenî keiî Dateibezeichneò expliziô angegebeî wurde® Damiô 
+sind die folgenden Textdateioperationen }quivalent:
+
+  write(x)     write (OUTPUT,x)
+  read(x)      read (INPUT,x) 
+  writeln      writeln (OUTPUT)   
+  readln       readln (INPUT)
+  eof          eof (INPUT)
+.paŠDas folgende Programm zeigt die Verwendung der Standarddatei LST:
+
+Beispiel:
+
+  PROGRAM Druck;
+  BEGIN
+    :
+    .
+  writeln(LST,'Ausgabe ueber Drucker');
+    :
+    .
+
+
+4.10.8. Ein- und Ausgabe von Textdateien {ber Standardger}te
+------------------------------------------------------------
+
+Einå Textdateé kanî eineò Diskettendateé odeò eineí Standard-E/A-
+Ger}ô zugewieseî werden®  Diå Ein- unä Ausgabeî werdeî miô  Stan
+dardprozedureî READ¬ READLN¬ WRITÅ unä WRITELÎ ausgef{hrt.
+Diå  Parameteò  k>nneî  voî CHAÒ unä  STRINÇ  verschiedenå  Typeî 
+haben® Iî dieseî F}lleî erfolgô einå automatischå Datenkonvertie
+runç  beé  deò Ein- unä Ausgabå iî odeò auó deî Zeicheî deó  Zei
+chensatzes.
+Isô  deò erstå Parameteò eineò E/A-Prozeduò eiî Variablenbezeich
+neò eineò Textdatei¬  danî beziehô sicè diå Ein- odeò Ausgabå auæ 
+dieså Datei®  Ií andereî Falì beziehô siå sicè auæ diå  Standard
+textdateé INPUÔ odeò OUTPUT.
+
+
+4.10.8.1. READ
+- - - - - - - -
+
+Diå READ-Prozeduò erm>glichô diå Eingabå voî Zeichen¬ Stringó unä 
+numerischen Daten.
+
+Syntax: read  ( Variable<,..., Variable<)
+        read  ( Dateivariable<, Variable<,..., Variable<)
+
+wobeé  diå   Variable< voí Tyğ CHAR¬  STRING¬  INTEGEÒ odeò  REAÌ 
+sein kann.
+Diå  erstå  Forí liesô Dateî voî  deò  Standarddateé  INPUT®  Diå 
+zweitå liesô Eingabeî voî deò Textdateé  Dateivariable<¬  diå f{ò 
+daó Leseî vorbereiteô werdeî mu\ odeò vordefinierô ist® Miô eineò 
+Variableî  voí Tyğ CHAÒ liesô REAÄ voî deò Dateé eiî Zeicheî  unä 
+weisô dieseó deò Variableî zu®  Ií Fall¬  da\ diå Dateé einå Dis
+kettendateé ist¬ wirä EOLÎ TRUE¬ wenî daó n}chstå Zeicheî CÒ odeò 
+CTRL-Ú ist® EOÆ wirä TRUE¬ wenî daó n}chstå Zeicheî CTRL-Ú ist.
+Miô eineò Variableî voí Tyğ STRINÇ liesô REAÄ sovielå Zeicheî wiå 
+durcè  diå maximalå L}ngå deó STRINÇ erlaubô sind¬  eó seé  denn¬ 
+EOLÎ  odeò  EOÆ wurdå vorheò erreichô odeò deò Puffeò miô  BUFLEÎ  
+ n< auf n-Zeichen begrenzt.
+
+Miô eineò numerischeî Variableî (INTEGEÒ odeò REAL© erwarteô REAÄ 
+einå Zeichenkette¬  diå miô deí Formaô eineò numerischeî Konstan
+teî deó entsprechendeî Typó {bereinstimmt.
+.paŠVoranstehendå  Leerzeichen¬  HT¬  CÒ odeò LÆ werdeî {bersprungen® 
+Diå  Zeichenkettå daræ nichô l}ngeò aló 3° Zeicheî seiî  unä  mu\ 
+miô eineí Leerzeichen¬  HT¬ CÒ odeò CTRL-Ú beendeô sein® Ií Fall¬ 
+da\  diå Zeichenkettå nichô miô deí Formaô  {bereinstimmt¬  tritô 
+eiî   E/A-Fehleò  auf®   Ií  andereî  Falì  wirä  diå  numerischå 
+Zeichenkettå  iî  deî  entsprechendeî  Tyğ  konvertierô  unä  deò 
+Variableî  zugewiesen®  Ií  Fall¬  da\  voî  eineò Diskettendateé 
+geleseî    wurdå   unä   diå   Eingabezeichenkettå   miô    eineí 
+Leerzeichen odeò HÔ endet¬ starteô diå n}chstå READ- odeò READLN-
+Operatioî  miô deí Zeichen¬  daó unmittelbaò  dieseí  Leerzeicheî 
+odeò  HÔ folgt®  F{ò beide¬  Diskettendateé odeò logischeó Ger}t¬ 
+wirä EOLN=TRUE¬  wenî diå Zeichenkettå miô CÒ odeò CTRL-Ú endete® 
+Eiî Spezialfalì deò numerischeî Eingabå tritô auf¬ wenî EOLÎ odeò 
+EOÆ  bereitó  beií  Beginî TRUÅ wird®  Iî dieseí  Falì  wirä  deò 
+Variableî keiî neueò Werô zugewiesen®  Diå Variablå beh}lô  ihreî 
+alten Wert.
+
+Wenî diå Eingabedateé 'CON:§ zugewieseî odeò diå Standarddateé ií 
+(*JB+*)-Moduó  verwendeô wurde¬  gelteî speziellå Regelî f{ò  daó 
+Leseî  deò Variablen®  Beií Aufruæ voî REAÄ odeò READLÎ wirä  diå 
+ganzå  Zeilå voî deò Konsolå iî eineî Puffeò  gebracht¬  unä  daó 
+Einleseî   deò   Variableî   erfolgô  auó   dieseí   Puffeò   aló 
+Eingabequelle® Dieó erm>glichô daó Editiereî w}hrenä deò Eingabe® 
+Es bewirken:
+
+Backspacå unä DEÌ  R{cksetzeî deó  Cursoró unä L>scheî  deó  dorô 
+                   stehendeî  Zeichens®  Backspacå wirä durcè diå 
+                   Tastå ^--~ odeò CTRL-H¬  DEÌ durcè  diå  Tastå 
+                   ^DEL~ erzeugt.
+
+CTRL-Ø             R{cksetzeî deó  Cursoró auæ deî  Eingabebeginî 
+                   und L>schen aller eingegebenen Zeichen.
+
+Diå ^ET~-Tastå beendeô diå Eingabe» daó dabeé eingegebenå CÒ wirä 
+nichô aló Echï auæ deí Bildschirí ausgegeben.
+Interî  wirä  diå Eingabezeilå miô eineí CTRL-Ú aí  Endå  gespei
+chert®  Isô  dieså  Eingabezeilå k{rzeò aló diå Variableî iî  deò 
+Parameterliste¬   werdeî  diå  restlicheî  Variableî  wiå   folgô 
+behandelt:
+
+- bei CHAR wird CTRL-Z eingetragen,
+- bei STRING wird mit Leerzeichen aufgef{llt, 
+- numerische Variablen bleiben unver}ndert.
+
+Maximaì  k>nneî  iî  einå  Eingabezeilå  12·  Zeicheî  eingegebeî 
+werden®  Maî  kanî  diå Eingabezeile¬  wiå  bereitó  beschrieben¬ 
+begrenzen®  Dazõ  wirä deò vordeklarierteî Variableî BUFLEÎ  einå 
+INTEGER-Zahl aus dem Bereich 0 bis 127 zugewiesen.
+
+Beispiel:
+
+  write ('Dateiname (max. 10 Zeichen):');
+  buflen := 10; readln (Dateiname);
+
+Eó  isô  zõ beachten¬  da\ diå Zuweisungeî zõ BUFLEÎ nuò f{ò  daó 
+unmittelbaò darauffolgendå REAÄ wirken® Danacè wirä BUFLEÎ soforô 
+wieder auf 127 gesetzt.Š4.10.8.2. READLN
+- - - - - - - - -
+
+Deò Unterschieä zwischeî READLÎ unä REAÄ bestehô darin¬  da\ nacè 
+deí  Einleseî deò letzteî Variableî beé READLÎ deò Resô deò Zeilå 
+{bersprungen wird.
+
+Syntax: readln ( Variable<,..., Variable<)
+        readln ( Dateivariable<,..., Variable<)
+
+Nacè  eineí READLÎ liesô daó n}chstå REAÄ odeò READLÎ voí  Beginî 
+deò n}chsteî Zeile®  EOLÎ isô immeò FALSÅ nacè READLN¬ au\eò wenî 
+EOÆ ½ TRUÅ ist® Eó isô aucè m>glich¬ READLÎ ohnå Parameteò aufzu
+rufen®  Iî dieseî F}lleî wirä diå gesamtå Zeilå {bersprungen®  Ií 
+Fall¬  da\  READLÎ voî deò  Consolå liest¬ wirä  ií Gegensatú  zõ 
+REAÄ  daó  beendetå CÒ aló Echï iî deò Forí CR/LF-Folgå  auæ  den 
+Bildschirí {bertragen.
+
+
+4.10.8.3. WRITE
+- - - - - - - -
+
+Miô  WRITÅ isô diå Ausgabå voî Zeichen¬  Strings¬  boolescheî unä 
+numerischen Werten m>glich.
+
+Syntax: write ( Parameter<,..., Parameter<)
+        write ( Dateivariable<, Parameter<,..., Parameter<)
+
+Diå  Parameteò  sinä Variableî voí  Tyğ  CHAR¬  STRING¬  BOOLEAN¬ 
+INTEGEÒ odeò REAL®  Wahlweiså folgô dieseî Parameterî jeweiló eiî 
+Doppelpunkô unä eiî INTEGER-Ausdruck¬  deò diå L}ngå deó Ausgabe
+feldeó angibt®  Iî deò ersteî deò obeî angegebeneî Formeî erfolgô 
+diå  Ausgabå  deò Variableî durcè diå  Standarddateé  OUTPUT®  Ií 
+zweiteî Falì werdeî diå Variableî durcè diå Textdateé ausgegeben.
+
+Diå Formatå deò WRITE-Parameteò h}ngeî voí Tyğ deò Variableî  ab® 
+Ií  folgendeî  werdeî  diå  unterschiedlicheî  Formatå  unä  ihrå 
+Eigenschaften beschrieben. Dabei bezeichnen die Symbole:
+
+  C,m,n   Ausdr{cke vom Typ   CHAR
+  S       Ausdr{cke vom Typ   STRING
+  B       Ausdr{cke vom Typ   BOOLEAN
+  I       Ausdr{cke vom Typ   INTEGER
+  R       Ausdr{cke vom Typ   REAL
+
+
+Format{bersicht
+---------------
+
+C        Ausgabe des Zeichens C.
+
+C:î      Ausgabå deó  Zeichenó Ã rechtsb{ndiç iî eineí î  Zeicheî 
+         langen Feld, d.h. vor C stehen n-1 Leerzeichen.
+
+Ó        Ausgabå  deó STRING's®  Feldeò (ARRAYs© k>nneî ebenfalló 
+         ausgegebeî  werden¬  wenî siå miô STRINÇ  {bereinstimmeî 
+         unä voí Tyğ CHAÒ sind.ŠS:î      Ausgabå  deó  STRING'ó rechtsb{ndiç iî eineí  î  Zeicheî 
+         langen Feld, d.h. vor S stehen n-length(S) Leerzeichen.
+  
+B        Ausgabe des Wortes TRUE oder FALSE.
+
+B:î      Ausgabå deó Worteó TRUÅ odeò FALSÅ rechtsb{ndiç iî eineí 
+         n Zeichen langen Feld.
+
+I        Ausgabe der Dezimaldarstellung von I.
+
+I:î      Ausgabå  deò  Dezimaldarstellunç voî É  rechtsb{ndiç  iî 
+         eineí n Zeichen langen Feld.
+
+Ò        Ausgabå  deò  Dezimaldarstellunç voî Ò  rechtsb{ndiç  iî 
+         eineí  1¸ Zeicheî langeî Felä aló Gleitkommazahì iî  deò 
+         Form:     R <= 0      x.xxxxxxxxxxEtxx
+                   R    0     -x.xxxxxxxxxxEtxx
+         
+         Dabei bedeuten die Zeichen           Leerzeichen,
+                                           x  Ziffern         und
+                                           t  + oder -.
+
+R:î      Ausgabå  deò  Dezimaldarstellunç voî Ò  rechtsb{ndiç  iî 
+         eineí  î Zeicheî langeî Felä aló  Gleitkommazahl iî  deò 
+         Form:     R <= 0      blanks x. Zahl Etxx
+                   R    0      blanks-x. Zahl Etxx
+
+         Dabei bedeuten:  blanks  keine oder mehrere Leerzeichen,
+                          Zahl    eine bis zehn Ziffern,
+                          x       eine Ziffer                 und
+                          t       + oder -.
+
+         Nacè   deí  Dezimalpunkô  wirä  mindestenó  einå  Ziffeò 
+         ausgegeben¬  d.h®  î mu\ mindestenó · sein® Isô î gr>\eò 
+         aló 16¬ sï steheî voò deò Zahì Leerzeichen.
+
+R:n:í    Ausgabå  deò  Dezimaldarstellunç voî Ò  rechtsb{ndiç  iî 
+         eineí  î  Zeicheî  langeî Felä aló Festpunktzahì  miô  í 
+         Zifferî nacè deí Komma.
+         Dabeé mu\ í ií Bereicè °  ½ í  ½ 2´ liegen¬  sonsô  wirä 
+         Gleitkommaformaô  verwendet®  Daó Felä wirä voò deò Zahì 
+         miô Leerzeicheî aufgef{llt.
+
+
+4.10.8.4. WRITELN
+- - - - - - - - -
+
+Deò Unterschieä zwischeî WRITÅ unä WRITELÎ bestehô darin¬ da\ beé 
+WRITELÎ  nacè deò letzteî Variableî einå  CR/LF-Folgå  ausgegebeî 
+wird.
+
+Syntax: writeln ( Parameter<,.., Parameter<)
+        writeln ( Dateivariable<, Parameter<,.., Parameter<)
+
+WRITELÎ  odeò  WRITELÎ   Dateivariable< bewirkô nuò  diå  Ausgabå 
+einer CR/LF-Folge.
+.paŠ4.10.9. Nichtgetypte Dateien 
+----------------------------
+
+Nichtgetyptå Dateieî sinä Kanalein- unä -ausgabeî auæ niedrigsteí 
+Niveau. Es werden S}tze zu 128 Bytes {bertragen.
+Einå  nichtgetyptå Dateivariablå ben>tigô  wenigeò  Speicherplatú 
+aló  einå anderå Dateivariable¬  dá diå Dateî beé E/A-Operationeî 
+direkô zwischeî  deò  Diskettendatei unä deò Variableî {bertrageî 
+werden, ohne Platz f{r einen Sektorpuffer zu ben>tigen.
+
+Beispiel:
+
+  VAR Kunde: FILE;
+
+Allå Standarddateiprozeduren¬  alsï aucè SEEK¬  au\eò READ¬ WRITÅ 
+unä  FLUSH¬  sinä  erlaubt®  BLOCKREAÄ unä BLOCKWRITÅ  sinä  zweé 
+speziellå schnellå ]bertragungsprozeduren¬  diå anstellå voî REAÄ 
+und WRITE genutzt werden.
+
+Syntax: blockread  ( Dateivariable<, Variable<, n<)
+        blockwrite ( Dateivariable<, Variable<, n<)
+
+ Dateivariable<  entsprichô dabeé deí  Variablenbezeichneò  eineò 
+ungetypteî  Datei¬   Variable< eineò beliebigeî Variableî unä  n< 
+eineí INTEGER-Ausdruck®   n< gibô diå Anzahì deò zõ {bertragendeî 
+128-Byte-S}tzå zwischeî Diskettendateé unä Speicheò an®   
+ Variable<   mu\  daf{ò  ausreichen®   BLOCKREAÄ  unä  BLOCKWRITÅ 
+realisiereî zus}tzlicè diå Weiterf{hrunç deó Dateifensteró uí diå 
+entsprechende Anzahl von S}tzen.
+
+Beispiel (ohne Sicherung gegen Fehler):
+
+  PROGRAM Kopieren;
+  VAR Quelldatei,Zieldatei : FILE;
+      Dateiname            : STRING^12~;
+      Laufwerk             : CHAR;
+      Puffer               : ARRAY^1...127~ OF BYTE;
+
+      BEGIN
+        writeln ('Kopieren einer Datei');
+        write ('Dateiname: ');readln(Dateiname);
+        assign (Quelldatei,Dateiname);
+        reset (Quelldatei);
+        write ('Ziellaufwerk: ');
+        read (KBD,Laufwerk);
+        assign (Zieldatei,concat(Laufwerk,':',Dateiname));
+        rewrite (Zieldatei);
+        WHILE NOT eof (Quelldatei) DO BEGIN
+          blockread (Quelldatei,Puffer,1);
+          blockwrite (Zieldatei,Puffer,1)
+        END;
+        close (Quelldatei);
+        close (Zieldatei);
+      END.
+.paŠ4.10.10. Ein- und Ausgabepr{fung (IORESULT)
+-------------------------------------------
+
+E/A-Pr{funç  deò  Laufzeiô  eineó Programmeó sinä  durcè  diå  I-
+Compiler-Direktiven m>glich.
+Isô  JI« gesetzt¬  sï werdeî Fehleò iî E/A-Operationeî durcè  daó 
+Laufzeitsysteí MicroDOÓ auæ diå {blichå Weiså behandelt®  Isô JI- 
+gesetzt¬  sï  sinä diå E/A-Operationeî durcè deî Programmiereò zõ 
+{berwacheî unä Fehleò entsprechenä zõ behandeln®  Dazõ dienô  diå 
+vordefiniertå  Funktioî  IORESULT®  Siå  lieferô  nacè  deò  E/A-
+Operatioî  eineî  Fehlercodå  voí Tyğ INTEGEÒ  zur{ck®  Nulì  isô 
+fehlerfrei®  Durcè Anwendunç deò vordefinierteî Prozeduò IORESULÔ 
+wirä deò Fehlercodå auæ Nulì zur{ckgesetzt.
+Darauó resultiert¬  wirä nacè Auftreteî eineó E/A-Fehleró w}hrenä 
+deò  Programmausf{hrunç  (JI-gesetzt© einå weiterå  E/A-Operatioî 
+ausgef{hrt¬   ohnå  deî  {beò  IORESULÔ  gelieferteî   Fehlercodå 
+abzupr{fen¬  sï  erfolgô  einå Behandlunç deó Fehleró  durcè  daó 
+Laufzeitsysteí MicroDOS.
+
+Beispiel:
+
+  PROGRAM Bsp;
+  VAR Kunde      : FILE;
+      Dateiname  : STRING^14~;
+      Test       : BOOLEAN;
+  BEGIN
+    REPEAT
+      write ('Eingabe des Namens der Datei:');
+      readln (Dateiname);
+      assign (Kunde,Dateiname);
+      (*JI-*) reset (Kunde); (*JI+*)
+      Test:= (ioresult = 0);
+      IF NOT Test THEN writeln ('Datei ',Dateiname, 'kann nicht 
+                                 eroeffnet werden');
+    UNTIL Test;
+    close (Kunde);
+  END.
+
+Beé  folgendeî  Standardfunktioneî kanî eó zweckm}\iç  sein¬  miô 
+IORESULT die Fehlerbehandlung selbst zu {bernehmen.
+
+  BLOCKREAD   BLOCKWRITE   CHAIN   CLOSE
+  ERASE       EXECUTE      FLUSH   RENAME
+  RESET       REWRITE      SEEK
+    

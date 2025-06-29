@@ -1,0 +1,223 @@
+ ;      TITLE   CDAPPL.MAC -- APPLE ][/COBOL CRT INTERFACE
+
+        .8080
+
+;**********************************************************
+;*
+;*          COPYRIGHT (C) 1980 MICROSOFT
+;*
+;*      (SEE THE SOFTCARD REFERENCE MANUAL, VOL. I, PAGES
+;*       2-13 THRU 2-16 FOR MORE INFORMATION)
+;*
+;**********************************************************
+
+        EXTRN   $OUTCH,$INKEY
+
+        ENTRY   $CRLEN,$CRWID,$CLIST,$FLIST,$TLIST
+        ENTRY   $SETCR,$CURBK,$ALARM,$CUROF,$CURON
+        ENTRY   $ERASE,$EOL,$HILIT,$LOLIT
+        ENTRY   $INCRT,$OUCRT
+        ENTRY   $BREAK
+;**********************************************************
+;*
+;*      EQUATES:
+;*
+;**********************************************************
+
+SSFTAB  EQU     0F398H          ;SOFTWARE SCREEN FUNCTIONS
+SFLDIN  EQU     0F397H          ;LEAD-IN CHARACTER
+SXYOFF  EQU     0F396H          ;SOFTWARE CURSOR ADDRESS OFFSET
+
+BELL    EQU     07H             ;AUDIBLE ALARM
+BSPACE  EQU     08H             ;BACKSPACE CHAR.
+
+;**********************************************************
+;*
+;* SCREEN DIMENSIONS (CHANGED TO 24 X 40 IF USING APPLE VIDEO)
+;*
+;**********************************************************
+
+$CRLEN: DB      24D             ;LINES ON TERMINAL
+$CRWID: DB      80D             ;COLUMNS ON TERMINAL
+                                ;(MAY BE CHANGED AT RUNTIME
+                                ;TO 40 IF USING APPLE VIDEO)
+
+;**********************************************************
+;*
+;* FUNCTION CHARACTER DEFINITIONS
+;*
+;**********************************************************
+
+$CLIST:                         ;DEFINES EDITING KEYS
+        DB      18H             ;LINE DELETE
+        DB      08H             ;CHARACTER DELETE
+        DB      15H             ;NON-DESTRUCTIVE FWD SPACE (--> KEY)
+        DB      04H             ;NON-DESTRUCTIVE BACKSPACE (CTRL-D)
+        DB      2BH             ;PLUS SIGN (+)
+        DB      2DH             ;MINUS SIGN (-)
+        DB      00H             ;END OF LIST
+
+$FLIST:                         ;DEFINES FUNCTION KEYS
+        DB      11H             ;CTRL-Q GENERATES 02
+        DB      03H             ;CTRL-C GENERATES 03
+        DB      1AH             ;CTRL-Z GENERATES 04
+        DB      00H             ;END OF LIST
+
+$TLIST:                         ;DEFINES TERMINATOR KEYS
+        DB      02H             ;BACKTAB (CONTROL-B)
+        DB      1BH             ;ESCAPE
+        DB      09H             ;TAB (CONTROL-I)
+        DB      0DH             ;CARRIAGE RETURN
+        DB      0AH             ;LINE FEED (CTRL-J)
+        DB      00H             ;END OF LIST
+
+$BREAK: DB      3               ;Debugger Interrupt: CTRL-C     ** LN 10/13/83
+;*******************************************************
+;*
+;*   $SETCR - POSITION CURSOR AT SPECIFIED X,Y COORDS
+;*            ENTER WITH X IN [L], Y IN [H]
+;*
+;*******************************************************
+
+$SETCR:
+        PUSH    H               ;SAVE [HL]
+        MVI     A,7             ;PERFORM FUNCTION 7 (ADDRESS CURSOR)
+        CALL    SCRFUN
+
+        DCR     H               ;MAP 1..24 TO 0..23
+        DCR     L               ;MAP 1..80 TO 0..79
+
+        LDA     SXYOFF          ;GET THE CURSOR ADDRESS OFFSET
+        ANA     A               ;SET THE CONDITION FLAGS
+        JP      NORVS           ;SEND COORDINATES AS USUAL ?
+
+        PUSH    PSW
+        MOV     A,H             ;(NO) SWAP [H] WITH [L]
+        MOV     H,L
+        MOV     L,A
+        POP     PSW             ;RESTORE OFFSET
+
+NORVS:  PUSH    PSW             ;SAVE OFFSET
+        ADD     H               ;ADD OFFSET TO COORD
+        CALL    $OUTCH          ;OUTPUT THE FIRST COORDINATE
+
+        POP     PSW             ;RESTORE THE OFFSET
+        ADD     L               ;ADD OFFSET TO COORD
+        POP     H               ;RESTORE [HL]
+        JMP     $OUTCH          ;OUTPUT THE SECOND COORDINATE
+
+;*******************************************************
+;*
+;*   BACKSPACE CURSOR
+;*
+;*******************************************************
+
+$CURBK:
+        MVI     A,BSPACE        ;SEND BACKSPACE
+        JMP     $OUTCH
+
+;*******************************************************
+;*
+;*   AUDIBLE ALARM (BELL)
+;*
+;*******************************************************
+
+$ALARM:
+        MVI     A,BELL          ;RING THE BELL
+        JMP     $OUTCH
+
+;*******************************************************
+;*
+;*   CURSOR ON AND CURSOR OFF FUNCTIONS (NOT SUPPORTED)
+;*
+;*******************************************************
+
+$CURON:
+$CUROF:
+        RET                     ;JUST RETURN
+
+;*******************************************************
+;*
+;*   ERASE FROM CURSOR TO END OF SCREEN
+;*
+;*******************************************************
+
+$ERASE:
+        MVI     A,2             ;PERFORM SOFTWARE SCREEN FUNCTION 2
+        JMP     SCRFUN
+
+;*******************************************************
+;*
+;*   ERASE FROM CURSOR TO END OF LINE
+;*
+;*******************************************************
+
+$EOL:
+        MVI     A,3             ;PERFORM SOFTWARE SCREEN FUNCTION 3
+        JMP     SCRFUN
+
+;*******************************************************
+;*
+;*   SET HIGHLIGHTED (INVERSE) VIDEO MODE
+;*
+;*******************************************************
+
+$HILIT:
+        MVI     A,5             ;PERFORM SOFTWARE SCREEN FUNCTION 5
+        JMP     SCRFUN
+
+;*******************************************************
+;*
+;*   SET LOWLIGHTED (NORMAL) VIDEO MODE
+;*
+;*******************************************************
+
+$LOLIT:
+        MVI     A,4             ;PERFORM SOFTWARE SCREEN FUNCTION 4
+        JMP     SCRFUN
+
+;*******************************************************
+;*
+;*   DISPLAY AND ACCEPT ONE PRINTABLE CHARACTER
+;*      $INKEY: EXIT WITH THE CHARACTER IN [A]
+;*              (THE RUNTIME WILL THEN CHECK FOR THE CHARACTER
+;*              IN $CLIST, $FLIST, OR $TLIST).
+;*      $OUCRT: ENTER WITH THE CHARACTER IN [A]
+;*
+;*******************************************************
+
+$INCRT: JMP     $INKEY          ;GET A CHARACTER FROM THE OPERATING SYSTEM
+
+$OUCRT: JMP     $OUTCH          ;SEND A CHARACTER TO THE OPERATING SYSTEM
+
+
+;*******************************************************
+;*
+;* SCRFUN - EXECUTE SCREEN FUNCTION.  THIS IS THE INTERFACE
+;*          TO THE APPLE CP/M SCREEN FUNCTION TABLE
+;*
+;*******************************************************
+
+SCRFUN:
+        PUSH    H               ;SAVE [HL]
+
+        LXI     H,SSFTAB-1      ;[HL] IS ADDR OF TABLE - 1
+        ADD     L               ;ADD INDEX INTO TABLE
+        MOV     L,A             ;UPDATE POINTER
+
+        MOV     A,M             ;GET THE SOFTWARE CHARACTER
+        POP     H               ;RESTORE [HL]
+        ANA     A               ;TEST THE SOFTWARE CHARACTER
+        RZ                      ;IF ZERO, JUST RETURN
+        JP      NOLDIN          ;IS LEAD-IN REQUIRED FIRST?
+
+        PUSH    PSW             ;(YES) SAVE THE CHARACTER
+        LDA     SFLDIN          ;GET THE LEAD-IN CHARACTER
+        CALL    $OUTCH          ;OUTPUT THE LEAD-IN
+        POP     PSW             ;RESTORE SCREEN FUNCTION CHAR
+
+NOLDIN: JMP     $OUTCH          ;OUTPUT FUNCTION CHAR
+
+
+        END
+

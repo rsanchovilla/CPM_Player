@@ -1,0 +1,263 @@
+////////////////////////////////////////////////////////////////////
+//  %RAND
+//  Module to allow a) random positioning in files.
+//		    b) binary and 'update' files distinguished.
+//
+//  the model is the seek() in C/80
+//  seek(f, offset,type)  sets next position for rdch() or wrch()    
+//
+//  Types 0..2  - Offset units are  BYTES
+//  Types 3..5  - Offset units are  RECORDS  (128 bytes)
+//      Type 6  - Offset units are  RECORD BOUNDARIES
+//  Type 0 or 3 - Offset from beginning of file  (positive value)
+//  Type 1 or 4 - Offset from current position ( may be +ve or -ve)
+//  Type 2 or 5 - Offset from LAST BYTE of file  (negative value)
+//
+//  ***  Type 6 - As in type 5, but starts from byte 0 of record.
+//                Note that offset of 0 positions file on last byte
+//                just as types 2 or 5.
+//
+//  e.g.  seek(f, 0, 0) or seek(f,0,3) will go to first byte of file.
+//        seek(f, 5, 1) then moves 5 bytes fwd to 6th byte of file, or       
+//        seek(f, 5, 4) moves fwd 5 (128 byte) records to the sixth.
+//        seek(f, 0, 2) move to the last byte of the file - NB this
+//            must be done before closing the file.
+//        seek(f, -2,5) move 256 bytes before the last byte of file.
+//        possible to seek beyond the last byte of the file to add to
+//        a 'w' or 'u' file, but not a 'r' file.
+//
+//  the value f is the address of the fcb returned by findinput()
+//  or findoutput(). Note that this is a z80 addr not a bcpl addr.
+//
+//  NB this needs a versions of RTS2 & DRIVE2 with larger IO-blocks
+//     (6 extra bytes in fcb) and versions of rdch() and wrch() that
+//     are patched to distinguish binary files, and 'update' mode.
+//     wrch() has a new subrtn to read the NEXT record into the buffer
+//     after writing out current, and both rdch() and wrch() keep an
+//     extra copy of the byte-counter, in case the main one gets re-set
+//     by an EOF (=255). To use the new wrch() a file must have been
+//     opened with fopen(name,mode) and a seek to the first byte should
+//     be made before doing anything. fclose(f) does a seek to the last
+//     byte of the file before doing an endwrite() or endread().
+//
+// fopen(filename,mode) and fclose(fcb) are provided to be used with
+// random files instead of findinput() or findoutput() and endwrite().
+//
+// See further notes in RANDOM.DOC
+////////////////////////////////////////////////////////////////////////////
+
+GET "libhdr"
+
+//  BYTEPOS - return current buffer pointer. Points to NEXT byte.
+
+LET bytepos(f) = mem%(f+f.byte)   // use the copy
+
+//  FILEPOSR - point to the  record currently being accessed by rdch()/wrch()
+//  Under most circumstances the CR pointer is one ahead of the buffer. It is
+//  pointing at the actual buffer when = 127, i.e. about to read in next.
+
+LET fileposR(f) = VALOF     
+$(  let x,b = mem%(f+cr), bytepos(f)
+    test x = 0 | b = 127 then RESULTIS x
+    else RESULTIS x-1
+$)
+
+//  FILEPOS - return number of bytes from start of file to current position
+//  This points to NEXT byte accessed by rdch().
+
+LET filepos(f) =  VALOF
+$( let p =  fileposR(f)
+   if (p>0) & mem%(f+f.flag) \= 255 then p -:= 1
+   RESULTIS (p*128) + ((bytepos(f)+1)&127)
+$)
+
+//  SETPOS - move to position in file by using random read.
+//  note that actual counters (CR,SECT, COUNT,& BYTE) are set elsewhere.
+
+LET setpos(f,rec) = VALOF
+$(  
+    if rec = -1 then
+     $( bdos(35,f)
+        resultis mem%(f+r0)
+     $)
+    mem%(f+r0) := rec    
+    mem%(f+r1) := 0		 // can't cope with long files yet!
+    mem%(f+f.buff) := ^Z         // in case write later
+    
+    if bdos(readr,f) \= 0 then   // error, probably past eof so try write.
+    $(  if bdos(writer,f)\= 0 then // if still error, give up
+            RESULTIS -1
+    $)
+    RESULTIS 0
+$)
+
+// SEEK - the function to set next position for rdch() or wrch()
+
+LET seek(f,offset,type) = VALOF
+$(  let rec,byte,x,b,temp,bt,last,eof = ?,?,?,?,?,?,-1,0
+    let currentRec,currentByte = ?,?
+
+// forgot to open file?
+    if f=0 then resultis -1
+
+// if EOF at last read then reset the byte counter
+    if mem%(f+f.count)=255 then mem%(f+f.count) := mem%(f+f.byte)
+
+// work out current pointers
+    currentRec:= fileposR(f); currentByte := bytepos(f)
+
+// if there has been a seek, and file is not read-only, then write
+// out the record currently in the buffer.
+    if mem%(f+f.flag)\=0 then
+     $( if mem%(f+f.mode) \= 0 
+        $( mem%(f+r0) := currentRec 
+           bdos(sdma,f+f.buff)
+           bdos(writer,f)
+        $)
+     $)
+
+/* check for legal parameters */
+
+   test offset<0 then  switchon type into
+     $(  case 0: case 3 : resultis -1
+         case 1: if abs(offset) > filepos(f) then resultis -1
+		 endcase
+	 case 4: if abs(offset)*128 > filepos(f) then resultis -1
+     $)
+   else if offset>0 & (type = 2 | type > 4) then resultis -1
+
+/* now convert types to just 4 kinds */
+
+     test type > 2 then    // in records
+       $( rec := offset; byte := 0; type -:= 3 $)
+     else                  // in bytes
+       $( rec := offset/128; byte := offset REM 128  $)
+
+     switchon type into
+      $(
+        // offset from current (byte) position.
+        case 1:  
+		 rec +:= currentRec 
+                 byte+:= ((currentByte+1)&127)
+  	  	 rec +:= byte/128
+	         byte := byte REM 128
+	       	 if byte < 0 then
+		   $( rec -:= 1; byte +:= 128 $)
+	// offset from start of file
+	case 0:	 
+	endcase
+
+        // offset from last byte of file
+        case 3 : test offset = 0 then type := 2
+                 else rec +:= 1
+        case 2 : temp := setpos(f, -1)		   // last physical rec.
+                 if mem%(f+f.bin) = 0 then	   // not binary file
+      		  $( temp -:= 1			   // so find ASCII eof.
+		    setpos(f,temp)		   // read in last record
+		    b := 0			   // find EOF
+		    for i = 0 to 127 do		   
+		      $( if mem%(f+f.buff+i) = ^Z then 
+			$( b := i BREAK $)
+		      $)
+		    byte +:= b
+		 $)
+	       rec +:= temp
+               test type=3 then 
+		   byte := 0  
+  	       else 
+		 $( rec +:= byte/128
+		    byte := byte REM 128
+		    if byte < 0 then 
+		     $( byte +:= 128  rec -:=1 $)
+		 $)
+        endcase
+        default: RESULTIS -1
+     $)
+
+     // check range of the new pointers
+     bt := byte  
+     test byte = 0 then byte := 127 else byte -:= 1
+     rec := max(0,rec)
+
+     // set the sector and  read into the buffer
+     unless setpos(f,rec) = 0 then resultis -1
+
+     // if this is not a binary file check for EOF
+     // and fill rest of buffer with ^Z
+    if mem%(f+f.bin) = 0 then
+      $(  for i = 0 to 127 do
+             $( test mem%(f+f.buff+i) = ^Z then 
+                  $( if eof = 0 then
+		     $( eof := 1  last := i $)
+	          $)
+                else if eof=1 then mem%(f+f.buff+i) := ^Z
+	     $)
+       $)
+
+      // read-past-eof is error except in update mode.
+    test (last >= 0) then 
+      $( if  (mem%(f+f.mode) \= 3) & (bt > last) then 
+ 	  $( writes("*n++ Can't seek beyond Eof except in update mode ++*n")
+	     RESULTIS -1   /* MESSAGE FOR DEBUG ONLY - Remove if not wanted */
+	  $)
+         mem%(f+f.flag) := last+1  // indicate eof
+      $)
+    else mem%(f+f.flag) := 255     // or not 
+
+      // remember position
+    mem%(f+f.sect) := rec
+
+      // set bcpl file pointers
+    mem%(f+f.count) := byte
+    mem%(f+f.byte)  := byte
+    test byte = 127 then mem%(f+cr) := rec
+    else mem%(f+cr) := rec+1
+
+    mem%(f+f.rw) := 255     // reset read/write flag
+    RESULTIS 0
+$)
+
+//  FOPEN - open a file. Modes are "w" or 'w' for write-only
+//          "r" or 'r' for read-only  "u" or 'u' for update.
+//          "wb","rb", or "ub" for binary files that do not recognise
+//          ^Z  or Newline and Linefeed as anything special.  
+//  The checks for these modes are not very complete !
+
+LET fopen(fname,mode) = VALOF
+$(
+    let f,bin = 0,0
+    if  mode > 256 then				   // string e.g. "wb"
+      $( if mode%0 > 1 then if mode%2 = 'b' then bin := 1
+         mode := mode%1
+      $)
+    test mode = 'w' then f := findoutput(fname)    // create
+    else 
+     $( test mode = 'r' | mode = 'u' then f := findinput(fname) // read/write
+        else $( writef("*nFile mode not recognised for %s*n",fname)
+		  RESULTIS 0
+	       $)
+     $)
+    if f = 0 then RESULTIS 0
+    mem%(f+f.bin) := bin                           // binary
+    if mode = 'u' then mem%(f+f.mode) := 3         // update
+    // finally, reset counters for random write
+    mem%(f+f.sought) := 1
+    mem%(f+f.count)  := 127
+    mem%(f+f.byte)   := 127
+    RESULTIS f
+$)
+
+//  FCLOSE - close a file after seeking to end.
+//           default input/output returned to console stream.
+
+LET fclose(f) BE
+$(  if mem%(f+f.mode) = 0 then 
+      $( selectinput(f) endread()  selectinput(findinput("con:")) RETURN $)
+    selectoutput(f)
+    seek(f,0,2)			// set to last byte of file
+    endwrite()
+    selectoutput(findoutput("con:"))
+$)
+
+
+

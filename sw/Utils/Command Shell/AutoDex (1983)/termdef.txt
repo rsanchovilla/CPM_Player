@@ -1,0 +1,191 @@
+TERMDEF.TXT contains notes on the effective use of TERMDEF,
+the AUTODEX Terminal Definition program.
+
+1. General Information
+======================
+
+TERMDEF (Terminal Definition) lets you edit any existing terminal definition
+in AUTODEX.  The program is menu driven, and "almost" self-explanatory.
+
+You will need your terminal hardware manual handy.
+
+Before running TERMDEF, you should have run INSTALL to define a terminal
+to AUTODEX that is "close" to yours.  This terminal definition
+will be the starting point for the edit process.  If you are unsure
+of a terminal that is "close", try the Osborne 1.
+
+After entering
+
+     A>TERMDEF<RETURN>
+
+you will be given an opportunity to change disks and read this documentation.
+After that the master menu is displayed.  Start by typing
+
+     1
+
+to list your current terminal definition.  Compare the information with your
+hardware manual, and when you see discrepancies, enter a
+
+     2
+
+to begin the edit process.  After making edits and returning to the master
+menu, type a
+
+     3
+
+to update the AUTODEX terminal definition.  If you are dissatisfied
+with your new terminal definition, type a
+
+     4
+
+to exit without changing AUTODEX.
+
+Now run AUTODEX by entering
+
+     A>AX<RETURN>
+
+and looking at the results.  Repeat this process until you are satisfied
+with the results.
+
+2. Terminal Editing
+===================
+
+When editing a terminal definition, TERMDEF displays about 13 different
+categories of terminal information to edit.  All but a few are
+self-explanatory.  The ones that are not are Position Cursor,
+Move Cursor, Highlight a Field, and Pad Character.
+
+3. Editing: Position Cursor
+===========================
+
+AUTODEX's Terminal Definition  supports six different conventions for
+positioning the cursor to a specified row and column. You may
+specify your sequence explicitly if it is not on the standard list.
+
+The first, and by far the most common, is descended from
+the ADM 3A, and requires a four character Escape sequence:
+          ESC = R C
+The ESC and = are transmitted as is.  The R is the desired
+row number + 32 (where rows start at 0).  For example, row
+20 would be the ASCII character 2, with a decimal value of
+20+32 = 52, which is hexadecimal 32.  The C is the desired
+column, using the same convention as for the row.  With
+the exception of the terminals below, this is 
+universally used.
+
+The second is for the DEC VT-100 and other ANSI standard
+terminals.  The sequence is:
+          ESC [ Row ; Column H
+The Row  and Column values start at 1 and are represented
+as ASCII text strings.
+
+The third is for the entire line of Vector Graphic
+computers.  The sequence is:
+          ESC Column Row
+The column and row start at 0 and are represented as
+ASCII numeric values.  Some implementations add 128 to the
+values to turn on the high bit, but this is not required.
+
+The fourth is for the ADDS Viewpoint and DEC VT-52.  The sequence is:
+          ESC Y R C
+The R and C are just like the ADM 3A.
+
+The fifth is for the Hewlett Packard 125.  The sequence is:
+          ESC & a  Row r Column C
+The Row  and Column values start at 0 and are represented
+as ASCII text strings.
+
+The sixth is for the Hazeltine 1500.  The sequence is:
+          TILDE CTRL-Q C R
+The column and row start at 0 and are represented as
+ASCII numeric values.
+
+Finally, you may specify exactly how the cursor is addressed.
+You must carefully study your hardware manual, and then respond
+to the following questions:
+
+	1. The row bias, i.e. the row number to specify relative
+        to zero.  For example, if the row bias were 32 (very common),
+        then the topmost row (row 0) would be specified as a 32.
+	2. The column bias; the same principle as the row bias.
+	3. Whether rows or columns are transmitted first
+	4. Whether row and column values are in binary
+	   or ASCII text
+	5. The ASCII sequence before the first of row or column
+	   are transmitted (called The Leadin Sequence)
+	6. The ASCII sequence (if any) separating the
+	   row and column values (called The Middle Sequence)
+	7. The ASCII sequence  (if any) after the latter of row
+	   or column are transmitted (called The Ending Sequence)
+
+
+4. Editing: Move Cursor
+=======================
+
+AUTODEX's Terminal Definition  supports cursor movement sequences
+(i.e., up, down, left, right) of one to three characters in length.
+By far the most common, but by no means universal convention,
+is for one character sequences.
+
+You are first asked to define the output cursor sequences, that is, the
+sequences that are transmitted by the computer to move the cursor up, down,
+etc.
+
+You are then asked if the input cursor sequences should be the same.  In most
+cases, the answer to this is Yes.  There are two notable exceptions
+to this rule:
+
+     * When the computer/terminal uses different codes for input and output.
+       The Xerox 820 II is the only one we know of that does this, but
+       there are no doubt others.
+
+     * When you are used to using specific control keys that do not match
+       the arrow keys to move the cursor around.  If someone has used
+       WordStar, for example, for several years, they will probably want to
+       customize their cursor input sequences to match WordStar.
+
+One notable exception to this process is the Hazeltine 1500, which has the
+unique distinction of having cursor input sequences of different length.
+Further, the right arrow key (on the models that have one) generates
+a CTRL-P, which is both AUTODEX's and CP/M's print toggle!
+The move cursor routines will ask you if this is a Hazeltine 1500.  If
+so,  respond y.  This will get you the output sequences fine, but
+you must use single character control keys for up, down, left, right
+on input!
+
+
+5. Editing: Highlighting
+========================
+
+Terminals support highlighting in one of two ways:
+
+     1. Active: the field to be highlighted must be transmitted to the
+        screen, preceded by a sequence to turn highlighting on, and
+        followed by a sequence to turn it off.
+        Most terminals are this way.
+
+     2. Static:  the field to be highlighted is already on the screen;
+        the program transmits a highlight stop character at the
+        end of the field, and a highlight start character at the beginning
+        of the field. The TeleVideo line and portions of the
+        Lear-Siegler line operate this way.
+
+It is often not clear from the hardware manual which of the above is the
+method used.  If in doubt, try the Active method and look at the results!
+
+6. Pad Character
+================
+
+Some terminals need pad characters after Clear Screen, Clear End of
+Screen, or Clear End of Line.  Pad characters are non-displayable characters
+that give the terminal time to finish the operation (e.g. Clear Screen)
+before the displayable characters are received.  This is a characteristic of
+older terminals without buffers for the characters being transmitted.  Newer
+terminals and the modern integrated computer/terminals (Xerox 820 II,
+Osborne 1, etc.) rarely (if ever) need these pad characters.  If you sometimes
+see one to three characters of gibberish on the screen, go into the pad
+character function and set the number of pad characters for all operations
+to zero.
+
+
+ start character at t

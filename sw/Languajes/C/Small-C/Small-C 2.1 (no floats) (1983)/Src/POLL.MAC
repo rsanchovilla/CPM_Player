@@ -1,0 +1,81 @@
+CC1:
+poll::
+PUSH B
+LXI H,0
+DAD SP
+PUSH H
+LXI H,6
+PUSH H
+LXI H,255
+PUSH H
+CALL Ubdos
+POP B
+POP B
+CALL CCPDPI##
+LXI H,4
+CALL CCDSGI##
+MOV A,H
+ORA L
+JZ CC3
+POP D
+PUSH D
+LXI H,19
+CALL CCEQ##
+MOV A,H
+ORA L
+JZ CC4
+CC5:
+LXI H,0
+DAD SP
+PUSH H
+LXI H,6
+PUSH H
+LXI H,255
+PUSH H
+CALL Ubdos
+POP B
+POP B
+CALL CCPDPI##
+CALL CCLNEG##
+MOV A,H
+ORA L
+JZ CC6
+JMP CC5
+CC6:
+POP D
+PUSH D
+LXI H,3
+CALL CCEQ##
+MOV A,H
+ORA L
+JZ CC7
+LXI H,0
+PUSH H
+CALL exit
+POP B
+CC7:
+LXI H,0
+POP B
+RET
+CC4:
+POP D
+PUSH D
+LXI H,3
+CALL CCEQ##
+MOV A,H
+ORA L
+JZ CC8
+LXI H,0
+PUSH H
+CALL exit
+POP B
+CC8:
+CC3:
+POP H
+PUSH H
+POP B
+RET
+EXT exit
+EXT Ubdos
+END
+

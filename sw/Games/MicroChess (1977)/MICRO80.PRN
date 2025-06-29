@@ -1,0 +1,2040 @@
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                        TITLE '8080 MICROCHESS'
+                                
+                                ; 8080 MICROCHESS
+                                ; (C) COPYRIGHT 1977, MICRO-WARE LIMITED
+                                ; WRITTEN BY P. JENNINGS & T. O'BRIEN
+                                ;
+                                ; TYPED IN HEXDUMP FROM THE MANUAL AND APPLIED PATCHES
+                                ; FROM THE OCTOBER 1977 MICROCHESS NOTES.
+                                ;
+                                ; BY DEFAULT THE PROGRAM USES TERMINAL I/O FOR
+                                ; A CROMEMCO TU-ART. BY SETTING ONE OF MITS
+                                ; OR IMSAI TO 1, THE TERMINAL I/O ROUTINES ARE
+                                ; PATCHED FOR A MITS 2SIO OR IMSAI SIO2.
+                                ;
+                                ; ADDED THE DOCUMENTED PATCHES FOR DISPLAY OPTIONS.
+                                ; ADDED PATCHES TO MAKE IT WORKING UNDER CP/M.
+                                ;
+                                ; UDO MUNK, OCTOBER 2016
+                                ;
+                                ; ADDED PATCH TO DISPLAY A SMALL BOARD WITH COORDINATES.
+                                ; ADDED DAZZLER OUPUT USING 8080 INSTRUCTIONS ONLY.
+                                ; MADE PATCH FOR BOARD WITH COORDINATES RELOCATABLE.
+                                ; FIRST SWITCH DAZZLER ON AND THEN DRAW BOARD, SO THAT
+                                ; IT ALSO WORKS WITH DAZZLER II.
+                                ; IMPROVED CP/M PATCH, NOW ALSO SAVES IOBYTE, SOME BIOS'S
+                                ; NEED IT.
+                                ;
+                                ; UDO MUNK, NOVEMBER 2016
+                                ;
+                                ; ASSEMBLE WITH INTEL 8080 CROSSASSEMBLER OR DRI MAC UNDER CP/M.
+                                ; UNDER CP/M DRI LOAD WILL NOT WORK, USE MLOAD.
+                                
+                                
+  0000                          OFFSET  SET  0
+                                
+                                ;
+                                ; BUILD STANDALONE OR CP/M VERSION
+                                ;
+  0001                          CPM     SET  1
+                                
+                                        IF   CPM
+  0100                          OFFSET  SET  0100H
+                                        ENDIF
+                                
+                                ;
+                                ; ADDITIONAL DAZZLER GRAPHICS OUTPUT
+                                ;
+  0000                          DAZZLER SET  0
+                                
+                                ;
+                                ; TERMINAL I/O PATCH OPTIONS FOR STANDALONE
+                                ;
+  0000                          MITS    SET  0
+  0001                          IMSAI   SET  1
+                                
+                                ;
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+                                ; DISPLAY OPTIONS
+                                ;
+  0000                          SMALLD  SET  0          ;SMALL BOARD DISPLAY
+  0001                          COORD   SET  1          ;DISPLAY SMALL BOARD WITH COORDINATES
+  0001                          MAUTO   SET  1          ;AUTO DISPLAY AFTER MICROCHESS MOVES
+  0001                          CAUTO   SET  1          ;AUTO DISPLAY AFTER CHALLENGER MOVES
+                                
+  0000'                         	ASEG
+                                        ORG  OFFSET
+                                
+  0100    31 82 0D CD           L000:   DB 031H,082H,00DH,0CDH,0ACH,009H,021H,06DH
+  0104    AC 09 21 6D           
+  0108    0B CD DA 01                   DB 00BH,0CDH,0DAH,001H,021H,093H,00BH,0CDH
+  010C    21 93 0B CD           
+                                
+  0110    DA 01 21 B9           L010:   DB 0DAH,001H,021H,0B9H,00BH,0CDH,0DAH,001H
+  0114    0B CD DA 01           
+  0118    CD AC 09 CD                   DB 0CDH,0ACH,009H,0CDH,0AFH,005H,021H,095H
+  011C    AF 05 21 95           
+                                
+  0120    0A 22 7D 0A           L020:   DB 00AH,022H,07DH,00AH,021H,0CBH,00AH,022H
+  0124    21 CB 0A 22           
+  0128    7F 0A 21 01                   DB 07FH,00AH,021H,001H,00BH,022H,079H,00AH
+  012C    0B 22 79 0A           
+                                
+  0130    21 37 0B 22           L030:   DB 021H,037H,00BH,022H,07BH,00AH,0AFH,032H
+  0134    7B 0A AF 32           
+  0138    74 0A 32 78                   DB 074H,00AH,032H,078H,00AH,032H,082H,00AH
+  013C    0A 32 82 0A           
+                                
+  0140    32 81 0A 32           L040:   DB 032H,081H,00AH,032H,075H,00AH,032H,076H
+  0144    75 0A 32 76           
+  0148    0A 3E 10 32                   DB 00AH,03EH,010H,032H,077H,00AH,03EH,0EEH
+  014C    77 0A 3E EE           
+                                
+  0150    32 4D 0A 32           L050:   DB 032H,04DH,00AH,032H,04EH,00AH,021H,0F5H
+  0154    4E 0A 21 F5           
+  0158    0B CD 5C 01                   DB 00BH,0CDH,05CH,001H,0CDH,0C9H,009H,0CDH
+  015C    CD C9 09 CD           
+                                
+  0160    BF 09 78 0F           L060:   DB 0BFH,009H,078H,00FH,0D2H,06FH,000H,03EH
+  0164    D2 6F 00 3E           
+  0168    01 32 82 0A                   DB 001H,032H,082H,00AH,0CDH,0C3H,005H,0CDH
+  016C    CD C3 05 CD           
+                                
+  0170    42 02 CD AC           L070:   DB 042H,002H,0CDH,0ACH,009H,031H,082H,00DH
+  0174    09 31 82 0D           
+  0178    21 E6 0D 22                   DB 021H,0E6H,00DH,022H,059H,00AH,021H,020H
+  017C    59 0A 21 20           
+                                
+  0180    20 22 20 0C           L080:   DB 020H,022H,020H,00CH,021H,010H,00CH,0CDH
+  0184    21 10 0C CD           
+  0188    5C 01 CD 20                   DB 05CH,001H,0CDH,020H,003H,0CDH,0ACH,009H
+  018C    03 CD AC 09           
+                                
+  0190    21 0A 0D 7E           L090:   DB 021H,00AH,00DH,07EH,0FEH,047H,0CAH,0D7H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  0194    FE 47 CA D7           
+  0198    00 FE 44 CA                   DB 000H,0FEH,044H,0CAH,042H,003H,0FEH,045H
+  019C    42 03 FE 45           
+                                
+  01A0    CA 2C 02 FE           L0A0:   DB 0CAH,02CH,002H,0FEH,053H,0CAH,0E1H,001H
+  01A4    53 CA E1 01           
+  01A8    FE 4F CA D1                   DB 0FEH,04FH,0CAH,0D1H,003H,0FEH,052H,0CAH
+  01AC    03 FE 52 CA           
+                                
+  01B0    20 02 FE 41           L0B0:   DB 020H,002H,0FEH,041H,0CAH,0F1H,002H,0FEH
+  01B4    CA F1 02 FE           
+  01B8    4E CA 05 03                   DB 04EH,0CAH,005H,003H,0CDH,068H,001H,03AH
+  01BC    CD 68 01 3A           
+                                
+  01C0    0F 0D FE 4D           L0C0:   DB 00FH,00DH,0FEH,04DH,0CAH,026H,001H,0FEH
+  01C4    CA 26 01 FE           
+  01C8    3D CA 48 03                   DB 03DH,0CAH,048H,003H,0FEH,00DH,0C2H,02CH
+  01CC    FE 0D C2 2C           
+                                
+  01D0    01 CD 6D 08           L0D0:   DB 001H,0CDH,06DH,008H,000H,000H,000H,0CDH
+  01D4    00 00 00 CD           
+  01D8    7D 04 3A 78                   DB 07DH,004H,03AH,078H,00AH,0B7H,0CAH,0F4H
+  01DC    0A B7 CA F4           
+                                
+  01E0    00 21 4F 20           L0E0:   DB 000H,021H,04FH,020H,022H,01EH,00CH,021H
+  01E4    22 1E 0C 21           
+  01E8    20 4F 22 1B                   DB 020H,04FH,022H,01BH,00CH,0AFH,032H,078H
+  01EC    0C AF 32 78           
+                                
+  01F0    0A C3 02 01           L0F0:   DB 00AH,0C3H,002H,001H,0CDH,0ADH,001H,0CDH
+  01F4    CD AD 01 CD           
+  01F8    97 03 3A 4F                   DB 097H,003H,03AH,04FH,00AH,0FEH,0FFH,0CAH
+  01FC    0A FE FF CA           
+                                
+  0200    38 01 21 16           L100:   DB 038H,001H,021H,016H,00CH,0CDH,05CH,001H
+  0204    0C CD 5C 01           
+  0208    3A 81 0A FE                   DB 03AH,081H,00AH,0FEH,0FFH,0CAH,017H,003H
+  020C    FF CA 17 03           
+                                
+  0210    3A 74 0A B7           L110:   DB 03AH,074H,00AH,0B7H,0CAH,01DH,001H,021H
+  0214    CA 1D 01 21           
+  0218    AE 0C CD 5C                   DB 0AEH,00CH,0CDH,05CH,001H,0CDH,0ACH,009H
+  021C    01 CD AC 09           
+                                
+  0220    00 00 00 C3           L120:   DB 000H,000H,000H,0C3H,075H,000H,0CDH,06DH
+  0224    75 00 CD 6D           
+  0228    08 C3 75 00                   DB 008H,0C3H,075H,000H,021H,023H,00CH,0CDH
+  022C    21 23 0C CD           
+                                
+  0230    5C 01 CD AC           L130:   DB 05CH,001H,0CDH,0ACH,009H,0C3H,075H,000H
+  0234    09 C3 75 00           
+  0238    21 30 0C CD                   DB 021H,030H,00CH,0CDH,0DAH,001H,0CDH,042H
+  023C    DA 01 CD 42           
+                                
+  0240    02 CD AC 09           L140:   DB 002H,0CDH,0ACH,009H,021H,047H,00CH,0CDH
+  0244    21 47 0C CD           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+  0248    5C 01 CD C9                   DB 05CH,001H,0CDH,0C9H,009H,0CDH,0BFH,009H
+  024C    09 CD BF 09           
+                                
+  0250    78 FE 59 C2           L150:   DB 078H,0FEH,059H,0C2H,0C8H,001H,0CDH,0ACH
+  0254    C8 01 CD AC           
+  0258    09 C3 18 00                   DB 009H,0C3H,018H,000H,07EH,0FEH,00DH,0C8H
+  025C    7E FE 0D C8           
+                                
+  0260    47 CD BF 09           L160:   DB 047H,0CDH,0BFH,009H,023H,0C3H,05CH,001H
+  0264    23 C3 5C 01           
+  0268    2A 0A 0D CD                   DB 02AH,00AH,00DH,0CDH,099H,001H,032H,050H
+  026C    99 01 32 50           
+                                
+  0270    0A 2A 0D 0D           L170:   DB 00AH,02AH,00DH,00DH,0CDH,099H,001H,032H
+  0274    CD 99 01 32           
+  0278    51 0A 32 4E                   DB 051H,00AH,032H,04EH,00AH,03AH,050H,00AH
+  027C    0A 3A 50 0A           
+                                
+  0280    21 0C 0A 0E           L180:   DB 021H,00CH,00AH,00EH,01FH,0BEH,0CAH,091H
+  0284    1F BE CA 91           
+  0288    01 2B 0D F2                   DB 001H,02BH,00DH,0F2H,085H,001H,0C3H,02CH
+  028C    85 01 C3 2C           
+                                
+  0290    01 79 32 4D           L190:   DB 001H,079H,032H,04DH,00AH,032H,04FH,00AH
+  0294    0A 32 4F 0A           
+  0298    C9 7D E6 0F                   DB 0C9H,07DH,0E6H,00FH,017H,017H,017H,017H
+  029C    17 17 17 17           
+                                
+  02A0    47 7C E6 0F           L1A0:   DB 047H,07CH,0E6H,00FH,0B0H,047H,0E6H,088H
+  02A4    B0 47 E6 88           
+  02A8    C2 2C 01 78                   DB 0C2H,02CH,001H,078H,0C9H,03AH,050H,00AH
+  02AC    C9 3A 50 0A           
+                                
+  02B0    47 CD 8F 09           L1B0:   DB 047H,0CDH,08FH,009H,02AH,0DDH,009H,022H
+  02B4    2A DD 09 22           
+  02B8    1B 0C 3A 51                   DB 01BH,00CH,03AH,051H,00AH,047H,0CDH,08FH
+  02BC    0A 47 CD 8F           
+                                
+  02C0    09 2A DD 09           L1C0:   DB 009H,02AH,0DDH,009H,022H,01EH,00CH,0C9H
+  02C4    22 1E 0C C9           
+  02C8    CD AC 09 CD                   DB 0CDH,0ACH,009H,0CDH,0ACH,009H,021H,05BH
+  02CC    AC 09 21 5B           
+                                
+  02D0    0C CD 5C 01           L1D0:   DB 00CH,0CDH,05CH,001H,0CDH,0ACH,009H,076H
+  02D4    CD AC 09 76           
+  02D8    00 00 CD 5C                   DB 000H,000H,0CDH,05CH,001H,0CDH,0ACH,009H
+  02DC    01 CD AC 09           
+                                
+  02E0    C9 CD AC 09           L1E0:   DB 0C9H,0CDH,0ACH,009H,021H,0DFH,00BH,0CDH
+  02E4    21 DF 0B CD           
+  02E8    5C 01 CD C9                   DB 05CH,001H,0CDH,0C9H,009H,0CDH,0BFH,009H
+  02EC    09 CD BF 09           
+                                
+  02F0    78 FE 53 CA           L1F0:   DB 078H,0FEH,053H,0CAH,003H,002H,0FEH,042H
+  02F4    03 02 FE 42           
+  02F8    CA 0A 02 FE                   DB 0CAH,00AH,002H,0FEH,04EH,0CAH,011H,002H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+  02FC    4E CA 11 02           
+                                
+  0300    C3 2C 01 06           L200:   DB 0C3H,02CH,001H,006H,000H,00EH,0FFH,0C3H
+  0304    00 0E FF C3           
+  0308    15 02 06 00                   DB 015H,002H,006H,000H,00EH,0FBH,0C3H,015H
+  030C    0E FB C3 15           
+                                
+  0310    02 06 08 0E           L210:   DB 002H,006H,008H,00EH,0FBH,078H,032H,01EH
+  0314    FB 78 32 1E           
+  0318    07 79 32 61                   DB 007H,079H,032H,061H,008H,0C3H,072H,000H
+  031C    08 C3 72 00           
+                                
+  0320    CD AC 09 21           L220:   DB 0CDH,0ACH,009H,021H,07EH,00CH,0CDH,05CH
+  0324    7E 0C CD 5C           
+  0328    01 C3 3E 01                   DB 001H,0C3H,03EH,001H,0CDH,0C3H,005H,03AH
+  032C    CD C3 05 3A           
+                                
+  0330    82 0A B7 CA           L230:   DB 082H,00AH,0B7H,0CAH,03AH,002H,0AFH,0C3H
+  0334    3A 02 AF C3           
+  0338    3C 02 3E 01                   DB 03CH,002H,03EH,001H,032H,082H,00AH,0C3H
+  033C    32 82 0A C3           
+                                
+  0340    75 00 CD AC           L240:   DB 075H,000H,0CDH,0ACH,009H,0CDH,0ACH,009H
+  0344    09 CD AC 09           
+  0348    16 00 21 B6                   DB 016H,000H,021H,0B6H,00CH,0CDH,0DAH,001H
+  034C    0C CD DA 01           
+                                
+  0350    7A B7 CA 5B           L250:   DB 07AH,0B7H,0CAH,05BH,002H,021H,0D2H,00CH
+  0354    02 21 D2 0C           
+  0358    CD DA 01 06                   DB 0CDH,0DAH,001H,006H,021H,0CDH,0BFH,009H
+  035C    21 CD BF 09           
+                                
+  0360    06 20 CD BF           L260:   DB 006H,020H,0CDH,0BFH,009H,021H,00CH,00AH
+  0364    09 21 0C 0A           
+  0368    0E 1F 7E BA                   DB 00EH,01FH,07EH,0BAH,0CAH,0B8H,002H,02BH
+  036C    CA B8 02 2B           
+                                
+  0370    0D F2 6A 02           L270:   DB 00DH,0F2H,06AH,002H,07AH,0E6H,00FH,05FH
+  0374    7A E6 0F 5F           
+  0378    7A E6 F0 0F                   DB 07AH,0E6H,0F0H,00FH,00FH,00FH,00FH,083H
+  037C    0F 0F 0F 83           
+                                
+  0380    1F DA 89 02           L280:   DB 01FH,0DAH,089H,002H,006H,020H,0C3H,08BH
+  0384    06 20 C3 8B           
+  0388    02 06 3A CD                   DB 002H,006H,03AH,0CDH,0BFH,009H,0CDH,0BFH
+  038C    BF 09 CD BF           
+                                
+  0390    09 06 20 CD           L290:   DB 009H,006H,020H,0CDH,0BFH,009H,014H,07AH
+  0394    BF 09 14 7A           
+  0398    E6 0F FE 08                   DB 0E6H,00FH,0FEH,008H,0C2H,065H,002H,006H
+  039C    C2 65 02 06           
+                                
+  03A0    21 CD BF 09           L2A0:   DB 021H,0CDH,0BFH,009H,0CDH,0ACH,009H,07AH
+  03A4    CD AC 09 7A           
+  03A8    C6 08 57 F2                   DB 0C6H,008H,057H,0F2H,050H,002H,021H,0EEH
+  03AC    50 02 21 EE           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+                                
+  03B0    0C CD DA 01           L2B0:   DB 00CH,0CDH,0DAH,001H,0CDH,0ACH,009H,0C9H
+  03B4    CD AC 09 C9           
+  03B8    79 FE 10 D2                   DB 079H,0FEH,010H,0D2H,0D3H,002H,03AH,082H
+  03BC    D3 02 3A 82           
+                                
+  03C0    0A B7 C2 CC           L2C0:   DB 00AH,0B7H,0C2H,0CCH,002H,03AH,083H,00AH
+  03C4    02 3A 83 0A           
+  03C8    47 C3 DD 02                   DB 047H,0C3H,0DDH,002H,03AH,084H,00AH,047H
+  03CC    3A 84 0A 47           
+                                
+  03D0    C3 DD 02 3A           L2D0:   DB 0C3H,0DDH,002H,03AH,082H,00AH,0B7H,0C2H
+  03D4    82 0A B7 C2           
+  03D8    C5 02 C3 CC                   DB 0C5H,002H,0C3H,0CCH,002H,0CDH,0BFH,009H
+  03DC    02 CD BF 09           
+                                
+  03E0    79 E6 0F 4F           L2E0:   DB 079H,0E6H,00FH,04FH,006H,000H,021H,085H
+  03E4    06 00 21 85           
+  03E8    0A 09 46 CD                   DB 00AH,009H,046H,0CDH,0BFH,009H,0C3H,091H
+  03EC    BF 09 C3 91           
+                                
+  03F0    02 3E CD 32           L2F0:   DB 002H,03EH,0CDH,032H,0D4H,000H,032H,020H
+  03F4    D4 00 32 20           
+  03F8    01 21 42 02                   DB 001H,021H,042H,002H,022H,0D5H,000H,022H
+  03FC    22 D5 00 22           
+                                
+  0400    21 01 C3 72           L300:   DB 021H,001H,0C3H,072H,000H,021H,000H,000H
+  0404    00 21 00 00           
+  0408    22 D4 00 22                   DB 022H,0D4H,000H,022H,0D5H,000H,022H,020H
+  040C    D5 00 22 20           
+                                
+  0410    01 22 21 01           L310:   DB 001H,022H,021H,001H,0C3H,072H,000H,021H
+  0414    C3 72 00 21           
+  0418    96 0C CD 5C                   DB 096H,00CH,0CDH,05CH,001H,0C3H,03EH,001H
+  041C    01 C3 3E 01           
+                                
+  0420    21 0A 0D 0E           L320:   DB 021H,00AH,00DH,00EH,000H,0CDH,0C9H,009H
+  0424    00 CD C9 09           
+  0428    78 77 FE 0D                   DB 078H,077H,0FEH,00DH,0CAH,03CH,003H,0FEH
+  042C    CA 3C 03 FE           
+                                
+  0430    18 CA 72 00           L330:   DB 018H,0CAH,072H,000H,0CDH,0BFH,009H,023H
+  0434    CD BF 09 23           
+  0438    0C C3 25 03                   DB 00CH,0C3H,025H,003H,0AFH,0B9H,0CAH,025H
+  043C    AF B9 CA 25           
+                                
+  0440    03 C9 CD 42           L340:   DB 003H,0C9H,0CDH,042H,002H,0C3H,075H,000H
+  0444    02 C3 75 00           
+  0448    CD 68 01 21                   DB 0CDH,068H,001H,021H,00CH,00AH,00EH,00FH
+  044C    0C 0A 0E 0F           
+                                
+  0450    3A 50 0A BE           L350:   DB 03AH,050H,00AH,0BEH,0CAH,05CH,003H,02BH
+  0454    CA 5C 03 2B           
+  0458    0D F2 53 03                   DB 00DH,0F2H,053H,003H,036H,0CCH,021H,08CH
+  045C    36 CC 21 8C           
+                                
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+  0460    0A 0E 07 3A           L360:   DB 00AH,00EH,007H,03AH,010H,00DH,0BEH,0CAH
+  0464    10 0D BE CA           
+  0468    72 03 2B 0D                   DB 072H,003H,02BH,00DH,0F2H,066H,003H,0C3H
+  046C    F2 66 03 C3           
+                                
+  0470    2C 01 21 FD           L370:   DB 02CH,001H,021H,0FDH,009H,006H,000H,009H
+  0474    09 06 00 09           
+  0478    3E CC BE CA                   DB 03EH,0CCH,0BEH,0CAH,083H,003H,02BH,0BEH
+  047C    83 03 2B BE           
+                                
+  0480    C2 2C 01 3A           L380:   DB 0C2H,02CH,001H,03AH,051H,00AH,077H,03AH
+  0484    51 0A 77 3A           
+  0488    11 0D FE 4D                   DB 011H,00DH,0FEH,04DH,0CAH,072H,000H,0FEH
+  048C    CA 72 00 FE           
+                                
+  0490    0D CA D4 00           L390:   DB 00DH,0CAH,0D4H,000H,0C3H,02CH,001H,03AH
+  0494    C3 2C 01 3A           
+  0498    51 0A E6 F0                   DB 051H,00AH,0E6H,0F0H,0FEH,070H,0C0H,03AH
+  049C    FE 70 C0 3A           
+                                
+  04A0    4F 0A 4F E6           L3A0:   DB 04FH,00AH,04FH,0E6H,008H,0C8H,021H,0EDH
+  04A4    08 C8 21 ED           
+  04A8    09 06 00 09                   DB 009H,006H,000H,009H,03EH,0CCH,077H,021H
+  04AC    3E CC 77 21           
+                                
+  04B0    EE 09 1E 00           L3B0:   DB 0EEH,009H,01EH,000H,0BEH,0CAH,0BDH,003H
+  04B4    BE CA BD 03           
+  04B8    23 1C C3 B4                   DB 023H,01CH,0C3H,0B4H,003H,03AH,051H,00AH
+  04BC    03 3A 51 0A           
+                                
+  04C0    77 3E 3D 32           L3C0:   DB 077H,03EH,03DH,032H,020H,00CH,021H,086H
+  04C4    20 0C 21 86           
+  04C8    0A 16 00 19                   DB 00AH,016H,000H,019H,07EH,032H,021H,00CH
+  04CC    7E 32 21 0C           
+                                
+  04D0    C9 3A 0C 0D           L3D0:   DB 0C9H,03AH,00CH,00DH,0FEH,04FH,0C2H,02CH
+  04D4    FE 4F C2 2C           
+  04D8    01 3A 0E 0D                   DB 001H,03AH,00EH,00DH,0FEH,04FH,0C2H,02FH
+  04DC    FE 4F C2 2F           
+                                
+  04E0    04 3A 82 0A           L3E0:   DB 004H,03AH,082H,00AH,0B7H,0CAH,005H,004H
+  04E4    B7 CA 05 04           
+  04E8    3A FD 09 FE                   DB 03AH,0FDH,009H,0FEH,074H,0C2H,02CH,001H
+  04EC    74 C2 2C 01           
+                                
+  04F0    3E 72 32 FD           L3F0:   DB 03EH,072H,032H,0FDH,009H,03EH,073H,032H
+  04F4    09 3E 73 32           
+  04F8    00 0A 32 4E                   DB 000H,00AH,032H,04EH,00AH,03EH,013H,032H
+  04FC    0A 3E 13 32           
+                                
+  0500    4D 0A C3 1F           L400:   DB 04DH,00AH,0C3H,01FH,004H,03AH,0FDH,009H
+  0504    04 3A FD 09           
+  0508    FE 73 C2 2C                   DB 0FEH,073H,0C2H,02CH,001H,03EH,075H,032H
+  050C    01 3E 75 32           
+                                
+  0510    FD 09 3E 74           L410:   DB 0FDH,009H,03EH,074H,032H,000H,00AH,032H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+
+
+  0514    32 00 0A 32           
+  0518    4E 0A 3E 13                   DB 04EH,00AH,03EH,013H,032H,04DH,00AH,03AH
+  051C    32 4D 0A 3A           
+                                
+  0520    0F 0D FE 4D           L420:   DB 00FH,00DH,0FEH,04DH,0CAH,072H,000H,0FEH
+  0524    CA 72 00 FE           
+  0528    0D CA D4 00                   DB 00DH,0CAH,0D4H,000H,0C3H,02CH,001H,03AH
+  052C    C3 2C 01 3A           
+                                
+  0530    82 0A B7 CA           L430:   DB 082H,00AH,0B7H,0CAH,053H,004H,03AH,0FDH
+  0534    53 04 3A FD           
+  0538    09 FE 74 C2                   DB 009H,0FEH,074H,0C2H,02CH,001H,03EH,076H
+  053C    2C 01 3E 76           
+                                
+  0540    32 FD 09 3E           L440:   DB 032H,0FDH,009H,03EH,075H,032H,0FFH,009H
+  0544    75 32 FF 09           
+  0548    32 4E 0A 3E                   DB 032H,04EH,00AH,03EH,012H,032H,04DH,00AH
+  054C    12 32 4D 0A           
+                                
+  0550    C3 6D 04 3A           L450:   DB 0C3H,06DH,004H,03AH,0FDH,009H,0FEH,073H
+  0554    FD 09 FE 73           
+  0558    C2 2C 01 3E                   DB 0C2H,02CH,001H,03EH,071H,032H,0FDH,009H
+  055C    71 32 FD 09           
+                                
+  0560    3E 72 32 FF           L460:   DB 03EH,072H,032H,0FFH,009H,032H,04EH,00AH
+  0564    09 32 4E 0A           
+  0568    3E 12 32 4D                   DB 03EH,012H,032H,04DH,00AH,03AH,00DH,00DH
+  056C    0A 3A 0D 0D           
+                                
+  0570    FE 4D CA 72           L470:   DB 0FEH,04DH,0CAH,072H,000H,0FEH,00DH,0CAH
+  0574    00 FE 0D CA           
+  0578    D4 00 C3 2C                   DB 0D4H,000H,0C3H,02CH,001H,02AH,075H,00AH
+  057C    01 2A 75 0A           
+                                
+  0580    7D FE 36 D2           L480:   DB 07DH,0FEH,036H,0D2H,06BH,005H,0CDH,0CFH
+  0584    6B 05 CD CF           
+  0588    04 F5 2A 75                   DB 004H,0F5H,02AH,075H,00AH,023H,022H,075H
+  058C    0A 23 22 75           
+                                
+  0590    0A F1 D2 6B           L490:   DB 00AH,0F1H,0D2H,06BH,005H,0CDH,04FH,005H
+  0594    05 CD 4F 05           
+  0598    CD B7 04 CD                   DB 0CDH,0B7H,004H,0CDH,06DH,008H,03AH,04DH
+  059C    6D 08 3A 4D           
+                                
+  05A0    0A FE 00 C0           L4A0:   DB 00AH,0FEH,000H,0C0H,03EH,002H,032H,04DH
+  05A4    3E 02 32 4D           
+  05A8    0A 3A 4E 0A                   DB 00AH,03AH,04EH,00AH,0EEH,003H,032H,04EH
+  05AC    EE 03 32 4E           
+                                
+  05B0    0A 32 78 0A           L4B0:   DB 00AH,032H,078H,00AH,0C3H,098H,004H,021H
+  05B4    C3 98 04 21           
+  05B8    ED 09 3A 4D                   DB 0EDH,009H,03AH,04DH,00AH,032H,04FH,00AH
+  05BC    0A 32 4F 0A           
+                                
+  05C0    4F 06 00 09           L4C0:   DB 04FH,006H,000H,009H,07EH,032H,050H,00AH
+  05C4    7E 32 50 0A           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+
+
+  05C8    3A 4E 0A 32                   DB 03AH,04EH,00AH,032H,051H,00AH,0C9H,0CDH
+  05CC    51 0A C9 CD           
+                                
+  05D0    04 05 CA EB           L4D0:   DB 004H,005H,0CAH,0EBH,004H,0CDH,01CH,005H
+  05D4    04 CD 1C 05           
+  05D8    21 77 0A 35                   DB 021H,077H,00AH,035H,0F2H,0E7H,004H,0AFH
+  05DC    F2 E7 04 AF           
+                                
+  05E0    26 00 2E F0           L4E0:   DB 026H,000H,02EH,0F0H,022H,075H,00AH,0DAH
+  05E4    22 75 0A DA           
+  05E8    CF 04 C9 CD                   DB 0CFH,004H,0C9H,0CDH,029H,005H,02AH,075H
+  05EC    29 05 2A 75           
+                                
+  05F0    0A EB 2A 79           L4F0:   DB 00AH,0EBH,02AH,079H,00AH,019H,07EH,032H
+  05F4    0A 19 7E 32           
+  05F8    4D 0A 2A 7B                   DB 04DH,00AH,02AH,07BH,00AH,019H,07EH,032H
+  05FC    0A 19 7E 32           
+                                
+  0600    4E 0A 37 C9           L500:   DB 04EH,00AH,037H,0C9H,02AH,075H,00AH,0EBH
+  0604    2A 75 0A EB           
+  0608    2A 7D 0A 19                   DB 02AH,07DH,00AH,019H,03AH,04DH,00AH,0BEH
+  060C    3A 4D 0A BE           
+                                
+  0610    C2 1B 05 2A           L510:   DB 0C2H,01BH,005H,02AH,07FH,00AH,019H,03AH
+  0614    7F 0A 19 3A           
+  0618    4E 0A BE C9                   DB 04EH,00AH,0BEH,0C9H,02AH,075H,00AH,07DH
+  061C    2A 75 0A 7D           
+                                
+  0620    C6 09 6F 22           L520:   DB 0C6H,009H,06FH,022H,075H,00AH,0FEH,036H
+  0624    75 0A FE 36           
+  0628    C9 2A 75 0A                   DB 0C9H,02AH,075H,00AH,0E5H,03AH,077H,00AH
+  062C    E5 3A 77 0A           
+                                
+  0630    4F 3E FF 32           L530:   DB 04FH,03EH,0FFH,032H,077H,00AH,0CDH,01CH
+  0634    77 0A CD 1C           
+  0638    05 21 77 0A                   DB 005H,021H,077H,00AH,034H,0D2H,04AH,005H
+  063C    34 D2 4A 05           
+                                
+  0640    0D FA 4A 05           L540:   DB 00DH,0FAH,04AH,005H,0CDH,004H,005H,0CAH
+  0644    CD 04 05 CA           
+  0648    36 05 E1 22                   DB 036H,005H,0E1H,022H,075H,00AH,0C9H,03AH
+  064C    75 0A C9 3A           
+                                
+  0650    1E 07 3C 57           L550:   DB 01EH,007H,03CH,057H,006H,005H,00EH,0FFH
+  0654    06 05 0E FF           
+  0658    3E FF 3D C2                   DB 03EH,0FFH,03DH,0C2H,05AH,005H,00DH,0C2H
+  065C    5A 05 0D C2           
+                                
+  0660    58 05 05 C2           L560:   DB 058H,005H,005H,0C2H,056H,005H,015H,0C2H
+  0664    56 05 15 C2           
+  0668    54 05 C9 3E                   DB 054H,005H,0C9H,03EH,00CH,032H,054H,00AH
+  066C    0C 32 54 0A           
+                                
+  0670    32 50 0A 0E           L570:   DB 032H,050H,00AH,00EH,014H,0CDH,0DFH,005H
+  0674    14 CD DF 05           
+  0678    3E 04 32 54                   DB 03EH,004H,032H,054H,00AH,0CDH,0DDH,005H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+
+
+  067C    0A CD DD 05           
+                                
+  0680    3A 50 0A FE           L580:   DB 03AH,050H,00AH,0FEH,00FH,0DAH,0A3H,005H
+  0684    0F DA A3 05           
+  0688    21 ED 09 06                   DB 021H,0EDH,009H,006H,000H,03AH,04FH,00AH
+  068C    00 3A 4F 0A           
+                                
+  0690    32 4D 0A 4F           L590:   DB 032H,04DH,00AH,04FH,009H,07EH,032H,050H
+  0694    09 7E 32 50           
+  0698    0A 3A 51 0A                   DB 00AH,03AH,051H,00AH,032H,04EH,00AH,0CDH
+  069C    32 4E 0A CD           
+                                
+  06A0    6D 08 C9 3E           L5A0:   DB 06DH,008H,0C9H,03EH,0FFH,032H,04FH,00AH
+  06A4    FF 32 4F 0A           
+  06A8    32 50 0A 32                   DB 032H,050H,00AH,032H,051H,00AH,0C9H,021H
+  06AC    51 0A C9 21           
+                                
+  06B0    0D 0A 11 ED           L5B0:   DB 00DH,00AH,011H,0EDH,009H,00EH,020H,07EH
+  06B4    09 0E 20 7E           
+  06B8    12 23 13 0D                   DB 012H,023H,013H,00DH,0C2H,0B7H,005H,0C9H
+  06BC    C2 B7 05 C9           
+                                
+  06C0    CD AF 05 21           L5C0:   DB 0CDH,0AFH,005H,021H,0EDH,009H,011H,0FDH
+  06C4    ED 09 11 FD           
+  06C8    09 0E 10 3E                   DB 009H,00EH,010H,03EH,077H,096H,047H,0EBH
+  06CC    77 96 47 EB           
+                                
+  06D0    3E 77 96 70           L5D0:   DB 03EH,077H,096H,070H,0EBH,077H,023H,013H
+  06D4    EB 77 23 13           
+  06D8    0D C2 CB 05                   DB 00DH,0C2H,0CBH,005H,0C9H,00EH,010H,021H
+  06DC    C9 0E 10 21           
+                                
+  06E0    5D 0A AF 77           L5E0:   DB 05DH,00AH,0AFH,077H,023H,00DH,0F2H,0E3H
+  06E4    23 0D F2 E3           
+  06E8    05 3E 10 32                   DB 005H,03EH,010H,032H,04DH,00AH,021H,04DH
+  06EC    4D 0A 21 4D           
+                                
+  06F0    0A 35 F8 CD           L5F0:   DB 00AH,035H,0F8H,0CDH,058H,007H,03EH,008H
+  06F4    58 07 3E 08           
+  06F8    32 55 0A 3A                   DB 032H,055H,00AH,03AH,04DH,00AH,0FEH,008H
+  06FC    4D 0A FE 08           
+                                
+  0700    F2 56 06 FE           L600:   DB 0F2H,056H,006H,0FEH,006H,0F2H,043H,006H
+  0704    06 F2 43 06           
+  0708    FE 04 F2 35                   DB 0FEH,004H,0F2H,035H,006H,0FEH,001H,0CAH
+  070C    06 FE 01 CA           
+                                
+  0710    1E 06 F2 27           L610:   DB 01EH,006H,0F2H,027H,006H,0CDH,098H,006H
+  0714    06 CD 98 06           
+  0718    C2 15 06 C3                   DB 0C2H,015H,006H,0C3H,0EEH,005H,0CDH,0A9H
+  071C    EE 05 CD A9           
+                                
+  0720    06 C2 1E 06           L620:   DB 006H,0C2H,01EH,006H,0C3H,0EEH,005H,03EH
+  0724    C3 EE 05 3E           
+  0728    04 32 55 0A                   DB 004H,032H,055H,00AH,0CDH,0A9H,006H,0C2H
+  072C    CD A9 06 C2           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+
+
+                                
+  0730    2C 06 C3 EE           L630:   DB 02CH,006H,0C3H,0EEH,005H,0CDH,0A9H,006H
+  0734    05 CD A9 06           
+  0738    3A 55 0A FE                   DB 03AH,055H,00AH,0FEH,004H,0C2H,035H,006H
+  073C    04 C2 35 06           
+                                
+  0740    C3 EE 05 3E           L640:   DB 0C3H,0EEH,005H,03EH,010H,032H,055H,00AH
+  0744    10 32 55 0A           
+  0748    CD 98 06 3A                   DB 0CDH,098H,006H,03AH,055H,00AH,0FEH,008H
+  074C    55 0A FE 08           
+                                
+  0750    C2 48 06 C3           L650:   DB 0C2H,048H,006H,0C3H,0EEH,005H,03EH,006H
+  0754    EE 05 3E 06           
+  0758    32 55 0A CD                   DB 032H,055H,00AH,0CDH,0DAH,006H,0FAH,06BH
+  075C    DA 06 FA 6B           
+                                
+  0760    06 3A 52 0A           L660:   DB 006H,03AH,052H,00AH,0B7H,0CAH,06BH,006H
+  0764    B7 CA 6B 06           
+  0768    CD 93 07 CD                   DB 0CDH,093H,007H,0CDH,058H,007H,021H,055H
+  076C    58 07 21 55           
+                                
+  0770    0A 35 7E FE           L670:   DB 00AH,035H,07EH,0FEH,005H,0CAH,05BH,006H
+  0774    05 CA 5B 06           
+  0778    CD DA 06 DA                   DB 0CDH,0DAH,006H,0DAH,08BH,006H,0FAH,0EEH
+  077C    8B 06 FA EE           
+                                
+  0780    05 3A 52 0A           L680:   DB 005H,03AH,052H,00AH,0B7H,0C2H,0EEH,005H
+  0784    B7 C2 EE 05           
+  0788    CD 93 07 3A                   DB 0CDH,093H,007H,03AH,04EH,00AH,0E6H,0F0H
+  078C    4E 0A E6 F0           
+                                
+  0790    FE 20 CA 78           L690:   DB 0FEH,020H,0CAH,078H,006H,0C3H,0EEH,005H
+  0794    06 C3 EE 05           
+  0798    CD DA 06 FA                   DB 0CDH,0DAH,006H,0FAH,0A1H,006H,0CDH,093H
+  079C    A1 06 CD 93           
+                                
+  07A0    07 CD 58 07           L6A0:   DB 007H,0CDH,058H,007H,021H,055H,00AH,035H
+  07A4    21 55 0A 35           
+  07A8    C9 CD DA 06                   DB 0C9H,0CDH,0DAH,006H,0D2H,0C0H,006H,0F5H
+  07AC    D2 C0 06 F5           
+                                
+  07B0    E1 22 72 0A           L6B0:   DB 0E1H,022H,072H,00AH,03AH,052H,00AH,0B7H
+  07B4    3A 52 0A B7           
+  07B8    CA A9 06 2A                   DB 0CAH,0A9H,006H,02AH,072H,00AH,0E5H,0F1H
+  07BC    72 0A E5 F1           
+                                
+  07C0    FA D2 06 3A           L6C0:   DB 0FAH,0D2H,006H,03AH,052H,00AH,0F5H,0CDH
+  07C4    52 0A F5 CD           
+  07C8    93 07 F1 32                   DB 093H,007H,0F1H,032H,052H,00AH,0B7H,0CAH
+  07CC    52 0A B7 CA           
+                                
+  07D0    A9 06 CD 58           L6D0:   DB 0A9H,006H,0CDH,058H,007H,021H,055H,00AH
+  07D4    07 21 55 0A           
+  07D8    35 C9 3A 55                   DB 035H,0C9H,03AH,055H,00AH,006H,000H,021H
+  07DC    0A 06 00 21           
+                                
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+
+
+  07E0    2C 0A 4F 09           L6E0:   DB 02CH,00AH,04FH,009H,03AH,04EH,00AH,086H
+  07E4    3A 4E 0A 86           
+  07E8    32 4E 0A E6                   DB 032H,04EH,00AH,0E6H,088H,0C2H,051H,007H
+  07EC    88 C2 51 07           
+                                
+  07F0    3A 4E 0A 0E           L6F0:   DB 03AH,04EH,00AH,00EH,01FH,021H,00CH,00AH
+  07F4    1F 21 0C 0A           
+  07F8    BE CA 04 07                   DB 0BEH,0CAH,004H,007H,02BH,00DH,0F2H,0F8H
+  07FC    2B 0D F2 F8           
+                                
+  0800    06 C3 12 07           L700:   DB 006H,0C3H,012H,007H,079H,0FEH,010H,0DAH
+  0804    79 FE 10 DA           
+  0808    51 07 3E 01                   DB 051H,007H,03EH,001H,032H,052H,00AH,0C3H
+  080C    32 52 0A C3           
+                                
+  0810    16 07 AF 32           L710:   DB 016H,007H,0AFH,032H,052H,00AH,03AH,054H
+  0814    52 0A 3A 54           
+  0818    0A B7 FA 4F                   DB 00AH,0B7H,0FAH,04FH,007H,0FEH,000H,0F2H
+  081C    07 FE 00 F2           
+                                
+  0820    4F 07 F5 3A           L720:   DB 04FH,007H,0F5H,03AH,052H,00AH,0F5H,03EH
+  0824    52 0A F5 3E           
+  0828    F9 32 54 0A                   DB 0F9H,032H,054H,00AH,032H,053H,00AH,0CDH
+  082C    32 53 0A CD           
+                                
+  0830    6D 08 CD C3           L730:   DB 06DH,008H,0CDH,0C3H,005H,0CDH,0E9H,005H
+  0834    05 CD E9 05           
+  0838    CD 70 07 F1                   DB 0CDH,070H,007H,0F1H,032H,052H,00AH,0F1H
+  083C    32 52 0A F1           
+                                
+  0840    32 54 0A 3A           L740:   DB 032H,054H,00AH,03AH,053H,00AH,0B7H,0FAH
+  0844    53 0A B7 FA           
+  0848    4F 07 3E 80                   DB 04FH,007H,03EH,080H,0B7H,037H,0C9H,0AFH
+  084C    B7 37 C9 AF           
+                                
+  0850    C9 AF 32 52           L750:   DB 0C9H,0AFH,032H,052H,00AH,02FH,0B7H,0C9H
+  0854    0A 2F B7 C9           
+  0858    21 ED 09 06                   DB 021H,0EDH,009H,006H,000H,03AH,04DH,00AH
+  085C    00 3A 4D 0A           
+                                
+  0860    4F 09 7E 32           L760:   DB 04FH,009H,07EH,032H,04EH,00AH,0C9H,0CDH
+  0864    4E 0A C9 CD           
+  0868    6D 08 CD C3                   DB 06DH,008H,0CDH,0C3H,005H,0CDH,0E9H,005H
+  086C    05 CD E9 05           
+                                
+  0870    CD C3 05 21           L770:   DB 0CDH,0C3H,005H,021H,000H,000H,039H,022H
+  0874    00 00 39 22           
+  0878    57 0A 2A 59                   DB 057H,00AH,02AH,059H,00AH,0F9H,0D1H,021H
+  087C    0A F9 D1 21           
+                                
+  0880    55 0A 72 21           L780:   DB 055H,00AH,072H,021H,04DH,00AH,073H,0C1H
+  0884    4D 0A 73 C1           
+  0888    E1 71 E1 70                   DB 0E1H,071H,0E1H,070H,078H,032H,04EH,00AH
+  088C    78 32 4E 0A           
+                                
+  0890    C3 A0 08 3A           L790:   DB 0C3H,0A0H,008H,03AH,054H,00AH,0B7H,016H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+
+
+  0894    54 0A B7 16           
+  0898    00 5F FA 20                   DB 000H,05FH,0FAH,020H,008H,03AH,04DH,00AH
+  089C    08 3A 4D 0A           
+                                
+  08A0    B7 CA B2 07           L7A0:   DB 0B7H,0CAH,0B2H,007H,047H,03EH,008H,0BBH
+  08A4    47 3E 08 BB           
+  08A8    C2 B2 07 3A                   DB 0C2H,0B2H,007H,03AH,065H,00AH,0B8H,0CAH
+  08AC    65 0A B8 CA           
+                                
+  08B0    FB 07 21 62           L7B0:   DB 0FBH,007H,021H,062H,00AH,019H,034H,03EH
+  08B4    0A 19 34 3E           
+  08B8    01 B8 C2 BE                   DB 001H,0B8H,0C2H,0BEH,007H,034H,03AH,052H
+  08BC    07 34 3A 52           
+                                
+  08C0    0A B7 CA F2           L7C0:   DB 00AH,0B7H,0CAH,0F2H,007H,00EH,00FH,021H
+  08C4    07 0E 0F 21           
+  08C8    0C 0A 3A 4E                   DB 00CH,00AH,03AH,04EH,00AH,0BEH,0CAH,0D7H
+  08CC    0A BE CA D7           
+                                
+  08D0    07 2B 0D F2           L7D0:   DB 007H,02BH,00DH,0F2H,0CDH,007H,076H,021H
+  08D4    CD 07 76 21           
+  08D8    3D 0A 06 00                   DB 03DH,00AH,006H,000H,009H,07EH,021H,063H
+  08DC    09 7E 21 63           
+                                
+  08E0    0A 19 BE DA           L7E0:   DB 00AH,019H,0BEH,0DAH,0ECH,007H,077H,021H
+  08E4    EC 07 77 21           
+  08E8    65 0A 19 71                   DB 065H,00AH,019H,071H,021H,064H,00AH,019H
+  08EC    21 64 0A 19           
+                                
+  08F0    86 77 7B FE           L7F0:   DB 086H,077H,07BH,0FEH,004H,0CAH,0FCH,007H
+  08F4    04 CA FC 07           
+  08F8    FA 34 08 C9                   DB 0FAH,034H,008H,0C9H,03AH,067H,00AH,032H
+  08FC    3A 67 0A 32           
+                                
+  0900    5C 0A AF 32           L800:   DB 05CH,00AH,0AFH,032H,054H,00AH,0CDH,06DH
+  0904    54 0A CD 6D           
+  0908    08 CD C3 05                   DB 008H,0CDH,0C3H,005H,0CDH,0DDH,005H,0CDH
+  090C    CD DD 05 CD           
+                                
+  0910    C3 05 3E 08           L810:   DB 0C3H,005H,03EH,008H,032H,054H,00AH,0CDH
+  0914    32 54 0A CD           
+  0918    E9 05 CD 73                   DB 0E9H,005H,0CDH,073H,007H,0C3H,0ACH,008H
+  091C    07 C3 AC 08           
+                                
+  0920    16 FF FE F9           L820:   DB 016H,0FFH,0FEH,0F9H,0C2H,034H,008H,03AH
+  0924    C2 34 08 3A           
+  0928    FD 09 21 4E                   DB 0FDH,009H,021H,04EH,00AH,0BEH,0C0H,0AFH
+  092C    0A BE C0 AF           
+                                
+  0930    32 53 0A C9           L830:   DB 032H,053H,00AH,0C9H,03AH,052H,00AH,0B7H
+  0934    3A 52 0A B7           
+  0938    C8 3A 4E 0A                   DB 0C8H,03AH,04EH,00AH,00EH,007H,021H,004H
+  093C    0E 07 21 04           
+                                
+  0940    0A BE CA 4B           L840:   DB 00AH,0BEH,0CAH,04BH,008H,02BH,00DH,0C2H
+  0944    08 2B 0D C2           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+
+
+  0948    41 08 C9 21                   DB 041H,008H,0C9H,021H,03DH,00AH,006H,000H
+  094C    3D 0A 06 00           
+                                
+  0950    09 7E 21 61           L850:   DB 009H,07EH,021H,061H,00AH,019H,0BEH,0DAH
+  0954    0A 19 BE DA           
+  0958    5B 08 77 1B                   DB 05BH,008H,077H,01BH,07BH,032H,054H,00AH
+  095C    7B 32 54 0A           
+                                
+  0960    FE FF CA 68           L860:   DB 0FEH,0FFH,0CAH,068H,008H,0CDH,067H,007H
+  0964    08 CD 67 07           
+  0968    21 54 0A 34                   DB 021H,054H,00AH,034H,0C9H,021H,000H,000H
+  096C    C9 21 00 00           
+                                
+  0970    39 22 57 0A           L870:   DB 039H,022H,057H,00AH,02AH,059H,00AH,0F9H
+  0974    2A 59 0A F9           
+  0978    3A 4E 0A 47                   DB 03AH,04EH,00AH,047H,00EH,01FH,021H,00CH
+  097C    0E 1F 21 0C           
+                                
+  0980    0A BE CA 8A           L880:   DB 00AH,0BEH,0CAH,08AH,008H,02BH,00DH,0F2H
+  0984    08 2B 0D F2           
+  0988    81 08 36 CC                   DB 081H,008H,036H,0CCH,0E5H,021H,0EDH,009H
+  098C    E5 21 ED 09           
+                                
+  0990    16 00 3A 4D           L890:   DB 016H,000H,03AH,04DH,00AH,05FH,019H,0E5H
+  0994    0A 5F 19 E5           
+  0998    4E 70 C5 21                   DB 04EH,070H,0C5H,021H,055H,00AH,056H,0D5H
+  099C    55 0A 56 D5           
+                                
+  09A0    21 00 00 39           L8A0:   DB 021H,000H,000H,039H,022H,059H,00AH,02AH
+  09A4    22 59 0A 2A           
+  09A8    57 0A F9 C9                   DB 057H,00AH,0F9H,0C9H,097H,03EH,080H,021H
+  09AC    97 3E 80 21           
+                                
+  09B0    6A 0A 86 23           L8B0:   DB 06AH,00AH,086H,023H,086H,023H,086H,021H
+  09B4    86 23 86 21           
+  09B8    60 0A 86 21                   DB 060H,00AH,086H,021H,05EH,00AH,086H,021H
+  09BC    5E 0A 86 21           
+                                
+  09C0    6F 0A 96 23           L8C0:   DB 06FH,00AH,096H,023H,096H,021H,061H,00AH
+  09C4    96 21 61 0A           
+  09C8    96 21 5F 0A                   DB 096H,021H,05FH,00AH,096H,021H,05DH,00AH
+  09CC    96 21 5D 0A           
+                                
+  09D0    96 21 6E 0A           L8D0:   DB 096H,021H,06EH,00AH,096H,021H,062H,00AH
+  09D4    96 21 62 0A           
+  09D8    96 D2 DD 08                   DB 096H,0D2H,0DDH,008H,097H,01FH,0C6H,040H
+  09DC    97 1F C6 40           
+                                
+  09E0    21 6B 0A 86           L8E0:   DB 021H,06BH,00AH,086H,023H,086H,021H,063H
+  09E4    23 86 21 63           
+  09E8    0A 96 1F C6                   DB 00AH,096H,01FH,0C6H,090H,021H,05CH,00AH
+  09EC    90 21 5C 0A           
+                                
+  09F0    86 86 86 86           L8F0:   DB 086H,086H,086H,086H,021H,060H,00AH,086H
+  09F4    21 60 0A 86           
+  09F8    21 63 0A 96                   DB 021H,063H,00AH,096H,096H,023H,096H,096H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+
+
+  09FC    96 23 96 96           
+                                
+  0A00    21 5F 0A 96           L900:   DB 021H,05FH,00AH,096H,0F5H,03AH,04EH,00AH
+  0A04    F5 3A 4E 0A           
+  0A08    FE 33 CA 30                   DB 0FEH,033H,0CAH,030H,009H,0FEH,034H,0CAH
+  0A0C    09 FE 34 CA           
+                                
+  0A10    30 09 FE 22           L910:   DB 030H,009H,0FEH,022H,0CAH,030H,009H,0FEH
+  0A14    CA 30 09 FE           
+  0A18    25 CA 30 09                   DB 025H,0CAH,030H,009H,03AH,04DH,00AH,0B7H
+  0A1C    3A 4D 0A B7           
+                                
+  0A20    CA 34 09 21           L920:   DB 0CAH,034H,009H,021H,0EDH,009H,006H,000H
+  0A24    ED 09 06 00           
+  0A28    4F 09 7E FE                   DB 04FH,009H,07EH,0FEH,010H,0F2H,034H,009H
+  0A2C    10 F2 34 09           
+                                
+  0A30    F1 C6 02 F5           L930:   DB 0F1H,0C6H,002H,0F5H,03AH,063H,00AH,021H
+  0A34    3A 63 0A 21           
+  0A38    3D 0A BE C2                   DB 03DH,00AH,0BEH,0C2H,043H,009H,0F1H,097H
+  0A3C    43 09 F1 97           
+                                
+  0A40    C3 5B 09 3A           L940:   DB 0C3H,05BH,009H,03AH,062H,00AH,0B7H,0C2H
+  0A44    62 0A B7 C2           
+  0A48    5A 09 3A 6D                   DB 05AH,009H,03AH,06DH,00AH,0B7H,0C2H,05AH
+  0A4C    0A B7 C2 5A           
+                                
+  0A50    09 F1 3E FF           L950:   DB 009H,0F1H,03EH,0FFH,032H,081H,00AH,0C3H
+  0A54    32 81 0A C3           
+  0A58    5B 09 F1 0E                   DB 05BH,009H,0F1H,00EH,004H,021H,054H,00AH
+  0A5C    04 21 54 0A           
+                                
+  0A60    71 21 50 0A           L960:   DB 071H,021H,050H,00AH,032H,05BH,00AH,0BEH
+  0A64    32 5B 0A BE           
+  0A68    DA 8E 09 CA                   DB 0DAH,08EH,009H,0CAH,08EH,009H,032H,050H
+  0A6C    8E 09 32 50           
+                                
+  0A70    0A 3A 4D 0A           L970:   DB 00AH,03AH,04DH,00AH,032H,04FH,00AH,03AH
+  0A74    32 4F 0A 3A           
+  0A78    4E 0A 32 51                   DB 04EH,00AH,032H,051H,00AH,0AFH,032H,074H
+  0A7C    0A AF 32 74           
+                                
+  0A80    0A 3A 6B 0A           L980:   DB 00AH,03AH,06BH,00AH,021H,03DH,00AH,0BEH
+  0A84    21 3D 0A BE           
+  0A88    C2 8E 09 32                   DB 0C2H,08EH,009H,032H,074H,00AH,0C9H,021H
+  0A8C    74 0A C9 21           
+                                
+  0A90    DD 09 47 1F           L990:   DB 0DDH,009H,047H,01FH,01FH,01FH,01FH,0CDH
+  0A94    1F 1F 1F CD           
+  0A98    A2 09 77 23                   DB 0A2H,009H,077H,023H,078H,0CDH,0A2H,009H
+  0A9C    78 CD A2 09           
+                                
+  0AA0    77 C9 E6 0F           L9A0:   DB 077H,0C9H,0E6H,00FH,0C6H,030H,0FEH,03AH
+  0AA4    C6 30 FE 3A           
+  0AA8    D8 C6 07 C9                   DB 0D8H,0C6H,007H,0C9H,006H,00DH,0CDH,0BFH
+  0AAC    06 0D CD BF           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+
+
+                                
+  0AB0    09 06 0A CD           L9B0:   DB 009H,006H,00AH,0CDH,0BFH,009H,006H,07FH
+  0AB4    BF 09 06 7F           
+  0AB8    CD BF 09 CD                   DB 0CDH,0BFH,009H,0CDH,0BFH,009H,0C9H,0E5H
+  0ABC    BF 09 C9 E5           
+                                
+  0AC0    C5 D5 CD D7           L9C0:   DB 0C5H,0D5H,0CDH,0D7H,009H,0D1H,0C1H,0E1H
+  0AC4    09 D1 C1 E1           
+  0AC8    C9 E5 D5 C5                   DB 0C9H,0E5H,0D5H,0C5H,0CDH,0DAH,009H,078H
+  0ACC    CD DA 09 78           
+                                
+  0AD0    C1 D1 E1 E6           L9D0:   DB 0C1H,0D1H,0E1H,0E6H,07FH,047H,0C9H,0C3H
+  0AD4    7F 47 C9 C3           
+  0AD8    E6 0D C3 F1                   DB 0E6H,00DH,0C3H,0F1H,00DH,000H,000H,000H
+  0ADC    0D 00 00 00           
+                                
+  0AE0    00 00 00 00           L9E0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0AE4    00 00 00 00           
+  0AE8    00 00 00 00                   DB 000H,000H,000H,000H,000H,003H,004H,000H
+  0AEC    00 03 04 00           
+                                
+  0AF0    07 02 05 01           L9F0:   DB 007H,002H,005H,001H,006H,010H,017H,011H
+  0AF4    06 10 17 11           
+  0AF8    16 12 15 14                   DB 016H,012H,015H,014H,013H,073H,074H,070H
+  0AFC    13 73 74 70           
+                                
+  0B00    77 72 75 71           LA00:   DB 077H,072H,075H,071H,076H,060H,067H,061H
+  0B04    76 60 67 61           
+  0B08    66 62 65 64                   DB 066H,062H,065H,064H,063H,003H,004H,000H
+  0B0C    63 03 04 00           
+                                
+  0B10    07 02 05 01           LA10:   DB 007H,002H,005H,001H,006H,010H,017H,011H
+  0B14    06 10 17 11           
+  0B18    16 12 15 14                   DB 016H,012H,015H,014H,013H,073H,074H,070H
+  0B1C    13 73 74 70           
+                                
+  0B20    77 72 75 71           LA20:   DB 077H,072H,075H,071H,076H,060H,067H,061H
+  0B24    76 60 67 61           
+  0B28    66 62 65 64                   DB 066H,062H,065H,064H,063H,0F0H,0FFH,001H
+  0B2C    63 F0 FF 01           
+                                
+  0B30    10 11 0F EF           LA30:   DB 010H,011H,00FH,0EFH,0F1H,0DFH,0E1H,0EEH
+  0B34    F1 DF E1 EE           
+  0B38    F2 12 0E 1F                   DB 0F2H,012H,00EH,01FH,021H,00BH,00AH,006H
+  0B3C    21 0B 0A 06           
+                                
+  0B40    06 04 04 04           LA40:   DB 006H,004H,004H,004H,004H,002H,002H,002H
+  0B44    04 02 02 02           
+  0B48    02 02 02 02                   DB 002H,002H,002H,002H,002H,0EEH,0EEH,000H
+  0B4C    02 EE EE 00           
+                                
+  0B50    00 00 00 00           LA50:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0B54    00 00 00 00           
+  0B58    00 E6 0D 00                   DB 000H,0E6H,00DH,000H,000H,000H,000H,000H
+  0B5C    00 00 00 00           
+                                
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+
+
+  0B60    00 00 00 00           LA60:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0B64    00 00 00 00           
+  0B68    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0B6C    00 00 00 00           
+                                
+  0B70    00 00 00 00           LA70:   DB 000H,000H,000H,000H,000H,000H,000H,010H
+  0B74    00 00 00 10           
+  0B78    00 01 0B 37                   DB 000H,001H,00BH,037H,00BH,095H,00AH,0CBH
+  0B7C    0B 95 0A CB           
+                                
+  0B80    0A 00 00 57           LA80:   DB 00AH,000H,000H,057H,042H,04BH,051H,052H
+  0B84    42 4B 51 52           
+  0B88    52 42 42 4E                   DB 052H,042H,042H,04EH,04EH,050H,050H,050H
+  0B8C    4E 50 50 50           
+                                
+  0B90    50 50 50 50           LA90:   DB 050H,050H,050H,050H,050H,0EEH,01FH,017H
+  0B94    50 EE 1F 17           
+  0B98    16 16 14 16                   DB 016H,016H,014H,016H,01BH,016H,0EEH,01FH
+  0B9C    1B 16 EE 1F           
+                                
+  0BA0    1E 16 14 16           LAA0:   DB 01EH,016H,014H,016H,011H,010H,01DH,01EH
+  0BA4    11 10 1D 1E           
+  0BA8    1D 16 1A 14                   DB 01DH,016H,01AH,014H,012H,017H,011H,011H
+  0BAC    12 17 11 11           
+                                
+  0BB0    1F 16 17 14           LAB0:   DB 01FH,016H,017H,014H,012H,01EH,015H,01BH
+  0BB4    12 1E 15 1B           
+  0BB8    12 1F 16 14                   DB 012H,01FH,016H,014H,012H,01EH,011H,014H
+  0BBC    12 1E 11 14           
+                                
+  0BC0    1E 17 1F 16           LAC0:   DB 01EH,017H,01FH,016H,014H,01DH,01EH,01DH
+  0BC4    14 1D 1E 1D           
+  0BC8    17 12 1B EE                   DB 017H,012H,01BH,0EEH,043H,055H,052H,033H
+  0BCC    43 55 52 33           
+                                
+  0BD0    63 54 55 66           LAD0:   DB 063H,054H,055H,066H,0EEH,053H,044H,052H
+  0BD4    EE 53 44 52           
+  0BD8    63 64 63 72                   DB 063H,064H,063H,072H,045H,043H,042H,055H
+  0BDC    45 43 42 55           
+                                
+  0BE0    56 66 75 52           LAE0:   DB 056H,066H,075H,052H,062H,052H,044H,055H
+  0BE4    62 52 44 55           
+  0BE8    52 31 75 53                   DB 052H,031H,075H,053H,036H,052H,074H,044H
+  0BEC    36 52 74 44           
+                                
+  0BF0    55 31 75 43           LAF0:   DB 055H,031H,075H,043H,064H,022H,034H,052H
+  0BF4    64 22 34 52           
+  0BF8    44 55 42 52                   DB 044H,055H,042H,052H,043H,043H,052H,075H
+  0BFC    43 43 52 75           
+                                
+  0C00    52 0F 06 04           LB00:   DB 052H,00FH,006H,004H,000H,00EH,001H,004H
+  0C04    00 0E 01 04           
+  0C08    0E 07 0F 0E                   DB 00EH,007H,00FH,00EH,007H,005H,00FH,005H
+  0C0C    07 05 0F 05           
+                                
+  0C10    01 0C 06 06           LB10:   DB 001H,00CH,006H,006H,00FH,00BH,005H,004H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+
+
+  0C14    0F 0B 05 04           
+  0C18    00 06 06 0C                   DB 000H,006H,006H,00CH,00FH,007H,006H,004H
+  0C1C    0F 07 06 04           
+                                
+  0C20    00 0E 04 01           LB20:   DB 000H,00EH,004H,001H,007H,00FH,007H,006H
+  0C24    07 0F 07 06           
+  0C28    06 04 06 0B                   DB 006H,004H,006H,00BH,006H,000H,00FH,007H
+  0C2C    06 00 0F 07           
+                                
+  0C30    04 06 0F 04           LB30:   DB 004H,006H,00FH,004H,006H,006H,004H,033H
+  0C34    06 06 04 33           
+  0C38    22 46 01 34                   DB 022H,046H,001H,034H,013H,055H,043H,025H
+  0C3C    13 55 43 25           
+                                
+  0C40    33 34 25 41           LB40:   DB 033H,034H,025H,041H,043H,063H,014H,032H
+  0C44    43 63 14 32           
+  0C48    22 25 24 21                   DB 022H,025H,024H,021H,011H,014H,006H,044H
+  0C4C    11 14 06 44           
+                                
+  0C50    52 35 34 22           LB50:   DB 052H,035H,034H,022H,025H,041H,006H,023H
+  0C54    25 41 06 23           
+  0C58    52 14 03 34                   DB 052H,014H,003H,034H,022H,025H,044H,014H
+  0C5C    22 25 44 14           
+                                
+  0C60    23 22 11 06           LB60:   DB 023H,022H,011H,006H,034H,022H,032H,025H
+  0C64    34 22 32 25           
+  0C68    43 41 44 52                   DB 043H,041H,044H,052H,052H,04DH,049H,043H
+  0C6C    52 4D 49 43           
+                                
+  0C70    52 4F 43 48           LB70:   DB 052H,04FH,043H,048H,045H,053H,053H,020H
+  0C74    45 53 53 20           
+  0C78    20 20 20 20                   DB 020H,020H,020H,020H,020H,020H,020H,020H
+  0C7C    20 20 20 20           
+                                
+  0C80    20 20 20 20           LB80:   DB 020H,020H,020H,020H,020H,020H,020H,020H
+  0C84    20 20 20 20           
+  0C88    20 28 43 29                   DB 020H,028H,043H,029H,020H,031H,039H,037H
+  0C8C    20 31 39 37           
+                                
+  0C90    37 2E 0D 57           LB90:   DB 037H,02EH,00DH,057H,052H,049H,054H,054H
+  0C94    52 49 54 54           
+  0C98    45 4E 20 42                   DB 045H,04EH,020H,042H,059H,03AH,020H,050H
+  0C9C    59 3A 20 50           
+                                
+  0CA0    2E 20 4A 45           LBA0:   DB 02EH,020H,04AH,045H,04EH,04EH,049H,04EH
+  0CA4    4E 4E 49 4E           
+  0CA8    47 53 20 26                   DB 047H,053H,020H,026H,020H,054H,02EH,020H
+  0CAC    20 54 2E 20           
+                                
+  0CB0    4F 27 42 52           LBB0:   DB 04FH,027H,042H,052H,049H,045H,04EH,02EH
+  0CB4    49 45 4E 2E           
+  0CB8    0D 2D 2D 2D                   DB 00DH,02DH,02DH,02DH,02DH,02DH,02DH,02DH
+  0CBC    2D 2D 2D 2D           
+                                
+  0CC0    2D 2D 2D 2D           LBC0:   DB 02DH,02DH,02DH,02DH,02DH,02DH,02DH,02DH
+  0CC4    2D 2D 2D 2D           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-18
+
+
+  0CC8    2D 2D 2D 2D                   DB 02DH,02DH,02DH,02DH,02DH,02DH,02DH,02DH
+  0CCC    2D 2D 2D 2D           
+                                
+  0CD0    2D 2D 2D 2D           LBD0:   DB 02DH,02DH,02DH,02DH,02DH,02DH,02DH,02DH
+  0CD4    2D 2D 2D 2D           
+  0CD8    2D 2D 2D 2D                   DB 02DH,02DH,02DH,02DH,02DH,02DH,00DH,057H
+  0CDC    2D 2D 0D 57           
+                                
+  0CE0    48 49 43 48           LBE0:   DB 048H,049H,043H,048H,020H,04DH,04FH,044H
+  0CE4    20 4D 4F 44           
+  0CE8    45 20 3F 20                   DB 045H,020H,03FH,020H,028H,053H,02CH,042H
+  0CEC    28 53 2C 42           
+                                
+  0CF0    2C 4E 29 20           LBF0:   DB 02CH,04EH,029H,020H,00DH,044H,04FH,020H
+  0CF4    0D 44 4F 20           
+  0CF8    59 4F 55 20                   DB 059H,04FH,055H,020H,057H,041H,04EH,054H
+  0CFC    57 41 4E 54           
+                                
+  0D00    20 57 48 49           LC00:   DB 020H,057H,048H,049H,054H,045H,020H,03FH
+  0D04    54 45 20 3F           
+  0D08    20 28 59 2C                   DB 020H,028H,059H,02CH,04EH,029H,020H,00DH
+  0D0C    4E 29 20 0D           
+                                
+  0D10    3A 20 20 20           LC10:   DB 03AH,020H,020H,020H,020H,00DH,04DH,043H
+  0D14    20 0D 4D 43           
+  0D18    20 3A 20 00                   DB 020H,03AH,020H,000H,000H,02DH,000H,000H
+  0D1C    00 2D 00 00           
+                                
+  0D20    20 20 0D 49           LC20:   DB 020H,020H,00DH,049H,04EH,050H,055H,054H
+  0D24    4E 50 55 54           
+  0D28    20 45 52 52                   DB 020H,045H,052H,052H,04FH,052H,02EH,00DH
+  0D2C    4F 52 2E 0D           
+                                
+  0D30    43 48 45 43           LC30:   DB 043H,048H,045H,043H,04BH,04DH,041H,054H
+  0D34    4B 4D 41 54           
+  0D38    45 20 2D 20                   DB 045H,020H,02DH,020H,059H,04FH,055H,020H
+  0D3C    59 4F 55 20           
+                                
+  0D40    57 49 4E 21           LC40:   DB 057H,049H,04EH,021H,021H,021H,00DH,050H
+  0D44    21 21 0D 50           
+  0D48    4C 41 59 20                   DB 04CH,041H,059H,020H,041H,047H,041H,049H
+  0D4C    41 47 41 49           
+                                
+  0D50    4E 20 3F 20           LC50:   DB 04EH,020H,03FH,020H,028H,059H,02CH,04EH
+  0D54    28 59 2C 4E           
+  0D58    29 20 0D 54                   DB 029H,020H,00DH,054H,048H,041H,04EH,04BH
+  0D5C    48 41 4E 4B           
+                                
+  0D60    53 20 46 4F           LC60:   DB 053H,020H,046H,04FH,052H,020H,054H,048H
+  0D64    52 20 54 48           
+  0D68    45 20 47 41                   DB 045H,020H,047H,041H,04DH,045H,02EH,02EH
+  0D6C    4D 45 2E 2E           
+                                
+  0D70    2E 20 4D 49           LC70:   DB 02EH,020H,04DH,049H,043H,052H,04FH,043H
+  0D74    43 52 4F 43           
+  0D78    48 45 53 53                   DB 048H,045H,053H,053H,02EH,00DH,059H,04FH
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-19
+
+
+  0D7C    2E 0D 59 4F           
+                                
+  0D80    55 20 52 45           LC80:   DB 055H,020H,052H,045H,053H,049H,047H,04EH
+  0D84    53 49 47 4E           
+  0D88    45 44 20 2D                   DB 045H,044H,020H,02DH,020H,049H,020H,057H
+  0D8C    20 49 20 57           
+                                
+  0D90    49 4E 21 21           LC90:   DB 049H,04EH,021H,021H,021H,00DH,020H,020H
+  0D94    21 0D 20 20           
+  0D98    43 48 45 43                   DB 043H,048H,045H,043H,04BH,04DH,041H,054H
+  0D9C    4B 4D 41 54           
+                                
+  0DA0    45 20 2D 20           LCA0:   DB 045H,020H,02DH,020H,049H,020H,057H,049H
+  0DA4    49 20 57 49           
+  0DA8    4E 21 21 21                   DB 04EH,021H,021H,021H,021H,00DH,020H,043H
+  0DAC    21 0D 20 43           
+                                
+  0DB0    48 45 43 4B           LCB0:   DB 048H,045H,043H,04BH,021H,00DH,02BH,02DH
+  0DB4    21 0D 2B 2D           
+  0DB8    2D 2D 2D 2D                   DB 02DH,02DH,02DH,02DH,02DH,020H,04DH,049H
+  0DBC    2D 20 4D 49           
+                                
+  0DC0    43 52 4F 43           LCC0:   DB 043H,052H,04FH,043H,048H,045H,053H,053H
+  0DC4    48 45 53 53           
+  0DC8    20 2D 2D 2D                   DB 020H,02DH,02DH,02DH,02DH,02DH,02DH,02DH
+  0DCC    2D 2D 2D 2D           
+                                
+  0DD0    2B 0D 21 20           LCDO:   DB 02BH,00DH,021H,020H,020H,020H,020H,020H
+  0DD4    20 20 20 20           
+  0DD8    20 20 20 20                   DB 020H,020H,020H,020H,020H,020H,020H,020H
+  0DDC    20 20 20 20           
+                                
+  0DE0    20 20 20 20           LCE0:   DB 020H,020H,020H,020H,020H,020H,020H,020H
+  0DE4    20 20 20 20           
+  0DE8    20 20 20 20                   DB 020H,020H,020H,020H,021H,00DH,02BH,02DH
+  0DEC    21 0D 2B 2D           
+                                
+  0DF0    2D 2D 2D 2D           LCF0:   DB 02DH,02DH,02DH,02DH,02DH,020H,043H,048H
+  0DF4    2D 20 43 48           
+  0DF8    41 4C 4C 45                   DB 041H,04CH,04CH,045H,04EH,047H,045H,052H
+  0DFC    4E 47 45 52           
+                                
+  0E00    20 2D 2D 2D           LD00:   DB 020H,02DH,02DH,02DH,02DH,02DH,02DH,02DH
+  0E04    2D 2D 2D 2D           
+  0E08    2B 0D 00 00                   DB 02BH,00DH,000H,000H,000H,000H,000H,000H
+  0E0C    00 00 00 00           
+                                
+  0E10    00 00 00 00           LD10:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E14    00 00 00 00           
+  0E18    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E1C    00 00 00 00           
+                                
+  0E20    00 00 00 00           LD20:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E24    00 00 00 00           
+  0E28    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E2C    00 00 00 00           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-20
+
+
+                                
+  0E30    00 00 00 00           LD30:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E34    00 00 00 00           
+  0E38    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E3C    00 00 00 00           
+                                
+  0E40    00 00 00 00           LD40:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E44    00 00 00 00           
+  0E48    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E4C    00 00 00 00           
+                                
+  0E50    00 00 00 00           LD50:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E54    00 00 00 00           
+  0E58    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E5C    00 00 00 00           
+                                
+  0E60    00 00 00 00           LD60:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E64    00 00 00 00           
+  0E68    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E6C    00 00 00 00           
+                                
+  0E70    00 00 15 D7           LD70:   DB 000H,000H,015H,0D7H,01FH,0D0H,0CFH,009H
+  0E74    1F D0 CF 09           
+  0E78    00 20 07 80                   DB 000H,020H,007H,080H,00AH,00DH,028H,003H
+  0E7C    0A 0D 28 03           
+                                
+  0E80    8D 00 00 00           LD80:   DB 08DH,000H,000H,000H,000H,000H,000H,000H
+  0E84    00 00 00 00           
+  0E88    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E8C    00 00 00 00           
+                                
+  0E90    00 00 00 00           LD90:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E94    00 00 00 00           
+  0E98    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0E9C    00 00 00 00           
+                                
+  0EA0    00 00 00 00           LDA0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0EA4    00 00 00 00           
+  0EA8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0EAC    00 00 00 00           
+                                
+  0EB0    00 00 00 00           LDB0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0EB4    00 00 00 00           
+  0EB8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0EBC    00 00 00 00           
+                                
+  0EC0    00 00 00 00           LDC0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0EC4    00 00 00 00           
+  0EC8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0ECC    00 00 00 00           
+                                
+  0ED0    00 00 00 00           LDD0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0ED4    00 00 00 00           
+  0ED8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0EDC    00 00 00 00           
+                                
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-21
+
+
+  0EE0    00 00 00 00           LDE0:   DB 000H,000H,000H,000H,000H,000H,0DBH,000H
+  0EE4    00 00 DB 00           
+  0EE8    E6 80 CA E6                   DB 0E6H,080H,0CAH,0E6H,00DH,078H,0D3H,001H
+  0EEC    0D 78 D3 01           
+                                
+  0EF0    C9 DB 00 E6           LDF0:   DB 0C9H,0DBH,000H,0E6H,040H,0CAH,0F1H,00DH
+  0EF4    40 CA F1 0D           
+  0EF8    DB 01 E6 7F                   DB 0DBH,001H,0E6H,07FH,047H,0C9H,000H,000H
+  0EFC    47 C9 00 00           
+                                
+  0F00    00 00 00 00           LE00:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F04    00 00 00 00           
+  0F08    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F0C    00 00 00 00           
+                                
+  0F10    00 00 00 00           LE10:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F14    00 00 00 00           
+  0F18    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F1C    00 00 00 00           
+                                
+  0F20    00 00 00 00           LE20:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F24    00 00 00 00           
+  0F28    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F2C    00 00 00 00           
+                                
+  0F30    00 00 00 00           LE30:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F34    00 00 00 00           
+  0F38    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F3C    00 00 00 00           
+                                
+  0F40    00 00 00 00           LE40:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F44    00 00 00 00           
+  0F48    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F4C    00 00 00 00           
+                                
+  0F50    00 00 00 00           LE50:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F54    00 00 00 00           
+  0F58    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F5C    00 00 00 00           
+                                
+  0F60    00 00 00 00           LE60:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F64    00 00 00 00           
+  0F68    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F6C    00 00 00 00           
+                                
+  0F70    00 00 00 00           LE70:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F74    00 00 00 00           
+  0F78    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F7C    00 00 00 00           
+                                
+  0F80    00 00 00 00           LE80:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F84    00 00 00 00           
+  0F88    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F8C    00 00 00 00           
+                                
+  0F90    00 00 00 00           LE90:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-22
+
+
+  0F94    00 00 00 00           
+  0F98    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0F9C    00 00 00 00           
+                                
+  0FA0    00 00 00 00           LEA0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FA4    00 00 00 00           
+  0FA8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FAC    00 00 00 00           
+                                
+  0FB0    00 00 00 00           LEB0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FB4    00 00 00 00           
+  0FB8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FBC    00 00 00 00           
+                                
+  0FC0    00 00 00 00           LEC0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FC4    00 00 00 00           
+  0FC8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FCC    00 00 00 00           
+                                
+  0FD0    00 00 00 00           LED0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FD4    00 00 00 00           
+  0FD8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FDC    00 00 00 00           
+                                
+  0FE0    00 00 00 00           LEE0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FE4    00 00 00 00           
+  0FE8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FEC    00 00 00 00           
+                                
+  0FF0    00 00 00 00           LEF0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FF4    00 00 00 00           
+  0FF8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  0FFC    00 00 00 00           
+                                
+  1000    00 00 00 00           LF00:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1004    00 00 00 00           
+  1008    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  100C    00 00 00 00           
+                                
+  1010    00 00 00 00           LF10:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1014    00 00 00 00           
+  1018    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  101C    00 00 00 00           
+                                
+  1020    00 00 00 00           LF20:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1024    00 00 00 00           
+  1028    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  102C    00 00 00 00           
+                                
+  1030    00 00 00 00           LF30:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1034    00 00 00 00           
+  1038    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  103C    00 00 00 00           
+                                
+  1040    00 00 00 00           LF40:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1044    00 00 00 00           
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-23
+
+
+  1048    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  104C    00 00 00 00           
+                                
+  1050    00 00 00 00           LF50:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1054    00 00 00 00           
+  1058    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  105C    00 00 00 00           
+                                
+  1060    00 00 00 00           LF60:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1064    00 00 00 00           
+  1068    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  106C    00 00 00 00           
+                                
+  1070    00 00 00 00           LF70:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1074    00 00 00 00           
+  1078    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  107C    00 00 00 00           
+                                
+  1080    00 00 00 00           LF80:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1084    00 00 00 00           
+  1088    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  108C    00 00 00 00           
+                                
+  1090    00 00 00 00           LF90:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  1094    00 00 00 00           
+  1098    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  109C    00 00 00 00           
+                                
+  10A0    00 00 00 00           LFA0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10A4    00 00 00 00           
+  10A8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10AC    00 00 00 00           
+                                
+  10B0    00 00 00 00           LFB0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10B4    00 00 00 00           
+  10B8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10BC    00 00 00 00           
+                                
+  10C0    00 00 00 00           LFC0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10C4    00 00 00 00           
+  10C8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10CC    00 00 00 00           
+                                
+  10D0    00 00 00 00           LFD0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10D4    00 00 00 00           
+  10D8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10DC    00 00 00 00           
+                                
+  10E0    00 00 00 00           LFE0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10E4    00 00 00 00           
+  10E8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10EC    00 00 00 00           
+                                
+  10F0    00 00 00 00           LFF0:   DB 000H,000H,000H,000H,000H,000H,000H,000H
+  10F4    00 00 00 00           
+  10F8    00 00 00 00                   DB 000H,000H,000H,000H,000H,000H,000H,000H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-24
+
+
+  10FC    00 00 00 00           
+                                
+                                ;
+                                ; PATCH TERMINAL I/O FOR MITS 2SIO
+                                ;
+                                        IF   MITS
+                                        ORG  0DE6H + OFFSET
+                                TTYO:   IN   16
+                                        ANI  2
+                                        JZ   TTYO - OFFSET
+                                        MOV  A,B
+                                        OUT  17
+                                        RET
+                                TTYI:   IN   16
+                                        ANI  1
+                                        JZ   TTYI - OFFSET
+                                        IN   17
+                                        ANI  7FH
+                                        MOV  B,A
+                                        RET
+                                        ENDIF
+                                
+                                ;
+                                ; PATCH TERMINAL I/O FOR IMSAI SIO2
+                                ;
+                                        IF   IMSAI
+                                        ORG  0DE6H + OFFSET
+  0EE6    DB 03                 TTYO:   IN   3
+  0EE8    E6 01                         ANI  1
+  0EEA    CA 0DE6                       JZ   TTYO - OFFSET
+  0EED    78                            MOV  A,B
+  0EEE    D3 02                         OUT  2
+  0EF0    C9                            RET
+  0EF1    DB 03                 TTYI:   IN   3
+  0EF3    E6 02                         ANI  2
+  0EF5    CA 0DF1                       JZ   TTYI - OFFSET
+  0EF8    DB 02                         IN   2
+  0EFA    E6 7F                         ANI  7FH
+  0EFC    47                            MOV  B,A
+  0EFD    C9                            RET
+                                        ENDIF
+                                
+                                ;
+                                ; PATCH FOR SMALL BOARD DISPLAY
+                                ;
+                                        IF   SMALLD
+                                        ORG  0258H + OFFSET
+                                        DB   0,0,0
+                                        ENDIF
+                                
+                                ;
+                                ; PATCH FOR AUTO DISPLAY AFTER MICROCHESS MOVES
+                                ;
+                                        IF   MAUTO
+                                        ORG  0120H + OFFSET
+  0220    CD 42 02                      DB   0CDH,042H,002H
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-25
+
+
+                                        ENDIF
+                                
+                                ;
+                                ; PATCH FOR AUTO DISPLAY AFTER CHALLENGER MOVES
+                                ;
+                                        IF   CAUTO
+                                        ORG  00D4H + OFFSET
+  01D4    CD 42 02                      DB   0CDH,042H,002H
+                                        ENDIF
+                                
+                                ;
+                                ; ORIGINAL PATCH TO DISPLAY SMALL BOARD WITH COORDINATES
+                                ; DO NOT ACTIVATE TOGETHER WITH DAZZLER OUTPUT, USES SAME MEMORY
+                                ; PATCH AREA
+                                ; REPLACED WITH A RELOCATABLE PATCH FOR THIS BELOW
+                                ;
+                                        IF   0
+                                        ORG  024AH + OFFSET
+                                        DB   021H,040H,00EH,0CDH,078H,00EH,03AH,02FH
+                                        DB   00EH,0C6H,030H,047H,0CDH,060H,00EH,000H
+                                        DB   000H
+                                        ORG  02B1H + OFFSET
+                                        DB   0CDH,084H,00EH
+                                        ORG  0E40H + OFFSET
+                                        DB   020H,020H,020H,020H,020H,030H,020H,020H
+                                        DB   031H,020H,020H,032H,020H,020H,033H,020H
+                                        DB   020H,034H,020H,020H,035H,020H,020H,036H
+                                        DB   020H,020H,037H,00DH,000H,000H,000H,000H
+                                        DB   0CDH,0BFH,009H,004H,078H,0E6H,007H,032H
+                                        DB   02FH,00EH,006H,020H,0C3H,0BFH,009H,00EH
+                                        DB   006H,020H,0CDH,0BFH,009H,0C3H,0BFH,009H
+                                        DB   0CDH,0DAH,001H,0CDH,070H,00EH,021H,0B6H
+                                        DB   00CH,0C3H,0DAH,001H,0CDH,070H,00EH,0C3H
+                                        DB   0DAH,001H
+                                        ENDIF
+                                
+                                ;
+                                ; RELOCATABLE PATCH TO DISPLAY SMALL BOARD WITH COORDINATES
+                                ;
+                                        IF   COORD
+                                        ORG  024AH + OFFSET     ;PATCH IN ROUTINES FOR BOARD COORDINATES
+  034A    21 0E2A                       LXI  H,CTEXT - OFFSET
+  034D    CD 0E00                       CALL DISP1 - OFFSET
+  0350    3A 0E29                       LDA  DDAT - OFFSET
+  0353    C6 30                         ADI  30H
+  0355    47                            MOV  B,A
+  0356    CD 0E14                       CALL DISP3 - OFFSET
+  0359    00                            NOP
+  035A    00                            NOP
+                                        ORG  02B1H + OFFSET
+  03B1    CD 0E23                       CALL DISP4 - OFFSET
+                                        ENDIF
+                                
+                                ;
+                                ; MAKE SURE THAT PATCHES BELOW GO INTO THE PATCH AREA, IF
+                                ; NOT ORG'ED OTHERWISE
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-26
+
+
+                                ;
+                                        ORG  0E00H + OFFSET
+                                
+                                ;
+                                ; THE DAZZLER OUPUT ROUTINES FROM CROMEMCO DAZZLECHESS REWRITTEN WITH
+                                ; 8080 INSTRUCTIONS, SO THAT IT WORKS WITH ANY 8080/8085/Z80 SYSTEM
+                                ;
+                                
+                                        IF   DAZZLER
+                                
+                                        ORG  6 + OFFSET         ;PATCH THIRD INSTRUCTION TO CALL
+                                        CALL DINIT - OFFSET     ;THE DAZZLER INITIALISATION
+                                
+                                        ORG  0059H + OFFSET     ;PATCH IN DATA INITALISATION
+                                        CALL IDATA - OFFSET
+                                
+                                        ORG  0242H + OFFSET     ;PATCH CALL TO CUSTOM BOARD DISPLAY
+                                        CALL DDISP - OFFSET
+                                
+                                        ORG  05C3H + OFFSET     ;PATCH IN SUBROUTINE TO SWITCH PIECE COLOR
+                                        CALL SWC - OFFSET
+                                
+                                        ORG  0E00H + OFFSET     ;DAZZLER OUTPUT ROUTINES GO HERE
+                                
+                                SWC:    PUSH PSW                ;SWITCH PIECE COLOR
+                                        LDA  DAT1 - OFFSET
+                                        CMA
+                                        STA  DAT1 - OFFSET
+                                        POP  PSW
+                                        LXI  H,09EDH
+                                        RET
+                                
+                                DINIT:                          ;INITIALISE DAZZLER
+                                        MVI  A,8CH              ;DAZZLER ON, VIDEO MEMORY @ 1800H
+                                        OUT  0EH
+                                        MVI  A,30H              ;NORMAL COLOR MODE, 64X64
+                                        OUT  0FH
+                                        CALL DBOARD - OFFSET    ;DRAW CHESS BOARD
+                                        LXI  H,0B6DH
+                                        RET
+                                
+                                IDATA:                          ;INITIALISE DATA
+                                        MVI  A,0FFH             ;PIECE COLOR BLACK
+                                        STA  DAT1 - OFFSET
+                                        CALL 015CH
+                                        RET
+                                
+                                DDISP:                          ;CUSTOM BOARD DISPLAY
+                                        CALL DBOARD - OFFSET    ;DRAW CHESS BOAD
+                                        CALL DPIECE - OFFSET    ;DRAW CHESS PIECES
+                                        RET
+                                
+                                DBOARD: MVI  B,10H              ;DRAW CHESS BOARD
+                                        LXI  D,1801H
+                                        LXI  H,1800H            ;DAZZLER VIDEO MEMORY @ 1800H
+                                DB1:    PUSH B
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-27
+
+
+                                        MVI  A,03H
+                                        MVI  B,10H
+                                DB2:    PUSH B
+                                        MVI  B,0                ;DRAW FIELDS
+                                DBP1:   MVI  M,33H              ;WHITE FIELD AS GREEN
+                                        MOV  C,A
+                                        CALL LDIR
+                                        INX  D
+                                        INX  H
+                                DBP2:   MVI  M,99H              ;BLACK FIELD AS RED
+                                        MOV  C,A
+                                        CALL LDIR
+                                        INX  D
+                                        INX  H
+                                        POP  B
+                                        DCR  B
+                                        JNZ  DB2 - OFFSET
+                                        LDA  DBP1 + 1 - OFFSET  ;FLIP COLORS AND DRAW NEXT ROW OF FIELDS
+                                        MOV  B,A
+                                        LDA  DBP2 + 1 - OFFSET
+                                        STA  DBP1 + 1 - OFFSET
+                                        MOV  A,B
+                                        STA  DBP2 + 1 - OFFSET
+                                        POP  B
+                                        DCR  B
+                                        JNZ  DB1 - OFFSET
+                                        RET
+                                
+                                DPIECE:                         ;DRAW CHESS PIECES
+                                        LXI  D,09ECH            ;PIECE ADDRESS TABLE - 1
+                                        MVI  B,02H
+                                DPIE0:  PUSH B
+                                        LXI  H,PTAB - 6 - OFFSET ;PIECE GRAPHICS TABLE - 1 ENTRY
+                                        SHLD DAT2 - OFFSET
+                                        MVI  B,08H
+                                DPIE1:  PUSH B
+                                        CALL DONEP - OFFSET
+                                        POP  B
+                                        DCR  B
+                                        JNZ  DPIE1 - OFFSET
+                                        MVI  B,08H
+                                DPIE2:  PUSH B
+                                        CALL DONEP - OFFSET
+                                        LXI  B,0FFFAH           ;BC = -6
+                                        LHLD DAT2 - OFFSET
+                                        DAD  B
+                                        SHLD DAT2 - OFFSET
+                                        POP  B
+                                        DCR  B
+                                        JNZ  DPIE2 - OFFSET
+                                        LDA  DAT1 - OFFSET
+                                        CMA
+                                        STA  DAT1 - OFFSET
+                                        POP  B
+                                        DCR  B
+                                        JNZ  DPIE0 - OFFSET
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-28
+
+
+                                        RET
+                                
+                                DONEP:                          ;DRAW ONE PIECE
+                                        INX  D                  ;DE -> NEXT PIECE IN TABLE
+                                        PUSH D
+                                        CALL SUB1 - OFFSET
+                                        LXI  B,6                ;6 BYTES PER PIECE GRAPHICS
+                                        LHLD DAT2 - OFFSET
+                                        DAD  B
+                                        SHLD DAT2 - OFFSET
+                                        CALL SUB2 - OFFSET
+                                        POP  D
+                                        RET
+                                
+                                SUB1:   XCHG                    ;BIT FIDDLING TO GET PIECE GRAPHICS ON BOARD
+                                        MOV  A,M
+                                        ANI  80H
+                                        MOV  A,M
+                                        JZ   SUB11 - OFFSET
+                                        POP  D
+                                        LXI  B,6
+                                        LHLD DAT2 - OFFSET
+                                        DAD  B
+                                        SHLD DAT2 - OFFSET
+                                        POP  D
+                                        RET
+                                SUB11:  RRC
+                                        MOV  B,A
+                                        RLC
+                                        RLC
+                                        RLC
+                                        MOV  C,A
+                                        RLC
+                                        MOV  E,A
+                                        RLC
+                                        ANI  4
+                                        MOV  D,A
+                                        MOV  A,E
+                                        ANI  1
+                                        ORA  D
+                                        MOV  D,A
+                                        MOV  A,B
+                                        ANI  2
+                                        ORA  D
+                                        MOV  D,A
+                                        MVI  A,18H
+                                        ORA  D
+                                        MOV  D,A
+                                        MOV  A,E
+                                        ANI  80H
+                                        MOV  E,A
+                                        MOV  A,C
+                                        ANI  0CH
+                                        ORA  E
+                                        PUSH PSW
+                                        ORI  16
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-29
+
+
+                                        MOV  E,A
+                                        POP  PSW
+                                        RET
+                                
+                                SUB2:   MOV  B,C
+                                SUB22:  MOV  A,M
+                                        ANI  32
+                                        CNZ  SUB4 - OFFSET
+                                        INX  D
+                                        MOV  A,M
+                                        ANI  16
+                                        CNZ  SUB3 - OFFSET
+                                        MOV  A,M
+                                        ANI  8
+                                        CNZ  SUB4 - OFFSET
+                                        INX  D
+                                        MOV  A,M
+                                        ANI  4
+                                        CNZ  SUB3 - OFFSET
+                                        MOV  A,M
+                                        ANI  2
+                                        CNZ  SUB4 - OFFSET
+                                        INX  D
+                                        MOV  A,M
+                                        ANI  1
+                                        CNZ  SUB3 - OFFSET
+                                        PUSH H
+                                        LXI  H,000DH
+                                        DAD  D
+                                        XCHG
+                                        POP  H
+                                        INX  H
+                                        DCR  B
+                                        JNZ  SUB22 - OFFSET
+                                        RET
+                                
+                                SUB3:   XCHG
+                                        MOV  A,M
+                                        ANI  0F0H
+                                        MOV  C,A
+                                        LDA  DAT1 - OFFSET
+                                        ANI  00FH
+                                        ORA  C
+                                        MOV  M,A
+                                        XCHG
+                                        RET
+                                
+                                SUB4:   XCHG
+                                        MOV  A,M
+                                        ANI  00FH
+                                        MOV  C,A
+                                        LDA  DAT1 - OFFSET
+                                        ANI  0F0H
+                                        ORA  C
+                                        MOV  M,A
+                                        XCHG
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-30
+
+
+                                        RET
+                                
+                                DAT1:   DB   0FFH                       ;PIECE COLOR
+                                DAT2:   DW   0                          ;PIECE LOCATION
+                                
+                                PTAB:   DB   0CH,3FH,33H,21H,33H,1EH    ;PIECE GRAPHICS
+                                        DB   00H,2DH,3FH,2DH,3FH,3FH
+                                        DB   2DH,3FH,1EH,1EH,1EH,1EH
+                                        DB   2DH,3FH,1EH,1EH,1EH,1EH
+                                        DB   0CH,1CH,3FH,1EH,0CH,3FH
+                                        DB   0CH,1CH,3FH,1EH,0CH,3FH
+                                        DB   08H,1EH,3FH,37H,07H,0FH
+                                        DB   08H,1EH,3FH,37H,07H,0FH
+                                        DB   00H,0CH,0CH,1EH,3FH,3FH
+                                
+                                        ENDIF
+                                
+                                ;
+                                ; RELOCATABLE PATCH TO DISPLAY SMALL BOARD WITH COORDINATES
+                                ;
+                                        IF   COORD
+                                
+  0F00    CD 01DA               DISP1:  CALL 01DAH
+  0F03    CD 0E0C                       CALL DISP2 - OFFSET
+  0F06    21 0CB6                       LXI  H,0CB6H
+  0F09    C3 01DA                       JMP  01DAH
+                                
+  0F0C    06 20                 DISP2:  MVI  B,20H
+  0F0E    CD 09BF                       CALL 09BFH
+  0F11    C3 09BF                       JMP  09BFH
+                                
+  0F14    CD 09BF               DISP3:  CALL 09BFH
+  0F17    04                            INR  B
+  0F18    78                            MOV  A,B
+  0F19    E6 07                         ANI  07H
+  0F1B    32 0E29                       STA  DDAT - OFFSET
+  0F1E    06 20                         MVI  B,20H
+  0F20    C3 09BF                       JMP  09BFH
+                                
+  0F23    CD 0E0C               DISP4:  CALL DISP2 - OFFSET
+  0F26    C3 01DA                       JMP  01DAH
+                                
+  0F29    00                    DDAT:   DB   0
+  0F2A    20 20 20 20           CTEXT:  DB   '     0  1  2  3  4  5  6  7',0DH
+  0F2E    20 30 20 20           
+  0F32    31 20 20 32           
+  0F36    20 20 33 20           
+  0F3A    20 34 20 20           
+  0F3E    35 20 20 36           
+  0F42    20 20 37 0D           
+                                
+                                        ENDIF
+                                
+                                ;
+                                ; PATCH TO RUN IT UNDER CP/M
+                                ;
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-31
+
+
+                                        IF   CPM
+                                
+                                        ORG  0 + OFFSET         ;PATCH FIRST INSTRUCTION TO JUMP
+  0100    C3 1100                       JMP  CPMIN              ;TO THE CP/M PATCH
+                                
+                                        ORG  01D7H + OFFSET     ;PATCH HLT FOR STANDALONE TO
+  02D7    C3 114C                       JMP  CPMOUT             ;RETURN TO CP/M
+                                
+                                        ORG  0DE6H + OFFSET     ;PATCH TERMINAL OUT FOR CP/M
+  0EE6    48                            MOV  C,B
+  0EE7    CD 115F                       CALL CONOUT
+  0EEA    C9                            RET
+                                
+                                
+                                	ORG  09B6H + OFFSET
+  0AB6    06 20                 	MVI  B,' '		;REMOVE 7F CHAR AT BEGINNING OF LINE
+                                	
+                                        ORG  0DF1H + OFFSET     ;PATCH TERMINAL IN FOR CP/M
+  0EF1    CD 115C                       CALL CONIN
+  0EF4    E6 7F                         ANI  7FH
+  0EF6    47                            MOV  B,A
+  0EF7    C9                            RET
+                                
+                                        ORG  1000H + OFFSET     ;CP/M PATCH AREA
+  1100    2A 0001               CPMIN:  LHLD 1                  ;BIOS WARM BOOT -> HL
+  1103    01 0006                       LXI  B,6                ;BIOS CONIN -> HL
+  1106    09                            DAD  B
+  1107    23                            INX  H
+  1108    7E                            MOV  A,M                ;STORE ADR. FOR CONIN
+  1109    32 115D                       STA  CONIN + 1
+  110C    23                            INX  H
+  110D    7E                            MOV  A,M
+  110E    32 115E                       STA  CONIN + 2
+  1111    2A 0001                       LHLD 1                  ;BIOS WARM BOOT -> HL
+  1114    01 0009                       LXI  B,9                ;BIOS CONOUT -> HL
+  1117    09                            DAD  B
+  1118    23                            INX  H
+  1119    7E                            MOV  A,M                ;STORE ADR. FOR CONOUT
+  111A    32 1160                       STA  CONOUT + 1
+  111D    23                            INX  H
+  111E    7E                            MOV  A,M
+  111F    32 1161                       STA  CONOUT + 2
+  1122    3A 0003                       LDA  3                  ;GET THE IOBYTE
+  1125    31 11F2                       LXI  SP,STACK
+  1128    21 0000                       LXI  H,0                ;FOR CP/M WE NEED TO SAVE 00-7FH
+  112B    11 1162                       LXI  D,SAVE
+  112E    01 0080                       LXI  B,0080H
+  1131    CD 11F2                       CALL LDIR
+  1134    21 0100                       LXI  H,OFFSET           ;NOW MOVE THE PROGRAM DOWN TO 0
+  1137    11 0000                       LXI  D,0
+  113A    01 0FFF                       LXI  B,0FFFH
+  113D    CD 11F2                       CALL LDIR
+  1140    32 0003                       STA  3                  ;RESTORE THE IOBYTE, BIOS MIGHT NEED IT
+  1143    31 0D82                       LXI  SP,0D82H           ;FIRST INSTRUCTION JUST PATCHED ABOVE
+  1146    CD 09AC                       CALL 09ACH              ;SECOND INSTRUCTION DESTROYED BY IOBYTE
+  1149    C3 0006                       JMP  6                  ;GO TO MICROCHESS
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	1-32
+
+
+                                
+  114C    31 11F2               CPMOUT: LXI  SP,STACK
+  114F    21 1162                       LXI  H,SAVE             ;RESTORE 00-7FH FOR CP/M
+  1152    11 0000                       LXI  D,0
+  1155    01 0080                       LXI  B,0080H
+  1158    CD 11F2                       CALL LDIR
+                                        IF   DAZZLER
+                                        XRA  A                  ;SWITCH DAZZLER OFF
+                                        OUT  0EH
+                                        ENDIF
+  115B    C7                            RST  0                  ;AND THEN RETURN TO CP/M
+                                
+  115C    C3 0000               CONIN:  JMP  0                  ;CALL BIOS CONSOLE IN
+  115F    C3 0000               CONOUT: JMP  0                  ;CALL BIOS CONSOLE OUT
+                                
+  1162                          SAVE:   DS   80H
+  11E2                                  DS   16
+  11F2                          STACK:
+                                
+                                        ENDIF
+                                
+                                ;
+                                ; SUPPORT ROUTINE TO AVOID USING Z80 LDIR INSTRUCTION
+                                ;
+                                        IF   CPM OR DAZZLER
+  11F2    F5                    LDIR:   PUSH PSW
+  11F3    7E                    LDIR1:  MOV  A,M
+  11F4    12                            STAX D
+  11F5    23                            INX  H
+  11F6    13                            INX  D
+  11F7    0B                            DCX  B
+  11F8    78                            MOV  A,B
+  11F9    B1                            ORA  C
+  11FA    C2 11F3                       JNZ  LDIR1
+  11FD    F1                            POP  PSW
+  11FE    C9                            RET
+                                        ENDIF
+                                
+                                        END
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+0001 	CAUTO           115C 	CONIN           115F 	CONOUT          
+0001 	COORD           0001 	CPM             1100 	CPMIN           
+114C 	CPMOUT          0F2A 	CTEXT           0000 	DAZZLER         
+0F29 	DDAT            0F00 	DISP1           0F0C 	DISP2           
+0F14 	DISP3           0F23 	DISP4           0001 	IMSAI           
+0100 	L000            0110 	L010            0120 	L020            
+0130 	L030            0140 	L040            0150 	L050            
+0160 	L060            0170 	L070            0180 	L080            
+0190 	L090            01A0 	L0A0            01B0 	L0B0            
+01C0 	L0C0            01D0 	L0D0            01E0 	L0E0            
+01F0 	L0F0            0200 	L100            0210 	L110            
+0220 	L120            0230 	L130            0240 	L140            
+0250 	L150            0260 	L160            0270 	L170            
+0280 	L180            0290 	L190            02A0 	L1A0            
+02B0 	L1B0            02C0 	L1C0            02D0 	L1D0            
+02E0 	L1E0            02F0 	L1F0            0300 	L200            
+0310 	L210            0320 	L220            0330 	L230            
+0340 	L240            0350 	L250            0360 	L260            
+0370 	L270            0380 	L280            0390 	L290            
+03A0 	L2A0            03B0 	L2B0            03C0 	L2C0            
+03D0 	L2D0            03E0 	L2E0            03F0 	L2F0            
+0400 	L300            0410 	L310            0420 	L320            
+0430 	L330            0440 	L340            0450 	L350            
+0460 	L360            0470 	L370            0480 	L380            
+0490 	L390            04A0 	L3A0            04B0 	L3B0            
+04C0 	L3C0            04D0 	L3D0            04E0 	L3E0            
+04F0 	L3F0            0500 	L400            0510 	L410            
+0520 	L420            0530 	L430            0540 	L440            
+0550 	L450            0560 	L460            0570 	L470            
+0580 	L480            0590 	L490            05A0 	L4A0            
+05B0 	L4B0            05C0 	L4C0            05D0 	L4D0            
+05E0 	L4E0            05F0 	L4F0            0600 	L500            
+0610 	L510            0620 	L520            0630 	L530            
+0640 	L540            0650 	L550            0660 	L560            
+0670 	L570            0680 	L580            0690 	L590            
+06A0 	L5A0            06B0 	L5B0            06C0 	L5C0            
+06D0 	L5D0            06E0 	L5E0            06F0 	L5F0            
+0700 	L600            0710 	L610            0720 	L620            
+0730 	L630            0740 	L640            0750 	L650            
+0760 	L660            0770 	L670            0780 	L680            
+0790 	L690            07A0 	L6A0            07B0 	L6B0            
+07C0 	L6C0            07D0 	L6D0            07E0 	L6E0            
+07F0 	L6F0            0800 	L700            0810 	L710            
+0820 	L720            0830 	L730            0840 	L740            
+0850 	L750            0860 	L760            0870 	L770            
+0880 	L780            0890 	L790            08A0 	L7A0            
+08B0 	L7B0            08C0 	L7C0            08D0 	L7D0            
+08E0 	L7E0            08F0 	L7F0            0900 	L800            
+0910 	L810            0920 	L820            0930 	L830            
+0940 	L840            0950 	L850            0960 	L860            
+0970 	L870            0980 	L880            0990 	L890            
+09A0 	L8A0            09B0 	L8B0            09C0 	L8C0            
+'8080 MICROCHESS'	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+
+
+09D0 	L8D0            09E0 	L8E0            09F0 	L8F0            
+0A00 	L900            0A10 	L910            0A20 	L920            
+0A30 	L930            0A40 	L940            0A50 	L950            
+0A60 	L960            0A70 	L970            0A80 	L980            
+0A90 	L990            0AA0 	L9A0            0AB0 	L9B0            
+0AC0 	L9C0            0AD0 	L9D0            0AE0 	L9E0            
+0AF0 	L9F0            0B00 	LA00            0B10 	LA10            
+0B20 	LA20            0B30 	LA30            0B40 	LA40            
+0B50 	LA50            0B60 	LA60            0B70 	LA70            
+0B80 	LA80            0B90 	LA90            0BA0 	LAA0            
+0BB0 	LAB0            0BC0 	LAC0            0BD0 	LAD0            
+0BE0 	LAE0            0BF0 	LAF0            0C00 	LB00            
+0C10 	LB10            0C20 	LB20            0C30 	LB30            
+0C40 	LB40            0C50 	LB50            0C60 	LB60            
+0C70 	LB70            0C80 	LB80            0C90 	LB90            
+0CA0 	LBA0            0CB0 	LBB0            0CC0 	LBC0            
+0CD0 	LBD0            0CE0 	LBE0            0CF0 	LBF0            
+0D00 	LC00            0D10 	LC10            0D20 	LC20            
+0D30 	LC30            0D40 	LC40            0D50 	LC50            
+0D60 	LC60            0D70 	LC70            0D80 	LC80            
+0D90 	LC90            0DA0 	LCA0            0DB0 	LCB0            
+0DC0 	LCC0            0DD0 	LCDO            0DE0 	LCE0            
+0DF0 	LCF0            0E00 	LD00            0E10 	LD10            
+0E20 	LD20            0E30 	LD30            0E40 	LD40            
+0E50 	LD50            0E60 	LD60            0E70 	LD70            
+0E80 	LD80            0E90 	LD90            0EA0 	LDA0            
+0EB0 	LDB0            0EC0 	LDC0            0ED0 	LDD0            
+0EE0 	LDE0            0EF0 	LDF0            11F2 	LDIR            
+11F3 	LDIR1           0F00 	LE00            0F10 	LE10            
+0F20 	LE20            0F30 	LE30            0F40 	LE40            
+0F50 	LE50            0F60 	LE60            0F70 	LE70            
+0F80 	LE80            0F90 	LE90            0FA0 	LEA0            
+0FB0 	LEB0            0FC0 	LEC0            0FD0 	LED0            
+0FE0 	LEE0            0FF0 	LEF0            1000 	LF00            
+1010 	LF10            1020 	LF20            1030 	LF30            
+1040 	LF40            1050 	LF50            1060 	LF60            
+1070 	LF70            1080 	LF80            1090 	LF90            
+10A0 	LFA0            10B0 	LFB0            10C0 	LFC0            
+10D0 	LFD0            10E0 	LFE0            10F0 	LFF0            
+0001 	MAUTO           0000 	MITS            0100 	OFFSET          
+1162 	SAVE            0000 	SMALLD          11F2 	STACK           
+0EF1 	TTYI            0EE6 	TTYO            
+
+
+
+No Fatal error(s)
+
+
+    1030 	LF30      

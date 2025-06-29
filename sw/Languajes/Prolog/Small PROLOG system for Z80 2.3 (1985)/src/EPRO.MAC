@@ -1,0 +1,404 @@
+
+; EPRO.Z80
+;		********   E-Prolog   ******
+
+;	G. A. Edgar
+;	107 W. Dodridge St., Columbus, OH 43202
+;	CompuServe 70715,1324
+
+;	Not copyrighted, but if you improve it, how about
+;	at least letting me know?
+
+	.Z80
+SIGNON:: DB	'E-Prolog   ver. 2.3'
+	DB	'     (August 1, 1985)',13,10,0
+SYMBSZ	EQU	3000		; symbol table size
+STACKSZ	EQU	1500		; stack size
+
+.COMMENT %
+
+ versions
+  1.0		April 2, 1985
+	For Macro-80, Z-80, CP/M 2.2
+	Based on PIL : Prolog in Lisp,
+	by Ken Kahn, Par Emanuelson, Martin Nilsson.
+  1.1		April 10, 1985
+	Packing of node space
+	Rewrite VALUE
+  1.2		April 19, 1985
+	Rearrange database
+	(version 1.2 released)
+  1.3		May 3, 1985
+	bug fixes
+  2.0		May 19, 1985
+	Rewritten, mostly in C
+  2.1		June 1, 1985
+	Back into M80, Z-80, CP/M
+  2.2		July 5, 1985
+	line-feed following BDOS 10 call
+	fixes for UNIFY, PROVE
+  2.3		August 1, 1985
+	version for SIG/M
+
+Most of the C language source has been left in the code as
+comments.  The source files are:  EPRO.Z80, CLASS.Z80,
+SYMB.Z80, HEAP.Z80, DATBADD.Z80, UNIFY.Z80, CMD.Z80,
+PROVE.Z80, INPUT.Z80, OUTPUT.Z80, ERROR.Z80, ASSEM.Z80,
+INIT.Z80 .  The documentation file is EPRO.DOC .
+
+/* types */
+
+typedef	unsigned				NUMBER;
+
+typedef	int					BOOLEAN;
+
+typedef	struct XSYMBOL {
+	char *			addr;
+	struct XSYMBOL *	lptr;
+	struct XSYMBOL *	rptr;
+	char			string[1];
+	}					SYMBOL;
+
+typedef	SYMBOL *				VARIABLE;
+
+typedef	struct XNODE *				PAIR;
+
+typedef	union {
+	PAIR			list;
+	SYMBOL *		symbol;
+	NUMBER			number;
+	}					EXPR;
+
+typedef	struct XNODE {
+	EXPR			left;
+	EXPR			right;
+	}					NODE;
+
+typedef	union XSUBVAL {
+	struct XSUBST *		val;
+	struct XSEXPR *		assgn;
+	}					SUBVAL;
+
+typedef	struct XSUBST {
+	VARIABLE		vname;
+	SUBVAL			back;
+	SUBVAL			forw;
+	}					SUBST;
+
+typedef	SUBST *					LSUBST;
+
+typedef struct XSEXPR {
+	EXPR			sexp;
+	SUBVAL			back;
+	LSUBST			slist;
+	}					SEXPR;
+
+typedef struct {
+	struct XALPHASTATE *	pred;
+	EXPR			assertion;
+	SUBST			subst[1];
+	}					BETASTATE;
+
+typedef struct XALPHASTATE {
+	BETASTATE *		pred; /* tree pred */
+	PAIR			goal;
+	PAIR			datb;
+	BETASTATE *		back; /* linear pred */
+	}					ALPHASTATE;
+
+END OF COMMENT %
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1		; empty list
+UNDEF	EQU	-2		; undefined pointer
+FROZEN	EQU	-3		; frozen variable
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+; -------------- global variables --------------------
+
+	DSEG
+;unsigned	symbs = SYMBSZ;
+SYMBS::	DW	SYMBSZ
+;unsigned	stacks = STACKSZ;
+STACKS:: DW	STACKSZ
+;int		opar;		/* no. of open parentheses */
+OPAR::	DS	1
+;char *		stop;		/* top of symbol table */
+;#define	hbot	stop	/* bottom of heap */
+HBOT::
+STOP::	DS	2
+;char *		hfree;		/* free space in heap */
+HFREE::	DS	2
+;char *		htop;		/* top of heap */
+HTOP::	DS	2
+;char *	datbtop;		/* top of database */
+DBTOP::	DS	2
+	CSEG
+
+;main()
+MAIN::
+	LD	SP,(6)
+;  {
+;  static EXPR e;
+;
+;  init();
+	CALL	INIT##
+;  datbtop = hbot;
+	LD	HL,(HBOT)
+	LD	(DBTOP),HL
+;  while (1)
+EP1:
+;    {
+;    hfree = datbtop;
+	LD	HL,(DBTOP)
+	LD	(HFREE),HL
+;    opar = 0;
+	XOR	A
+	LD	(OPAR),A
+;    e.list = rdg1();
+	CALL	RDG1
+;    if (atomp(e.list) || varp(e.list))
+	CALL	ATOMP##
+	JR	NZ,EP3
+	CALL	VARP##
+	JR	Z,EP2
+;      {
+EP3:
+;      /* prove */
+;      prove(e.list);
+	CALL	PROVE##
+;      continue;
+	JR	EP1
+;      }
+EP2:
+;    if (!(nelistp(e.list)))
+	CALL	NELP##
+	JR	NZ,EP4
+;      {
+;      eprint(e.list,empty);
+EP5:
+	LD	DE,EMPTY
+	CALL	EPRINT##
+;      error(" illegal.\r\n");
+	LD	HL,EP3MSG
+	CALL	ERROR##
+	DSEG
+EP3MSG:	DB	' illegal.',CR,LF,0
+	CSEG
+;      continue;
+	JR	EP1
+;      }
+EP4:
+;    if (clausep(e.list))
+	CALL	CLP##
+	JR	Z,EP5
+;      {
+;      /* add to database */
+;      datbadd(e.list->left.list->left.symbol,e.list);
+	PUSH	HL
+	CALL	@LEFT##
+	CALL	@LEFT##
+	POP	DE
+	CALL	DBADD##
+;      continue;
+	JR	EP1
+;      }
+;EP5: above
+;    /* otherwise */
+;    eprint(e.list,empty);
+;    error(" illegal!\r\n");
+;    }
+;  exit(0);
+;  }
+
+; READ A GOAL
+;
+; input:
+;	none
+; output:
+;	HL -> goal [EXPR]
+;EXPR
+;rdg1()			/* recursive */
+;  {
+RDG1::
+;  while (separp(rdchar()))
+;    ;
+RD1:
+	CALL	RDCHAR##
+	CALL	SEPARP
+	JR	NZ,RD1
+;  if (character == '(')
+	LD	A,(CHR##)
+	CP	'('
+	JR	NZ,RD2
+;    {
+;    opar++;
+	LD	A,(OPAR)
+	INC	A
+	LD	(OPAR),A
+;    return rdg2();
+	JP	RDG2
+;    }
+RD2:
+;  else
+;    {
+;    unrdchar();
+	CALL	UNRDCH##
+;    return gtoken();
+	JP	GTOKEN##
+;    }
+;  }
+;
+;EXPR
+;rdg2()
+RDG2:
+;  {
+;  unsigned temp;
+	DSEG
+TEMP:	DW	0
+	CSEG
+;
+;  while (separp(rdchar()))
+;    ;
+RD3:
+	CALL	RDCHAR##
+	CALL	SEPARP
+	JR	NZ,RD3
+;  if (character == ')')
+	LD	A,(CHR##)
+	CP	')'
+	JR	NZ,RD4
+;    {
+;    opar--;
+	LD	A,(OPAR)
+	DEC	A
+	LD	(OPAR),A
+;    return empty;
+	LD	HL,EMPTY
+	RET
+;    }
+RD4:
+;  else if (character == '|')
+	CP	'|'
+	JR	NZ,RD5
+;    {
+;    temp = rdg1();
+	CALL	RDG1			; recursion
+	LD	(TEMP),HL
+;    while (separp(rdchar()))
+;      ;
+RD6:
+	CALL	RDCHAR##
+	CALL	SEPARP
+	JR	NZ,RD6
+;    if (!(character == ')'))
+	LD	A,(CHR##)
+	CP	')'
+	JR	Z,RD7
+;      fatal("\r\nSyntax error.\r\n");
+	LD	HL,RD6MSG
+	JP	FATAL##
+	DSEG
+RD6MSG:	DB	CR,LF,'Syntax error.',CR,LF,0
+	CSEG
+RD7:
+;    opar--;
+	LD	A,(OPAR)
+	DEC	A
+	LD	(OPAR),A
+;    return temp;
+	LD	HL,(TEMP)
+	RET
+;    }
+RD5:
+;  else
+;    {
+;    unrdchar();
+	CALL	UNRDCH##
+;    temp = rdg1();
+	CALL	RDG1			; recursion
+;    return makepair(temp,rdg2());
+	PUSH	HL
+	CALL	RDG2			; recursion
+	EX	DE,HL
+	POP	HL
+	JP	MKPAIR##
+;    }
+;  }
+
+; SEPARATOR?
+;
+; is it a separator?  also, skip comment in [...]
+; input:
+;	none
+; output:
+;	Z flag set = no
+;BOOLEAN
+;separp()
+SEPARP::
+;  {
+;  switch (character)
+	LD	A,(CHR##)
+;    {
+;    case '[':
+	CP	'['
+	JR	NZ,SE1
+;      do
+;        rdchar();
+SE2:
+	CALL	RDCHAR##
+	LD	A,(CHR##)
+;      while (character != ']') ;
+	CP	']'
+	JR	NZ,SE2
+	JR	RETT
+SE1:
+;    case ' ':
+	CP	' '
+	JR	Z,RETT
+;    case '\r':
+	CP	CR
+	JR	Z,RETT
+;    case '\n':
+	CP	LF
+	JR	Z,RETT
+;    case '\t':
+	CP	HT
+	JR	NZ,RETF
+;      return TRUE;
+RETT:
+	OR	A
+	RET
+;    default:
+;      return FALSE;
+RETF:
+	XOR	A
+	RET
+;    }
+;  }
+
+; 16 bit compare
+;
+; input:
+;	HL , DE
+; output:
+;	C, Z flags
+; AF destroyed, others saved
+CPHL::	XOR	A		; NC
+	PUSH	HL
+	SBC	HL,DE
+	POP	HL
+	RET
+
+	END	MAIN
+

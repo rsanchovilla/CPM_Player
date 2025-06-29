@@ -1,0 +1,95 @@
+
+KUTE Aug. 1984
+
+          From the North West Kaypro User's Group (NWKUG),  Portland,
+          Ore.,  via Ryan Wilson
+
+          This nifty article was taken from the newsletter of the NWKUG.
+          It works beautifully and I wanted to share it with the KUTE
+          members.  It has been modified only marginally to make certain
+          points more clearly than in the original.
+
+
+                       RESETTING DISKS WHILE IN PERFECT WRITER
+                                from the KAPPA HACKER
+
+          Some of you have observed that one of the advantages of
+          PluPerfect Writer and other comparable add-ons for Perfect Writer
+          was being able to switch disks after a "write" or BDOS error
+          during a session.  Resetting disks not only allows back-ups to be
+          made, but it allows files to be transfered from disk to disk
+          while editing.  Unfortunately, environments cost money and take
+          up precious RAM space.
+
+          Why Perfect Writer left out a disk reset is a mystery to me:
+          nothing is easier to program than the BDOS 13 call.  What I have
+          below -- absolutely free -- is a patch which inserts a disk reset
+          as a replacement for one of the present Perfect Writer commands.
+          Here's what you do:
+
+          1.      Look at Appendix A-43 in your PW manual and find a
+          function that you are not presently using.  The example below
+          uses CTRL-X, S = 'MGOSPELL' because I use a spelling checker
+          other than Perfect Speller.  If you are still using Perfect
+          Speller, may I suggest CTRL-X,> = 'MINDNTRG' = 'Indent Region' or
+          any other obscure command available.  If you have never heard of
+          these commands, that is exactly my point.  One of them won't be
+          missed.
+
+          2.      Put the PW Installation disk in DRIVE A and enter
+          "type pw.sym" <CR>.  Use CTRL-S to stop the scrolling.  You will
+          see columns of function names and numbers.  These numbers are the
+          HEX addresses of the routines within PW.COM.  All you need to do
+          is find your replaceable function and make a note of the HEX
+          number.  I am using PW version 1.20 and am replacing CTRL-X,S;
+          therefore I'm using "5EC9."
+
+          3.      Next, put your CP/M disk in DRIVE A and a working copy of
+          PW.COM in DRIVE B.  Go to DRIVE B as the default drive (type "B:"
+          at the A> prompt).  Enter "A:DDT PW.COM" <CR>.  After some disk
+          activity and some numbers, you will see the DDT prompt " - ".
+          Now enter "a" plus the HEX address you want to change.  In my
+          example of replacing "MGOSPELL," the command would be -a5EC9.
+
+          You will get a response beginning with the address line (5EC9).
+          You now enter the rest of the first command line below, followed
+          by a <CR>.  You will get another address (5ECC) and command.  The
+          list below shows the entire sequence for my example, beginning
+          with 5EC9.  For your own case the assembly commands and the
+          displacements will be the same, though the original address will
+          depend on the command you are changing.
+
+          5EC9  LXI  B,OOOD <CR>
+          5ECC  CALL 005    <CR>
+          5ECF  LXI  B,000E <CR>
+          5ED2  LXI  D,0001 <CR>
+          5ED5  CALL 005    <CR>
+          5ED8  RET         <CR>
+          5ED9  .           <CR>  (the dot is a "period")
+
+          For safety, I ordinarily work on DRIVE B in Perfect Writer.  If
+          you use DRIVE A as the default drive, change the fourth command
+          line to:  LXI  D,0000
+
+          4.      Then enter g0 at the  -  prompt.
+
+          After you get the Warm Boot, enter:  save 137 pw.com <CR>.
+
+          When the write to disk is finished, you will possess a Perfect
+          Writer that will reset the disk system whenever you enter the
+          command.  This capacity will save you hours of work someday.
+          Just keep a formatted disk around in case something goes wrong
+          with the primary disk.
+
+          Address for NWKUG is:
+
+                  NWKUG
+                  PO Box II
+                  Portland, Oregon  97232
+
+          They have a dandy public domain software library including
+          several games disks, lots of utilities and many JRT Pascal disks
+          including tutorials.  The librarian's name is Gary Matusch.
+CR>  (the dot is a "period")
+
+          For

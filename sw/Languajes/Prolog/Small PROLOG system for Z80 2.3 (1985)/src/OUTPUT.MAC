@@ -1,0 +1,461 @@
+
+; ===========================================================
+;OUTPUT.Z80
+;	output routines for E-Prolog
+;	May 24, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+; compare with given value
+;
+?CPHL	MACRO	?VALUE
+	PUSH	DE
+	LD	DE,?VALUE
+	CALL	CPHL##
+	POP	DE
+	ENDM
+
+	DSEG
+
+; output file: 0 = console, 1 = disk, -1 = null
+OUTF::	DB	0
+
+; file control block for output file
+OUTFCB::
+	DB	0
+	DB	'        '
+	DB	'   '
+	DB	0,0,0,0
+	DS	20
+
+; buffer for output file
+OUTDMA::
+	DS	128
+OUTE::
+
+; pointer for output file
+OUTP::	DW	OUTDMA
+
+	CSEG
+
+; fill with one character
+;
+; all registers destroyed
+?FILL	MACRO	?ADDR,?COUNT,?VAL
+	LD	HL,?ADDR
+	PUSH	HL
+	POP	DE
+	INC	DE
+	LD	BC,?COUNT-1
+	LD	(HL),?VAL
+	LDIR
+	ENDM
+
+; copy string
+;
+; input:
+;	HL -> source
+; all registers destroyed
+?COPY	MACRO	?ADDR
+	LD	DE,?ADDR
+	CALL	COPY
+	ENDM
+; copy string
+;
+; input:
+;	HL -> source (string terminated by 0, which is
+;		not copied)
+;	DE -> destination
+; all registers destroyed
+	DSEG
+DEST:	DW	0
+	CSEG
+COPY::
+	LD	(DEST),DE
+	CALL	LISTP##
+	RET	NZ
+	CALL	NUMBP##
+	RET	NZ
+	CALL	@STR##
+	LD	DE,(DEST)
+COPY1:	LD	A,(HL)
+	OR	A
+	RET	Z
+	LD	(DE),A
+	INC	HL
+	INC	DE
+	JR	COPY1
+
+; create FCB for output file.
+;
+; input:
+;	HL = list (rest of atom)
+;	DE = lsub (substitutions for HL)
+	DSEG
+PEXP:	DW	0
+PLSUB:	DW	0
+	CSEG
+DOOUT::
+	LD	(PEXP),HL
+	LD	(PLSUB),DE
+	XOR	A
+	LD	(OUTF),A
+	?FILL	OUTFCB,36,0
+	?FILL	OUTFCB+1,11,' '
+DOOUT1:	LD	HL,PEXP
+	LD	DE,PLSUB
+	CALL	VNEXT##
+	CALL	SYMBP##
+	JR	Z,DOOUT3
+	?CPHL	ACON##
+	JR	Z,DOOUT3
+	LD	A,-1
+	LD	(OUTF),A
+	?CPHL	ANULL##
+	JP	Z,DOOUT3
+	LD	A,1
+	LD	(OUTF),A
+	?COPY	OUTFCB+1
+	LD	HL,PEXP
+	LD	DE,PLSUB
+	CALL	VNEXT##
+	CALL	SYMBP##
+	JR	Z,DOOUT3
+	?CPHL	ACOLON##
+	JR	NZ,DOOUT2
+	LD	A,(OUTFCB+1)
+	SUB	'A'-1
+	LD	(OUTFCB),A
+	?FILL	OUTFCB+1,11,' '
+	JR	DOOUT1
+DOOUT2:	?CPHL	ADOT##
+	JR	NZ,DOOUT3
+	LD	HL,PEXP
+	LD	DE,PLSUB
+	CALL	VNEXT##
+	CALL	SYMBP##
+	JR	Z,DOOUT3
+	?COPY	OUTFCB+9
+DOOUT3:
+	RET
+
+CRLF::	LD	HL,CRLFX
+	CALL	MSG
+	RET
+	DSEG
+CRLFX:	DB	CR,LF,0
+	CSEG
+
+; character out
+;
+; input:
+;	character in A
+; saves registers, except AF
+CHROUT::
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	LD	E,A
+	LD	A,(OUTF)	; output device
+	OR	A
+	JR	Z,CHRO1		; console
+	DEC	A
+	JR	NZ,CHROE	; null
+	LD	HL,(OUTP)	; disk file
+	PUSH	DE
+	LD	DE,OUTE
+	CALL	CPHL##
+	POP	DE
+	JR	NZ,CHRO2
+	PUSH	DE		; E = character
+	CALL	FLUSH		; flush buffer
+	POP	DE		; E = character
+	LD	HL,OUTDMA
+CHRO2:	LD	(HL),E
+	INC	HL
+	LD	(OUTP),HL
+	JR	CHROE
+CHRO1:	LD	C,2		; console write
+	CALL	BDOS
+CHROE:	POP	HL
+	POP	DE
+	POP	BC
+	RET
+
+; flush output file buffer
+FLUSH::
+	LD	DE,OUTDMA
+	LD	C,26		; set DMA
+	CALL	BDOS
+	LD	DE,OUTFCB
+	LD	C,21		; write sequential
+	CALL	BDOS
+	OR	A
+	RET	Z
+	LD	HL,DSKERR
+	JP	FATAL##
+	DSEG
+DSKERR:	DB	CR,LF,'DISK WRITE ERROR.',0
+	CSEG
+
+;msg(s)
+;  char * s;
+;  {
+;  register char c;
+;  while(c = *s++)
+;    chrout(c);
+;  }
+MSG::
+	LD	A,(HL)
+	INC	HL
+	OR	A
+	RET	Z
+	CALL	CHROUT
+	JR	MSG
+
+; close existing output device
+CLOSE::
+	LD	A,(OUTF)	; output device
+	DEC	A
+	LD	A,0
+	LD	(OUTF),A	; revert to console
+	RET	NZ
+	LD	HL,(OUTP)
+CLOSE0:	?CPHL	OUTE
+	JR	Z,CLOSE1
+	LD	(HL),CTLZ	; fill with ^Z
+	INC	HL
+	JR	CLOSE0
+CLOSE1:	CALL	FLUSH
+	LD	DE,OUTFCB
+	LD	C,16		; close file
+	CALL	BDOS
+	RET
+
+;eprint(ex,ls)		/* recursive */
+;  EXPR ex;
+;  LSUBST ls;
+	DSEG
+EXP:	DW	0
+LSU:	DW	0
+;  {
+;  EXPR e;
+;  SUBVAL sv;
+SV:	DW	0
+	CSEG
+EPRINT::
+;
+	LD	(EXP),HL
+	LD	(LSU),DE
+;  e.list = ex;	/* synonym */
+;  if (varp(ex) && ls != (LSUBST)empty)
+	CALL	VARP
+	JP	Z,EP1
+	LD	HL,(LSU)
+	?CPHL	EMPTY
+	JR	Z,EP1
+;    {
+;    sv.val = value(vf(ex,ls));
+	LD	HL,(EXP)
+	LD	DE,(LSU)
+	CALL	VF##
+	CALL	VALUE##
+	LD	(SV),HL
+;    if (substp(sv.val))
+	CALL	SUBSTP##
+	JR	NZ,EP1
+;      ;
+;    else
+;      {
+;      ex = e.list = sv.assgn->sexp.list;
+	CALL	@EXPR##
+	LD	(EXP),HL
+;      ls = sv.assgn->slist;
+	LD	HL,(SV)
+	CALL	@SLIST##
+	LD	(LSU),HL
+;      }
+;    }
+EP1:
+;  if (numbp(ex))
+;    return prdec(ex);
+	LD	HL,(EXP)
+	CALL	NUMBP##
+	JP	NZ,PRDEC
+;  if (symbp(ex))
+;    return msg(e.symbol->string);
+	CALL	SYMBP##
+	JR	Z,EP2
+	CALL	@STR##
+	JP	MSG
+EP2:
+;  chrout('(');
+	LD	A,'('
+	CALL	CHROUT
+;  while (ex != (PAIR)empty)
+EP3:
+	LD	HL,(EXP)
+	?CPHL	EMPTY
+	JP	Z,EP4
+;    {
+;    eprint(ex->left.list,ls);
+	LD	HL,(SV)
+	PUSH	HL
+	LD	HL,(EXP)
+	PUSH	HL
+	CALL	@LEFT##
+	LD	DE,(LSU)
+	PUSH	DE
+	CALL	EPRINT		; recursion
+	POP	HL
+	LD	(LSU),HL
+	POP	HL
+	POP	DE
+	LD	(SV),DE
+;    ex = e.list = ex->right.list;
+	CALL	@RIGHT##
+	LD	(EXP),HL
+;    if (varp(ex) && ls != (LSUBST)empty)
+	CALL	VARP##
+	JR	Z,EP5
+	LD	HL,(LSU)
+	?CPHL	EMPTY
+	JR	Z,EP5
+;      {
+;      sv.val = value(vf(ex,ls));
+	LD	HL,(EXP)
+	LD	DE,(LSU)
+	CALL	VF##
+	CALL	VALUE##
+	LD	(SV),HL
+;      if (substp(sv.val))
+;        ;
+	CALL	SUBSTP
+	JR	NZ,EP5
+;      else
+;        {
+;        ex = e.list = sv.assgn->sexp.list;
+	LD	HL,(SV)
+	CALL	@EXPR##
+	LD	(EXP),HL
+;        ls = sv.assgn->slist;
+	LD	HL,(SV)
+	CALL	@SLIST
+	LD	(LSU),HL
+;        }
+;      }
+EP5:
+;    if (! listp(ex))
+;      {
+	LD	HL,(EXP)
+	CALL	LISTP
+	JR	NZ,EP6
+;      msg(" | ");
+	LD	HL,EPM
+	DSEG
+EPM:	DB	' | ',0
+	CSEG
+	CALL	MSG
+;      eprint(ex,ls);
+	LD	HL,(SV)
+	PUSH	HL
+	LD	HL,(EXP)
+	PUSH	HL
+	LD	DE,(LSU)
+	PUSH	DE
+	CALL	EPRINT		; recursion
+	POP	HL
+	LD	(LSU),HL
+	POP	HL
+	LD	(EXP),HL
+	POP	HL
+	LD	(SV),HL
+;      break;
+	JR	EP4
+;      }
+EP6:
+;    if (ex != (PAIR)empty)
+;      chrout(' ');
+	LD	HL,(EXP)
+	?CPHL	EMPTY
+	JR	Z,EP8
+	LD	A,' '
+	CALL	CHROUT
+;    }
+EP8:
+	JP	EP3
+EP4:
+;  return chrout(')');
+	LD	A,')'
+	JP	CHROUT
+;  }
+
+; print decimal
+;
+; input:
+;	HL = number
+; side effect:
+;	print out in decimal
+; all registers destroyed
+PRDEC::
+	LD	A,H
+	OR	L
+	JR	NZ,PRD1
+	LD	A,'0'
+	JP	CHROUT
+PRD1:	LD	BC,DD1
+PRD2:	LD	A,(BC)
+	LD	E,A
+	INC	BC	
+	LD	A,(BC)
+	LD	D,A
+	INC	BC	
+	PUSH	HL
+	XOR	A
+	SBC	HL,DE
+	POP	HL
+	JR	C,PRD2
+PRDL:	XOR	A
+PRD3:	SBC	HL,DE
+	JR	C,PRD4
+	INC	A
+	JR	PRD3
+PRD4:	ADD	HL,DE
+	ADD	A,'0'
+	CALL	CHROUT
+	LD	A,1
+	CP	E
+	RET	Z
+	LD	A,(BC)
+	LD	E,A
+	INC	BC	
+	LD	A,(BC)
+	LD	D,A
+	INC	BC	
+	JR	PRDL
+
+	DSEG
+DD1:	DW	10000
+	DW	1000
+	DW	100
+	DW	10
+	DW	1
+	CSEG
+
+	END
+

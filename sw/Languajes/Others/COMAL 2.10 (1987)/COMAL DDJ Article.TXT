@@ -1,0 +1,472 @@
+COMALDDJ.TXT
+------------
+
+- "COMAL-80: A New Language?"
+   by Susan SONDERSTRUP and Mogens PELLE
+   DDJ, No.56, June 1981, Vol.6-6, page 14
+
+(Retyped by Emmanuel ROCHE.)
+
+
+Over the years, various magazines have published articles  about 
+the advantages and disadvantages of different languages.
+
+BASIC  has  been  the  subject of  many articles  indicating its 
+limitations, and pointing out that even  a simple  program seems 
+rather difficult to read and understand.
+
+The  articles  often  conclude  by  expressing  the  need  for a 
+language  which  makes  it  natural  to  build up  a program  of 
+smaller, logically linked parts, which can be called one by  one 
+in an orderly way.
+
+One such language is Pascal, frequently mentioned in contrast to 
+BASIC, and just as often described in emotional terms.
+
+The silent war between Pascal and BASIC fans will probably never 
+find its end, as some believe that Pascal  does not  have proper 
+editing facilities (due to the construction  as a  compiler) and 
+is too difficult to learn.
+
+At this  point, it  will be  suitable to  add that  most persons 
+taking  part  in  the  continuing discussions  are EDP  teachers 
+showing an ever increasing interest for  Pascal, to  match their 
+higher levels.
+
+Even before this war was started, an attempt  to build  a bridge 
+took  its  start  in  Denmark.   The  teachers  expressed  their 
+dissatisfaction  with   the  possibilities   at  hand,   and  as 
+constructive criticism always leads forward, a new language  was 
+implemented: COMAL-80 (COMmon Algorithmic Language for the Intel 
+8080/Zilog Z-80).
+
+This  language  has its  family connections  to both  Pascal and 
+BASIC, as it is believed to contain the best parts from both.
+
+As mentioned above, the demand came from the educational sector, 
+asking for a better language, which is the  reason for  COMAL-80 
+having  built-in  programming  support,  and  by  its structure, 
+facilitating a possible transition to more scientific languages. 
+However, this does not mean that COMAL-80 is for education only, 
+as  it  has  proved  valuable  for  administrative,  as  well as 
+controlling, jobs, too.
+
+It takes an extended BASIC and a good Pascal. Stir well, and you 
+get COMAL-80.  At least,  that is  the way  it may  look to  the 
+users,  but  it  certainly  takes  a  lot  more  to take  up the 
+competition  with  established languages,  benefiting from  many 
+years of adjustments to fit the market.
+
+Rather, it takes a lot of planning, hard work, and  precision to 
+avoid loose  ends to  implement the  language, meeting  the high 
+expectations shown in the preliminary specifications.
+
+That the results far exceeded the expectations is proven by  the 
+fantastic  response  received  from  the  more  than  100   test 
+installations having been in use for about one year, before  the 
+current lead on the educational market in this country. The good 
+results  have  spread  the  knowledge  of  COMAL-80  across  the 
+borders, and what seemed to be pioneer work  within Denmark  has 
+led to many a plan for other high-level languages.
+
+
+A bit of history
+----------------
+
+The idea behind this language is  not new.   It started  back in 
+1973  when  Mr. Borge  Christensen, assistant  professor at  the 
+teachers college in Tondern, achieved daily access to a computer 
+equipped with a BASIC -- at the time, apparently a good one.
+
+Pretty soon, he found  several problems  in running  this BASIC. 
+First of all, the students often  had problems  reading programs 
+that they had written themselves some  time earlier.   Among the 
+reasons,  Mr.  Christensen  found  the  awkward  and unnecessary 
+limitations for variable names  ("A1"), which  was quite  normal 
+for BASICs at that time. Also, he found  that, in  BASIC, it  is 
+extremely difficult to write structured programs.
+
+Mr. Christensen not only had the talent, but  also the  touch of 
+luck needed to make the ideas come true.   Acquiring the  source 
+code was one thing, but having two excellent people in the area, 
+Per Christiansen and Knud Christensen, who were able  to improve 
+the code, was just what he needed to get rid of the most obvious 
+weaknesses.
+
+The result  was instant  -- students  found it  a lot  easier to 
+understand and work with this improved BASIC, and, in the  years 
+following,  it  was  distributed  to colleges  and high  schools 
+teaching EDP.
+
+In 1978, low-cost microcomputers really entered the market,  and 
+EDP spread  into grammar  schools. However,  the micros  all had 
+BASIC  --   and  now  the  teachers  had  the  knowledge of  the 
+"improved" BASIC.
+
+The demand for better language on  micros became  so heavy  that 
+the  implementation  of a  new language  took its  start in  the 
+summer of 1978. The first version  was released  for use  on the 
+COMET, marketed  by  International Computers  Limited, in  March 
+1979.
+
+Through the spring and summer, this version was  tested by  more 
+than  100  teachers  and  their  students,  whose  comments  and 
+suggestions mostly turned into implemented improvements. Most of 
+this  work  was  done  by  Arne  Christensen, a  student of  the 
+Copenhagen  University  for Data  Science, in  close cooperation 
+with Borge Christensen. (At this point,  it is  worth mentioning 
+that, despite the similarity of their last names, the four gents 
+are in no way related.) The product resulting from this  work is 
+marketed under the trade name of COMAL-80.
+
+
+But what is the difference?
+---------------------------
+
+As described above, COMAL-80 appears as an improvement of BASIC. 
+The most important aspect is that  it works  as an  interpreter. 
+Among the many important reasons for  this, you  will find  that 
+program errors can be dealt with very efficiently.
+
+When a line is finished and the RETURN key is pressed, the error 
+message appears instantly. To  continue the  program, the  error 
+must be corrected. The cursor indicates the error point, and  in 
+many cases COMAL-80 suggests what needs to be done.
+
+An example to this important feature is found below:
+
+        10 DIM ARRAY(17
+        ERROR 14: ")" expected
+
+        10 DIM ARRAY(17)
+        20 OPEN
+        ERROR 30: "FILE" expected
+
+        20 OPEN FILE
+        ERROR 23: Operand expected
+
+        20 OPEN FILE 1
+        ERROR 21: "," expected
+
+        20 OPEN FILE 1,
+        ERROR 23: Operand expected
+
+        20 OPEN FILE 1,"TEST"
+        ERROR 21: "," expected
+
+        20 OPEN FILE 1,"TEST",
+        ERROR 43: READ/WRITE/RANDOM expected
+
+        20 OPEN FILE 1,"TEST",READ
+
+From BASIC, another feature is inherited:  the line  numbers. It 
+is incorporated in COMAL-80 because the basic idea is to be able 
+to run any BASIC program, too.
+
+It may seem strange to incorporate  a full  extended BASIC  in a 
+new language --  rather like putting  a Ford-T  engine in  an MG 
+Sport -- but the intention is very clear.  Even programmers  are 
+slaves  of  routine and,  on numerous  occasions, it  has proven 
+extremely  difficult  to  make  them  start  all over  on a  new 
+language. That is why COMAL-80 offers the programmer a chance to 
+work as if it was the  good old  BASIC, and  slowly move  to the 
+expanded facilities when the need occurs. Not only can one still 
+be  a  BASIC  freak  and  run  COMAL-80, but  even the  valuable 
+programs already made in BASIC can run in COMAL-80. For the sake 
+of honesty, BASIC has a lot of dialects and some of them  are in 
+fact contradictory; therefore, some minor editorial  corrections 
+may be needed, but certainly no routines need reprogramming.
+
+Though the line numbers are incorporated,  there is  no need  to 
+use them, as all references to a program can be done by  labels. 
+There is no need to keep track of absolute references such as
+
+        30 GOTO 5000
+
+although it can be done, it could as well be
+
+        30 GOTO start
+
+for which "start" has been defined in another line, such as
+
+        5000 LABEL start
+
+Another  significant  difference,  which  actually  makes   this 
+language so powerful, is the structured  part which,  as already 
+mentioned, is taken in from Pascal.
+
+First of all, the procedure concept: this instruction is roughly 
+an expansion of GOSUB in BASIC, but significantly more powerful. 
+The instruction has the form of:
+
+        PROC name
+        ...
+        ENDPROC name
+
+"name" which may be called from any part of the program by the 
+instruction
+
+        EXEC name
+
+Parameters may be transferred to a procedure, which may even  be 
+declared closed. This gives the advantage  of allowing  the same 
+variable names to be used both inside and  outside a  procedure. 
+Such  closing  may  again   be  opened   by  using   the  GLOBAL 
+instruction. Obscure procedure names  are no  longer needed,  as 
+all  names  may include  up to  16 characters.  Meaningful names 
+improve the readibility and the understanding of a program.
+
+COMAL-80   includes   conditional   instructions.    The   BASIC 
+instruction IF...THEN  is of  course included,  but it  has been 
+heavily expanded to the combined IF instruction:
+
+        IF...(THEN)...(ELIF)...
+          (ELSE)...(ENDIF)
+
+In the same way ON i GOTO k,l,m may be used or substituted by  a 
+stronger term:
+
+        CASE...(OF)...WHEN...
+            (OTHERWISE)...ENDCASE
+
+Repeating  instructions  known from  BASIC: FOR...TO...NEXT  may 
+even  be  used backwards  in COMAL-80,  replacing TO  by DOWNTO. 
+Further, it includes 3 powerful instructions:
+
+        WHILE...ENDWHILE
+        REPEAT...UNTIL
+        LOOP...EXIT...ENDLOOP
+
+-- instructions which certainly make working a lot easier to the 
+programmer.
+
+The above examples can give but an impression of the significant 
+benefits included in COMAL-80. Hopefully, the  following program 
+will prove more than this brief description.
+
+However, one more advantage deserves mentioning: the PRINT USING 
+function has been expanded to have a certain resemblance to  the 
+FORMAT instruction used in other languages, and it is allowed to 
+write:
+
+        100 a$ := "##.###"
+        ...
+        200 PRINT USING a$:variable
+
+
+Sample Metanic COMAL program
+----------------------------
+
+0010 // Polyny (Dutch program) 27-11-1980
+0020 INPUT "Epsilon: ": eps
+0030 DIM prog$ OF 10
+0040 DIM ind(0:50),poly(-1:50)
+0050 gr#:=0; rod:=0; grop#:=0
+0060 MAT ind:=0
+0070 MAT poly:=0
+0080 REPEAT 0090   INPUT "Program: ": prog$
+0100   CASE prog$ OF 
+0110   WHEN "ind"
+0120     ind
+0130   WHEN "ud"
+0140     ud
+0150   WHEN "retab"
+0160     retab
+0170   WHEN "rod"
+0180     rod
+0190   WHEN "vaerdi"
+0200     vaerdi
+0210   WHEN "div"
+0220     horner
+0230   WHEN "dif"
+0240     dif
+0250   WHEN "kwa"
+0260     kwa
+0270   OTHERWISE
+0280     // Do nothing
+0290   ENDCASE
+0300 UNTIL prog$=""
+0310 PROC ind CLOSED
+0320   GLOBAL ind, gr#, poly, grop#
+0330   INPUT "Grad: ": gr#
+0340   grop#:=gr#
+0350   FOR i#:=gr# DOWNTO 0 DO
+0360     PRINT USING "##: ": i#,
+0370     INPUT "": ind(i#)
+0380     poly(i#):=ind(i#)
+0390   NEXT i#
+0400   poly(-1):=0
+0410 ENDPROC ind
+0420 PROC ud CLOSED
+0430   GLOBAL poly, gr#
+0440   FOR i#:=gr# DOWNTO 0 DO
+0450     PRINT USING "-##: ": i#,
+0460     PRINT poly(i#)
+0470   NEXT i#
+0480   PRINT "-----------------"
+0490   PRINT "Rest: "; poly(-1)
+0500   PRINT
+0510 ENDPROC ud
+0520 PROC horner CLOSED
+0530   GLOBAL poly, gr#,rod
+0540   x:=poly(gr#)
+0550   FOR i#:=gr#-1 DOWNTO -1 DO
+0560     y:=poly(i#); poly(i#):=x; x:=x*rod+y
+0570   NEXT i#
+0580   poly(gr#):=0; gr#:=-1
+0590   PRINT "Rest: ",
+0600   PRINT poly(-1)
+0610   PRINT
+0620 ENDPROC horner
+0630 PROC retab CLOSED
+0640   GLOBAL ind, poly, gr#, grop#
+0650   gr#:=grop#
+0660   FOR i#:=gr# DOWNTO 0 DO
+0670     poly(i#):=ind(i#)
+0680   NEXT i#
+0690   poly(-1):=0
+0700 ENDPROC retab
+0710 PROC rod CLOSED
+0720   GLOBAL poly, gr#, rod, eps
+0730   INPUT "A,B: ": a,b
+0740   fa:=fna(a); fb:=fna(b)
+0750   IF fa=0 THEN
+0760     m:=a
+0770   ELIF fb=0 THEN
+0780     m:=b
+0790   ELIF SGN(fa)=SGN(fb) THEN
+0800     PRINT "a: "; fa; "    "; "B: "; fb; "ens fortegn!"
+0810   ELSE
+0820     IF fa>0 THEN a:=+b; b:=a-b; a:=-b
+0830   ENDIF
+0840   REPEAT
+0850     m:=(a+b)/2; fm:=fna(m)
+0860     IF fm<0 THEN
+0870       a:=m
+0880     ELIF fm>0 THEN
+0890       b:=m
+0900     ELSE
+0910       a:=m; b:=m
+0920     ENDIF
+0930   UNTIL ABS(b-a)<eps
+0940   PRINT m; " ("; fm;
+0950   rod:=m
+0960 ENDPROC rod
+0970 PROC vaerdi CLOSED
+0980   GLOBAL gr#, poly
+0990   DIM a$ OF 20
+1000   REPEAT
+1010     INPUT "Start: ": a$
+1020     slut:=a$=""
+1030     IF slut THEN GOTO hopud
+1040     fra:=VAL(a$)
+1050     INPUT "Til: ": a$
+1060     IF a$<>"" THEN
+1070       til:=VAL(a$)
+1080       INPUT "step: ": a$
+1090       IF a$="" THEN
+1100         stp:=1
+1110       ELSE
+1120         stp:=VAL(a$)
+1130       ENDIF
+1140     ELSE
+1150       til:=fra; stp:=1
+1160     ENDIF
+1170     FOR x:=fra TO til STEP stp DO
+1180       PRINT x; ": "; fna(x)
+1190     NEXT x
+1200     hopud:
+1210   UNTIL slut
+1220 ENDPROC vaerdi
+1230 DEF fna(x)
+1240   GLOBAL poly, gr#
+1250   y:=poly(gr#)
+1260   FOR i#:=gr#-1 DOWNTO 0 DO
+1270     y:=y*x+poly(i#)
+1280   NEXT i#
+1290   fna:=y
+1300 ENDDEF fna
+1310 PROC dif CLOSED
+1320   GLOBAL poly, gr#
+1330   k1:=poly(gr#)
+1340   FOR i#:=gr# DOWNTO 1 DO
+1350     k2:=k1; k1:=poly(i#-1); poly(i#-1):=k2*i#
+1360   NEXT i#
+1370   gr#:=-1; poly(-1):=0
+1380 ENDPROC dif
+1390 PROC kva CLOSED
+1400   GLOBAL poly, gr#
+1410   IF gr#<>2 THEN
+1420     PRINT "Grad = "; gr#
+1430   ELSE
+1440     a:=poly(2); b:=poly(1); c:=poly(0)
+1450     d:=b*b-4*a*c
+1460     IF d<0 THEN
+1470       PRINT "Ingen rod. d = "; d
+1480     ELSE
+1490       IF b<0 THEN
+1500         x1:=(-b+SQR(d))/2/a
+1510       ELSE
+1520         x1:=(-b-SQR(d))/2/a
+1530       ENDIF
+1540       x2:=c/a/x1
+1550       PRINT "x1, x2 = "; x1; "    "; x2
+1560     ENDIF
+1570   ENDIF
+1580 ENDPROC kva
+
+
+How does it work?
+-----------------
+
+As mentioned, COMAL-80 has been implemented  as an  interpreter, 
+the advantages of which are numerous,  but leaving  us with  the 
+drawback of lower speed. However, there  are ways  to compensate 
+for this and increase the speed.
+
+This program has been divided into three parts,  each doing  its 
+own job.
+
+Part one consists of two sub-modules: the editor and the  syntax 
+control working while keying in the  program. The  editor allows 
+writing, deleting, and inserting anywhere on the line,  and upon 
+completion,   indicated   by  pressing   RETURN,  the   line  is 
+transferred to the syntax control, which checks the line against 
+COMAL-80 specifications. If a syntax error is found, the line is 
+redisplayed, the cursor indicating the error location. Also,  an 
+error  code  and  one  of more  than 200  error messages,  which 
+include over 3,000 letters, explains what is wrong. At the  same 
+time, it returns to the edit mode, ready  for corrections.  This 
+repeats  until  the line  is accepted,  upon which  the line  is 
+transferred to internal format, ready for later execution.
+
+Module 2 -- the prepass -- takes over when the program is  to be 
+executed. This  module concludes  the translation  into internal 
+format. Among other things,  it extends  referring lines  by the 
+absolute memory address for the lines referred to.
+
+The program is now brought to a format in which  the 3rd  module 
+can work very rapidly. In fact, the runtime  module of  COMAL-80 
+has proved in several cases to be faster than BASIC on a  16-bit 
+minicomputer.
+
+
+Availability
+------------
+
+In March 1981, COMAL-80 was known to be available for  different 
+micros  running  the CP/M  operating system,  and by  now it  is 
+probably available for other systems, too.
+
+
+Conclusion
+----------
+
+The implementation  of COMAL-80  has demonstrated  that a  great 
+idea may as well come from a small country, and  that, even  the 
+complicated task it is to turn the idea into a new EDP language, 
+can be done to the extent of gaining international recognition.
+
+
+EOF
+

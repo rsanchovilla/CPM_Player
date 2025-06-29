@@ -1,0 +1,296 @@
+                SEARCH: A Free-format Text Retrieval System
+
+        SEARCH is a file-searching program that allows you to search 
+multiple text files for various words or phrases.  Unlike simpler search 
+programs, SEARCH can deal with "items" of text larger than single lines, 
+and can search for several words or phrases at a time.  SEARCH  can 
+directly search files within libraries, as well as SQUEEZED and CRUNCHED 
+files.  It is a somewhat stripped-down version of the ESEARCH  utility 
+available on some RCP/M systems.
+
+                              THE FINE PRINT
+
+        Copyright (c) 1987,1988 by Eric Bohlman.  SEARCH and its 
+documentation may be  freely copied and used for non-commercial purposes.  
+Commercial use or  distribution for profit requires permission of the 
+author.  Address any inquiries to:
+
+    Eric Bohlman
+    P.O. Box 97
+    Wilmette, IL 60091
+
+                            SYSTEM REQUIREMENTS
+
+        SEARCH requires CP/M 2.2 or higher and at least 43K of TPA to use 
+all features.  More memory speeds up searches by eliminating the need to 
+buffer text items on disk.
+
+                                 OPERATION
+
+        There are two ways to invoke SEARCH.  The first is to simply type 
+SEARCH.  In this case you will be prompted repeatedly for the files you 
+wish to search after you have told it what to search for.  The second is to 
+specify the files, search string(s) and optional modifier switches on the 
+command line (see below).  If you use the prompting method, the first thing 
+SEARCH will do is ask you for what to search for.  You may enter a word or 
+phrase.  After you enter it, you will be asked "AND?".  You may enter 
+another word or phrase at this point; if so, an item will be retrieved only 
+if it contains both words or phrases.  You can AND up to 16 words or 
+phrases.  When you're done ANDing, press return n response to the AND 
+prompt.  You will then be asked "OR?".  At this point you can enter another 
+word or phrase, possibly including more AND's.  An item will match if 
+either of the ORed words or phrases is present.
+
+                                  EXAMPLE
+
+    Search for? TEXT
+    AND? RETRIEVAL
+    AND?
+    OR? SEARCH
+    AND?
+    OR?
+
+Would retrieve all text items containing both "text" and "retrieval" as 
+well as those containing "SEARCH" (case is not significant in search 
+terms).  Answering the OR? prompt with a return completes specification of 
+what to search for.
+
+        You can also tell SEARCH to look for items that DO NOT contain a 
+given word.  To do this, just type "!" in front of a word at any of the 
+prompts.
+
+                                  EXAMPLE
+
+    Search for? TEXT
+    And? !GRAPHICS
+
+Would retrieve those items that contain "text" and also don't contain 
+"graphics."  Note that "!" has a special meaning only when it appears at 
+the beginning of a word or phrase; otherwise it is used literally.  If you 
+need to search for a word that begins with a "!" precede it with a 
+backslash.
+
+        When searching, SEARCH treats any number of spaces as equivalent to 
+one space, and treats CR/LF pairs as a single space, so a multi-word phrase 
+will be matched even if it falls across a line boundary in text with a left 
+margin.  If a line ends with a dash, SEARCH will ignore the dash and the 
+CR/LF, so that hyphenated words will be matched properly.
+
+        In addition, you can use the caret "^" character to control left- 
+and right-embedding of words.  A caret at the beginning or end of a word 
+(or phrase) means that the word will not be matched if it is embedded in 
+another word.  For example, "ion" would match "ion," "ionized," "emotion" 
+and "emotionally." "^ion" would match only words beginning with "ion," 
+"ion^" would match only words ending with "ion" and "^ion^" would match 
+"ion" exclusively.
+
+        At this point SEARCH will prompt you for a file to search.  If you 
+just enter return, you will exit SEARCH (you come back to this prompt when 
+you are done searching a file).  You may enter a file specification, which 
+may include a ZCPR-style drive/user specification or named directory 
+reference.  You may use wildcards in your file name.  You can also specify 
+a library member by following the filename with a space and a second 
+filename (obviously without the duspec).  The library member name may 
+contain wildcards, and you can mix wildcards in both filenames.  You can't 
+use wildcard user numbers, though.
+
+                                 EXAMPLES
+
+    myfile.doc
+    b12:myfile.doc
+    doc:myfile.doc         (if you have ZCPR3)
+    a2:*.doc
+    mylbr list.doc
+    mylbr.lbr list.doc
+    mylbr.txt list.doc (treated as mylbr.lbr list.doc)
+    mylbr *.doc
+    *.lbr *.doc
+    *.* *.doc (treated as *.lbr *.doc)
+
+        Next you will be asked what separator to use for the file.  A 
+separator is a line that breaks the file into items. The first item in the 
+file begins with the first line and ends with the first separator line; the 
+next item starts after the separator and ends with the next separator or 
+end-of-file, whichever comes first.  If the separator is not present in the 
+file, the entire file is treated as one item.  A line must match the 
+separator literally except for case and trailing spaces; if the separator 
+were "----" only lines consisting ONLY of four dashes would be treated as 
+separators.  Just entering return at the prompt means use a blank line for 
+the separator; the special value "l" (or anything beginning with "l") 
+(either case is ok) means to treat each line as one item.  As you can see, 
+an item has to be composed of lines (text followed by CRLF); for example, a 
+period as separator implies that items are separated by lines containing 
+just a period rather than implying that each sentence of text is an item.
+
+        Note that the comparison for the separator is case-sensitive.  Of 
+course, this matters only if the separator contains letters.  However, 
+either an "l" or "L" indicates line-by-line matching.
+
+        Now SEARCH will open each file that matches your filename 
+specification.  If one of the files can't be opened for some reason, it 
+will say so.  SEARCH reads the first two characters of each file (or 
+library member) to determine whether it is normal, SQUEEZED or CRUNCHED; it 
+does not require a Q or Z in the extension.  If SEARCH encounters a 
+matching item, the filename will be displayed (for the first item only) and 
+the item will be displayed.  When the end of the file is reached, SEARCH 
+will go on to the next file if any.  When there are no more files, SEARCH 
+will go back to the FILE?  prompt, at which point you may specify more 
+files to be searched (for the same words or phrases), or you may exit.  (by 
+pressing return at the prompt).
+
+        While a file is being searched, you can abort back to CP/M with 
+ctrl-c.  If an item is being displayed, you can use ctrl-x to stop 
+displaying that item and start searching for the next item in the file.  If 
+nothing is being displayed, i.e. SEARCH is searching for the next item, 
+ctrl-x will stop searching the current file and start searching the next 
+one.  You can use ctrl-s and ctrl-q to pause and resume the display of 
+items.
+
+                 SPECIFYING ARGUMENTS ON THE COMMAND LINE
+
+        The second way to use SEARCH is to specify your arguments on the 
+command line.  The syntax for this is:
+    SEARCH <FILESPEC> <SEPARATOR> -<SWITCHES> =<SEARCH STRINGS>
+The switches and the search strings can appear in any position on the 
+command line because they begin with distinguishing characters.  The first 
+argument that doesn't begin with either special character is the filespec, 
+and the second one is the separator.  Note that arguments are normally 
+separated by spaces; if an argument contains a space (such as a library 
+member filespec), it must be enclosed in quotes.  Note also that the proper 
+way to specify a blank line as a separator is "".  If you so desire, you 
+can omit any of the filespec, separator, and search strings; if so you will 
+be prompted for the missing items.  Remember that if you enter the 
+separator on the command line and it contains any letters, they will be 
+entered in upper case because of the way CP/M processes command lines.  If 
+you need to enter lower case characters in a separator, omit it from the 
+command line and enter it at the prompt.  You don't need to worry about 
+case in search strings; the matching there is case-insensitive.
+
+                                 SWITCHES
+
+        You can change the behavior of SEARCH by using command-line 
+switches.  All switches consist of a - followed by a letter.  You can also 
+specify several switches by using a - followed by several letters.  The 
+following switches can be used:
+
+    -F  Don't display the names of files with matches.  This is useful if 
+        you are redirecting output into a file (see below).
+
+    -M  Pause output every 23 lines (this only counts item display lines, 
+        not filename display lines).
+
+    -N  When displaying items, show the line number within the file on each 
+        line of each item.
+
+    -S  Show filenames only.  If this option is selected, SEARCH will stop 
+        searching each file as soon as it detects a match.  You would use 
+        this if you wanted only a list of files that contained a word or 
+        phrase.
+
+    -U  Show filenames for unsuccesful searches.  If you select this, 
+        SEARCH will display the filename of each file searched.  If no 
+        matches can be found, a message to that effect will be displayed
+        next to the filename.  Note that the F option overrides this.
+
+                              SEARCH STRINGS
+
+        When you enter search strings on the command line, you separate 
+them with & for AND and | for OR.  Remember that if any of your search 
+strings contains a space, you must enclose the entire search-string 
+argument, starting with the =, in quotes.  Also note that you should NOT 
+type spaces before or after the & or | symbols unless you really want to 
+match a literal space before or after a word.
+
+        If you need to include a literal '&' or '|' in a search string, 
+precede it with a backslash ('\').  If you need a literal backslash, use 
+'\\'.  This is known as an escape character.
+
+        & takes precedence over |.  Search expressions cannot be 
+parenthesized.  If you need the effect of "this&(that|those)" you have to 
+write it out as "this&that|this&those."
+
+                                 EXAMPLES
+
+    SEARCH B3:MYFILE L -MF =CP/M&EDITOR|MS-DOS&COMPILER
+
+    (Note that if the search string had been written as
+    =CP/M & EDITOR | MS-DOS & COMPILER
+    two things would be wrong.  First, the space after CP/M would terminate 
+    the argument (this is a property of the C compiler with which SEARCH 
+    was written).  Second, even if the argument were enclosed in quotes, 
+    the spaces would be treated literally, with the result that, for 
+    example, EDITOR would be matched ONLY if it were both preceded and 
+    followed by spaces, e.g. "EDITOR." wouldn't match.
+
+    SEARCH "B15:MYLBR *.TXT" "" "=TEXT SEARCHING&COMPUTER PROGRAMS"
+
+                             OUTPUT REDIRECTION
+
+        You can redirect the output of SEARCH into a file by including on 
+the command line an argument of the form ">file." For example,
+    SEARCH >LOG.TXT
+would send the "Searching..." messages and the text of the matched items 
+(but not prompts to you) into a file called LOG.TXT.
+    SEARCH >LST:
+would send the output to the printer.  User specs are not allowed in the 
+redirection argument (which is implemented by the C compiler used to 
+compile SEARCH; the program itself thinks it's writing to the screen).  The 
+output file will be silently overwritten if it already exists.
+
+                              "INSPECT" MODE
+
+        SEARCH has a special option which allows you to inspect each 
+retrieved item and decide whether or not to append it to the end of a text 
+file.  For example, you could search the .FOR file of an RCPM system, and 
+make a list of those programs that you don't already have but would like to 
+get.
+
+        To activate inspect mode, you need to use the switch "-I" 
+immediately (no spaces) followed by a file name.  Then as soon as an item 
+has been displayed, you will be prompted with "Append (y/N)?"  If you 
+answer yes, the item will be appended to the end of the file that you 
+named.
+
+                                  EXAMPLE
+
+    SEARCH B1:MYRCPM.FOR ---- -IIWANT.LST =CP/M&!MS-DOS 
+    queries every hit before appending to file IWANT.LST
+
+
+                               QUICK SUMMARY
+
+        Typing "SEARCH ?" or "SEARCH /" will give you a quick summary of 
+SEARCH's options.
+
+                                PATCH AREA
+
+        SEARCH includes an area which you can alter with a program like 
+PATCH or DU.  The locations there allow you to change certain defaults:
+
+010BH:  Filename display.  If this is nonzero, it reverses the F option, 
+        i.e. filenames will not be displayed unless the F option is used.
+010CH:  "More" option.  A nonzero here reverses the M option.
+010DH:  Numbering option.  A nonzero here reverses the N option.
+010EH:  Skip option.  A nonzero here reverses the S option.
+010FH:  Unsuccessful file display option.  A nonzero here reverses the U
+        option.
+0110H:  Character that represents AND in search strings.  Default is '&'.
+0111H:  Character that represents OR in search strings.  Default is '|'.
+0112H:  Character that introduces search strings.  Default is '='.
+0113H:  Character that introduces switches.  Default is '-'.
+0114H:  Escape character for search strings.  Default is '\'.
+0115H:  Character that represents NOT in search strings.  Default is '!'.
+
+                           TEMPORARY FILE USAGE
+
+        SEARCH may need to create a temporary file for buffering purposes.  
+SEARCH maintains an item text buffer which is either 8K or the largest 
+amount of memory it can find less than 8K (this can be VERY small in 
+systems with small TPA).  If an item won't fit, it "spills over" to the 
+temporary disk file, which is called A15:ESEARCH.TMP.  Search takes care of 
+deleting the temporary file when it no longer needs it.  All this detail 
+has very little relevance to the user of SEARCH, except that with all the 
+publicity about "viruses" going around, it's a good idea to point out why a 
+program does disk writes when you wouldn't think it would have to.
+rch strings.  Default is '|'.
+0112H:  Character that introduces search st

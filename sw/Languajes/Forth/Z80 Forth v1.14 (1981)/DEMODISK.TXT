@@ -1,0 +1,289 @@
+Contents of file FORTH.SCR on Z-80 FORTH distribution disk
+-----------------------------------------------------------
+
+We suggest that you do not alter the distribution file, but  copy  the
+files FORTH.COM and FORTH.SCR onto a fresh disk for your own use.  You
+may then use the editor to erase the demonstration programs, retaining
+the various editors and utility functions.
+
+
+
+Screen(s)       Contents
+
+ 0              System identification and credits.
+
+ 1              Memory allocation.  A short program  which  determines
+                the  amount  of user memory available in a CP/M system
+                and allocates it as Forth virtual memory disk buffers.
+                Screen  2  is  called  automatically  to  display  the
+                resulting  system  configuration.   To execute type: 1
+                LOAD <return>.  The maximum number of disk buffers  to
+                be  used is defined by the constant MAX.BUFFERS, which
+                is  set  at  32  on  the  program  supplied  with  the
+                distribution  disk.   You  may  wish  to  modify  this
+                constant depending on the type of application programs
+                you are running and the respective speeds of your disk
+                drive and CPU.  For programs which repeatedly access a
+                small set of disk blocks, set the value of MAX.BUFFERS
+                large enough so that  all  referenced  blocks  can  be
+                retained in RAM.  Programs that randomly access a very
+                large   set  of  disk  blocks  probably  will  not  be
+                enhanced, and in fact if MAX.BUFFERS is defined  as  a
+                large  enough  number  programs  may  slow  down  (the
+                overhead of searching  memory  for  the  proper  block
+                becomes  greater  than  the  overhead of reading it in
+                from the disk).
+
+ 2              Display system configuration including amount of  user
+                memory,  number  of  virtual  memory disk buffers, and
+                hardware-dependent parameters.   To  execute  type:  2
+                LOAD CONFIGURATION <return>.
+
+ 3              Utility  to  create  a  new FORTH.COM file with user's
+                application specific extensions.  After debugging  and
+                compiling  your  customized  utilities,  type:  3 LOAD
+                <return>.  The  program  will  reset  the  cold  start
+                literals to include your added functions, then it will
+                exit  to  CP/M after displaying instructions to SAVE a
+                new COM file.  For example, to create a FORTH.COM file
+                with precompiled Screen Editor, you  would  enter  the
+                FORTH  interpreter, type 20 LOAD <return>, then 3 LOAD
+                <return>, and follow the instructions to  SAVE  a  new
+                COM file.
+
+ 4-5            Reserved for Interpreter/Compiler error messages.
+
+ 6              Reserved for Assembler error messages.
+
+ 7              Reserved for Data Base Management error messages.
+
+ 8              Integer    1-dimensional   and   2-dimensional   array
+                definitions.   During  compilation,  "n   ARRAY   xxx"
+                creates an array of n words named xxx, and initializes
+                it  to  zeros.   During  execution, "n xxx" leaves the
+                indexed address into the  array  on  the  top  of  the
+                stack.   During  compilation, "x y 2ARRAY xxx" creates
+                an  array  with  dimensions  x  by  y  named  xxx  and
+                initializes  it to zeros.  During execution, "x y xxx"
+                returns  an  indexed  address  into  the   array   for
+                coordinates  (x,y).   For  example, "4 10 xxx @" would
+                fetch the contents of coordinate (4,10) in array xxx.
+
+ 10-14          fig-FORTH  portable   line   editor.    See   separate
+                documentation  section  in  User's manual.  If you are
+                using BIGFORTH.COM, the line editor is already part of
+                the load file, and does not need to be  compiled  from
+                the disk screen file before use.
+
+ 17             INTERFACE  AGE  Benchmark  program.   May  be  used to
+                compare speeds of different FORTH systems.  To compile
+                type: 17 LOAD <return>.  To run benchmark  type:  1000
+                BENCH  <return>.   See  FORTH DIMENSIONS II/4 page 112
+                for timing comparisons.  This program runs on our Z-80
+                FORTH system at 4 mHz in 2 minutes 37 seconds.
+
+ 18-19          Execution variables and arrays, by M. A. McCourt.  See
+                FORTH DIMENSIONS II/4 page 109. 
+
+ 20-22          Screen  Editor  for  CRT's  with   cursor   addressing
+                capability.   See  separate  documentation  section in
+                User's manual.   Terminal dependent for cursor control
+                functions loaded from screen #46.
+
+ 23             Print a series of triads as 66 line pages suitable for
+                listing  on  a  printer  without form feed capability.
+                For example, to compile the function and print screens
+                4  through  25,  you  would  type:  23   LOAD   4   25
+                PRINT-TRIADS ^P <return>.
+
+ 24             ENIUQ,  a  self-reproducing  program in FORTH by Lyall
+                Morrill, from FORTH  Dimensions  II/5  page  140.   To
+                execute program type 24 LOAD <return>.
+
+ 25-28          The  Theory  that  Jack  Built,  a  poem  in  Forth by
+                Frederick Winsor.  To view  the  poem  type:  25  LOAD
+                <return>.   Depress  any  key  to  display  successive
+                stanzas.
+
+ 29-30          Eight  Queens  Problem,  by  Jerry  Levan.   This   is
+                included as a demonstration of the use of recursion in
+                Forth.  To execute type: 29 LOAD <return>. 
+
+ 31             Cursor control functions for TVI 912C terminal.
+
+ 32-37          Towers  of  Hanoi,  by  Peter  Midnight.   This  is an
+                amazing demonstration of the speed and power of  Forth
+                in  the hands of a skilled programmer.  The program is
+                terminal dependent for  the  Clear-Screen  and  cursor
+                addressing functions which are loaded from screen #46.
+                To execute type: 32 LOAD 10 TOWERS <return>.
+
+ 38-44          Breakforth  Game  by Arnold Schaeffer, highly modified
+                for use on standard CRT terminal (original version was
+                for  TRS-80  with  mapped  video).   The  program   is
+                terminal     dependent     for     Clear-Screen    and
+                cursor-addressing functions loaded  from  screen  #46,
+                you  should also modify the definition of "MOVEPADDLE"
+                for the keys you wish  to  move  the  paddle  left  or
+                right.   This program is system and hardware dependent
+                in a variety of ways and will require some fine-tuning
+                to operate satisfactorily.  In particular, the routine
+                "PADDLE" reads the terminal status  port  directly  to
+                see  if  a key has been depressed, you must modify the
+                port number and the status bit  for  your  serial  I/O
+                board.   As  distributed, the "," key moves the paddle
+                left, the "."  key moves the paddle right.
+
+ 45             Random  Number Generator, by J.  E.  Rickenbacker.  In
+                order to compile the random  function  type:  45  LOAD
+                <return>.  Then any number followed by the word RANDOM
+                will  return  a  random  value  between  zero and that
+                number.  For example, 50 RANDOM will  return  a  value
+                between  0  and  49.   A  short  program  to test this
+                function:
+                45 LOAD : TEST 100 0 DO 100 RANDOM . LOOP ; TEST
+
+ 46             Cursor  control  functions for demonstration programs,
+                includes Clear-Screen,  Home,  Clear  to  End-of-Line,
+                Clear  to  End-of-Screen,  and Cursor Addressing.  The
+                distribution file has  the  functions  set  up  for  a
+                Beehive  B-100 terminal.  These routines may be easily
+                modified for other  terminal  types,  however  do  not
+                change  the  stack operands or results if you wish the
+                demonstration programs to work properly.  Screens  are
+                supplied  elsewhere  in  the  distribution  file for a
+                number of common terminal types, if one  of  these  is
+                suitable  for  your CRT use the line editor to copy it
+                into screen #46.
+
+ 47             Console integer input routine.  Used to read a  single
+                precision  (16 bit) number from the keyboard and leave
+                it on top of the  stack.   To  compile  type  47  LOAD
+                <return>.  To read a number from the console and leave
+                it  on  top  of the stack, your program should execute
+                #IN.
+
+ 48             Cursor  control functions for ADDS Regent 25 terminal.
+                Exactly the same operands and results as screen #46.
+
+ 49             Cursor  control  functions  for  Beehive  B-100   CRT,
+                provided as a backup for screen #46.
+
+ 50-51          Trig  lookup  routines,  provides  SIN  and  COS  to 4
+                significant digits.  See BYTE, August 1980, page  122.
+                Before  using  these  functions,  your  program should
+                compile the lookup table  and  glossary  additions  by
+                executing  50  LOAD  <return>.  Example: 45 SIN leaves
+                the result 7071 on the stack.
+
+ 52             Case  Statement  by  Charles  E.   Eaker.   See  FORTH
+                Dimensions,  Vol.   II,  No.  3, page 37.  Defines the
+                FORTH words CASE, OF, ENDOF,  and  ENDCASE.   See  the
+                Screen  Editor  in  screens  #20-22  which  uses these
+                functions to decode the keyboard input, also the  Z-80
+                Assembler   which   uses   them   to   parse  register
+                assignments.
+
+ 53             String definition and string  console  input.   During
+                compilation,  "n STRING xxx" creates a string array of
+                n characters named xxx and initializes  it  to  nulls.
+                During  execution,  "n  xxx" leaves an indexed address
+                into the string array on top  of  the  stack.   During
+                execution,  "n  xxx $IN" reads a character string from
+                the console, and  stores  it  into  string  array  xxx
+                starting  at  offset  n.  The input is terminated by a
+                carriage return or if the array is filled.
+
+ 54             Case Statement by Karl Bochert  and  Dave  Lion.   See
+                FORTH  Dimensions, Vol.  II, No.  3, page 50.  Defines
+                the words CASE, ENDCASE, and ENDCASES.  Less  powerful
+                than the implementation by Dr.  Eaker.
+
+ 55             Demonstration  of Bochert/Lion case statement.  To try
+                it type: 54 LOAD 55 LOAD <return>
+
+ 56             Cursor control functions for Lear ADM3 CRT.  
+
+ 57             Cursor control functions for Soroc IQ120 CRT.
+
+ 58-61          The Game of Life, a cellular automata invented by John
+                P.  Conway and popularized by  Martin  Gardner.   This
+                implementation  runs rather slow and could be improved
+                dramatically  by   recoding   GENERATE   in   assembly
+                language.   The  program  is  terminal  dependent  for
+                cursor control routines loaded from  screen  #46.   To
+                execute   the  program  type  58  LOAD  n  GENERATIONS
+                <return>,  (for  example  58  LOAD  10   GENERATIONS),
+                picking a small number n until you get some experience
+                with  the  program.   When  the  program  asks for the
+                beginning pattern, push either the space  or  the  '*'
+                key  to  set  up  live cells.  The carriage return key
+                will move the cursor to a new line, the line feed  key
+                moves  the  cursor straight down, the delete key backs
+                up the cursor, and the escape key signals that you are
+                finished   entering   the   pattern.    For    further
+                information  see  the  mathematical  games  section in
+                Scientific American, February 1971.
+
+ 62             Some simple timing functions for FORTH, which  can  be
+                used  to  compare  the  speed of different interpreter
+                versions.
+
+ 63             Debugging  aids to display stack contents.  To compile
+                these routines execute 63 LOAD.  To display the  stack
+                without changing its contents, include the word .STACK
+                in  your  program  at the desired execution point.  On
+                CRT terminals, you may use the word CRT.STACK together
+                with the cursor addressing functions  to  display  the
+                stack in a convenient area of the screen.
+
+ 64-68          FORTH  decompiler.   This program will decode and list
+                the "top layer" of any "high level  defined"  word  in
+                the  glossary,  with  the  exception  of  a few system
+                functions such as  COLD,  QUIT,  ABORT  which  do  not
+                terminate  with ";", ";S", or ";CODE".  The decompiler
+                uses some  tricks  to  determine  whether  a  word  is
+                compiled,  machine  language  primitive,  constant, or
+                variable; thus may not be directly portable  to  other
+                FORTH  interpreters.  To compile the Decompiler, type:
+                64 LOAD <return>.  To decompile a glossary  word  xxx,
+                type DIS xxx <return>.  If you are using BIGFORTH.COM,
+                the  Decompiler is already part of the load module and
+                does not need to be compiled from the disk file before
+                use.
+
+ 70-73          FORTH-79  Vocabulary  extension.   By  compiling these
+                screens, the user can extend Z-80 FORTH to include all
+                of the entire Required  Word  Set  defined  under  the
+                FORTH-79  Standard,  October  1980.   No protection is
+                provided against using  Z-80  FORTH  vocabulary  items
+                which  are  NOT  defined under FORTH-79, however.  See
+                the separate  section  of  the  user's  manual  titled
+                FORTH-79   Standard   for   explanations  of  the  new
+                vocabulary items.  To compile type: 70 LOAD <return>.
+
+ 74-77          String stack extensions by John Cassady.  Implements a
+                stack for text strings with commands fairly orthogonal
+                to the conventional FORTH numeric data stack.  See the
+                original article in BYTE, February 1981, page 152  for
+                detailed explanations.
+
+ 78-99          Z-80  Assembler.   A  separate  section  in the user's
+                manual describes the capabilities and  limitations  of
+                this  Assembler.   To  compile type: 78 LOAD <return>.
+                If using BIGFORTH.COM,  the  Assembler  vocabulary  is
+                already precompiled into the load module.
+
+ 100            Demonstration screen for the Z-80 Assembler, shows how
+                to  add a new machine language primitive to FORTH.  To
+                compile and view the screen type: 100 LOAD <return>.
+
+ 101            Memory  Dump  extension ( addr n DUMP -> ).  Display n
+                memory locations starting at address  in  the  current
+                number  base.   To  compile  type:  101 LOAD <return>.
+                Example, to  view  256  bytes  in  hexadecimal  format
+                starting  at  location  1000H,  you  would  enter  the
+                command: HEX 1000 100 DUMP <return>
+
+
+

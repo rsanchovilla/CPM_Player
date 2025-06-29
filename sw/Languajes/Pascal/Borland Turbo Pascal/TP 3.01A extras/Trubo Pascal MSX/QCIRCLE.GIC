@@ -1,0 +1,39 @@
+{  Q C I R C L E . G I C      Schnelle Kreisroutine    V 1.0   19-Mai-1987  }
+
+procedure QuickCircle (xm, ym, r: integer);
+
+  var
+   x, y, y1: integer;
+   hires:    boolean;
+
+  begin
+    x := 0;
+    y := r;
+    r := pred(r);
+    hires := (SCRMOD or 1) = 7;
+
+    while x <= y do
+      begin
+      if r < 0
+      then begin
+        y := pred(y);
+        r := r + (y shl 1);
+        end;
+      if hires then y1 := succ(y) shr 1 else y1 := y;
+      pset (xm+x, ym+y1);
+      pset (xm-x, ym+y1);
+      pset (xm+x, ym-y1);
+      pset (xm-x, ym-y1);
+      if hires then y1 := succ(x) shr 1 else y1 := x;
+      pset (xm+y, ym+y1);
+      pset (xm-y, ym+y1);
+      pset (xm+y, ym-y1);
+      pset (xm-y, ym-y1);
+      r := r - succ(x shl 1);
+      x := succ(x);
+      end;
+  end;
+
+
+
+

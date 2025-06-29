@@ -1,0 +1,411 @@
+GET "LIBHDR"
+
+
+//  These are the definitions of tags and ycodes for the MICROBCPL compiler.
+//  Note that the two are interlinked in the region of the operators, and it is
+//  not advised to alter the ordering unless it is certain that it is
+//  understood what is going on.
+
+
+//  TBYTESPERWORD may well need to be changed when using as a cross compiler.
+
+MANIFEST
+ $( tbytesperword=bytesperword
+ $)
+
+//  First the basic symbol definitions.
+
+MANIFEST
+ $( tarrow=1
+
+//  All the dyadic operators have equivalent tags and ycodes.
+
+    tpercent=tarrow+1
+    tshl=tpercent+1
+    tshr=tshl+1
+    tequals=tshr+1
+    tneq=tequals+1
+
+//  The next four must be together for purposes of extended relations.
+
+    tleq=tneq+1
+    tgeq=tleq+1
+    tgr=tgeq+1
+    tle=tgr+1
+
+//  The next nine must go together for purposes of assignment operators.
+
+    ttimes=tle+1
+    tdiv=ttimes+1
+    trem=tdiv+1
+    tand=trem+1
+    tor=tand+1
+    teqv=tor+1
+    tneqv=teqv+1
+
+//  The next six must go together as they are all monadic operators.
+
+    tplus=tneqv+1
+    tminus=tplus+1
+    tpling=tminus+1
+    tnot=tpling+1
+    tabs=tnot+1
+    tat=tabs+1
+
+//  From here on the restrictions are much less.
+
+    tcomma=tat+1
+    ttable=tcomma+1
+    tvalof=ttable+1
+    ttrue=tvalof+1
+    tfalse=ttrue+1
+    tquer=tfalse+1
+    tbra=tquer+1
+    tket=tbra+1
+    tassign=tket+1
+    tsemicol=tassign+1
+    tcolon=tsemicol+1
+    tvec=tcolon+1
+    tbe=tvec+1
+    tbreak=tbe+1
+    tloop=tbreak+1
+    tendcase=tloop+1
+    treturn=tendcase+1
+    tfinish=treturn+1
+    tgoto=tfinish+1
+    tresul=tgoto+1
+    tswitchon=tresul+1
+    tinto=tswitchon+1
+
+//  The next three must go together.
+
+    trepunt=tinto+1
+    trepwh=trepunt+1
+    trepeat=trepwh+1
+    tuntil=trepeat+1
+    twhile=tuntil+1
+    tfor=twhile+1
+    tto=tfor+1
+    tby=tto+1
+    tif=tby+1
+    tunless=tif+1
+    ttest=tunless+1
+    tcase=ttest+1
+    tdefault=tcase+1
+    tthen=tdefault+1
+    telse=tthen+1
+    tget=telse+1
+
+//  The next four must go together.
+
+    tmanif=tget+1
+    tglob=tmanif+1
+    tlet=tglob+1
+    topen=tlet+1
+    tclose=topen+1
+
+//  The last three are psuedo-symbols in as much they have no real lexical
+//  manifestation as such.
+
+    tconst=tclose+1
+    tstring=tconst+1
+    tend=tstring+1
+ $)
+
+
+//  These are the ycode definitions.
+
+MANIFEST
+ $( yfinish=1
+
+//  All the dyadic operators correspond with their symbol values.
+
+    ypercent=tpercent
+    ypling=tpling
+    ytimes=ttimes
+    ydiv=tdiv
+    yrem=trem
+    yplus=tplus
+    yminus=tminus
+    yequals=tequals
+    yneq=tneq
+    yleq=tleq
+    ygeq=tgeq
+    yshl=tshl
+    yshr=tshr
+    ygr=tgr
+    yle=tle
+    yand=tand
+    yor=tor
+    yeqv=teqv
+    yneqv=tneqv
+
+//  All the monadic operators are a fixed increment above their dyadic
+//  counterparts, or the counterparts they would have if they had them.
+
+    ymonplus=ypling+1
+    ymonmin=ymonplus+1
+    ymonpling=ymonmin+1
+    ynot=ymonpling+1
+    yabs=ynot+1
+    yat=yabs+1
+
+//  The extended relations are a fixed increment above their short
+//  counterparts.
+
+    ylongleq=yat+1
+    ylonggeq=ylongleq+1
+    ylonggr=ylonggeq+1
+    ylongle=ylonggr+1
+    yderef=ylongle+1
+    ypush=yderef+1
+
+//  The one byte pushes must be in sequential order.
+
+    ypush0=ypush+tbytesperword
+    ypush1=ypush0+1
+    ypush2=ypush1+1
+    ypush3=ypush2+1
+    ypush4=ypush3+1
+    yfalse=ypush4+1
+    ytrue=yfalse+1
+
+//  The ten ordinary assignment codes must be together and apart from YASSIGN,
+//  which must be first, are fixed increments from their dyadic operator
+//  counterparts.
+
+    yassign=ytrue+1
+    yasstimes=yassign+1
+    yassdiv=yasstimes+1
+    yassrem=yassdiv+1
+    yassand=yassrem+1
+    yassor=yassand+1
+    yasseqv=yassor+1
+    yassneqv=yasseqv+1
+    yassplus=yassneqv+1
+    yassminus=yassplus+1
+
+//  The push variable address codes must be together.
+
+    ypshdyn=yassminus+1
+    ypshglob=ypshdyn+tbytesperword
+
+//  The push-and-dereference codes must be a fixed increment above the ordinary
+//  variable push codes.
+
+    ydpshdyn=ypshglob+tbytesperword
+    ydpshglob=ydpshdyn+tbytesperword
+
+//  The function call codes must be together.
+
+    yfcall=ydpshglob+tbytesperword
+    yfcall0=yfcall+1
+    yfcall1=yfcall0+1
+    yfcall2=yfcall1+1
+    yfcall3=yfcall2+1
+
+//  The procedure call codes must be a fixed increment above their function
+//  call couterparts.
+
+    ypcall=yfcall3+1
+    ypcall0=ypcall+1
+    ypcall1=ypcall0+1
+    ypcall2=ypcall1+1
+    ypcall3=ypcall2+1
+
+//  All the one byte argument jump codes must be one greater than their full
+//  maxsized counterparts.
+
+    yjump=ypcall3+1
+    yrjump=yjump+1
+    yjfalse=yrjump+1
+    yrjfalse=yjfalse+1
+    yjtrue=yrjfalse+1
+    yrjtrue=yjtrue+1
+    yret=yrjtrue+1
+    ydeper=yret+1
+
+//  The percent assignment Y-codes must be together, starting with the YPERASS
+//  and the rest being a fixed increment above their dyadic operator
+//  counterparts.
+
+    yperass=ydeper+1
+    ypasstimes=yperass+1
+    ypassdiv=ypasstimes+1
+    ypassrem=ypassdiv+1
+    ypassand=ypassrem+1
+    ypassor=ypassand+1
+    ypasseqv=ypassor+1
+    ypassneqv=ypasseqv+1
+    ypassplus=ypassneqv+1
+    ypassminus=ypassplus+1
+    ytable=ypassminus+1
+    ystring=ytable+1
+    ydyndec=ystring+1
+    yswitchon=ydyndec+1
+    ygoto=yswitchon+1
+ $)
+
+GLOBAL
+ $( hexdigit:101
+    byte:102
+    readprog:103
+    thing:104
+    ch:105
+    pos:106
+    xx:107
+    prog:108
+ $)
+
+LET hexdigit(x)='0'<=x<='9'->x-'0',x-'A'+10
+
+LET byte(n,vector)=(hexdigit(vector%(2*n-1))<<4)+hexdigit(vector%(2*n))
+
+LET readprog(vector)=VALOF
+ $( LET buffer=VEC 80/bytesperword
+    LET x=0
+    LET y=findinput(parms)
+    IF y=0 THEN
+     $( writef("Error with file %s*n*n*n*n*n*n",parms)
+        FINISH
+     $)
+    selectinput(y)
+     $( y := 0
+         $( ch := rdch()
+            IF ch=-1 THEN RESULTIS x
+            buffer%y := ch
+            y +:= 1
+         $) REPEATWHILE ch~='*n'
+        IF byte(4,buffer)=0 THEN FOR y=1 TO byte(1,buffer) DO
+         $( vector%x := byte(y+4,buffer)
+            x +:= 1
+         $)
+     $) REPEAT
+ $)
+
+LET thing(s,n) BE
+ $( LET x=0
+    writef("%i5 : %s ",pos,s)
+    TEST n=-1 THEN
+     $( writen((prog%(pos+1)+(prog%(pos+2)<<8)+pos+1)&#XFFFF)
+        pos +:= 2
+     $)
+    ELSE IF n~=0 THEN
+     $( FOR y=1 TO n DO
+         $( pos +:= 1
+            x := (x<<8)+prog%pos
+         $)
+        writen(x)
+     $)
+ $)
+
+LET start() BE
+ $( LET pprog=VEC 16000/bytesperword
+    LET max=readprog(pprog)
+    prog := pprog
+    xx := 0
+    pos := 0
+     $( xx := prog%pos
+        SWITCHON xx INTO
+         $( CASE ypercent:thing("ypercent",0) ENDCASE
+            CASE ypling:thing("ypling",0) ENDCASE
+            CASE ytimes:thing("ytimes",0) ENDCASE
+            CASE ydiv:thing("ydiv",0) ENDCASE
+            CASE yrem:thing("yrem",0) ENDCASE
+            CASE yplus:thing("yplus",0) ENDCASE
+            CASE yminus:thing("yminus",0) ENDCASE
+            CASE yequals:thing("yequals",0) ENDCASE
+            CASE yneq:thing("yneq",0) ENDCASE
+            CASE yleq:thing("yleq",0) ENDCASE
+            CASE ygeq:thing("ygeq",0) ENDCASE
+            CASE yshl:thing("yshl",0) ENDCASE
+            CASE yshr:thing("yshr",0) ENDCASE
+            CASE ygr:thing("ygr",0) ENDCASE
+            CASE yle:thing("yle",0) ENDCASE
+            CASE yand:thing("yand",0) ENDCASE
+            CASE yor:thing("yor",0) ENDCASE
+            CASE yeqv:thing("yeqv",0) ENDCASE
+            CASE yneqv:thing("yneqv",0) ENDCASE
+            CASE ymonpling:thing("ymonpling",0) ENDCASE
+            CASE ymonplus:thing("ymonplus",0) ENDCASE
+            CASE ymonmin:thing("ymonmin",0) ENDCASE
+            CASE ynot:thing("ynot",0) ENDCASE
+            CASE yabs:thing("yabs",0) ENDCASE
+            CASE yat:thing("yat",0) ENDCASE
+            CASE ylongleq:thing("ylongleq",0) ENDCASE
+            CASE ylonggeq:thing("ylonggeq",0) ENDCASE
+            CASE ylongle:thing("ylongle",0) ENDCASE
+            CASE ylonggr:thing("ylonggr",0) ENDCASE
+            CASE yderef:thing("yderef",0) ENDCASE
+            CASE ypush:thing("ypush2",2) ENDCASE
+            CASE ypush+1:thing("ypush1",1) ENDCASE
+            CASE ypush0:thing("ypushzero",0) ENDCASE
+            CASE ypush1:thing("ypushone",0) ENDCASE
+            CASE ypush2:thing("ypushtwo",0) ENDCASE
+            CASE ypush3:thing("ypushthree",0) ENDCASE
+            CASE ypush4:thing("ypushfour",0) ENDCASE
+            CASE yassign:thing("yassign",0) ENDCASE
+            CASE yasstimes:thing("yasstimes",0) ENDCASE
+            CASE yassdiv:thing("yassdiv",0) ENDCASE
+            CASE yassrem:thing("yassrem",0) ENDCASE
+            CASE yassand:thing("yassand",0) ENDCASE
+            CASE yassor:thing("yassor",0) ENDCASE
+            CASE yasseqv:thing("yasseqv",0) ENDCASE
+            CASE yassneqv:thing("yassneqv",0) ENDCASE
+            CASE yassplus:thing("yassplus",0) ENDCASE
+            CASE yassminus:thing("yassminus",0) ENDCASE
+            CASE ypshdyn:thing("ypshdyn2",2) ENDCASE
+            CASE ypshdyn+1:thing("ypshdyn1",1) ENDCASE
+            CASE ypshglob:thing("ypshglob2",2) ENDCASE
+            CASE ypshglob+1:thing("ypshglob1",1) ENDCASE
+            CASE ydpshdyn:thing("ydpshdyn2",2) ENDCASE
+            CASE ydpshdyn+1:thing("ydpshdyn1",1) ENDCASE
+            CASE ydpshglob:thing("ydpshglob2",2) ENDCASE
+            CASE ydpshglob+1:thing("ydpshglob1",1) ENDCASE
+            CASE yfcall:thing("yfcall",1) ENDCASE
+            CASE yfcall0:thing("yfcall0",0) ENDCASE
+            CASE yfcall1:thing("yfcall1",0) ENDCASE
+            CASE yfcall2:thing("yfcall2",0) ENDCASE
+            CASE yfcall3:thing("yfcall3",0) ENDCASE
+            CASE ypcall:thing("ypcall",1) ENDCASE
+            CASE ypcall0:thing("ypcall0",0) ENDCASE
+            CASE ypcall1:thing("ypcall1",0) ENDCASE
+            CASE ypcall2:thing("ypcall2",0) ENDCASE
+            CASE ypcall3:thing("ypcall3",0) ENDCASE
+            CASE yjump:thing("yjump",-1) ENDCASE
+            CASE yrjump:thing("yrjump",1) ENDCASE
+            CASE yjfalse:thing("yjfalse",-1) ENDCASE
+            CASE yrjfalse:thing("yrjfalse",1) ENDCASE
+            CASE yjtrue:thing("yjtrue",-1) ENDCASE
+            CASE yrjtrue:thing("yrjtrue",1) ENDCASE
+            CASE yfalse:thing("yfalse",0) ENDCASE
+            CASE ytrue:thing("ytrue",0) ENDCASE
+            CASE yfinish:thing("yfinish",0) ENDCASE
+            CASE yret:thing("yret",0) ENDCASE
+            CASE ydeper:thing("ydeper",0) ENDCASE
+            CASE yperass:thing("yperass",0) ENDCASE
+            CASE ypasstimes:thing("ypasstimes",0) ENDCASE
+            CASE ypassdiv:thing("ypassdiv",0) ENDCASE
+            CASE ypassrem:thing("ypassrem",0) ENDCASE
+            CASE ypassand:thing("ypassand",0) ENDCASE
+            CASE ypassor:thing("ypassor",0) ENDCASE
+            CASE ypasseqv:thing("ypasseqv",0) ENDCASE
+            CASE ypassneqv:thing("ypassneqv",0) ENDCASE
+            CASE ypassplus:thing("ypassplus",0) ENDCASE
+            CASE ypassminus:thing("ypassminus",0) ENDCASE
+            CASE ytable:thing("ytable",-1) ENDCASE
+            CASE ystring:thing("ystring",0) pos +:= 1 FOR x=1 TO prog%pos DO
+             $( pos +:= 1 TEST ' '<=prog%pos<=#X7E THEN wrch(prog%pos)
+                    ELSE writef("**X%X2",prog%pos)
+             $) ENDCASE
+            CASE ydyndec:thing("ydyndec",1) ENDCASE
+            CASE yswitchon:thing("yswitchon",-1) ENDCASE
+            CASE ygoto:thing("ygoto",0) ENDCASE
+            DEFAULT :writef("%i5 : %n",pos,xx)
+         $)
+        pos +:= 1
+        newline()
+     $) REPEATUNTIL pos>=max
+ $)
+
+

@@ -1,0 +1,124 @@
+	              	                     	                                                                                                                                                                                                                                                                                                                                                                          
+SET PRINT IT
+ 
+Set Example---
+ 
+The SET command executes a series of "rules."  A rule is a numeric or
+character equation which may have a logical test associated with it.
+SET performs algebra on the fields within a record.
+ 
+The rules below describe the relationships among the different fields
+within the customer order record.  It includes sales tax if the customer
+lives in California, and determines the appropriate shipping charges.
+Amount is Quantity multipled by Unit Price.
+ 
+------------------------------------------------------------------------------
+ 
+ 
+<form>
+ 
+Customer:      Last Name:    {lname                }
+               Address:      {address              }
+               City:         {city                 }
+               State:        {state                }
+ 
+ 
+Product:       Product:      {prod                 }
+               Description:  {desc                 }
+               Part Number:  {pnum      }
+               Price:        {price     }
+ 
+Order:         Quantity:     {quan      }
+ 
+               Amount:       {am        }
+               Discount:     {dis       }
+               Tax:          {tax       }
+               Shipping:     {ship      }
+               ==========================
+               Total:        {tot       }
+<end>
+ 
+<rules>
+am    9,999.99 = quan * price
+dis   9,999.99 = quan * 0.10 when am <= 200
+dis   9,999.99 = quan * 0.15 when am > 200
+tax   9,999.99 = am * 0.065 when state = CA
+tax   = "No tax" when not state = CA
+ship  9,999.99 = quan * 0.05 when state = CA
+ship  9,999.99 = quan * 0.10 when state <> CA
+tot  99,999.99 = am - dis + tax + ship
+<end>
+ 
+ 
+<record>
+a {lname               <}
+b {address             <}
+c {city                <}
+d {state               <}
+e {prod                <}
+f {desc                <}
+g {pnum     >}
+h {price    >}
+i {quan     >}
+j {am       >}
+k {dis      >}
+l {tax      >}
+m {ship     >}
+n {tot      >}
+<end>
+a Joel
+b 2121 42nd Street
+c New York
+d NY
+e GLUE
+f 8 oz. Bottle
+g          101
+h        45.50
+i          200
+j
+k
+l
+m
+n
+a Five
+b 23 Greenbury Drive
+c Greenbury
+d CA
+e PAPER
+f 50 sheets white bond
+g          205
+h        25.75
+i          150
+j
+k
+l
+m
+n
+
+j     9,358.25
+k        30.75
+l       No tax
+m        20.50
+n     9,348.00
+a Marvins
+b 1020 Blake St.
+c Bluebrass
+d PN
+e PAPER
+f 50 sheets white bond
+g          205
+h        25.75
+i          125
+j     3,218.75
+k        18.75
+l       No tax
+m        12.50
+n     3,212.50
+a Green
+b Mean Joe Lane
+c Greenbay
+d MI
+e GLUE
+f 8 oz. Bottle
+g          101
+h        

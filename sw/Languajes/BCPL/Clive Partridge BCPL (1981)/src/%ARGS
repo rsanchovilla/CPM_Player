@@ -1,0 +1,25 @@
+/* module to read the commandline and fill args vector  
+   the global ARGS should be set to a suitably sized vector
+   (argvsize) in start() 
+ */
+
+GET "LIBHDR"
+
+LET getargs(V) BE      
+$(
+  LET T,I,K = ?,1,0
+  V!1 := V+maxargs+1
+  $( IF K = maxargs THEN BREAK
+     T := getword(parms, @I) // @I because it will be updated
+     TEST T%0 = 0 THEN BREAK
+     ELSE $( K +:= 1
+            copy(T,V!K)       
+            V!(K+1) := V!K + T%0/bytesperword + 1
+         $)
+  $) REPEAT
+  V!0 := K
+$)
+
+// needs %xtra, %strg, %text
+
+

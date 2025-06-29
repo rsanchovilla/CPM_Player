@@ -1,0 +1,42 @@
+
+PROGRAM Hello;
+
+PROCEDURE BDOS(WORD function, input);	EXTERNAL;
+
+CONST	{ BDOS functions }
+	printCharCmd		= 02h;
+	printStringCmd		= 09h;
+	readConsoleStringCmd	= 0Ah;
+	commandLineAddress	= 80h;
+	cr			= 13;
+	lf			= 10;
+	crlf			= cr + 256 * lf;
+	bell			= 7;
+
+BYTE	commandLine		AT commandLineAddress;
+	commandLineLength	AT commandLineAddress;
+	commandLineBufferSize	AT commandLineAddress - 1;
+	t1 = 'Hola.$';
+
+
+PROCEDURE printString(WORD stringp);
+	BEGIN
+	BDOS(printStringCmd, stringp)
+	END printString;
+
+PROCEDURE printChar(WORD char);
+	BEGIN
+	BDOS(printCharCmd, char:[1])
+	END printChar;
+
+PROCEDURE printLn;
+	STATIC BYTE crlfString = (crlf, '$':[1]);
+	BEGIN
+	printString(@crlfString)
+	END printLn;
+
+BEGIN { hello }
+	printString(@t1);
+	printLn;
+END Hello.
+

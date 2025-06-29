@@ -1,0 +1,370 @@
+h48736
+s 00358/00000/00000
+d D 1.1 83/03/15 21:12:24 tes 1 0
+c date and time created 83/03/15 21:12:24 by tes
+e
+u
+4
+U
+t
+T
+I 1
+                .Z80
+GRAF            EQU     0000CH  ; ENTRY POINT TO BIOS GRAPHICS ROUTINES
+CWIDTH          EQU     08D     ; WIDTH OF CHARACTER CELL
+CHEIGHT         EQU     10D     ; HEIGHT OF CHARACTER CELL
+XCOORD          EQU     PARM1   ; EQUATES TO SAVE SPACE
+YCOORD          EQU     PARM2
+LENGTH          EQU     PARM3
+UP              EQU     130D    ; UP ARROW KEY
+DOWN            EQU     138D    ; DOWN ARROW KEY
+LEFT            EQU     136D    ; LEFT ARROW KEY
+RIGHT           EQU     134D    ; RIGHT ARROW KEY
+UP_LEFT         EQU     135D    ; UP & LEFT ARROW KEY
+UP_RIGHT        EQU     137D    ; UP & RIGHT ARROW KEY
+DOWN_LEFT       EQU     132D    ; DOWN & LEFT ARROW KEY
+DOWN_RIGHT      EQU     131D    ; DOWN & RIGHT ARROW KEY
+CHANGE_RATE     EQU     133D    ; 5 KEY ON KEYPAD
+SLOW_RATE       EQU     01D     ; CURSOR INCREMENT FOR SLOW MOVEMENT
+FAST_RATE       EQU     10D     ; CURSOR INCREMENT FOR FAST MOVEMENT
+;
+EXTERNAL	$AT		; MICROSOFT ROUTINE TO GET ARGS FROM FORTRAN
+;
+;       SUBROUTINE DEADVN - ERASES SCREEN ON NORTHSTAR ADVANTAGE
+;
+DEADVN:         ENTRY   DEADVN
+                LD      A,0D    ; LOAD CLEAR SCREEN OPCODE
+                CALL    GRAF    ; CLEAR THE SCREEN
+                RET
+;
+;       SUBROUTINE DBADVN (XYPTS, PATTERN) - DRAW BAR ON NORTHSTAR ADVANTAGE
+;               XYPTS(1), XYPTS(2) - LOWER LEFTHAND CORNER OF BAR
+;               XYPTS(3), XYPTS(4) - UPPER RIGHTHAND CORNER OF BAR
+;               PATTERN            - FILL PATTERN
+;
+DBADVN:         ENTRY   DBADVN
+                EX      DE,HL   ; HL POINTS TO ADDRESS OF FILL PATTERN
+                AND     A       ; CLEAR CARRY BIT
+                LD      A,(HL)  ; GET LOW ORDER BYTE OF FILL PATTERN
+                RLA             ; SHIFT OVER 2 BITS FOR COMMAND BYTE
+                RLA
+                OR      041H    ; BUILD REST OF COMMAND BYTE
+                LD      C,A     ; LOAD COMMAND BYTE
+                LD      A,02D   ; LOAD RECTANGLE OPCODE
+                EX      DE,HL   ; HL POINTS TO ARRAY OF POINTS
+                CALL    GRAF    ; DRAW FILLLED RECTANGLE
+                RET
+;
+;       SUBROUTINE DPADVN (LENGTH, XYPTS, PERIMETER, PATTERN) - DRAW POLYGON
+;               LENGTH  - NUMBER OF POINTS IN POLYGON
+;               XYPTS   - POINTS OF POLYGON (X1,Y1,X2,Y2...XN,YN)
+;               PERIMETER - OUTLINE PERIMETER.  0 = NO, 1 = YES
+;               PATTERN - FILL PATTERN
+;
+DPADVN:         ENTRY   DPADVN
+                LD      (PARM1),HL      ; STORE ADDRESS OF LENGTH
+                LD      (PARM2),DE      ; STORE ADDRESS OF XYPTS ARRAY
+                LD      A,02D           ; NUMBER OF REMAINING PARAMETERS
+                LD      HL,PARM3        ; HL POINTS TO PARAMETER STORAGE AREA
+                CALL    $AT             ; STORE ADDRESS OF PERIM AND PATTERN
+                LD      HL,(PARM1)
+                LD      B,(HL)          ; GET NUMBER OF VERTICES IN POLYGON
+                AND     A               ; CLEAR CARRY FLAG
+                LD      HL,(PARM4)
+                LD      A,(HL)          ; GET FILL PATTERN
+                RLA                     ; SHIFT LEFT TWO BITS FOR COMMAND BYTE
+                RLA
+                LD      HL,(PARM3)
+                LD      C,(HL)          ; GET PERIMETER FLAG
+                OR     C                ; ADD PERIMETER FLAG TO COMMAND BYTE
+                OR      040H            ; SET REPLACE MODE IN COMMAND BYTE
+                LD      C,A             ; LOAD COMMAND BYTE
+                LD      A,01D           ; LOAD POLYGON OPCODE
+                LD      HL,(PARM2)      ; HL POINTS TO ARRAY OF POINTS
+                CALL    GRAF            ; DRAW POLYGON
+                RET
+;
+;               SUBROUTINE DLADVN (XYPTS) - DRAW LINE ON NORTHSTAR ADVANTAGE
+;                       XYPTS(1), XYPTS(2) - FIRST POINT OF LINE
+;                       XYPTS(3), XYPTS(4) - SECOND POINT OF LINE
+;
+DLADVN:         ENTRY   DLADVN
+                LD      A,01D   ; LOAD POLYGON OPCODE
+                LD      B,02D   ; LOAD NUMBER OF VERTICES
+                LD      C,051H  ; LOAD COMMAND BYTE (PERIMETER ON, SOLID FILL)
+                CALL    GRAF    ; DRAW LINE
+                RET
+;
+;               SUBROUTINE DTADVN (X, Y, LENGTH, STRING) - OUTPUT TEXT
+;                       X,Y - START POINT OF TEXT STRING (LOWER LEFT CORNER)
+;                       LENGTH - NUMBER OF CHARACTERS IN TEXT STRING
+;                       STRING - TEXT STRING
+;
+DTADVN:         ENTRY   DTADVN
+                LD      (PARM1),HL      ; SAVE ADDRESS OF X-COORDINATE
+                LD      (PARM2),DE      ; SAVE ADDRESS OF Y-COORDINATE
+                LD      A,02D           ; NUMBER OF REMAINING PARAMETERS
+                LD      HL,PARM3        ; POINTER TO PARAMTER STORAGE AREA
+                CALL    $AT             ; SAVE REMAINING PARAMETERS
+                LD      HL,(PARM1)
+                LD      E,(HL)          ; GET LOW ORDER BYTE OF X-COORDINATE
+                INC     HL
+                LD      D,(HL)          ; GET HIGH ORDER BYTE OF X-COORDINATE
+                LD      (XCOORD),DE     ; SAVE X-COORDINATE
+                LD      HL,(PARM2)
+                LD      A,(HL)          ; GET Y-COORDINATE
+                SUB     CHEIGHT         ; ADJUST TO UPPER LEFT HAND CORNER
+                LD      (YCOORD),A      ; SAVE Y-COORDINATE
+                LD      HL,(PARM3)
+                LD      A,(HL)          ; GET LOW ORDER BYTE OF LENGTH
+                LD      (LENGTH),A      ; STORE LENGTH
+AGAIN:          LD      HL,(PARM4)      ; GET ADDRESS OF TEXT STRING
+                LD      HL,(PARM4)      ; GET ADDRESS OF TEXT STRING
+                LD      B,(HL)          ; GET CHARACTER
+                INC     HL              ; INCREMENT POINTER TO TEXT STRING
+                INC     HL
+                LD      (PARM4),HL
+                LD      C,0D            ; LOAD COMMAND BYTE
+                LD      A,(YCOORD)      ; GET Y-COORDINATE
+                LD      E,A
+                LD      HL,(XCOORD)     ; GET X-COORDINATE
+                LD      A,05D           ; LOAD CHARACTER OUTPUT CODE
+                CALL    GRAF            ; OUTPUT CHARACTER
+                LD      A,(LENGTH)
+                DEC     A               ; DONE?
+                JP      Z,DTDONE        ; YES
+                LD      (LENGTH),A      ; NO, UPDATE LENGTH
+                LD      HL,(XCOORD)     ; UPDATE X-COORDINATE
+                LD      BC,CWIDTH
+                ADD     HL,BC           ; ADD CHARACTER WIDTH TO X-COORDINATE
+                LD      (XCOORD),HL
+                JP      AGAIN
+DTDONE:         RET
+;
+;       SUBROUTINE DIADVN - INITIALIZE NORTHSTAR ADVANTAGE FOR GRAPHICS
+;
+DIADVN:         ENTRY   DIADVN
+                LD      A,02D           ; LOAD RECTANGLE OPCODE
+                LD      C,080H          ; LOAD COMMAND BYTE TO SET VIEWPORT
+                LD      HL,SCREEN
+                CALL    GRAF            ; SET VIEWPORT
+                RET
+;
+;       SUBROUTINE DGADVN (XIN, YIN, XOUT, YOUT, KEY) - GIN ON ADVANTAGE
+;               XIN,YIN - INITIAL LOCATION OF GIN CURSOR
+;               XOUT,YOUT - FINAL LOCATION OF GIN CURSOR
+;               KEY     - KEY STRUCK TO TERMINATE GIN
+;
+DGADVN:         ENTRY   DGADVN
+                LD      (PARM1),HL      ; SAVE FIRST PARAMETER ADDRESS
+                LD      (PARM2),DE      ; SAVE SECOND PARAMTER ADDRESS
+                LD      A,03D           ; THREE PARAMETERS REMAIN
+                LD      HL,PARM3        ; POINTER TO PARAMETER STORAGE
+                CALL    $AT             ; SAVE REST OF PARAMETER ADDRESSES
+                LD      A,0             ; INITIALIZE COMPLETION FLAG TO OFF
+                LD      (FLAG),A
+                LD      (MOVFLG),A      ; INITIALIZE CURSOR MOVEMENT FLAG
+                LD      HL,FAST_RATE    ; INITIALIZE CURSOR RATE TO FAST
+                LD      (INCR),HL
+                LD      HL,(PARM1)      ; GET STARTING X-COORDINATE
+                LD      E,(HL)          ; GET LOW ORDER BYTE
+                INC     HL
+                LD      D,(HL)          ; GET HIGH ORDER BYTE
+                LD      (XCENT),DE      ; SAVE AS CENTER OF CURSOR
+                LD      HL,(PARM2)      ; GET STARTING Y-COORDINATE
+                LD      E,(HL)          ; GET LOW ORDER BYTE
+                INC     HL
+                LD      D,(HL)          ; GET HIGH ORDER BYTE
+                LD      (YCENT),DE      ; SAVE AS CENTER OF CURSOR
+                JP      CURON           ; TURN CURSOR ON
+RDKEY:          LD      C,06D           ; DIRECT I/O FROM KEYBOARD OPCODE
+                LD      E,0FFH
+                CALL    0005            ; READ CHARACTER FROM KEYBOARD
+                CP      0               ; VALID CHARACTER
+                JP      Z,RDKEY         ; NO, TRY AGAIN
+                LD      (KEY),A         ; YES, SAVE KEY STRUCK
+                CP      UP              ; WAS KEY UP ARROW
+                JP      Z,CURUP         ; YES
+                CP      UP_RIGHT        ; NO, WAS KEY UP & RIGHT ARROW
+                JP      Z,CURUP         ; YES
+                CP      UP_LEFT         ; NO, WAS KEY UP & LEFT ARROW
+                JP      NZ,CHKDWN       ; NO
+CURUP:          LD      (MOVFLG),A      ; SET CURSOR MOVEMENT FLAG
+                LD      HL,(INCR)       ; GET CURSOR INCREMENT
+                LD      DE,(YCENT)      ; GET Y-CENTER OF CURSOR
+                AND     A
+                SBC     HL,DE           ; ROOM FOR FULL CURSOR INCR ?
+                JP      M,MOVUP         ; YES
+                LD      HL,0D           ; NO, MOVE CURSOR TO TOP
+                LD      (YCENT),HL
+                JP      CHKLFT
+MOVUP:          LD      HL,(INCR)       ; MOVE CURSOR UP FULL INCREMENT
+                EX      DE,HL           ; POSITION IN HL, INCREMENT IN DE
+                AND     A
+                SBC     HL,DE
+                LD      (YCENT),HL
+                JP      CHKLFT
+CHKDWN:         CP      DOWN            ; WAS KEY DOWN ARROW
+                JP      Z,CURDWN        ; YES
+                CP      DOWN_LEFT       ; NO, WAS KEY DOWN & LEFT ARROW
+                JP      Z,CURDWN        ; YES
+                CP      DOWN_RIGHT      ; NO, WAS KEY DOWN & RIGHT ARROW
+                JP      NZ,CHKLFT       ; NO
+CURDWN:         LD      (MOVFLG),A      ; SET CURSOR MOVEMENT FLAG
+                LD      HL,(YMAX)       ; GET MAXIMUM Y-CENTER
+                LD      DE,(YCENT)      ; GET CURRENT Y-CENTER OF CURSOR
+                AND     A
+                SBC     HL,DE           ; GET DISTANCE FROM MAXIMUM
+                EX      DE,HL           ; PUT DISTANCE FROM MAX IN HL
+                LD      HL,(INCR)
+                SBC     HL,DE           ; ROOM FOR FULL CURSOR INCR ?
+                JP      M,MOVDWN        ; YES
+                LD      HL,(YMAX)       ; NO, MOVE CURSOR TO BOTTOM EDGE
+                LD      (YCENT),HL
+                JP      CHKLFT
+MOVDWN:         LD      HL,(YCENT)      ; MOVE CURSOR DOWN FULL INCREMENT
+                LD      DE,(INCR)
+                ADD     HL,DE
+                LD      (YCENT),HL
+CHKLFT:         LD      A,(KEY)         ; GET KEY STRUCK
+                CP      LEFT            ; WAS KEY LEFT ARROW ?
+                JP      Z,CURLFT        ; YES
+                CP      UP_LEFT         ; NO, WAS KEY UP & LEFT ARROW ?
+                JP      Z,CURLFT        ; YES
+                CP      DOWN_LEFT       ; NO, WAS KEY DOWN & LEFT ARROW?
+                JP      NZ,CHKRGT       ; NO
+CURLFT:         LD      (MOVFLG),A      ; SET CURSOR MOVEMENT FLAG
+                LD      HL,(INCR)       ; GET CURSOR INCREMENT
+                LD      DE,(XCENT)      ; GET X-CENTER OF CURSOR
+                AND     A
+                SBC     HL,DE           ; ROOM FOR FULL CURSOR INCR ?
+                JP      M,MOVLFT        ; YES
+                LD      HL,0D           ; NO, MOVE CURSOR TO LEFT EDGE
+                LD      (XCENT),HL
+                JP      CUROFF
+MOVLFT:         LD      HL,(INCR)       ; MOVE CURSOR LEFT FULL INCREMENT
+                EX      DE,HL           ; POSITION IN HL, INCREMENT IN DE
+                AND     A
+                SBC     HL,DE
+                LD      (XCENT),HL
+                JP      CUROFF
+CHKRGT:         LD      A,(KEY)         ; GET KEY STRUCK
+                CP      RIGHT           ; WAS KEY RIGHT ARROW ?
+                JP      Z,CURRGT        ; YES
+                CP      UP_RIGHT        ; NO, WAS KEY UP & RIGHT ARROW?
+                JP      Z,CURRGT        ; YES
+                CP      DOWN_RIGHT      ; NO, WAS KEY DOWN & RIGHT ARROW?
+                JP      NZ,CHKRAT       ; NO
+CURRGT:         LD      (MOVFLG),A      ; SET CURSOR MOVEMENT FLAG
+                LD      HL,(XMAX)       ; GET MAXIMUM X-CENTER
+                LD      DE,(XCENT)      ; GET CURRENT X-CENTER OF CURSOR
+                AND     A
+                SBC     HL,DE           ; GET DISTANCE FROM MAXIMUM
+                AND     A
+                EX      DE,HL           ; PUT DISTANCE FROM MAX IN HL
+                LD      HL,(INCR)
+                SBC     HL,DE           ; ROOM FOR FULL CURSOR INCR ?
+                JP      M,MOVRGT        ; YES
+                LD      HL,(XMAX)       ; NO, MOVE CURSOR TO RIGHT EDGE
+                LD      (XCENT),HL
+                JP      CUROFF
+MOVRGT:         LD      HL,(XCENT)      ; MOVE CURSOR RIGHT FULL INCREMENT
+                LD      DE,(INCR)
+                ADD     HL,DE
+                LD      (XCENT),HL
+                JP      CUROFF
+CHKRAT:         CP      CHANGE_RATE     ; WAS KEY CHANGE RATE (5) ?
+                JP      NZ,ENDGIN       ; NO
+                LD      A,(INCR)        ; YES, CHANGE INCREMENT
+                CP      FAST_RATE       ; IS CURRENT RATE FAST ?
+                JP      Z,SLOW          ; YES, MAKE NEW RATE SLOW
+                LD      A,FAST_RATE     ; NO, MAKE NEW RATE FAST
+                LD      (INCR),A
+                JP      RDKEY
+SLOW:           LD      A,SLOW_RATE     ; MAKE NEW RATE SLOW
+                LD      (INCR),A
+                JP      RDKEY
+ENDGIN:         LD      A,(MOVFLG)      ; WAS CURSOR MOVEMENT KEY HIT ?
+                OR      A
+                JP      NZ,CUROFF       ; YES
+                LD      A,01D           ; NO, TERMINATE GIN
+                LD      (FLAG),A        ;     TERMINATE GIN
+CUROFF:         LD      C,03D           ; SET XOR TO ERASE CURRENT CURSOR
+                LD      D,02D           ; 2 8-BIT BLOCKS WIDE
+                LD      E,08D           ; 8 LINES LONG
+                LD      HL,CURSOR       ; GET ADDRESS OF CURSOR DEFINITION
+                LD      IX,(XOLD)       ; GET X,Y OF UPPER LEFT CORNER
+                LD      IY,(YOLD)
+                LD      A,04D           ; LOAD BLOCK MOVE OPCODE
+                CALL    GRAF            ; ERASE OLD CUROSR
+                LD      A,(FLAG)        ; GET GIN TERMINATION FLAG
+                OR      A               ; GIN DONE ?
+                JP      NZ,DGDONE       ; YES
+;
+;               TURN ON CURSOR AT NEW LOCATION. (XOLD, YOLD) IS
+;               UPPER LEFT HAND CORNER OF CURSOR BLOCK
+;
+CURON:          LD      HL,(XCENT)
+                LD      (XOLD),HL       ; SAVE AS OLD X-COORDINATE
+                LD      A,(YCENT)
+                LD      (YOLD),A        ; SAVE AS OLD Y-COORDINATE
+                LD      C,03D           ; SET XOR IN COMMAND BYTE
+                LD      D,02D           ; 2 8-BIT BLOCKS WIDE
+                LD      E,08D           ; 8 LINES LONG
+                LD      HL,CURSOR       ; GET ADDRESS OF CURSOR DEFINITION
+                LD      IX,(XOLD)       ; GET X,Y OF UPPER LEFT CORNER
+                LD      IY,(YOLD)
+                LD      A,04D           ; LOAD BLOCK MOVE OPCODE
+                CALL    GRAF            ; DISPLAY NEW CUROSR
+                LD      A,0D            ; CLEAR CURSOR MOVEMENT FLAG
+                LD      (MOVFLG),A
+                JP      RDKEY
+DGDONE:         LD      HL,XCENT        ; SAVE GIN LOCATION. FIRST SAVE X
+                LD      DE,(PARM3)
+                LDI
+                LDI
+                LD      HL,YCENT        ; RETURN Y
+                LD      DE,(PARM4)
+                LDI
+                LD      A,0D            ; ZERO HIGH ORDER BYTE
+                LD      (DE),A
+                LD      HL,KEY          ; RETURN KEY STRUCK
+                LD      DE,(PARM5)
+                LDI
+                LD      (DE),A          ; ZERO HIGH ORDER BYTE
+                RET
+XCENT:          DS      2               ; X CENTER OF CURSOR
+YCENT:          DS      2               ; Y CENTER OF CURSOR
+XOLD:           DS      2               ; LAST LEFT EDGE OF CURSOR
+YOLD:           DS      1               ; LAST TOP EDGE OF CURSOR
+KEY:            DS      1               ; LAST KEY STRUCK
+FLAG:           DS      1               ; GIN DONE FLAG (0=NO, 1=YES)
+MOVFLG:         DS      1               ; CURSOR MOVEMENT FLAG (IF 0 NO, ELSE Y
+INCR:           DS      2               ; CURSOR MOVEMENT INCREMENT
+SCREEN:         DW      0D
+                DW      0D
+XMAX:           DW      0639D           ; MAX SCREEN WIDTH
+YMAX:           DW      0239D           ; MAX SCREEN HEIGHT
+PARM1:          DS      2               ; LOCAL PARAMETER/VARIABLE STORAGE
+PARM2:          DS      2
+PARM3:          DS      2
+PARM4:          DS      2
+PARM5:          DS      2
+CURSOR:         DB      0FFH            ; DEFINITION OF GIN CURSOR (1ST COL)
+                DB      080H
+                DB      098H
+                DB      086H
+                DB      081H
+                DB      000H
+                DB      000H
+                DB      000H
+                DB      0C0H            ; 2ND COLUMN OF DEFINITION
+                DB      000H
+                DB      000H
+                DB      000H
+                DB      080H
+                DB      060H
+                DB      018H
+                DB      006H
+                END
+E 1

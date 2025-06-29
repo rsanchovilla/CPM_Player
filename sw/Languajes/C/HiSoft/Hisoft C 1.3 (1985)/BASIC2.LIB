@@ -1,0 +1,322 @@
+/* * * * * *       B A S I C 2 . L I B       * * * * * */
+/*                                                     */
+/*              Graphics Function Library              */
+/*              Copyright (C) 1985 HISOFT              */
+/*              Last Changed  9 June 1985              */
+/*                                                     */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+#list-
+
+draw(control_string)
+  char *control_string;
+{
+#define _DRAW_SCALE 2
+  typedef int  *ip;
+  typedef char *cp;
+  static  int  *p, c, heading, dx, dy, dX, dY,
+    x_scale = 1 << _DRAW_SCALE, y_scale = 1 << _DRAW_SCALE;
+  static  char *s, *s2;
+
+  s       = control_string;
+
+  while (c = tolower(*s))
+  {
+      ++s;
+      p  = cast(ip) s;
+      dX = *p++ * x_scale >> _DRAW_SCALE;
+      dY = *p++ * y_scale >> _DRAW_SCALE;
+      s2 = cast(cp) p;
+      switch (heading)
+    {
+        case 0: dx =  dX; dy =  dY; break;
+        case 1: dx =  dY; dy = -dX; break;
+        case 2: dx = -dX; dy = -dY; break;
+        case 3: dx = -dY; dy =  dX; break;
+    }
+
+      switch (c)
+    {
+  default:  continue;
+
+  case '0': G_move_absolute(0, 0);
+            s2 = s;
+            break;
+
+  case 'm': G_move_relative(dx, dy);
+            break;
+
+  case 'p': G_plot_relative(dx, dy);
+            break;
+
+  case 'l': G_line_relative(dx, dy);
+            break;
+
+  case 't': while (*s != '\n') G_wr_char(*s++);
+            s2 = s + 1;
+            break;
+
+  case 'c': if (tolower(*s++) == 'f') G_set_pen(*s);
+            else                      G_set_paper(*s);
+            s2 = s + 1;
+            break;
+
+  case 's': x_scale = dx;
+            y_scale = dy;
+            break;
+
+  case 'r': heading = (heading + 1) % 4;
+            s2 = s;
+            break;
+    }
+  s = s2;
+  }
+}
+
+
+
+T_set_graphic(on)
+{
+  reg_a = on;
+  inline(
+    LD_A_from, &reg_a,
+    CALL,      0xBB63 /* TXT_SET_GRAPHIC */
+        );
+}
+
+
+
+T_win_enable(x1,x2,y1,y2)
+{
+  reg_hl = (x1 << 8) + y1;
+  reg_de = (x2 << 8) + y2;
+  inline(
+    LD_HL_from, &reg_hl,
+    LD_DE_from, &reg_de,
+    CALL,       0xBB66 /* TXT_WIN_ENABLE */
+        );
+}
+
+
+
+T_swap_streams(stream_number, another_stream_number)
+{
+  reg_bc = (stream_number << 8) + another_stream_number;
+  inline(
+    LD_BC_from, &reg_bc,
+    CALL,       0xBBB7 /* TXT_SWAP_STREAMS */
+        );
+}
+
+
+
+T_get_cursor(px_column, py_row, p_roll_count)
+  int *px_column, *py_row, *p_roll_count;
+{
+  inline(
+    CALL,       0xBB78, /* TXT_GET_CURSOR */
+    LD_A_into,  &reg_a,
+    LD_HL_into, &reg_hl
+         );
+  *p_roll_count = reg_a;
+  *px_column    = (reg_hl >> 8) & 0xFF;
+  *py_row       = reg_hl & 0xFF;
+}
+
+
+
+G_ask_cursor(pdx, pdy)
+  int *pdx, *pdy;
+{
+  inline(
+    CALL,       0xBBC6, /* GRA_ASK_CURSOR */
+    LD_DE_into, &reg_de,
+    LD_HL_into, &reg_hl
+        );
+  *pdx = reg_de;  *pdy = reg_hl;
+}
+
+
+
+G_set_origin(x,y)
+{
+  reg_de = x;
+  reg_hl = y;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBC9 /* GRA_SET_ORIGIN */
+        );
+}
+
+
+
+G_win_width(x1,x2)
+{
+  reg_de = x1;
+  reg_hl = x2;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBCF /* GRA_WIN_WIDTH */
+         );
+}
+
+
+
+G_win_height(y1,y2)
+{
+  reg_de = y1;
+  reg_hl = y2;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBD2 /* GRA_WIN_HEIGHT */
+        );
+}
+
+
+
+G_clear_window()
+{
+  inline(CALL, 0xBBDB); /* GRA_CLEAR_WINDOW */
+}
+
+
+
+G_set_pen(ink)
+{
+  reg_a = ink;
+  inline(
+    LD_A_from, &reg_a,
+    CALL,      0xBBDE /* GRA_SET_PEN */
+        );
+}
+
+
+
+G_set_paper(ink)
+{
+  reg_a = ink;
+  inline(
+    LD_A_from, &reg_a,
+    CALL,      0xBBE4 /* GRA_SET_PAPER */
+        );
+}
+
+
+
+G_wr_char(c)
+{
+  reg_a = c;
+  inline(
+    LD_A_from, &reg_a,
+    CALL,      0xBBFC /* GRA_WR_CHAR */
+        );
+}
+
+
+
+G_move_absolute(x,y)
+{
+  reg_de = x;  reg_hl = y;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBC0 /* GRA_MOVE_ABSOLUTE */
+        );
+}
+
+
+
+G_move_relative(dx, dy)
+{
+  reg_de = dx;  reg_hl = dy;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBC3 /* GRA_MOVE_RELATIVE */
+        );
+}
+
+
+
+G_plot_absolute(x, y)
+{
+  reg_de = x;  reg_hl = y;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBEA /* GRA_PLOT_ABSOLUTE */
+        );
+}
+
+
+
+G_plot_relative(dx, dy)
+{
+  reg_de = dx;  reg_hl = dy;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBED /* GRA_PLOT_RELATIVE */
+        );
+}
+
+
+
+int G_test_absolute(x, y)
+{
+  reg_de = x;  reg_hl = y;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBF0, /* GRA_TEST_ABSOLUTE */
+    LD_L_A,
+    LD_H_with, 0
+        );
+}
+
+
+
+int G_test_relative(dx, dy)
+{
+  reg_de = dx;  reg_hl = dy;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBF3, /* GRA_TEST_RELATIVE */
+    LD_L_A,
+    LD_H_with, 0
+        );
+}
+
+
+
+G_line_absolute(x, y)
+{
+  reg_de = x;  reg_hl = y;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBF6 /* GRA_LINE_ABSOLUTE */
+        );
+}
+
+
+
+G_line_relative(dx, dy)
+{
+  reg_de = dx;  reg_hl = dy;
+  inline(
+    LD_DE_from, &reg_de,
+    LD_HL_from, &reg_hl,
+    CALL,       0xBBF9 /* GRA_LINE_RELATIVE */
+        );
+}
+
+#list+
+
+/* * * * * *   End of Graphics VDU Functions   * * * * * */
+
+    

@@ -1,0 +1,193 @@
+             PLOTTER subsystem - by C.B. Falconer
+
+The file PLOTTER.INC may be included in a PascalP source program with
+"(*$i'plotter.inc'*), and provides:
+
+       A 900 (wide) by 640 (deep) bit field, which will appear
+       as a 7 1/2 inch by 8 inch field on an Epson printer.
+
+       The ability to set any dot in the field, to write lines
+       from the "current" position to any other position;  to
+       reposition the "pen" at any position (by writing a line
+       with no ink); and to write graphics characters, described
+       by a Hershey font file, at any location and at any angle,
+       and with any scale factor.
+
+The field size may be modified by altering the constant HDOTS (for the
+width), and MAXSTRIPS (for the height).  The height is always MAXSTRIPS
+times 8 dots, and this value is available in VDOTS : integer (but ONLY
+after plotopen is called.
+
+The constants VDPI and HDPI (vertical/horizontal dots per inch) are
+used to modify the Hershey fonts for the proper form factors.  These are
+set for the Epson printers.  ONLY after plotopen is called, the ratio is
+available in ASPECT : real.
+
+The values in XNOW, YNOW, VDOTS, ASPECT may be used, but should NOT be
+altered by the application program.
+
+The file TESTPLOT.PAS is a demonstrator, and allows the user to specify
+lines and character strings to write.  It automatically creates an outline
+border.  Use this as a usage example.
+
+In general, before using the system the procedure PLOTOPEN must be called
+
+              plotopen
+
+to initialize.  If graphics characters are to be written the font must be
+loaded by:
+              loadfont(VAR f : text)
+
+where f is the text file holding the font.  Note that the font may be
+changed on the fly by reloading a new font.  The font may be loaded before
+or after calling plotopen.  Loadfont reads the file from the beginning.
+
+All plotting (except PLOTDOT) is done in terms of an imaginary pen position.
+Lines are drawn from the present position to a specified new position, with
+or without marking the "paper".  The call is:
+
+              plotline(ink : boolean; x, y : integer)
+
+where ink false causes no paper marking.  x and y are the final absolute
+pen location.  At least one dot will be made when ink is true.
+
+The variables XNOW and YNOW (: integer) always hold the current pen position.
+
+The primitive
+
+              plotdot(x, y : integer)
+
+allows other subsystems to interface, such as arc generators.
+
+To plot a character (which is in the loaded font), the call is:
+
+              plotchar(ch : char; x, y : integer;
+                       height, compress, angle : real);
+
+where x,y is the starting location, height is the relative height (usually
+in the range 0.5 to 2.0), compress (usually 1) specifies horizontal 
+compression/expansion (values less than 1 specify compression), and angle
+(in radians) specifies counter-clockwise rotation of the x axis for the
+character.  At completion xnow/ynow will be a suitable location for the
+next character at the same angle.  A space uses the horizontal size of the
+first character in the font (usually 'A') and simply moves.
+
+Plotchar uses the 'aspect' value to correct distortions in the font caused
+by different vertical and horizontal dot densities.
+
+At completion of the drawing, to write the output to either a disk file or
+the listing device (an Epson printer), do
+
+              plotclose(VAR f : text);
+
+where f is the already opened file to write to.  This allows multiple
+drawings to be emitted to the same file.
+
+WARNING: If a disk file is created that file will contain many non-printing
+characters whose interpretation is not the usual.  To print it must be
+copied totally unchanged to the printer.  Program LIST can do this.
+
+NOTE: Both the virtual memory (temporary) file, and the output file, will
+contain about 71 K bytes.  The virtual file is created on the default drive,
+but the output file may be controlled at run time.  The application may
+remove the virtual file with "purge(stripfile)" at completion, if desired.
+
+
+Fonts
+=====
+
+The font files consist of a series of entries, consisting of:
+
+* The character 'C'
+  The character to be plotted
+
+and the remainder of the entry is a series of integers, separated by
+spaces or <eolns>
+
+* The standard Hershey identification number for the graphic.
+  the height of the character (2 digits)
+  the width  of the character (2 digits)
+* the width for non-proportional writing (2 digits)
+  <eoln>
+
+followed by a series of 4 or 5 char. integers, max 10 per line,
+specifying RELATIVE pen positions (offset by 10 for x, by 35 for y).
+If the integer is negative it specifies that no marks are to be
+made in moving to this position, otherwise "ink" is used.  The rest
+of the integer is interpreted as its absolute value (i.e. after
+discarding any - sign).  If the value is >= 10000 it is the last 
+for the character (and eoln follows).  The right two digits are a
+"y" position, and the left two (ignoring any 10000) are the "x"
+position.  These are alway relative to the starting position for
+the character, after subtracting the above offsets.
+
+The fields marked with "*" are not used by this software, and thus
+may be anything.  However they must be present in the file or the
+load process will fail.
+
+This allows custom fonts to be generated and used as desired.
+The three fonts supplied (font1, font2, and font3) require successively
+more processing, and are successively elegant.  They contain the
+characters 'A' thru 'Z', 'a' thru 'z', '0' thru '9'.
+
+
+PascalP PCD vs COM files
+========================
+
+Since most of the time is spent in system procedures (file i/o, real
+arithmetic, and trigonometric functions) minimum speed improvements
+result from the use of .COM files rather than the machine independant
+.PCD files.  Time ratios will be in the order of 2:1 to 3:2.
+
+
+Other systems
+=============
+Most of the code is in ISO standard Pascal, and thus should port with
+no difficulty.  The declarations may have to be inserted in the appropriate
+portion of the application for systems other than PascalP (which allows
+complete modularizaation).  Other points are discussed below, and potential
+problem areas are marked with '{}' in the first column of the source.
+
+
+Other printers
+==============
+
+The output interface is entirely specified in PLOTCLOSE, and thus can
+be modified without affecting any other portion of the code.  A simple
+FOR loop can be used for character by character output, but will be
+much slower.  If the output rate is limited by a printer, this will not
+matter, but for diskfile output will be a nuisance.  Printers with other
+formats (interleaved, etc) may require some local data manipulation 
+and/or combination of adjacent strips.
+
+
+Virtual Memory
+==============
+
+The system uses a virtual memory scheme for the bit map, thus allowing
+execution on systems with limited data segments (CPM, HP3000, most
+8086/MsDos compilers).  This uses the random file access procedures
+of PascalP ('update', 'reposition') and the non-aborting 'allocate' (which
+is identical to 'new', except returns NIL in place of aborting when memory
+is not available).  To use 'new', adjust the constant 'maxloaded' downwards
+until the program stops aborting.   Any adjustments to other systems
+should be confined to 'getstrip', 'keepstrip', 'plotopen', (and possibly
+'plotclose').
+
+On any system, if the pagesize or resolution is increased, sooner or later
+the virtual memory will be required, since internal memory is always finite.
+
+
+References
+==========
+
+Much code was adapted from DOTGRAM (1986) (of the PHYLIP suite), by
+Felsenstein and Meacham, and ELLIPSE (1985) by C. B. Falconer.  The
+methods are expounded in Decision Variables, by Tom Hogan, Dr Dobbs
+Journal, May 1985, and Algorithm for Computer Control of Digital
+Plotter, IBM Sys. J. 4(1):25-30, 1965.  The fundamental algorithm is
+known as Bresenhams algorithm.
+
+
+C.B. Falconer 87/02/02
+n

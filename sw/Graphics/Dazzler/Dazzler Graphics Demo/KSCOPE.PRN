@@ -1,0 +1,156 @@
+                ; KALEDIOSCOPE PROGRAM FOR CROMEMCO DAZZLER; 
+                ; PROVIDED BY BILL SUDBRINK
+                ; CONVERTED INTO TASM SOURCE BY RICHARD CINI; JUNE 2, 2010; ALTERNATIVE VERSION
+                ; CONVERTED TO MAC VERSION J. MONAHAN 12/6/2013 (FLIPPED CR/LF'S)
+                
+                
+ 0001 =         SCROLL		EQU	01H	;SET SCROOL DIRECTION UP.
+ 000A =         LF		EQU	0AH
+ 000D =         CR		EQU	0DH
+ 0008 =         BS		EQU	08H	;BACK SPACE (REQUIRED FOR SECTOR DISPLAY)
+ 0007 =         BELL		EQU	07H
+ 0020 =         SPACE		EQU	20H
+ 0011 =         QUIT		EQU	11H	;TURNS OFF ANY SCREEN ENHANCEMENTS (FLASHING, UNDERLINE ETC).
+ 0017 =         NO$ENHANCEMENT	EQU	17H	;TURNS OFF WHATEVER IS ON
+ 0010 =         FAST		EQU	10H	;HIGH SPEED SCROOL
+ 0009 =         TAB		EQU	09H	;TAB ACROSS (8 SPACES FOR SD-BOARD)
+ 001B =         ESC		EQU	1BH
+                
+                
+ 0000 =         FALSE		EQU	0
+ FFFF =         TRUE		EQU	NOT FALSE
+                
+ FFFF =         CPM		EQU	TRUE	;IF FALSE, OUTPUT DIRECT TO S100 BUS MONITOR HARDWARE
+                
+                ; CPM BDOS EQUATES		;CAN USE BEFORE WE GET STARTED
+ 0009 =         PRINT		EQU	9
+ 0005 =         BDOS		EQU	5
+                
+ 0000 =         CONSTAT EQU	0		;CONSOLE SATATUS BITS (HARDWHARE SPECIFIC, PROPELLER CONSOLE I/O BOARD)
+ 0001 =         CONDATA EQU	1	
+                
+                
+                
+                ;-------------- FOR CONSOLE INPUT & OUTPUT (CANNOT USE CPM BECAUSE RAM AT 0H IS USED HERE)
+ 0000 =         CONSOL$STATUS	EQU	0H	
+ 0001 =         CONSOL$IN	EQU	01H
+ 0001 =         CONSOL$OUT	EQU	01H
+                
+                
+                
+                
+ 0100           	ORG	100H		;<--- SO CPM CAN RUN PROGRAM
+                
+ 0100 F3         	DI			;WE DON'T KNOW, HOW INTERRUPTS WORKS IN THIS SYSTEM, 
+                 				;SO WE DISABLE THEM. [SP] IS PROBABLY OK FOR A SMALL PROGRAM LIKE THIS
+                
+ 0101 310001    	LXI	SP,100H
+ 0104 118801     	LXI	D,SIGNON	;PRINT A WELCOME MESSAGE ON CONSOLE
+ 0107 0E09      	MVI	C,PRINT
+ 0109 CD0500    	CALL	BDOS		;PRINT MESSAGE, RETURN
+                 
+ 010C 3E81       	MVI	A,81H		;<---- DAZZLER DISPLAY AT 1000H
+ 010E D30E      	OUT 	0EH
+ 0110 3E30      	MVI	A,30H
+ 0112 D30F      	OUT	0FH	
+                
+                L000B:
+ 0114 78        	MOV	A,B
+ 0115 0F        	RRC
+ 0116 0F         	RRC
+ 0117 A2         	ANA 	D
+ 0118 81         	ADD	C
+ 0119 4F         	MOV	C,A
+ 011A 0F         	RRC
+ 011B 0F         	RRC
+ 011C A2         	ANA	D
+ 011D 6F          	MOV 	L,A
+ 011E 78          	MOV 	A,B
+ 011F 95          	SUB 	L
+ 0120 47         	MOV 	B,A
+ 0121 C5         	PUSH 	B
+ 0122 D5          	PUSH 	D
+ 0123 E5          	PUSH 	H
+ 0124 110000      	LXI 	D,0000H
+ 0127 7C          	MOV 	A,H
+ 0128 E61F        	ANI 	1FH
+ 012A 1F          	RAR
+ 012B DA3401      	JC 	L002B
+ 012E 5F          	MOV 	E,A	; ORIGINAL CODES FOR $7B (MOV A,E) 	
+ 012F 07         	RLC
+ 0130 07          	RLC
+ 0131 07          	RLC
+ 0132 07          	RLC
+ 0133 57          	MOV 	D,A	; ORIGINAL CODES FOR $7A (MOV A,D)
+                 
+ 0134 2608      L002B:	MVI 	H,08H
+ 0136 CD6601      	CALL 	L005D
+                  	
+ 0139 78          	MOV 	A,B
+ 013A 2F           	CMA
+ 013B 47          	MOV 	B,A
+ 013C 2606        	MVI	H,06H
+ 013E CD6601      	CALL 	L005D
+                  	
+ 0141 79         	MOV 	A,C
+ 0142 2F         	CMA
+ 0143 4F         	MOV 	C,A
+ 0144 2602       	MVI 	H,02H
+ 0146 CD6601      	CALL 	L005D
+                  	
+ 0149 78          	MOV 	A,B
+ 014A 2F          	CMA
+ 014B 47          	MOV 	B,A
+ 014C 2604        	MVI 	H,04H
+ 014E CD6601      	CALL 	L005D
+                  	
+ 0151 E1          	POP 	H
+ 0152 D1          	POP 	D
+ 0153 C1          	POP 	B
+ 0154 1D          	DCR 	E
+ 0155 C21401      	JNZ 	L000B
+                  	
+ 0158 04          	INR 	B
+ 0159 0C          	INR 	C
+ 015A 1E3F        	MVI 	E,3FH
+ 015C 25          	DCR 	H
+ 015D C21401      	JNZ 	L000B
+                  	
+ 0160 14          	INR 	D
+ 0161 261F        	MVI 	H,1FH
+ 0163 C31401      	JMP 	L000B
+                 
+ 0166 79        L005D:	MOV 	A,C
+ 0167 E6F8        	ANI 	0F8H
+ 0169 17          	RAL
+ 016A 6F          	MOV 	L,A
+ 016B 7C          	MOV	A,H
+ 016C CE00       	ACI 	00H
+ 016E 67         	MOV 	H,A
+ 016F 78         	MOV 	A,B
+ 0170 E6F8       	ANI 	0F8H
+ 0172 1F         	RAR
+ 0173 1F         	RAR
+ 0174 1F         	RAR
+ 0175 1F         	RAR
+ 0176 F5         	PUSH 	PSW
+ 0177 85         	ADD 	L
+ 0178 6F         	MOV 	L,A
+ 0179 F1        	POP 	PSW
+ 017A 7E        	MOV 	A,M
+ 017B DA8301     	JC 	L007A
+                 	
+ 017E E6F0       	ANI 	0F0H
+ 0180 83         	ADD 	E
+ 0181 77         	MOV 	M,A
+ 0182 C9         	RET
+                 
+ 0183 E60F      L007A:	ANI 	0FH
+ 0185 82         	ADD 	D
+ 0186 77         	MOV 	M,A
+ 0187 C9         	RET
+                 
+ 0188 0D0A074372SIGNON:	DB	CR,LF,BELL,'Cromemco Dazzler KSCOPE Program. '
+ 01AC 0D0A486974	DB	CR,LF,'Hit Reset button to stop program',CR,LF,LF,'$'
+                             
+                ;END

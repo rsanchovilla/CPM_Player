@@ -1,0 +1,91 @@
+(*  L O A D P I C . G I C  Laden/Speichern von Bildteilen  V2.2 15-Mai-1987  *)
+
+
+
+(* Nach dem Aufruf von LoadPic oder SavePic gibt IOresult einen der
+   folgenden Funktionswerte zurck:
+
+     0:       Ok, Datei geladen
+   $01:       Datei nicht gefunden
+   $07:       Nicht genug freier Speicher
+   $90:       Falscher Bildschirmmodus oder keine Bilddatei
+   $99:       Unerwartetes Datei-Ende
+   $F0:       Diskette voll
+   $F1:       Unerlaubter Dateiname oder Directory voll
+--------------------------------------------------------------- *)
+
+
+type _Copypicname = string[20];
+
+
+
+procedure _CopyPic (code: integer);  { nur fr den internen Gebrauch!!! }
+
+  type
+    arr  = array [0..$0016] of byte;
+    hook = record
+             jump: byte;
+             ad:   integer;
+           end;
+
+  var
+    auxError: arr;
+    SPsave:   integer;
+    h_error:  hook absolute $FFB1;
+    h_save:   hook;
+
+  const
+    errorcode: arr = ($D5,$3A,$41,$F3,$26,$00,$CD,$24,$00,$3A,$42,$F3,
+                      $26,$40,$CD,$24,$00,$D1,$ED,$7B,$00,$00,$C9);
+
+  begin
+    auxError          := errorcode;
+    auxError[20]      := lo(addr(SPsave));
+    auxError[21]      := hi(addr(SPsave));
+    h_save            := h_error;
+    h_error.jump      := $C3;
+    h_error.ad        := addr(auxError);
+
+    inline ($CD/*+$001F/$7B/$B7/$CA/*+$0064/$01/$2E/$00/$DD/$21/$2D/$01/$CD/
+            _CALSUB/$21/*+$003A/$7E/$B7/$28/$44/$BB/$28/$41/$23/$23/$18/$F5/
+            $ED/$73/SPSAVE/$ED/$7B/RECURPTR/$2A/HEAPPTR/$CB/$7C/$20/$03/$21/
+            $00/$80/$22/$C6/$F6/$B7/$ED/$72/$3F/$21/V9938COMMAND/$DD/$2A/CODE/
+            $D4/_CALSUB/$ED/$7B/SPSAVE/$1E/$00/$D0/$1E/$05/$C9/$05/$90/$07/
+            $07/$35/$01/$37/$99/$3E/$F1/$42/$F0/$43/$F1/$00/$FE/$23/$7E/$32/
+            $D0/$00/$11/$77/$F5/$0E/$10/$CD/$05/$00);
+
+    h_error := h_save;
+  end;
+
+
+
+
+procedure LoadPic (n: _Copypicname; x, y, direction: integer);
+
+  begin
+    n := '"' + n + '"'#0;
+    V9938command.sx   := addr(n[1]);
+    V9938command.dx   := x;
+    V9938command.dy   := y + swap(ACPAGE);
+    V9938command.arg  := direction shl 2;
+    V9938command.l_op := LOGOPR;
+    _CopyPic ($019D);
+  end;
+
+
+procedure SavePic (n: _Copypicname; x1,y1, x2,y2: integer);
+
+  begin
+    n := '"' + n + '"'#0;
+    V9938command.sx   := x1;
+    V9938command.sy   := y1 + swap(ACPAGE);
+    V9938command.nx   := succ(abs(x2 - x1));
+    V9938command.ny   := succ(abs(y2 - y1));
+    V9938command.arg  := (ord(x1 > x2) shl 2) + (ord(y1 > y2) shl 3);
+    V9938command.dx   := addr(n[1]);
+    _CopyPic ($01A1);
+    inline ($11/$77/$F5/$0E/$13/$3A/$D0/$00/$FE/$F0/$CC/$05/$00);
+  end;
+
+
+

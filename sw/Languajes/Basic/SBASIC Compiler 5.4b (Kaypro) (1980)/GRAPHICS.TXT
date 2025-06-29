@@ -1,0 +1,248 @@
+
+                G R A P H I C S    D O C U M E N T A T I O N 
+                ===============    =========================
+
+     In the S-Basic graphics package (graphics.bas), there are several
+procedures that allow the user to draw complicated figures with just one
+command.
+     These are:
+
+- a circle drawing routine; it requires three parameters: the vertical
+coordinate of the center of the circle, the horizontal coordinate of
+the center, and the radius of the circle.
+ 
+- a rectangle drawing routine: it has four parameters: the vertical
+coordinate of the upper left corner, the horizontal coordinate of that
+corner, the height, and the width.
+
+- a square drawing routine: it needs three parameters: the vertical
+coordinate of the upper left corner, the horizontal coordinate of the
+upper left corner, and the length of a side.
+
+- a bar drawing routine; it requires eight parameters: the vertical
+coordinate of the base of the bar, the horizontal coordinate of the
+base, the height, the width, the depth, the interior of the bar
+filled or empty, vertical illusion of depth up or down, and horizontal
+illusion of depth up or down.
+     The fifth parameter should be 0 for an empty bar, or 1 for
+a full one. The seventh parameter should be 1 for down, -1 for up.
+the eighth should be 1 for right, -1 for left.
+
+     It is reccommended that the user run the following program to
+observe the use of these procedures:
+
+$INCLUDE GRAPHICS.BAS
+
+VAR V1, H1, RADIUS = INTEGER
+VAR V2, H2, HEIGHT, WIDTH = INTEGER
+VAR V3, H3, LENGTH = INTEGER
+VAR V4, H4, H, W, V.PERSPECTIVE, H.PERSPECTIVE, INTERIOR, DEPTH = INTEGER
+
+V1 = 15
+H1 = 15
+RADIUS = 10
+CIRCLE V1, H1, RADIUS
+
+V2 = 30
+H2 = 10
+HEIGHT = 20
+WIDTH = 40
+RECTANGLE V2, H2, HEIGHT, WIDTH
+
+V3 = 60
+H3 = 20
+LENGTH = 30
+SQUARE V3, H3, LENGTH
+
+V4 = 80
+H4 = 80
+H = 50
+W = 15
+DEPTH = 8
+V.PERSPECTIVE = -1
+H.PERSPECTIVE = 1
+INTERIOR = 0
+BAR V4, H4, H, W, DEPTH, INTERIOR, V.PERSPECTIVE, H.PERSPECTIVE
+
+V4 = 20
+H4 = 130
+H = 50
+W = 10
+DEPTH = 15
+V.PERSPECTIVE = 1
+H.PERSPECTIVE = 1
+INTERIOR = 1
+BAR V4, H4, H, W, DEPTH, INTERIOR, V.PERSPECTIVE, H.PERSPECTIVE
+
+     
+      
+    VIDEO GRAPHICS AND ATTRIBUTES COMMAND SET FOR THE KAYPRO 10 
+    ===========================================================
+
+INTRODUCTION
+
+     The KAYPRO 10 has a graphics and attributes set that currently
+includes drawing and erasing lines, drawing and erasing pixels,
+inverse video, reduced intensity, blinking fields, graphics char-
+acters, cursor positioning, and cursor on/off.
+
+GRAPHICS
+
+     To draw graphics on the KAYPRO 10, the screen is treated as an
+array 100 pixels high, and 160 pixels wide. Any spot on the screen 
+can be addressed by a vertical coordinate (ranging from 32 to 131)
+and a horizontal coordinate (ranging from 32 to 191). The pixel in 
+the upper left corner of the screen has coordinates of 32,32.
+     Line and pixel graphics are drawn on the screen by writing an
+escape sequence to the console output. For the purpose of drawing
+lines and pixels, an escape sequence is a 4 or 6 byte sequence
+defined as follows:
+
+Escape sequence = ESC <sequence-type> <V1> <H1> [<V2> <H2>] 
+
+where:
+1)  ESC is an ascii 27 (1B hex).
+2)  <sequence-type> is a character of the set { *, (space), L, D }.
+3)  V1, H1, V2, H2 are 1-byte values indicating locations on the screen.
+
+     To write a pixel, the sequence-type must be a "*". H2 and V2 
+		are not used. V1 is the vertical coordinate of the
+		pixel. H1 is the horizontal coordinate.
+
+     To erase a pixel, the sequence-type must be a space. H1, V1, H2,
+		and V2 are the same as above.
+     
+     To draw a line, the sequence-type must be a "L". H1 is the 
+		horizontal coordinate of the first point of the
+		line. V1 is the vertical coordinate of the first
+		point. H2 is the horizontal coordinate of the 
+		last point. V2 is the vertical coordinate of the
+		last point.
+
+     To delete a line, the sequence-type must be a "D". H1, V1, H2,
+		and V2 are the same as above.
+
+
+CURSOR POSITIONING
+
+     When positioning the cursor on the KAYPRO 10, the screen is 
+treated as an array 25 characters high, and 80 characters wide. 
+Any spot on the screen can be addressed by a vertical coordinate
+(ranging from 32 to 66) and a horizontal coordinate (ranging from 
+32 to 111). The character in the upper left corner of the screen 
+has coordinates of 32,32.
+     The cursor can be moved to a desired position on the screen
+by writing an escape sequence to the console output. For the
+purpose of cursor positioning, an escape sequence is a 4 byte
+sequence defined as follows:
+
+Escape sequence = ESC EQUALSIGN <V1> <H1>
+
+where:
+1)  ESC is an ascii 27 (1B hex).
+2)  EQUALSIGN is the character '=' (3D hex).
+3)  V1, H1 are 1-byte values indicating the location on the screen.
+
+
+GRAPHICS CHARACTERS
+
+     Each of the character positions on the screen occupies the same
+area as eight pixels (4 high, 2 wide). Thus, pixels can be addressed
+in groups of eight at a time. To set pixels in a character position,
+the cursor is moved to that position, and then a byte is sent to
+the console output. This byte must have the high order bit set to 1
+to distinguish it from normal characters. The remaining seven bits
+are use to set 7 of the 8 pixels.
+
+              I.E: to write these pixels....
+
+                                -------   
+           Pixel # 1 ------>   |   |   |   <------ Pixel # 0
+                               |---+---|  
+           Pixel # 3 ------>   |   |   |   <------ Pixel # 2
+                               |---+---|  
+           Pixel # 5 ------>   |   |   |   <------ Pixel # 4
+                               |---+---|  
+      Pixel # 7 (off)------>   |   |   |   <------ Pixel # 6
+                                -------
+
+              output this byte:
+
+
+                     -------------------------------
+   must be '1' -->  |   |   |   |   |   |   |   |   |  <-- bit for # 0
+                     -------------------------------
+                          ^   ^   ^   ^   ^   ^
+                          |   |   |   |   |   |
+                bit for # 6   |   |   |   |   bit for # 1
+                              |   |   |   |
+                    bit for # 5   |   |   bit for # 2
+                                  |   |
+                        bit for # 4   bit for # 3
+
+
+     As shown above, pixel # 7 is off. To write a pixel with it on,
+send the inverse video command (ESC,B,0), then output the inverse
+for bits 0 through 6.  I.e: 10000000b would print a blank graphics 
+character; (ESC,B,0),10000000b would print a solid character.
+
+
+ATTRIBUTE COMMANDS
+
+     A character can be set to inverse video, blinking, reduced
+intensity, or underlined. Also, the cursor can be turned off. These
+attributes are activated by sending a 3 byte escape sequence to the
+console output:
+
+Escape sequence = ESC <on-off-code> <attribute-code>
+
+where:
+1)  ESC is an ascii 27 (1B hex)
+2)  <on-off-code> is a 'B' to set an attribute on, or a 'C' to set it off.
+3)  <attribute-code> has a value of 0 through 4, as follows:
+		0 = inverse video,
+		1 = reduced intensity,
+		2 = blinking,
+		3 = underline,
+		4 = cursor.
+
+Default for these attributes is: 0 = off, 1 = off, 2 = off, 3 = off, 4 = on.
+
+
+COMMENTS
+
+1) Examples of line and pixel drawing can be found in GRAPHICS.BAS.
+
+2) All of the coordinates used are 32 or greater. At first glance,
+it would seem natural to start them at 1 or 0.  However BDOS interprets
+some byte values of 32 or less as control keys. For example, an attempt
+to use a coordinate of 9 will result in eight spaces being printed
+on the screen (BDOS thinks that the 9 is a tab).
+
+3) A line drawn from point a to point b will not always look the same
+as a line from b to a; it will be a mirror image.
+
+4) Graphics characters, pixels, and lines cannot write over normal 
+characters.
+
+
+SUMMARY
+
+Graphics commands:
+
+	Set Pixel			ESC, * , V1, H1
+	Clear Pixel			ESC,   , V1, H1
+	Set line			ESC, L , V1, H1, V2, H2
+	Delete line			ESC, D , V1, H1, V2, H2
+
+Attribute commands:
+
+	Inverse video on		ESC, B, 0
+	Reduced intensity on		ESC, B, 1
+	Blinking on			ESC, B, 2
+	Underlining on			ESC, B, 3
+	Cursor on			ESC, B, 4
+
+	Inverse video off		ESC, C, 0
+	Reduced intensity off		ESC, C, 1
+	Blinking off			ESC, C, 

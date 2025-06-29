@@ -1,0 +1,153 @@
+.macro chttl = The Translation Process
+.ch .chttl
+.hl 1 Translation Steps
+Pascal  source  programs are translated into runable programs in  two  or
+more steps shown schematically below (The PCODE is legible text in a
+_.TIC file):
+
+PCD interpreters (no intrinsic procedures or segmentation):
+.asis
+
+   SOURCE----->PCODE----->PCD=PROGRAM
+           !          !
+        PASCALP    ASSMPCD
+
+!
+PCD interpreters (intrinsic procedures or segmented):
+.asis
+
+   SOURCE----->PCODE----->RBMFILE(s)----->PCD=PROGRAM
+           !          !               !
+        PASCALP    ASSMPCD          LINKER
+
+!
+8080 Native code:
+.asis
+
+                                    LIBRARY----\
+   SOURCE----->PCODE----->ASSY------>SLRFILE------>PROGRAM
+           !          !          !             !
+        PASCALP    ASSMAP      SLRMAC        SLRNK
+
+!
+HP3000 (native code):
+.asis
+
+   SOURCE----->PCODE----->SPL----->USL----->PROGRAM
+           !          !        !        !
+        PASCALP    ASSMSPL    SPL    SEGMENTER
+
+!
+.note On File Sizes
+You can expect _.TIC files to be roughly the same size as the Pascal
+source files.  For _.COM generation the _.MAC file will usually be 
+about 3 to 4 times the size of the _.TIC file.
+
+.hl 1 The Compiler Header, .bb showing files used
+PASCALP (source, list,prr, ef, input, output) [parm] .eb .b
+PascalP may be operated directly by making the appropriate substitutions in
+the program header.  The pre-defined jobs below combine compiler and assembly
+execution into one command, .bb and .eb are normally most convenient.  A useful 
+specification of source is "CON", which allows entry of options and inclusion
+of the main program, for example:
+
+.i 10 (*$n-,d-,i'yourprog.pas'*) .b
+to suppress line numbers and run-time checks when compiling "yourprog.pas".
+This type of operation avoids any editing of source files.  See the "x" option
+under Compiler Switches, for a mechanism to set options in specific program
+areas without affecting the overall option settings.  Similar "stub" files
+may be defined for convenient compilation with various modes set.
+
+.hl 1 Pre-defined Jobs
+Under CPM the submit files COMPILE.JOB,  PASCPCD.JOB and
+.bb PASCPREP.JOB capture the complete (compilation assembly linkage)
+process into one command. .eb COMPILE.JOB simplifies entry  to  one
+filename.
+
+.note NOTE
+"JOB"  is similar to the standard CPM "SUBMIT"  utility,   but  allows
+nested jobs,  interactive entry, execution with any default drive assignments,
+specification of default parameters,  uses the comma as a parameter delimiter,
+and  allows "quoted string" parameters.   It will also perform the same  drive
+searches  as  the  overall  Pascal  file system.   It  is  an  enhancement  of
+"SUPERSUB".
+.res
+.hl 1 Compilation Commands
+Using the supplied programs and job streams simplified compilation commands
+are available.
+.tp 9 .hl 2     CPM:   Typical commands are:
+.i 10            A>JOB PASCPCD source list object scratch .b
+.i 20               (where scratch and object may be identical) .cr
+     or .cr
+.i 10            A>JOB COMPILE source####_<_<with no extension>> .cr
+
+.hl 1 Options
+A  number of options have been added .bb to control the compilation process.
+.eb These options are specified
+by  PARM  values in the command.   Multiple options may  be  specified  by
+adding  the  corresponding values.   (Under CPM parm is a number enclosed  by
+"[]" outside the fileparameter section of the command line.)
+.rem use .res after .itemize area
+.macro itemize = .sav .tabs 5 15 .p -10 1 5 .lm 15 .rm $$rm-5;
+.tp 8  .itemize
+.pp  PARM .t  Meaning
+.pp  2   .t   Generate procedure tracing code
+.pp  4   .t   Continue after compiler errors/warnings
+.pp  8   .t   Cross-compile (16 bit on 8 or 8 on 16 bit machines)
+.res
+
+.hl 2 Under CPM
+If no "8" bit is set code for an 8 bit machine (Pcd interpreter or 8080
+native code) is generated.  The following apply:
+.itemize
+.pp  16 .t Force a relocatable PCD file. (Programs with neither intrinsics,
+externals, nor segmentation will normally generate an executable PCD file,
+which cannot be linked to external procedures.
+.pp 64 .t For _.PCD generation, over-ride segmentation commands and force
+generation of a single segment code file.  For _.COM generation, cause the
+intermediate assembly source file to be generated in Zilog rather than
+Intel mnemnonics.  This increases the file size by about 10%.
+.pp  128 .t Echo the compiler listing on the TIC (temporary intermediate code)
+file for subsequent listing during the assembly phase.  This option greatly
+enlarges the TIC file size.  If converted to executable PCD via ASSMPCD
+a complete listing can be extracted on "codelist" file.  See the job file
+PASCPCD.JOB, which installs all these options.  Similarly, if converted to
+assembly source with ASSMAP, the original compilation listing appears as
+comments.
+.res
+
+.bb .hl 2 Under other systems (e.g. HP3000)
+Slightly different conventions apply.  Omitted from this manual.
+.eb
+.hl 2 Procedure Tracing
+Compiled programs normally do not contain procedure tracing messages.  If
+procedure tracing is desired use the "2" bit option,  and run the program with
+an  odd value of PARM specified.   Messages of the form "ENTER  procedurename"
+and  "EXIT  procedurename" will be generated automatically. .bb  At present
+this feature  is  suppressed, because most systems cannot conveniently supply
+sense switches for control, however custom interpreters can be supplied which
+enable the feature. .eb
+The messages are indented to reflect the dynamic 
+procedure level.  Therefore messages from recursive 
+procedures may disappear to the right.
+
+
+.hl 2 Where options take effect
+Of  the above "bit" options,  only the 4,  8 and 128 bits (no  error  job
+aborts,  byte  object machine,  and echo listing on P-Code file) are  directly
+implemented on the compiler.   The remaining options are passed to the various
+assembly programs which generate final code.
+
+.note	Microsoft _.REL format
+While it is possible to use this format, it is not supported because
+a: Names are limited to 6 characters, and extremely confusing errors
+can result from name collisions; b: The LIB80 program is unreliable,
+and loses portions of large libraries, thus making maintenance of
+PASCLIB.REL impracticable.
+
+SLR Systems format and librarian avoids all these problems, and is
+also an order of magnitude faster.  Unfortunately the SLR programs
+will only execute under Z80 processors (while the PascalP system
+can execute under 8080, 8085, and v20 processors).
+.res
+)b

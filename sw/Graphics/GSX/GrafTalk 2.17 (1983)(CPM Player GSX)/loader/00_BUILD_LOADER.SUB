@@ -1,0 +1,38 @@
+; assemble GTPLTGSX
+; This program receives the HP 74XX plotter commands and
+; based on them issues GSX calls to draw the image on screen
+; it is assembled as PRL and embedded in GTLOADER 
+ERA GTPLTGSX.PRL
+ERA GTPLTGSX.REL
+ERA GTPLTGSX.SYM
+ERA GTPLTGSX.TXT
+M80 GTPLTGSX,GTPLTGSX.TXT=GTPLTGSX.ASM /Z/M
+LINK GTPLTGSX=GTPLTGSX[op]
+ERA GTPLTGSX.REL
+ERA GTPLTGSX.SYM
+;
+; assemble GTLOAD
+; This program does the following actions
+; 1) relocates the embedded program GTPLTGSX on top of TPA
+; 2) calls GTPLTGSX to hook BDOS function 5 (send char to printer port)
+;
+ERA GTLOAD.REL
+ERA GTLOAD.TXT
+ERA GTLOAD.COM
+; assemble and generate listing file
+M80 GTLOAD,GTLOAD.TXT=GTLOAD.ASM /Z/M
+L80 GTLOAD,GTLOAD/N/E
+ERA GTLOAD.REL
+; concatenate GTPLTGSX, as it is not .COM, add the [O] option 
+; to force a binary copy
+PIP GL.COM=GTLOAD.COM,GTPLTGSX.PRL[O]
+ERA GTPLTGSX.PRL
+ERA GTLOAD.COM
+;
+; GENGRAF GTLOAD
+; so it will load the GSX driver stated in ASSIGN.SYS
+; copy the result to main program folder
+; 
+GENGRAF GL.COM
+PIP B:GTLOAD.COM=GL.COM
+ERA GL.COM

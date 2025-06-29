@@ -1,0 +1,65 @@
+h16646
+s 00053/00000/00000
+d D 1.1 83/03/15 21:15:19 tes 1 0
+c date and time created 83/03/15 21:15:19 by tes
+e
+u
+4
+U
+t
+T
+I 1
+; integer function ndcfcg (coord)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                      ;
+;          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        ;
+;          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           ;
+;          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          ;
+;          WITH THE TERMS OF THAT AGREEMENT.                           ;
+;                                                                      ;
+;          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            ;
+;          ALL RIGHTS RESERVED.                                        ;
+;                                                                      ;
+;     Function: Convert from NDC space (0-32767) to FCG device space   ;
+;               (0-639)                                                ;
+;                                                                      ;
+;     Input Parameters:                                                ;
+;            coord - coordinate value to be converted (0-32767)        ;
+;                                                                      ;
+;     Output Parameters:                                               ;
+;            ndcfcg - coordinate value in FCG device space (0-639)     ;
+;                                                                      ;
+;     Routines Called:                                                 ;
+;            none                                                      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	.8080
+ndcfcg:	entry 	ndcfcg
+	mov	e,m    		; get value in 0-32767 space
+	inx	h
+	mov	d,m
+	xchg
+	mvi	b,1		; shift value right 1 bit (0-16383 space)
+	call	rshift
+	push	h		; save it
+	mvi	b,2		; shift right 2 more bits (0-4095 space)
+	call	rshift
+	pop	d               ; get first value
+	dad	d               ; add it to second - 0-639 space
+        mvi	b,5		; shift right 5 more bits (0-639 space)
+	call	rshift
+	ret
+; 	Rshift function assumes value in hl and shift count in b.
+;	It returns the value shifted right b bits in hl.
+rshift: 
+	ana	a               ; clear carry
+        mov	a,h             ; get high order byte
+	rar			; rotate right
+	mov	h,a             ; put it back
+	mov	a,l		; get low order byte
+	rar			; rotate right
+	mov	l,a		; put it back
+	dcr	b		; decrement count in b
+	jnz	rshift		; not done
+	ret
+        end
+E 1

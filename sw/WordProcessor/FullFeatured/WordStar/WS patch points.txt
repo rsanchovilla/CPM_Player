@@ -1,0 +1,78 @@
+                              WS.COM PATCH POINTS
+                   (abbreviated and updated from WSBIBLE.DOC)
+             (system control and printer patch points not included)
+        (versions prior to 2.26 do no use labels, use address instead)
+
+00    = hex number
+#00   = hex number that tells how many hex bytes follow
+00-00 = a range of hex numbers
+< >   = comments
+To modify the actual file, subtract 100h from the memory location (IE: 193=093)
+
+            MEMORY LOCATION
+              WS VERSION
+LABEL   087 092 093 226 300 330  LEN  INSTALLED ID TEST                      RANGE  DEFAULT
+------  --- --- --- --- --- ---  ---  -------------------------------------  -----  --------
+        182 193 193 n/a n/a n/a   58  TERMINAL ID TEXT                       (varies)
+IDTEX   n/a n/a n/a 18F 18F 18A   34  TERMINAL ID TEXT                       (varies)
+        1BD 1CF 1CF n/a n/a n/a   58  PRINTER ID TEXT                        (varies)
+        n/a n/a n/a 1B3 n/a n/a   34  PRINTER ID TEXT                        (varies)
+PIDTEX  n/a n/a n/a n/a 1B3 1AE   34  PRINTER ID TEXT                        (varies)
+PROTTX  n/a n/a n/a 1D7 1D7 1D2   34  PRINTER PROTOCOL TEXT                  (varies)
+PDRVTX  n/a n/a n/a 1FB 1FB 1F6   34  PORT DRIVER TEXT                       (varies)
+       5817 120 120 134 134 128    1  INSTALLED FLAG(00=installed,FF=not)    00 FF  00
+
+LABEL   087 092 093 226 300 330  LEN  TERMINAL ESCAPE SEQUENCE CODES   CTRL  RANGE  DEFAULT
+------  --- --- --- --- --- ---  ---  -------------------------------------  -----  --------
+HITE    200 230 230 248 248 232    1  SCREEN HEIGHT(24 lines)                10-19  18
+WID     201 231 231 249 249 233    1  SCREEN WIDTH(80 columns)               40-50  50
+        202 232 232 n/a n/a n/a   11  CLEAR SCREEN & HOME CURSOR                   #00 00-00
+CLEAD1  20D 23D 23D 24A 24A 234    9  CURSOR POS-LEAD-IN STR                       #00 00-00
+CLEAD2  216 246 246 253 253 23D    5  CURSOR POS-STR BETWEEN COL/LINE              #00 00-00
+CTRAIL  21B 24B 24B 258 258 242    5  CURSOR POS-TRAILING STR                      #00 00-00
+CB4LFG  220 250 250 25D 25D 247    1  CURSOR POS-FLAG(00=ln/col,FF=col/ln)   00 FF  00
+LINOFF  221 251 251 25E 25E 248    1  CURSOR POS-LINE OFFSET                 00-20  20
+COLOFF  222 252 252 25F 25F 249    1  CURSOR POS-COLUMN OFFSET               00-20  20
+ASCUR   223 253 253 260 260 24A    1  CURSOR POS-DATA(00=binary,02=digit)    00 02  00
+ERAEOL  230 260 260 26D 26D 250    7  ERASE TO END OF LINE              ^QY        #00 00-00
+LINDEL  237 267 267 274 274 257    7  DELETE LINE                       ^Y         #00 00-00
+LININS  23E 26E 26E 27B 27B 25E    9  INSERT LINE                       ^N         #00 00-00
+IVON    247 277 277 284 284 267    7  TURN ON HIGHLIGHTING                         #00 00-00
+                                       (inverse video, half intensity, underlining)
+IVOFF   24E 27E 27E 28B 28B 26E    7  TURN OFF HIGHLIGHTING                        #00 00-00
+                                       (inverse video, half intensity, underlining)
+TRMINI  255 285 285 292 292 275    9  TERMINAL INITIALIZATION STRING               #00 00-00
+TRMUNI  25E 28E 28E 29B 29B 27E    9  TERMINAL UNINITIALIZATION STRING             #00 00-00
+USELST  26D 29D 29D 2AA 2AA 28D    1  CAN USE LAST LINE ON CRT FLAG(FF=on,00=off)   00
+
+LABEL   087 092 093 226 300 330  LEN  INITIAL DELAYS                         RANGE  DEFAULT
+------  --- --- --- --- --- ---  ---  -------------------------------------  -----  --------
+        26F 29F 29F n/a n/a n/a    1  UNKNOWN                                       19
+DELCUS  270 2A0 2A0 2AE 2AE 28E    1  CURSOR ADDRESSING DELAY(msec)          00-FF  0A
+DELMIS  271 2A1 2A1 2AF 2AF 28F    1  OTHER MISC FUNCT DELAY(msec)           00-FF  05
+DEL1    n/a n/a n/a 2CF 2CF 2AF    1  CURSOR BLINK-ON SHORT DELAY(msec)      00-FF  03
+DEL2    n/a n/a n/a 2D0 2D0 2B0    1  CURSOR BLINK-OFF MED-SHORT DELAY(msec) 00-FF  09
+DEL3    n/a n/a n/a 2D1 2D1 2B1    1  SUBMENUS MED-LONG DELAY(msec)          00-FF  19
+DEL4    n/a n/a n/a 2D2 2D2 2B2    1  MESSAGES AND SIGN-ONS LONG DELAY(msec) 00-FF  40
+DEL5    n/a n/a n/a n/a 2D3 2B3    1  SCREEN REDISPLAY/REFRESH DELAY(msec)   00-FF  09
+
+LABEL   087 092 093 226 300 330  LEN  INITIAL SETUP                    CTRL  RANGE  DEFAULT
+------  --- --- --- --- --- ---  ---  -------------------------------------  -----  --------
+         ?   ?   ?  2D7 n/a n/a    1  FIND .OVR FILES ON DRIVE(01=A:,02=B:)  01-16  01
+DEFDSK  n/a n/a n/a n/a 2DC 2B9    1  FIND .OVR FILES ON DRIVE(01=A:,02=B:)  01-16  01
+ITHELP  2C0 2F0 2F0 360 360 34D    1  HELP LEVEL                        ^JH  00-03  03
+ITITOG  2C1 2F1 2F1 362 362 34F    1  INSERT MODE(FF=on,00=off)         ^V   00 FF  FF
+ITDSDR  n/a n/a n/a 363 363 350    1  FILE DIR DISPLAY(FF=on,00=off)    ^KF  00 FF  FF
+INITWF  2E1 311 311 385 385 36D    1  WORD WRAP(FF=on,00=off)           ^OW  00 FF  FF
+    +1  2E2 312 312 386 386 36E    1  JUSTIFY(FF=on,00=off)             ^OJ  00 FF  FF
+    +2  2E3 313 313 387 387 36F    1  VARIABLE TABS(FF=on,00=off)       ^OV  00 FF  FF
+    +3  n/a n/a n/a 388 388 370    1  SOFT HYPHEN(FF=on,00=off)         ^OE  00 FF  00
+    +4  n/a n/a n/a 389 389 371    1  HYPEN-HELP(FF=on,00=off)          ^OH  00 FF  FF
+    +5  2E5 315 315 38A 38A 372    1  CNTRL CHARS DISPLAY(FF=on,00=off) ^OD  00 FF  FF
+    +6  2E6 316 316 38B 38B 373    1  RULER LINE DISPLAY(FF=on,00=off)  ^OT  00 FF  FF
+    +8  2E8 318 318 38D 38D 375    1  PAGE BREAK DISPLAY(FF=on,00=off)  ^OP  00 FF  FF
+    +9  2E9 319 319 38E 38E 376    1  LINE SPACING                      ^OS  01-09  01
+    +A  2EA 31A 31A 38F 38F 377    1  MODE(FF=column,00=block)          ^KN  00 FF  00
+
+       5817 77A 77A 838 838 81A       END OF USER PATCHING ACCESSABLE AREA
+

@@ -1,0 +1,62 @@
+; lgload loads a RSX program that acts as GSX driver
+; it is completly transparent to Logo 
+; lgload needs the mandatoy GSX files: GSX.SYS, 
+; ASSIGN.SYS, and DD*.PRL driver
+; lglogo will also load and run LOGO.COM
+; koch program for DrLogo by John Elliott 2022-08-03
+; https://www.seasip.info/Unix/Joyce/screens.html
+xsub
+lgload
+;expect #27 "Y" #32 #32 "?"
+to koch
+fs
+cs
+make "col 0
+make "cs cos (180 / 6)
+make "x 0
+make "y 0
+make "length 150
+star :x :y :length
+ss
+end
+to star :x :y :length
+make "ang 0
+if :length < 5 [go "out]
+make "col :col + 1
+if :col > 7 [make "col 1]
+setpc :col
+make "x1 :length * :cs
+make "y1 :length / 2
+pu
+setpos (list :x :y + :length)
+pd
+setpos (list :x + :x1 :y - :y1)
+setpos (list :x - :x1 :y - :y1)
+setpos (list :x :y + :length)
+pu
+setpos (list :x :y - :length)
+pd
+setpos (list :x + :x1 :y + :y1)
+setpos (list :x - :x1 :y + :y1)
+setpos (list :x :y - :length)
+repeat 6 [arms :ang make "ang :ang + 60]
+star :x :y :length / 3
+label "out
+end
+to arms :ang
+make "newx :x + :length * sin (:ang + 60)
+make "newy :y + :length * cos (:ang + 60)
+star :newx :newy :length / 3
+end
+make "y 0
+make "x 0
+make "cs 0.866025388240814
+make "newy 168.393825491269
+make "newx 168.393825491269
+make "ang 0
+make "y1 2.77777777777778
+make "x1 4.81125215689341
+make "length 150
+cs koch
+
+

@@ -1,0 +1,108 @@
+            CRunch and UNCRunch LZH version 2.0 Release Documentation
+                                  July, 1991
+
+What this is:
+
+   This library contains versions of programs to perform compression of, 
+   decompression of, and typing of files via the LZH algorithm.  The algorithm 
+   and its history are covered below.
+
+   This release is the first major change in almost 2 years!
+
+   This new release introduces encoding changes from v1.1 that make even 
+   SMALLER output files.  UNCRLZH v2.0 (supplied) is required to decompress 
+   files encoded with this new method.  (UNCRLZH v1.1 WILL recognize that a 
+   newer release of the program is required, and will inform you if you try to 
+   use it on files encoded with this new version.)   UNCRLZH v2.0 will 
+   decompress files encoded with EITHER version of LZH encoding.
+
+   The algorithm has been recoded for speed.  Test cases have shown a 10% 
+   performance enhancement over version 1.1.
+
+   In the purest sense, this is really a release of the CRLZH.REL and 
+   UNLZH.REL (CRunch LZH and UNcrunch LZH) code.  However, without a 
+   convenient (and familiar) user interface, the encoding method is of little 
+   use to the typical user.
+
+   As a quick means to an end, the algorithm has been grafted (with 
+   permission) to Steve Greenberg's CRUNCH, and UNCRUNCH programs as modified 
+   and extended by Gene Pizzetta.  (There is a separate TYPELZ graft.)  The 
+   resulting program files (CRLZH and UNCRLZH) are, at this time, offered as 
+   an official release (the beta test period being completed), on a restricted 
+   distribution basis: Permission is granted to use or copy these files 
+   provided that such use is non-profit in nature.
+
+What LZH compression does and how it compares:
+
+   FIRST - It's SLOW.  Much slower than CRUNCH.  About even with the old 
+   SQueeze.  It's the nature of the algorithm, but few complaints have been 
+   recieved about that fact.  This release is substantially faster than the 
+   v1.1 release.
+
+   The most impressive aspect of the algorithm is that it compresses further 
+   than CRUNCH.  The nature of material being compressed is important - prose 
+   and high level language code will compress the best.  Since the algorithm 
+   depends, in part, on patterns within the file being compressed, it is 
+   surprising to discover that it does a better job (in general) on .COM files 
+   than CRUNCH.
+
+   Examples:
+    CRUNCH of SLR180.COM   106% ratio   (actually made a larger file)
+    CRLZH  of SLR180.COM    84% ratio
+    CRUNCH of TYPELZ22.Z80  45% ratio
+    CRLZH  of TYPELZ22.Z80  40% ratio
+    CRUNCH of 'C' source    45% ratio   (typical 'C' src selected at random)
+    CRLZH  of 'C' source    33% ratio   (same file as above)
+
+A small history:
+
+   I am NOT the originator of the LZH encoding.  The program that started my 
+   whole involvement in the introduction of this method of compression to the 
+   8-bit world bears the following opening comments:
+      /*
+      * LZHUF.C English version 1.0
+      * Based on Japanese version 29-NOV-1988
+      * LZSS coded by Haruhiko OKUMURA
+      * Adaptive Huffman Coding coded by Haruyasu YOSHIZAKI
+      * Edited and translated to English by Kenji RIKITAKE
+      */
+
+   This 'C' program implemented the compression algorithm of the LHARC program 
+   which arrived on the US scene in the spring of '89.
+
+   Being of a curious nature, I figured I'd play with the algorithm just to 
+   understand it (the internal comments were, indeed, sparse - leaving MUCH to 
+   the reader's contemplation/reverse engineering) while 'better minds' than I 
+   tackled it in earnest.
+
+   Months passed.  I found that I was 'mastering' the algorithm (read that as 
+   demonstrating to myself that I understood it) by converting it piece-wise 
+   to assembly language.  After a while, I was left with a 'C' language main 
+   program, run time library, and I/O with the business end of the compression 
+   and decompression implemented entirely in assembly language.  Since the 
+   expected event of one of the 'heavies' in the PD and/or compression world 
+   releasing a CP/M version of the compression algorithm hadn't come to pass, 
+   I set about making a version myself.
+
+   The natural choice was to substitute CRUNCH (UNCR and TYPELZ) for my 
+   vestigial 'C' main program.  After some 'customizations' of the algorithm 
+   (adding reserved codes and tailoring the table sizes to produce a good 
+   trade-off between the available CP/M memory space and execution speed), the  
+   programs in this LBR were generated.
+
+   At this time, let me take the opportunity to thank Mr. Greenberg for making 
+   the CRUNCH and UNCR programs and releasing the code.  Without the 
+   availability of those programs (and his permission), I probably would not 
+   have set out upon the final phase of this project.  His coding allowed me 
+   to easily 'graft' my encoding and decoding subroutines to the main programs 
+   to rapidly create these release versions.
+
+Parting shots:
+
+       The author will not be responsible for any damage, loss, etc.  caused 
+       by the use of these programs.
+
+R. Warren
+Sysop, The Elephant's Graveyard (Z-Node#9)
+619-270-3148 (PCP area CASDI)
+

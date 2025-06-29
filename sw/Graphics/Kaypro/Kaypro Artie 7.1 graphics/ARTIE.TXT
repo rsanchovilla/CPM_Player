@@ -1,0 +1,284 @@
+=====================================================================
+
+                 Documentation for ARTIE Version 7.1
+
+                          by Peter Donnelly
+
+                           - March 1987 -   
+
+=====================================================================
+
+     ARTIE is for creating graphic images on CP/M Kaypros. Basic 
+instructions are included in the program itself. 
+     The following files make up the complete ARTIE package:
+
+ARTIE.COM    - the command file for drawing and printing. 
+ARTFONT.ART  - must be present for the big-character function.
+ARTHELP.TXT  - same for the help function.
+ARTJUKI.CHN  - rename to ARTPRINT.CHN to support a Diablo 630-
+               compatible daisy-wheel printer.
+ARTPAN.CHN   - same for Panasonic 1091 and other dot-matrix printers.
+ARTOKI.CHN   - same for Okidata 91 or 92 printer.
+ARTSHOW.COM  - program to display a series of screens. 
+SHOW-?.ART   - sample screens to be viewed with TYPE or ARTSHOW.
+ARTIE.DOC    - TYPEable to the printer.
+
+=====================================================================
+
+                            NEW FEATURES
+
+     First I must apologize for the proliferation of versions. 
+Writing programs for the Kaypro is a little like offering custom kits 
+for Ramblers; you want to get them out there quickly, before the 
+number of interested people drops to zero. So I've released new 
+editions of the program as it evolved rather than waiting for it to 
+reach a definitive form.
+     That said, version 7 will probably be the last major revision. 
+ARTIE was originally conceived as a tool for creating easy-to-use, 
+TYPEable screen files, and it has gone about as far as it can in that 
+direction. 
+     This latest version of ARTIE sees two major additions: simple 
+production of characters in large fonts, and a built-in screen dump 
+for the Panasonic/Epson/Gemini printers. There are many small 
+changes, and the code has been streamlined so that even with the new 
+features it will fit into less than 37K of RAM.
+     The big characters are accessed through a new ^T command. A 
+default typeface is provided but users can easily build their own 
+font libraries. See ARTFONT, below.
+     The screen dump, activated by ^G, produces a different image 
+than the regular ARTPAN printer driver: smaller and somewhat 
+distorted, with keyboard characters printed in compressed rather than 
+pica mode. Text in inverse video is printed in italics, as it now is 
+in ARTPAN.
+     ARTIE now distinguishes between the numerical keypad and the 
+ordinary number keys, so it is possible to type in numbers without 
+the old ^N command.
+                                  
+                             USEABILITY
+
+     The program was developed on the Kaypro 2X (1984) and should  
+work fully on any model that has TYPEable graphics associated with 
+ASCII numbers 0-31 and 128-255. In 1985 and later models using the 
+so-called universal ROM, and under some non-standard operating 
+systems, the non-pixel graphics on palette 3 will not be available. 
+Users of the earlier machines that display palette 3 should not 
+select this palette for output intended to be portable to other 
+Kaypros. (See also USER PATCHES and note on ARTSHOW, below.)
+     The Panasonic printer driver should work on many other machines 
+such as the Epsons and Geminis. The Juki version will support most 
+daisy-wheels including the "Kaypro Letter Quality Printer."
+     The graphics mode under ZCPR is automatically enabled.
+
+                           ARTIE AND DDRAW
+
+     Files from D. Griffith's non-commercial program DDRAW that have 
+been saved with the "T" option are to some extent compatible with 
+ARTIE. It is possible, for example, to draw a circle graph in DDRAW, 
+save it as a screen with the extension .ART, and read it into ARTIE. 
+Limitations are that you won't be able to edit the extreme right-hand 
+column, line 25 will be lost, and there will be difficulties where 
+more than two special video effects have been combined in a single 
+cell.
+
+                          HINTS ON DRAWING 
+
+     Cells can have invisible attributes. If you print spaces while  
+the blink function is turned on, for example, then those spaces are  
+defined in the array as blinking spaces. If you get some odd results  
+when using the fill function, this may be the reason; only truly  
+empty spaces will be filled, not those defined as blinking or dim.  
+Similarly, ^E will clear only those cells which are the same in all  
+respects as the cell where the pointer is placed. Erasing with DEL  
+will restore spaces to neutrality. 
+     A quick way to reset the brush to a neutral state is to hit 0  
+followed by LINE FEED. This a good method to keep from accidentally  
+erasing or overwriting a cell when you next move the pointer. 
+     When in pixel-drawing mode you can only modify existing block 
+graphics or draw on a blank part of the screen. To do anything else 
+you must return to normal drawing mode. 
+     Since the special video effects apply only to whole characters, 
+it is not possible to toggle effects on and off in pixel-drawing 
+mode. If you want to draw with dim pixels, first fill the area with 
+"dim spaces" in normal drawing mode; or else draw at normal intensity 
+and then add dimming with a cut-and-paste procedure. When adding a 
+pixel to a blinking character you may get unexpected results, because 
+if you fill in the lower left corner you are in effect creating an 
+inverse graphic.
+
+                            CUT AND PASTE
+
+     The first time you strike ^C a cue line will appear, asking you  
+to mark the upper left corner of the rectangle to be cut. If you wish 
+to abort the cut at this time, just home the pointer. Otherwise move 
+the pointer to the top left corner of the block, placing it under the 
+top row, not above it. (To mark a single line, don't move the cursor 
+up the screen at all -  just to the left.) ARTIE will remember the 
+defined area until it is erased with ^KE or until ^C is struck again. 
+It is the boundaries of the block that are stored in memory, not the 
+contents, so any changes you make to the block after it is cut will 
+be part of subsequent paste operations. 
+     Details read into the screen from disk while the erasing toggle 
+is on will completely overwrite the rectangle they occupy; otherwise 
+the old image will show through wherever there are spaces (with no 
+video effects) in the new. This feature is handy for creating 
+textured backgrounds around complex images. You can also merge two 
+complete screens; simply save the one that is to appear in the  
+foreground as a detail file and read it into the other.
+     You can add special effects to any block by setting the 
+appropriate toggles and then either marking the block and altering it 
+with ^KA or reading it in as a detail file. 
+     The ^R command serves for both screen and detail files.  ARTIE 
+will look for a screen file when you strike ^R with the pointer  on 
+the top line; otherwise it will look for a detail. 
+
+                               ARTFONT
+
+     The file ARTFONT.ART contains a partial font of large keyboard 
+characters that is automatically loaded into memory from the logged 
+drive. To use the font, strike ^T and enter a string of up to 20 
+characters. A block five lines deep will come in much as if it were a 
+detail file, already marked as a block for further manipulation with 
+^K. Unsupported keys are printed as blanks. 
+     ARTFONT can be edited like any screen file, and different 
+fontfiles can be created for loading anytime with the ^N command. 
+When you edit the current font and save it under the same name, the 
+new version is automatically loaded into font memory.
+     Editing of fontfiles must be done with pixel graphics only. 
+Characters may be altered completely but must always be contained 
+within a cell of 4 rows by 6 columns and of course are always 
+accessed with the same key. Proportional spacing imposes narrower 
+limits on some characters. The backslash is reserved for a user-
+defined character or pattern.
+
+                              ARTPRINT
+
+     The program ARTPRINT.CHN can be run only on exiting ARTIE, with 
+the command ESC P. 
+     One can achieve surprisingly varied effects with the Juki 
+version. Unlike other graphics programs supporting the daisy-wheel, 
+ARTPRINT does not attempt to replicate a dot-matrix effect by 
+printing thousands of periods; rather, it prints a "shading  
+character" (of your choice) once for each screen pixel. The equals 
+sign makes a good all-purpose shading character. A larger character 
+such as a dollar sign will produce complex interwoven patterns; the 
+letter 'n', used in the fine checkerboard pattern, gives the effect 
+of woven rattan. If you want to get really fancy, divide your work 
+into two or more screens and print each one with a different shading 
+character, repositioning the paper each time.
+
+                               ARTSHOW
+
+     This standalone program can be used in two ways: to give a quick 
+scan of all screen files on the disk or to present a prepared show. 
+With the "A" argument (type "ARTSHOW ?" for a list of options) it 
+will search the logged drive for all files named *.ART and show these 
+in alphabetical order, with the filenames printed on the status line. 
+Otherwise it will display, repeatedly and without comment, up to 6 
+screens that have been named consecutively as SHOW-1.ART, SHOW-2.ART, 
+and so on. (These are loaded into memory to save wear on the drives.)
+     ARTSHOW controls the video chip directly, not through the 
+regular BIOS routines, so that non-pixel graphics will be displayed 
+on all machines. (Special thanks to Raymond Rosenkranz for his help 
+with this.) However, you must cold boot with the reset button before 
+running the program, to prevent problems. Also, some machines may 
+produce a lot of screen-write errors. 
+
+                          USING ARTIE FILES
+
+     Remember that a TYPE command will leave only 23 lines of an 
+ARTIE file on the screen, as the system prompt will print on line 24. 
+If you want to make TYPEable electronic greeting-cards, leave the top 
+line blank so that nothing will scroll out of sight. 
+     For the information of programmers who wish to incorporate ARTIE  
+screen graphics into their own routines, the files are made up of  
+continous strings of characters with no carriage returns or line  
+feeds. In case anyone wants to read a file line-by-line, the 80th  
+column contains a graphic space, character #128, a value not normally  
+found elsewhere on the screen. An exception is made for the last 
+column of the last line, which contains a null so that when the file 
+is written the cursor will not advance and force the top line to 
+scroll off the screen. Escape sequences have been inserted wherever 
+the video attributes (underlining, dimming, inverting, and blinking) 
+need to be toggled on and off as the screen prints. 
+    In Pascal, and I presume in other languages with character  
+variables, a file may be accessed by a simple loop of read and write  
+commands continuing until the EOF is encountered. Lines will sort  
+themselves out automatically with the normal dropping of the cursor  
+after every 80 printable characters. 
+     Unfortunately, MBASIC does not lend itself readily to processing  
+ARTIE files. They must be treated as random files and read character 
+by character. You will have to include a routine for determining 
+whether each character is part of an escape sequence; that is, 
+whether either of the two preceding characters is CHR$(27). Then 
+every printable character will have to be output through a direct 
+cursor address followed by a carriage return, necessary because 
+MBASIC insists on a CR every so often and will spit out random 
+characters if it doesn't find one. The process of reading and 
+printing the file will be very slow. 
+
+                            USER PATCHES
+
+     The Kaypro video chip is capable of displaying a different  
+character for each of the bytes in the range 0-255. However, the  
+operating system does not allow access to some of these (like #7, 
+which is always interpreted as a control code to ring a bell), and 
+indeed the newer models running CP/M 2.2u do not permit display of 
+any of the characters in the range 0-31 through normal programming 
+means. All 256 characters are shown in Raymond Rosenkranz's public 
+program SEEBIOS, but to use them in drawing you have to buy Spectre 
+Technologies' REMBRANDT.
+     Palette 3 in ARTIE contains a selection of low-range graphics  
+readily available (and TYPEable) on older machines. Newer machines  
+will simply not display these characters. To make ARTIE more useful, 
+owners of such machines may want to patch graphics or keyboard  
+characters from the range 32-255 onto this palette by replacing the 
+14 bytes beginning at address 211C. 
+
+                        COPYRIGHT INFORMATION
+
+     ARTIE.COM and its associated files may be freely copied for  
+private use but not distributed for gain without the author's written  
+permission.
+
+                        SPECIAL ANNOUNCEMENT
+
+     ARTIE's successor, ARTPAGE, is now available as a commercial 
+program. ARTPAGE does almost everything ARTIE does and much more. 
+Among its features:
+
+- On-screen "what you see is what you get" layout of a full printer 
+  page in either of two formats, up to 115 text columns by 83 lines. 
+  The screen window is 79 columns by 24 lines. 
+- Fastest screen refresh of any Kaypro graphics program, permitting 
+  virtually instantaneous windowing onto any part of the page form.
+  The window can even be moved line by line or column by column.
+- Improved cut-and-paste facility even lets you send a detail 
+  directly to the dot-matrix printer.
+- Accepts graphics files from ARTIE and from Spectre Technologies' 
+  REMBRANDT and PRESTO. (Fine-line graphics are not supported.)
+- Text can be read in from any ASCII file and arranged in columns 
+  on the page, side by side with graphics. Some Wordstar print      
+  commands are recognized. Underlining, boldface, and italics are       
+  shown with video effects. Superscript, subscript, compressed, and   
+  expanded fonts are also supported. 
+- Drivers are provided for the standard daisy-wheel and Epson-type 
+  (nine-pin) printers. (Sorry, not the Okidata.) 
+
+     ARTPAGE is ideal for preparing newsletters, bulletins, technical 
+papers - any material where a mixture of text and graphics is 
+required. 
+     Look for PAGEDEMO.LBR on bulletin boards, or send $7 (refundable 
+on purchase) for a demonstration version that has all features except 
+file-saving and memory dump. Call 604-383-4955 evenings for more 
+information.
+     ARTPAGE comes complete with printed documentation, at least 
+three headline fonts, and sample page files. The price is US $30 (Cdn 
+$40) postpaid. Send payment by money order for prompt dispatch by 
+airmail; payment by cheque will delay delivery for several weeks.
+
+                           ARTIE SOFTWARE
+                     964 Heywood Ave.,  No. 220
+                     Victoria BC Canada V8V 2Y5
+
+=====================================================================
+

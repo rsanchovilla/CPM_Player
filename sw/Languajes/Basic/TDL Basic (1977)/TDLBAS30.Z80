@@ -1,0 +1,8289 @@
+; 2020-01-19
+;
+; Disassembly of TDL 12K BASIC V3.0 FOR CP/M
+;
+;
+; The usual disclaimers apply.
+;
+
+	.Z80
+
+inc_xh	macro
+	db	0ddh, 24h
+	endm
+
+inc_xl	macro
+	db	0ddh, 2ch
+	endm
+
+ld_cxh	macro
+	db	0ddh, 4ch
+	endm
+
+ld_dxl	macro
+	db	0ddh, 55h
+	endm
+
+ld_xhc	macro
+	db	0ddh, 61h
+	endm
+
+ld_xha	macro
+	db	0ddh, 67h
+	endm
+
+ld_xlc	macro
+	db	0ddh, 69h
+	endm
+
+ld_xld	macro
+	db	0ddh, 6ah
+	endm
+
+ld_xla	macro
+	db	0ddh, 6fh
+	endm
+
+ld_axh	macro
+	db	0ddh, 7ch
+	endm
+
+ld_axl	macro
+	db	0ddh, 7dh
+	endm
+
+adc_axh	macro
+	db	0ddh, 8ch
+	endm
+
+adc_axl	macro
+	db	0ddh, 8dh
+	endm
+
+sbc_axh	macro
+	db	0ddh, 9ch
+	endm
+
+sbc_axl	macro
+	db	0ddh, 9dh
+	endm
+
+and_xl	macro
+	db	0ddh, 0a5h
+	endm
+
+or_xh	macro
+	db	0ddh, 0b4h
+	endm
+
+or_xl	macro
+	db	0ddh, 0b5h
+	endm
+
+; common functions
+
+CPHL_DE	macro
+	local	@a
+	ld	a, h
+	sub	d
+	jr	nz, @a
+	ld	a, l
+	sub	e
+@a:
+	endm
+
+LDHL_M	macro
+	ld	a, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, a
+	endm
+
+LDDE_M	macro
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	endm
+
+LDBC_M	macro
+	ld	c, (hl)
+	inc	hl
+	ld	b, (hl)
+	endm
+
+LDM_DE	macro
+	ld	(hl), e
+	inc	hl
+	ld	(hl), d
+	endm
+
+LDM_BC	macro
+	ld	(hl), c
+	inc	hl
+	ld	(hl), b
+	endm
+
+TSTM_W	macro
+	ld	a, (hl)
+	inc	hl
+	or	(hl)
+	endm
+
+	aseg
+
+FCB1	equ	5Ch
+FCB2	equ	6Ch
+
+	org	100h
+
+;
+; TDL BASIC uses ram buffer at 100h to 2FFh regardless
+; of the location of the interpreter in memory.
+;
+
+BUF	equ	$
+
+L100:	jp	L38E1
+
+L101	equ	L100+1
+L102	equ	L100+2
+
+L103:	db	0
+L104:	dw	0
+L106:	dw	0
+L108:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+L138:	db	0
+	db	0
+L13A:	dw	0
+L13C:	dw	0
+L13E:	dw	0
+L140:	dw	0
+L142:	db	0
+L143:	db	0
+L144:	dw	0
+L146:	dw	0
+L148:	dw	0
+L14A:	dw	0
+L14C:	dw	0
+L14E:	dw	0
+L150:	dw	0
+L152:	dw	0
+L154:	dw	0
+L156:	dw	0
+L158:	dw	0
+L15A:	dw	0
+L15C:	dw	0
+L15E:	db	0
+L15F:	db	0
+L160:	db	0
+L161:	db	0
+L162:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0
+L17C:	dw	0
+L17E:	dw	0
+L180:	dw	0
+L182:	db	0
+L183:	dw	0
+L185:	db	0
+L186:	db	0
+L187:	db	0
+	db	0
+	db	0
+L18A:	db	0
+L18B:	db	0
+L18C:	db	0
+L18D:	db	0
+	db	0
+	db	0
+L190:	db	0
+L191:	dw	0
+L193:	dw	0
+L195:	db	0
+L196:	dw	0
+L198:	dw	0
+L19A:	db	0
+L19B:	db	0
+L19C:	dw	0
+L19E:	db	0
+L19F:	dw	0
+L1A1:	dw	0
+L1A3:	db	0
+L1A4:	db	0
+L1A5:	dw	0
+L1A7:	db	0
+L1A8:	db	0
+L1A9:	db	0
+L1AA:	db	0
+L1AB:	db	0
+L1AC:	dw	0
+	dw	0
+L1B0:	db	0
+L1B1:	db	0
+L1B2:	dw	0
+L1B4:	dw	0
+L1B6:	dw	0
+L1B8:	dw	0
+L1BA:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+L23A:	db	0
+L23B:	dw	0
+L23D:	db	0
+L23E:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0
+L249:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0
+L25D:	db	0
+L25E:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+L2DE:	db	0
+L2DF:	dw	0
+L2E1:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+L2F1:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0
+L2FD:	db	0
+L2FE:	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0
+L3FD:	db	0, 0, 0
+
+BUFEND	equ	$
+
+;
+; TDL BASIC starts here
+;
+
+BASIC:	jp	L38E1		;"INITIALIZE" ENTRY POINT
+REST:	jp	L6CE		;RECOVERY ENTRY POINT
+USR:	jp	LDBC		;USER DEF.
+	jp	LDA5
+	jp	L16EA
+
+CIN:	ld	a, 1
+
+BDOS:	push	bc
+	push	de
+	push	hl
+	ld	e, c
+	ld	c, a
+	call	5
+	pop	hl
+	pop	de
+	pop	bc
+	ret
+
+L41D:	ld	a, (L23A)
+	or	a
+	jr	z, L45E
+	push	hl
+	inc	a
+	jr	z, L44E
+	ld	hl, L23A
+	dec	(hl)
+	jr	nz, L453
+	ld	(hl), 80h
+	push	bc
+	push	de
+	ld	c, 26
+	ld	de, L1BA
+	ld	(L23B), de
+	call	5
+	ld	c, 20
+	ld	de, FCB1
+	call	5
+	pop	de
+	pop	bc
+	dec	a
+	jr	nz, L453
+	dec	a
+	ld	(L23A), a
+
+L44E:	ld	a, 1Ah
+	scf
+	jr	L45C
+
+L453:	ld	hl, (L23B)
+	ld	a, (hl)
+	inc	hl
+	ld	(L23B), hl
+	or	a
+
+L45C:	pop	hl
+	ret
+
+L45E:	ld	e, 33
+
+L460:	jp	L6D9
+
+COUT:	ld	a, 2
+	jp	BDOS
+
+L468:	ld	a, (L2DE)
+	or	a
+	jr	z, L492
+	push	hl
+	ld	hl, (L2DF)
+	ld	(hl), c
+	inc	hl
+	ld	(L2DF), hl
+	ld	hl, L2DE
+	dec	(hl)
+	jr	nz, L490
+	ld	(hl), 80h
+	push	bc
+	push	de
+	ld	de, L25E
+	ld	(L2DF), de
+	ld	bc, L23D
+	call	L4A7
+	pop	de
+	pop	bc
+
+L490:	pop	hl
+	ret
+
+L492:	ld	e, 22h
+	jr	L460
+
+LST:	ld	a, 5
+	jr	L4A4
+
+CSTS:	ld	a, 11
+	jr	L4A4
+
+IOCHK:	ld	a, 7
+	jr	L4A4
+
+IOSET:	ld	a, 8
+
+L4A4:	jp	BDOS
+
+L4A7:	push	bc
+	ld	c, 26
+	call	5
+	pop	de
+	ld	c, 21
+	call	5
+	or	a
+	ret	z
+	inc	a
+	ld	e, 1Dh
+	jr	z, L4C2
+	dec	a
+	dec	a
+	ld	e, 1Eh
+	jr	z, L4C2
+	ld	e, 1Fh
+L4C2:	jp	L6D9
+
+L4C5:	push	bc
+	push	de
+	push	hl
+	xor	a
+	ld	(L23A), a
+	ld	(FCB1+12), a
+	ld	(FCB2+16), a
+	ld	de, L1BA
+	ld	(L23B), de
+	ld	c, 26
+	call	5
+	ld	c, 15
+	ld	de, FCB1
+	call	5
+	inc	a
+	ld	e, 20h
+	jp	z, L6D9
+	ld	a, 1
+	ld	(L23A), a
+	pop	hl
+	pop	de
+	pop	bc
+	ret
+
+L4F5:	call	L537
+	push	bc
+	push	de
+	push	hl
+	xor	a
+	ld	(L249), a
+	ld	(L25D), a
+	ld	de, L25E
+	ld	(L2DF), de
+	ld	c, 26
+	call	5
+	ld	c, 17
+	ld	de, L23D
+	push	de
+	call	5
+	inc	a
+	ld	e, 23h
+	jp	nz, L6D9
+	pop	de
+	ld	c, 22
+	call	5
+	inc	a
+	ld	e, 1Dh
+	jp	z, L6D9
+	ld	a, 80h
+	ld	(L2DE), a
+	pop	hl
+	pop	de
+	pop	bc
+	ret
+
+L532:	xor	a
+	ld	(L23A), a
+	ret
+
+L537:	push	bc
+	push	de
+	push	hl
+	ld	hl, L2DE
+	ld	a, (hl)
+	or	a
+	jr	z, L569
+	ld	c, 1Ah
+	call	L468
+	ld	c, 0
+
+L548:	ld	a, (hl)
+	cp	80h
+	jr	z, L552
+	call	L468
+	jr	L548
+
+L552:	ld	(hl), c
+	ld	de, L25E
+	ld	c, 26
+	call	5
+	ld	de, L23D
+	ld	c, 16
+	call	5
+	inc	a
+	ld	e, 24h
+	jp	z, L6D9
+
+L569:	pop	hl
+	pop	de
+	pop	bc
+	ret
+
+L56D:	dw	L2A74
+	dw	L2B7E
+	dw	L2A9F
+	dw	USR
+	dw	L16C2
+	dw	L1BB8
+	dw	L16FB
+	dw	L31E5
+	dw	L32E5
+	dw	L28BC
+	dw	L323B
+	dw	L3321
+	dw	L3327
+	dw	L33AA
+	dw	L33C1
+	dw	L2652
+	dw	L1A7D
+	dw	L189E
+	dw	L1C12
+	dw	L1A8C
+	dw	L1A9A
+	dw	L1AAA
+	dw	L1ADA
+	dw	L1AE3
+	dw	L16F6
+	dw	L1B12
+
+L5A1:	db	79h
+	dw	L2C78
+	db	79h
+	dw	L275E
+	db	7Ch
+	dw	L290C
+	db	7Ch
+	dw	L2990
+	db	7Fh
+	dw	L31EE
+	db	50h
+	dw	L1481
+	db	46h
+	dw	L1480
+
+L5B6:	dw	LD27
+	dw	LBA7
+	dw	L1296
+	dw	LE68
+	dw	L11A2
+	dw	L1529
+	dw	L11FC
+	dw	LE84
+	dw	LE2D
+	dw	L17FA
+	dw	L1028
+	dw	LCCE
+	dw	LE1C
+	dw	LE4B
+	dw	LE6A
+	dw	LD25
+	dw	L1BC1
+	dw	LF79
+	dw	LD6E
+	dw	L1BC7
+	dw	L1713
+	dw	L2659
+	dw	L1063
+	dw	L1063
+	dw	L11A2
+	dw	LDEA
+	dw	L17FA
+	dw	L1E95
+	dw	LE6A
+L5F0:	dw	LE6A
+	dw	L105E
+	dw	L2229
+	dw	L2226
+	dw	L23D0
+	dw	L1C2D
+	dw	L1DFD
+	dw	LD69
+	dw	L1E02
+	dw	L23EC
+	dw	L23E7
+	dw	L1063
+	dw	L6C8
+	dw	L2641
+	dw	L260F
+	dw	L25E2
+	dw	L25A3
+	dw	L119C
+	dw	L249E
+	dw	L9B3
+	dw	LD5D
+	dw	L2668
+	dw	LFC6
+	dw	LFCE
+	dw	L26F8
+	dw	L26F9
+	dw	L6C8
+	dw	L6C8
+	dw	L6C8
+	dw	L1CEF
+	dw	L1D2A
+	dw	L1D3E
+	dw	L1D5A
+	dw	L6C8
+	dw	LE11
+	dw	L1EF2
+	dw	L864
+	dw	L1171
+	dw	L24DF
+	dw	L2456
+	dw	L2459
+	dw	L1F42
+	dw	LB29
+	dw	LB24
+	dw	L1FED
+	dw	L21EF
+	dw	L2243
+	dw	LD4B
+	dw	L1E8F
+	dw	L1D97
+	dw	L1DC4
+	dw	L1DBF
+
+L658:	ld	hl, 4
+	add	hl, sp
+	ld	bc, 17
+
+L65F:	ld	a, (hl)
+	inc	hl
+	cp	81h
+	ret	nz
+	ld	a, (hl)
+	inc	hl
+	push	hl
+	ld	h, (hl)
+	ld	l, a
+	ld	a, d
+	or	e
+	ex	de, hl
+	jr	z, L671
+	ex	de, hl
+	sbc	hl, de
+
+L671:	pop	hl
+	inc	hl
+	ret	z
+	add	hl, bc
+	jr	L65F
+
+L677:	call	L69C
+	push	bc
+	ex	(sp), hl
+	pop	bc
+
+L67D:	or	a
+	push	hl
+	sbc	hl, de
+	push	bc
+	ex	(sp), hl
+	pop	bc
+	ex	de, hl
+	ex	(sp), hl
+	inc	bc
+	lddr
+	inc	hl
+	inc	de
+	ld	b, d
+	ld	c, e
+	pop	de
+	ret
+
+L68F:	push	hl
+	ld	hl, (L156)
+	ld	b, 0
+	add	hl, bc
+	add	hl, bc
+	call	L69C
+	pop	hl
+	ret
+
+L69C:	push	de
+	ex	de, hl
+	ld	hl, -40
+	add	hl, sp
+	or	a
+	sbc	hl, de
+	ex	de, hl
+	pop	de
+	ret	nc
+
+L6A8:	ld	e, 7
+	jr	L6D9
+
+L6AC:	cp	(hl)
+	jp	z, LC88
+	jr	L6C8
+
+L6B2:	ld	a, (L143)
+	or	a
+	jr	nz, L6C2
+	pop	bc
+	ld	hl, L389C
+	call	LACE
+	jp	L8B3
+
+L6C2:	ld	hl, (L140)
+	ld	(L148), hl
+
+L6C8:	ld	e, 2
+	db	1		; LD BC,nn
+
+L6CB:	ld	e, 0Bh
+	db	1		; LD BC,nn
+
+L6CE:	ld	e, 16h
+	db	1		; LD BC,nn
+
+L6D1:	ld	e, 0Ah
+	db	1		; LD BC,nn
+
+L6D4:	ld	e, 12h
+	db	1		; LD BC,nn
+
+L6D7:	ld	e, 1
+
+L6D9:	ld	sp, (L1B6)
+	pop	ix
+	ld	hl, (L1B4)
+	ld	a, h
+	or	l
+	jr	z, L711
+	push	hl
+	ld	hl, 0
+	ld	(L1B4), hl
+	ld	c, 3
+	call	L68F
+	ld	c, e
+	pop	de
+	ld	hl, (L144)
+	push	hl
+	ld	hl, (L1B2)
+	push	hl
+	ld	a, (L1B1)
+	ld	b, a
+	ld	hl, (L148)
+	push	hl
+	ld	(L1B2), hl
+	ld	a, c
+	ld	(L1B1), a
+	ld	c, 0DFh
+	push	bc
+	ex	de, hl
+	jp	(ix)
+
+L711:	ld	hl, (L148)
+	ld	(L1B2), hl
+	ld	a, h
+	and	l
+	inc	a
+	jr	z, L725
+	ld	(L14A), hl
+	ld	hl, (L144)
+	ld	(L14C), hl
+
+L725:	ld	a, e
+	ld	(L1B1), a
+	or	a
+	jr	z, L730
+	cp	27h
+	jr	c, L732
+
+L730:	ld	e, 27h
+
+L732:	call	L8B7
+	call	L1134
+	ld	hl, L363A
+
+L73B:	dec	e
+	jr	z, L745
+
+L73E:	bit	7, (hl)
+	inc	hl
+	jr	z, L73E
+	jr	L73B
+
+L745:	call	LACE
+	ld	hl, (L148)
+	ld	a, h
+	and	l
+	inc	a
+	call	nz, L2C92
+
+L751:	call	L8B7
+	ld	(L1A4), a
+	call	L1121
+
+L75A:	ld	hl, 0FFFFh
+	ld	(L148), hl
+	ld	a, (L1A4)
+	or	a
+	jr	z, L78B
+	ld	hl, (L191)
+	jp	m, L24C9
+	ld	de, (L193)
+	add	hl, de
+	jp	c, L1637
+
+L774:	ld	(L191), hl
+	push	hl
+	call	L2C9A
+	call	LA75
+	call	LA11
+	call	LC88
+	pop	de
+	or	a
+	jr	z, L751
+	scf
+	jr	L795
+
+L78B:	call	LA11
+	call	LC88
+	inc	a
+	dec	a
+	jr	z, L75A
+
+L795:	push	af
+	cp	5
+	jp	z, LCF4
+	exx
+	ld	hl, L1A4
+	inc	(hl)
+	dec	(hl)
+	exx
+
+L7A2:	call	z, LDC1
+	cp	20h
+	jr	nz, L7AA
+	inc	hl
+
+L7AA:	push	de
+	call	L8C8
+	ld	b, a
+	pop	de
+	pop	af
+	jp	nc, LCAB
+	push	de
+	push	bc
+
+L7B6:	inc	hl
+	ld	a, (hl)
+	or	a
+	jr	z, L7C7
+	cp	20h
+	jr	z, L7B6
+	cp	9
+	jr	z, L7B6
+	cp	0Ah
+	jr	z, L7B6
+
+L7C7:	push	af
+	call	L843
+	push	bc
+	jr	nc, L7E2
+	ex	de, hl
+	ld	hl, (L152)
+
+L7D2:	ld	a, (de)
+	ld	(bc), a
+	inc	bc
+	inc	de
+	CPHL_DE
+	jr	nz, L7D2
+	ld	(L152), bc
+
+L7E2:	pop	de
+	pop	af
+	jr	z, L807
+	ld	bc, (L152)
+	pop	hl
+	add	hl, bc
+	push	hl
+	call	L677
+	pop	hl
+	ld	(L152), hl
+	ex	de, hl
+	ld	(hl), h
+	inc	hl
+	inc	hl
+	pop	de
+	LDM_DE
+	inc	hl
+	ld	de, L2FE
+
+L800:	ld	a, (de)
+	ld	(hl), a
+	inc	hl
+	inc	de
+	or	a
+	jr	nz, L800
+
+L807:	call	L873
+	inc	hl
+	ex	de, hl
+	ld	hl, L75A
+	push	hl
+
+L810:	ld	h, d
+	ld	l, e
+	TSTM_W
+	ret	z
+	inc	hl
+	inc	hl
+	inc	hl
+	xor	a
+
+L81A:	cp	(hl)
+	inc	hl
+	jr	nz, L81A
+	ex	de, hl
+	LDM_DE
+	jr	L810
+
+L824:	ld	de, 0
+	push	de
+	jr	z, L836
+	pop	de
+	call	LCE9
+	push	de
+	jr	z, L83F
+	ld	a, 0A6h
+	call	L6AC
+
+L836:	ld	de, 0FFFFh
+	call	nz, LCE9
+	jp	nz, L6C8
+
+L83F:	ex	de, hl
+	pop	de
+	ex	(sp), hl
+	push	hl
+
+L843:	ld	hl, (L150)
+
+L846:	ld	b, h
+	ld	c, l
+	TSTM_W
+	dec	hl
+	ret	z
+	inc	hl
+	inc	hl
+	LDHL_M
+	sbc	hl, de
+	ld	h, b
+	ld	l, c
+	LDHL_M
+	ccf
+	ret	z
+	ccf
+	ret	nc
+	exx
+	add	hl, de
+	exx
+	jr	L846
+
+L864:	ret	nz
+
+L865:	ld	hl, (L150)
+	xor	a
+	ld	(L19A), a
+	ld	(hl), a
+	inc	hl
+	ld	(hl), a
+	inc	hl
+	ld	(L152), hl
+
+L873:	ld	hl, (L150)
+	dec	hl
+
+L877:	ld	(L144), hl
+	ld	hl, (L104)
+	ld	(L13C), hl
+	call	LCDF
+	ld	hl, (L152)
+	ld	(L154), hl
+	ld	(L156), hl
+	pop	bc
+	ld	sp, (L14E)
+	ld	hl, L108
+	ld	(L106), hl
+	xor	a
+	ld	h, a
+	ld	l, a
+	ld	(L14C), hl
+	ld	(L142), a
+	ld	(L19E), a
+	ld	(L1B4), hl
+	ld	(L1B8), hl
+	push	hl
+	ld	(L19F), sp
+	push	bc
+	ld	(L1B6), sp
+
+L8B3:	ld	hl, (L144)
+	ret
+
+L8B7:	xor	a
+	ld	(L100), a
+
+L8BB:	ld	iy, COUT
+	ld	(L183), iy
+	ld	iy, L185
+	ret
+
+L8C8:	xor	a
+	ld	(L103), a
+	ld	c, 5
+	ld	de, L2FE
+
+L8D1:	ld	a, (hl)
+	ld	b, a
+	or	a
+	jp	z, L96C
+	cp	'!'
+	jr	c, L92A
+	cp	'"'
+	jr	z, L95A
+	ld	a, (L103)
+	or	a
+	ld	b, a
+	ld	a, (hl)
+	jr	nz, L92A
+	cp	'0'
+	jr	c, L8EF
+	cp	':'
+	jr	c, L92A
+
+L8EF:	push	de
+	ld	de, L343A
+	push	hl
+	jr	L8F8
+
+L8F6:	inc	hl
+	inc	de
+
+L8F8:	ld	a, (de)
+	or	a
+	jr	z, L921
+	cp	20h
+	jr	nz, L909
+	inc	de
+
+L901:	ld	a, (hl)
+	cp	20h
+	jr	nz, L909
+	inc	hl
+	jr	L901
+
+L909:	ex	de, hl
+	ld	a, (de)
+	cp	60h
+	jr	c, L911
+	and	5Fh
+
+L911:	xor	(hl)
+	and	7Fh
+	ex	de, hl
+	jr	nz, L960
+	ld	a, (de)
+	rla
+	jr	nc, L8F6
+	pop	af
+	ld	a, b
+	or	80h
+	jr	L929
+
+L921:	pop	hl
+	ld	a, (hl)
+	cp	60h
+	jr	c, L929
+	and	5Fh
+
+L929:	pop	de
+
+L92A:	ex	de, hl
+	cp	0C9h
+	ld	(hl), 3Ah
+	jr	nz, L933
+	inc	c
+	inc	hl
+
+L933:	ex	de, hl
+	inc	hl
+	ld	(de), a
+	inc	de
+	inc	c
+	sub	3Ah
+	jr	z, L946
+	cp	9Bh
+	ld	b, 3Ah
+	jr	z, L953
+	cp	49h
+	jr	nz, L949
+
+L946:	ld	(L103), a
+
+L949:	sub	54h
+	jr	z, L952
+	sub	0Eh
+	jp	nz, L8D1
+
+L952:	ld	b, a
+
+L953:	ld	a, (hl)
+	or	a
+	jr	z, L96C
+	cp	b
+	jr	z, L92A
+
+L95A:	inc	hl
+	ld	(de), a
+	inc	c
+	inc	de
+	jr	L953
+
+L960:	pop	hl
+	push	hl
+	inc	b
+	ex	de, hl
+
+L964:	bit	7, (hl)
+	inc	hl
+	jr	z, L964
+	ex	de, hl
+	jr	L8F8
+
+L96C:	ld	hl, L2FD
+	ld	(de), a
+	inc	de
+	ld	(de), a
+	inc	de
+	ld	(de), a
+	ret
+
+L975:	ld	hl, L2FE
+	ld	b, 1
+	ld	a, b
+	ld	(L19E), a
+
+L97E:	call	L9AF
+	or	a
+	jr	z, L97E
+	cp	7Fh
+	jr	z, L97E
+	cp	1Ah
+	jr	z, L9B3
+	cp	0Dh
+	jr	z, L9A3
+	cp	0Ah
+	jr	nz, L998
+	dec	b
+	jr	z, L975
+	inc	b
+
+L998:	ld	c, a
+	ld	a, b
+	cp	0FDh
+	jr	nc, L9AA
+	ld	(hl), c
+	inc	hl
+	inc	b
+	jr	L97E
+
+L9A3:	xor	a
+	ld	(hl), a
+	ld	hl, L2FD
+	inc	a
+	ret
+
+L9AA:	ld	e, 25
+	jp	L6D9
+
+L9AF:	call	L41D
+	ret	nc
+
+L9B3:	ld	hl, (L1B8)
+	ld	a, l
+	or	a
+	jp	z, L1E84
+	ld	sp, (L1B6)
+	ret
+
+L9C0:	ld	a, b
+	dec	a
+	or	(iy+0)
+	jr	z, LA11
+
+L9C7:	djnz	L9CB
+	jr	LA0E
+
+L9CB:	dec	hl
+	ld	a, (hl)
+	call	LA77
+	call	LADA
+	cp	7Fh
+	jr	z, L9C7
+	jr	LA1D
+
+L9D9:	ld	a, (L1AA)
+	or	a
+	jr	nz, L975
+	ld	a, 3Fh
+	call	LA83
+
+L9E4:	ld	a, (L1AA)
+	or	a
+	jp	nz, L975
+	ld	a, 3Fh
+	call	LA83
+	call	LA75
+	call	LA11
+	inc	hl
+	ld	a, (hl)
+	dec	hl
+	cp	5
+	ret
+
+L9FC:	call	L8BB
+
+L9FF:	push	af
+	ld	a, 5Eh
+	call	LA83
+	pop	af
+	or	40h
+	jp	LA83
+
+LA0B:	call	L9FF
+
+LA0E:	call	L115B
+
+LA11:	ld	hl, L2FE
+	ld	b, 1
+	ld	a, b
+	ld	(L19E), a
+
+LA1A:	call	LADA
+
+LA1D:	cp	7
+	jr	z, LA5D
+	cp	0Dh
+	jp	z, L112F
+	cp	5		; ctl-E
+	jp	z, L1127
+	cp	15h		; ctl-U
+	jr	z, LA0B
+	cp	7Fh		; DEL
+	jr	z, L9C0
+	cp	12h		; ctl-R
+	jr	nz, LA4B
+	call	L9FF
+	call	L115B
+	ld	hl, L2FE
+	ld	c, b
+
+LA41:	dec	c
+	jr	z, LA1A
+	ld	a, (hl)
+	inc	hl
+	call	LA77
+	jr	LA41
+
+LA4B:	cp	9
+	jr	z, LA5D
+	cp	0Ah
+	jr	nz, LA59
+	dec	b
+	jr	z, LA11
+	inc	b
+	jr	LA5D
+
+LA59:	cp	20h
+	jr	c, LA1A
+
+LA5D:	ld	c, a
+	ld	a, b
+	cp	0FDh
+	ld	a, 7
+	jr	nc, LA70
+	ld	a, c
+	ld	(hl), a
+	inc	hl
+	inc	b
+	cp	0Ah
+	call	z, L1154
+	jr	LA1A
+
+LA70:	call	LA77
+	jr	LA1A
+
+LA75:	ld	a, 20h
+
+LA77:	cp	0Ah
+	jr	nz, LA83
+	call	L1134
+	ld	a, 0Ah
+	ret
+
+LA81:	ld	a, '\'
+
+LA83:	push	bc
+	ld	c, a
+	ld	a, (L100)
+	or	a
+	jr	nz, LACA
+	ld	a, c
+	cp	9
+	jr	nz, LAB7
+	ld	a, (iy+1)
+	and	0F8h
+	dec	a
+	cp	(iy+0)
+	jr	c, LAB2
+	ld	a, (iy+0)
+	and	7
+	cpl
+	add	a, 9
+	ld	b, a
+	ld	c, 20h
+
+LAA6:	call	L182
+	inc	(iy+0)
+	djnz	LAA6
+
+LAAE:	ld	c, 9
+	jr	LACA
+
+LAB2:	call	L1134
+	jr	LAAE
+
+LAB7:	cp	20h
+	jr	c, LAC7
+	ld	a, (iy+0)
+	cp	(iy+1)
+	call	nc, L1134
+	inc	(iy+0)
+
+LAC7:	call	L182
+
+LACA:	ld	a, c
+	pop	bc
+	or	a
+	ret
+
+LACE:	ld	a, (hl)
+	res	7, a
+	call	LA77
+	bit	7, (hl)
+	ret	nz
+	inc	hl
+	jr	LACE
+
+LADA:	call	CIN
+	and	7Fh
+	cp	0Fh		; ctl-O
+	jr	nz, LAEF
+	call	L9FC
+	ld	a, (L100)
+	cpl
+	ld	(L100), a
+	xor	a
+	ret
+
+LAEF:	cp	9
+	jr	nz, LB10
+	push	af
+	ld	a, (iy+1)
+	and	0F8h
+	dec	a
+	cp	(iy+0)
+	jr	c, LB0B
+	ld	a, (iy+0)
+	add	a, 8
+	and	0F8h
+	ld	(iy+0), a
+	pop	af
+	ret
+
+LB0B:	call	L1134
+	pop	af
+	ret
+
+LB10:	cp	20h
+	ret	c
+	cp	7Fh
+	ret	z
+	push	af
+	ld	a, (iy+0)
+	cp	(iy+1)
+	jr	nc, LB0B
+	inc	(iy+0)
+	pop	af
+	ret
+
+LB24:	call	L1FE0
+	jr	LB2C
+
+LB29:	call	L1F97
+
+LB2C:	pop	bc
+	call	L824
+	push	bc
+
+LB31:	call	L1134
+	pop	hl
+	pop	de
+	LDBC_M
+	inc	hl
+	ld	a, b
+	or	c
+	jr	z, LB71
+	call	LCF7
+	push	bc
+	LDBC_M
+	inc	hl
+	push	bc
+	ex	(sp), hl
+	ex	de, hl
+	CPHL_DE
+	pop	bc
+	jr	c, LB70
+	ex	(sp), hl
+	push	hl
+	push	bc
+	ex	de, hl
+	call	L2C9A
+	pop	hl
+	call	LA75
+	call	LB74
+	ld	hl, L2FE
+	ld	bc, LB31
+	push	bc
+
+LB67:	dec	hl
+	ld	b, 0
+	call	L18D4
+	jp	L1918
+
+LB70:	pop	bc
+
+LB71:	jp	L751
+
+LB74:	ld	bc, L2FD
+	db	3Eh		; LD A,n
+
+LB78:	pop	hl
+
+LB79:	ld	a, (hl)
+	inc	bc
+	or	a
+	inc	hl
+	ld	(bc), a
+	ret	z
+	jp	p, LB79
+	cp	0C9h
+	jr	nz, LB87
+	dec	bc
+
+LB87:	sub	80h
+	push	hl
+	ld	hl, L343A
+	jr	z, LB97
+
+LB8F:	bit	7, (hl)
+	inc	hl
+	jr	z, LB8F
+	dec	a
+	jr	nz, LB8F
+
+LB97:	ld	a, (hl)
+	cp	20h
+	jr	z, LBA4
+	or	a
+	res	7, a
+	ld	(bc), a
+	jp	m, LB78
+	inc	bc
+
+LBA4:	inc	hl
+	jr	LB97
+
+LBA7:	ld	a, 29h
+	ld	(L142), a
+	call	LE84
+	ex	(sp), hl
+	call	L658
+	pop	de
+	jr	nz, LBB8
+	add	hl, bc
+	ld	sp, hl
+
+LBB8:	ex	de, hl
+	ld	c, 0Ah
+	call	L68F
+	push	hl
+	call	LE68
+	ex	(sp), hl
+	push	hl
+	ld	hl, (L148)
+	ex	(sp), hl
+	ld	a, 9Fh
+	call	L6AC
+	call	L12E3
+	call	L12E0
+	push	hl
+	call	L2AD3
+	pop	hl
+	push	bc
+	push	ix
+	push	de
+	ld	bc, 8100h
+	ld	ix, 0
+	ld	d, c
+	ld	e, c
+	ld	a, (hl)
+	cp	0A4h
+	ld	a, 1
+	jr	nz, LBFA
+	call	LC88
+	call	L12E0
+	push	hl
+	call	L2AD3
+	call	L2A90
+	pop	hl
+
+LBFA:	push	bc
+	push	ix
+	push	de
+	push	af
+	inc	sp
+	push	hl
+	ld	hl, (L144)
+	ex	(sp), hl
+
+LC05:	ld	b, 81h
+	push	bc
+	inc	sp
+
+LC09:	call	CSTS
+	or	a
+	call	nz, LCFC
+	ld	(L144), hl
+	ld	a, (hl)
+	cp	3Ah
+	jr	z, LC51
+	or	a
+	jp	nz, L6C8
+	inc	hl
+	TSTM_W
+	inc	hl
+	jp	z, LD2C
+	LDDE_M
+	ld	(L148), de
+	ld	a, (L19A)
+	or	a
+	jr	z, LC51
+
+LC31:	push	af
+	call	m, L1FE0
+	push	de
+	push	hl
+	ld	a, '<'
+	call	LA83
+	ex	de, hl
+	call	L2C9A
+	ld	a, '>'
+	call	LA83
+	pop	hl
+	pop	de
+	pop	af
+	add	a, a
+	jr	nc, LC51
+	call	L8BB
+	add	a, a
+	jr	c, LC31
+
+LC51:	call	LC88
+	ld	de, LC09
+	push	de
+	ld	(L1B6), sp
+
+LC5C:	ret	z
+
+LC5D:	sub	80h
+	jp	c, LE88
+	cp	0C6h-80h
+	jp	z, LEDF
+	cp	9Dh-80h
+	jr	c, LC7A
+	sub	0C9h-80h
+	jp	c, L6C8
+	cp	0B4h-80h
+	jp	nc, L6C8
+	ld	de, L5F0
+	jr	LC7D
+
+LC7A:	ld	de, L5B6
+
+LC7D:	rlca
+	ld	c, a
+	ld	b, 0
+	ex	de, hl
+	add	hl, bc
+	LDBC_M
+	push	bc
+	ex	de, hl
+
+LC88:	inc	hl
+
+LC89:	ld	a, (hl)
+	cp	0D5h
+	jr	nz, LC96
+
+LC8E:	inc	hl
+	ld	a, (hl)
+	cp	3Ah
+	ret	z
+	or	a
+	jr	nz, LC8E
+
+LC96:	cp	':'
+	ret	nc
+	cp	20h
+	jr	z, LC88
+	cp	9
+	jr	z, LC88
+	cp	0Ah
+	jr	z, LC88
+	cp	'0'
+	ccf
+	inc	a
+	dec	a
+	ret
+
+LCAB:	xor	a
+	ld	(L19E), a
+	ld	(L19F), sp
+
+LCB3:	ld	(L144), hl
+	jr	LC51
+
+LCB8:	ld	a, (L19E)
+	or	a
+	jr	nz, LCCB
+	exx
+	ld	hl, 9
+	add	hl, sp
+	ex	de, hl
+	ld	hl, (L19F)
+	sbc	hl, de
+	exx
+	ret	nc
+
+LCCB:	jp	L1889
+
+LCCE:	jr	z, LCDF
+	call	LCE9
+	push	hl
+	call	L843
+	pop	de
+	jp	nc, LE46
+	ld	h, b
+	ld	l, c
+	jr	LCE3
+
+LCDF:	ex	de, hl
+	ld	hl, (L150)
+
+LCE3:	dec	hl
+
+LCE4:	ld	(L158), hl
+	ex	de, hl
+	ret
+
+LCE9:	dec	hl
+
+LCEA:	call	LC88
+	call	LDC1
+	jr	LC89
+
+LCF2:	pop	bc
+
+LCF3:	pop	bc
+
+LCF4:	or	a
+	jr	LD2B
+
+LCF7:	call	CSTS
+	or	a
+	ret	z
+
+LCFC:	call	LADA
+	cp	14h
+	jr	nz, LD0F
+	push	hl
+	ld	hl, (L148)
+	ld	a, h
+	and	l
+	inc	a
+	call	nz, L21E9
+	pop	hl
+	ret
+
+LD0F:	cp	13h
+	jr	nz, LD1E
+
+LD13:	call	LADA
+	cp	5
+	jr	z, LD1E
+	cp	11h
+	jr	nz, LD13
+
+LD1E:	cp	5
+	ret	nz
+	call	L9FC
+	db	3Eh		; LD A,n
+
+LD25:	ret	nz
+	db	0F6h		; OR n
+
+LD27:	ret	nz
+	ld	(L144), hl
+
+LD2B:	pop	bc
+
+LD2C:	push	af
+	ld	hl, (L148)
+	ld	a, l
+	and	h
+	inc	a
+	jr	z, LD3E
+	ld	(L14A), hl
+	ld	hl, (L144)
+	ld	(L14C), hl
+
+LD3E:	call	L8B7
+	pop	af
+	ld	hl, L38C7
+	jp	nz, L745
+	jp	L751
+
+LD4B:	ld	e, 17
+	ld	hl, (L14C)
+	ld	a, h
+	or	l
+	jr	z, LDBE
+	ex	de, hl
+	ld	hl, (L14A)
+	ld	(L148), hl
+	ex	de, hl
+	ret
+
+LD5D:	call	L1F90
+	ld	a, 22h
+	call	nz, L1BFF
+	ld	(iy+5), a
+	ret
+
+LD69:	call	L1FD9
+	jr	LD71
+
+LD6E:	call	L1F90
+
+LD71:	call	L1BFF
+	cp	32h
+	jr	nc, LDBC
+	ld	(iy+3), a
+	ld	a, 2Ch
+	cp	(hl)
+	ret	nz
+	call	LC88
+	call	L1BFF
+	ld	(iy+4), a
+	ret
+
+LD89:	ld	a, (hl)
+LD8A:	cp	'A'
+	ret	c
+	cp	'['
+	ccf
+	ret
+
+LD91:	call	L12E3
+	jr	LDA5
+
+LD96:	call	LC88
+
+LD99:	call	L12F5
+
+LD9C:	call	L12E3
+
+LD9F:	call	L2A90
+	jp	m, LDBC
+
+LDA5:	ld	a, (L15F)
+	cp	91h
+	jp	c, L2B46
+	ld	bc, 9180h
+	ld	ix, 0
+	ld	de, 0
+	call	L2B07
+	ld	d, c
+	ret	z
+
+LDBC:	ld	e, 5
+
+LDBE:	jp	L6D9
+
+LDC1:	dec	hl
+	ld	de, 0
+
+LDC5:	inc	hl
+	ld	a, (hl)
+	or	a
+	ret	z
+	cp	'0'
+	ccf
+	ret	nc
+	cp	'9'+1
+	ret	nc
+	push	hl
+	ld	hl, 6552	; max line# before add last digit
+	or	a
+	sbc	hl, de
+	jp	c, L6C8
+	ld	h, d
+	ld	l, e
+	add	hl, de
+	add	hl, hl
+	add	hl, de
+	add	hl, hl
+	sub	'0'
+	ld	e, a
+	ld	d, 0
+	add	hl, de
+	ex	de, hl
+	pop	hl
+	jr	LDC5
+
+LDEA:	jr	z, LE0E
+	call	LD99
+	call	LC89
+	ret	nz
+	push	hl
+	ld	hl, (L104)
+	sbc	hl, de
+	ex	de, hl
+	jp	c, L6C8
+	ld	hl, (L152)
+	ld	bc, 28h
+	add	hl, bc
+	sbc	hl, de
+	jp	nc, L6A8
+	ex	de, hl
+	ld	(L14E), hl
+	pop	hl
+
+LE0E:	jp	L877
+
+LE11:	jp	z, L873
+	call	L877
+	ld	bc, LC09
+	jr	LE2C
+
+LE1C:	ld	c, 3
+	call	L68F
+	pop	bc
+	push	hl
+	ld	de, (L148)
+	push	de
+	ld	d, 8Ch
+	push	de
+	inc	sp
+
+LE2C:	push	bc
+
+LE2D:	call	LDC1
+	call	LE6A
+
+LE33:	push	hl
+	ld	hl, (L148)
+	or	a
+	sbc	hl, de
+	pop	hl
+	inc	hl
+	call	c, L846
+
+LE3F:	call	nc, L843
+	ld	h, b
+	ld	l, c
+	dec	hl
+	ret	c
+
+LE46:	ld	e, 8
+
+LE48:	jp	L6D9
+
+LE4B:	ret	nz
+	ld	d, 0FFh
+	call	L658
+	cp	8Ch
+	ld	e, 3
+	jr	nz, LE48
+	ld	a, (hl)
+	inc	hl
+	and	(hl)
+	dec	hl
+	inc	a
+	call	z, LCB8
+	ld	sp, hl
+	pop	hl
+	ld	(L148), hl
+	ld	hl, LC09
+	ex	(sp), hl
+LE68:	db	1		; LD BC,xx3A
+	db	3Ah
+
+LE6A:	ld	c, 0
+	ld	b, 0
+
+LE6E:	ld	a, c
+	ld	c, b
+	ld	b, a
+
+LE71:	ld	a, (hl)
+	or	a
+	ret	z
+	cp	b
+	ret	z
+	inc	hl
+	cp	22h
+	jr	z, LE6E
+	sub	8Ah
+	jr	nz, LE71
+	cp	b
+	adc	a, d
+	ld	d, a
+	jr	LE71
+
+LE84:	cp	0C6h
+	jr	z, LEDF
+
+LE88:	call	L152E
+	ld	a, 0ADh
+	call	L6AC
+
+LE90:	push	de
+	ld	a, (L102)
+	push	af
+	call	L12F5
+	pop	af
+	ex	(sp), hl
+	ld	(L144), hl
+	rra
+	call	L12E5
+	jr	nz, LEAA
+	push	hl
+	call	L2AE7
+	pop	de
+	pop	hl
+	ret
+
+LEAA:	push	hl
+	ld	hl, (L15A)
+	push	hl
+	inc	hl
+	inc	hl
+	LDDE_M
+	ld	hl, L3FD
+	or	a
+	sbc	hl, de
+	jr	nc, LECE
+	ld	hl, (L14E)
+	or	a
+	sbc	hl, de
+	pop	de
+	jr	nc, LED6
+	ld	hl, (L152)
+	or	a
+	sbc	hl, de
+	jr	nc, LED6
+	db	3Eh		; LD A,n
+
+LECE:	pop	de
+	call	L1A67
+	ex	de, hl
+	call	L18AE
+
+LED6:	call	L1A67
+	pop	hl
+	call	L2AEA
+	pop	hl
+	ret
+
+LEDF:	call	LC88
+	ld	a, '('
+	call	L6AC
+	call	L152E
+	call	L12E4
+	ld	a, ','
+	call	L6AC
+	push	de
+	push	hl
+	ex	de, hl
+	inc	hl
+	inc	hl
+	LDDE_M
+	push	hl
+	ld	hl, (L14E)
+	or	a
+	sbc	hl, de
+	jr	c, LF10
+	push	de
+	call	L192D
+	pop	bc
+	pop	hl
+	ld	(hl), d
+	dec	hl
+	ld	(hl), e
+	call	L1A3D
+	db	3Eh		; LD A,n
+
+LF10:	pop	hl
+	pop	hl
+	call	L1BFF
+	or	a
+	jp	z, LDBC
+	push	af
+	ld	e, 0FFh
+	ld	a, (hl)
+	cp	29h
+	jr	z, LF29
+	ld	a, ','
+	call	L6AC
+	call	L1BFF
+
+LF29:	ld	a, ')'
+	call	L6AC
+	ld	a, 0ADh
+	call	L6AC
+	pop	af
+	ex	(sp), hl
+	dec	a
+	cp	(hl)
+	ld	b, 0
+	jr	nc, LF43
+	ld	c, a
+	ld	a, (hl)
+	sub	c
+	cp	e
+	ld	b, a
+	jr	c, LF43
+	ld	b, e
+
+LF43:	push	bc
+	inc	hl
+	inc	hl
+	ld	b, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, b
+	ld	b, 0
+	add	hl, bc
+	pop	bc
+	ex	(sp), hl
+	push	bc
+	call	L12F0
+	pop	bc
+	pop	de
+	push	hl
+	ld	hl, (L15A)
+	ld	a, b
+	sub	(hl)
+	push	af
+	ld	a, b
+	jr	c, LF60
+	ld	a, (hl)
+
+LF60:	inc	hl
+	inc	hl
+	LDBC_M
+	call	L1A3D
+	pop	af
+	jr	c, LF74
+	jr	z, LF74
+	ex	de, hl
+
+LF6E:	ld	(hl), 20h
+	inc	hl
+	dec	a
+	jr	nz, LF6E
+
+LF74:	call	L1A47
+	pop	hl
+	ret
+
+LF79:	cp	0DFh
+	jr	z, LF9E
+	cp	0DCh
+	jr	z, LFA6
+	call	L1BFF
+	ld	a, (hl)
+	ld	b, a
+	cp	8Ch
+	jr	z, LF90
+	ld	a, 88h
+	call	L6AC
+	dec	hl
+
+LF90:	ld	c, e
+
+LF91:	dec	c
+	ld	a, b
+	jp	z, LC5D
+	call	LCEA
+	cp	2Ch
+	ret	nz
+	jr	LF91
+
+LF9E:	call	LFAE
+	ld	(L1B4), bc
+	ret
+
+LFA6:	call	LFAE
+	ld	(L1B8), bc
+	ret
+
+LFAE:	call	LC88
+	jr	z, LFB8
+	ld	a, 88h
+	call	L6AC
+
+LFB8:	ld	bc, 0
+	ret	nc
+	call	LDC1
+	push	hl
+	call	LE33
+	pop	hl
+	dec	bc
+	ret
+
+LFC6:	ld	e, 0
+	call	nz, L1BFF
+
+LFCB:	jp	L6D9
+
+LFCE:	push	af
+	jr	z, LFE0
+	jr	nc, LFDB
+	call	LE2D
+	push	hl
+	pop	ix
+	jr	LFE0
+
+LFDB:	cp	82h
+	jp	nz, L6C8
+
+LFE0:	pop	af
+	ex	af, af'
+	ld	d, 0FFh
+	call	L658
+	cp	0DFh
+	ld	e, 1Ch
+	jr	nz, LFCB
+	ld	b, (hl)
+	inc	hl
+	ld	a, (hl)
+	inc	hl
+	and	(hl)
+	dec	hl
+	inc	a
+	call	z, LCB8
+	ld	sp, hl
+	ld	a, b
+	ld	(L1B1), a
+	pop	hl
+	ld	(L148), hl
+	pop	hl
+	ld	(L1B2), hl
+	ld	hl, LC09
+	ex	(sp), hl
+	ex	af, af'
+	jr	nz, L1017
+	ex	de, hl
+	ld	hl, L2FD
+	sbc	hl, de
+	ex	de, hl
+	ret	nz
+	pop	de
+	jp	LCB3
+
+L1017:	jr	nc, L101D
+	push	ix
+	pop	hl
+	ret
+
+L101D:	ld	a, (hl)
+	or	a
+	jr	nz, L1025
+	ld	de, 5
+	add	hl, de
+
+L1025:	jp	LE68
+
+L1028:	call	L12F5
+	ld	a, (hl)
+	cp	2Ch
+	call	z, LC88
+	cp	88h
+	jr	z, L103B
+	ld	a, 0A2h
+	call	L6AC
+	dec	hl
+
+L103B:	push	hl
+	call	L2A90
+	pop	hl
+	jr	z, L104B
+
+L1042:	call	LC88
+	jp	c, LE2D
+	jp	LC5C
+
+L104B:	ld	d, 1
+
+L104D:	call	LE68
+	or	a
+	ret	z
+	call	LC88
+	cp	0C9h
+	jr	nz, L104D
+	dec	d
+	jr	nz, L104D
+	jr	L1042
+
+L105E:	call	L1FD9
+	jr	L1066
+
+L1063:	call	L1F90
+
+L1066:	jp	z, L1134
+	cp	9Dh
+	jp	z, L2FF2
+
+L106E:	jp	z, L1134
+	cp	9Eh
+	jp	z, L10FB
+	cp	0A1h
+	jp	z, L10FA
+	push	hl
+	cp	2Ch
+	jr	z, L10D8
+	cp	3Bh
+	jp	z, L1119
+	pop	bc
+	call	L12F5
+	push	hl
+	ld	a, (L102)
+	or	a
+	jr	nz, L10AB
+	call	L2CAE
+	call	L18D1
+	ld	hl, (L15A)
+	ld	a, (iy+0)
+	add	a, (hl)
+	cp	(iy+1)
+	call	nc, L1134
+	call	L1918
+	call	LA75
+	jr	L10D2
+
+L10AB:	ld	hl, (L15A)
+	ld	a, (iy+5)
+	or	a
+	push	af
+	jr	z, L10B7
+	ld	a, 2
+
+L10B7:	add	a, (hl)
+	cp	(iy+1)
+	jr	nc, L10C6
+	add	a, (iy+0)
+	cp	(iy+1)
+	call	nc, L1134
+
+L10C6:	pop	af
+	push	af
+	call	nz, LA77
+	call	L1918
+	pop	af
+	call	nz, LA77
+
+L10D2:	pop	hl
+	call	LC89
+	jr	L106E
+
+L10D8:	ld	a, (iy+0)
+	cp	(iy+2)
+	call	nc, L1134
+	jr	nc, L1119
+	push	af
+	ld	a, (iy+5)
+	or	a
+	jr	z, L10F2
+	pop	af
+	ld	a, 2Ch
+	call	LA83
+	jr	L1119
+
+L10F2:	pop	af
+
+L10F3:	sub	0Eh
+	jr	nc, L10F3
+	cpl
+	jr	L1112
+
+L10FA:	scf
+
+L10FB:	push	af
+	call	L1BFC
+	ld	a, 29h
+	call	L6AC
+	dec	hl
+	pop	af
+	push	hl
+	ld	a, 0FFh
+	jr	c, L110F
+	ld	a, (iy+0)
+	cpl
+
+L110F:	add	a, e
+	jr	nc, L1119
+
+L1112:	inc	a
+	ld	b, a
+
+L1114:	call	LA75
+	djnz	L1114
+
+L1119:	pop	hl
+	call	LC88
+	ret	z
+	jp	L106E
+
+L1121:	ld	hl, L38B3
+	jp	L19B
+
+L1127:	ld	hl, L2FE
+	ld	(hl), a
+	inc	hl
+	call	L9FF
+
+L112F:	ld	(hl), 0
+	ld	hl, L2FD
+
+L1134:	ld	a, 0Dh
+	ld	(iy+0), a
+	call	LA83
+	ld	a, 0Ah
+
+L113E:	call	LA83
+
+L1141:	ld	a, (iy+3)
+	inc	a
+
+L1145:	dec	a
+	ld	(iy+0), a
+	ret	z
+	push	af
+	ld	a, (iy+4)
+	call	LA83
+	pop	af
+	jr	L1145
+
+L1154:	ld	a, 0Dh
+	ld	(iy+0), a
+	jr	L113E
+
+L115B:	call	L1134
+	ld	a, (L1A4)
+	or	a
+	ret	z
+	push	hl
+	push	bc
+	ld	hl, (L191)
+	call	L2C9A
+	call	LA75
+	pop	bc
+	pop	hl
+	ret
+
+L1171:	pop	de
+	ld	de, 0Ah
+	push	de
+	call	c, LCE9
+	ex	de, hl
+	ex	(sp), hl
+	ex	de, hl
+	cp	2Ch
+	jr	nz, L1186
+	call	LC88
+	call	c, LCE9
+
+L1186:	or	a
+	jp	nz, L6C8
+	ld	(L193), de
+	ld	a, d
+	or	e
+	jp	z, L6C8
+	ld	a, 1
+	ld	(L1A4), a
+	pop	hl
+	jp	L774
+
+L119C:	ld	a, 84h
+	call	L6AC
+	db	0F6h		; OR n
+
+L11A2:	xor	a
+	push	af
+	call	L1FC0
+	ld	(L1AA), a
+	or	a
+	jr	nz, L11C4
+	ld	a, (hl)
+	cp	22h
+	ld	a, 0
+	ld	(L100), a
+	jr	nz, L11C4
+	call	L18D2
+	ld	a, 3Bh
+	call	L6AC
+	push	hl
+	call	L1918
+	pop	hl
+
+L11C4:	ex	(sp), hl
+	push	hl
+	call	L1880
+	call	L9E4
+	jp	z, LCF2
+	pop	af
+	jr	z, L1206
+
+L11D2:	ex	(sp), hl
+	call	L152E
+	call	L12E4
+	ex	(sp), hl
+	push	de
+	ld	b, 0
+	call	L18D4
+	ex	de, hl
+	ld	hl, L11E9
+	ex	(sp), hl
+	push	de
+	jp	LEAA
+
+L11E9:	pop	hl
+	call	LC89
+	ret	z
+	ld	a, ','
+	call	L6AC
+	push	hl
+	call	L9D9
+	jp	z, LCF3
+	jr	L11D2
+
+L11FC:	cp	23h
+	jp	z, L26AC
+	push	hl
+	ld	hl, (L158)
+	db	0F6h		; OR n
+
+L1206:	xor	a
+	ld	(L143), a
+	ex	(sp), hl
+	jr	L1212
+
+L120D:	ld	a, ','
+	call	L6AC
+
+L1212:	call	L152E
+	ex	(sp), hl
+	push	de
+	ld	a, (hl)
+	cp	','
+	jr	z, L1228
+	ld	a, (L143)
+	or	a
+	jr	nz, L1276
+	call	L9D9
+	jp	z, LCF2
+
+L1228:	ld	a, (L102)
+	or	a
+	jr	z, L1248
+	call	LC88
+	ld	d, a
+	ld	b, a
+	cp	'"'
+	jr	z, L123C
+	ld	d, ':'
+	ld	b, ','
+	dec	hl
+
+L123C:	call	L18D5
+	ex	de, hl
+	ld	hl, L1253
+	ex	(sp), hl
+	push	de
+	jp	LEAA
+
+L1248:	call	LC88
+	call	L2BAF
+	ex	(sp), hl
+	call	L2AE7
+	pop	hl
+
+L1253:	call	LC89
+	jr	z, L125D
+	cp	','
+	jp	nz, L6B2
+
+L125D:	ex	(sp), hl
+	call	LC89
+	jr	nz, L120D
+	pop	de
+	ld	a, (L143)
+	or	a
+	ex	de, hl
+	jp	nz, LCE4
+	or	(hl)
+	ld	hl, L38BB
+	push	de
+	call	nz, LACE
+	pop	hl
+	ret
+
+L1276:	call	LE68
+	or	a
+	jr	nz, L128C
+	inc	hl
+	TSTM_W
+	ld	e, 4
+	jr	z, L12ED
+	inc	hl
+	LDDE_M
+	ld	(L140), de
+
+L128C:	call	LC88
+	cp	83h
+	jr	nz, L1276
+	jp	L1228
+
+L1296:	ld	de, 0
+
+L1299:	call	nz, L152E
+	ld	(L144), hl
+	call	L658
+	jp	nz, L6D7
+	ld	sp, hl
+	push	de
+	ld	a, (hl)
+	inc	hl
+	push	af
+	push	de
+	call	L2ABD
+	ex	(sp), hl
+	push	hl
+	call	L2754
+	pop	hl
+	call	L2AE7
+	pop	hl
+	call	L2AD6
+	push	hl
+	call	L2B07
+	pop	hl
+	pop	bc
+	sub	b
+	call	L2B3D
+	jr	z, L12D0
+	ex	de, hl
+	ld	(L148), hl
+	ld	l, c
+	ld	h, b
+	jp	LC05
+
+L12D0:	ld	sp, hl
+	ld	hl, (L144)
+	ld	a, (hl)
+	cp	2Ch
+	jp	nz, LC09
+	call	LC88
+	call	L1299
+
+L12E0:	call	L12F5
+
+L12E3:	db	0F6h		; OR n
+
+L12E4:	scf
+
+L12E5:	ld	a, (L102)
+	adc	a, a
+	or	a
+	ret	pe
+
+L12EB:	ld	e, 13
+
+L12ED:	jp	L6D9
+
+L12F0:	call	L12F5
+	jr	L12E4
+
+L12F5:	dec	hl
+	ld	d, 0
+
+L12F8:	push	de
+	ld	c, 1
+	call	L68F
+	call	L136F
+	ld	(L146), hl
+
+L1304:	ld	hl, (L146)
+
+L1307:	pop	bc
+	ld	a, b
+	cp	78h
+	call	nc, L12E3
+	ld	a, (hl)
+	ld	d, 0
+
+L1311:	sub	0ACh
+	jr	c, L132A
+	cp	3
+	jr	nc, L132A
+	cp	1
+	rla
+	xor	d
+	cp	d
+	ld	d, a
+	jp	c, L6C8
+	ld	(L13E), hl
+	call	LC88
+	jr	L1311
+
+L132A:	ld	a, d
+	or	a
+	jp	nz, L14A6
+	ld	a, (hl)
+	ld	(L13E), hl
+	sub	0A5h
+	ret	c
+	cp	7
+	ret	nc
+	ld	e, a
+	ld	a, (L102)
+	dec	a
+	or	e
+	ld	a, e
+	jp	z, L19F6
+	rlca
+	add	a, e
+	ld	e, a
+	ld	hl, L5A1
+	add	hl, de
+	ld	a, b
+	ld	d, (hl)
+	cp	d
+	ret	nc
+	inc	hl
+	call	L12E3
+
+L1352:	push	bc
+	ld	bc, 1304h
+	push	bc
+	ld	bc, (L15A)
+	push	bc
+	ld	bc, (L15C)
+	push	bc
+	ld	bc, (L15E)
+	push	bc
+	LDBC_M
+	push	bc
+	ld	hl, (L13E)
+	jr	L12F8
+
+L136F:	xor	a
+	ld	(L102), a
+	call	LC88
+	jp	c, L2BB4
+	call	LD89
+	jr	nc, L13D0
+	cp	0A5h
+	jr	z, L136F
+	cp	'.'
+	jp	z, L2BB4
+	cp	0A6h
+	jr	z, L13BF
+	cp	'"'
+	jp	z, L18D2
+	cp	0A3h
+	jp	z, L1509
+	cp	0A0h
+	jp	z, L1749
+	cp	'&'
+	jp	z, L2C42
+	cp	0E3h
+	jr	c, L13AD
+	cp	0E6h
+	jp	c, L1425
+	cp	0EAh
+	jp	z, L1457
+
+L13AD:	sub	0AFh
+	jr	nc, L13E1
+
+L13B1:	ld	a, '('
+	call	L6AC
+	call	L12F5
+	ld	a, ')'
+	call	L6AC
+	ret
+
+L13BF:	ld	d, 7Dh
+	call	L12F8
+	ld	hl, (L146)
+	push	hl
+	call	L2AA3
+
+L13CB:	call	L12E3
+	pop	hl
+	ret
+
+L13D0:	call	L152E
+L13D3:	push	hl
+	ex	de, hl
+	ld	(L15A), hl
+	ld	a, (L102)
+	or	a
+	call	z, L2ABD
+	pop	hl
+	ret
+
+L13E1:	ld	b, 0
+	rlca
+	ld	c, a
+	push	bc
+	call	LC88
+	ld	a, c
+	cp	29h
+	jr	c, L1414
+	cp	30h
+	jr	z, L1414
+	cp	32h
+	jr	z, L1411
+	jp	nc, LDBC
+	ld	a, 28h
+	call	L6AC
+	call	L12F0
+	ld	a, 2Ch
+	call	L6AC
+	ex	de, hl
+	ld	hl, (L15A)
+	ex	(sp), hl
+	push	hl
+	ex	de, hl
+	call	L1BFF
+	ex	de, hl
+
+L1411:	ex	(sp), hl
+	jr	L141C
+
+L1414:	call	L13B1
+	ex	(sp), hl
+	ld	de, L13CB
+	push	de
+
+L141C:	ld	bc, L56D
+	add	hl, bc
+	ld	c, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, c
+	jp	(hl)
+
+L1425:	push	af
+	call	LC88
+	pop	af
+	cp	0E4h
+	jr	c, L1445
+	jr	z, L143F
+	ld	a, '('
+	call	L6AC
+	call	L152E
+	ld	a, ')'
+	call	L6AC
+	jr	L144B
+
+L143F:	ld	de, (L1B2)
+	jr	L144B
+
+L1445:	ld	a, (L1B1)
+	ld	e, a
+	ld	d, 0
+
+L144B:	push	hl
+	ld	hl, L13CB
+	push	hl
+	xor	a
+	ld	(L102), a
+	jp	L16E4
+
+L1457:	call	LC88
+	ld	a, 28h
+	call	L6AC
+	ld	de, L2E1
+	push	de
+	call	L1C49
+	ld	a, 29h
+	call	L6AC
+	xor	a
+	ld	(L102), a
+	pop	de
+	ld	c, 11h
+	call	L1D48
+	cp	0FFh
+	sbc	a, a
+	push	hl
+	ld	hl, L13CB
+	push	hl
+	jp	L2A77
+
+L1480:	db	0F6h		; OR n
+
+L1481:	xor	a
+	push	af
+	call	LD91
+	pop	af
+	ex	de, hl
+	pop	bc
+	pop	ix
+	ex	(sp), hl
+	ex	de, hl
+	call	L2AC6
+	push	af
+	call	LDA5
+	pop	af
+	pop	bc
+	ld	a, c
+	ld	hl, L16E9
+	jr	nz, L14A1
+	and	e
+	ld	c, a
+	ld	a, b
+	and	d
+	jp	(hl)
+
+L14A1:	or	e
+	ld	c, a
+	ld	a, b
+	or	d
+	jp	(hl)
+
+L14A6:	ld	hl, L14B8
+	ld	a, (L102)
+	rra
+	ld	a, d
+	rla
+	ld	e, a
+	ld	d, 100
+	ld	a, b
+	cp	d
+	ret	nc
+	jp	L1352
+
+L14B8:	cp	d
+	inc	d
+	ld	a, c
+	or	a
+	rra
+	pop	bc
+	pop	ix
+	pop	de
+	push	af
+	call	L12E5
+	ld	hl, L14FF
+	push	hl
+	jp	z, L2B07
+	xor	a
+	ld	(L102), a
+	push	de
+	call	L1A47
+	pop	de
+	LDBC_M
+	inc	hl
+	push	bc
+	LDBC_M
+	push	bc
+	call	L1A4B
+	call	L2B3D
+	pop	hl
+	ex	(sp), hl
+	ld	d, l
+	pop	hl
+
+L14E8:	ld	a, e
+	or	d
+	ret	z
+	ld	a, d
+	sub	1
+	ret	c
+	xor	a
+	cp	e
+	inc	a
+	ret	nc
+	dec	d
+	dec	e
+	ld	a, (bc)
+	cp	(hl)
+	inc	hl
+	inc	bc
+	jr	z, L14E8
+	ccf
+	jp	L2A9B
+
+L14FF:	inc	a
+	adc	a, a
+	pop	bc
+	and	b
+	add	a, 0FFh
+	sbc	a, a
+	jp	L2A77
+
+L1509:	ld	d, 5Ah
+	call	L12F8
+	call	L12E3
+	call	LDA5
+	ld	a, e
+	cpl
+	ld	c, a
+	ld	a, d
+	cpl
+	call	L16E9
+	pop	bc
+	jp	L1304
+
+L1520:	call	LC89
+	ret	z
+	ld	a, 2Ch
+	call	L6AC
+
+L1529:	ld	bc, L1520
+	push	bc
+
+	db	0F6h		; OR n
+
+L152E:	xor	a
+	ld	(L101), a
+	ld	b, (hl)
+
+L1533:	call	LD89
+	jp	c, L6C8
+	xor	a
+	ld	c, a
+	ld	(L102), a
+	call	LC88
+	jr	c, L1548
+	call	LD89
+	jr	c, L1553
+
+L1548:	ld	c, a
+
+L1549:	call	LC88
+	jr	c, L1549
+	call	LD89
+	jr	nc, L1549
+
+L1553:	sub	24h
+	jr	nz, L1560
+	inc	a
+	ld	(L102), a
+	set	7, c
+	call	LC88
+
+L1560:	ld	a, (L142)
+	dec	a
+	or	a
+	jr	z, L1569
+	dec	a
+	scf
+
+L1569:	jp	z, L1605
+	add	a, (hl)
+	sub	26h
+	jr	z, L15DD
+	xor	a
+	ld	(L142), a
+	push	hl
+	ld	hl, (L154)
+	ex	de, hl
+	ld	hl, (L152)
+
+L157D:	CPHL_DE
+	jr	z, L1597
+	ld	a, c
+	sub	(hl)
+	inc	hl
+	jr	nz, L158C
+	ld	a, b
+	sub	(hl)
+
+L158C:	inc	hl
+	jr	z, L15CF
+	inc	hl
+	inc	hl
+	inc	hl
+	inc	hl
+	inc	hl
+	inc	hl
+	jr	L157D
+
+L1597:	pop	hl
+	ex	(sp), hl
+	push	de
+	ld	de, L13D3
+	CPHL_DE
+	pop	de
+	jr	z, L15D2
+	ex	(sp), hl
+	push	hl
+	push	bc
+	ld	bc, 8
+	ld	hl, (L156)
+	push	hl
+	add	hl, bc
+	pop	bc
+	push	hl
+	call	L677
+	pop	hl
+	ld	(L156), hl
+	ld	h, b
+	ld	l, c
+	ld	(L154), hl
+
+L15BF:	dec	hl
+	ld	(hl), 0
+	CPHL_DE
+	jr	nz, L15BF
+	pop	de
+	LDM_DE
+	inc	hl
+
+L15CF:	ex	de, hl
+	pop	hl
+	ret
+
+L15D2:	ld	(L15F), a
+	ld	hl, BUFEND-1
+	ld	(L15A), hl
+	pop	hl
+	ret
+
+L15DD:	push	hl
+	ld	hl, (L101)
+	ex	(sp), hl
+	ld	d, a
+
+L15E3:	push	de
+	push	bc
+	call	LD96
+	pop	bc
+	pop	af
+	ex	de, hl
+	ex	(sp), hl
+	push	hl
+	ex	de, hl
+	inc	a
+	ld	d, a
+	ld	a, (hl)
+	cp	2Ch
+	jr	z, L15E3
+	ld	a, ')'
+	call	L6AC
+	ld	(L146), hl
+	pop	hl
+	ld	(L101), hl
+	ld	e, 0
+	push	de
+	db	11h		; LD DE,nn
+
+L1605:	push	hl
+	push	af
+	ld	hl, (L154)
+	db	3Eh		; LD A,n
+
+L160B:	add	hl, de
+	ld	de, (L156)
+	CPHL_DE
+	jr	z, L163C
+	ld	a, (hl)
+	cp	c
+	inc	hl
+	jr	nz, L161F
+	ld	a, (hl)
+	cp	b
+
+L161F:	inc	hl
+	LDDE_M
+	inc	hl
+	jr	nz, L160B
+	ld	a, (L101)
+	or	a
+	jp	nz, L6D1
+	pop	af
+	jp	c, L270A
+	jp	z, L25EA
+	sub	(hl)
+	jr	z, L169B
+
+L1637:	ld	e, 9
+	jp	L6D9
+
+L163C:	ld	de, 6
+	pop	af
+	jp	c, L2749
+	jp	z, L2602
+	LDM_BC
+	inc	hl
+	ld	c, a
+	call	L68F
+	inc	hl
+	inc	hl
+	ld	(L13E), hl
+	ld	(hl), c
+	inc	hl
+	ld	a, (L101)
+	rla
+	ld	a, c
+
+L165A:	ld	bc, 0Bh
+	jr	nc, L1661
+	pop	bc
+	inc	bc
+
+L1661:	LDM_BC
+	inc	hl
+	push	af
+	push	hl
+	call	L2B97
+	ex	de, hl
+	pop	hl
+	pop	af
+	dec	a
+	jr	nz, L165A
+	push	af
+	ld	b, d
+	ld	c, e
+	ex	de, hl
+	add	hl, de
+	jr	c, L1637
+	call	L69C
+	ld	(L156), hl
+
+L167D:	dec	hl
+	ld	(hl), 0
+	CPHL_DE
+	jr	nz, L167D
+	inc	bc
+	ld	d, a
+	ld	hl, (L13E)
+	ld	e, (hl)
+	ex	de, hl
+	add	hl, hl
+	add	hl, bc
+	ex	de, hl
+	dec	hl
+	dec	hl
+	LDM_DE
+	inc	hl
+	pop	af
+	jr	c, L16BE
+
+L169B:	ld	b, a
+	ld	c, a
+	ld	a, (hl)
+	inc	hl
+	db	16h		; LD D,n
+
+L16A0:	pop	hl
+	LDDE_M
+	inc	hl
+	ex	(sp), hl
+	push	af
+	push	hl
+	or	a
+	sbc	hl, de
+	jr	nc, L1637
+	call	L2B97
+	pop	de
+	add	hl, de
+	pop	af
+	dec	a
+	ld	b, h
+	ld	c, l
+	jr	nz, L16A0
+	add	hl, hl
+	add	hl, bc
+	add	hl, hl
+	pop	bc
+	add	hl, bc
+	ex	de, hl
+
+L16BE:	ld	hl, (L146)
+	ret
+
+L16C2:	ld	de, (L156)
+	ld	hl, 0
+	add	hl, sp
+	ld	a, (L102)
+	or	a
+	jr	z, L16DD
+	call	L1A47
+	call	L1957
+	ld	de, (L14E)
+	ld	hl, (L13C)
+
+L16DD:	xor	a
+	ld	(L102), a
+	sbc	hl, de
+
+L16E3:	ex	de, hl
+
+L16E4:	xor	a
+	ld	b, 98h
+	jr	L16F3
+
+L16E9:	ld	b, c
+
+L16EA:	ld	d, b
+	ld	e, 0
+	ld	hl, L102
+	ld	(hl), e
+	ld	b, 90h
+
+L16F3:	jp	L2A7C
+
+L16F6:	ld	a, (L18B)
+	jr	L170F
+
+L16FB:	call	L1C02
+	cp	3
+	jp	nc, L1FBB
+	cp	1
+	jr	nc, L16F6
+	ld	a, (L1AB)
+	jr	z, L170F
+	ld	a, (L185)
+
+L170F:	ld	b, a
+	xor	a
+	jr	L16EA
+
+L1713:	call	L188E
+	call	L1880
+	ex	de, hl
+	LDM_DE
+	ex	de, hl
+	dec	hl
+
+L171F:	call	LC88
+	jr	z, L172B
+	cp	0ADh
+	jr	nz, L171F
+
+L1728:	jp	LE68
+
+L172B:	or	a
+	jr	nz, L173D
+	inc	hl
+	TSTM_W
+	jp	z, L6C8
+	inc	hl
+	LDDE_M
+	ld	(L148), de
+
+L173D:	call	LC88
+	jr	z, L172B
+	cp	89h
+	jr	z, L1728
+	jp	L173D
+
+L1749:	call	L188E
+	ld	a, (L102)
+	or	a
+	push	af
+	ld	(L146), hl
+	ex	de, hl
+	LDHL_M
+	or	h
+	jp	z, L6D4
+	ld	a, (hl)
+	cp	28h
+	jr	nz, L17D3
+	call	LC88
+	ld	(L13E), hl
+	jr	L176F
+
+L176A:	ld	a, ','
+	call	L6AC
+
+L176F:	ld	c, 5
+	call	L68F
+	ld	a, 29h
+	ld	(L142), a
+	call	L152E
+	ex	de, hl
+	ld	a, (L102)
+	or	a
+	scf
+	jr	nz, L1794
+	LDBC_M
+	push	bc
+	inc	hl
+	LDBC_M
+	push	bc
+	inc	hl
+	LDBC_M
+	push	bc
+	jr	L179C
+
+L1794:	push	af
+	push	de
+	ex	de, hl
+	call	L18F4
+	pop	de
+	pop	af
+
+L179C:	push	hl
+	push	af
+	ex	de, hl
+	ld	a, (hl)
+	cp	')'
+	jr	nz, L176A
+	ld	hl, (L146)
+	ld	a, '('
+	call	L6AC
+	push	hl
+	ld	hl, (L13E)
+
+L17B0:	call	L152E
+	ex	(sp), hl
+	call	LE90
+	ld	a, (hl)
+	cp	')'
+	jr	z, L17C9
+	ld	a, 2Ch
+	call	L6AC
+	ex	(sp), hl
+	ld	a, ','
+	call	L6AC
+	jr	L17B0
+
+L17C9:	call	LC88
+	ex	(sp), hl
+	ld	a, ')'
+	call	L6AC
+	db	3Eh		; LD A,n
+
+L17D3:	push	de
+	call	LC89
+	jr	z, L17E9
+	ld	a, 0ADh
+	call	L6AC
+	call	L12F5
+	call	LC89
+	jp	nz, L6C8
+	jr	L182A
+
+L17E9:	ld	c, 2
+	call	L68F
+	ld	de, (L148)
+	push	de
+	ld	d, 0A0h
+	push	de
+	inc	sp
+	jp	LC09
+
+L17FA:	jr	nz, L1808
+	call	L27DF
+	ld	(L138), a
+	cpl
+	ld	(L102), a
+	jr	L1811
+
+L1808:	call	L12F5
+	call	LC89
+	jp	nz, L6C8
+
+L1811:	ld	d, 0FFh
+	call	L658
+	cp	0A0h
+	ld	e, 17h
+	jp	nz, L6D9
+	ld	a, (hl)
+	inc	hl
+	and	(hl)
+	dec	hl
+	inc	a
+	call	z, LCB8
+	ld	sp, hl
+	pop	hl
+	ld	(L148), hl
+
+L182A:	ld	a, (L102)
+	inc	a
+	jr	z, L1833
+	dec	a
+	jr	nz, L1861
+
+L1833:	pop	de
+
+L1834:	pop	af
+	jr	nc, L184A
+	jr	nz, L1870
+	pop	hl
+	pop	bc
+	ld	(hl), b
+	dec	hl
+	ld	(hl), c
+	dec	hl
+	pop	bc
+	ld	(hl), b
+	dec	hl
+	ld	(hl), c
+	dec	hl
+	pop	bc
+	ld	(hl), b
+	dec	hl
+	ld	(hl), c
+	jr	L1834
+
+L184A:	push	af
+	push	de
+	ld	hl, L102
+	bit	7, (hl)
+	jr	z, L1854
+	ld	(hl), a
+
+L1854:	or	a
+	ld	de, L138
+	call	nz, L18F4
+	pop	hl
+	pop	af
+	rra
+	jp	L12E5
+
+L1861:	ld	de, (L15A)
+	call	L1A67
+	ld	hl, L138
+	call	L2AEA
+	jr	L1833
+
+L1870:	call	L1A67
+	ld	a, (hl)
+	ld	(L106), hl
+	pop	hl
+	ld	(hl), a
+	inc	hl
+	inc	hl
+	LDM_BC
+	jr	L1834
+
+L1880:	push	hl
+	ld	hl, (L148)
+	inc	hl
+	ld	a, h
+	or	l
+	pop	hl
+	ret	nz
+
+L1889:	ld	e, 12
+	jp	L6D9
+
+L188E:	ld	a, 0A0h
+	call	L6AC
+	or	80h
+	ld	b, a
+	ld	a, 29h
+	ld	(L142), a
+	jp	L1533
+
+L189E:	call	L12E3
+	call	L2CAE
+	call	L18D1
+	call	L1A47
+	ld	bc, L1AA6
+	push	bc
+
+L18AE:	ld	a, (hl)
+	inc	hl
+	inc	hl
+	push	hl
+	call	L192D
+	pop	hl
+	LDBC_M
+	call	L18C5
+	push	hl
+	call	L1A3D
+	pop	de
+	ret
+
+L18C2:	call	L192D
+
+L18C5:	ld	hl, L138
+	push	hl
+	ld	(hl), a
+	inc	hl
+	inc	hl
+	LDM_DE
+	pop	hl
+	ret
+
+L18D1:	dec	hl
+
+L18D2:	ld	b, 22h
+
+L18D4:	ld	d, b
+
+L18D5:	push	hl
+	ld	c, 0FFh
+
+L18D8:	inc	hl
+	ld	a, (hl)
+	inc	c
+	or	a
+	jr	z, L18E4
+	cp	d
+	jr	z, L18E4
+	cp	b
+	jr	nz, L18D8
+
+L18E4:	cp	22h
+	call	z, LC88
+	ex	(sp), hl
+	inc	hl
+	ex	de, hl
+	ld	a, c
+	call	L18C5
+
+L18F0:	ld	de, L138
+	db	3Eh		; LD A,n
+
+L18F4:	push	de
+
+	ld	hl, (L106)
+	ld	(L15A), hl
+	ld	a, 1
+	ld	(L102), a
+	call	L2AEA
+	CPHL_DE
+	ld	(L106), hl
+	pop	hl
+	ld	a, (hl)
+	ret	nz
+	ld	e, 16
+
+L1911:	jp	L6D9
+
+L1914:	inc	hl
+
+L1915:	call	L18D1
+
+L1918:	call	L1A47
+	call	L2B3D
+	inc	e
+
+L191F:	dec	e
+	ret	z
+	ld	a, (bc)
+	call	LA77
+	cp	0Dh
+	call	z, L1141
+	inc	bc
+	jr	L191F
+
+L192D:	or	a
+	db	0Eh		; LD C,n
+
+L192F:	pop	af
+	push	af
+	ld	hl, (L14E)
+	ex	de, hl
+	ld	hl, (L13C)
+	ld	c, a
+	xor	a
+	ld	b, a
+	sbc	hl, bc
+	CPHL_DE
+	jr	c, L194C
+	ld	(L13C), hl
+	inc	hl
+	ex	de, hl
+	pop	af
+	ret
+
+L194C:	pop	af
+	ld	e, 14
+	jr	z, L1911
+	cp	a
+	push	af
+	ld	bc, L192F
+	push	bc
+
+L1957:	ld	hl, (L104)
+
+L195A:	ld	(L13C), hl
+	xor	a
+	ex	af, af'
+	ld	de, (L14E)
+	exx
+	ld	hl, L108
+
+L1967:	ld	de, (L106)
+	CPHL_DE
+	ld	bc, L1967
+	jr	nz, L19B5
+	ld	hl, (L152)
+
+L1979:	ld	de, (L154)
+	CPHL_DE
+	jr	z, L198F
+	bit	7, (hl)
+	inc	hl
+	inc	hl
+	call	L19B6
+	jr	L1979
+
+L198E:	pop	bc
+
+L198F:	ex	de, hl
+	ld	hl, (L156)
+	sbc	hl, de
+	ex	de, hl
+	jr	z, L19DC
+
+L1998:	call	L2B3D
+	bit	7, e
+	push	hl
+	add	hl, bc
+	jr	z, L198E
+	ex	(sp), hl
+	ld	c, (hl)
+	ld	b, 0
+	add	hl, bc
+	add	hl, bc
+	inc	hl
+
+L19A8:	pop	de
+	CPHL_DE
+	jr	z, L198F
+	push	de
+	ld	bc, L19A8
+
+L19B5:	push	bc
+
+L19B6:	ld	a, (hl)
+	inc	hl
+	inc	hl
+	LDDE_M
+	inc	hl
+	inc	hl
+	inc	hl
+	ret	z
+	or	a
+	ret	z
+	push	de
+	exx
+	pop	bc
+	ld	hl, (L13C)
+	sbc	hl, bc
+	exx
+	ret	c
+	exx
+	ld	h, d
+	ld	l, e
+	sbc	hl, bc
+	exx
+	ret	nc
+	exx
+	ld	d, b
+	ld	e, c
+	exx
+	ex	af, af'
+	push	hl
+	pop	ix
+	ret
+
+L19DC:	ex	af, af'
+	ret	nc
+	exx
+	ld	hl, (L13C)
+	ex	de, hl
+	ld	c, a
+	ld	b, 0
+	add	hl, bc
+	dec	hl
+	lddr
+	ld	h, d
+	ld	l, e
+	inc	de
+	ld	(ix-3), d
+	ld	(ix-4), e
+	jp	L195A
+
+L19F6:	push	bc
+	push	hl
+	ld	hl, (L15A)
+	ex	(sp), hl
+	call	L136F
+	ex	(sp), hl
+	call	L12E4
+	ld	a, (hl)
+	push	hl
+	ld	hl, (L15A)
+	push	hl
+	add	a, (hl)
+	ld	e, 0Fh
+	jp	c, L6D9
+	call	L18C2
+	pop	de
+	call	L1A4B
+	ex	(sp), hl
+	call	L1A4A
+	push	hl
+	ld	hl, (L13A)
+	ex	de, hl
+	call	L1A2D
+	call	L1A2D
+	ld	hl, L1307
+	ex	(sp), hl
+	push	hl
+	jp	L18F0
+
+L1A2D:	pop	hl
+	ex	(sp), hl
+	LDBC_M
+	inc	hl
+	LDHL_M
+
+L1A37:	ld	a, b
+	or	c
+	ret	z
+	ldir
+	ret
+
+L1A3D:	ld	h, b
+	ld	l, c
+	ld	c, a
+	ld	b, 0
+	jr	L1A37
+
+L1A44:	call	L12E4
+
+L1A47:	ld	hl, (L15A)
+
+L1A4A:	ex	de, hl
+
+L1A4B:	call	L1A67
+	ex	de, hl
+	ret	nz
+	push	de
+	ld	d, b
+	ld	e, c
+	dec	de
+	ld	c, (hl)
+	ld	hl, (L13C)
+	CPHL_DE
+	jr	nz, L1A65
+	ld	b, a
+	add	hl, bc
+	ld	(L13C), hl
+
+L1A65:	pop	hl
+	ret
+
+L1A67:	ld	hl, (L106)
+	dec	hl
+	dec	hl
+	dec	hl
+	ld	b, (hl)
+	dec	hl
+	ld	c, (hl)
+	dec	hl
+	dec	hl
+	CPHL_DE
+	ret	nz
+	ld	(L106), hl
+	ret
+
+L1A7D:	ld	bc, L170F
+	push	bc
+
+L1A81:	call	L1A44
+	xor	a
+	ld	d, a
+	ld	(L102), a
+	ld	a, (hl)
+	or	a
+	ret
+
+L1A8C:	call	L1A81
+	jr	z, L1AE9
+	inc	hl
+	inc	hl
+	LDDE_M
+	ld	a, (de)
+	jp	L170F
+
+L1A9A:	ld	a, 1
+	call	L18C2
+	call	L1C05
+	ld	hl, (L13A)
+	ld	(hl), e
+
+L1AA6:	pop	bc
+	jp	L18F0
+
+L1AAA:	call	L1BE3
+	xor	a
+
+L1AAE:	ex	(sp), hl
+	ld	c, a
+	db	3Eh		; LD A,n
+
+L1AB1:	push	hl
+
+L1AB2:	push	hl
+	ld	a, (hl)
+	cp	b
+	jr	c, L1AB9
+	ld	a, b
+	db	11h		; LD DE,nn
+
+L1AB9:	ld	c, 0
+	push	bc
+	call	L192D
+	pop	bc
+	pop	hl
+	push	hl
+	inc	hl
+	inc	hl
+	ld	b, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, b
+	ld	b, 0
+	add	hl, bc
+	ld	b, h
+	ld	c, l
+	call	L18C5
+	call	L1A3D
+	pop	de
+	call	L1A4B
+	jp	L18F0
+
+L1ADA:	call	L1BE3
+	pop	de
+	push	de
+	ld	a, (de)
+	sub	b
+	jr	L1AAE
+
+L1AE3:	ex	de, hl
+	ld	a, (hl)
+	pop	de
+	ld	b, e
+	inc	b
+	dec	b
+
+L1AE9:	jp	z, LDBC
+	push	bc
+	ld	e, 0FFh
+	cp	29h
+	jr	z, L1AFB
+	ld	a, 2Ch
+	call	L6AC
+	call	L1BFF
+
+L1AFB:	ld	a, 29h
+	call	L6AC
+	pop	af
+	ex	(sp), hl
+	dec	a
+	cp	(hl)
+	ld	b, 0
+	jr	nc, L1AB2
+	ld	c, a
+	ld	a, (hl)
+	sub	c
+	cp	e
+	ld	b, a
+	jr	c, L1AB2
+	ld	b, e
+	jr	L1AB2
+
+L1B12:	pop	hl
+	ld	a, 28h
+	call	L6AC
+	call	L12F0
+	ld	de, (L15A)
+	push	de
+	ld	a, 2Ch
+	call	L6AC
+	call	L12F0
+	ld	de, (L15A)
+	push	de
+	ld	bc, 0FFh
+	ld	a, (hl)
+	cp	2Ch
+	jr	nz, L1B4A
+	push	bc
+	call	L1BFC
+	pop	bc
+	dec	e
+	ld	b, e
+	inc	e
+	jr	z, L1AE9
+	ld	a, (hl)
+	cp	2Ch
+	jr	nz, L1B4A
+	push	bc
+	call	L1BFC
+	pop	bc
+	ld	c, e
+
+L1B4A:	ld	a, 29h
+	call	L6AC
+	ex	(sp), hl
+	push	bc
+	call	L1A4A
+	pop	bc
+	ex	de, hl
+	pop	hl
+	ex	(sp), hl
+	push	de
+	push	bc
+	call	L1A4A
+	pop	bc
+	pop	de
+	ld	a, b
+	sub	(hl)
+	jp	nc, L1BB5
+	neg
+	cp	c
+	jr	nc, L1B6A
+	ld	c, a
+
+L1B6A:	inc	hl
+	inc	hl
+	LDHL_M
+	push	hl
+	push	bc
+	ld	c, b
+	ld	b, 0
+	add	hl, bc
+	pop	bc
+	ex	de, hl
+	ld	a, c
+	sub	(hl)
+	jr	c, L1BB4
+	inc	a
+	ld	c, a
+	ld	b, (hl)
+	inc	hl
+	inc	hl
+	LDHL_M
+	ex	de, hl
+	ld	a, b
+	or	a
+	jr	z, L1BA7
+
+L1B8A:	push	bc
+	ld	b, 0
+	ld	a, (de)
+	cpir
+	ld	a, c
+	pop	bc
+	jr	nz, L1BB4
+	ld	c, a
+	push	bc
+	push	de
+	push	hl
+	jr	L1BA0
+
+L1B9A:	inc	de
+	ld	a, (de)
+	cp	(hl)
+	jr	nz, L1BA2
+	inc	hl
+
+L1BA0:	djnz	L1B9A
+
+L1BA2:	pop	hl
+	pop	de
+	pop	bc
+	jr	nz, L1BB0
+
+L1BA7:	pop	de
+	sbc	hl, de
+	ld	a, l
+
+L1BAB:	call	L170F
+	pop	hl
+	ret
+
+L1BB0:	ld	a, c
+	or	a
+	jr	nz, L1B8A
+
+L1BB4:	pop	de
+
+L1BB5:	xor	a
+	jr	L1BAB
+
+L1BB8:	call	L1C02
+	ld	c, a
+	in	a, (c)
+	jp	L170F
+
+L1BC1:	call	L1BEE
+	out	(c), a
+	ret
+
+L1BC7:	call	L1BEE
+	ld	b, a
+	push	bc
+	ld	e, 0
+	call	LC89
+	jr	z, L1BDB
+	ld	a, 2Ch
+	call	L6AC
+	call	L1BFF
+
+L1BDB:	pop	bc
+
+L1BDC:	in	a, (c)
+	xor	e
+	and	b
+	jr	z, L1BDC
+	ret
+
+L1BE3:	ex	de, hl
+	ld	a, 29h
+	call	L6AC
+	pop	bc
+	pop	de
+	push	bc
+	ld	b, e
+	ret
+
+L1BEE:	call	L1BFF
+	push	de
+	ld	a, 2Ch
+	call	L6AC
+	call	L1BFF
+	pop	bc
+	ret
+
+L1BFC:	call	LC88
+
+L1BFF:	call	L12F5
+
+L1C02:	call	L12E3
+
+L1C05:	call	LD9F
+	ld	a, d
+	or	a
+	jp	nz, LDBC
+	call	LC89
+	ld	a, e
+	ret
+
+L1C12:	call	L1A81
+	jp	z, L27DF
+	ld	e, a
+	inc	hl
+	inc	hl
+	LDHL_M
+	push	hl
+	add	hl, de
+	ld	b, (hl)
+	ld	(hl), d
+	ex	(sp), hl
+	push	bc
+	ld	a, (hl)
+	call	L2BAF
+	pop	bc
+	pop	hl
+	ld	(hl), b
+	ret
+
+L1C2D:	jr	c, L1C38
+	call	IOCHK
+	xor	3
+
+L1C34:	ld	c, a
+	jp	IOSET
+
+L1C38:	call	L1BFF
+	cp	4
+	jp	nc, L6C8
+	ld	b, a
+	call	IOCHK
+	and	0FCh
+	or	b
+	jr	L1C34
+
+L1C49:	push	de
+	call	L12F0
+	ex	(sp), hl
+	push	hl
+	ld	hl, (L15A)
+	call	L2B3D
+	pop	hl
+	ld	(hl), 0
+	call	L1CE2
+	jr	c, L1CDA
+	cp	'.'
+	jr	z, L1CDA
+	cp	':'
+	jr	z, L1CDA
+	ld	d, a
+	call	L1CE2
+	jr	c, L1C86
+	cp	':'
+	jr	nz, L1C86
+	ld	a, d
+	sub	'@'
+	jr	c, L1CDA
+	cp	5
+	jr	nc, L1CDA
+	ld	(hl), a
+	call	L1CE2
+	jr	c, L1CDA
+	cp	'.'
+	jr	z, L1CDA
+	ld	d, 8
+	jr	L1C8E
+
+L1C86:	inc	hl
+	ld	(hl), d
+	ld	d, 7
+
+L1C8A:	cp	'.'
+	jr	z, L1CA0
+
+L1C8E:	cp	':'
+	jr	z, L1CDA
+	inc	hl
+	ld	(hl), a
+	call	L1CE2
+	jr	c, L1CC4
+	dec	d
+	jr	nz, L1C8A
+	cp	'.'
+	jr	nz, L1CDA
+
+L1CA0:	call	L1CD2
+	ld	d, 3
+
+L1CA5:	call	L1CE2
+	jr	c, L1CBC
+	cp	'.'
+	jr	z, L1CDA
+	cp	':'
+	jr	z, L1CDA
+	inc	hl
+	ld	(hl), a
+	dec	d
+	jr	nz, L1CA5
+	call	L1CE2
+	jr	nc, L1CDA
+
+L1CBC:	call	L1CD2
+
+L1CBF:	call	L1A47
+	pop	hl
+	ret
+
+L1CC4:	call	L1CD2
+	ex	de, hl
+	ld	hl, L1CDF
+	ld	bc, 3
+	ldir
+	jr	L1CBF
+
+L1CD2:	inc	d
+
+L1CD3:	dec	d
+	ret	z
+	inc	hl
+	ld	(hl), 20h
+	jr	L1CD3
+
+L1CDA:	ld	e, 26h
+	jp	L6D9
+
+L1CDF:	db	'BAS'
+
+L1CE2:	inc	e
+	dec	e
+	scf
+	ret	z
+	ld	a, (bc)
+	inc	bc
+	dec	e
+	cp	20h
+	jr	z, L1CE2
+	or	a
+	ret
+
+L1CEF:	call	L1FB4
+	call	L1D7E
+	jr	nz, L1D25
+	cp	'I'
+	jr	z, L1CFF
+	cp	'O'
+	jr	nz, L1D25
+
+L1CFF:	push	af
+	ld	a, ','
+	call	L6AC
+	pop	af
+	push	af
+	ld	de, L23D
+	cp	'I'
+	jr	nz, L1D16
+	ld	de, 5Ch
+	call	L532
+	jr	L1D19
+
+L1D16:	call	L537
+
+L1D19:	call	L1C49
+	pop	af
+	cp	'I'
+	jp	z, L4C5
+	jp	L4F5
+
+L1D25:	ld	e, 25h
+	jp	L6D9
+
+L1D2A:	call	L1FB4
+	call	L1D7E
+	jr	nz, L1D25
+	cp	'I'
+	jp	z, L532
+	cp	'O'
+	jr	nz, L1D25
+	jp	L537
+
+L1D3E:	ld	de, 2E1h
+	push	de
+	call	L1C49
+	pop	de
+	ld	c, 13h
+
+L1D48:	push	hl
+	push	de
+	push	bc
+	ld	de, 80h
+	ld	c, 26
+	call	5
+	pop	bc
+	pop	de
+	call	5
+	pop	hl
+	ret
+
+L1D5A:	ld	de, L2E1
+	push	de
+	call	L1C49
+	ld	a, 2Ch
+	call	L6AC
+	ld	de, L2F1
+	push	de
+	call	L1C49
+	pop	de
+	ld	c, 11h
+	call	L1D48
+	inc	a
+	ld	e, 23h
+	jp	nz, L6D9
+	pop	de
+	ld	c, 17h
+	jr	L1D48
+
+L1D7E:	call	L12F0
+	push	hl
+	ld	hl, (L15A)
+	ld	a, (hl)
+	dec	a
+	jr	nz, L1D95
+	inc	hl
+	inc	hl
+	LDHL_M
+	ld	a, (hl)
+	push	af
+	call	L1A47
+	pop	af
+
+L1D95:	pop	hl
+	ret
+
+L1D97:	ld	a, 0A7h
+	cp	(hl)
+	jr	z, L1DAE
+	call	L1D7E
+	jp	nz, L6C8
+	dec	hl
+	push	hl
+	call	L1E3B
+	call	L1E1E
+
+L1DAA:	pop	hl
+	jp	LC88
+
+L1DAE:	push	hl
+	call	L4C5
+
+L1DB2:	call	L41D
+	jr	c, L1DAA
+	or	a
+	jr	z, L1DB2
+	call	L1E1E
+	jr	L1DB2
+
+L1DBF:	call	L1FD9
+	jr	L1DC7
+
+L1DC4:	call	L1F90
+
+L1DC7:	push	hl
+	call	L1134
+	call	L4C5
+
+L1DCE:	call	L41D
+	jr	c, L1DFB
+	or	a
+	jr	z, L1DCE
+	inc	a
+	jr	z, L1DE5
+	dec	a
+	call	LA83
+
+L1DDD:	call	L1134
+	call	L1E6E
+	jr	L1DCE
+
+L1DE5:	call	L1E80
+	call	LA83
+	ld	a, 3Ah
+	call	LA83
+
+L1DF0:	call	L1E80
+	or	a
+	jr	z, L1DDD
+	call	LA83
+	jr	L1DF0
+
+L1DFB:	pop	hl
+	ret
+
+L1DFD:	call	L1FD9
+	jr	L1E05
+
+L1E02:	call	L1F90
+
+L1E05:	call	L1BFF
+	cp	0Eh
+	jp	c, LDBC
+	ld	(iy+1), a
+	ld	c, a
+
+L1E11:	sub	0Eh
+	jr	nc, L1E11
+	add	a, 1Ch
+	neg
+	add	a, c
+	ld	(iy+2), a
+	ret
+
+L1E1E:	jr	nc, L1E27
+	ld	c, 0FFh
+	ex	af, af'
+	call	L468
+	ex	af, af'
+
+L1E27:	ld	c, a
+	call	L468
+
+L1E2B:	ld	b, 3
+
+L1E2D:	call	L1E80
+	ld	c, a
+	call	L468
+	ld	a, c
+	or	a
+	jr	nz, L1E2B
+	djnz	L1E2D
+	ret
+
+L1E3B:	push	af
+	call	L4C5
+	pop	af
+	call	LD8A
+	jp	c, L6C8
+	ld	c, a
+
+L1E47:	call	L41D
+	jr	c, L1E6A
+	or	a
+	jr	z, L1E47
+	inc	a
+	jr	z, L1E5B
+	dec	a
+	cp	c
+	jr	z, L1E62
+
+L1E56:	call	L1E6E
+	jr	L1E47
+
+L1E5B:	call	L1E80
+	cp	c
+	jr	nz, L1E56
+	scf
+
+L1E62:	push	af
+	ld	c, 7
+	call	COUT
+	pop	af
+	ret
+
+L1E6A:	ld	e, 13h
+	jr	L1E86
+
+L1E6E:	ld	b, 3
+
+L1E70:	call	L1E80
+	or	a
+	jr	nz, L1E6E
+	djnz	L1E70
+	ret
+
+L1E79:	call	L1E80
+	or	a
+	jr	nz, L1E79
+	ret
+
+L1E80:	call	L41D
+	ret	nc
+
+L1E84:	ld	e, 14h
+
+L1E86:	jp	L6D9
+
+L1E89:	inc	d
+	call	nz, L865
+	jr	L1E84
+
+L1E8F:	call	L537
+	jp	0
+
+L1E95:	call	L1D7E
+	jp	nz, L6C8
+	dec	hl
+	call	LD8A
+	jp	c, L6C8
+	ld	c, a
+	call	LC88
+	jr	z, L1ED8
+	ld	a, 2Ch
+	call	L6AC
+	push	bc
+	call	L12F0
+	pop	bc
+	ld	b, c
+	ld	c, 0FFh
+	call	L468
+	ld	c, b
+	call	L468
+	push	hl
+	ld	hl, (L15A)
+	ld	b, (hl)
+	ld	a, b
+	or	a
+	jr	z, L1ED2
+	inc	hl
+	inc	hl
+	LDDE_M
+	ex	de, hl
+
+L1ECB:	ld	c, (hl)
+	call	L468
+	inc	hl
+	djnz	L1ECB
+
+L1ED2:	call	L1A47
+	ld	c, 0
+	pop	hl
+
+L1ED8:	push	hl
+	call	L468
+	ld	hl, (L152)
+	ex	de, hl
+	ld	hl, (L150)
+
+L1EE3:	ld	c, (hl)
+	inc	hl
+	call	L468
+	CPHL_DE
+	jr	nz, L1EE3
+	pop	hl
+	ret
+
+L1EF2:	cp	97h
+	push	af
+	call	z, LC88
+	call	L1D7E
+	jp	nz, L6C8
+	dec	hl
+	ld	(L15A), a
+	pop	af
+	ld	d, 0FFh
+	jr	z, L1F0C
+
+L1F07:	call	L865
+	ld	d, 0
+
+L1F0C:	ld	a, (L15A)
+	call	L1E3B
+	call	c, L1E79
+	ld	hl, (L150)
+
+L1F18:	ld	b, 3
+
+L1F1A:	call	L41D
+	jp	c, L1E89
+	ld	e, a
+	sub	(hl)
+	and	d
+	jr	nz, L1F3D
+	ld	(hl), e
+	call	L69C
+	ld	a, (hl)
+	or	a
+	inc	hl
+	jr	nz, L1F18
+	djnz	L1F1A
+	ld	(L152), hl
+	ld	a, (L1A4)
+	or	a
+	call	z, L1121
+	jp	L807
+
+L1F3D:	ld	e, 15h
+	jp	L6D9
+
+L1F42:	ret	nz
+	pop	hl
+	ld	hl, (L150)
+
+L1F47:	TSTM_W
+	inc	hl
+	jr	z, L1F7E
+	LDDE_M
+	inc	hl
+	push	hl
+	call	L16E4
+	call	L2CAE
+	inc	hl
+	call	L1F86
+	pop	hl
+	ld	a, (hl)
+	cp	9
+	jr	z, L1F67
+	ld	c, 20h
+	call	L468
+
+L1F67:	call	LB74
+	push	hl
+	ld	hl, L2FE
+	call	L1F86
+	pop	hl
+	ld	c, 0Dh
+	call	L468
+	ld	c, 0Ah
+	call	L468
+	jr	L1F47
+
+L1F7E:	ld	c, 1Ah
+	call	L468
+	jp	L751
+
+L1F86:	ld	a, (hl)
+	or	a
+	ret	z
+	ld	c, a
+	call	L468
+	inc	hl
+	jr	L1F86
+
+L1F90:	ex	de, hl
+	ld	hl, L8BB
+	ex	(sp), hl
+	push	hl
+	ex	de, hl
+
+L1F97:	ld	de, LC89
+	push	de
+	call	L1FC8
+	cp	3
+	jp	nc, L1FBB
+	dec	a
+	ret	m
+	jr	nz, L1FE0
+	ld	iy, L468
+	ld	(L183), iy
+	ld	iy, L1AB
+	ret
+
+L1FB4:	call	L1FC8
+	dec	a
+	jp	z, LC89
+
+L1FBB:	ld	e, 1Bh
+	jp	L6D9
+
+L1FC0:	call	L1FC8
+	cp	2
+	jr	nc, L1FBB
+	ret
+
+L1FC8:	ld	a, (hl)
+	cp	23h
+	ld	a, 0
+	ret	nz
+	call	L1BFC
+	ret	z
+	ld	a, 2Ch
+	call	L6AC
+	ld	a, e
+	ret
+
+L1FD9:	ex	de, hl
+	ld	hl, L8BB
+	ex	(sp), hl
+	push	hl
+	ex	de, hl
+
+L1FE0:	ld	iy, LST
+	ld	(L183), iy
+	ld	iy, L18B
+	ret
+
+L1FED:	ex	af, af'
+	ex	de, hl
+	ld	hl, (L148)
+	ld	a, h
+	and	l
+	inc	a
+	jp	nz, LDBC
+	ld	hl, L1A8
+	ld	a, (hl)
+	ld	(hl), 0
+	inc	hl
+	ld	(hl), a
+	ld	hl, (L150)
+	TSTM_W
+	ex	de, hl
+	jp	z, LE6A
+	ld	de, 0Ah
+	push	de
+	ex	af, af'
+	call	c, LCE9
+	ld	(L198), de
+	pop	de
+	cp	2Ch
+	jr	nz, L2021
+	call	LC88
+	call	c, LCE9
+
+L2021:	ld	(L196), de
+	push	hl
+	ld	hl, (L150)
+	inc	hl
+	inc	hl
+	LDDE_M
+	pop	hl
+	cp	2Ch
+	jr	nz, L2041
+	call	LC88
+	call	c, LCE9
+	ld	hl, (L198)
+	sbc	hl, de
+	jp	c, L6C8
+
+L2041:	ld	(L1A5), de
+	or	a
+	jp	nz, L6C8
+	call	L843
+	jp	nc, LE46
+	ld	h, b
+	ld	l, c
+	exx
+	ld	de, 1
+	ld	hl, 0
+	exx
+	ld	de, 0FFFFh
+	call	L846
+	exx
+	dec	hl
+	ex	de, hl
+	ld	bc, (L196)
+	ld	a, b
+	or	c
+	jp	z, L6C8
+	call	L2B97
+	ld	de, (L198)
+	add	hl, de
+	jp	c, L1637
+	ld	hl, (L150)
+
+L2079:	inc	hl
+	inc	hl
+	LDBC_M
+	ex	de, hl
+	ld	hl, (L1A5)
+	sbc	hl, bc
+	jr	c, L208C
+	jr	z, L2096
+	ld	h, b
+	ld	l, c
+	jr	L2099
+
+L208C:	ld	bc, (L196)
+	ld	hl, (L191)
+	add	hl, bc
+	jr	L2099
+
+L2096:	ld	hl, (L198)
+
+L2099:	ld	(L191), hl
+	ex	de, hl
+
+L209D:	call	LC88
+
+L20A0:	or	a
+	jp	z, L21AE
+	cp	88h
+	jr	z, L20C0
+	cp	8Ch
+	jr	z, L20C0
+	cp	0A2h
+	jr	z, L20C0
+	cp	0C9h
+	jr	z, L20C0
+	cp	9Dh
+	jr	z, L20C0
+	cp	8Bh
+	jr	z, L20C0
+	cp	0E0h
+	jr	nz, L209D
+
+L20C0:	call	LC88
+	jr	nc, L20A0
+	ld	(L193), hl
+	dec	hl
+	ld	de, 0
+	ld	c, 0
+
+L20CE:	call	LC88
+	jr	nc, L20FE
+	push	hl
+	or	a
+	ld	hl, L1998
+	sbc	hl, de
+	jr	nc, L20ED
+	ld	hl, L36B1
+	call	LACE
+	call	L21E6
+	pop	hl
+
+L20E6:	call	LC88
+	jr	c, L20E6
+	jr	L20A0
+
+L20ED:	ld	h, d
+	ld	l, e
+	add	hl, hl
+	add	hl, hl
+	add	hl, de
+	add	hl, hl
+	sub	30h
+	ld	e, a
+	ld	d, 0
+	add	hl, de
+	ex	de, hl
+	pop	hl
+	inc	c
+	jr	L20CE
+
+L20FE:	ld	a, c
+	ld	(L195), a
+	push	hl
+	ld	hl, (L1A5)
+	ex	de, hl
+	push	hl
+	sbc	hl, de
+	jr	c, L2136
+	call	L843
+	ld	h, b
+	ld	l, c
+	pop	de
+	exx
+	ld	hl, (L198)
+	ld	de, (L196)
+	exx
+	call	L846
+	jr	c, L2133
+	ld	hl, L369D
+	push	de
+	call	LACE
+	pop	hl
+	call	L2C9A
+	call	L21E6
+	pop	hl
+	ld	a, (hl)
+	jp	L20A0
+
+L2133:	exx
+	push	hl
+	exx
+
+L2136:	pop	de
+	pop	hl
+	xor	a
+	ld	b, 98h
+	call	L2A7C
+	call	L2CAE
+	ld	b, 0
+	inc	hl
+	push	hl
+
+L2145:	ld	a, (hl)
+	or	a
+	jr	z, L214D
+	inc	b
+	inc	hl
+	jr	L2145
+
+L214D:	ld	a, (L195)
+	sub	b
+	jr	z, L218F
+	jr	c, L2171
+	ld	c, a
+	ld	b, 0
+	ld	hl, (L193)
+	ld	d, h
+	ld	e, l
+	add	hl, bc
+	push	hl
+	ld	hl, (L152)
+	sbc	hl, de
+	sbc	hl, bc
+	ld	b, h
+	ld	c, l
+	pop	hl
+	ldir
+	ld	(L152), de
+	jr	L218F
+
+L2171:	neg
+	ld	c, a
+	ld	b, 0
+	ld	hl, (L152)
+	ld	d, h
+	ld	e, l
+	add	hl, bc
+	call	L69C
+	ld	(L152), hl
+	ex	de, hl
+	push	hl
+	ld	bc, (L193)
+	sbc	hl, bc
+	ld	b, h
+	ld	c, l
+	pop	hl
+	lddr
+
+L218F:	pop	de
+	ld	hl, (L193)
+
+L2193:	ld	a, (de)
+	or	a
+	jr	z, L219C
+	ld	(hl), a
+	inc	hl
+	inc	de
+	jr	L2193
+
+L219C:	push	hl
+	ld	hl, (L150)
+	ex	de, hl
+	call	L810
+	pop	hl
+	ld	a, (hl)
+	cp	2Ch
+	jp	z, L20C0
+	jp	L20A0
+
+L21AE:	inc	hl
+	or	(hl)
+	inc	hl
+	or	(hl)
+	dec	hl
+	jp	nz, L2079
+	ld	de, (L1A5)
+	call	L843
+	ld	h, b
+	ld	l, c
+	ld	bc, (L196)
+	ld	de, (L198)
+	inc	hl
+
+L21C8:	inc	hl
+	LDM_DE
+
+L21CC:	inc	hl
+	ld	a, (hl)
+	or	a
+	jr	nz, L21CC
+	ex	de, hl
+	add	hl, bc
+	ex	de, hl
+	inc	hl
+	or	(hl)
+	inc	hl
+	or	(hl)
+	jr	nz, L21C8
+	call	L877
+	ld	a, (L1A9)
+	ld	(L1A8), a
+	jp	L751
+
+L21E6:	ld	hl, (L191)
+
+L21E9:	call	L2C92
+	jp	L1134
+
+L21EF:	call	L824
+	pop	de
+	push	bc
+	call	L843
+	jp	nc, LDBC
+	ld	d, h
+	ld	e, l
+	ex	(sp), hl
+	push	hl
+	CPHL_DE
+	sbc	hl, de
+	jp	nc, LDBC
+	call	L1121
+	pop	bc
+	ld	hl, L807
+	ex	(sp), hl
+	ex	de, hl
+	ld	hl, (L152)
+
+L2215:	ld	a, (de)
+	ld	(bc), a
+	inc	bc
+	inc	de
+	CPHL_DE
+	jr	nz, L2215
+	ld	(L152), bc
+	ret
+
+L2226:	ld	a, 7Fh
+	db	1		; LD BC,nn
+
+L2229:	ld	a, 0BFh
+	push	af
+	call	L12F5
+	call	L2A90
+	dec	a
+	cpl
+	ld	b, a
+	pop	af
+	ld	c, a
+	cpl
+	and	b
+	ld	b, a
+	ld	a, (L19A)
+	and	c
+	or	b
+	ld	(L19A), a
+	ret
+
+L2243:	call	LCE9
+	ret	nz
+	pop	hl
+
+L2248:	call	L843
+	jp	nc, LDBC
+	ld	h, b
+	ld	l, c
+	inc	hl
+	inc	hl
+	LDBC_M
+	inc	hl
+	push	bc
+	call	LB74
+
+L225A:	pop	hl
+	push	hl
+	call	L2C9A
+	call	LA75
+	ld	hl, L2FE
+	push	hl
+	ld	e, 0FFh
+
+L2268:	inc	e
+	ld	a, (hl)
+	and	7Fh
+	ld	(hl), a
+	inc	hl
+	jr	nz, L2268
+	pop	hl
+	ld	d, a
+
+L2272:	ld	b, 0
+
+L2274:	call	LADA
+	cp	':'
+	jr	nc, L228B
+	cp	'0'
+	jr	c, L228B
+	sub	'0'
+	ld	c, a
+	ld	a, b
+	rlca
+	rlca
+	add	a, b
+	rlca
+	add	a, c
+	ld	b, a
+	jr	L2274
+
+L228B:	push	hl
+	ld	hl, L2272
+	ex	(sp), hl
+	dec	b
+	inc	b
+	jr	nz, L2295
+	inc	b
+
+L2295:	exx
+
+L2296:	ld	hl, L22B6
+
+L2299:	cp	(hl)
+	inc	hl
+	LDBC_M
+	inc	hl
+	push	bc
+	exx
+	ret	z
+	exx
+	pop	bc
+	inc	(hl)
+	dec	(hl)
+	jr	nz, L2299
+	cp	60h
+	jr	c, L22B0
+	and	5Fh
+	jr	L2296
+
+L22B0:	exx
+	ld	a, 7
+	jp	LA83
+
+L22B6:	db	20h
+	dw	L22E9
+	db	'Q'
+	dw	LD2B
+	db	'L'
+	dw	L2321
+	db	'F'
+	dw	L22FA
+	db	'I'
+	dw	L235D
+	db	'D'
+	dw	L232B
+	db	0Dh
+	dw	L23AE
+	db	'R'
+	dw	L2344
+	db	'E'
+	dw	L23B4
+	db	'X'
+	dw	L2358
+	db	'K'
+	dw	L22F4
+	db	'H'
+	dw	L2355
+	db	7Fh
+	dw	L23A2
+	db	'A'
+	dw	L22E1
+	db	0
+
+L22E1:	pop	bc
+	pop	de
+	call	L1134
+	jp	L2248
+
+L22E9:	ld	a, (hl)
+	or	a
+	ret	z
+	inc	d
+	call	LA77
+	inc	hl
+	djnz	L22E9
+	ret
+
+L22F4:	push	hl
+	ld	hl, L233F
+	ex	(sp), hl
+	scf
+
+L22FA:	push	af
+	call	LADA
+	ld	c, a
+	pop	af
+	dec	(hl)
+	inc	(hl)
+	ret	z
+	push	af
+	call	c, L233F
+	ld	a, (hl)
+
+L2308:	call	LA77
+	pop	af
+	push	af
+	jr	nc, L2314
+	call	L23C1
+	jr	L2316
+
+L2314:	inc	hl
+	inc	d
+
+L2316:	ld	a, (hl)
+	or	a
+	jr	z, L231F
+	cp	c
+	jr	nz, L2308
+	djnz	L2308
+
+L231F:	pop	af
+	ret
+
+L2321:	call	LB67
+	call	L1134
+	pop	bc
+	jp	L225A
+
+L232B:	ld	a, (hl)
+	or	a
+	ret	z
+	ld	a, 5Ch
+	call	LA83
+
+L2333:	ld	a, (hl)
+	or	a
+	jr	z, L233F
+	call	LA77
+	call	L23C1
+	djnz	L2333
+
+L233F:	ld	a, 5Ch
+	jp	LA83
+
+L2344:	ld	a, (hl)
+	or	a
+	ret	z
+	call	LADA
+	ld	(hl), a
+	cp	0Ah
+	call	z, L1154
+	inc	hl
+	inc	d
+	djnz	L2344
+	ret
+
+L2355:	ld	(hl), 0
+	ld	e, d
+
+L2358:	ld	b, 0FFh
+	call	L22E9
+
+L235D:	call	LADA
+	cp	0Dh
+	jr	z, L23AE
+	cp	1Bh
+	ret	z
+	cp	7Fh
+	jr	nz, L237A
+	dec	d
+	inc	d
+	jr	z, L2381
+	dec	hl
+	dec	d
+	ld	a, (hl)
+	call	LA77
+	call	L23C1
+	jr	L235D
+
+L237A:	push	af
+	ld	a, e
+	cp	0FFh
+	jr	c, L2388
+	pop	af
+
+L2381:	ld	a, 7
+	call	LA83
+	jr	L235D
+
+L2388:	sub	d
+	inc	e
+	inc	d
+	push	de
+	ex	de, hl
+	ld	l, a
+	ld	h, 0
+	add	hl, de
+	ld	b, h
+	ld	c, l
+	inc	bc
+	call	L67D
+	pop	de
+	pop	af
+	ld	(hl), a
+	cp	0Ah
+	call	z, L1154
+	inc	hl
+	jr	L235D
+
+L23A2:	ld	a, d
+	or	a
+	ret	z
+	dec	d
+	dec	hl
+	ld	a, (hl)
+	call	LA77
+	djnz	L23A2
+	ret
+
+L23AE:	call	L1134
+	call	LB67
+
+L23B4:	call	L1134
+	pop	bc
+	pop	de
+	scf
+	push	af
+	ld	hl, L2FE
+	jp	L7AA
+
+L23C1:	push	hl
+	dec	e
+
+L23C3:	ld	a, (hl)
+	or	a
+	jr	z, L23CE
+	inc	hl
+	ld	a, (hl)
+	dec	hl
+	ld	(hl), a
+	inc	hl
+	jr	L23C3
+
+L23CE:	pop	hl
+	ret
+
+L23D0:	ret	nz
+	ex	de, hl
+	ld	hl, L17C
+	ld	a, r
+	ld	(hl), a
+	inc	hl
+	ld	(hl), a
+	inc	hl
+	ld	(hl), a
+	inc	hl
+	ld	(hl), a
+	inc	hl
+	and	7Fh
+	ld	(hl), a
+	inc	hl
+	ld	(hl), 80h
+	ex	de, hl
+	ret
+
+L23E7:	call	L1FD9
+	jr	L23EF
+
+L23EC:	call	L1F90
+
+L23EF:	ret	nz
+	push	hl
+	ld	hl, (L152)
+
+L23F4:	call	L1134
+	call	LCF7
+	ld	de, (L154)
+	CPHL_DE
+	jr	z, L2441
+	ld	c, (hl)
+	inc	hl
+	ld	a, (hl)
+	inc	hl
+	bit	7, a
+	jr	nz, L2439
+	call	LA83
+	ld	a, c
+	and	7Fh
+	call	nz, LA83
+	ld	a, 24h
+	bit	7, c
+	call	nz, LA83
+	ld	a, 3Dh
+	call	LA83
+	ld	a, c
+	rla
+	sbc	a, a
+	ld	(L15A), hl
+	push	hl
+	jr	nz, L2435
+	call	L2ABD
+	call	L2CAE
+	call	L18D1
+
+L2435:	call	L1918
+	pop	hl
+
+L2439:	inc	hl
+	inc	hl
+	inc	hl
+	inc	hl
+	inc	hl
+	inc	hl
+	jr	L23F4
+
+L2441:	pop	hl
+	ret
+
+L2443:	jr	nc, L244A
+	push	af
+	xor	a
+	jp	L7A2
+
+L244A:	ld	e, 18h
+	jp	L6D9
+
+L244F:	call	L41D
+	ret	c
+	and	7Fh
+	ret
+
+L2456:	call	L865
+
+L2459:	call	L4C5
+
+L245C:	ld	hl, L2FD
+	ld	b, 0
+
+L2461:	call	L244F
+	jr	c, L2498
+	jr	z, L2461
+	cp	7Fh
+	jr	z, L2461
+	cp	1Ah
+	jr	z, L2498
+	cp	0Ah
+	jr	nz, L2478
+	inc	b
+	dec	b
+	jr	z, L2461
+
+L2478:	ld	c, a
+	ld	a, b
+	cp	0FFh
+	ld	a, c
+	jr	z, L2481
+	inc	hl
+	inc	b
+
+L2481:	ld	(hl), a
+	sub	0Dh
+	jr	nz, L2461
+	ld	(hl), a
+	ld	a, 0FEh
+	ld	(L1A4), a
+	ld	hl, L2FD
+	call	LC88
+	inc	a
+	dec	a
+	jr	z, L245C
+	jr	L2443
+
+L2498:	call	L873
+	jp	L751
+
+L249E:	call	L1D7E
+	jp	nz, L24BA
+	ld	(L15A), a
+	call	LC89
+	ld	de, 0FFFFh
+	jr	z, L24BD
+	ld	a, 2Ch
+	call	L6AC
+	jp	nc, L6C8
+	call	LCE9
+
+L24BA:	jp	nz, L6C8
+
+L24BD:	ld	(L191), de
+	ld	a, 0FDh
+	ld	(L1A4), a
+	jp	L1F07
+
+L24C9:	inc	a
+	inc	a
+	jr	z, L245C
+	call	L873
+	ld	de, (L191)
+	ld	a, d
+	and	e
+	inc	a
+	ld	bc, LC09
+	push	bc
+	ret	z
+	jp	LE3F
+
+L24DF:	ret	z
+	jp	nc, LDBC
+	call	LCE9
+	ld	(L191), de
+	ld	de, 0Ah
+	cp	2Ch
+	jr	nz, L24F7
+	call	LC88
+	call	c, LCE9
+
+L24F7:	ld	(L193), de
+	ld	a, 0ADh
+	call	L6AC
+	call	L824
+	pop	de
+	push	bc
+	ld	h, b
+	ld	l, c
+	exx
+	ld	de, 1
+	ld	hl, 0
+	exx
+	call	L846
+	jp	nc, LDBC
+	push	hl
+	exx
+	ex	de, hl
+	ld	bc, (L193)
+	ld	a, b
+	or	c
+	jp	z, L6C8
+	call	L2B97
+	ld	de, (L191)
+	add	hl, de
+	jp	c, L1637
+	push	hl
+	ld	de, (L191)
+	call	L843
+	jp	c, LDBC
+	pop	de
+	push	bc
+	ld	h, b
+	ld	l, c
+	TSTM_W
+	jr	z, L254A
+	inc	hl
+	LDHL_M
+	sbc	hl, de
+	jp	c, L1637
+
+L254A:	pop	bc
+	pop	hl
+	pop	de
+	push	hl
+	sbc	hl, de
+	ex	(sp), hl
+	dec	hl
+	sbc	hl, bc
+	ex	de, hl
+	jr	c, L2561
+	sbc	hl, bc
+	jp	c, LDBC
+	add	hl, bc
+	ex	de, hl
+	pop	hl
+	push	hl
+	add	hl, de
+
+L2561:	ex	(sp), hl
+	push	hl
+	ld	d, b
+	ld	e, c
+	ld	bc, (L152)
+	add	hl, bc
+	push	hl
+	call	L677
+	pop	hl
+	ld	(L152), hl
+	ld	h, b
+	ld	l, c
+	pop	bc
+	ex	(sp), hl
+	push	de
+	ldir
+	pop	hl
+	ld	bc, (L191)
+
+L257E:	inc	hl
+	inc	hl
+	LDM_BC
+
+L2583:	inc	hl
+	ld	a, (hl)
+	or	a
+	jr	nz, L2583
+	inc	hl
+	pop	de
+	CPHL_DE
+	jr	z, L259D
+	push	de
+	ex	de, hl
+	ld	hl, (L193)
+	add	hl, bc
+	ld	b, h
+	ld	c, l
+	ex	de, hl
+	jr	L257E
+
+L259D:	call	L1121
+	jp	L807
+
+L25A3:	call	L152E
+	push	de
+	push	hl
+	ld	hl, L161
+	call	L2AEA
+	ld	hl, (L154)
+	ex	(sp), hl
+	ld	a, (L102)
+	push	af
+	ld	a, 2Ch
+	call	L6AC
+	call	L152E
+	pop	bc
+	ld	a, (L102)
+	xor	b
+	rra
+	jp	c, L12EB
+	ex	(sp), hl
+	ex	de, hl
+	push	hl
+	ld	hl, (L154)
+	sbc	hl, de
+	jp	nz, LDBC
+	pop	de
+	pop	hl
+	ex	(sp), hl
+	push	de
+	call	L2AEA
+	pop	hl
+	ld	de, 161h
+	call	L2AEA
+	pop	hl
+	ret
+
+L25E2:	ld	a, 1
+	ld	(L142), a
+	jp	L152E
+
+L25EA:	push	hl
+	add	hl, de
+	ex	de, hl
+	ld	hl, (L156)
+	or	a
+	sbc	hl, de
+	ex	(sp), hl
+	pop	bc
+	ex	de, hl
+	dec	de
+	dec	de
+	dec	de
+	dec	de
+	jr	z, L25FE
+	ldir
+
+L25FE:	ld	(L156), de
+
+L2602:	ld	(L142), a
+	pop	hl
+	ld	a, (hl)
+	cp	2Ch
+	ret	nz
+	call	LC88
+	jr	L25E2
+
+L260F:	ret	z
+	ld	(L191), sp
+	push	hl
+	ld	de, L263F
+	push	de
+	call	LD99
+	ld	c, 0
+
+L261E:	push	de
+	call	LC89
+	jr	z, L2634
+	ld	a, 2Ch
+	call	L6AC
+	inc	c
+	push	bc
+	call	LD99
+	pop	bc
+	ex	de, hl
+	ex	(sp), hl
+	ex	de, hl
+	jr	L261E
+
+L2634:	ex	de, hl
+	ld	hl, (L191)
+	dec	hl
+	ld	(hl), d
+	dec	hl
+	ld	(hl), e
+	dec	hl
+	dec	hl
+	ret
+
+L263F:	pop	hl
+	ret
+
+L2641:	ld	a, 0
+	call	nz, L1BFF
+	ret	nz
+	cp	0Bh
+	jr	z, L2641
+	jp	nc, LDBC
+	ld	(L1A8), a
+	ret
+
+L2652:	call	LD9C
+	ld	a, (de)
+	jp	L170F
+
+L2659:	call	LD99
+	push	de
+	ld	a, 2Ch
+	call	L6AC
+	call	L1BFF
+	pop	de
+	ld	(de), a
+	ret
+
+L2668:	call	L1FB4
+	ret	z
+
+L266C:	call	L12F5
+	push	hl
+	ld	a, (L102)
+	or	a
+	jr	nz, L2684
+	ld	b, 6
+	ld	hl, L15A
+
+L267B:	ld	c, (hl)
+	call	L468
+	inc	hl
+	djnz	L267B
+	jr	L26A0
+
+L2684:	ld	hl, (L15A)
+	ld	c, (hl)
+	ld	b, c
+	call	L468
+	inc	hl
+	inc	hl
+	LDHL_M
+	ld	a, b
+	or	a
+	jr	z, L269D
+
+L2696:	ld	c, (hl)
+	call	L468
+	inc	hl
+	djnz	L2696
+
+L269D:	call	L1A47
+
+L26A0:	pop	hl
+	call	LC89
+	ret	z
+	ld	a, 2Ch
+	call	L6AC
+	jr	L266C
+
+L26AC:	call	L1FB4
+	ret	z
+
+L26B0:	call	L152E
+	push	hl
+	ld	a, (L102)
+	or	a
+	jr	z, L26DC
+	push	de
+	call	L9AF
+	call	L18C2
+	ld	b, a
+	or	a
+	jr	z, L26CC
+
+L26C5:	call	L9AF
+	ld	(de), a
+	inc	de
+	djnz	L26C5
+
+L26CC:	ld	de, L138
+	call	L18F4
+	pop	de
+	ld	hl, L26ED
+	ex	(sp), hl
+	push	hl
+	ex	de, hl
+	jp	LEAA
+
+L26DC:	ld	b, 6
+	ld	hl, L15A
+
+L26E1:	call	L9AF
+	ld	(hl), a
+	inc	hl
+	djnz	L26E1
+	ex	de, hl
+	call	L2AE7
+	pop	hl
+
+L26ED:	call	LC89
+	ret	z
+	ld	a, 2Ch
+	call	L6AC
+	jr	L26B0
+
+L26F8:	db	0F6h
+
+L26F9:	xor	a
+	push	af
+	call	L1FB4
+	ex	af, af'
+	pop	af
+	ex	af, af'
+
+L2701:	ret	z
+	ld	a, 2
+	ld	(L142), a
+	jp	L152E
+
+L270A:	ld	(L142), a
+	ld	a, (L102)
+	or	a
+	ld	e, 0Dh
+	jp	nz, L6D9
+	push	hl
+	ld	l, (hl)
+	ld	h, a
+	add	hl, hl
+	inc	hl
+	ex	de, hl
+	sbc	hl, de
+	ld	b, h
+	ld	c, l
+	pop	hl
+	add	hl, de
+	ex	af, af'
+	jr	nz, L273B
+	ex	af, af'
+
+L2726:	call	L9AF
+	ld	(hl), a
+	cpi
+	jp	pe, L2726
+
+L272F:	pop	hl
+	call	LC89
+	ret	z
+	ld	a, 2Ch
+	call	L6AC
+	jr	L2701
+
+L273B:	ex	af, af'
+
+L273C:	push	bc
+	ld	c, (hl)
+	call	L468
+	pop	bc
+	cpi
+	jp	pe, L273C
+	jr	L272F
+
+L2749:	ld	(L142), a
+	ld	e, 1Ah
+	jp	L6D9
+
+L2751:	ld	hl, L31DF
+
+L2754:	call	L2AD6
+	jr	L2765
+
+L2759:	call	L2AD6
+	jr	L2762
+
+L275E:	pop	bc
+	pop	ix
+	pop	de
+
+L2762:	call	L2AA3
+
+L2765:	ld	a, b
+	or	a
+	ret	z
+	ld	a, (L15F)
+	or	a
+	jp	z, L2AC6
+	sub	b
+	jr	nc, L2783
+	neg
+	exx
+	push	ix
+	call	L2AD3
+	exx
+	ex	(sp), ix
+	call	L2AC6
+	exx
+	pop	ix
+
+L2783:	cp	29h
+	ret	nc
+	push	af
+	call	L2AF2
+	ld	h, a
+	pop	af
+	call	L2860
+	or	h
+	ld	hl, L15A
+	jp	p, L27A7
+	call	L282B
+	jr	nc, L2804
+	inc	hl
+	inc	(hl)
+	jp	z, L2826
+	ld	l, 1
+	call	L287D
+	jr	L2804
+
+L27A7:	xor	a
+	sub	b
+	ld	b, a
+	ld	a, (hl)
+	sbc	a, e
+	ld	e, a
+	inc	hl
+	ld	a, (hl)
+	sbc	a, d
+	ld	d, a
+	inc	hl
+	ld	a, (hl)
+	sbc_axl
+	ld_xla
+	inc	hl
+	ld	a, (hl)
+	sbc_axh
+	ld_xha
+	inc	hl
+	ld	a, (hl)
+	sbc	a, c
+	ld	c, a
+
+L27C1:	call	c, L2843
+
+L27C4:	ld	l, b
+	ld	h, e
+	xor	a
+
+L27C7:	ld	b, a
+	ld	a, c
+	or	a
+	jr	nz, L27F3
+	ld_cxh
+	ld_axl
+	ld_xha
+	ld_xld
+	xor	a
+	ld	d, h
+	ld	h, l
+	ld	l, a
+	ld	a, b
+	sub	8
+	cp	0D0h
+	jr	nz, L27C7
+
+L27DF:	xor	a
+
+L27E0:	ld	(L15F), a
+	ret
+
+L27E4:	dec	b
+	add	hl, hl
+	rl	d
+	ex	af, af'
+	add	ix, ix
+	ex	af, af'
+	jr	nc, L27F0
+	inc	ix
+
+L27F0:	ex	af, af'
+	rl	c
+
+L27F3:	jp	p, L27E4
+	ld	a, b
+	ld	e, h
+	ld	b, l
+	or	a
+	jr	z, L2804
+	ld	hl, L15F
+	add	a, (hl)
+	ld	(hl), a
+	jr	nc, L27DF
+	ret	z
+
+L2804:	ld	a, b
+
+L2805:	ld	hl, L15F
+	or	a
+	call	m, L2816
+	ld	b, (hl)
+	inc	hl
+	ld	a, (hl)
+	and	80h
+	xor	c
+	ld	c, a
+	jp	L2AC6
+
+L2816:	inc	e
+	ret	nz
+	inc	d
+	ret	nz
+	inc_xl
+	ret	nz
+	inc_xh
+	ret	nz
+	inc	c
+	ret	nz
+	ld	c, 80h
+	inc	(hl)
+	ret	nz
+
+L2826:	ld	e, 6
+	jp	L6D9
+
+L282B:	ld	a, (hl)
+	add	a, e
+	ld	e, a
+	inc	hl
+	ld	a, (hl)
+	adc	a, d
+	ld	d, a
+	inc	hl
+	ld	a, (hl)
+	adc_axl
+	ld_xla
+	inc	hl
+	ld	a, (hl)
+	adc_axh
+	ld_xha
+	inc	hl
+	ld	a, (hl)
+	adc	a, c
+	ld	c, a
+	ret
+
+L2843:	ld	hl, L160
+	ld	a, (hl)
+	cpl
+	ld	(hl), a
+	xor	a
+	ld	l, a
+	ld	h, a
+	sub	b
+	ld	b, a
+	ld	a, l
+	sbc	hl, de
+	ex	de, hl
+	ld	l, a
+	sbc_axl
+	ld_xla
+	ld	a, l
+	sbc_axh
+	ld_xha
+	ld	a, l
+	sbc	a, c
+	ld	c, a
+	ret
+
+L2860:	ld	b, 0
+
+L2862:	sub	8
+	jr	c, L2876
+	ld	b, e
+	ld	e, d
+	ld_dxl
+	ex	af, af'
+	ld_axh
+	ld_xla
+	ex	af, af'
+	ld_xhc
+	ld	c, 0
+	jr	L2862
+
+L2876:	add	a, 9
+	ld	l, a
+
+L2879:	xor	a
+	dec	l
+	ret	z
+	ld	a, c
+
+L287D:	rra
+	ld	c, a
+	ld_axh
+	rra
+	ld_xha
+	ld_axl
+	rra
+	ld_xla
+	rr	d
+	rr	e
+	rr	b
+	jr	L2879
+
+L2891:	db	0, 0, 0, 0, 0, 81h
+L2897:	db	6
+	db	23h, 85h, 0ACh, 0C3h, 11h, 7Fh
+	db	53h, 0CBh, 9Eh, 0B7h, 23h, 7Fh
+	db	0CCh, 0FEh, 0A6h, 0Dh, 53h, 7Fh
+	db	0CBh, 5Ch, 60h, 0BBh, 13h, 80h
+	db	0DDh, 0E3h, 4Eh, 38h, 76h, 80h
+	db	5Ch, 29h, 3Bh, 0AAh, 38h, 82h
+
+L28BC:	call	L2A90
+	or	a
+	jp	pe, LDBC
+	ld	hl, L15F
+	ld	a, (hl)
+	ld	bc, 8035h
+	ld	ix, 4F3h
+	ld	de, 33FAh
+	sub	b
+	push	af
+	ld	(hl), b
+	push	de
+	push	ix
+	push	bc
+	call	L2765
+	pop	bc
+	pop	ix
+	pop	de
+	inc	b
+	call	L2994
+	ld	hl, L2891
+	call	L2759
+	ld	hl, L2897
+	call	L32B2
+	ld	bc, 8080h
+	ld	ix, 0
+	ld	de, 0
+	call	L2765
+	pop	af
+	call	L2C72
+	ld	bc, 8031h
+	ld	ix, 7217h
+	ld	de, 0F7D2h
+	jr	L2910
+
+L290C:	pop	bc
+	pop	ix
+	pop	de
+
+L2910:	call	L2A90
+	ret	z
+	ld	l, 0
+	call	L2A34
+	ld	a, c
+	push	de
+	exx
+	ld	c, a
+	pop	de
+	push	ix
+	pop	hl
+	exx
+	ld	bc, 0
+	ld	d, b
+	ld	e, b
+	ld	ix, 0
+	ld	hl, L27C4
+	push	hl
+	ld	hl, L2939
+	push	hl
+	push	hl
+	push	hl
+	push	hl
+	ld	hl, L15A
+
+L2939:	ld	a, (hl)
+	inc	hl
+	or	a
+	jr	nz, L294C
+	ld	b, e
+	ld	e, d
+	ld_dxl
+	ex	af, af'
+	ld_axh
+	ld_xla
+	ex	af, af'
+	ld_xhc
+	ld	c, a
+	ret
+
+L294C:	push	hl
+	ex	de, hl
+	ld	e, 8
+
+L2950:	rra
+	ld	d, a
+	ld	a, c
+	jr	nc, L2967
+	push	hl
+	exx
+	ex	(sp), hl
+	add	hl, de
+	ex	(sp), hl
+	ex	de, hl
+	push	ix
+	ex	(sp), hl
+	adc	hl, de
+	ex	(sp), hl
+	pop	ix
+	ex	de, hl
+	adc	a, c
+	exx
+	pop	hl
+
+L2967:	rra
+	ld	c, a
+	ld_axh
+	rra
+	ld_xha
+	ld_axl
+	rra
+	ld_xla
+	rr	h
+	rr	l
+	rr	b
+	dec	e
+	ld	a, d
+	jr	nz, L2950
+	ex	de, hl
+
+L297E:	pop	hl
+	ret
+
+L2980:	call	L2AAB
+	ld	bc, 8420h
+	ld	ix, 0
+	ld	de, 0
+	call	L2AC6
+
+L2990:	pop	bc
+	pop	ix
+	pop	de
+
+L2994:	call	L2A90
+	jp	z, L6CB
+	ld	l, 0FFh
+	call	L2A34
+	push	iy
+	inc	(hl)
+	inc	(hl)
+	dec	hl
+	push	hl
+	exx
+	pop	hl
+	ld	c, (hl)
+	dec	hl
+	ld	d, (hl)
+	dec	hl
+	ld	e, (hl)
+	dec	hl
+	ld	a, (hl)
+	dec	hl
+	ld	l, (hl)
+	ld	h, a
+	ex	de, hl
+	exx
+	ld	b, c
+	ex	de, hl
+	push	ix
+	pop	iy
+	xor	a
+	ld	c, a
+	ld	d, a
+	ld	e, a
+	ld	ix, 0
+	ld	(L1A7), a
+
+L29C4:	push	hl
+	push	iy
+	push	bc
+	push	hl
+	ld	a, b
+	exx
+	ex	(sp), hl
+	or	a
+	sbc	hl, de
+	ex	(sp), hl
+	ex	de, hl
+	push	iy
+	ex	(sp), hl
+	sbc	hl, de
+	ex	(sp), hl
+	pop	iy
+	ex	de, hl
+	sbc	a, c
+	exx
+	pop	hl
+	ld	b, a
+	ld	a, (L1A7)
+	sbc	a, 0
+	ccf
+	jr	nc, L29EF
+	ld	(L1A7), a
+	pop	af
+	pop	af
+	pop	af
+	scf
+	jr	L29F3
+
+L29EF:	pop	bc
+	pop	iy
+	pop	hl
+
+L29F3:	inc	c
+	dec	c
+	rra
+	jp	m, L2A2F
+	rla
+	rl	e
+	rl	d
+	ex	af, af'
+	add	ix, ix
+	ex	af, af'
+	jr	nc, L2A06
+	inc	ix
+
+L2A06:	ex	af, af'
+	rl	c
+	add	hl, hl
+	ex	af, af'
+	add	iy, iy
+	ex	af, af'
+	jr	nc, L2A12
+	inc	iy
+
+L2A12:	ex	af, af'
+	rl	b
+	ld	a, (L1A7)
+	rla
+	ld	(L1A7), a
+	ld	a, c
+	or	d
+	or	e
+	or_xh
+	or_xl
+	jr	nz, L29C4
+	push	hl
+	ld	hl, L15F
+	dec	(hl)
+	pop	hl
+	jr	nz, L29C4
+	jr	L2A5C
+
+L2A2F:	pop	iy
+	jp	L2805
+
+L2A34:	ld	a, b
+	or	a
+	jr	z, L2A58
+	ld	a, l
+	ld	hl, L15F
+	xor	(hl)
+	add	a, b
+	ld	b, a
+	rra
+	xor	b
+	ld	a, b
+	jp	p, L2A57
+	add	a, 80h
+	ld	(hl), a
+	jp	z, L297E
+	call	L2AF2
+	ld	(hl), a
+	dec	hl
+	ret
+
+L2A51:	call	L2A90
+	cpl
+	or	a
+	db	21h		; LD HL,nn
+
+L2A57:	or	a
+
+L2A58:	pop	hl
+	jp	p, L27DF
+
+L2A5C:	jp	L2826
+
+L2A5F:	call	L2AD3
+	ld	a, b
+	or	a
+	ret	z
+	add	a, 2
+	jr	c, L2A5C
+	ld	b, a
+	call	L2765
+	ld	hl, L15F
+	inc	(hl)
+	ret	nz
+	jr	L2A5C
+
+L2A74:	call	L2A90
+
+L2A77:	ld	b, 88h
+	ld	de, 0
+
+L2A7C:	ld	hl, L15F
+	ld	c, a
+	push	de
+	pop	ix
+	ld	de, 0
+	ld	(hl), b
+	ld	b, 0
+	inc	hl
+	ld	(hl), 80h
+	rla
+	jp	L27C1
+
+L2A90:	ld	a, (L15F)
+	or	a
+	ret	z
+	ld	a, (L15E)
+	db	0FEh		; CP n
+
+L2A99:	cpl
+	rla
+
+L2A9B:	sbc	a, a
+	ret	nz
+	inc	a
+	ret
+
+L2A9F:	call	L2A90
+	ret	p
+
+L2AA3:	ld	hl, L15E
+	ld	a, (hl)
+	xor	80h
+	ld	(hl), a
+	ret
+
+L2AAB:	ex	de, hl
+
+L2AAC:	ld	hl, (L15A)
+	ex	(sp), hl
+	push	hl
+	ld	hl, (L15C)
+	ex	(sp), hl
+	push	hl
+	ld	hl, (L15E)
+	ex	(sp), hl
+	push	hl
+	ex	de, hl
+	ret
+
+L2ABD:	ld	de, L15A
+	ld	bc, 6
+	ldir
+	ret
+
+L2AC6:	ld	(L15A), de
+	ld	(L15C), ix
+	ld	(L15E), bc
+	ret
+
+L2AD3:	ld	hl, L15A
+
+L2AD6:	LDDE_M
+	inc	hl
+	ld	c, (hl)
+	ld_xlc
+	inc	hl
+	ld	c, (hl)
+	ld_xhc
+	inc	hl
+	LDBC_M
+	inc	hl
+	ret
+
+L2AE7:	ld	de, L15A
+
+L2AEA:	ld	bc, 6
+	ex	de, hl
+	ldir
+	ex	de, hl
+	ret
+
+L2AF2:	ld	hl, L15E
+	ld	a, (hl)
+	rlca
+	scf
+	rra
+	ld	(hl), a
+	ccf
+	rra
+	inc	hl
+	inc	hl
+	ld	(hl), a
+	ld	a, c
+	rlca
+	scf
+	rra
+	ld	c, a
+	rra
+	xor	(hl)
+	ret
+
+L2B07:	ld	a, b
+	or	a
+	jr	z, L2A90
+	call	L2A90
+	ld	a, c
+	jr	z, L2A99
+	ld	hl, L15E
+	xor	(hl)
+	ld	a, c
+	jp	m, L2A99
+	call	L2B21
+	rra
+	xor	c
+	jp	L2A99
+
+L2B21:	inc	hl
+	ld	a, b
+	cp	(hl)
+	ret	nz
+	dec	hl
+	ld	a, c
+	cp	(hl)
+	ret	nz
+	dec	hl
+	ld_axh
+	cp	(hl)
+	ret	nz
+	dec	hl
+	ld_axl
+	cp	(hl)
+	ret	nz
+	dec	hl
+	ld	a, d
+	cp	(hl)
+	ret	nz
+	dec	hl
+	ld	a, e
+	sub	(hl)
+	ret	nz
+	pop	hl
+	ret
+
+L2B3D:	LDDE_M
+	inc	hl
+	LDBC_M
+	inc	hl
+	ret
+
+L2B46:	ld	b, a
+	ld	c, a
+	ld	d, a
+	ld	e, a
+	ld_xha
+	ld_xla
+	or	a
+	ret	z
+	push	hl
+	call	L2AD3
+	call	L2AF2
+	xor	(hl)
+	ld	h, a
+	jp	p, L2B6C
+	dec	de
+	ld	a, d
+	and	e
+	inc	a
+	jr	nz, L2B6C
+	dec	ix
+	ld_axh
+	and_xl
+	inc	a
+	jr	nz, L2B6C
+	dec	c
+
+L2B6C:	ld	a, 0A8h
+	sub	b
+	call	L2860
+	ld	a, h
+	rla
+	call	c, L2816
+	ld	b, 0
+	call	c, L2843
+	pop	hl
+	ret
+
+L2B7E:	ld	hl, L15F
+	ld	a, (hl)
+	cp	0A8h
+	ld	a, (L15A)
+	ret	nc
+	ld	a, (hl)
+	call	L2B46
+	ld	(hl), 0A8h
+	ld	a, e
+	push	af
+	ld	a, c
+	rla
+	call	L27C1
+	pop	af
+	ret
+
+L2B97:	ld	hl, 0
+	ld	a, b
+	or	c
+	ret	z
+	ld	a, 17
+
+L2B9F:	dec	a
+	ret	z
+	add	hl, hl
+	jr	c, L2BAC
+	ex	de, hl
+	add	hl, hl
+	ex	de, hl
+	jr	nc, L2B9F
+	add	hl, bc
+	jr	nc, L2B9F
+
+L2BAC:	jp	L1637
+
+L2BAF:	cp	'&'
+	jp	z, L2C42
+
+L2BB4:	cp	'-'
+	push	af
+	jr	z, L2BBE
+	cp	'+'
+	jr	z, L2BBE
+	dec	hl
+
+L2BBE:	call	L27DF
+	ld	b, a
+	ld	d, a
+	ld	e, a
+	cpl
+	ld	c, a
+
+L2BC6:	call	LC88
+	jr	c, L2C21
+	cp	'.'
+	jr	z, L2BF5
+	cp	'E'
+	jr	nz, L2BF8
+	call	LC88
+	dec	d
+	cp	0A6h
+	jr	z, L2BE9
+	cp	'-'
+	jr	z, L2BE9
+	inc	d
+	cp	'+'
+	jr	z, L2BE9
+	cp	0A5h
+	jr	z, L2BE9
+	dec	hl
+
+L2BE9:	call	LC88
+	jr	c, L2C37
+	inc	d
+	jr	nz, L2BF8
+	xor	a
+	sub	e
+	ld	e, a
+	inc	c
+
+L2BF5:	inc	c
+	jr	z, L2BC6
+
+L2BF8:	push	hl
+	ld	a, e
+	sub	b
+	jp	p, L2C0A
+	call	L2AAB
+	neg
+	ld	hl, L2891
+	call	L2ABD
+	scf
+
+L2C0A:	push	af
+
+L2C0B:	call	L2C7F
+	jr	nz, L2C0B
+	pop	af
+	jr	nc, L2C1A
+	pop	bc
+	pop	ix
+	pop	de
+	call	L2994
+
+L2C1A:	pop	de
+	pop	af
+	call	z, L2AA3
+	ex	de, hl
+	ret
+
+L2C21:	push	de
+	ld	d, a
+	ld	a, b
+	adc	a, c
+	ld	b, a
+	push	bc
+	push	hl
+	push	de
+	call	L2A5F
+	pop	af
+	sub	30h
+	call	L2C72
+	pop	hl
+	pop	bc
+	pop	de
+	jr	L2BC6
+
+L2C37:	ld	a, e
+	add	a, a
+	add	a, a
+	add	a, e
+	add	a, a
+	add	a, (hl)
+	sub	30h
+	ld	e, a
+	jr	L2BE9
+
+L2C42:	ld	de, 0
+
+L2C45:	call	LC88
+	jr	z, L2C6C
+	jr	c, L2C58
+	sub	'A'
+	jr	c, L2C6C
+	cp	6
+	jr	nc, L2C6C
+	add	a, 0Ah
+	jr	L2C5A
+
+L2C58:	sub	30h
+
+L2C5A:	ex	af, af'
+	ld	a, d
+	cp	10h
+	jp	nc, L2826
+	ex	af, af'
+	ex	de, hl
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	or	l
+	ld	l, a
+	ex	de, hl
+	jr	L2C45
+
+L2C6C:	push	hl
+	call	L16E4
+	pop	hl
+	ret
+
+L2C72:	call	L2AAB
+	call	L2A77
+
+L2C78:	pop	bc
+	pop	ix
+	pop	de
+	jp	L2765
+
+L2C7F:	ret	z
+
+L2C80:	push	af
+	call	L2A5F
+	pop	af
+	dec	a
+	ret
+
+L2C87:	push	de
+	push	hl
+	push	af
+	call	L2980
+	pop	af
+	pop	hl
+	pop	de
+	inc	a
+	ret
+
+L2C92:	push	hl
+	ld	hl, L38AB
+	call	LACE
+	pop	hl
+
+L2C9A:	call	L16E3
+	ld	hl, L1A8
+	ld	a, (hl)
+	ld	(hl), 0
+	push	af
+	call	L2CAE
+	pop	af
+	ld	(L1A8), a
+	jp	L1914
+
+L2CAE:	xor	a
+
+L2CAF:	ld	(L1A3), a
+	ld	hl, L162
+	ld	(hl), ' '
+	and	8
+	jr	z, L2CBD
+	ld	(hl), '+'
+
+L2CBD:	call	L2A90
+	jp	p, L2CCB
+	ld	(hl), '-'
+	push	hl
+	call	L2AA3
+	pop	hl
+	or	h
+
+L2CCB:	inc	hl
+	ld	(hl), '0'
+	ld	a, (L1A3)
+	ld	d, a
+	rla
+	jp	c, L2D83
+	jp	z, L2D7B
+	push	hl
+	call	L2EF0
+	ld	hl, L1A8
+	inc	(hl)
+	dec	(hl)
+	jr	z, L2D35
+	ld	d, a
+	add	a, 0Bh
+	jp	m, L2D26
+	cp	(hl)
+	jr	z, L2CEF
+	jr	nc, L2D26
+
+L2CEF:	ld	b, a
+	ld	a, (hl)
+	sub	b
+	inc	a
+	ld	c, a
+	inc	b
+	ld	a, d
+	ld	d, 0Bh
+	pop	hl
+	inc	hl
+	call	L2E54
+	push	hl
+	xor	a
+	ld	bc, 0
+	cpir
+	dec	hl
+	ld	bc, L2D0D
+	push	bc
+	xor	a
+	push	af
+	jr	L2D54
+
+L2D0D:	pop	hl
+	ld	a, (hl)
+	cp	'-'
+	ret	z
+	cp	' '
+	ret	z
+	cp	'0'
+	jr	z, L2D23
+	cp	'%'
+	jr	nz, L2D22
+	inc	hl
+	ld	a, (hl)
+	cp	'-'
+	ret	z
+
+L2D22:	dec	hl
+
+L2D23:	ld	(hl), ' '
+	ret
+
+L2D26:	ld	c, (hl)
+	dec	c
+	jr	z, L2D2B
+	inc	c
+
+L2D2B:	ld	b, 2
+	pop	hl
+	inc	hl
+	ld	a, d
+	ld	d, 0
+	jp	L2EA8
+
+L2D35:	ld	bc, 300h
+	add	a, 0Ch
+	jp	m, L2D45
+	cp	0Dh
+	jr	nc, L2D45
+	inc	a
+	ld	b, a
+	ld	a, 2
+
+L2D45:	sub	2
+	pop	hl
+	push	af
+	call	L2F2B
+	ld	(hl), '0'
+	jr	nz, L2D51
+	inc	hl
+
+L2D51:	call	L2F3E
+
+L2D54:	dec	hl
+	ld	a, (hl)
+	cp	'0'
+	jr	z, L2D54
+	cp	'.'
+	jr	z, L2D5F
+	inc	hl
+
+L2D5F:	pop	af
+	jr	z, L2D7C
+
+L2D62:	ld	(hl), 'E'
+	inc	hl
+	ld	(hl), '+'
+	jp	p, L2D6E
+	ld	(hl), '-'
+	neg
+
+L2D6E:	ld	b, 2Fh
+
+L2D70:	inc	b
+	sub	0Ah
+	jr	nc, L2D70
+	add	a, 3Ah
+	inc	hl
+	ld	(hl), b
+	inc	hl
+	ld	(hl), a
+
+L2D7B:	inc	hl
+
+L2D7C:	ld	(hl), 0
+	ex	de, hl
+	ld	hl, L162
+	ret
+
+L2D83:	inc	hl
+	push	bc
+	push	hl
+	ld	a, d
+	rra
+	jp	c, L2E9F
+	ld	bc, 0B60Eh
+	ld	ix, 1BC9h
+	ld	de, 0BF04h
+	call	L2B07
+	jp	m, L2DA4
+	pop	hl
+	pop	bc
+	call	L2CAE
+	dec	hl
+	ld	(hl), '%'
+	ret
+
+L2DA4:	ld	d, 0Bh
+	call	L2A90
+	call	nz, L2EF0
+	pop	hl
+	pop	bc
+	jp	m, L2E54
+	push	bc
+	ld	e, a
+	ld	a, b
+	sub	d
+	sub	e
+	call	p, L2FCA
+	call	L2FD2
+	call	L2F3E
+	or	e
+	call	nz, L2FEC
+	or	e
+	call	nz, L2F2B
+	pop	de
+	ld	a, e
+	or	a
+	jr	nz, L2DCD
+	dec	hl
+
+L2DCD:	dec	a
+	call	p, L2FCA
+
+L2DD1:	push	hl
+	ld	hl, L162
+	ld	b, (hl)
+	ld	c, ' '
+	ld	a, (L1A3)
+	ld	e, a
+	and	20h
+	jr	z, L2DE7
+	ld	a, b
+	cp	c
+	ld	c, '*'
+	jr	nz, L2DE7
+	ld	b, c
+
+L2DE7:	ld	(hl), c
+	call	LC88
+	jr	z, L2DFD
+	cp	'E'
+	jr	z, L2DFD
+	cp	'0'
+	jr	z, L2DE7
+	cp	','
+	jr	z, L2DE7
+	cp	'.'
+	jr	nz, L2E00
+
+L2DFD:	dec	hl
+	ld	(hl), '0'
+
+L2E00:	bit	4, e
+	jr	z, L2E07
+	dec	hl
+	ld	(hl), '$'
+
+L2E07:	bit	2, e
+	jr	nz, L2E0D
+	dec	hl
+	ld	(hl), b
+
+L2E0D:	pop	hl
+	jr	z, L2E12
+	ld	(hl), b
+	inc	hl
+
+L2E12:	ld	(hl), 0
+	ld	hl, L161
+
+L2E17:	inc	hl
+
+L2E18:	ld	a, (L1A1)
+	sub	l
+	sub	d
+	ret	z
+	ld	a, (hl)
+	cp	' '
+	jr	z, L2E17
+	cp	'*'
+	jr	z, L2E17
+	dec	hl
+	push	hl
+
+L2E29:	push	af
+	call	LC88
+	cp	'-'
+	jr	z, L2E29
+	cp	'+'
+	jr	z, L2E29
+	cp	'$'
+	jr	z, L2E29
+	cp	'0'
+	jr	nz, L2E4D
+	inc	hl
+	call	LC88
+	jr	nc, L2E4D
+	dec	hl
+	db	1		; LD BC,nn
+
+L2E45:	dec	hl
+	ld	(hl), a
+	pop	af
+	jr	z, L2E45
+	pop	bc
+	jr	L2E18
+
+L2E4D:	pop	af
+	jr	z, L2E4D
+	pop	hl
+	ld	(hl), '%'
+	ret
+
+L2E54:	ld	e, a
+	ld	a, c
+	or	a
+	jr	z, L2E5A
+	dec	a
+
+L2E5A:	add	a, e
+	jp	m, L2E5F
+	xor	a
+
+L2E5F:	push	bc
+	push	af
+
+L2E61:	call	m, L2C87
+	jr	nz, L2E61
+	pop	bc
+	ld	a, e
+	sub	b
+	pop	bc
+	ld	e, a
+	add	a, d
+	ld	a, b
+	jp	m, L2E7B
+	sub	d
+	sub	e
+	call	p, L2FCA
+	push	bc
+	call	L2FD2
+	jr	L2E8C
+
+L2E7B:	call	L2FCA
+	ld	a, c
+	call	L2F2E
+	ld	c, a
+	xor	a
+	sub	d
+	sub	e
+	call	L2FCA
+	push	bc
+	ld	b, a
+	ld	c, a
+
+L2E8C:	call	L2F3E
+	pop	bc
+	or	c
+	jr	nz, L2E96
+	ld	hl, (L1A1)
+
+L2E96:	add	a, e
+	dec	a
+	call	p, L2FCA
+	ld	d, b
+	jp	L2DD1
+
+L2E9F:	call	L2A90
+	scf
+	call	nz, L2EF0
+	pop	hl
+	pop	bc
+
+L2EA8:	push	af
+	ld	a, c
+	or	a
+	push	af
+	jr	z, L2EAF
+	dec	a
+
+L2EAF:	add	a, b
+	ld	c, a
+	ld	a, d
+	and	4
+	cp	1
+	sbc	a, a
+	ld	d, a
+	add	a, c
+	ld	c, a
+	sub	0Bh
+	push	af
+	push	bc
+
+L2EBE:	call	m, L2C87
+	jp	m, L2EBE
+	pop	bc
+	pop	af
+	push	bc
+	push	af
+	jp	m, L2ECC
+	xor	a
+
+L2ECC:	neg
+	add	a, b
+	inc	a
+	add	a, d
+	ld	b, a
+	ld	c, 0
+	call	L2F3E
+	pop	af
+	call	p, L2FE6
+	pop	bc
+	pop	af
+	jr	nz, L2EE0
+	dec	hl
+
+L2EE0:	pop	af
+	jr	c, L2EE7
+	add	a, 0Bh
+	sub	b
+	sub	d
+
+L2EE7:	push	bc
+	call	L2D62
+	ex	de, hl
+	pop	de
+	jp	L2DD1
+
+L2EF0:	push	de
+	xor	a
+	push	af
+	call	L2F19
+
+L2EF6:	ld	bc, 0A215h
+	ld	ix, 2F8h
+	ld	de, 0FFFDh
+	call	L2B07
+	jp	p, L2F16
+	pop	af
+	call	L2C80
+	push	af
+	jp	L2EF6
+
+L2F0E:	pop	af
+	call	L2C87
+	push	af
+	call	L2F19
+
+L2F16:	pop	af
+	pop	de
+	ret
+
+L2F19:	ld	bc, 0A53Ah
+	ld	ix, 43B7h
+	ld	de, 3FFCh
+	call	L2B07
+	pop	hl
+	jp	p, L2F0E
+	jp	(hl)
+
+L2F2B:	dec	b
+	jr	nz, L2F36
+
+L2F2E:	ld	(hl), '.'
+	ld	(L1A1), hl
+	inc	hl
+	ld	c, b
+	ret
+
+L2F36:	dec	c
+	ret	nz
+	ld	(hl), ','
+	inc	hl
+	ld	c, 3
+	ret
+
+L2F3E:	push	de
+	push	bc
+	push	hl
+	call	L2751
+	inc	a
+	call	L2B46
+	call	L2AC6
+	pop	hl
+	pop	bc
+	ld	de, L2F93
+	ld	a, 0Bh
+
+L2F52:	call	L2F2B
+	push	bc
+	push	af
+	push	hl
+	push	de
+	call	L2AD3
+	pop	hl
+	ld	b, 2Fh
+
+L2F5F:	inc	b
+	ld	a, e
+	sub	(hl)
+	ld	e, a
+	inc	hl
+	ld	a, d
+	sbc	a, (hl)
+	ld	d, a
+	inc	hl
+	ld_axl
+	sbc	a, (hl)
+	ld_xla
+	inc	hl
+	ld_axh
+	sbc	a, (hl)
+	ld_xha
+	inc	hl
+	ld	a, c
+	sbc	a, (hl)
+	ld	c, a
+	dec	hl
+	dec	hl
+	dec	hl
+	dec	hl
+	jr	nc, L2F5F
+	call	L282B
+	inc	hl
+	call	L2AC6
+	ex	de, hl
+	pop	hl
+	ld	(hl), b
+	inc	hl
+	pop	af
+	pop	bc
+	dec	a
+	jr	nz, L2F52
+	call	L2F2B
+	ld	(hl), a
+	pop	de
+	ret
+
+L2F93:	db	0, 0E4h, 0Bh, 54h, 2
+	db	0, 0CAh, 9Ah, 3Bh, 0
+	db	0, 0E1h, 0F5h, 5, 0
+	db	80h, 96h, 98h, 0, 0
+	db	40h, 42h, 0Fh, 0, 0
+	db	0A0h, 86h, 1, 0, 0
+	db	10h, 27h, 0, 0, 0
+	db	0E8h, 3, 0, 0, 0
+	db	64h, 0, 0, 0, 0
+	db	0Ah, 0, 0, 0, 0
+	db	1, 0, 0, 0, 0
+
+L2FCA:	or	a
+	ret	z
+	dec	a
+	ld	(hl), '0'
+	inc	hl
+	jr	L2FCA
+
+L2FD2:	ld	a, e
+	add	a, d
+	inc	a
+	ld	b, a
+	inc	a
+
+L2FD7:	sub	3
+	jr	nc, L2FD7
+	add	a, 5
+	ld	c, a
+	ld	a, (L1A3)
+	and	40h
+	ret	nz
+	ld	c, a
+	ret
+
+L2FE6:	jr	nz, L2FEC
+
+L2FE8:	ret	z
+	call	L2F2B
+
+L2FEC:	ld	(hl), '0'
+	inc	hl
+	dec	a
+	jr	L2FE8
+
+L2FF2:	call	LC88
+	call	L1F97
+	jr	nc, L3018
+	call	LCE9
+	push	hl
+	call	L843
+	jp	nc, LE46
+	ld	h, b
+	ld	l, c
+	inc	hl
+	inc	hl
+	inc	hl
+	call	LC88
+	sub	9Ch
+	jp	nz, LDBC
+	ld	b, a
+	call	L18D4
+	pop	hl
+	jr	L301B
+
+L3018:	call	L12F0
+
+L301B:	call	LC89
+	scf
+	jr	z, L302D
+	cp	','
+	jr	z, L302A
+	cp	';'
+	jp	nz, L6C8
+
+L302A:	call	LC88
+
+L302D:	ex	de, hl
+	ld	hl, (L15A)
+	db	1		; LD BC,nn
+
+L3032:	pop	de
+	ex	de, hl
+	push	hl
+	push	af
+	push	de
+	ld	b, (hl)
+	or	b
+	jp	z, LDBC
+	inc	hl
+	inc	hl
+	ld	c, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, c
+	jp	L304B
+
+L3045:	call	L31D0
+	call	LA83
+
+L304B:	xor	a
+	ld	e, a
+	ld	d, a
+
+L304E:	call	L31D0
+	ld	d, a
+	ld	a, (hl)
+	inc	hl
+	cp	'#'
+	jp	z, L3092
+	cp	27h
+	jp	z, L3155
+	dec	b
+	jp	z, L3141
+	cp	'+'
+	ld	a, 8
+	jr	z, L304E
+	dec	hl
+	ld	a, (hl)
+	inc	hl
+	cp	'.'
+	jp	z, L30AA
+	cp	(hl)
+	jr	nz, L3045
+	cp	'$'
+	jr	z, L308B
+	cp	'*'
+	jr	nz, L3045
+	ld	a, b
+	cp	2
+	inc	hl
+	jr	c, L3084
+	ld	a, (hl)
+	cp	'$'
+
+L3084:	ld	a, 20h
+	jr	nz, L308F
+	dec	b
+	inc	e
+	db	0FEh		; CP n
+
+L308B:	xor	a
+	add	a, 10h
+	inc	hl
+
+L308F:	inc	e
+	add	a, d
+	ld	d, a
+
+L3092:	inc	e
+	ld	c, 0
+	dec	b
+	jr	z, L30DE
+	ld	a, (hl)
+	inc	hl
+	cp	'.'
+	jr	z, L30B5
+	cp	'#'
+	jr	z, L3092
+	cp	','
+	jr	nz, L30BF
+	set	6, d
+	jr	L3092
+
+L30AA:	ld	a, (hl)
+	cp	'#'
+	ld	a, '.'
+	jp	nz, L3045
+	ld	c, 1
+	inc	hl
+
+L30B5:	inc	c
+	dec	b
+	jr	z, L30DE
+	ld	a, (hl)
+	inc	hl
+	cp	'#'
+	jr	z, L30B5
+
+L30BF:	push	de
+	ld	d, h
+	ld	e, l
+	cp	'^'
+	jr	nz, L30DC
+	cp	(hl)
+	jr	nz, L30DC
+	inc	hl
+	cp	(hl)
+	jr	nz, L30DC
+	inc	hl
+	cp	(hl)
+	jr	nz, L30DC
+	inc	hl
+	ld	a, b
+	sub	4
+	jr	c, L30DC
+	pop	de
+	ld	b, a
+	inc	d
+	inc	hl
+	db	0CAh		; JP Z,nn
+
+L30DC:	ex	de, hl		; EB
+	pop	de		; D1
+
+L30DE:	dec	hl
+	inc	e
+	bit	3, d
+	jr	nz, L30F7
+	dec	e
+	ld	a, b
+	or	a
+	jr	z, L30F7
+	ld	a, (hl)
+	sub	'-'
+	jr	z, L30F4
+	cp	0FEh		; -2
+	jr	nz, L30F7
+	set	3, d
+
+L30F4:	set	2, d
+	dec	b
+
+L30F7:	pop	hl
+	pop	af
+	jr	z, L314C
+	push	bc
+	push	de
+
+L30FD:	call	L12F5
+	pop	de
+	pop	bc
+	push	bc
+	push	hl
+	ld	b, e
+	ld	a, b
+	add	a, c
+	cp	1Ah
+	jp	nc, LDBC
+	ld	a, d
+	or	80h
+	call	L2CAF
+	call	L1915
+
+L3115:	pop	hl
+	call	LC89
+	scf
+	jr	z, L3128
+	cp	';'
+	jr	z, L3125
+	cp	','
+	jp	nz, L6C8
+
+L3125:	call	LC88
+
+L3128:	pop	bc
+	ex	de, hl
+	pop	hl
+	push	hl
+	push	af
+	push	de
+	ld	a, (hl)
+	sub	b
+	inc	hl
+	inc	hl
+	ld	c, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, c
+	ld	d, 0
+	ld	e, a
+	add	hl, de
+	ld	a, b
+	or	a
+	jp	nz, L304B
+	jr	L3147
+
+L3141:	call	L31D0
+	call	LA83
+
+L3147:	pop	hl
+	pop	af
+	jp	nz, L3032
+
+L314C:	call	c, L1134
+	ex	(sp), hl
+	call	L1A4A
+	pop	hl
+	ret
+
+L3155:	ld	c, 1
+	ld	e, 'L'
+	dec	b
+	jr	z, L3178
+	ld	a, (hl)
+	inc	hl
+	cp	'E'
+	jr	z, L316E
+	cp	'R'
+	jr	z, L316E
+	cp	'L'
+	jr	z, L316E
+	cp	'C'
+	jr	nz, L3178
+
+L316E:	ld	e, a
+
+L316F:	inc	c
+	dec	b
+	jr	z, L3178
+	ld	a, (hl)
+	inc	hl
+	cp	e
+	jr	z, L316F
+
+L3178:	call	L31D0
+	pop	hl
+	pop	af
+	jr	z, L314C
+	push	bc
+	push	de
+	call	L12F0
+	pop	de
+	pop	bc
+	push	bc
+	push	hl
+	ld	hl, (L15A)
+	ld	b, c
+	ld	c, 0
+	ld	a, e
+	cp	'E'
+	jr	z, L31C1
+	push	de
+	push	bc
+	call	L1AB1
+	pop	bc
+	pop	de
+	ld	hl, (L15A)
+	ld	a, b
+	sub	(hl)
+	ld	b, a
+	ld	a, e
+	cp	'L'
+	jr	z, L31B3
+	cp	'R'
+	jr	z, L31BE
+	ld	a, b
+	srl	b
+	sub	b
+
+L31AD:	ex	af, af'
+	call	L31C8
+	ex	af, af'
+
+L31B2:	ld	b, a
+
+L31B3:	push	bc
+	call	L1918
+	pop	bc
+	call	L31C8
+	jp	L3115
+
+L31BE:	xor	a
+	jr	L31AD
+
+L31C1:	ld	a, b
+	sub	(hl)
+	jr	nc, L31B2
+	xor	a
+	jr	L31B2
+
+L31C8:	inc	b
+
+L31C9:	dec	b
+	ret	z
+	call	LA75
+	jr	L31C9
+
+L31D0:	push	af
+	ld	a, d
+	or	a
+	ld	a, '+'
+	call	nz, LA83
+	pop	af
+	ret
+
+L31DA:	ld	hl, L2AA3
+	ex	(sp), hl
+	jp	(hl)
+
+L31DF:	db	0, 0, 0, 0, 0, 80h
+
+L31E5:	call	L2AAB
+	ld	hl, L31DF
+	call	L2ABD
+
+L31EE:	pop	bc
+	pop	ix
+	pop	de
+	call	L2A90
+	jr	z, L323B
+	ld	a, b
+	or	a
+	jp	z, L27E0
+	push	de
+	push	ix
+	push	bc
+	ld	a, c
+	or	7Fh
+	call	L2AD3
+	jp	p, L321B
+	push	de
+	push	ix
+	push	bc
+	call	L2B7E
+	pop	bc
+	pop	ix
+	pop	de
+	push	af
+	call	L2B07
+	pop	hl
+	ld	a, h
+	rra
+
+L321B:	pop	hl
+	ld	(L15E), hl
+	pop	hl
+	ld	(L15C), hl
+	pop	hl
+	ld	(L15A), hl
+	call	c, L31DA
+	call	z, L2AA3
+	push	de
+	push	ix
+	push	bc
+	call	L28BC
+	pop	bc
+	pop	ix
+	pop	de
+	call	L2910
+
+L323B:	ld	bc, 8138h
+	ld	ix, 0AA3Bh
+	ld	de, 295Ch
+	call	L2910
+	ld	a, (L15F)
+	cp	88h
+	jp	nc, L2A51
+	call	L2AAB
+	call	L2B7E
+	pop	bc
+	pop	ix
+	pop	de
+	push	af
+	call	L2762
+	ld	hl, L3275
+	call	L32C1
+	ld	hl, L15F
+	pop	af
+	or	a
+	jp	m, L326E
+	add	a, (hl)
+	db	1		; LD BC,nn
+
+L326E:	add	a, (hl)
+	ccf
+	ld	(hl), a
+	ret	nc
+	jp	L2A51
+
+L3275:	db	10
+	db	0CCh, 0D5h, 45h, 56h, 15h, 6Ah
+	db	0CFh, 37h, 0A0h, 92h, 27h, 6Dh
+	db	0F5h, 95h, 0EEh, 93h, 0, 71h
+	db	0D0h, 0FCh, 0A7h, 78h, 21h, 74h
+	db	0B1h, 21h, 82h, 0C4h, 2Eh, 77h
+	db	82h, 58h, 58h, 95h, 1Dh, 7Ah
+	db	6Dh, 0CBh, 46h, 58h, 63h, 7Ch
+	db	0E9h, 0FBh, 0EFh, 0FDh, 75h, 7Eh
+	db	0D2h, 0F7h, 17h, 72h, 31h, 80h
+	db	0, 0, 0, 0, 0, 81h
+
+L32B2:	call	L2AAB
+	ld	de, L290C
+	push	de
+	push	hl
+	call	L2AD3
+	call	L2910
+	pop	hl
+
+L32C1:	call	L2AAB
+	ld	a, (hl)
+	inc	hl
+	call	L2ABD
+
+L32C9:	cp	0F1h
+	pop	bc
+	pop	ix
+	pop	de
+	dec	a
+	ret	z
+	push	de
+	push	ix
+	push	bc
+	push	af
+	push	hl
+	call	L2910
+	pop	hl
+	call	L2AD6
+	push	hl
+	call	L2765
+	pop	hl
+	jr	L32C9+1
+
+L32E5:	call	L2A90
+	jp	m, L330C
+	ld	hl, L17C
+	call	L2ABD
+	ret	z
+	ld	bc, 9835h
+	ld	ix, 447Ah
+	ld	de, 0
+	call	L2910
+	ld	bc, 6828h
+	ld	ix, 0B146h
+	ld	de, 0
+	call	L2765
+
+L330C:	call	L2AD3
+	ld	a, e
+	ld	e, c
+	ld	c, a
+	ld	(hl), 80h
+	dec	hl
+	ld	b, (hl)
+	ld	(hl), 80h
+	call	L27C4
+	ld	hl, L17C
+	jp	L2AE7
+
+L3321:	ld	hl, L3373
+	call	L2754
+
+L3327:	call	L2AAB
+	ld	bc, 8349h
+	ld	ix, 0FDAh
+	ld	de, 0A221h
+	call	L2AC6
+	pop	bc
+	pop	ix
+	pop	de
+	call	L2994
+	call	L2AAB
+	call	L2B7E
+	pop	bc
+	pop	ix
+	pop	de
+	call	L2762
+	ld	hl, L3379
+	call	L2759
+	call	L2A90
+	scf
+	jp	p, L335F
+	call	L2751
+	call	L2A90
+	or	a
+
+L335F:	push	af
+	call	p, L2AA3
+	ld	hl, L3379
+	call	L2754
+	pop	af
+	call	nc, L2AA3
+	ld	hl, L337F
+	jp	L32B2
+
+L3373:	db	21h, 0A2h, 0DAh, 0Fh, 49h, 81h
+L3379:	db	0, 0, 0, 0, 0, 7Fh
+L337F:	db	7
+	db	90h, 0BAh, 34h, 76h, 6Ah, 82h
+	db	0E4h, 0E9h, 0E7h, 4Bh, 0F1h, 84h
+	db	0B1h, 4Fh, 7Fh, 3Bh, 28h, 86h
+	db	31h, 0B6h, 64h, 69h, 99h, 87h
+	db	0E4h, 36h, 0E3h, 35h, 23h, 87h
+	db	24h, 31h, 0E7h, 5Dh, 0A5h, 86h
+	db	21h, 0A2h, 0DAh, 0Fh, 49h, 83h
+
+L33AA:	call	L2AAB
+	call	L3327
+	pop	bc
+	pop	ix
+	pop	de
+	call	L2AAC
+	ex	de, hl
+	call	L2AC6
+	call	L3321
+	jp	L2990
+
+L33C1:	call	L2A90
+	call	m, L31DA
+	call	m, L2AA3
+	ld	a, (L15F)
+	cp	81h
+	jr	c, L33E1
+	ld	bc, 8100h
+	ld	ix, 0
+	ld	d, c
+	ld	e, c
+	call	L2994
+	ld	hl, L2759
+	push	hl
+
+L33E1:	ld	hl, L33EB
+	call	L32B2
+	ld	hl, L3373
+	ret
+
+L33EB:	db	13
+	db	14h, 7, 0BAh, 0FEh, 62h, 75h
+	db	51h, 16h, 0CEh, 0D8h, 0D6h, 78h
+	db	4Ch, 0BDh, 7Dh, 0D1h, 3Eh, 7Ah
+	db	1, 0CBh, 23h, 0C4h, 0D7h, 7Bh
+	db	0DCh, 3Ah, 0Ah, 17h, 34h, 7Ch
+	db	36h, 0C1h, 0A3h, 81h, 0F7h, 7Ch
+	db	0EBh, 16h, 61h, 0AEh, 19h, 7Dh
+	db	5Dh, 78h, 8Fh, 60h, 0B9h, 7Dh
+	db	0A2h, 44h, 12h, 72h, 63h, 7Dh
+	db	16h, 62h, 0FBh, 47h, 92h, 7Eh
+	db	0C0h, 0F0h, 0BFh, 0CCh, 4Ch, 7Eh
+	db	7Eh, 8Eh, 0AAh, 0AAh, 0AAh, 7Fh
+	db	0F6h, 0FFh, 0FFh, 0FFh, 7Fh, 80h
+
+L343A:	db	'EN',0C4h
+	db	'FO',0D2h
+	db	'NEX',0D4h
+	db	'DAT',0C1h
+	db	'INPU',0D4h
+	db	'DI',0CDh
+	db	'REA',0C4h
+	db	'LE',0D4h
+	db	'GO T',0CFh
+	db	'FNEN',0C4h
+	db	'I',0C6h
+	db	'RESTOR',0C5h
+	db	'GO SU',0C2h
+	db	'RETUR',0CEh
+	db	'RE',0CDh
+	db	'STO',0D0h
+	db	'OU',0D4h
+	db	'O',0CEh
+	db	'NUL',0CCh
+	db	'WAI',0D4h
+	db	'DE',0C6h
+	db	'POK',0C5h
+	db	'PRIN',0D4h
+	db	0BFh
+	db	'LISTE',0CEh
+	db	'CLEA',0D2h
+	db	'FNRETUR',0CEh
+	db	'SAV',0C5h
+	db	0A1h
+	db	'USIN',0C7h
+	db	'TAB',0A8h
+	db	'T',0CFh
+	db	'F',0CEh
+	db	'SPC',0A8h
+	db	'THE',0CEh
+	db	'NO',0D4h
+	db	'STE',0D0h
+	db	0ABh
+	db	0ADh
+	db	0AAh
+	db	0AFh
+	db	0DEh
+	db	'AN',0C4h
+	db	'O',0D2h
+	db	0BEh
+	db	0BDh
+	db	0BCh
+	db	'SG',0CEh
+	db	'IN',0D4h
+	db	'AB',0D3h
+	db	'US',0D2h
+	db	'FR',0C5h
+	db	'IN',0D0h
+	db	'PO',0D3h
+	db	'SQ',0D2h
+	db	'RN',0C4h
+	db	'LO',0C7h
+	db	'EX',0D0h
+	db	'CO',0D3h
+	db	'SI',0CEh
+	db	'TA',0CEh
+	db	'AT',0CEh
+	db	'PEE',0CBh
+	db	'LE',0CEh
+	db	'STR',0A4h
+	db	'VA',0CCh
+	db	'AS',0C3h
+	db	'CHR',0A4h
+	db	'LEFT',0A4h
+	db	'RIGHT',0A4h
+	db	'MID',0A4h
+	db	'LPO',0D3h
+	db	'INST',0D2h
+	db	'ELS',0C5h
+	db	'LPRIN',0D4h
+	db	'TRAC',0C5h
+	db	'LTRAC',0C5h
+	db	'RANDOMIZ',0C5h
+	db	'SWITC',0C8h
+	db	'LWIDT',0C8h
+	db	'LNUL',0CCh
+	db	'WIDT',0C8h
+	db	'LVA',0D2h
+	db	'LLVA',0D2h
+	db	'SPEA',0CBh
+	db	0A7h
+	db	'PRECISIO',0CEh
+	db	'CAL',0CCh
+	db	'KIL',0CCh
+	db	'EXCHANG',0C5h
+	db	'LIN',0C5h
+	db	'LOADG',0CFh
+	db	'EO',0C6h
+	db	'QUOT',0C5h
+	db	'WRIT',0C5h
+	db	'ERRO',0D2h
+	db	'RESUM',0C5h
+	db	'MSAV',0C5h
+	db	'MLOA',0C4h
+	db	'ER',0D2h
+	db	'ER',0CCh
+	db	'VARAD',0D2h
+	db	'OPE',0CEh
+	db	'CLOS',0C5h
+	db	'ERAS',0C5h
+	db	'RENAM',0C5h
+	db	'LOOKU',0D0h
+	db	'RU',0CEh
+	db	'LOA',0C4h
+	db	'NE',0D7h
+	db	'AUT',0CFh
+	db	'COP',0D9h
+	db	'ALOA',0C4h
+	db	'AMERG',0C5h
+	db	'ASAV',0C5h
+	db	'LIS',0D4h
+	db	'LLIS',0D4h
+	db	'RENUMBE',0D2h
+	db	'DELET',0C5h
+	db	'EDI',0D4h
+	db	'CON',0D4h
+	db	'EXI',0D4h
+	db	'DCOP',0D9h
+	db	'DINDE',0D8h
+	db	'LDINDE',0D8h
+	db	0
+
+SERIAL:	dw	7724h
+
+L363A:	db	'NEXT W/O FO',0D2h
+	db	'SYNTAX ERRO',0D2h
+	db	'RETURN W/O GOSU',0C2h
+	db	'OUT OF DAT',0C1h
+	db	'ILLEGAL FUNCTIO',0CEh
+	db	'ARITHMETIC OVERFLO',0D7h
+	db	'OUT OF MEMOR',0D9h
+L369D:	db	'UNDEFINED STATEMENT',0A0h
+L36B1:	db	'SUBSCRIPT OUT OF RANG',0C5h
+	db	'RE-DIMENSIONED ARRA',0D9h
+	db	'CAN',27h,'T /',0B0h
+	db	'ILLEGAL DIREC',0D4h
+	db	'TYPE MIS-MATC',0C8h
+	db	'NO STRING SPAC',0C5h
+	db	'STRING TOO LON',0C7h
+	db	'TOO COMPLE',0D8h
+	db	'CAN',27h,'T CONTINU',0C5h
+	db	'UNDEFINED USER CAL',0CCh
+	db	'FILE NOT FOUN',0C4h
+	db	'ILLEGAL EO',0C6h
+	db	'FILES DIFFEREN',0D4h
+	db	'RECOVERE',0C4h
+	db	'FNRETURN W/O FUNCTION CAL',0CCh
+	db	'MISSING STATEMENT NUMBE',0D2h
+	db	'RECORD TOO LARG',0C5h
+	db	'UNDEFINED MATRI',0D8h
+	db	'INVALID UNIT NUMBE',0D2h
+	db	'RESUME W/O ERRO',0D2h
+	db	'DIRECTORY FUL',0CCh
+	db	'EXTENSION ERRO',0D2h
+	db	'NO DISK SPAC',0C5h
+	db	'INPUT FILE NOT FOUN',0C4h
+	db	'NO INPUT FIL',0C5h
+	db	'NO OUTPUT FIL',0C5h
+	db	'DUPLICATE OUTPUT FIL',0C5h
+	db	'OUTPUT CLOSE ERRO',0D2h
+	db	'INVALID OPEN TYP',0C5h
+	db	'INVALID FILE I',0C4h
+	db	'UNKNOWN ERRO',0D2h
+L389C:	db	'*INVALID INPUT',8Ah
+L38AB:	db	' @ LINE',0A0h
+L38B3:	db	0Ah
+	db	'READY:',8Ah
+L38BB:	db	'*EXTRA LOST',8Ah
+L38C7:	db	0Ah
+	db	'*BREA',0CBh
+	db	0
+
+; disposable area
+
+DISPOS	equ	$
+
+L38CF:	call	L1134
+	ld	hl, (SERIAL)
+	call	L2C9A
+	call	L1134
+
+L38DB:	ld	hl, L39F8
+	call	LACE
+
+L38E1:	xor	a
+	ld	hl, BUFEND-1
+	ld	sp, hl
+	ld	(L14E), hl
+	ld	(L1B6), hl
+	ld	(hl), a
+
+L38ED:	dec	l
+	ld	(hl), a
+	jr	nz, L38ED
+	dec	h
+	jr	nz, L38ED
+	dec	hl
+	ld	(L148), hl
+	ld	a, 2Ch
+	ld	(L2FD), a
+	ld	a, 0C3h
+	ld	(L182), a
+	ld	(L19B), a
+	ld	hl, L38E1
+	ld	(L19C), hl
+	ld	iy, L185
+	ld	hl, COUT
+	ld	(L183), hl
+	ld	a, 48h
+	ld	(L186), a
+	ld	(L18C), a
+	ld	a, 38h
+	ld	(L187), a
+	ld	(L18D), a
+	ld	a, 0FDh
+	ld	(L1AC), a
+	ld	a, 0EAh
+	ld	(L1AC+1), a
+	ld	a, 22h
+	ld	(L1B0), a
+	xor	a
+	ld	(L18A), a
+	ld	(L190), a
+	ld	hl, L108
+	ld	(L106), hl
+	ld	hl, 8000h
+	ld	(L17C), hl
+	ld	(L17E), hl
+	ld	(L180), hl
+	ld	hl, L3A32
+	call	LACE
+	call	L9E4
+	call	LC88
+	cp	41h
+	jp	z, L38DB
+	cpl
+	cp	0A9h
+	jp	z, L38CF
+	inc	a
+	jr	nz, L396D
+	ld	hl, (6)
+	dec	hl
+	jr	L3981
+
+L396D:	ld	hl, L2FE
+	call	LC89
+	call	L2BAF
+	ld	a, (hl)
+	or	a
+	jp	nz, L6C8
+	call	LD9F
+	ex	de, hl
+	dec	hl
+	dec	hl
+
+L3981:	ld	(L104), hl
+	ld	(L13C), hl
+	push	hl
+	ld	de, BUFEND	;** constant - assumed to be in low memory
+	or	a
+	sbc	hl, de
+	pop	hl
+
+L398F:	jp	c, L6A8
+	ld	de, -100
+	add	hl, de
+	ld	de, BASIC
+	CPHL_DE
+	ld	de, DISPOS
+	jr	nc, L39A7
+	ld	de, BUFEND	;** constant - assumed to be in low memory
+L39A7:	CPHL_DE
+	jr	c, L398F
+	ld	sp, hl
+	ld	(L14E), hl
+	ex	de, hl
+	ld	(L150), hl
+	call	L69C
+	dec	hl
+	ld	(hl), 0
+	or	a
+	ex	de, hl
+	sbc	hl, de
+	ld	bc, -16
+	add	hl, bc
+	call	L1134
+	call	L2C9A
+	ld	hl, L3A41
+	call	LACE
+	ld	hl, LACE
+	ld	(L19C), hl
+	call	L865
+	ld	bc, 12
+	ld	de, L23D
+	ld	hl, FCB2
+	ldir
+	ld	a, (FCB1+1)
+	cp	20h
+	call	nz, L4C5
+	ld	a, (L23E)
+	cp	20h
+	call	nz, L4F5
+	jp	L751
+
+L39F8:	db	'T.D.L. Z-80 BASIC by Neil Colvin & Roger Amidon',0Ah
+	db	'Nov. 1977',8Ah
+L3A32:	db	0Ah
+	db	'Highest Memor',0F9h
+L3A41:	db	' Bytes Free',0Ah,0Ah
+	db	'Welcome to BASIC, Ver. 3.05',0Ah
+	db	'<TDL Z-80 High Precision Extended CPM Based Version>',8Ah
+
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0, 0, 0, 0, 0, 0, 0, 0
+	db	0
+
+	end
+
+

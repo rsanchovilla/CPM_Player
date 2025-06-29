@@ -1,0 +1,226 @@
+/*  String functions for BCPL
+         These assume low-level strbuffer(), fillchar(), move(), pos()
+         in linked module TEXT, and min(),z80(),BCPL() from XTRA.
+    
+   (f) stringof(num,char)  (f)  substr(str,pos,len)  (f)  addstr(str1,str2)
+   (p) join(str1,str2)     (p)  insert(substr,str,pos) (p) delete(str,pos,len)
+   (p) subcopy(str1,str2, pos, len)    (p)  copy(str1,str2)
+   (f) pos( substr, str)  -  n.b. substr MUST be string, not char constant.
+   (f) instr(str,pat,pos) -  as above but varying start and BASIC syntax.
+   (f) compare(str1,str2)  (f)  val(str,base)        (f)  str(value,base)
+   (f) reads() - read a string from input of up to 128 chars & return pointer.
+   (f) getword(str,index) - return next space-delimited substring from S%index
+
+   N.B.  (p) indicates a procedure whose arguments must be declared & whose 
+          effects upon strings are permanent.
+         (f) indicates a function whose returned value, if a string pointer,
+          is only an address in the string buffer, and hence does not last
+          for long. The string buffer is circular, when not enough space to
+          store the required string is left, the pointer is reset to its start.
+          If you need a lot of such temporary results, and don't want to copy
+          them immediately to safety, then increase the stringbuffer size. It
+          is currently 1k long.  The code of DRIVE2 will need altering and
+          reassembling, and the Manifest strspace (see below) to match
+ */
+
+GET "LIBHDR"
+
+MANIFEST  $( strspace = #x400  $)   // must agree with equate in TEXT
+
+// first a lower-level slave
+
+LET string(length) = VALOF
+$(
+     LET sptr = BCPL(strbuffer()-2)
+     LET endbuf = BCPL(strbuffer()+ strspace)
+     LET T = !sptr
+     length := min(length+1,maxstrlength)/bytesperword
+     TEST  (T + length) < endbuf  THEN
+            !sptr +:= length
+     ELSE   $(  T :=  BCPL(strbuffer())
+		!sptr := T + length
+            $)
+     RESULTIS T     
+$)
+// now some useful string functions
+// chr$(x) is stringof(1,x)
+
+LET stringof(len,char) = VALOF
+$(  LET T = string(len)
+    LET TT = z80(T)
+    fillchar(TT+1,char,len)
+    T%0 := len
+    RESULTIS T
+$)
+
+LET substr(S,pos,len) = VALOF
+$( 
+  LET T = string(len)
+  LET TT,SS = z80(T),z80(S)
+  IF len > 0 THEN 
+       move(SS+pos,TT+1,len)
+  T%0 := len
+  RESULTIS T
+$)
+
+/* BASIC style version of pos() */
+
+LET instr(str,pat,psn) = pos(pat,substr(str,psn,str%0-psn))
+  
+/* concatenate  T onto S - temporarily  */
+
+LET  addstr(S,T) = VALOF
+$(
+   LET len = min(T%0, maxstrlength-S%0)
+   LET V = string(len+S%0)
+   LET VV,SS,TT = z80(V), z80(S),z80(T)
+   move(SS+1,VV+1,S%0)
+   move(TT+1,VV+1+S%0,len)
+   V%0 := S%0+len
+   RESULTIS V
+$)
+
+/* concatenate  T onto S - permanently! */
+
+LET join(S,T) BE
+$( 
+   LET SS,TT = z80(S),z80(T)
+   LET len = min(T%0,maxstrlength-S%0)
+   move(TT+1, SS+1+S%0,len)
+   S%0 +:= len
+$)
+
+/*  copy S to T - start at pos and copy len bytes */
+ 
+LET subcopy(S,T,pos,len) BE
+$( 
+  LET SS,TT = z80(S),z80(T)
+  TEST len <0 THEN len := 0
+  ELSE len := min(len, S%0-pos+1)
+  IF len > 0  THEN
+     move(SS+pos,TT+1,len)
+  T%0 := len
+$)
+
+/* copy whole of S to T */
+
+LET copy(S,T) BE
+$(
+  LET SS,TT = z80(S),z80(T)
+  move(SS,TT, S%0+1)
+$)
+
+LET delete(S,pos,len) BE
+$(
+  LET SS = z80(S)
+  IF len <= 0 THEN len := 0
+  IF len > 0 THEN
+   move(SS+pos+len, SS+pos, S%0-pos+1)
+  S%0 := S%0 -len
+$)
+
+LET insert(T,S,pos) BE
+$(
+  LET SS,TT = z80(S),z80(T)
+  IF T<256 THEN $( T:= stringof(1,T)   // make single-char constant 
+                  TT:= z80(T)  $)      // into a string.
+  IF T%0 = 0 THEN RETURN
+  move(SS+pos,SS+pos+T%0, S%0-pos+1)
+  move(TT+1,SS+pos,T%0)
+  S%0 := S%0+T%0
+$)
+
+/*  return 0 if str1=str2.
+           1 if str2<str1.
+          -1 if str1<str2. */
+
+LET compare(str1,str2) = VALOF              
+  $(
+     LET count,length,ret,flag = 0,0,0,0        
+     length := min(str1%count,str2%count)         
+     TEST str1%0 < str2%0 THEN flag := -1         
+     ELSE IF str1%0 > str2%0 THEN flag := 1
+          $(
+              count +:= 1
+              TEST str1%count = str2%count THEN ret := 0
+              ELSE TEST str1%count < str2%count THEN ret := -1
+              ELSE ret := 1
+          $)  REPEATWHILE count < length & ret = 0
+     TEST flag & (ret = 0) THEN RESULTIS flag ELSE RESULTIS ret
+   $)
+
+/* numeric conversion - any base using '0'-'9','A'.... */
+
+LET val(S,base) = VALOF
+$(
+    LET sum, sign,first,ch = 0,1,1,?
+    IF S%1 = '-' THEN
+    $(    sign := -1
+          first := 2
+    $)
+    FOR I = first TO S%0  DO
+    $( 
+       ch := (S%I > '9')-> S%I -'A'+10, S%I -'0'
+       TEST  -1<ch<base THEN
+           sum := sum*base+ch 
+       ELSE RESULTIS 0          
+    $) 
+    RESULTIS sum*sign
+$)
+
+
+LET str(N,base) = VALOF
+$(
+   LET T = string(16)        
+   LET V = VEC 16
+   LET D,C,first = 0,?,1
+   IF N < 0 THEN
+   $(  first := 2
+       T%1 := '-'
+       N := ABS(N)
+   $)
+   $(  V!D  :=  N REM base
+       N /:= base    
+       D +:= 1
+   $) repeatwhile N > base-1 & D < 16
+   V!D := N
+   FOR I = 0 TO  D  DO
+   $(  C := V!(D-I)   
+       T%(I+first) := (C > 9) -> C + 'A'-10 , C + '0'
+   $)
+   T%0 := D+first
+   RESULTIS T
+$)
+
+/* read a string from input - up to 128 chars */
+LET reads() = VALOF
+$( LET SIZE = 128
+   LET T = string(SIZE)     
+   LET I,CH = 0,?
+    $(  CH  := RDCH()
+        I +:= 1
+        UNLESS CH = '*N' DO T%I := CH
+    $) repeatuntil CH = '*N' | I >= SIZE        
+   T%0 := I-1 
+   RESULTIS T
+$)
+/* return next space-delimited string from S, starting at index I
+   NB  index is passed as a POINTER (@I) so that it can be updated.
+   A simpler form ( getstr(source,target,index)) that uses no string
+   extensions is in %XTRA
+ */
+LET getword(S,I)=VALOF
+$(
+  LET K,len,pos = !I, 0,?
+  WHILE (S%K = '*S' | S%K = '*T') & K <= S%0
+     DO  K +:= 1
+  pos := K
+  WHILE S%K ~= '*S' & S%K ~= '*T' & K <= S%0
+     DO $( K +:= 1; len +:= 1 $)
+  !I := K
+  RESULTIS  substr(S,pos,len)
+$)
+
+// needs %xtra, %text
+
+/* eof */

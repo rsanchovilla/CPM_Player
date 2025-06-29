@@ -1,0 +1,134 @@
+*  CHAIN  - load and run a program from any BCPL program
+*
+*     This low-level procedure is called by execute() at high-level.
+*  It assumes that the program file has been opened by findinput().
+*  It assumes all checks for existence of files done.
+*  It assumes that the first argument of command has an fcb at TFCB
+*  and a second at TFCB+32.
+*  It assumes all arguments were made uppercase elsewhere.
+*
+*
+*  chain( command,tfcb,progfcb)  - all addresses passed as z80 addr.
+*
+	NAME	%CHAIN
+
+REBOOT  EQU	0000H
+FCB1	EQU	5CH
+FCB2	EQU	6CH
+TPA	EQU	100H
+LAST	EQU	TPA-2 
+TBUFF	EQU	80H
+BDOS	EQU	5
+SETDMA	EQU	26
+READS	EQU	20
+DPUSH	EQU	38H		; ycode to push params on machine stack
+
+BASE	DEFW	ENDMOD-$
+
+CHAIN	DEFW	5
+	DEFB	DPUSH,2,DPUSH,3,DPUSH,4
+	DEFB	0
+
+; HL contains addr of FIB (bcpl copy of fcb)
+; The addr of TFCB is on the stack
+; The addr of the command is above it    
+
+	LD	DE,FCB1		
+        LD	BC,32
+	LDIR
+
+; move code of loader to text buffer
+
+        LD	HL,LOAD
+	LD	DE,TBUFF
+	LD	BC,ENDLOAD-LOAD
+	LDIR
+
+; The last instruction of loader is  LDIR  put just before TPA
+
+	LD	A,0EDH		
+	LD	(LAST),A
+	LD	A,0B0H
+	LD	(LAST+1),A
+	JP	TBUFF
+
+; We now jump to the relocated loader
+
+LOAD:	LD	DE,TPA
+LOAD1:	PUSH	DE
+	LD	C,SETDMA
+	CALL	BDOS
+	LD	DE,FCB1
+	LD	C,READS
+	CALL	BDOS
+	POP	HL		; get back DMA
+	AND     A       	; EOF?
+	JR	NZ,DONE
+	LD	DE,80H		; bump DMA
+	ADD	HL,DE
+	EX	DE,HL
+	JR	LOAD1		; get next sector
+
+DONE:				; reset DMA to 80h
+        LD	DE,TBUFF
+	LD	C,SETDMA
+	CALL	BDOS
+* 
+* now copy args to fcb1 and fcb2. Then copy whole command line to 80h
+* overwriting the loader. 
+* If there are no args then the fcbs will be blanks
+
+	POP	HL		; tfcb has first arg - both fcbs were
+	PUSH	HL		; prepared at high level.
+	LD	DE,FCB1
+	LD	BC,16
+	LDIR
+
+	POP	HL
+	LD 	DE,32		; tfcb+32 has
+	ADD	HL,DE		; second arg
+	LD	DE,FCB2
+	LD	BC,16
+	LDIR
+ 	XOR	A		; zero the cr field
+        LD	(07CH),A
+	POP	HL		; command addr       
+
+* Having popped last argument off the stack, reset for next prog?
+
+  	LD	SP,(BDOS+1)
+ 	LD	DE,REBOOT       ; leave 0 as return addr
+ 	PUSH	DE
+	LD	A,(HL)          ; retrieve length of command
+	INC	HL		; point to first char
+	AND	A
+	JR	NZ,DONE2	; if zero put 0 in 81h and go to prog
+	LD	(TBUFF),A
+	LD	(TBUFF+1),A
+	JP      TPA
+
+DONE2:
+	LD	(TBUFF),A
+	LD	C,A  
+        LD	B,0
+	LD	A,' '
+	LD	(TBUFF+1),A
+	LD	DE,TBUFF+2     ; copy the rest of the command
+*
+*  Now, jump  to the LDIR and fall  through into the new program.
+*  we never return to original program.
+
+	JP	LAST
+
+ENDLOAD:DEFB	0
+
+	IF	($.AND.1)=1
+	DEFB	0
+	ENDIF
+
+	DEFW	190, CHAIN-BASE
+	DEFW	1
+ENDMOD	DEFW	190
+
+
+

@@ -1,0 +1,573 @@
+CRLZH and UNCRLZH v2.0 are new releases of the LZH algorithm merged with 
+updates to the CRUNCH programs (thru v2.8):
+
+1) A new encoding algorithm is used.  This new algorithm COMPRESSES FURTHER 
+   than v1.1.  The UNCRLZH v2.0 program can detect files encoded with the 1.1 
+   algorithm and can automatically select proper decoding method.
+
+2) The LZH algorithm has been extensively re-coded for speed.  Test cases have 
+   shown decreases in compression time of 10% or more (times vary with type of 
+   material being compressed).
+
+3) The file limit has been changed back to 256 to reduce run-time space 
+   requirements.  If this is a problem, the limit can be changed by the user 
+   with re-assembly of the file(s).
+
+-----------------------CRLZH/UNCRLZH v1.0 notes follow---------------------
+
+CRLZH and UNCRLZH v1.1 are virtually identical to their 1.0 versions (the 
+Beta test versions) with the following exceptions:
+
+1) The version number placed in the LZH-Encoded file (part of the header) 
+   is now 11h instead of 10h (for 1.1 vs 1.0).  Other than that minor 
+   detail, the files produced by this official release and the Beta test 
+   will be identical.  (Files produced with the Beta version are acceptable 
+   to UNCRLZH v1.1).
+
+2) The CRLZH program is marginally faster.  Some small speed enhancements 
+   were made, but the algorithm is intrinsically slow.
+
+3) The UNCRLZH program has been changed to default to the file extension 
+   .?Y? when the extension .* is used (see CRUNCH 2.4 notes, below, under 
+   the heading: 4. DETAIL INVOLVING FORCED "?Z?" EXTENSION [UNCR only].) 
+   This means that to UNCRUNCH all ?Z? files, you must use .?Z? rather than 
+   .* (.* will only find .?Y? files).  HOWEVER, the character used has 
+   been made a configurable item (see patch information), so you can tailor 
+   it for your preference.
+
+4) The display format differs slightly (a few extra CR-LF sequences).
+
+-----------------------CRLZH/UNCRLZH v1.0 notes follow---------------------
+
+CRLZH and UNCRLZH v1.0 (Beta test versions) are based upon S. Greenberg's 
+CRUNCH and UNCRunch programs (v2.4).  The intent was to provide a user 
+interface identical to existing programs (similar function - similar 
+interface).  CRLZH and UNCRLZH differ from Steve's programs in the 
+following areas:
+
+1) CRLZH makes files with a 'Y' in the extension (as opposed to 'Z').  The 
+   UNCRLZH program recognizes this as the extension for LZH encoded 
+   files.
+
+2) CRLZH progressively changes the file extension of the crunched file, 
+   allowing for a bit more user insight into the original file name.  It  
+   operates upon file extensions as follows:
+
+      BLANKS - converted to .YYY
+      .123   - converted to .1Y3
+      .?Y?   - converted to .?YY
+      .?YY   - converted to .YYY
+
+There was no reason to tamper with the format CRUNCH uses on the output 
+file.  Therefore, with the exception of taking the 'next' file type in 
+sequence (SQueezed files begin with a 76h,FFh sequence; Crunched files with 
+76h,FEh; so LZH encoded files begin with 076h,FDh) and setting the revision 
+levels in the header to 1.0, there's no difference in the output file 
+format.  You can probably coax your time/date stamping into operating 
+on LZH encoded files.
+
+UNCRLZH preserves the capability to operate on CRUNCHED and SQueezed files, 
+so you can use it on your system as a replacement for UNCR.  There were no 
+changes to these features (Uncruncing and Unsqueezing was supplied in .REL 
+file form) so fear not!  The driving program was altered ONLY to recognize 
+the additional file type and branch to the new decompression code (version 
+number and sign-on message text was altered, too...but that's trivial.)
+
+Since these programs are BASICALLY CRUNCH v2.8 and  UNCRunch  v2.8, the user 
+interfaces are the same.  The the version 2.3 internal revision information 
+in the CRUNCH program has been preserved so that the program can be 
+configured by the same programs (if any exist).
+
+-------------------CRUNCH/UNCRunch v2.8 history follows-------------------
+
+
+                       CRUNCH/UNCR HISTORY
+
+
+     +--------------------------------------------------------+
+     | Previous versions of CRUNCH/UNCR included no history   |
+     | file, with the exception of partial histories accom-   |
+     | panying the DateStamper (2.3D) versions.  This history |
+     | file has been compiled by condensing the contents of   |
+     | release notes and other information included in previ- |
+     | ous distribution libraries available to me.            |
+     |                                       Gene Pizzetta    |
+     |                                       March 19, 1991   |
+     +--------------------------------------------------------+
+
+
+Version 2.8 -- May 5, 1991 -- Gene Pizzetta
+     Fix one bug and create another!  But this one is very minor: 
+     if the file was copied (rather than crunched) the date stamp 
+     was written to the destination file twice.  And if the A 
+     option was used, the  archive attribute was set twice on the 
+     source file (the latter dates from version 2.4).  Thanks to 
+     Howard Goldstein for finding that one.
+
+Version 2.7 -- April 27, 1991 -- Gene Pizzetta
+     Implemented Bruce Morgen's suggestion for a ZCPR3-only 
+     version that would allow UNCR to be smaller than 8K and 
+     still uncrunch LZH files.  In the ZCPR3-only version the Z80 
+     CPU test is replaced with a Z-System check.  Also fixed a 
+     bug: Bruce Morgen reported that CRUNCH with the A option 
+     failed to set the archive attribute on the source file if 
+     the destination file was in a different user area.  Putting 
+     the call to DATSTP after the call to ARCIT fixed that 
+     problem.  Howard Goldstein reported that if either program 
+     aborted because of insufficient memory, an arbitrary number 
+     of "files processed" was displayed.  The file count is 
+     initialized later in the code, but zero files is now 
+     displayed in that case.  Minor screen format corrections: 
+     "[ file empty ]" message was flush left, instead of one 
+     space in, as it should have been; and the disk change prompt 
+     was being overwritten by the next file crunched, for lack of 
+     a carriage return/line feed.  ZMAC/ZML instructions added to 
+     TEC file.
+
+Version 2.6 -- March 26, 1991 -- Gene Pizzetta
+     Failure to initialize TRPFLG for each file sometimes caused 
+     an extra null code to be inserted near the beginning of the 
+     crunched file.  This bug in no way affected the validity of 
+     the crunched file.  Also failed to include an LZH equate in 
+     CRUNCH.Z80 after adding LZH uncrunching to UNCR.
+
+Version 2.5 -- March 21, 1991 -- Gene Pizzetta
+     When running under ZSDOS, now copies the source file date 
+     stamp to the output file when crunching, uncrunching, or 
+     just copying.  In addition, the date stamp is stored in the 
+     header of the crunched file, in the same manner as the 2.3D 
+     versions.  UNCR gives priority to the embedded date stamp, 
+     it it exists, for the output file.  In either case the 
+     current date will be used as the access date.  If the modify 
+     date is blank (a non-standard condition), it will be 
+     supplied from the create date.
+
+     New S option toggles between including and excluding system 
+     (hidden) files.  As distributed, system files are excluded 
+     by default.  The old O option has been renamed the E option 
+     (erase existing files), and the old C option has been 
+     renamed the I option (inspect mode), for compatibility with 
+     other standard ZCPR3 utilities.  The old options still work, 
+     though, for those who have become accustomed to them.
+
+     Now handles up to 512 matching files, if an ambiguous 
+     filename is given.  (The number of files can easily be 
+     increased, if anybody has need for it.)  Version 2.4 could 
+     handle 256 and version 2.3D only 127 matching files.
+
+     UNCR now uncrunches LZH-encoded files, using the R. Warren's 
+     UNLZH.REL module.  It checks the header of LZH files for an 
+     embedded date stamp, although no LZH cruncher inserts the 
+     date at this time.  Nevertheless, we're ready if it ever 
+     happens.
+
+     Screen displays have been compacted somewhat to allow 
+     display of more filenames on the screen (twice as many in 
+     quiet mode).  High bits are now filtered when displaying 
+     filenames so you won't see weird characters.  (For UNCR the 
+     quiet mode screen looks the same, no matter what kind of 
+     file is being decompressed.  Each file takes a single lines, 
+     unless it's a direct copy.)
+
+     Under ZCPR3 the command processor parses the filespecs, so 
+     all permissible user areas are available.  Under ZCPR33 and 
+     above, invalid directory specs will generate an error rather 
+     than defaulting to the current directory.  The usage screen 
+     will also reflect the actual name of the COM file, even if 
+     re-executed with the GO command.
+
+     All options are configurable as the default operating mode.  
+     The usage screen now reflects the current effect of the 
+     command line options, if they are used.  All configuration, 
+     including CRUNCH's exclusion list, can be done with ZCNFG.  
+     The same CFG file is used for both CRUNCH and UNCR, but some 
+     configuration options are not effective for both programs.  
+     See the ZCNFG help screens for full details.
+
+     Other changes:  If the original file already has a "Z" as 
+     the middle character of its filetype (for example, "AZM"), 
+     CRUNCH will now change only the last character of the 
+     filetype to a "Z", unless that character is also already a 
+     "Z".  If either program is aborted with a ^C, the partial 
+     output file will be closed and erased, so zero-length files 
+     will no longer be left behind.  Incorporates routines from 
+     version 2.3D that traps and alters any occurrence of the 
+     command mode sequence used by Telenet and PC-Pursuit, so 
+     file transfers will not be aborted on those systems.  CRUNCH 
+     now recognizes LZH encoded files as already crunched.  
+     Various messages have been added or altered to be more 
+     specific or for aesthetic reasons.
+
+     This version is a direct descendant of version 2.4.  Other 
+     than the TRAPIT routines, none of the version 2.5 code comes 
+     from the various 2.3D versions, although those versions 
+     originated the embedded date stamp idea incorporated herein. 
+     Many, many thanks go to Howard Goldstein for his ideas, his 
+     help, and his bug finding skills.
+
+Version 2.4 -- September 15, 1987 -- Steven Greenberg
+     CRUNCH and UNCR 2.4 process and generate files identical to 
+     version 2.3 (except embedded revision level byte), 
+     regardless of mode of operation.  A few very observant 
+     people noticed that v2.3 could output valid (but different) 
+     files when running in "quiet" mode.  The output of v2.4 
+     should be identical to v2.3 running in verbose mode, except 
+     for the embedded revision level byte.  Some changes were 
+     made in the implementation of the "core" of the algorithms 
+     for both CRUNCH and UNCRunch -- in the case of CRUNCH, 
+     conditionals were removed by splitting into three separate 
+     loops.  In the case of UNCRunch, an unnecessary chase to the 
+     end of "virtual links" was eliminated by aborting the search 
+     as soon as an available reassignments lot is found.  Other 
+     performance improving changes include less time updating the 
+     screen and dynamic I/O buffer sizing.  Non-time-critical 
+     "user-interface" changes (e.g., the "tag mode" code, etc.) 
+     were coded in as straightforward a manner as possible, with 
+     little regard to code space minimization and even less to 
+     speed.  The great majority of the changes are user interface 
+     related:
+
+     A new option lets you select any number of files from a 
+     group for processing.  After all the selections have been 
+     made the files will be processed.  Selections are presented 
+     and processed in alphabetical order.
+
+     If CRUNCH ever creates a file larger than the original, the 
+     file will automatically be erased and replaced with a direct 
+     copy of the original.  If the original is already crunched 
+     or squeezed, or if the filetype matches a user configurable 
+     exclusion list, such as .LBR or .ARC, a straight copy 
+     operation will be substituted.  Thus all specified files 
+     will be transferred in the most efficient manner, 
+     facilitating the use of CRUNCH for the creation of .LBR's or 
+     as a backup utility.  Similarly, UNCR will either uncrunch 
+     or direct-copy all specified files for full restoration.
+
+     If CRUNCH or UNCR fills an output diskette during a wildcard 
+     operation, the last (partial) file will be deleted and the 
+     user will be prompted to change diskettes.  Operation will 
+     then continue, starting with that last file.
+
+     UNCR and CRUNCH take as many as three or four (respectively) 
+     command line options, in any combination.  Each option 
+     corresponds to a mode which can be set to default to an 
+     user-defined state.  The command line toggle will then flip 
+     the state back on or off.
+
+     The archive mode toggle, when turned on, will only crunch 
+     files that have changed since they were last backed up 
+     (based on the CP/M directory archive bit).  When running in 
+     this mode each input file will be flagged as archived as 
+     soon as the crunch operation for that file has completed.  
+     The "prompt before overwrite" mode toggle allows command 
+     line control of whether the program stops to warn you each 
+     time it is about to overwrite a file with the same name.
+
+     UNCR now also unsqueezes as an added convenience!  Usage is 
+     identical.  UNCR will automatically recognize the file's 
+     format and use the appropriate algorithm.
+
+     Modest speed improvements have been made through a variety 
+     of techniques, including more data buffering to reduce disk 
+     activity.  The extended buffers are dynamically allocated to 
+     take maximum advantage of currently available memory on your 
+     system.
+
+     Messages inform you when the programs are crunching, 
+     uncrunching, unsqueezing or copying and why (e.g., "Already 
+     crunched" or "Zero length").  Includes the old in, out, and 
+     compression ratio reports as well as a final figure on the 
+     total number of files processed.
+
+     Current program constraints limit wildcard operations to a 
+     maximum of 255 files.  Hitting ^C will entirely abort either 
+     program immediately.  Although probably of limited 
+     usefulness, ^S will pause the programs (in verbose mode).  
+     ^W will then resume.
+
+Version 2.3D3 -- August 25, 1989 -- Howard Goldstein
+     This version fixes a bug which resulted in failure to 
+     recognize a datespec if a destination du was entered.  
+     Changes in the COMMON routines fix problems concerning the 
+     correct drive for the !!!TIME&.DAT file when running under a 
+     non-ZCPR3 system.
+
+Version 2.3D2 -- November 7, 1988 -- Carson Wilson
+     Previous versions set the UNCRUNCHed file's Last Access 
+     stamp to the Last Access stamp of the original file.  This 
+     version sets the Last Access stamp of UNCRUNCHed files to 
+     the current time and date if a DateStamper compatible clock 
+     is available via BDOS function 12 (Return Version).  All 
+     changes are to this file and are marked "2.3D2" for 
+     reference.
+
+Version 2.3D1.1 -- August 2, 1988 -- Carson Wilson
+     Changes in COMMON.LIB:  Replaced 8080 opcodes with Z80 
+     opcodes for Z80ASM.  Added code to close !!!TIME&.DAT file 
+     at label RETCCP:.  This was the only way to ensure that the 
+     file is always closed and set to R/O.  T&D file is only 
+     closed if we were writing to it.  Modified CLOSTD and OPENTD 
+     to preserve the T&D file's original archive bit.
+
+Version 2.3D1 -- July 20, 1988 -- Carson Wilson
+     UNCRUNCH version 2.3D did not set the !!!TIME&.DAT file to 
+     read/only on exit.  UNCRUNCH v. 2.3D1 corrects this error.  
+     The version name was decided upon to avoid confusion with 
+     UNCRUNCH version 2.4, which adds several features not 
+     available in 2.3, but does not support DateStamped files.  
+     UNCR23D1 is released with the approval of Bridger Mitchell, 
+     author of UNCR23D.  CRUNCH23D remains unchanged.
+
+Version 2.3D -- March 14, 1987 -- Bridger Mitchell, Plu*Perfect Systems
+     CRUNCH and UNCRUNCH support DateStamped files.  CRUNCH 
+     includes the original file's datestamp data in the header of 
+     the crunched output file.  UNCRUNCH v2.3D uses these data to 
+     replace the datestamp of the uncrunched file after it has 
+     been closed.  This means that the uncrunched file will have 
+     its original time and date.  CRUNCH also supports an 
+     additional optional field -- a datespec -- which may be used 
+     to specify a temporal class of files to crunch, for example, 
+     all files more recent than a specified date and time.
+
+     CRUNCH now monitors the output for the first two bytes of 
+     the sequence: 00dh, 040h, 00dh (with hi bits possibly set).  
+     If detected, it inserts the CRUNCH NULCODE.  This prevents a 
+     crunched file from triggering Telenet/PC-Pursuit's command- 
+     mode, which can abort a file transfer.  Code is derived from 
+     C. B. Falconer's CRN v2.5., 86/12/19.
+
+Version 2.3 -- November 15, 1986 -- Steven Greenberg
+     The core of this source code is pretty much unchanged since 
+     the original conception and refinement of CRUNCH v2.0.  
+     Though attention was made in selecting an algorithm which 
+     could be implemented in a relatively efficient manner, and 
+     some care was taken to keep the 'innermost' loops fairly 
+     streamlined, there is no doubt room for improvement in terms 
+     of the optimally efficient implementation.  This simply 
+     means that future releases may run even faster than the 
+     current one.
+
+     The programs now can be configured for ZCPR use.  To support 
+     the Z3 environment descriptor, the patch byte locations have 
+     been shifted up.  If you are going to be patching these 
+     bytes yourself, refer to the new PATCH23.DOC, included.  
+     (Note: while the location of these bytes has changed, their 
+     function has not).  If you are going to use the install 
+     program CRINSTAL.COM, just make sure to use v2.3 of that 
+     program, included.  If you make a mistake and use the wrong 
+     install with the wrong program, you will simply get a 
+     "Invalid or Incompatible CRUNCH.COM" or some similar 
+     message.  Usage of v2.3 is identical to that of v2.1.
+
+     Acknowledgements:  ZCPR3 Consultant: Bruce Morgen.  Also 
+     thanks to (continued from last release): Keith Peterson, Jon 
+     Schneider, Jay Sage, Gary Inman, Steve Russel, Terry 
+     Carroll, George Peace, Pete Zuroff, and many others.
+
+Version 2.2 -- November 3, 1986 -- Steven Greenberg
+     This library contains version 2.1 of the CRUNCH and UNCRunch 
+     data compression utilities.  CRUNCH21.LBR, as originally 
+     released, contained an installation program CRINSTAL.COM.  
+     This was created as a last minute after-thought, because the 
+     number of available "patch bytes" was getting out of hand 
+     (also past experience has shown that people tend to ignore 
+     patch bytes, which is understandable).  Unfortunately, the 
+     last minute nature of the program (and its apparent 
+     simplicity) allowed it to slip by normal multi-system, pre- 
+     release testing channels.  While the install program worked 
+     fine under CP/M 3, it worked only on CP/M 3.  I don't know 
+     why DRI chose to change the operation of low# system calls 
+     (namely "6"), but the bottom line is that the program would 
+     not accept any input as a "Yes" response, including the 
+     answer to the question "Do you want to continue?" (This made 
+     the program quite difficult to run).
+
+     Though it has been less than 24 hours since the release of 
+     CRUNCH21.LBR, their is no recalling in this "business" (I 
+     use the term loosely).  CRUNCH22.LBR contains a modified 
+     CRINSTAL v2.2 (which uses good old fashioned BDOS #1 calls).
+
+Version 2.1 -- November 2, 1986 -- Steven Greenberg
+     Main change from version 2.0:  Provides full "DU:" support 
+     for source and destination files.  Drive, User, neither, or 
+     both in either order will be accepted for either the source 
+     or destination.  Particularly useful for backup (e.g., 
+     "CRUNCH <file> B0:") when working with a hard drive.  The 
+     display format has been correspondingly updated to always 
+     show source and destination drive and user codes, whether 
+     they are specified or not.
+
+     You can now type CRUNCH *.* or UNCR *.* in mixed groups of 
+     files and get the desired results.  CRUNCH *.* will 
+     automatically not attempt to crunch files which are already 
+     crunched (or squeezed!).  This decision is made after 
+     opening the input file and analyzing the first few bytes, 
+     not by using the middle letter of the filename extension (so 
+     .AZM files, etc.  will still be crunched).  This complements 
+     the UNCR v2.0 feature of only uncrunching crunched files 
+     when *.* is specified, though that is achieved more 
+     expediently by filename extension analysis.
+
+     Error recovery:  Put half a crunched file in, get half an 
+     uncrunched file out!  While this is not a recommended mode 
+     of operation, it is illustrative of a somewhat more 
+     intelligent handling of various error conditions.  If errors 
+     are detected within a crunched file, the maximum amount of 
+     information accumulated will be written and the file closed. 
+     Furthermore, almost all errors pertaining to a single file 
+     will not result in an abort of the entire wildcard operation 
+     -- the program will continue with the rest of the files.  
+     Major errors, (e.g., destination disk full), will of course 
+     abort the whole operation.
+
+     Minor changes were made to provide more useful error 
+     messages (e.g., "Disk Full" for disk full, and "Output 
+     error" for other, less common output related errors.  The 
+     usage message has been significantly expanded:  type CRUNCH 
+     or UNCR with no filename specified to see it.
+
+     Corrected a one count error on input records displayed when 
+     uncrunching a version 1 crunched file with the version 2 
+     program.  Big file fans:  an extra decimal place provided on 
+     the final input K ---> output K to correctly display file 
+     sizes even if they exceed 1 megabyte.  Note that all four 
+     "running displays" are in 4 digit fixed format fields, and 
+     will loop back to zero after 9999.  This is not too uncommon 
+     on the "cr" column, and would happen on the input or output 
+     recs columns if a file size exceeded 1.25 megabyte.  This is 
+     nothing to be concerned with.  Certain other very technical 
+     internal corrections have been made -- it is recommended 
+     that you replace your version 2.0 programs with these 2.1 
+     versions to maintain utmost reliability under all possible 
+     circumstances.
+
+     The "running displays" update slightly less often now when 
+     crunching, as it was determined that a non negligible amount 
+     of time was being wasted updating the screen.  It may appear 
+     CRUNCH is running slower, but rest assured it's actually 
+     running faster.
+
+     More user configurable options, plus an install program!  A 
+     provision to eliminate the 'Result not smaller than 
+     original.  Save it anyway?' question has been provided.  
+     When this situation occurs, it is often on very small files 
+     -- some people prefer unattended wildcard operation which 
+     will not stop to prompt for user input, even if at the 
+     expense of a few extra resulting records.  This, along with 
+     three other options provided as "patches" in v2.0 ( 
+     "Quiet/Verbose", "Prompt before overwrite", and "Defeat 
+     multi-sector I/O" [see accompanying TURBODOS.WRN for a full 
+     description of that one]) can now be quickly changed (in 
+     CRUNCH and UNCR simultaneously) by running CRINSTAL and 
+     answering a few self-explanatory questions.  See 
+     CRINSTAL.DOC for simple instructions on how to fire up this 
+     installation program.  (Note to more technical users: the 
+     one byte patches can still be made using a debugger.  A few 
+     additional patches, which the install program does not 
+     support, can be made as well; these are probably only of 
+     interest to more technical users anyway).
+
+     Acknowledgements:  The flexible drive/user command line was 
+     made possible thru use of Jim Lopushinsky's "PARSEFCB.REL" 
+     module.  Many thanks to Paul Foote & Richie Holmes who have 
+     been supporters of CRUNCH since its inception; to Bob Freed 
+     for technical asides; and to John Stensvaag for CRUNCH.BG2.
+
+Version 2.0 -- September 2, 1986 -- Steven Greenberg
+     CRUNCH v2.0 embodies all of the concepts employed in the 
+     UNIX COMPRESS-ARC512 algorithm, but is additionally enhanced 
+     by a "metastatic code reassignment" facility.  The code 
+     reassignment is augmented with a refined incremental 
+     compression ratio analysis for adaptive reset.  This 
+     provides additional improvement, especially on files with 
+     certain structural variations.  (It is ironic to note that 
+     if the file ARC512.EXE is CRUNCHed, the resulting file is 
+     nearly 14% smaller than the file produced when that program 
+     is used to compress itself).  Although short files will 
+     generally produce the same results as the above mentioned 
+     utilities, CRUNCH saves a few extra bytes by eliminating 
+     zero fill between code length changes.  Other improvements 
+     include:
+
+     Use of multi-sector I/O when running in a CP/M 3.0+ 
+     environment (automatically selected when appropriate).  May 
+     be permanently deactivated if desired.
+
+     Relaxed restrictions on filenames (e.g., files with a "Z" as 
+     the middle extension character, such as .AZM files, are not 
+     a problem).
+
+     Improved wildcard operation -- non-critical errors will 
+     abort only the current file, not the entire operation.
+
+     "Verbose" and "Quiet" modes of operation.  The former gives 
+     full running progress reports while compressing, including 
+     number of input and output records, compression ratio, 
+     "codes assigned" and "codes reassigned".  Although some of 
+     this information has limited usefulness, it is amusing to 
+     watch.  "Quiet" may be preferred when using slow (or 
+     printing) terminals, and will allow the results of up to 24 
+     wildcard operations to remain on the console.
+
+     Optional prompt before erasure of pre-existing files.  A 
+     warning will be issued if an existing file is about to be 
+     over-written.  This feature can be deactivated if desired.
+
+     Full compatibility with all crunched files.  UNCR 2.0 will 
+     uncrunch all "crunched" files, regardless of which version 
+     of CRUNCH was used to create them.  CRUNCH v2.0 will always 
+     use the improved algorithm to create new files.
+
+     "Confirm" mode of operation.  Used in conjunction with a 
+     wildcard filespec, this option allows selectively crunching 
+     or uncrunching a subset of all files matching the spec.  The 
+     user will be prompted (Y/N) for each file matching file; a 
+     response of "N" will simply move on to the next file.
+
+     Continuous checking for ^C abort.
+
+     Inclusion of a "NOP" code.  In addition to the normal 
+     special EOF and RESET codes, the new structure sets aside 
+     two additional codes as reserved (one "NOP", one "SPARE").  
+     The "NOP" code can be inserted into the data stream at any 
+     point and will always be ignored by the uncruncher.  One 
+     possible use of this would be a "Telenet Trap" -- where the 
+     CRUNCH program would monitor its output and insert a NOP 
+     code if it saw that the output would otherwise produce an 
+     undesired sequence (ref: R. Freed's PCP-WARN.MQG and PCP- 
+     FIX.MQG), thus producing files guaranteed to be 
+     transmittable while using PC-PURSUIT.  Although the current 
+     CRUNCH program does not yet monitor for this, the structure 
+     is already set up so this (or any other sequence) could be 
+     inhibited at any time, yet all files would remain 
+     upward/downward compatible.  Other data compression schemes 
+     do not have this flexibility.
+
+Version 1.2 -- June 16, 1986 -- Steven Greenberg
+     Existing v1.0 and v1.1 versions of these utilities should be 
+     replaced with v1.2.  A few minor bugs have been corrected, 
+     including one which could cause a possible file error when 
+     crunching numeric data files or object code.  In addition, 
+     these versions are up to 20% faster, take source as well as 
+     destination drive specs, and are still under 2k each.
+
+     The source has been provided for the first time, due to 
+     quite a number of requests (please read the copyright 
+     message).  All source code is crunched, by the way.  The 
+     programs are standalone assemblies, but two "include" files 
+     are used due to the large overlap between programs.  CRUNCH 
+     or UNCRunch can be assembled with M-80 by just making sure 
+     "INCLUDE1.INC" and "INCLUDE2.INC" are on the same drive/user 
+     area.
+
+Version 1.1 -- no information.
+
+Version 1.0 -- no information.
+
+Original author:
+
+     Steven Greenberg
+     203 S. Van Dien Ave
+     Ridgewood, NJ  07450
+     Voice: (201) 447-6543
+

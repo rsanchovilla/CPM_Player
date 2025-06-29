@@ -1,0 +1,559 @@
+h22307
+s 00547/00000/00000
+d D 1.1 83/03/15 21:09:16 tes 1 0
+c date and time created 83/03/15 21:09:16 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  dd4027.c            local   03/24/82  11:21
+#-h-  dd4027.rat          local   03/24/82  11:21
+subroutine dd4027 (contrl, intin, rlin, intout, rlout)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Input Parameters:                                                #
+#            contrl(1-3) - An integer array with following information #
+#                          contrl(1) - opcode for driver function      #
+#                          contrl(2) - length of integer array intin   #
+#                          contrl(3) - length of real input array rlin #
+#                                                                      #
+#            intin   -     Array of integer input parameters           #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters:                                               #
+#            contrl(4-6) - contrl(4) - length of integer array intout  #
+#                          contrl(5) - length of integer array rlout   #
+#                          contrl(6) - count of any other control parms#
+#                                                                      #
+#             rlout  -     Array of integer output parameters          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             chtoi   - convert a character string to a binary integer #
+#             itoch   - convert integer to character string            #
+#             dc4027 - define color on 4027                            #
+#             dm40xx - marker output emulation for TEK 40xx devices    #
+#             dr40xx - move/draw for TEK 40xx devices                  #
+#             GDEVIN  - get a character from the device                #
+#             gdevot  - put a character to device                      #
+#             gdstot - put a character string to the device            #
+#             gdstin - get a string of characters from the device      #
+#             gimnmx - perform min-max check for integer               #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+# local defines
+define(X_LIMITS_4027,639.)             # screen surface width
+define(Y_LIMITS_4027,419.)             # screen surface height
+define(COM_CHAR,BANG)                  # command character
+define(OUTLINE,1)                      # outline polygons
+define(NO_OUTLINE,2)                   # do not outline polygons
+ 
+integer contrl(1),intin(1),intout(1)
+real rlin(1),rlout(1)
+ 
+integer cl4027(7,3)                    # 4027 dd common declarations
+ 
+integer c, opcode, i, j, k, l, line(30), nx, ny,
+        enagin(8), monspc(8), newfrm(8), setup(34), wrkspc(7),
+        lstyle(8), kstyle,
+        txtjmp(11), xhi, xlo, yhi, ylo,
+        xbar(4), ybar(4), poly(4), linclr(9), gimnmx,
+        plyclr(12), txtclr(8), xstart, ystart, len, ierror
+real chrwid, chrhgt, lastpt(2)
+ 
+include mgscom
+ 
+common /cm4027/ cl4027               # 4027 dd common
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       txtjmp(6)  :: yhi
+#       txtjmp(7)  :: ylo
+#       txtjmp(9)  :: xhi
+#       txtjmp(10) :: xlo
+#
+#       lstyle(6) :: kstyle
+ 
+equivalence (txtjmp(6), yhi), (txtjmp(7), ylo),
+            (txtjmp(9), xhi), (txtjmp(10), xlo),
+            (lstyle(6), kstyle)
+ 
+#   The TEK 402x devices can only place characters on character cell boundries
+#   and therefore we use the full character cell size here. The actual
+#   character is 7x9 in a 8x14 cell.
+ 
+#            chrwid = 8./X_LIMITS_4027
+data chrwid /0.0125/
+ 
+#            chrhgt = 14./X_LIMITS_4027
+data chrhgt /0.021875/
+ 
+#            Enable gin - <COM_CHAR>ENA 1
+data enagin/ COM_CHAR,BIGE,BIGN,BIGA,BLANK,DIG1,CR,NEWLINE/
+ 
+#            Line style - <COM_CHAR>LIN <style>
+data lstyle/ COM_CHAR,BIGL,BIGI,BIGN,BLANK,0,CR,NEWLINE/
+ 
+#            Host monitor - <COM_CHAR>MON H
+data monspc/ COM_CHAR,BIGM,BIGO,BIGN,BLANK,BIGH,CR,NEWLINE/
+ 
+#            New frame - <COM_CHAR>ERA G
+data newfrm/ COM_CHAR,BIGE,BIGR,BIGA,BLANK,BIGG,CR,NEWLINE/
+ 
+#            Set up for grahics - build work space, graphics space and
+#            position cursor -
+#            <COM_CHAR>WOR 30;<COM_CHAR>GRA 1,30;<COM_CHAR>JUM 1
+data setup / COM_CHAR,BIGW,BIGO,BIGR,BLANK,DIG3,DIG0,SEMICOL,_
+             COM_CHAR,BIGG,BIGR,BIGA,BLANK,DIG1,COMMA,DIG3,DIG0,SEMICOL,_
+             COM_CHAR,BIGJ,BIGU,BIGM,BLANK,DIG1,CR,_
+             COM_CHAR,BIGC,BIGO,BIGL,BLANK,BIGC,DIG1,CR,NEWLINE/
+ 
+#            Set up for text output - <COM_CHAR>JUM <x>,<y>;
+data txtjmp/ COM_CHAR,BIGJ,BIGU,BIGM,BLANK,0,0,COMMA,0,0,SEMICOL/
+ 
+#            Host work - <COM_CHAR>WOR H
+data wrkspc/ COM_CHAR,BIGW,BIGO,BIGR,BLANK,BIGH,CR/
+ 
+#            Set text color attribute - <COM_CHAR>ATT Cn;
+data txtclr/ COM_CHAR,BIGA,BIGT,BIGT,BLANK,BIGC,BLANK,SEMICOL/
+ 
+#            Polygon - <COM_CHAR>POL
+data poly  / COM_CHAR,BIGP,BIGO,BIGL/
+ 
+#            Set line color - <COM_CHAR>COL Cn
+data linclr/ COM_CHAR,BIGC,BIGO,BIGL,BLANK,BIGC,BLANK,CR,NEWLINE/
+ 
+#            Set polygon fill with outline - <COM_CHAR>COL Cn Cn
+data plyclr/ COM_CHAR,BIGC,BIGO,BIGL,BLANK,BIGC,BLANK,BLANK,BIGC,BLANK,_
+             CR,NEWLINE/
+ 
+opcode=contrl(OPCODE)
+ 
+#
+#  opcode move and draw
+#
+if  ((opcode == DRAW) | (opcode == MOVE)) {
+   if (ndclrp ~= ndclrl & opcode == DRAW) {  # Change color if necessary
+      ndclrp = ndclrl
+      linclr(7) = ndclrl
+      call gdstot (9, linclr)
+      }
+   call dr40xx (opcode, rlin)
+   }
+ 
+#
+#  opcode text
+#
+else if (opcode == TEXT) {
+   call gdevot (NEWLINE)     # make sure the buffer is empty
+   call gdstot (7, wrkspc)   # open workspace for output
+ 
+   # nx and ny are the character coordinates on the display surface. The
+   #    screen is 80 characters wide and 30 characters high with character
+   #    location (1,1) being the upper left hand corner. Each character cell
+   #    is 8 rasters wide and 14 rasters in height.
+ 
+   #                               79.875 = X_LIMITS_4027/8.
+   nx = max0 (1, min0 (80, ifix(zdxpos*79.875 + 1.5)))
+   #                            30. - zdypos*X_LIMITS_4027/14. + .5
+   ny = max0 (1, min0 (30, ifix(30.5 - zdypos*45.642857)))
+ 
+   # txtjmp(6)
+   yhi = ny/10 + DIG0
+ 
+   # txtjmp(7)
+   ylo = mod(ny,10) + DIG0
+ 
+   # txtjmp(9)
+   xhi = nx/10 + DIG0
+ 
+   # txtjmp(10)
+   xlo = mod(nx,10) + DIG0
+ 
+   call gdstot (11, txtjmp)      # Position the cursor for text output
+   txtclr(7) = ndclrt            # Set text color attribute
+   call gdstot (8, txtclr)
+   j = contrl(INTEGER_IN_LENGTH)
+   call gdstot (j, intin)        # Output the text string
+   call gdstot (8, monspc)       # Close the workspace for text output
+   }
+ 
+#
+#  opcode marker
+#
+else if (opcode == MARKER) {
+   kstyle = DIG1        # Set solid line style
+   call gdstot (8, lstyle)
+ 
+   if (ndclrp ~= ndclrm) {     # Change color if necessary
+      ndclrp = ndclrm
+      linclr(7) = ndclrm
+      call gdstot (9, linclr)
+      }
+ 
+   call dm40xx (intin, rlin)   # Emulate a marker
+   kstyle = ndlntp + DIG0 # Restore line style
+   call gdstot (8, lstyle)
+   }
+ 
+#
+#  opcode filled bar
+#
+else if (opcode == BAR_FILL) {
+   if (ndclrf ~= ndclrp) {             # Change color if necessary
+      ndclrp = ndclrf
+      linclr(7) = ndclrf
+      call gdstot (9, linclr)
+      }
+   xbar(1) = int (rlin(1) * zdlgax)    # Compute vertices of polygon
+   ybar(1) = int (rlin(2) * zdlgax)
+   xbar(2) = int (rlin(3) * zdlgax)
+   ybar(2) = ybar(1)
+   xbar(3) = xbar(2)
+   ybar(3) = int (rlin(4) * zdlgax)
+   xbar(4) = xbar(1)
+   ybar(4) = ybar(3)
+   call gdstot (4, poly)               # Output polygon (bar)
+   line(1) = BLANK
+   for (i=1; i<=4; i=i+1) {
+      len = itoch (xbar(i), line(2), 3, ierror)
+      call gdstot (len+1, line)
+      len = itoch (ybar(i), line(2), 3, ierror)
+      call gdstot (len+1, line)
+      }
+   call gdevot (CR)
+   }
+ 
+#
+#  opcode polygon
+#
+else if (opcode == POLYGON) {
+   if (ndedgs == NO_OUTLINE) {           # Set fill color
+      linclr(7) = ndclrf
+      call gdstot (9, linclr)
+      }
+   else {
+      plyclr(7) = ndclrf                 # Set fill and outline color
+      plyclr(10) = ndclrl
+      call gdstot (12, plyclr)
+      }
+   line(1) = BLANK
+   xstart = intin(1)
+   ystart = intin(2)
+   call gdstot (4, poly)                # Output polygon
+   for (i=1; i<=contrl(3); i=i+1) {
+      j = int (rlin(xstart) * zdlgax)
+      len = itoch (j, line(2), 3, ierror)
+      call gdstot (len+1, line)
+      j = int (rlin(ystart) * zdlgax)
+      len = itoch (j, line(2), 3, ierror)
+      call gdstot (len+1, line)
+      xstart = xstart + 1
+      ystart = ystart + 1
+      }
+   call gdevot (CR)
+ 
+   ndclrp = ndclrl                      # Reset line color
+   linclr(7) = ndclrl
+   call gdstot (9, linclr)
+   }
+ 
+#
+#  opcode set color
+#
+else if (opcode == COLOR) {
+      i = gimnmx (intin(1), 0, 6)         # Seven possible colors
+      k = i + 1
+      for (j=1; j<=3; j=j+1) {            # Save RGB values
+         cl4027(k,j) = int (rlin(j)*100.)
+         }
+      call dc4027 (i, cl4027(k,1), cl4027(k,2), cl4027(k,3))
+      }
+ 
+#
+#  opcode set background color
+#
+else if (opcode == SET_BACKGROUND_COLOR) {
+      ndclrb = gimnmx (intin(1), 0, 6)
+      intout(1) = ndclrb
+      k = ndclrb + 1
+      call dc4027 (7, cl4027(k,1), cl4027(k,2), cl4027(k,3))
+      }
+ 
+#
+#  opcode fill pattern
+#
+else if (opcode == SET_FILL_COLOR) {
+      ndclrf = gimnmx (intin(1), 0, 6)         # Seven colors of fills
+      intout(1) = ndclrf
+      ndclrf = ndclrf + DIG0
+      }
+ 
+#
+#  opcode line color
+#
+else if (opcode == SET_LINE_COLOR) {
+      ndclrl = gimnmx (intin(1), 0, 6)        # Seven line colors
+      intout(1) = ndclrl
+      ndclrl = ndclrl + DIG0
+      }
+ 
+#
+#  opcode text color
+#
+else if (opcode == SET_TEXT_COLOR) {
+      ndclrt = gimnmx (intin(1), 0, 6)        # Seven text colors
+      intout(1) = ndclrt
+      ndclrt = ndclrt + DIG0
+      }
+ 
+#
+#  opcode marker color
+#
+else if (opcode == SET_MARKER_COLOR) {
+      ndclrm = gimnmx (intin(1), 0, 6)        # Seven marker colors
+      intout(1) = ndclrm
+      ndclrm = ndclrm + DIG0
+      }
+ 
+#
+#  opcode polygon edge style
+#
+else if (opcode == SET_POLYGON_EDGE_STYLE) {
+      ndedgs = intin (1)
+      }
+ 
+#
+#  opcode text size
+#
+else if (opcode == TEXT_SIZE) {
+   rlout(1) = chrwid
+   rlout(2) = chrhgt
+   }
+ 
+#
+#  opcode line style
+#
+else if (opcode == LINESTYLE) {
+   ndlntp = gimnmx (intin(1), 1, 8) # The 4027 has 8 line styles (1-8)
+   kstyle = ndlntp + DIG0
+   intout(1) = ndlntp               # Return the actual linestyle selected
+   call gdstot (8, lstyle)
+   }
+ 
+#
+#    opcode new_frame
+#
+else if (opcode == NEW_FRAME) {
+   call gdstot (8, newfrm)
+   }
+ 
+#
+#    opcode get_point
+#
+else if (opcode == GET_POINT) {
+   for (i=1; i<=3; i=i+1) {  # try 3 times for a good input point
+      call gdstot (8, enagin)    # Enable gin
+      call gdstin (30, line, j)      # Read the device's response
+      for (k=1; k<=j; k=k+1) {   # Find the response - <COM_CHAR>DAT,
+         if (line(k) == COM_CHAR & line(k+1) == BIGD & line(k+2) == BIGA &
+             line(k+3) == BIGT) break
+         }
+      if (line(k) == COM_CHAR) {
+         for (k=k; k<=j; k=k+1) {    # Now find the first COMMA delimiter
+            if (line(k) == COMMA) break
+            }
+         if (line(k) == COMMA) {
+            call chtoi (line, k, nchar, kstop)   # Get the character struck
+            k = kstop
+            if (k <= j) {
+               call chtoi (line, k, nx, kstop)   # Convert the x coordinate
+               k = kstop
+               if (k <= j) {
+                  call chtoi (line, k, ny, kstop)   # Convert the y coordinate
+                  k = kstop
+                  break
+                  }
+               }
+            }
+         }
+      }
+   contrl(4) = 0
+   if (i <= 3) {  # check to see if we got our data
+      contrl(4) = 1       # inform high level that we got a point
+      intout(1) = nchar
+      rlout(1) = float(nx)/zdlgax
+      rlout(2) = float(ny)/zdlgax
+      }
+   }
+ 
+#
+# opcode set_device_parameters
+#
+else if (opcode == SET_DEVICE_PARAMETERS) {
+ 
+   # set up device capability array
+ 
+   devcap(TEXT_CAP) = YES      # Text capability
+   devcap(LINESTYLE_CAP) = 8   # Capable of 8 different linestyles
+   devcap(COLOR_CAP) = 7       # Capable of 7 colors
+   devcap(TEXT_SIZE_CAP) = 1   # Capable of 1 text size
+   devcap(GIN_CAP) = YES       # Gin capability
+   devcap(MARKER_CAP) = 5      # Capable of 5 different markers
+   devcap(POLYGON_FILL_CAP) = YES   # Capable of filled polygons
+   devcap(BAR_FILL_CAP) = 7    # Capable of filling a rectangular bar
+ 
+   zdlgax = X_LIMITS_4027      # Set the length of the longest axis.
+   zdxlng = 1.0                # Set the length of each axis in NDCs
+   zdylng = 0.65571205         # Y_LIMITS_4027 / X_LIMITS_4027
+   zdxpos = 0.0                # Initialize the device position registers
+   zdypos = 0.0
+   ndlntp = 1                  # Set current device line style
+   ndtxsz = 1                  # Set current device text size
+   ndclrp = DIG1               # Set current color
+   ndclrl = DIG1               # Set current line color
+   ndclrm = DIG1               # Set current marker color
+   ndclrf = DIG1               # Set current fill color
+   ndclrt = DIG1               # Set current text color
+   ndedgs = OUTLINE            # Set default polygon edge style
+ 
+   # initialize color table
+   # The first seven entries are :
+   #     black, red, green, blue, cyan, yellow, magenta
+ 
+   for (i=1; i<=7; i=i+1) {
+      for (j=1; j<=3; j=j+1) {
+         cl4027(i,j) = 0
+         }
+      }
+   cl4027(2,1) = 100
+   cl4027(3,2) = 100
+   cl4027(4,3) = 100
+   cl4027(5,2) = 100
+   cl4027(5,3) = 100
+   cl4027(6,1) = 100
+   cl4027(6,2) = 100
+   cl4027(7,1) = 100
+   cl4027(7,3) = 100
+ 
+   # initialize device
+ 
+   call gdstot (26, setup)
+   for (i=1; i<=7; i=i+1) {
+      call dc4027 (i-1, cl4027(i,1), cl4027(i,2), cl4027(i,3))
+      }
+   call dc4027 (7, 0, 0, 0)
+   }
+ 
+#
+#     stop graphics
+#
+else if (opcode == STOP_GRAPHICS) {
+   call dc4027 (0, 100, 100, 100)   # Map foreground text color to white
+   call gdevot (NEWLINE)   # Insure that buffer has been output
+   }
+ 
+#
+#     inquire screen size
+#
+else if (opcode == INQUIRE_SCREEN_SIZE) {
+   rlout(1) = zdxlng
+   rlout(2) = zdylng
+   rlout(3) = X_LIMITS_4027
+   }
+ 
+#
+#  opcode escape
+#
+else if (opcode == ESCAPE) {
+   j = contrl(INTEGER_IN_LENGTH)
+   call gdstot (j, intin)
+   }
+ 
+#
+#  opcode inquire color index
+#
+else if (opcode == INQUIRE_COLOR_INDEX) {
+   i = gimnmx (intin(1), 0, 6) + 1
+   for (j=1; j<=3; j=j+1) {
+      rlout(j) = float (cl4027(i,j)) / 100.
+      }
+   }
+ 
+return
+end
+#-t-  dd4027.rat          local   03/24/82  11:21
+#-h-  dc4027.rat          local   03/24/82  11:21
+subroutine dc4027 (index, red, green, blue)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function : Define a color on the TEK 4027                        #
+#                                                                      #
+#     Input Parameters:                                                #
+#            index   -     color index to be set (0-7)                 #
+#            red     -     degree of red (0-100)                       #
+#            green   -     degree of green (0-100)                     #
+#            blue    -     degree of blue (0-100)                      #
+#                                                                      #
+#     Output Parameters:                                               #
+#            none                                                      #
+#                                                                      #
+#     Routines Called:                                                 #
+#             itoch   - convert integer to character string            #
+#             gdstot - put a character string to the device            #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+integer index, red, green, blue, itoch, setclr(21), clr(3)
+integer ierror, i, j, len
+ 
+#     Mix color in RGB - <COM_CHAR>MIX Cn <red>,<green>,<blue>
+data setclr/ COM_CHAR,BIGM,BIGI,BIGX,BLANK,BIGC,0,BLANK,0,0,0,0,0,0,0,_
+             0,0,0,0,0,0/
+ 
+clr(1) = red
+clr(2) = green
+clr(3) = blue
+setclr(7) = DIG0 + index        # Build color command
+len = 8
+for (i=1; i<=3; i=i+1) {
+   len = len + 1
+   j = itoch (clr(i), setclr(len), 3, ierror)
+   len = len + j
+   setclr(len) = COMMA
+   }
+setclr (len) = CR
+len = len + 1
+setclr (len) = NEWLINE
+call gdstot (len, setclr)
+ 
+return
+end
+#-t-  dc4027.rat          local   03/24/82  11:21
+#-t-  dd4027.c            local   03/24/82  11:21
+#-h-  40xx.sup            local   03/24/82  11:21
+E 1

@@ -1,0 +1,108 @@
+///////////////////////////////////////////////////////////////////////
+//    PIO  -  module to use NewBrain PIOS  ( expanded machine )      //
+///////////////////////////////////////////////////////////////////////
+
+GET "LIBHDR"
+GET "ZHDR"
+GET "SYSHDR"
+
+/* useful for debug  remove after testing */
+LET showreg() BE
+$( LET R = registers() / bytesperword
+   newline()
+   writef("A   set to %I *N",R%0)
+   writef("B-C set to %I ,%I *N", R%2,R%1)
+   writef("D-E set to %I ,%I *N", R%4,R%3)
+   writef("H-L set to %I ,%I *N", R%6,R%5)
+   newline()
+$)
+
+/*  set the static register-variables ( like BBC A% - L%) 
+    useage  setReg("A &BC D,E &HL",value,value,value.....)
+    the delimiters / or & may be used before a double register
+    and spaces or , used to delimit groups or single registers
+*/
+
+LET setReg(STRING,V1,V2,V3,V4,V5,V6,V7) BE
+$(
+   LET T,R = @V1, registers()/bytesperword   //  word-address of registers
+   FOR P = 1 to STRING%0 DO
+       $(  LET K = STRING%P
+	   UNLESS K = ' ' | K = ',' DO   
+	   $(
+	   TEST K='/' | K= '&'               // a double register follows
+           THEN $(  
+		   K := STRING%(P+1)
+	           R%(Reg(K)) := !T >> 8
+	  	   K := STRING%(P+2)      
+		   R%(Reg(K)) := !T REM 256 
+		   P +:= 2
+		$)
+	   ELSE  R%(Reg(K)) := !T & 255      // single byte register
+	   T +:= 1
+	   $)
+	$)
+$)
+
+LET REG(N) = VALOF
+$(  SWITCHON N INTO
+      $(  CASE 'H' : RESULTIS 6          
+          CASE 'L' : RESULTIS 5    
+          CASE 'D' : RESULTIS 4    
+          CASE 'E' : RESULTIS 3     
+          CASE 'B' : RESULTIS 2    
+	  CASE 'C' : RESULTIS 1     
+	  CASE 'A' : RESULTIS 0     
+          DEFAULT  :
+	  writes("*N+++ Loading Illegal Register +++ *N")
+	  FINISH
+       $)
+$)
+
+LET s.open(mode,stream,device,params) BE
+$( LET P = syspstore(params)
+    setReg("A,&BC,D,E,&HL",device,params%0,0,stream,P)
+    TEST mode = in THEN  zcall(zopenin)
+    ELSE  zcall(zopenout)
+    IF  osresult() ~= 0 THEN writef("*n ++ Error %I  ++ *n",osresult())
+$)
+
+LET s.close(stream) BE
+$( setReg("E",stream)
+   zcall(zclose) 
+$)
+
+LET s.clear() BE
+$( FOR I = 5 TO 255 DO s.close(I) $)
+
+LET s.put(stream, char) BE
+$( SetReg("A,E",char,stream)
+   zcall(zoutput)
+$)
+
+LET s.get(stream) = VALOF
+$( LET x = ?
+   SetReg("E",stream)
+   x := zcall(zinput)
+   RESULTIS x
+$)
+
+LET s.puts(stream,string) BE
+$(
+   FOR I = 1 to string%0    
+   DO s.put(stream,string%i)
+$)
+
+LET s.gets(stream, addr, bytes) BE
+$(
+    setReg("E,&BC,&HL",stream,bytes,addr)
+    zcall(zblkin)
+/* - replaces - */
+//  FOR I = 0 to bytes - 1 DO
+//      mem%(addr+I) := s.get(stream)
+$)
+
+
+//  needs %ZCALL  and %SYS1
+
+

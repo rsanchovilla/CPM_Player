@@ -1,0 +1,52 @@
+
+    5 SHORT P1(100),Q1(100),R1(100),P2(100),Q2(100),R2(100)
+    8 SHORT E1,F1,G1,E2,F2,G2,C,S,F
+    9 SHORT X1(100),Y1(100),Z1(100),X2(100),Y2(100),Z2(100)
+   10 OPEN\1\"$DG" : PUT\1\"OKEZC"
+   20 @ : INPUT"Type the name of a disk data-filename: ",A$
+   30 DIM D$(13) : D$=A$+".DAT" : OPEN\2\D$ : DEG : I=1 : K=0 : @
+   50 INPUT\2\X1(I),Y1(I),Z1(I),X2(I),Y2(I),Z2(I)
+   60 P1(I)=X1(I) : Q1(I)=Y1(I) : R1(I)=Z1(I) : P2(I)=X2(I) : Q2(I)=Y2(I) : R2(I)=Z2(I)
+   65 M=X1(I)OR Y1(I)OR Z1(I)OR X2(I)OR Y2(I)OR Z2(I)
+   70 IF M=0 THEN GOTO 100
+   80 I=I+1 : GOTO 50
+  100 CLOSE\2\ : PUT\1\"O"
+  120 PUT\1\"K" :  FOR J=1 TO(I-1)
+  130  PUT\1,X1(J)+127,Y1(J)+127\"P" : PUT\1,X2(J)+127,Y2(J)+127\"L" : NEXT J
+  150 PUT\1\"A"
+  153 ESC : ON ESC GOTO 160
+  155 IF K=1 THEN GOTO 210
+  160 K=1 : @ : @"Type axis of rotation (X, Y, or Z), Original picture (O),"
+  165 INPUT"New data file (N), or Exit to BASIC control (E): ",E$
+  170 IF E$="O"THEN GOTO 1800
+  175 IF E$="N"THEN CLOSE : GOTO 10
+  177 IF E$="E"THEN CLOSE : GOTO 9999
+  178 GOTO 2000
+  179 ON ERROR GOTO 2050
+  180 @ : INPUT"Type incremental angle of rotation (in degrees): ",F
+  190 S=SIN(F) : C=COS(F)
+  210 NOESC : IF E$="X"THEN GOTO 1400
+  220 IF E$="Y"THEN GOTO 1000
+  400  FOR J=1 TO(I-1)
+  410  E1=X1(J)*C-Y1(J)*S : E2=X2(J)*C-Y2(J)*S
+  420  F1=X1(J)*S+Y1(J)*C : F2=X2(J)*S+Y2(J)*C
+  430  X1(J)=E1 : X2(J)=E2 : Y1(J)=F1 : Y2(J)=F2 : NEXT J : GOTO 120
+ 1000  FOR J=1 TO(I-1)
+ 1010  E1=Z1(J)*S+X1(J)*C : E2=Z2(J)*S+X2(J)*C
+ 1020  G1=Z1(J)*C-X1(J)*S : G2=Z2(J)*C-X2(J)*S
+ 1030  X1(J)=E1 : X2(J)=E2 : Z1(J)=G1 : Z2(J)=G2 : NEXT J : GOTO 120
+ 1400  FOR J=1 TO(I-1)
+ 1410  F1=Y1(J)*C-Z1(J)*S : F2=Y2(J)*C-Z2(J)*S
+ 1420  G1=Y1(J)*S+Z1(J)*C : G2=Y2(J)*S+Z2(J)*C
+ 1430  Y1(J)=F1 : Y2(J)=F2 : Z1(J)=G1 : Z2(J)=G2 : NEXT J : GOTO 120
+ 1800 K=0 :  FOR J=1 TO(I-1)
+ 1810  X1(J)=P1(J) : X2(J)=P2(J)
+ 1820  Y1(J)=Q1(J) : Y2(J)=Q2(J)
+ 1830  Z1(J)=R1(J) : Z2(J)=R2(J) : NEXT J : GOTO 120
+ 2000 IF E$="X"THEN GOTO 179
+ 2010 IF E$="Y"THEN GOTO 179
+ 2020 IF E$="Z"THEN GOTO 179
+ 2030 GOTO 160
+ 2050 @"Entry error - Try again" : GOTO 180
+ 9999 END
+

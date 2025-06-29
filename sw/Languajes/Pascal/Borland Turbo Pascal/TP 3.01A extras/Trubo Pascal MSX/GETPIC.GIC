@@ -1,0 +1,56 @@
+(*  G E T P I C . G I C    Grafik-Copy VRAM -> RAM    V 1.0  10-Mai-1987  *)
+
+
+
+{  COPY (x1,y1)-(x2,y2),page TO p
+
+   Die Mindestgr”áe von p berechnet sich wie folgt:
+
+   SCREEN 5:   nx/2 * ny + 5
+   SCREEN 6:   nx/4 * ny + 5
+   SCREEN 7:   nx/2 * ny + 5
+   SCREEN 8:   nx   * ny + 4
+}
+
+procedure GetPic (var p; x1, y1, x2, y2, page: integer);
+
+  begin
+    V9938command.sx  := x1;
+    V9938command.sy  := y1 + swap(page);
+    V9938command.dx  := addr(p);
+    V9938command.nx  := succ(abs(x2-x1));
+    V9938command.ny  := succ(abs(y2-y1));
+    V9938command.arg := (ord(x1 > x2) shl 2) + (ord(y1 > y2) shl 3);
+
+    inline ($21/V9938command/ {  LD   HL, V9938command }
+            $DD/$21/$99/$01/  {  LD   IX, BLTMV        }
+            $C3/_CALSUB);     {  JP   _CALSUB          }
+  end;
+
+
+
+procedure PutPic (var p; x1, y1, page, direction: integer);
+
+(**
+  var
+    puffer: record
+              dx, dy: integer;
+              data:   array[0..maxint] of byte;
+            end       absolute p;
+**)
+
+  begin
+    V9938command.sx   := addr(p);
+    V9938command.dx   := x1;
+    V9938command.dy   := y1 + swap(page);
+    V9938command.arg  := direction shl 2;
+    V9938command.l_op := LOGOPR;
+
+    inline ($21/V9938command/ {  LD   HL, V9938command }
+            $DD/$21/$95/$01/  {  LD   IX, BLTVM        }
+            $C3/_CALSUB);     {  JP   _CALSUB          }
+  end;
+
+
+
+

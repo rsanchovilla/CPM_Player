@@ -1,0 +1,79 @@
+{ I N T E R V A L . S I C     OnInterval-Routinen  V 2.2    01-MAI-1988    }
+{                             Schnelle Sparversion ohne STRIG, SPRITE usw. }
+
+{$A+,W0,U-}
+
+const
+  MaxEvent = 18;  { 19 = COM0:, 20 = COM1:, ..., maximal 26 }
+
+type
+  eventinfo = record
+                eventflag: byte;
+                eventproc: integer;
+              end;
+  fknumber = 1..10;
+  fkdef    = array[1..16] of char;
+  fkeys    = array[fknumber] of fkdef;
+  fkstring = string[15];
+
+  _fksptr   = ^_fksave;
+  _fksave   = record
+               kdef: fkeys;
+               kptr: _fksptr;
+              end;
+
+
+var
+  fkey:   fkeys absolute $F87F;
+  _fkptr: _fksptr;
+  TRPTBL: array[1..26] of eventinfo absolute $FC4C;
+
+
+procedure IntervalOff;
+  begin
+    TRPTBL[18].eventflag := 0;
+  end;
+
+procedure IntervalOn;
+  begin
+    TRPTBL[18].eventflag := TRPTBL[18].eventflag and $FC or 1;
+  end;
+
+procedure IntervalStop;
+  begin
+    TRPTBL[18].eventflag := TRPTBL[18].eventflag or 2;
+  end;
+
+procedure OnInterval (time, adr: integer);
+
+var
+  SoftwareInterrupt: ^integer absolute $378; { nur gÅltig fÅr Turbo 3.0 }
+  intval:            integer absolute $FCA0;
+  intcnt:            integer absolute $FCA2;
+
+
+{$R-,W1}
+  procedure intproc;
+    var i,j:    integer;
+        c:      char;
+
+    begin
+      with TRPTBL[18] do
+        if eventflag = 5
+        then begin
+          eventflag := eventflag or 2;
+          j         := eventproc;
+          inline ($2A/j/$7D/$B4/$C4/$99/$F3);
+          eventflag := eventflag and $F9;
+          end;
+    end;
+
+  begin
+    intval               := time;
+    intcnt               := intval;
+    SoftwareInterrupt^   := addr(intproc);
+    TRPTBL[18].eventproc := adr;
+  end;
+
+{$W0}
+

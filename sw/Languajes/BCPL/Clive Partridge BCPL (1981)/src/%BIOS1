@@ -1,0 +1,51 @@
+
+	TITLE  Bios and BiosHL functions for BCPL
+  	
+	NAME	BIOS
+
+	GLOBAL	XRET
+
+BIOSAD	EQU	0001H
+DPUSH	EQU	38H
+
+BASE:	DEFW	ENDMOD-BASE
+
+*  nbios( option,param,funct#)  where option is 0 for result
+*  in A and >0 for result in HL. funct# starts with 0=WARM
+
+BIOS:	DEFW	5
+	DEFB	DPUSH,2,DPUSH,3,DPUSH,4
+	DEFB	0
+	LD	A,L    ;function number - multiply by 3
+	ADD	A,A
+	ADD	A,L
+	LD	L,A
+	LD	DE,(BIOSAD)
+	ADD	HL,DE	; point to jump-table entry
+	POP	DE	; parameter
+	POP	AF	; option
+	PUSH	BC	; save prog counter
+	PUSH	AF      ; save option
+        LD	C,E	; parameter into BC
+	LD	B,D
+	CALL	CALLHL  ; call the routine
+	POP	DE	; get option
+        POP	BC      ; retore prog counter
+	INC	DE
+	DEC	DE	; test for zero
+        JP	NZ,XRET ; if option 1 HL already contains result
+	LD	L,A	; if option 0 put reslt in HL
+	LD	H,0
+	JP	XRET
+
+CALLHL: JP (HL)
+
+	IF	($.AND.1)=1
+	DEFB	0
+	ENDIF
+
+	DEFW	101, BIOS-BASE
+	DEFW	1
+ENDMOD:	DEFW	101
+
+

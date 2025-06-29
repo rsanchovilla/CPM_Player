@@ -1,0 +1,144 @@
+
+     WINDOW.INC ver 1.1- A windowing environment for Turbo Pascal programs
+
+                                Written by
+
+                    Orion Poplawski [GEnie: O.Poplawski]
+
+    WINDOW.INC (with WINDOW.LIB) is a set of procedures that allow a person to
+easily add windowing to their programs for console I/O purposes.  This adds a
+nice 'look' to the program from the user's viewpoint.  An example of a window
+created with these procedures follows:
+
+       +[1]-<Text>-------------------+
+       |                             |
+       |   Text goes here.           |
+       |                             |
+       +-----------------------------+
+
+    The procedures make no attempt to save overwritten data, so windows that
+are overlapped must be redrawn later by the program.  The windows currently
+can be located anywhere on the screen, but are limited to 38 chars of text
+(though this can be changed easily).
+
+     VERSION 1.1:
+
+    Version 1.1 of this package adds some I/O routines to the available
+procedures.  They are not fully tested, so please contact me at my GEnie mail 
+address listed above.
+
+     SETTING UP:
+
+    Two files are required for operation: WINDOW.INC and WINDOW.LIB.
+WINDOW.LIB contains the required global variables for the windows and must be
+included (with the {$I} compiler command) at the beginning of your program.
+WINDOW.INC contains the actual procedures and is included directly after the
+variable declarations.
+
+     OPERATION:
+
+    The first thing that must be done is to initialize the variables used by
+the windowing procedures.  This is done by calling the SCREEN_INIT procedure.
+From then on then following procedures are used to manipulate the windows:
+
+     functions:
+      CREATE(X,Y,W,L:Integer;T:String):Integer;
+
+          Create creates a window by storing size information, etc. into
+      a pointer list for later reference.  Create does not output anything
+      to the screen.  The value returned is the window number assigned to
+      the created window and used by all procedures to access that window.
+
+          X:X-Coordinate of upper-left corner of window border.
+          Y:Y-Coordinate "    "     "    "    "    "      "   .
+          W:Width of entire window (including border).
+          L:Length of entire window (including border).
+          T:Title of window.  Cannot be longer that W-6 characters.
+
+      RSTR(N:Integer):String[N];
+
+          RSTR is a subset of the READ_STR procedure described below.  It 
+      returns a string of length N.  It allows for editing with the backspace
+      key and will beep when the maximum length is reached.  A <CR> is needed
+      to exit the procedure.
+
+     procedures:
+
+  (** WINDOW_NUM is the number of the window that is being accessed as
+  (** assigned by CREATE.    
+
+      DRAW(WINDOW_NUM:Integer); - Draws the entire window, both border
+      and text.
+
+      UPDATE(WINDOW_NUM:Integer); - Draws only the data of a window.
+
+      BORDER(WINDOW_NUM:Integer); - Draws only the border of a window.
+
+      HIDE(WINDOW_NUM); - Hides a window by covering it with space
+      characters.
+
+      DEL(WINDOW_NUM); - Deletes a window from the pointer list.  Does
+      NOT hide the window.
+
+      CLEAR(WINDOW_NUM); - Deletes all of the data in a window.  Does NOT
+      affect the window as it appears on the screen.
+
+      PLOT(WINDOW_NUM,X,Y:Integer;S:String); -  Writes S to the window text
+      at location X,Y of the window (not the screen);
+
+      MOVE(WINDOW_NUM,X,Y:Integer); - Moves the cursor to position X,Y of
+      a window.
+
+      RET(WINDOW_NUM); - Writes 'Press <RETURN>' at the bottom of a window
+      and waits for keypressed to be TRUE.
+
+      WRITE_STR(WINDOW_NUM,X,Y:Integer; S:String[38]); - Prints string S at 
+      location X,Y of the window.  String is not saved in the window.
+
+      READ_INT(WINDOW_NUM,X,Y:Integer; var VAL:Integer); - Reads integer VAL
+      at location X,Y.  Some attempt at I/O checking for non integer inputs is
+      made.  NOTE: Currently this procedures clears 2 spaces before input to
+      erase any previous values.  If this is not needed it can easily be 
+      removed, it is marked in the source code.  Input is not recorded into the
+      window memory.
+
+      IN_CH(WINDOW_NUM,X,Y:Integer; var CH:Char); - Just like READ_INT except
+      for a character (only one space is cleared).  No <CR> is needed.
+
+      READ_STR(WIDNOW_NUM,X,Y,LEN; var ST:String[38]); - Like READ_INT except
+      does not clear spaces.  Uses RSTR mentioned above.
+
+     NOTES ON USE:
+
+    WINDOW.INC uses pointer lists to keep track of window data.  This requires
+free space in the program.  About 900 bytes of memory is currently needed per
+window.  This can be changed by adjusting the string length of dta in
+WINDOW.LIB.  It is currently set at 38 for 40 character wide windows.  The
+procedures have NO checks to see if memory is ever used up, so be careful.
+This will hopefully be fixed in a later version.  Also, due to the way the
+windows are drawn, do NOT create a window that has its border in the last
+column of your screen.
+
+     REQUESTS:
+
+    Though I have no copyright and am releasing this into the public domain,
+I have some requests to users and modifiers of this set of functions.  If
+you ever upload these procedures to another BBS, or give them to a friend,
+please keep the entire WINDOWnn.LBR library intact.  If you ever change the
+code, please contact me so I can coordinate the release of a later version
+and keep track of all versions out so as to avoid needless confusion.  
+Comments on the utility are very welcome.  I am still a novice and welcome 
+anyone's insight!
+
+    I hope to release a version that uses a disk file instead of a pointer
+list for those applications that need all the memory they can get.  Watch
+for it.
+
+                                Thank You, Enjoy!!!!
+
+       Orion Poplawski
+       612 Walnut Ave.
+       Ukiah, Ca 95482
+
+
+

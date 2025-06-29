@@ -1,0 +1,1094 @@
+
+
+
+
+
+
+
+
+
+
+   PPPPPP    RRRRRR     OOOOOOO    L         OOOOOOO     GGGGGG   ZZZZZZZZZ
+   P     P   R     R   O       O   L        O       O   G      G         Z
+   P     P   R     R   O       O   L        O       O   G               Z
+   PPPPPP    RRRRRR    O       O   L        O       O   G              Z
+   P         RR        O       O   L        O       O   G  GGGG       Z
+   P         R R       O       O   L        O       O   G      G     Z
+   P         R  R      O       O   L        O       O   G      G    Z
+   P         R   R     O       O   L        O       O   G      G   Z
+   P         R    R     OOOOOOO    LLLLLLL   OOOOOOO     GGGGGG   ZZZZZZZZZ
+
+
+
+
+
+
+
+
+
+
+
+                              Copyright (c) 1985
+                                by Peter Schorn
+                              Prinz-Eugen-Str. 6
+                              D-8000 Muenchen  40
+                             Tel. 089 / 300 25 78
+                                   31-May-85
+
+
+
+
+
+
+
+
+                          Version 3.12 vom 15-May-85
+1. Allgemeines
+==============
+
+Die Programmiersprache Prolog erfreut sich in letzter Zeit einer
+steigenden Beliebtheit. Diese logische Programmiersprache wird
+hauptsaechlich in der Kuenstlichen Intelligenz angewendet. Es gibt bereits
+Expertensysteme, die in Prolog geschrieben wurden. Ein anderer Grund fuer
+das wachsende Interesse an Prolog mag die Verwendung von Prolog im Fifth
+Generation Project der Japaner sein.
+
+Mit der hier vorgestellten Prolog-Implementation PROLOGZ fuer das
+Betriebssystem CP/M mit Z80-Prozessor wird das Ziel verfolgt, auch dem
+Benutzer von Personal-Computern die Moeglichkeit zu geben, mit dieser
+neuartigen und anfangs vielleicht sogar ungewohnten Programmiersprache
+zu experimentieren. Bei der Implementierung wurde vor allem auf eine
+moeglichst komfortable Programmierumgebung Wert gelegt. Es hat sich
+naemlich gezeigt, dass der Wechsel zwischen "Programm editieren" und
+"Programm ausfuehren bzw. testen" schnell moeglich sein muss, um eine hohe
+Produktivitaet zu erzielen. Aus diesem Grund ist PROLOGZ ein integriertes
+System aus bildschirmorientiertem Editor, Interpreter und
+Trace-Funktion. Darueberhinaus werden alle Funktionen menuegesteuert dem
+Benutzer angeboten. PROLOGZ stellt damit ein ueberaus
+benutzerfreundliches System dar, dessen Komfort auch auf groesseren
+Rechnern nicht anzutreffen ist.
+
+Der Sprachumfang und die in PROLOGZ verwendete Prolog-Syntax lehnen sich
+stark an das inzwischen zum Standardwerk gewordene Buch von W.F.Clocksin
+und C.S.Mellish "Programming in Prolog" (Springer-Verlag 1984, 2.
+Auflage, Preis ca. 40 DM) an. Die vorliegende Dokumentation kann und
+soll keine Einfuehrung in die Programmierung mit Prolog sein. Sie soll
+lediglich die Benutzung der Programmierumgebung sowie die Unterschiede
+zu Standard-Prolog ausfuehrlich erlaeutern. Aus diesem Grund sei das
+genannte Werk jedem Interessierten eindringlich empfohlen. "Programming
+in Prolog" wendet sich auch speziell an den Neuling in diesem
+interessanten Gebiet.
+
+PROLOGZ wird mit Beispielprogrammen geliefert, die einen stark
+unterschiedlichen Schwierigkeitsgrad haben. Er reicht von einfach
+(Familienstammbaum) bis zu weiter fortgeschritten (Taschenrechner,
+N-Damen-Problem). Damit ist gezeigt, dass auch auf einem "kleinen"
+Computer nicht-triviale Prolog-Programme ausfuehrbar sind.
+
+Auf jeden Fall wuensche ich allen Benutzern von PROLOGZ viel Spass beim
+Erlernen oder Verwenden von Prolog.
+
+2. Verwendung
+=============
+
+
+2.1 Lieferumfang
+----------------
+
+Zum PROLOGZ-System gehoeren die folgenden Files:
+
+ PROLOGZ .COM  ( Prolog-Interpreter,     siehe 2.3        128 Recs. = 16.000k )
+ PINST   .COM  ( Terminal-Installierung, siehe 2.2 und 6.  26 Recs. =  3.250k )
+ FAMILIE .PRO  ( Beispiel-Programm,      siehe 5.1         16 Recs. =  2.000k )
+ INTEGER .PRO  ( Beispiel-Programm,      siehe 5.2          7 Recs. =  0.875k )
+ CALC    .PRO  ( Beispiel-Programm,      siehe 5.3         23 Recs. =  2.875k )
+ QUEEN   .PRO  ( Beispiel-Programm,      siehe 5.4          8 Recs. =  1.000k )
+ KNAKE   .PRO  ( Beispiel-Programm,      siehe 5.5         15 Recs. =  1.875k )
+
+
+2.2 Installation
+----------------
+
+Vor der ersten Verwendung ist PROLOGZ an das Terminal, das benutzt
+werden soll, anzupassen. Dazu dient das Kommando
+
+     PINST
+
+Es erscheint ein Menue aus dem der Eintrag ausgewaehlt wird, der dem
+verwendeten Bildschirm entspricht. Unbedingt erforderlich sind die
+Funktionen "Kursor positionieren" und "Loeschen ab Kursorposition bis zum
+Ende der Zeile". Sollte die Anpassung mit PINST nicht moeglich sein, so
+folge man den Anweisungen, die im Abschnitt 6 gegeben sind. Man beachte,
+dass PROLOGZ.COM und PINST.COM sich auf dem gerade eingeloggten Laufwerk
+befinden.
+
+
+2.3 Der Interpreter
+-------------------
+
+Der Prolog-Interpreter wird mit dem Kommando
+
+     PROLOGZ
+
+gestartet. Es erscheint dann ein Menue, aus dem ausgewaehlt werden kann.
+Die Auswahl geschieht dadurch, dass man die spitzen Klammern (<  >) mit
+der Space-Taste nach rechts oder mit der DELETE-Taste nach links auf den
+gewuenschten Eintrag positioniert und dann die RETURN-Taste drueckt. Um
+die Klammern nach rechts zu bewegen kann man auch Control-D und TAB
+verwenden, waehrend  Control-S und BACKSPACE die Klammern nach links
+bewegen. Eine Auswahl kann auch dadurch vorgenommen werden, dass man den
+ersten Buchstaben des gewuenschten Eintrags eingibt. Dabei sind Gross- und
+Kleinschreibung gleichberechtigt. Es folgt nun eine Beschreibung der
+einzelnen Moeglichkeiten.
+
+
+2.3.1 Load
+----------
+
+Load dient zum Laden eines Prolog-Programms. Man kommt in den
+Bildschirm-Editor, dessen Funktionsweise bei Database (siehe Abschnitt
+2.3.4) genauer erlaeutert wird, und wird aufgefordert, den Dateinamen
+fuer ein zu ladendes Prolog-Programm einzugeben. Wurde bereits vorher
+einmal Load, Merge oder Save verwendet, so wird der zuletzt benutzte
+Dateiname vorgeschlagen. Er kann beliebig editiert werden (dazu siehe
+2.3.4 Database). Einen vorgeschlagenen Namen kann man durch Control-Y
+loeschen.
+
+Das zu ladende Prolog-Programm ueberschreibt ein eventuell vorhandenes
+Programm. Sind an dem vorhandenen Programm Aenderungen vorgenommen
+worden, so erhaelt man die Moeglichkeit, das alte Programm vor dem Laden
+des neuen Programms abzuspeichern (siehe 2.3.3 Save).
+
+Hat der Dateiname keine Extension, so wird ".PRO" angenommen. Moechte man
+eine Datei laden, die keine Extension hat, so setzt man an das Ende des
+Namens einen Punkt, aber keine Extension. Die Eingabe wird durch die
+ESCAPE-Taste abgeschlossen.
+
+Sollte das zu ladende Programm syntaktisch nicht richtig sein, so wird
+automatisch der Bildschirm-Editor (siehe 2.3.4 Database) aufgerufen und
+der Kursor in die Naehe der fehlerhaften Stelle positioniert. Sollte der
+Fall eintreten, dass man den Editor verlassen moechte obwohl das
+Prolog-Programm noch Fehler enthaelt, so bewegt man den Kursor an den
+Anfang des Programms und drueckt dann Control-L. Das Programm wird
+dadurch im Speicher geloescht. Die Datei auf Diskette bleibt davon
+natuerlich unberuehrt.
+
+
+2.3.2 Merge
+----------- 
+
+Merge dient zum Hinzuladen eines Prolog-Programms. Die Bedienung ist
+analog zu Load mit dem Unterschied, dass das angegebene Programm an das
+bereits im Speicher vorhandene Programm hinten angefuegt wird.
+
+
+2.3.3 Save
+----------
+
+Save dient zum Abspeichern des im Speicher vorhandenen Programms. Die
+Eingabe der Datei ist analog zu Load. Existiert bereits eine Datei des
+angegebenen Namens, so wird diese von Save ueberschrieben.
+
+
+2.3.4 Database
+--------------
+
+Database dient zur Eingabe und Modifikation eines Prolog-Programms. Die
+aktuelle Datenbasis (Prolog-Programm) kann nun mit dem Bildschirm-Editor
+bearbeitet werden. Die folgenden Steuerzeichen koennen dabei verwendet
+werden:
+
+Control-S : Kursor ein Zeichen nach links
+Control-D : Kursor ein Zeichen nach rechts
+Control-E : Kursor eine Zeile nach oben
+Control-X : Kursor eine Zeile nach unten
+Control-R : Kursor einen Bildschirm nach oben
+Control-C : Kursor einen Bildschirm nach unten
+Control-B : Kursor an den Anfang (bzw. das Ende) der Zeile
+
+BACKSPACE,
+DELETE    : loeschen das Zeichen vor dem Kursor
+Control-G : loescht das Zeichen auf dem der Kursor steht
+Control-Y : loescht die Zeile, in der sich der Kursor befindet
+Control-K : loescht ab Kursorposition bis zum Ende der Zeile
+Control-L : loescht ab Kursorposition bis zum Ende des Programms
+
+Control-O,
+Control-V : Wechsel des Einfuegemodus
+
+Control-N,
+RETURN    : fuegen einen Zeilenwechsel ein (unabhaengig vom Einfuegemodus) 
+  
+ESCAPE    : Beenden des Editors und Syntaxpruefung bei Programmen
+            und Anfragen
+
+sonst     : Einfuegen, bzw. Ueberschreiben
+
+Das Programm muss der im Abschnitt 4 angegebenen Syntax entsprechen. Eine
+Syntaxpruefung wird nach Eingabe von ESCAPE vorgenommen. Moechte man den
+Editor verlassen obwohl das Programm noch Syntaxfehler enthaelt, so kann
+man ab der ersten inkorrekten Stelle mit Control-L bis zum Ende des
+Programms loeschen. Dies ist aber nur zu empfehlen, wenn man eine Kopie
+des Programms auf Diskette hat.
+
+
+2.3.5 Query
+-----------
+
+Query dient zur Eingabe und Bearbeitung von Anfragen. Man kommt in den
+Bildschirm-Editor und es wird die letzte Anfrage angezeigt. Sie kann nun
+mit dem Editor veraendert oder durch eine neue Anfrage ersetzt werden.
+Man beachte, dass eine Anfrage eine "TERM_LIST" ist (dazu siehe Abschnitt
+4), die von einem Punkt (".") gefolgt wird. Nach dem Druecken der
+ESCAPE-Taste wird die Anfrage auf ihre syntaktische Korrektheit
+ueberprueft. Ist die Anfrage korrekt, so wird sie gestellt. Sobald eine
+Loesung gefunden ist, wird sie ausgegeben und der Benutzer wird gefragt,
+ob weitere Loesungen gesucht werden sollen. Gibt man auf die Frage
+"Continue? (Y/N) " "Y" ein, so wird nach einer weiteren Loesung gesucht.
+Die Antwort "N" beendet den Beweisvorgang. Ein laufender Beweis kann
+durch Druecken einer beliebigen Taste angehalten werden. Es erscheint
+dann ein "%", das erst wieder durch das Druecken einer weiteren Taste
+verschwindet. Die Tasten Control-/ und ESCAPE brechen den laufenden
+Beweis ab. Die Taste "T" schaltet den Trace-Mechanismus ein und "N"
+schaltet ihn wieder aus. Dazu siehe auch die beiden folgenden
+Abschnitte: 2.3.6 Trace und 2.3.7 Notrace. Bevor das Menue angezeigt
+wird, erfolgt in jedem Fall eine kurze Meldung. Dabei bedeutet:
+
+    "Yes"   : Es wurde eine Loesung der Anfrage gefunden.
+    "No"    : Es wurde keine oder keine weitere Loesung
+              der Anfrage gefunden.
+    "Break" : Der Beweis wurde abgebrochen.
+
+Anmerkung: In dem Puffer, der die Anfrage enthaelt, koennen auch mehrere
+Anfragen stehen. Es wird aber nur die erste gestellt. Diese Eigenschaft
+kann dazu verwendet werden, Anfragen Stack-artig zu verwalten. Diese Art
+der Verwaltung kommt beim top-down-Test eines Prolog-Programms vor.
+
+ 
+2.3.6 Trace
+-----------
+
+Schaltet den Trace-Modus ein. Wird bei eingeschaltetem Trace eine
+Anfrage gestellt, so wird bei jedem Aufruf eines Praedikats angezeigt:
+
+     1. in welcher Rekursionstiefe sich der Beweiser befindet (1. Zahl),
+     2. wieviel Speicher in Bytes noch frei ist (2. Zahl),
+     3. welches Praedikat gerade bewiesen werden soll,
+     4. welche weiteren Beweise noch gefuehrt werden muessen,
+        um eine Loesung zu finden.
+
+Variable, die waehrend des Beweisvorgangs dynamisch erzeugt werden, haben
+die Form "_<ganze Zahl>". Variable, die in der Anfrage enthalten waren,
+werden im Klartext angezeigt. Der Trace-Modus kann auch dynamisch zur
+Programmlaufzeit durch Ausfuehrung des eingebauten Praedikats trace (siehe
+3.19) eingeschaltet werden.
+
+
+2.3.7 Notrace
+-------------
+
+Schaltet den Trace-Modus wieder ab. Der Trace-Modus kann auch dynamisch
+zur Programmlaufzeit durch Ausfuehrung des eingebauten Praedikats notrace
+(siehe 3.14) wieder ausgeschaltet werden.
+
+
+2.3.8 Files
+-----------
+
+Files liefert ein Inhaltsverzeichnis der eingeloggten Diskette, das nur
+die Dateien mit der Extension ".PRO" (Prolog-Programme) enthaelt.
+
+
+2.3.9 Exit
+----------
+
+Exit dient zum Verlassen von PROLOGZ. Man wird allerdings noch gefragt,
+ob man eine modifizierte Datenbasis speichern moechte und ob man wirklich
+PROLOGZ beenden moechte. Auf der Ebene des Menue haben auch Control-C und
+ESCAPE die Wirkung von Exit.
+
+
+2.4 Systemfehlermeldungen
+-------------------------
+
+Out of memory: Das Programm ist zu gross oder die Anfrage ist zu
+komplex. Diese Fehlermeldung tritt meist dann auf, wenn eine
+nichtterminierende Rekursion programmiert wurde (z.B. a:-a. und die
+Anfrage lautete a.). Abhilfe: Programm korrigieren bzw. verkuerzen.
+
+Expression too complex: Die Regel oder Tatsache, in der sich der Kursor
+befindet, ist zu kompliziert. Abhilfe: Anzahl der Klammerebenen
+vermindern. Dieser Fehler sollte in normalen und uebersichtlichen
+Prolog-Programmen eigentlich nicht auftreten.
+
+Disk full: Das Programm kann unter dem gewuenschten Namen nicht mehr
+abgespeichert werden. Abhilfe: Befindet sich auf der Diskette eine
+Datei, die nicht mehr benoetigt wird, so kann auf deren Namen
+abgespeichert werden. Dies fuehrt aber zur Zerstoerung dieser bereits
+existierenden Datei. Natuerlich kann man auch auf ein anderes Laufwerk
+abspeichern, falls dort noch Platz ist. Dieser Fehler kann auch durch
+Verwendung der Systempraedikate "open" (siehe 3.16) bzw. "close" (siehe
+3.3) auftreten. Die Meldung bedeutet in diesem Fall, dass kein Platz fuer
+die Ausgabedatei vorhanden ist, die mit "open" erzeugt wurde.
+
+Directory full: Es koennen keine neuen Dateien mehr kreiert werden, d.
+das Inhaltsverzeichnis voll ist. Abhilfe: wie bei "Disk full". Dieser
+Fehler kann ausserdem durch die Verwendung von "open" (siehe 3.16)
+entstehen. Es konnte keine neue Ausgabedatei mehr angelegt werden.
+
+File not found: Bei einem "Load" oder "Merge" wurde eine Datei angegeben
+die unter dieser Bezeichnung nicht existiert. Abhilfe: Falls es sich um
+ein Prolog-Programm mit der Extension ".PRO" auf dem gerade eingeloggten
+Laufwerk handelt, so kann man sich mit "Files" (siehe 2.3.8) ueber diese
+Datei informieren.
+
+File too big: Das angegebene Prolog-Programm ist zu gross und kann nicht
+mehr (dazu)geladen werden.
+
+Too many variables in <name>: Es sollte eine Regel (<name>) oder
+Tatsache (<name>) ausgewertet werden, die mehr als 32 verschiedene
+Variable enthaelt. Abhilfe: Die betreffende Regel oder Tatsache ist so zu
+aendern, dass sie hoechstens 32 verschiedene Variable verwendet. Im
+allgemeinen ist es auch kein guter Programmierstil, in Regeln oder
+Tatsachen soviele verschiedene Variablen zu verwenden.
+
+Undefined predicate: <name> : Es sollte etwas ueber ein Literal (<name>)
+bewiesen werden zu dem es weder ein Systempraedikat noch vom Benutzer
+definierte Regeln oder Tatsachen gibt. Abhilfe: War wirklich der Effekt
+gewuenscht, dass ein Beweis nicht gelingen soll, so verwende man das
+eingebaute Praedikat "fail" (siehe 3.4). Ansonsten ist man einem
+Programmfehler auf die Spur gekommen.
+
+'.' expected: Syntaxfehler.
+
+Literal expected: Syntaxfehler, d. eine Regel oder Tatsache mit einem
+Literal beginnen muss.
+
+'.' or ':-' expected: Syntaxfehler.
+
+Illegal symbol at begin of term: Syntaxfehler.
+
+']' expected: Syntaxfehler.
+
+')' expected: Syntaxfehler.
+
+"'" expected: Syntaxfehler. Ein String darf sich nicht ueber einen
+Zeilenwechsel hin erstrecken.
+
+Can't redefine system predicate: Die Systempraedikate koennen nicht durch
+benutzerdefinierte Regeln oder Tatsachen erweitert werden.
+
+Bei allen Syntaxfehlern steht der Kursor vor oder auf dem Symbol, das
+verhindert, dass das Prolog-Programm zu einem korrekten Prolog-Programm
+fortgesetzt werden kann.
+
+3. Vordefinierte Praedikate
+==========================
+
+
+3.1 add
+-------
+
+Synonym '+' (Beachte: die beiden Hochkommas muessen auch eingegeben
+werden, etwa: '+'(2,3,X). ist eine vernuenftige Anfrage). add(X,Y,Z) kann
+bewiesen werden, wenn X und Y Zahlen sind (bzw. Variable sind, die mit
+Zahlen instantiiert sind) und Z mit dem Wert von X+Y unifiziert werden
+kann. Die Zahlen werden als vorzeichenbehaftete 16-Bit Zahlen aufgefasst.
+(Zahlbereich -32768 bis 32767). Bei allen arithmetischen Operationen
+werden Ueberlauf und Division durch 0 ignoriert.
+
+Beispiele:
+Anfrage: add(17,2,X).     Antwort: X=19
+Anfrage: add(2 ,X,Y).     Antwort: No
+Anfrage: '+'(2, 3,5).     Antwort: Continue? (Y/N)  
+
+Anmerkung: Die Antwort "Continue? (Y/N)" bedeutet sowohl hier als auch
+bei den folgenden Beispielen, dass ein Beweis erfolgreich verlaufen ist.
+
+
+3.2 atom
+--------
+
+atom(X) kann bewiesen werden, wenn X ein IDENTIFIER ist oder wenn X eine
+mit einem IDENTIFIER instantiierte Variable ist. Zur Definition von
+IDENTIFIER siehe Abschnitt 4.3.5. Standard-Prolog.
+
+Beispiele:
+Anfrage: atom(atom).      Antwort: Continue? (Y/N)
+Anfrage: atom(X).         Antwort: No
+Anfrage: atom(2).         Antwort: No
+Anfrage: atom(a(b)).      Antwort: No
+
+
+3.3 close
+---------
+
+close schliesst die zuletzt durch open(fileName) (siehe 3.16) erzeugte
+Ausgabedatei ab. Die gesamte Ausgabe des Beweisers wird danach nicht
+mehr mitprotokolliert. close erbringt keine Leistung, wenn keine Datei
+geoeffnet ist. close wird automatisch ausgefuehrt, wenn der Benutzer in
+das allgemeine Kommandomenue zurueckkehrt.
+
+Beispiel:
+Anfrage: open('test.dat'), write('Das ist TEST.DAT'), nl, close.
+Antwort: Continue? (Y/N)   (* Die Datei TEST.DAT besteht jetzt aus der
+Zeile "Das ist TEST.DAT". open: siehe 3.16, write: siehe 3.22, nl: siehe
+3.13 *)
+
+
+3.4 div
+-------
+
+Synonym '/'. Parameter analog zu add. Operator ist aber "/" (Division).
+
+Beispiele:
+Anfrage: div(8,3,X).      Antwort: X=2
+Anfrage: div(8,4,X).      Antwort: X=2
+Anfrage: '/'(-3,X,5).     Antwort: No
+Anfrage: div(-3,-1,3).    Antwort: Continue? (Y/N)
+
+
+3.5 fail
+--------
+
+Dieses Praedikat kann nie bewiesen werden. Standard-Prolog.
+
+Beispiel:
+Anfrage: fail.            Antwort: No
+
+
+3.6 ge
+------
+
+Synonym '>='. ge(X,Y) kann bewiesen werden, wenn X und Y Zahlen sind
+(bzw. Variable sind, die mit Zahlen instantiiert sind) und X>=Y ist. Die
+Zahlen werden als als vorzeichenbehaftete 16-Bit Zahlen aufgefasst.
+(Zahlbereich -32768  bis 32767). Standard-Prolog.
+
+Beispiele:
+Anfrage: ge(2,3).         Antwort: No
+Anfrage: ge(3,3).         Antwort: Continue? (Y/N)
+Anfrage: ge(4,3).         Antwort: Continue? (Y/N)
+Anfrage: '>='(4,X).       Antwort: No
+
+
+3.7 get0
+--------
+
+get0(X) kann bewiesen werden, wenn X mit der Zahl unifiziert werden
+kann, die  dem ASCII-Wert des Zeichens entspricht, das als naechstes
+eingegeben wird. Das eingegebene Zeichen wird nicht am Bildschirm
+wiederholt. Dazu ist ein expliziter Aufruf von put(X) noetig.
+Standard-Prolog.
+
+Beispiele:
+Anfrage: get0(X).       Antwort: X=65            (* Es wurde "A" eingegeben *)
+Anfrage: get0(66).      Antwort: Continue? (Y/N) (* Es wurde "B" eingegeben *)
+Anfrage: get0(66).      Antwort: No              (* Es wurde "C" eingegeben *)
+
+
+3.8 getclause
+-------------
+
+getclause(C,N,X) kann bewiesen werden, wenn die N-te Regel oder Tatsache
+des Praedikatzeichens C in der Datenbank mit X unifizierbar ist. C muss
+ein Atom sein und N eine Zahl.
+
+Beispiele:
+Die Datenbank enthalte die folgende Tatsache und Regel:
+int(null).
+int(suc(X)):-int(X).
+
+Anfrage: getclause(int,1,X).     Antwort: X=int(int(null))
+Anfrage: getclause(int,2,X).     Antwort: X=int(int(suc(_3)),int(_3)).
+Anfrage: getclause(int,3,X).     Antwort: No
+Anfrage: getclause(null,1,X).    Antwort: No
+
+
+3.9 integer
+-----------
+
+integer(X) kann bewiesen werden, wenn X eine Zahl ist oder wenn X eine
+mit einer Zahl instantiierte Variable ist. Standard-Prolog.
+
+Beispiele:
+Anfrage: integer(2).      Antwort: Continue? (Y/N)
+Anfrage: integer(atom).   Antwort: No
+Anfrage: integer(2,2).    Antwort: No
+Anfrage: integer([2]).    Antwort: No
+
+
+3.10 mod
+---------
+
+Synonym '%'. Parameter analog zu add. Operator ist aber "mod"
+(Divisionsrest).
+
+Beispiele:
+Anfrage: mod(3,2,X).      Antwort: X=1
+Anfrage: mod(6,3,0).      Antwort: Continue? (Y/N)
+Anfrage: '%'(1,X,X).      Antwort: No
+Anfrage: mod(7,-2,X).     Antwort: X=1    (*  7=(-2)*(-3)+  1  *)
+Anfrage: '%'(-7,2,X).     Antwort: X=-1   (* -7=  2 *(-3)+(-1) *)
+Anfrage: '%'(-7,-2,X).    Antwort: X=-1   (* -7=(-2)*  3 +(-1) *)
+
+
+3.11 mul
+--------
+
+Synonym '*'. Parameter analog zu add. Operator ist aber "*"
+(Multiplikation).
+
+Beispiele:
+Anfrage: '*'(-1,-1,1).    Antwort: Continue? (Y/N)
+Anfrage: mul(2,2,X).      Antwort: X=4
+Anfrage: mul(2,X,4).      Antwort: No
+Anfrage: mul(100,-100,X). Antwort: X=-10000
+
+
+3.12 name
+---------
+
+name(X,Y) kann bewiesen werden, wenn X das Atom ist, das sich aus der
+Zahlenliste Y ergibt, wenn man die Zahlen als ASCII-Werte auffasst.
+Standard-Prolog.
+
+Beispiele:
+Anfrage: name(X,[96,97,98]).   Antwort: X=abc
+Anfrage: name(abc,X).          Antwort: X=[96,97,98]
+Anfrage: name(abc,[96,97,98]). Antwort: Continue? (Y/N)
+ 
+
+3.13 nl
+-------
+
+nl gibt einen Zeilenvorschub auf dem Bildschirm aus. Standard-Prolog.
+
+
+3.14 notrace
+------------
+
+notrace schaltet den Trace-Modus ab. Zum Trace-Modus siehe auch 2.3.6
+und 3.19.
+ 
+
+3.15 numclause
+--------------
+
+numclause(C,X) kann bewiesen werden, wenn X mit der Anzahl der Regeln
+oder Fakten zum Praedikatzeichen C unifizierbar ist.
+
+Beispiele: (Die Datenbank sei wie im Beispiel fuer getclause 3.8 definiert)
+Anfrage: numclause(int,X).      Antwort: X=2
+Anfrage: numclause(X,Y).        Antwort: No
+Anfrage: numclause(int,1).      Antwort: No
+
+
+3.16 open
+---------
+
+open(fileName) eroeffnet eine Ausgabedatei. Alle Ausgaben des Beweisers
+(durch write (siehe 3.22), nl (siehe 3.13), put (siehe 3.17) oder trace
+(siehe 3.19)) werden sowohl auf den Bildschirm als auch auf die
+geoeffnete Datei geschrieben. Diese Datei ist ein normales Textfile und
+kann gedruckt werden oder mit einem Texteditor weiterverarbeitet werden.
+Die Ausgabedatei kann eventuell sogar als Eingabe fuer "load" (siehe
+2.3.1) fungieren. Die Ausgabe auf die eroeffnete Datei wird durch close
+(siehe 3.3) oder durch Rueckkehr in das Kommandomenue beendet. Sie wird
+ebenfalls beendet, wenn ein weiteres open(fileName) bewiesen werden
+soll. Der Dateiname muss den CP/M-Konventionen entsprechen.
+
+Beispiele:
+Anfrage: open(test).         eroeffnet TEST
+Anfrage: open('TEST').       eroeffnet TEST
+Anfrage: open('tesT.').      eroeffnet TEST
+Anfrage: open('a:test').     eroeffnet A:TEST
+Anfrage: open('B:test.DAT'). eroeffnet B:TEST.DAT
+
+
+3.17 put
+--------
+
+put(X) kann bewiesen werden, wenn X eine Zahl kleiner als 255 ist oder
+wenn X eine Variable ist, die mit einer Zahl kleiner als 255
+instantiiert ist. In diesem Fall wird das Zeichen ausgegeben, dessen
+ASCII-Code der Zahl entspricht. Standard-Prolog.
+
+Beispiele:
+Anfrage: put(7).      Antwort: Continue? (Y/N) (* die Glocke ertoent      *)
+Anfrage: put(64).     Antwort: Continue? (Y/N) (* ein "A" wird ausgegeben *)
+Anfrage: put(300).    Antwort: No
+Anfrage: put(atom).   Antwort: No
+
+
+3.18 sub
+--------
+
+Synonym '-'. Parameter analog zu add. Operator ist aber "-" (Subtraktion).
+
+Beispiele:
+Anfrage: sub(2,-2,X).    Antwort: X=4
+Anfrage: '-'(0,10,X).    Antwort: X=-10
+Anfrage: sub(X,X,0).     Antwort: No
+Anfrage: '-'(2,3,-1).    Antwort: Continue? (Y/N)
+
+
+3.19 trace
+----------
+
+trace schaltet den Trace-Modus ein. Zum Trace-Modus siehe auch 2.3.6 und 3.14.
+
+
+3.20 univ
+---------
+
+Synonym '=..'. Dieses zweistellige Praedikat entspricht dem "=.."
+Infix-Operator aus Standard-Prolog. Listen koennen aber mit "=.." weder
+konstruiert, noch zerlegt werden, d. der "." (dot-Operator) in diesem
+Prolog kein Funktor ist. Standard-Prolog.
+
+Beispiele:
+Anfrage:   univ(a(b,c(d)), X).   Antwort: X=[a,b,c(d)]  
+Anfrage:   univ(X,[a,Y,[b]]).    Antwort: X=a(Y,[b])
+
+
+3.21 var
+--------
+
+var(X) kann bewiesen werden, wenn X fuer eine uninstantiierte Variable
+steht. Standard-Prolog.
+
+Beispiele:
+Anfrage: var(X).            Antwort: X=
+Anfrage: var(atom).         Antwort: No
+Anfrage: var(2).            Antwort: No
+Anfrage: var([X]).          Antwort: No
+Anfrage: univ(a,X), var(X). Antwort: No
+
+
+3.22 write
+----------
+
+write(X) gibt X auf dem Bildschirm aus. Standard-Prolog.
+
+Beispiele:
+Anfrage: write([1,atom,f(X),'a b c']).
+Ausgabe:       [1,atom,f(X),a b c]
+
+
+3.23 writeq
+-----------
+
+Wie "write" mit dem Unterschied, dass IDENTIFIER noetigenfalls in "'"
+eingeschlossen ausgegeben werden, wenn sie nicht der normalen Syntax von
+IDENTIFIER entsprechen. Fuer eine Definition von IDENTIFIER siehe 4.3.5.
+
+Beispiele:
+Anfrage: writeq(['a b c','abc']).
+Ausgabe:        ['a b c',abc]
+
+
+4. Syntax von PROLOGZ
+=====================
+
+
+4.1 Allgemeines
+---------------
+
+Die Zeichen " " (Space, chr(32)), TAB (horizontaler TABulator, chr(9)),
+CR (Carriage Return, chr(13)), werden als Trennzeichen verwendet. LF
+(Line Feed, chr(10)) wird ignoriert. Ebenso wird das hoechste Bit der
+eingelesenenen Zeichen ignoriert. Nichtdarstellbare Zeichen werden auf
+'#' (chr(35)) abgebildet. Da die Kommentarzeichen "/*" und "*/" nicht
+zulaessig sind, sollen Kommentare als Strings eingegeben werden.
+Beispiel: '/* Das ist ein Kommentar */'. Man beachte aber, dass solche
+Kommentare eigentlich Tatsachen sind und daher den syntaktischen Regeln
+zu entsprechen haben.
+
+
+4.2 Unterschiede zur Clocksin/Mellish Syntax
+--------------------------------------------
+
+Der Hauptunterschied ist, dass alle Operatoren, sofern es sie noch gibt,
+in Praefixnotation geschrieben werden muessen. Die Infix- oder
+Postfixschreibweise gibt es nicht. Damit entfaellt auch die Notwendigkeit
+fuer das Praedikat op. Das Komma und der Punkt werden nicht als Operatoren
+aufgefasst. Der Strichpunkt ist als Operator nicht erlaubt. Der Cut und
+die Listennotation werden aber voll unterstuetzt.
+
+
+4.3 Syntaxdiagramme
+-------------------
+
+Bei allen Syntaxdiagrammen gilt die Konvention, dass sie von links oben
+nach rechts unten durchlaufen werden. Alle Ausnahmen von dieser
+Konvention sind explizit durch "--<--" gekennzeichnet.
+
+
+4.3.1 DATABASE
+--------------
+
+DATABASE ist Axiom der Grammatik und entspricht einem korrekten Programm.
+
+     ----------------
+-->--| FACT_OR_RULE |--+--------------------------+
+     ----------------  |                          |
+                       |                          | 
+                       |     ----------------     |
+                       +--<--| FACT_OR_RULE |--<--+-->--
+                             ----------------
+
+
+4.3.2 FACT_OR_RULE
+------------------
+
+                   ------------- 
+-->---+------------| TERM_LIST |------------+                 /* Tatsache */
+      |            -------------            |
+      |                                     |
+      |  --------            -------------  |
+      +--| TERM |--( ":-" )--| TERM_LIST |--+--( "." )-->--   /* Regel    */
+         --------            -------------
+
+
+4.3.3 TERM_LIST
+---------------
+
+     --------
+-->--| TERM |--+---------------------------+
+     --------  |                           |
+               |                           |
+               |     --------              |
+               +--<--| TERM |--( "," )--<--+-->--
+                     --------
+
+
+4.3.4 TERM
+----------
+                                      ----------
+-->--+--+-----------+-----------------| NUMBER |------------------+
+     |  |           |                 ----------                  |
+     |  +--( "+" )--+                                             |
+     |  |           |                                             |
+     |  +--( "-" )--+                                             |
+     |                   -----------------------                  |
+     +-------------------| VARIABLE_IDENTIFIER |------------------+
+     |                   -----------------------                  |
+     |  --------------                                            |
+     +--| IDENTIFIER |--+-----------------------------------------+
+     |  --------------  |                                         |
+     |                  |               -------------             |
+     |                  +----( "(" )----| TERM_LIST |---( ")" )---+
+     |                                  -------------             |
+     |                                                            |
+     +---------------------------( "!" )--------------------------+  /* cut */
+     |                                                            |
+     |           -------------                                    |
+     +--( "[" )--| TERM_LIST |--+---------------------+--( "]" )--+-->--
+                 -------------  |                     |
+                                |           --------  |
+     /* Listen-Notation */      +--( "|" )--| TERM |--+
+                                            --------
+
+
+4.3.5 IDENTIFIER
+----------------
+
+        ---------------------
+-->--+--| LOWER_CASE_LETTER |--+-----------------------+--+
+     |  ---------------------  |                       |  |
+     |                         |      ----------       |  |
+     |                         +---<--| LETTER |---<---+  |
+     |                         |      ----------       |  |
+     |                         |                       |  |
+     |                         |      ---------        |  |
+     |                         +---<--| DIGIT |---<----+  |
+     |                                ---------           |
+     |                                                    |
+     |             --------------------------             |
+     +---( "'" )---| ANY_CHARACTER_SEQUENCE |---( "'" )---+-->--
+                   --------------------------
+
+
+4.3.6 VARIABLE_IDENTIFIER
+-------------------------
+
+        ---------------------
+-->--+--| UPPER_CASE_LETTER |--+-----------------------+--+
+     |  ---------------------  |                       |  |
+     |                         |      ----------       |  |
+     |                         +---<--| LETTER |---<---+  |
+     |                         |      ----------       |  |
+     |                         |                       |  |
+     |                         |      ---------        |  |
+     |                         +---<--| DIGIT |---<----+  |
+     |                                ---------           |
+     |                                                    |
+     +-----------------------( "_" )----------------------+-->--
+
+
+4.3.7 NUMBER
+------------
+
+     ---------
+-->--| DIGIT |--+-------------------+
+     ---------  |                   |
+                |     ---------     |
+                +--<--| DIGIT |--<--+-->--
+                      ---------
+
+
+4.3.8 LETTER
+------------
+
+        ---------------------
+-->--+--| UPPER_CASE_LETTER |--+
+     |  ---------------------  |
+     |                         |
+     |  ---------------------  |
+     +--| LOWER_CASE_LETTER |--+-->--
+        ---------------------
+
+
+4.3.9 UPPER_CASE_LETTER
+-----------------------
+
+-->--( "A".."Z" )-->--
+
+
+4.3.10 LOWER_CASE_LETTER
+------------------------
+
+-->--( "a".."z" )-->--
+
+
+4.3.11 DIGIT
+------------
+
+-->--( "0".."9" )-->--
+
+
+4.3.12 ANY_CHARACTER_SEQUENCE
+-----------------------------
+
+-->--( character )--+-----------------------+
+                    |                       |
+                    +--<--( character )--<--+-->--
+
+Dabei ist "character" ein beliebiges Zeichen, das aber kein CR (Carriage
+Return, chr(13)) und kein EOF (End Of File, chr(26)) sein darf. Das
+Zeichen "'" wird durch zwei aufeinander folgende "'" dargestellt.
+
+5. Die Beispiel-Programme
+=========================
+
+Alle Beispielprograme sind normale Textdateien und koennen daher
+ausgedruckt werden und mit einem anderen als dem eingebauten Editor
+bearbeitet werden.
+
+
+5.1 FAMILIE.PRO
+---------------
+
+Es werden Verwandtschaftsbeziehungen in PROLOG dargestellt. Die gewaehlte
+Familie ist aber etwas merkwuerdig und wurde groesstenteils dem Buch
+"Niklaus Wirth, Algorithmen und Datenstrukturen, B.G.Teubner Stuttgart
+1983, Seite 198" entnommen. Folgende Praedikate werden zur Verfuegung
+gestellt:
+
+ehefrau(X,Y)      <==>  X ist Ehefrau von Y
+kind(X,Y)         <==>  X ist Kind von Y
+maennlich(X)      <==>  X ist maennlich
+weiblich(X)       <==>  X ist weiblich
+nachkomme(X,Y)    <==>  X ist Nachkomme von Y
+bruder(X,Y)       <==>  X ist Bruder von Y
+schwester(X,Y)    <==>  X ist Schwester von Y
+geschwister(X,Y)  <==>  X und Y sind Geschwister
+vater(X,Y)        <==>  X ist Vater von Y
+mutter(X,Y)       <==>  X ist Mutter von Y
+sohn(X,Y)         <==>  X ist Sohn von Y
+tochter(X,Y)      <==>  X ist Tochter von Y
+grossvater(X,Y)   <==>  X ist Grossvater von Y
+grossmutter(X,Y)  <==>  X ist Grossmutter von Y
+onkel(X,Y)        <==>  X ist Onkel von Y
+tante(X,Y)        <==>  X ist Tante von Y
+
+
+5.2 INTEGER.PRO
+--------------- 
+
+Es werden Praedikate zur Verfuegung gestellt, die eine Arithmetik auf
+Zahlen erlauben, die aus 0 (null) und der Nachfolgerfunktion (suc)
+aufgebaut sind. Beispiele: 0 entspricht null, 3 entspricht
+suc(suc(suc(null))). Es werden folgende Praedikate zur Verfuegung
+gestellt:
+
+int(X)        <==>  X ist eine natuerliche Zahl, aufgebaut aus null und suc.
+plus(X,Y,Z)   <==>  X+Y=Z
+minus(X,Y,Z)  <==>  X-Y=Z
+times(X,Y,Z)  <==>  X*Y=Z
+power(X,Y,Z)  <==>  X^Y=Z
+fac(X,Y)      <==>  X!=Y (X Fakultaet)
+acker(X,Y,Z)  <==>  ackermann_funktion(X,Y)=Z
+
+
+5.3 CALC.PRO
+------------
+
+Das Programm CALC.PRO wird durch Load (Abschnitt 2.2.1) geladen. Es
+stellt das Praedikat "calc" zur Verfuegung. Eine sinnvolle Anfrage ist
+daher "calc." (dazu siehe Query, Abschnitt 2.3.5). Es kann nun ein
+arithmetischer Ausdruck in der normalen mathematischen Notation
+eingegeben werden, der die Operatoren "+", "-", "*", "/" und "%"
+(modulo), sowie ganze Zahlen enthalten darf. Am Ende dieses Ausdrucks
+tippe man "=" ein, und der Ausdruck wird berechnet. Piepsen bedeutet
+dabei Division oder Modulo mit 0. Da der eingegebene Ausdruck sofort
+analysiert wird, kann es beim zu raschen Eintippen passieren, dass ein
+"%" erscheint. Das bedeutet, dass der Beweiser angehalten wurde. In
+diesem Fall drueckt man die SPACE-Taste und gibt das nicht verarbeitete
+Zeichen noch einmal ein.
+
+
+5.4 QUEEN.PRO
+-------------
+
+Das Programm QUEEN.PRO stellt das Praedikat q(N) zur Verfuegung. q(N)
+loest das N-Damen Problem und gibt die Loesungen am Bildschirm aus.
+Sinnvolle Anfragen sind q(4)., q(5)., q(6)., q(7)., q(8)., q(9). . Bei
+den letzten vier Anfragen muss man allerdings einige Geduld aufbringen
+bis eine erste Loesung vorliegt.
+
+
+5.5 KNAKE.PRO
+-------------
+
+Das Programm KNAKE.PRO stellt das Praedikat run zur Verfuegung. Sinnvoll
+ist daher die Anfrage run. . Am Beispiel einer "Logelei von Zweistein"
+wird demonstriert, wie man mit Hilfe von Prolog logische
+Denksportaufgaben verhaeltnismaessig einfach maschinell loesen kann. Es
+ist dabei bemerkenswert, dass sich die deutschen Saetze der Aufgabe mit
+geringem Aufwand in ein Prolog-Programm umformen lassen, so dass das
+Programm sehr deutlich die logische Struktur der Aufgabenstellung
+widerspiegelt. Nach dem hier verwendeten Muster kann eine grosse Klasse
+verwandter Denksportaufgaben behandelt werden.
+
+6. Terminal-Anpassung
+=====================
+
+Die Anpassung an einen bestimmten Bildschirm geschieht normalerweise
+durch das Programm PINST. Ist das verwendete Terminal aber nicht in der
+Auflistung vorhanden so kann das Programm PROLOGZ.COM an den folgenden
+Adressen geaendert werden:
+
+Adr. Name      Wert        Erklaerung
+12D  HITE:     DB   18H  ; 24, exakte Schirmhoehe in Zeilen
+12E  WIDTH:    DB   50H  ; 80, muss <= exakter Schirmbreite sein
+
+     ; Kursor-Positionierung, Einleitungsstring
+12F  CLEAD1:   DB   2    ; Anzahl der Zeichen
+               DB   1BH  ; erstes Zeichen  (z. B. escape)
+               DB   3DH  ; zweites Zeichen (z. B. '='   )
+               DB   0,0,0,0,0,0
+               
+     ; Kursor-Positionierung, String zwischen Zeile und Spalte
+138  CLEAD2:   DB   0    ; Anzahl der Zeichen
+               DB   0    ; erstes Zeichen
+               DB   0,0,0
+               
+     ; Kursor-Positionierung, String hinter Zeile und Spalte
+13D  CTRAIL:   DB   0    ; Anzahl der Zeichen
+               DB   0    ; erstes Zeichen
+               DB   0,0,0
+               
+     ; Flag ist ungleich Null, falls Spalte vor Zeile geschickt werden soll
+142  CB4LFG:   DB   0    ; Zeile zuerst
+
+     ; Offset, der auf Zeile addiert wird (0 ist die erste Zeile)
+143  LINOFF:   DB   20H
+
+     ; Offset, der auf Spalte addiert wird (0 ist die erste Spalte)
+144  COLOFF:   DB   20H
+
+145  ASCUR:    DB   0    ; 0, falls Zeile und Spalte binaer zu schicken sind
+                         ; 2, falls ASCII-Zahl mit 2 Ziffern
+                         ; 3, falls ASCII-Zahl mit 3 Ziffern
+                         
+     ; String, der ab Kursorposition bis zum Ende der Zeile loescht
+146  ERAEOL:   DB   1    ; Anzahl der Zeichen
+               DB   0EH  ; erstes Zeichen
+               DB   0,0,0,0
+               
+     ; String zur Terminalinitialisierung
+14C  INIT:     DB   0    ; Anzahl der Zeichen
+               DB   0    ; erstes Zeichen
+               DB   0,0,0,0
+               
+     ; String zum Zuruecksetzen des Terminals
+152  RESET:    DB   0    ; Anzahl der Zeichen
+               DB   0    ; erstes Zeichen
+               DB   0,0,0,0
+
+Die Aenderung kann mit DDT folgendermassen vorgenommen werden:
+1. DDT PROLOGZ.COM      ( DDT und PROLOGZ.COM sind auf dem gleichen Laufwerk )
+2. SXXX                 ( aendere Adresse XXX Hex                            )
+    YY                  ( neuer Wert ist YY  Hex                             )
+   .
+3. Wiederhole Schritt 2, bis alle Werte geaendert sind
+4. Control-C            ( verlasse DDT                                       )
+5. SAVE 64 PROLOGZ.COM  ( geaenderte Version abspeichern                     )
+
+
+7. Zusammenfassung ueber die Systempraedikate
+-------------------------------------------
+
+
+7.1 Arithmetik
+--------------
+
+3.1  add(X,Y,Z)               <==> X+Y=Z.       Synonym '+'. 
+3.18 sub(X,Y,Z)               <==> X-Y=Z.       Synonym '-'.
+3.11 mul(X,Y,Z)               <==> X*Y=Z.       Synonym '*'.
+3.4  div(X,Y,Z)               <==> X/Y=Z.       Synonym '/'.
+3.10 mod(X,Y,Z)               <==> X mod Y = Z. Synonym '%'.
+3.6  ge(X,Y)                  <==> X>=Y.        Synonym '>='.
+
+
+7.2 Erkennung
+-------------
+
+3.2  atom(X)                  <==> X ist ein Atom.
+3.9  integer(X)               <==> X ist eine ganze Zahl.
+3.21 var(X)                   <==> X ist eine uninstantiierte Variable.
+
+
+7.3 Datenbank
+-------------
+
+3.15 numclause(Clause,N)      <==> es gibt N Eintraege zur Klausel Clause.
+3.8  getclause(Clause,N,Term) <==> Term ist die N.te Klausel von Clause.
+
+
+7.4 Ein/Ausgabe
+---------------
+
+3.22 write(Term)              <==> Ausgabe von Term.
+3.23 writeq(Term)             <==> Ausgabe von Term mit noetigen Anfuehrungs-
+                                   strichen.
+3.13 nl                       <==> Ausgabe eines Zeilenvorschubs.
+3.17 put(Char)                <==> Ausgabe des ASCII-Zeichens Char.
+3.7  get0(Char)               <==> Eingabe eines Zeichens.
+3.16 open(fileName)           <==> oeffnet die Ausgabedatei fileName.     
+3.3  close                    <==> schliesst die zuletzt geoeffnete Ausgabedatei.
+
+
+7.5 Verschiedenes
+-----------------
+
+3.20 univ(Term,Liste)         <==> zerlegt Term in Liste und umgekehrt.
+                                   Synonym: '=..'.
+3.12 name(Atom,Liste)         <==> zerlegt Atom in eine Liste von Zahlen und
+                                   umgekehrt.
+3.19 trace                    <==> Trace einschalten.
+3.14 notrace                  <==> Trace ausschalten.
+3.5  fail                     <==> gelingt niemals.
+

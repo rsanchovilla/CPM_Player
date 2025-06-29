@@ -1,0 +1,167 @@
+*  FILES  - some file utility procedures for BCPL
+
+
+	NAME	FILES
+
+*  External Globals from RTS2
+
+	GLOBAL	ZERO
+	GLOBAL	NEXTCH
+ 
+*  External Global from BCPL2
+
+	GLOBAL	XRET
+
+*  Internal Globals
+	
+	GLOBAL	XFCB
+BDOS	EQU	5
+FSIZE   EQU	35
+DPUSH	EQU	38H
+
+BASE	DEFW	ENDMOD-$
+
+
+
+*  filesize(fcb)   -  return number of records given in fcb+15
+*  since fcb is usually a value returned by findinput() or findoutput()
+*  it is already a z80 address.
+
+FILSIZ: DEFW	3
+	DEFB	38H,2
+	DEFB	0
+	LD	DE,15
+	ADD	HL,DE
+	LD	L,(HL)
+	LD	H,0
+	JP	XRET
+
+*     
+*   makefcb(fcb,str) - make an fcb from str, expanding '*', and return
+*                      z80 addr of fcb 
+
+MAKFCB:	DEFW	4
+	DEFB	DPUSH,2,DPUSH,3
+	DEFB	0
+	POP	IX
+	PUSH	BC
+	ADD	HL,HL	; HL points to str - make z80 addr
+	ADD	IX,IX	; IX points to fcb - make z80 addr
+	CALL	XFCB
+	POP	BC
+	PUSH	IX
+	POP	HL	; return z80 addr of FCB
+	JP	XRET
+
+* HL contains string addr, IX addr of FCB
+
+XFCB:
+	PUSH	IX
+	POP 	DE
+	CALL	ZERO	; zero ex,s2,cr
+
+; set a default (blank) file-name
+
+	LD	B,11
+	LD	A,' '
+FILLBL:	INC	DE
+	LD	(DE),A
+	DJNZ	FILLBL
+	PUSH	IX
+	POP	DE
+	LD	C,(HL)		; get count byte
+
+; now swap the pointers round for NEXTCH
+
+	EX	DE,HL
+	INC	DE		; point to first char of string.
+	INC     HL		; point to beginning of name field.
+
+; remove leading spaces
+
+SKIP:	CALL	NEXTCH
+	RET     C   
+	CP	' '
+ 	JR	Z,SKIP
+
+; copy string into fcb - name field first.
+
+	LD	B,8
+	CP	'*'     
+	JR	NZ, FCB0 	; if first char is a '*' then it can't
+	LD	(IX+0),0	; be a drive, so zero the drive then
+	CALL	AMBIG		; fill the field with '?'
+	INC	DE		; assume a '.' next and skip it
+	DEC	C
+	JR      TYP 
+
+FCB0:	SUB	'A'-1		; assume first char is drive 
+	LD	(IX+0),A
+	CALL	NEXTCH
+	JR	NC,FCB1		; if end of string already, tidy up & ret.
+	LD	(IX+0),0
+	RET
+FCB1:
+	CP	':'
+	JR	Z,FCB2		; it was the drive - carry on
+	DEC	DE		; it wasn't, so back up two chars and
+	INC	C		; start again
+     	DEC	DE
+	INC	C
+	LD	(IX+0),0	; zero drive field again
+
+FCB2:	
+	CALL	NEXTCH
+	RET	C
+	CP	'*'
+	JR	NZ,FCB3
+	CALL	AMBIG		; fill out rest of name-field with '?'
+	INC	DE		; assume next is '.' and skip it
+	DEC	C
+	JR	TYP
+
+FCB3:	CP	' '
+	RET	Z
+	CP	'.'
+	JR	Z,TYP 
+  	LD	(HL),A
+	INC	HL
+ 	DJNZ    FCB2
+
+; here unless we have encountered a space already.
+
+TYP:    PUSH    IX		; reset fcb pointer to fcb+9  
+	POP	HL
+	PUSH	DE
+	LD	DE,9 
+	ADD	HL,DE
+	POP	DE
+	LD	B,3
+
+TYP1:	CALL	NEXTCH
+	RET	C
+	CP	'*'
+	JR	Z,AMBIG		; don't return here
+	CP	' '
+	RET	Z
+	LD	(HL),A
+	INC	HL
+	DJNZ	TYP1
+	RET
+
+AMBIG:	LD	A,'?'
+	LD	(HL),A
+	INC	HL
+	DJNZ	AMBIG
+	RET
+
+	IF	($.AND.1)=1
+	DEFB	0
+	ENDIF
+
+	DEFW	180, FILSIZ-BASE
+	DEFW	181, MAKFCB-BASE
+	DEFW	2
+ENDMOD: DEFW	181
+
+

@@ -1,0 +1,130 @@
+
+; ===========================================================
+;INIT.Z80
+;	initialization for E-Prolog
+;	August 1, 1985
+
+	.Z80
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+DEBUG	EQU	FALSE
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+BDBOT	EQU	CPM+0006H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+	CSEG
+
+INIT::
+;  infile = stdin;
+	XOR	A
+	LD	(INF##),A
+;  outfile = stdout;
+	LD	(OUTF##),A
+;  alldb = (PAIR)empty;
+	LD	HL,EMPTY
+	LD	(ALLDB##),HL
+;  alldbe = &alldb;
+	LD	HL,ALLDB##
+	LD	(ALLDBE##),HL
+;  inptr = strcpy(indma,cdma+1);
+	LD	HL,CDMA
+	LD	DE,RDBUFF##+1
+	LD	(INP##),DE
+	LD	BC,127
+	LDIR
+	CALL	INIX##
+;  msg(SIGNON);
+	LD	HL,SIGNON##
+	CALL	MSG##
+;  stop = settop(0);
+	LD	HL,0
+	CALL	SETTOP##
+;  stop = settop((bdosbot-stop)-stacks);
+	EX	DE,HL
+	LD	HL,(BDBOT)
+	SBC	HL,DE
+	LD	DE,(STACKS##)
+	SBC	HL,DE
+	CALL	SETTOP##
+;  if (stop == NULL)
+;    fatal("\nCannot allocate space.");
+	LD	A,H
+	OR	L
+	JR	NZ,INI1
+	LD	HL,MSG1
+	JP	FATAL##
+	DSEG
+MSG1:	DB	CR,LF,"Cannot allocate space.",0
+	CSEG
+INI1:
+;  stop = sbot+symbs;
+	LD	HL,(SBOT##)
+	LD	DE,(SYMBS##)
+	ADD	HL,DE
+	LD	(STOP##),HL
+;  htop = bdosbot-stacks;
+	LD	HL,(BDBOT)
+	LD	DE,(STACKS##)
+	SBC	HL,DE
+	LD	(HTOP##),HL
+;  hfree = hbot;
+	LD	HL,(STOP##)
+	LD	(HFREE##),HL
+
+IF	DEBUG
+;  msg("code:");
+	LD	HL,MSG2
+	CALL	MSG##
+;  prdec(sbot-0x100);
+	LD	HL,(SBOT##)
+	LD	DE,100H
+	SBC	HL,DE
+	CALL	PRDEC##
+;  msg("  symb:");
+	LD	HL,MSG3
+	CALL	MSG##
+;  prdec(stop-sbot);
+	LD	HL,(STOP##)
+	LD	DE,(SBOT##)
+	SBC	HL,DE
+	CALL	PRDEC##
+;  msg("  heap:");
+	LD	HL,MSG4
+	CALL	MSG##
+;  prdec(htop-hbot);
+	LD	HL,(HTOP##)
+	LD	DE,(STOP##)
+	SBC	HL,DE
+	CALL	PRDEC##
+;  msg("  stack:");
+	LD	HL,MSG5
+	CALL	MSG##
+;  prdec(bdosbot-htop);
+	LD	HL,(BDBOT)
+	LD	DE,(HTOP##)
+	SBC	HL,DE
+	CALL	PRDEC##
+;  chrout('\n');
+	CALL	CRLF##
+
+	DSEG
+MSG2:	DB	"code:",0
+MSG3:	DB	"  symb:",0
+MSG4:	DB	"  heap:",0
+MSG5:	DB	"  stack:",0
+	CSEG
+ENDIF
+	RET
+	END
+

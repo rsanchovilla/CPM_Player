@@ -1,0 +1,2332 @@
+	TITLE	'FiRe - File Restoral Utility Program'
+;
+;-----------------------------------------------------------------------
+;
+;	FIRE v12	by George F. Reding		08/10/87
+;
+; Utility program to restore disk files to like-new condition, where the
+; file allocations for each file are in a sequential order rather than
+; being scattered all over the disk (such as after a file/program has
+; been modified).
+;
+;	  NOTE: This program may possibly be not suitable
+;		for use on a hard disk drive that has been
+;		"partitioned"  into several pseudo-drives.
+;		Use at your own risk especially in such case.
+;
+; DPB offset and table lengths for CP/M 2.2 are different from those for
+; CP/M 3.0.  They are now automatically set by the program, and the BIOS
+; access is performed differently, eliminating the need to copy BIOS
+; vectors into the program.  Much 8080 code is changed to Z80 which con-
+; serves memory space and increases the speed of the program, although
+; it does restrict usage to computers with Z80 microprocessors.  You may
+; use the program even if available (TPA) memory falls short of the cap-
+; ability to handle your system maximum directory entry capacity (BSH,
+; BLM, DRM, and AL0 & AL1 values are all factors).  Either your TPA may
+; be too low, or your system directory capacity (DRM) is too large e.g.,
+; 2048 or more? max entries capacity.  If the situation does arise, a
+; message is given of the  MAXIMUM ACTIVE entries that you may have to
+; be able to continue, and you may abort if you desire not to continue.
+; The user should ensure that there are LESS active directory entries
+; by using DU, after usage of SAP.
+;
+;	 >> WARNING <<	To CONTINUE with MORE entries ACTIVE
+;	 than the figure shown WILL TRASH both files and di-
+;	 rectory.  Because of the memory limitation and dif-
+;	 ferences among systems, no warranties are expressed
+;	 or implied and a user of this program shall assume
+;	 any and all responsibility for results arising from
+;	 usage of the program.
+;
+; CP/M 3 test made on a Morrow MD-11 with two 20M hard drives, 22,004k
+; formatted capacity.  Morrow directory entry maximum is 2048 entries
+; for each hard drive.
+;					George F Reding
+;					P.O. Box 86386
+;					North Vancouver, BC
+;					Canada	V7L 4K6
+;
+;					CompuServe: 72436,45
+;
+;
+; 08/10/87  Modified CONBUF routine so that if return only is entered
+;   v12     after the summary is given that the program will properly
+;	    abort.			- George Reding
+;
+; 07/13/87  The original clobbered the DE register in the XBIOS2 routine
+;   v11     which would cause RECTRAN for CP/M 2.2 to nor work properly.
+;					- George Reding
+;
+; 06/15/87  Orginal version of FIRE.  Created from RESTORE v 1.2.
+;   v10     Created from RESTORE v 1.2
+;
+;-----------------------------------------------------------------------
+;
+; Created from:  RESTORE v 1.2
+;	    by:  Steve Dirickson
+;		 21145 Raintree Place NW
+;		 Poulsbo, WA  98370-9726
+;
+; Other credit:
+;		CPM22E by Mike Griswold
+;		SYSLIB by Richard Conn
+;
+;-----------------------------------------------------------------------
+;
+;	ASEG			; M80 needs this
+;
+NO	EQU	0
+YES	EQU	NOT NO		; For conditional assembly
+;
+DEBUG	EQU	NO		; Yes for debug display
+PROTCT	EQU	NO		; Yes to disable disk write
+;
+VER	EQU	12		; Version number
+VERM	EQU	08		; Version month
+VERD	EQU	10		; Version day
+VERY	EQU	87		; Version year
+;
+; System equates
+;
+BDOS	EQU	0005H		; BDOS
+DPB2OF	EQU	10		; Offset to CP/M 2.2 DPB
+DPB2LN	EQU	15		; Length of CP/M 2.2 dpb
+DPB3OF	EQU	12		; Offset to CP/M 3.0 dpb
+DPB3LN	EQU	17		; Length of CP/M 3.0 dpb
+FCB	EQU	5CH
+;
+RCCPM3	EQU	1024		; Size of CP/M 3.0 record buffer
+				; Set to your largest record size
+; Bdos function codes
+;
+CONINF	EQU	1		; Console input
+CONOUF	EQU	2		;    "	  output
+RDCBUF	EQU	10		; Read console buffer
+CONSTF	EQU	11		; Console status
+RETVER	EQU	12		; Return version #
+RESETF	EQU	13		; Reset disk
+GETDSK	EQU	25		; Get default disk
+;
+; Ascii characters
+;
+BEL	EQU	07H		; Bell
+BS	EQU	08H		; Backspace
+CR	EQU	0DH		; Carriage return
+LF	EQU	0AH		; Linefeed
+TAB	EQU	09H		; Tab
+;
+;-----------------------------------------------------------------------
+;
+; Macros to make things easier
+;
+PUSHRG	 MACRO
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC
+	 ENDM
+;
+POPRG	 MACRO
+	POP	BC
+	POP	DE
+	POP	HL
+	 ENDM
+;
+;-----------------------------------------------------------------------
+;
+;
+	ORG	100H
+;
+FIRE:	JP	CPUTST
+				; May be modified with SID/DDT
+DWAIT:	DEFB	0FFH		; Non-zero for disk change wait
+ADDLF:	DEFB	0		; Zero = no LF, else 0Ah = LF
+RECSIZ:	DEFW	RCCPM3		; Size of CP/M 3.0 record buffer
+;
+; Use Bob Freed's z80 CPU test
+;
+CPUTST:	SUB	A		; Z80 test
+	JP	PO,SIGNON	; If Z80, continue
+	CALL	PRINT		; Else give msg
+	DEFB	CR,LF,'Z80 needed',CR,LF,0
+	JP	0000H		; And quit
+;
+; Get version, see if valid, then give program name/version
+;
+SIGNON:	LD	C,RETVER	; Get version
+	CALL	BDOS
+	LD	A,L		; Get version to 'A'
+	LD	(VERFLG),A	; Store it
+	CP	22H		; Must be at least 2.2
+	JP	C,0000H		; If less then quit
+	LD	A,H
+	OR	A		; Test for 0 for CP/M
+	JP	NZ,0000H	; If not, quit as MP/M untested
+;
+	CALL	PRINT
+	DEFB	CR,LF,LF,'FiRe v'
+	DEFB	VER/10+'0',(VER	MOD	10)+'0',' '
+	DEFB	VERM/10+'0',(VERM MOD 10)+'0','/'
+	DEFB	VERD/10+'0',(VERD MOD 10)+'0','/'
+	DEFB	VERY/10+'0',(VERY MOD 10)+'0',' '
+	DEFB	' GFR',0
+;
+	LD	A,(DWAIT)
+	OR	A
+	JR	Z,CLRDT		; Skip if no disk change wait
+	CALL	PRINT
+	DEFB	CR,LF,LF,'Change disk - '
+	DEFB	'any key continues ',0
+	CALL	CONBUF		; Wait for input
+;
+; Initialize data and buffer areas to zero
+;
+CLRDT:	XOR	A		; Clear data/stack space to 0
+	LD	HL,DATA		; Point to 1st spot (source)
+	LD	(HL),A		; Fill 1st
+	LD	DE,DATA+1	; Point to 2nd spot (destination)
+	LD	BC,DATSIZ	; Length
+	LDIR			; Zero it all
+;
+; Next is for CP/M plus in debug mode
+;
+	 IF	DEBUG
+	PUSHRG
+	CALL	V3CHEK
+	JR	C,CLRDT1	; If not CP/M 3.0 skip this
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'HSTBUF: ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+CLRDT1:	POPRG
+	 ENDIF
+;
+; Only CP/M 3.0 needs the next buffer
+;
+	CALL	V3CHEK		; Cy set if not 3.0
+	JR	C,CLRDT2	; Skip if 2.2
+	XOR	A		; Zero for fill
+	LD	(HSTBUF),HL	; Save address of CP/M 3.0 record buffer
+	LD	BC,(RECSIZ)	; Get size of CP/M 3.0 record buffer
+	LDIR
+;
+; Save directory buffer start address, initialize this buffer
+;
+CLRDT2:	LD	(DIRECT),HL	; Save address of directory buffer
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'DIRECT: ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+	XOR	A		; Zero
+	LD	(HL),A		; The 1st location (source)
+	LD	BC,256*32	; Length to fill
+	LDIR
+;
+; Buffers initialized, now set up stack and linefeed char
+;
+	LD	SP,STACK	; Set our own stack
+	LD	A,(ADDLF)	; Get LF character or zero
+	LD	(FILELF),A	; Store it
+;
+; Set up dpb length and dpb offset according to CP/M version
+;
+SETDPB:	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,STDPB2	; Skip if 2.2
+	LD	HL,DPB3OF	; Offset XLT address to DPB address
+	LD	(DPBOF),HL	; Was defaulted for CP/M 2.2
+	LD	HL,DPB3LN	; Length of CP/M 3.0 DPB table
+	LD	(DPBLN),HL	; Was defaulted for CP/M 2.2
+;
+; The next protect conditional changed to be compatible.
+; Wasn't sure if the original would work under CP/M 3.0.  <gfr>
+;
+STDPB2:
+	 IF	PROTCT
+	LD	A,0AFH		; Store "XOR A" op code
+	LD	(WRITE),A	; At start of write routine
+	LD	A,0C9H		; Store "RET" op code
+	LD	(WRITE+1),A	; Just after it
+	 ENDIF
+;
+; If no disk specified on command line, get current disk
+;
+SETUP:	LD	A,(FCB)		; Check for any drive
+	DEC	A
+	JP	P,SETUP1	; Skip if disk mentioned
+	LD	C,GETDSK	; Get current disk (0=A,1=B,...)
+	CALL	BDOS
+;
+; Save disk, give msg, reset disk (CP/M 3.0), and go select it
+;
+SETUP1:	LD	(LOGDSK),A	; Save disk for CP/M 3.0
+	PUSH	AF		; Save it
+	CALL	PRINT		; Give drive message
+	DEFB	CR,LF,LF,'Drive: ',0
+	POP	AF		; Restore disk
+	PUSH	AF		; Resave it
+	ADD	A,'A'		; Convert to ASCII
+	LD	(ASCDSK),A	; Save ASCII disk letter
+	LD	E,A
+	CALL	CONOUT
+	LD	C,RESETF	; Reset disk for CP/M 3.0
+	CALL	BDOS
+	POP	AF		; Restore disk
+	LD	C,A		; Disk to 'C'
+	CALL	SELECT		; Select disk and get parameters
+;
+; Check that there is enough memory to read in the directory.
+; Get the max # of dir entries that will fit in available memory.
+;
+GTDRMX:	LD	A,(BDOS+2)	; Fetch BDOS page
+	DEC	A		; Less one
+	LD	HL,(DIRECT)	; Subtract start of directory buffer
+	SUB	H		; To get space available for directory
+	LD	H,0
+	LD	L,A		; # of 256-byte pages available
+	ADD	HL,HL		; *2  multiply by 8 to get number of
+	ADD	HL,HL		; *2  32-byte directory entries
+	ADD	HL,HL		; *2  that will fit
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'MAXDIR: ',0
+	POP	HL		; Restore for display
+	CALL	PHLFDC
+	POPRG
+	 ENDIF
+;
+	LD	DE,(DRM)	; Get # of directory entries on disk
+	INC	DE		; Convert from 0-relative to 1-relative
+	OR	A
+	SBC	HL,DE		; Subtr from max that will fit
+	JP	NC,CKDRBF	; Ok if enough room
+;
+;-----------------------------------------------------------------------
+;
+; Adjust maximum directory number (DRM) to a smaller/fake value for cases
+; where the directory has a capacity to hold 2048 (or more??) entries, or
+; in cases where the TPA may fall short of of capability to handle all of
+; the directory entries.  Adjust the directory group count (AL0 and AL1)
+; which varies with BLM (block size BLS) so that it matches with the
+; smaller/fake DRM value.  In order to use the program in such cases of
+; too many directory entries and/or of too little TPA space the TOTAL of
+; ACTIVE directory entries will have to be verified by the user with
+; "DU" or some equivilent program (after using "CLEANDIR", "SAP", "SAPP",
+; etc).  A warning message and the maximum number of active entries that
+; the program can handle is given, with opportunity for the user to
+; abort.  Faking of the DRM value is similar to that which "SAPP" (for
+; CP/M 3.0) is capable of (an assembly time option).  The way I have im-
+; plemented it here is an improvement though and "SAPP" will subsequently
+; be updated to implement this means of "auto-faking".	- George Reding
+;
+	LD	A,(BSH)
+	LD	B,A
+	LD	HL,128		; Calculate BLS
+;
+LESSBK:	ADD	HL,HL		; Shift HL left BSH times
+	DJNZ	LESSBK
+	ADD	HL,HL		; *2 for size of 2 buffers
+	LD	DE,(DIRECT)	; Start of directory buffer
+	ADD	HL,DE		; Add to get space used up
+;
+	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,NO3BUF	; Skip if 2.2
+	LD	DE,(RECSIZ)	; Get size of CP/M 3.0 record buffer
+	ADD	HL,DE		; Add it to the space used up
+;
+NO3BUF:	EX	DE,HL		; Space used up to DE
+	LD	HL,(BDOS+1)	; BDOS page (memory top) to HL
+	OR	A		; Clear for subtract
+	SBC	HL,DE		; Subtract space used from available
+	LD	L,H		; # of 256 byte pages available to L
+	LD	H,0
+	DEC	L		; Less one page
+	ADD	HL,HL		; *2  multiply by 8 to get number of
+	ADD	HL,HL		; *2  32-byte directory entries
+	ADD	HL,HL		; *2  that will fit
+	LD	(NEWMAX),HL	; Save memory maximum directory entries
+;
+; Now have faked maximum directory entries.  Now calculate new directory
+; allocation groups
+;
+	LD	A,(BLM)		; Get block size
+	INC	A		; Make 1 relative
+	LD	L,A		; Put into HL
+	LD	H,0
+	LD	DE,8		; Divisor 8 - 128 blocks make 1k
+	CALL	UDIVID		; Result HL = block size k's
+	LD	(BLMSIZ),HL	; Save block k size
+;
+	EX	DE,HL		; Move k size to DE (divisor)
+	LD	HL,(NEWMAX)	; Get memory maximum (dividend)
+	CALL	UDIVID
+	LD	DE,32		; Divisor 32 entries per k
+	CALL	UDIVID
+	LD	H,0		; Zero high
+	LD	A,L		; Result (new groups) into 'A'
+	LD	(NEWGRP),A	; Save new/fake group count
+;
+; Now have new directory groups.  Recalculate matching new fake DRM.
+;
+	LD	DE,32		; Mult by 32 entries
+	CALL	MULT
+	LD	DE,(BLMSIZ)	; Mult by k size
+	CALL	MULT
+	DEC	HL		; Make 0-relative
+	LD	(FAKDRM),HL	; Save new/fake "DRM"
+;
+	CALL	PRINT
+	DEFB	CR,LF,LF,BEL
+	DEFB	'Insufficient directory room',CR,LF,LF
+	DEFB	'Continue ONLY IF LESS than ',0
+	LD	HL,(FAKDRM)	; Get fake maximum entries
+	INC	HL
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	' entries are ACTIVE!',CR,LF
+	DEFB	'To continue IF MORE WILL DESTROY'
+	DEFB	' directory & files!',CR,LF,LF
+	DEFB	'Press ''Y'' to continue,'
+	DEFB	' else aborts: ',0
+;
+	CALL	CONBUF		; Get response
+	LD	A,(INBUF+2)
+	AND	31		; "Y", "y", and "^Y" are equiv
+	CP	'Y'-40H
+	JP	NZ,0000H	; If not Y, then abort
+;
+	LD	HL,(FAKDRM)	; Get our fake value
+	LD	(DRM),HL	; Store it
+	CALL	DOCOLL		; Get group count and 1st group
+				;   don't save real group count
+	LD	A,(NEWGRP)	; Get our fake group count
+	LD	(DIRGRP),A	; Save fake # of group instead
+	JR	FAKGRP		; Save real start/search group
+;
+; If enough memory, set up variables (see above about faking)
+;
+CKDRBF:	CALL	DOCOLL		; Get group count and 1st group
+	LD	(DIRGRP),A	; Save # of groups in directory
+FAKGRP:	LD	(STRTGP),HL	; Starting group in case faked
+	LD	(SRCHGP),HL	; Save 1st group after directory
+;
+;-----------------------------------------------------------------------
+;
+; Then read in the directory
+;
+	CALL	READDR		; Read in the directory
+;
+	LD	DE,(DRM)	; Get maximum # of directory entries in DE
+	INC	DE		; Make 1-relative
+	LD	(DIRACT),DE	; Default to all entries active
+;
+; Count active directory entries by finding 1st erased entry if any
+;
+	LD	BC,32		; Size of each entry
+	LD	HL,(DIRECT)
+FINDER:	LD	A,0E5H		; Look for first 'E5' in user #
+	CP	(HL)
+	JR	Z,FOUNDR
+	ADD	HL,BC		; Bump pointer to next entry
+	DEC	DE
+	LD	A,E
+	OR	D		; See if all entries checked
+	JR	NZ,FINDER	; Loop if some left
+	JR	DRNMST		; If no 'E5' found, already set up
+;
+; Now calculate the number of active entries
+;
+FOUNDR:	PUSH	HL		; Save pointer to 1st erased entry
+	LD	HL,(DRM)	; Calculate # of entries found
+	INC	HL
+	OR	A
+	SBC	HL,DE		; Subtr # of entries left
+	LD	(DIRACT),HL	; Save # of active dir entries
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'DIRACT: ',0
+	POP	HL		; Restore for display
+	CALL	PHLFDC
+	POPRG
+	 ENDIF
+;
+; Because Morrow had an oddity (possibly others) of setting the RC field
+; to 00H on newly formatted HARD drives, the set of DE (should have been
+; BC) register to the bytes-left value is now remarked out (below) and a
+; value of 13 is used for "remaining bytes to check".  Besides, if  13
+; "sequential bytes" are 0E5h you can probably bet your booties any r-
+; emaining bytes are the same, ensuring the directory was sorted and
+; cleaned with SAP.
+;
+;;;	LD	HL,32		; Mult entries left by 32
+;;;	CALL	MULT		; To get # of bytes
+;;;	EX	DE,HL		; Move count of bytes left to DE
+	LD	BC,13		; Check 13 bytes, see note above
+	POP	HL		; Restore pointer to 1st erased entry
+;
+; Ensure remaining free directory space is erased
+;
+CKERLP:	LD	A,0E5H		; Check that the rest of directory
+	CPI			; Is erased
+;
+	 IF	DEBUG
+	JP	NZ,DRNSRT
+	 ELSE
+	JR	NZ,DRNSRT	; Error if anything but 'E5' found
+	 ENDIF
+	JP	PE,CKERLP	; Loop until rest of directory checked
+;
+; Calculate total dir bytes, save 1st buffer address
+;
+DRNMST:	LD	HL,(DRM)	; Max # of directory entries
+	INC	HL		; Make 1-relative
+	LD	DE,32		; Size of each directory entry
+	CALL	MULT		; Hl has # of bytes in directory buffer
+	LD	(DIRBYT),HL	; Save it
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'DIRBYT: ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+	LD	DE,(DIRECT)	; Size in HL, get directory buffer start
+	ADD	HL,DE		; Add size and directory buffer start
+	LD	(GRBUF1),HL	; Addr of 1st group buffer
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'GRBUF1: ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+	LD	A,(BDOS+2)	; Fetch BDOS page
+	DEC	A		; Less one
+	SUB	H		; Subtr buffer address
+	LD	D,A		; Move to high, to multiply by 256
+	LD	E,0		; DE = bytes available for buffers
+;
+; Calculate the size of each block on the disk - 1k, 2k, 4k, etc.
+; See if room for two buffers.
+;
+CALBLS:	LD	A,(BSH)
+	LD	B,A
+	LD	HL,128		; Calculate BSL
+;
+CBLSLP:	ADD	HL,HL		; Shift HL left bsh times
+	DJNZ	CBLSLP
+	LD	(BLS),HL	; HL = block size (BLS) bytes, 1024, 2048,..
+	ADD	HL,HL		; Double to get size of 2 buffers
+	EX	DE,HL		; Put available space back in HL
+	OR	A
+	SBC	HL,DE		; Subtr buffer size from available space
+;
+	JP	NC,CKSORT	; Ok if no carry
+	CALL	PRINT
+	DEFB	CR,LF,LF,'Insufficient '
+	DEFB	' buffers room',BEL,0
+	JP	0000H
+;
+DRNSRT:	CALL	PRINT		; Directory unsorted error message
+	DEFB	CR,LF,LF,'Unsorted - use SAPP or'
+	DEFB	' equivilent first',CR,LF,0
+	JP	0000H
+;
+; Calculate and save addr of 2nd buffer
+;
+CKSORT:	LD	DE,(BLS)
+	LD	HL,(GRBUF1)	; Calculate address of 2nd group buffer
+	ADD	HL,DE
+	LD	(GRBUF2),HL
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'GRBUF2: ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+	CALL	PRINT		; Hard drives may take time
+	DEFB	CR,LF,LF,'Calculating...',0
+;
+	LD	DE,(DIRECT)	; Put start of directory in DE
+	LD	HL,32
+	ADD	HL,DE		; Point to 2nd directory entry
+	EX	DE,HL		; Now HL = 1st entry, DE = 2nd
+	LD	BC,(DIRACT)	; # of entries to check
+	DEC	BC		; Minus 1
+;
+; Ensure the directory is sorted
+;
+CKSTLP:	CALL	CMPDIR		; Compare the two directory entries
+	JP	C,DRNSRT	; Error if unsorted
+	PUSH	BC
+	LD	BC,32		; Size of directory entries
+	EX	DE,HL
+	ADD	HL,BC		; Bump pointers
+	EX	DE,HL
+	ADD	HL,BC
+	POP	BC
+	DEC	BC
+	LD	A,B
+	OR	C
+	JR	NZ,CKSTLP	; Loop until done
+;
+; Directory is verified to be sorted
+;
+	LD	B,16		; Assume 8 bit groups
+	LD	A,(DSM+1)
+	OR	A
+	JR	Z,SGRPAL
+	LD	B,8
+;
+SGRPAL:	LD	A,B
+	LD	(GRPALL),A	; Save # of allocation groups per entry
+	XOR	A		; Clear stats flag
+	LD	(STATS),A	; Zero means stats only
+;
+REDO:	LD	A,(STATS)	; Get stats flag
+	OR	A
+	CALL	NZ,READDR	; If after stat pass, reread directory
+;
+; Set initial starting group to be the 1st group after directory
+;
+	LD	HL,(STRTGP)	; Starting group in case faked
+	LD	(SRCHGP),HL
+;
+	LD	HL,(DIRACT)
+	LD	(DIRCTR),HL	; Initialize directory entry counter
+	LD	HL,(DIRECT)	; Point to 1st entry in directory
+;
+; Main program loop (finally)
+;
+; On entry, HL points to next directory entry to be checked.  (SRCHGP)
+; holds the 1st alloc group we want this file to have.	The allocation
+; group pointer and counter are set up, then the inner loop is entered
+; to process each allocation group assigned to this file.
+;
+RECOVR:	LD	(FILPTR),HL	; Save pointer to next file
+	LD	A,(STATS)
+	OR	A
+	JR	Z,RECOV1
+;
+SHOFIL:	CALL	PRINT		; Show user what we're doing
+	DEFB	CR
+FILELF:	DEFB	0,0		; Program sets to 0 or linefeed
+;
+	CALL	PRINT
+	DEFB	'Relocating:  ',0
+	LD	A,(ASCDSK)
+	LD	E,A
+	CALL	CONOUT
+	LD	HL,(FILPTR)	; Get file pointer
+	PUSH	HL
+	LD	A,(HL)		; Get user #
+	CALL	PAFDC
+	LD	E,':'
+	CALL	CONOUT
+	POP	DE		; Get file pointer back to 'DE'
+	INC	DE		; Bump past user #
+	CALL	PFN1
+	CALL	CTLCS		; See if abort requested
+	JP	Z,ABORT
+;
+RECOV1:	LD	HL,(FILPTR)	; Restore file pointer
+	LD	DE,16		; Offset to allocation map
+	ADD	HL,DE
+	LD	(ALLPTR),HL	; Pointer to working allocation group
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'ALLPTR: ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+	LD	A,(GRPALL)	; Get max # of alloc groups per entry
+	LD	(GRPNUM),A	; Save it as the group counter
+;
+; Inner loop to process each directory entry.  This loop steps through
+; the allocation map for the current directory entry, checking that the
+; next allocation group is the next sequential group.  If it isn't, the
+; group allocated to this file is swapped with the next sequential group
+; if it is also allocated, or simply copied to the next group if unallo-
+; cated.  The directory entries are updated to reflect the group swap.
+; The loop also terminates when a zero allocation group is found, indi-
+; cating that no more groups are allocated to this directory entry.
+;
+; On entry, HL points to the next allocation group in the disk map of
+; the current directory entry.	This should be the next consecutive al-
+; location group.  If not, the group pointed at is swapped with the next
+; sequential group.
+;
+; (SRCHGP) holds the number of the next sequential group
+;
+RECLP:	LD	HL,(ALLPTR)	; Pointer to next map entry to check
+	LD	BC,0		; Check for no more groups allocated
+	CALL	GRPCMP		; For this directory entry
+	JP	Z,DONXEN	; If so, skip to next entry
+;
+	 IF	DEBUG
+	PUSHRG
+	CALL	PRINT
+	DEFB	CR,LF,'At RECLP, SRCHGP: ',0
+	LD	HL,(SRCHGP)
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+	LD	HL,(SGPCTR)	; Increment allocation group counter
+	INC	HL
+	LD	(SGPCTR),HL
+;
+	LD	HL,(ALLPTR)	; Get back pointer
+	LD	BC,(SRCHGP)	; Next sequential group that should be there
+;
+	CALL	GRPCMP		; See if the next group is already in place
+	JP	Z,DONEXT	; Skip if no swap of group needed
+;
+SWAP:	LD	A,0FFH		; Set flag that directory has changed
+	LD	(DIRCHG),A
+	LD	HL,(SWPCTR)	; Increment swap counter
+	INC	HL
+	LD	(SWPCTR),HL
+	CALL	GETGRP		; If swap needed, see if it's allocated
+	LD	(GRPTR),HL	; Save possible allocation pointer
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	HL		; Save HL
+	CALL	PRINT
+	DEFB	CR,LF,'GRPTR: ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+	LD	A,H
+	OR	L
+	PUSH	AF		; Save flags
+	JR	Z,COPY2		; If not allocated, don't worry about copy
+;
+	 IF	DEBUG
+	PUSHRG
+	CALL	PRINT
+	DEFB	CR,LF,'Copying group ',0
+	LD	HL,(SRCHGP)
+	CALL	PHL4HC
+	CALL	PRINT
+	DEFB	' to GRBUF1',0
+	POPRG
+	 ENDIF
+;
+COPY1:	LD	A,(STATS)
+	OR	A
+	JR	Z,COPY1X	; Skip if stats only
+	LD	DE,(SRCHGP)
+	CALL	DEGRUP		; Select track and sector for desired group
+	LD	HL,(GRBUF1)	; Select DMA address
+	LD	(DMAADR),HL
+	CALL	READGP		; Read the group into group buffer 1
+;
+COPY1X:	LD	HL,(GRDCTR)	; Increment group read counter
+	INC	HL
+	LD	(GRDCTR),HL
+
+COPY2:	LD	HL,(ALLPTR)	; Get bad group in current entry
+	LD	E,(HL)
+	LD	A,(DSM+1)	; See if 8 or 16-bit groups
+	OR	A
+	JR	Z,COPY2S	; Skip if small groups
+	INC	HL
+	LD	D,(HL)
+	JR	COPY2M
+;
+COPY2S:	LD	D,0		; Zero high byte for small groups
+;
+COPY2M:	LD	(BADGRP),DE	; Save # of group being swapped
+;
+	LD	A,(STATS)
+	OR	A
+	JR	Z,COPY2X	; Skip if stats only
+;
+	 IF	DEBUG
+	PUSHRG
+	CALL	PRINT
+	DEFB	CR,LF,'Copying group ',0
+	LD	HL,(BADGRP)
+	CALL	PHL4HC
+	CALL	PRINT
+	DEFB	' to GRBUF2',0
+	POPRG
+	 ENDIF
+;
+COPY2A:	CALL	DEGRUP		; Select it
+	LD	HL,(GRBUF2)	; Select DMA addr
+	LD	(DMAADR),HL
+	CALL	READGP		; Read it into buffer 2
+;
+COPY2X:	LD	HL,(GRDCTR)	; Increment group read counter
+	INC	HL
+	LD	(GRDCTR),HL
+	POP	AF		; Get back flags
+	PUSH	AF		; Save again
+	JR	Z,COPY4		; Skip if desired group is not allocated
+;
+COPY3:	LD	A,(STATS)
+	OR	A
+	JR	Z,COPY3X	; Skip if stats only
+	LD	DE,(BADGRP)	; Get group pointer to swap
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	DE		; Save DE
+	CALL	PRINT
+	DEFB	CR,LF,'Copying from GRBUF1 to grp ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+COPY3A:	XOR	A		; Flag allocated write
+	LD	(WRTYP),A
+	CALL	DEGRUP
+	LD	HL,(GRBUF1)	; Select DMA address
+	LD	(DMAADR),HL
+	CALL	WRITGP		; Write it out
+;
+COPY3X:	LD	HL,(GWRCTR)	; Increment group write counter
+	INC	HL
+	LD	(GWRCTR),HL
+;
+COPY4:	LD	A,(STATS)
+	OR	A
+	JR	Z,COPY4X	; Skip if stats only
+	LD	DE,(SRCHGP)	; Write the copy of the desired group
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	DE		; Save DE
+	CALL	PRINT
+	DEFB	CR,LF,'Copying from GRBUF2 to grp ',0
+	POP	HL		; Restore for display
+	CALL	PHL4HC
+	POPRG
+	 ENDIF
+;
+COPY4A:	XOR	A		; Flag allocated write
+	LD	(WRTYP),A
+	CALL	DEGRUP		; Select the proper group
+	LD	HL,(GRBUF2)	; Select DMA address
+	LD	(DMAADR),HL
+	CALL	WRITGP
+;
+COPY4X:	LD	HL,(GWRCTR)	; Increment group write counter
+	INC	HL
+	LD	(GWRCTR),HL
+	POP	AF		; Get back flags
+	JR	Z,COPY6
+;
+COPY5:	LD	DE,(BADGRP)	; Get the bad grp number to DE
+	LD	HL,(GRPTR)	; Change the allocation of the group
+	LD	(HL),E		; Save lower byte of group #
+	LD	A,(DSM+1)	; See if 8 or 16-bit groups
+	OR	A
+	JR	Z,COPY6		; Skip if small groups
+	INC	HL		; Else save upper byte also
+	LD	(HL),D
+;
+COPY6:	LD	DE,(SRCHGP)	; Change the current alloc group
+	LD	HL,(ALLPTR)	; To the updated value
+	LD	(HL),E
+	LD	A,(DSM+1)	; See if 8 or 16-bit groups
+	OR	A
+	JR	Z,DONEXT	; Skip if small groups
+	INC	HL
+	LD	(HL),D
+;
+DONEXT:	LD	HL,(SRCHGP)	; Do next alloc group for this file
+	INC	HL		; Incr desired group
+	LD	(SRCHGP),HL
+	LD	HL,(ALLPTR)	; Get allocation grp pointer
+	INC	HL
+	LD	A,(DSM+1)	; See if 16-bit groups
+	OR	A
+	JR	Z,DONEX2	; Don't increment again for small groups
+	INC	HL		; For 16-bit groups, bump pointr again
+;
+DONEX2:	LD	(ALLPTR),HL	; Save new pointer
+	LD	A,(GRPNUM)	; Get group counter
+	DEC	A
+	LD	(GRPNUM),A
+	JP	NZ,RECLP	; Continue if still in current entry
+;
+DONXEN:	LD	A,(DIRCHG)	; See if directory changed for this entry
+	OR	A
+	CALL	NZ,WRITDR	; Rewrite directory if so
+	CALL	CTLCS		; Check for abort request
+	JR	Z,ABORT
+	XOR	A
+	LD	(DIRCHG),A	; Clear changed flag
+	LD	HL,(DIRCTR)	; See if at end of directory
+	DEC	HL
+	LD	A,H
+	OR	L
+	JR	Z,EXIT		; Exit when done
+;
+	LD	(DIRCTR),HL	; Update counter
+	LD	HL,(FILPTR)	; Get current file pointer
+	LD	DE,32		; Bump to next file
+	ADD	HL,DE
+	JP	RECOVR		; Loop back
+;
+ABORT:	CALL	PRINT
+	DEFB	CR,LF,LF,'Restore aborted, ',0
+	LD	HL,(DIRCTR)
+	PUSH	HL		; Save HL
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	' entr',0
+	POP	HL		; Restore it
+	LD	A,H		; Test if 0
+	OR	A
+	JR	NZ,ABORT1
+;
+	LD	A,L
+	DEC	A
+	JR	NZ,ABORT1
+	CALL	PRINT
+	DEFB	'y',0
+	JR	ABORT2
+;
+ABORT1:	CALL	PRINT
+	DEFB	'ies',0
+;
+ABORT2:	CALL	PRINT
+	DEFB	' left',CR,LF,0
+	JP	0000H
+;
+EXIT:	LD	A,(STATS)	; See if doing stats or disk
+	OR	A
+	JP	NZ,EXIT2	; Exit if 2nd time through
+;
+	CALL	PRINT
+	DEFB	CR,LF,LF,'Statistics',LF
+	DEFB	CR,LF,TAB,'Active dir entries: ',0
+	LD	HL,(DIRACT)
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	CR,LF,TAB,'Total groups  allocated: ',0
+	LD	HL,(SGPCTR)
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	CR,LF,TAB,'Group   swaps    needed: ',0
+	LD	HL,(SWPCTR)
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	CR,LF,TAB,'Group   reads    needed: ',0
+	LD	HL,(GRDCTR)
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	CR,LF,TAB,'Group   writes   needed: ',0
+	LD	HL,(GWRCTR)
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	CR,LF,TAB,'Directory writes needed: ',0
+	LD	HL,(DIRWCT)
+	CALL	PHLFDC
+;
+EXITX:	LD	A,(DWAIT)
+	OR	A
+	JR	Z,LOOPBK	; Skip if no waiting
+	CALL	PRINT
+	DEFB	CR,LF,LF,'Press ''Y'' to continue,'
+	DEFB	' else aborts: ',0
+	CALL	CONBUF		; Get response
+	LD	A,(INBUF+2)
+	AND	1FH		; 'y', 'y', and 'ctrl-y' are equivalent
+	CP	'Y'-40H
+	JP	NZ,0000H
+;
+LOOPBK:	INC	A		; Set non-stats flag
+	LD	(STATS),A
+	CALL	PRINT
+	DEFB	CR,LF,'Press ^C to abort...',CR,LF,0
+	JP	REDO
+;
+EXIT2:	CALL	PRINT
+	DEFB	CR,LF,LF,BEL
+	DEFB	'Done',CR,LF,0
+	JP	0000H
+;
+INBUF:	DEFB	1,0,0		; Buffer for console buffer read
+;
+;
+; Read or write the directory of the current disk
+;
+READDR:
+	 IF	DEBUG
+	PUSHRG
+	CALL	PRINT
+	DEFB	CR,LF,'Entering READDR',0
+	POPRG
+	 ENDIF
+;
+	XOR	A		; Clear write flag
+	JR	RWDIR
+;
+WRITDR:
+	 IF	DEBUG
+	PUSHRG
+	CALL	PRINT
+	DEFB	CR,LF,'Entering WRITDR',0
+	POPRG
+	 ENDIF
+;
+	LD	HL,(DIRWCT)	; Increment director write counter
+	INC	HL
+	LD	(DIRWCT),HL
+	LD	A,(STATS)
+	OR	A
+	RET	Z		; Skip if only doing stats
+;
+	LD	A,1		; Set write flag
+	LD	(WRTYP),A	; Flag as directory write also
+;
+RWDIR:	LD	(WRFLG),A
+	LD	HL,(DIRECT)	; Select directory buffer for DMA address
+	LD	(DMAADR),HL
+	LD	HL,(SYSTRK)	; Select 1st directory track
+	LD	(CURTRK),HL
+	LD	HL,1		; Set record 1
+	LD	(CURREC),HL
+	LD	A,(DIRGRP)	; # of groups in directory
+	LD	(GRPCTR),A	; To loop counter
+;
+RWDRLP:	CALL	RWGRP1		; Read or write group
+	LD	A,(GRPCTR)
+	DEC	A		; Decrement counter
+	LD	(GRPCTR),A
+	JR	NZ,RWDRLP	; Loop until all groups done
+	RET
+;
+;
+; Read or write selected group into or from current dma buffer.
+;
+; On entry, the desired group has been selected by a call to DEGROUP
+; which calculates the proper track and record.  The starting DMA address
+; for the group is in dMADDR.
+;
+; On entry to writgp only, wrtyp must have been set as follows:
+;		0 = write to allocated block
+;		1 = write to directory
+;
+READGP:	XOR	A		; Clear write flag
+	JR	RWGRP
+;
+WRITGP:	LD	HL,(DMAADR)	; Save start of group buffer
+	LD	(CRCBEG),HL	; For CRC calculation
+	LD	HL,(CURTRK)	; Likewise the current track
+	LD	(CRCTRK),HL
+	LD	HL,(CURREC)	; And record values
+	LD	(CRCREC),HL
+	LD	A,2		; Set write flag
+;
+RWGRP:	LD	(WRFLG),A	; Set write flag
+	LD	(CRCFLG),A	; And CRC-needed flag
+;
+RWGRP1:	LD	A,(BLM)		; Get block mask
+	INC	A		; Increment to get # of 128-byte records
+	LD	(RECCTR),A	; Per allocation group - set up counter
+;
+	 IF	DEBUG
+	PUSHRG
+	CALL	PRINT
+	DEFB	CR,LF,'Entering RWGRP',0
+	POPRG
+	 ENDIF
+;
+; Loop to read or write a group
+;
+RWGPLP:
+	 IF	DEBUG
+	PUSHRG
+	CALL	PRINT
+	DEFB	CR,LF,'In RWGPLP, DMA: ',0
+	LD	HL,(DMAADR)
+	CALL	PHL4HC
+	CALL	PRINT
+	DEFB	'  T: ',0
+	LD	HL,(CURTRK)
+	CALL	PHLFDC
+	CALL	PRINT
+	DEFB	'  S: ',0
+	LD	HL,(CURREC)
+	CALL	PHLFDC
+	POPRG
+	 ENDIF
+;
+	LD	BC,(DMAADR)	; Set DMA addr
+	CALL	SETDMA
+	LD	DE,(CURTRK)	; Get track
+	CALL	SETTRK
+	LD	DE,(CURREC)	; Get record
+	CALL	SETREC
+;
+	LD	A,(WRFLG)	; See if read or write
+	OR	A
+	JR	NZ,WRGRP
+	CALL	READ		; Read the record
+	JR	RWNXSC
+;
+WRGRP:	LD	A,(WRTYP)	; Get type of write
+	LD	C,A
+	CALL	WRITE		; Write the record
+;
+RWNXSC:	LD	DE,(CURREC)	; Incr current record
+	INC	DE
+	LD	HL,(SPT)	; See if beyond end of track
+	OR	A
+	SBC	HL,DE		; Subtract current from SPT
+	JR	NC,NEXTOK	; If not > SPT then continue
+;
+	LD	DE,(CURTRK)	; Is > SPT, bump track counter
+	INC	DE
+	LD	HL,(MAXTRK)	; See if at end of disk
+	OR	A
+	SBC	HL,DE		; Subtract new track from maximum
+	JR	NC,NXTTRK	; If not > maximum track then jump over
+;
+	LD	DE,0		; Is > maximum track, wrap to start
+;
+NXTTRK:	LD	(CURTRK),DE	; Store new current track
+	LD	DE,1		; And set record to 1
+;
+NEXTOK:	LD	(CURREC),DE	; Store new current record
+;
+	LD	HL,(DMAADR)
+	LD	DE,80H		; Advance to next DMA address
+	ADD	HL,DE
+	LD	(DMAADR),HL	; Store next DMA address
+	LD	A,(RECCTR)	; Get # of 128 byte records
+	DEC	A		; Decrement it
+	LD	(RECCTR),A	; Save new
+;
+	 IF	DEBUG
+	JP	NZ,RWGPLP	; Normal jump for debug mode
+	 ELSE
+	JR	NZ,RWGPLP	; Loop until all read
+	 ENDIF
+;
+; CRC verfification
+;
+CKCRC:	LD	A,(CRCFLG)	; See if CRC needed
+	OR	A
+	RET	Z		; Return if not
+;
+	DEC	A		; See if 1st or 2nd time through
+	LD	(CRCFLG),A	; Save updated flag
+	JR	Z,CRCVER	; If 2nd loop, go verify CRC
+;
+	CALL	CRCGEN		; Get the CRC for the grp in the buffer
+	LD	(CRCVAL),HL	; Save CRC value
+	LD	HL,(CRCBEG)	; Restore the grp buffer addr
+	LD	(DMAADR),HL
+	LD	HL,(CRCTRK)	; Likewise the track
+	LD	(CURTRK),HL
+	LD	HL,(CRCREC)	; And record values
+	LD	(CURREC),HL
+	XOR	A
+	LD	(WRFLG),A	; Clear write flag
+	JP	RWGRP1		; Go read the group back in
+;
+CRCVER:	CALL	CRCGEN		; Generate the new CRC
+	EX	DE,HL		; Save 2nd CRC in de
+	LD	HL,(CRCVAL)	; Get back the original CRC
+	OR	A
+	SBC	HL,DE		; Compare the two CRCs
+	RET	Z		; Return if ok
+;
+CRCERR:	CALL	PRINT
+	DEFB	CR,LF,'CRC error abort',CR,LF,0
+	JP	0000H
+;
+; Generate a CRC for the group in the buffer starting at (CRCbeg) with
+; length (BLS).  CRC value returned in HL.
+;
+CRCGEN:	CALL	CRCCLR		; Initialize CRC
+;
+	LD	DE,(BLS)	; Length of group in bytes
+	LD	HL,(CRCBEG)	; Point to start of buffer
+CRCLP:	LD	A,(HL)		; Get next byte in buffer
+	CALL	CRCUPD		; Update the CRC
+	INC	HL
+	DEC	DE
+	LD	A,D
+	OR	E
+	JR	NZ,CRCLP	; Loop until all bytes done
+	JP	CRCDON		; Finish CRC
+;
+; Get directory group count into a and 1st group number after directory
+; into HL.
+;
+DOCOLL:	LD	L,0
+	LD	A,(AL0)		; Read directory group allocation bits
+	CALL	COLECT		; Collect count of directory groups
+	LD	A,(AL1)
+	CALL	COLECT
+	LD	A,L		; Group count in register 'A' and
+	LD	H,0		;   HL = 1st group after directory
+	RET
+;
+; Collect the number of '1' bits in a as a count in L
+;
+COLECT:	LD	B,8		; Number of bits
+;
+COLOP:	RLA
+	JR	NC,COSKIP
+	INC	L
+;
+COSKIP:	DJNZ	COLOP
+	RET
+;
+;
+; Check for CTL-C or CTL-S, returns Z-flag set if CTL-C typed, else NZ
+;
+CTLCS:	CALL	CONST		; See if character available
+	OR	A
+	JR	NZ,GETC
+	OR	1		; Return NZ if not
+	RET
+;
+GETC:	CALL	CONIN		; Get the character
+	AND	31
+	CP	'S'-40H		; Wait for next character if CTL-S or S or s
+	CALL	Z,CONIN
+	CP	'C'-40H		; Check for CTL-C or C or c
+	RET			; Z-flag set if CTL-C
+;
+; Select the track/record corresponding to the group in DE
+;
+DEGRUP:	LD	HL,(DSM)	; Compare group # with maximum
+	OR	A
+	SBC	HL,DE		; Subtract group number from maximum
+	RET	C		; Return bad if too large
+;
+	CALL	GRP2SC		; Convert group number to track and record
+	CALL	SETTRK		; Set track
+	EX	DE,HL
+	CALL	SETREC		; And record
+	RET
+;
+;
+; Convert group in DE to corresponding record (HL) and track (DE)
+;
+GRP2SC:	LD	H,D
+	LD	L,E
+	LD	A,(BSH)		; Get block shift (count)
+	LD	B,A		; To 'B'
+	XOR	A		; Zero 'A'
+;
+SHLGRP:	ADD	HL,HL		; Shift block left 1 place
+	JP	NC,SHLSKI
+	INC	A
+;
+SHLSKI:	DJNZ	SHLGRP
+	LD	(TEMPC),A
+	EX	DE,HL
+	LD	HL,(SPT)	; Get SPT
+	CALL	NEG		; Negate it for division
+	EX	DE,HL		; Put into DE
+	LD	BC,0		; Initial quotient
+;
+GRPDLP:	INC	BC		; Incr quotient
+	ADD	HL,DE		; Divide by adding negative SPT
+	JP	C,GRPDLP
+	LD	A,(TEMPC)
+	DEC	A
+	LD	(TEMPC),A
+	JP	P,GRPDLP
+;
+	DEC	BC		; Adjust division result
+	LD	DE,(SPT)	; Position SPT to DE, negative value = HL
+	ADD	HL,DE		; Add to get remainder
+	PUSH	HL		; Save records remaining
+	LD	HL,(SYSTRK)	; Get number of system tracks
+	ADD	HL,BC		; Add to quotient (tracks)
+	EX	DE,HL		; Put absolute track into DE
+	POP	HL		; Get back records remaining
+	INC	HL		; Make 1-relative
+	RET
+;
+; Find which file the group in (BC) belongs to.  On return, HL has the
+; address of the allocation map entry which matches BC, or 0 if no
+; matching entry found.
+;
+GETGRP:	LD	HL,(DIRACT)	; Max directory entry number
+	INC	HL		; Make 1-relative
+	LD	(FILECT),HL
+	LD	HL,(DIRECT)	; Point to directory
+	PUSH	HL		; Save pointer to name
+;
+GETGLP:	POP	HL		; Restore file pointer
+	PUSH	HL
+	LD	A,(HL)		; Look at user number of next directory entry
+	CP	0E5H		; Erased? (shouldn't be, but just in case)
+	JR	Z,GETGNF	; Ignore if so
+	LD	DE,14		; Now get record count
+	ADD	HL,DE		; S2 portion ..
+	LD	A,(HL)		; Is 0 in CP/M 1.4
+	AND	0FH
+	LD	E,A
+	INC	HL
+	LD	A,(HL)
+	OR	E
+	JR	Z,GETGNF	; Skip if no records allocated (empty file)
+	LD	A,(GRPALL)	; Initialize loop counter to number of
+	LD	E,A		; Allocation groups per file
+;
+GETGL2:	INC	HL		; Point at next allocation map entry
+	CALL	GRPCMP		; See if it matches the one in 'BD'
+	JR	Z,GETGEX	; Exit if match found
+	DEC	E		; Count down
+	JR	NZ,GETGL2	; Go test some more
+;
+GETGNF:	POP	HL		; Get back entry pointer
+	LD	DE,32
+	ADD	HL,DE		; Bump to next entry
+	PUSH	HL		; Save it
+	LD	HL,(FILECT)	; See if all directory entries checked
+	DEC	HL
+	LD	(FILECT),HL
+	LD	A,H
+	OR	L
+	JR	NZ,GETGLP	; Continue if more entries left
+;
+GETGEX:	POP	DE		; Pop extra directory pointer
+	LD	A,H
+	OR	L
+	RET	Z		; Exit if HL = 0, indicating no match found
+	LD	A,(DSM+1)	; Get disk size indicator
+	OR	A
+	JR	Z,GETGX1	; Skip if 8-bit groups
+	DEC	HL		; Since GRPCMP increments pointer for big ones
+GETGX1:	INC	A		; Reset zero flag to show match found
+	RET			; Return with address of match in HL
+;
+; Compare the directory entry pointed to by HL to the one pointed to by
+; DE.  Set carry flag if the one pointed to by HL (lower in the direc-
+; tory) is larger, indicating that the directory is not sorted.
+;
+CMPDIR:	PUSH	HL		; Save registers
+	PUSH	DE
+	PUSH	BC
+;
+	 IF	DEBUG
+	PUSHRG
+	PUSH	DE		; Save 2nd file
+	PUSH	HL		; Save 1st file
+	CALL	PRINT
+	DEFB	CR,LF,'Comparing ',0
+	POP	DE		; Restore 1st file
+	INC	DE		; Skip user number
+	CALL	PFN1
+	CALL	PRINT
+	DEFB	' and ',0
+	POP	DE		; Restore 2nd file
+	INC	DE		; Skip user #
+	CALL	PFN1
+	POPRG
+	 ENDIF
+;
+;
+	LD	B,15		; Check user, name, type, extent, s2, & rc
+;
+; Loop through the user number, file name, type, and extent.  Any time
+; the character in the lower entry is larger than the corresponding ele-
+; ment in the upper entry, meaning the directory is not in order, the
+; routine exits with the carry flag set.  When the first non-match is
+; found with the upper element larger, indicating that the two entries
+; are in order, the routine exits with the carry flag cleared.
+;
+CMPDLP:	LD	A,(HL)		; Compare corresponding elements
+	AND	7FH		; Mask off attribute bit
+	LD	C,A		; Save it
+	LD	A,(DE)
+	AND	7FH
+	CP	C
+	JR	C,CMPDEX	; Error if lower one is larger
+	JR	NZ,CMPDEX	; If not the same and no carry,
+				; Higher must be larger - exit ok
+	INC	DE		; If the same continue the check
+	INC	HL		; Bump pointers
+	DJNZ	CMPDLP		; Loop until all characters checked
+;
+; This point should never be reached, since, if we drop out of the loop,
+; it indicates that the two entries have the same user number, file name,
+; type, and extent which is not really legal.  "SAPP", "CLEANDIR", or
+; whatever was used to sort the directory should have caught this, but
+; didn't.  Treat this the same as an improperly sorted directory.
+;
+CMPDER:	SCF			; Set carry
+;
+CMPDEX:	POP	BC
+	POP	DE
+	POP	HL
+	RET
+;
+;
+; See if the group # in bc and the one pointed to by hl are the
+; same.  Set z flag if so, nz if not.  Hl is incremented if the
+; allocation groups are 16 bits.  Flags are set.
+;
+GRPCMP:	LD	A,(DSM+1)
+	LD	D,A		; Set size indicator
+	LD	A,C		; Get (lower byte of) group number
+	INC	D
+	DEC	D		; See if one or two bytes in number
+	JR	Z,CMP8		; Skip if only 1 byte to be checked
+	CP	(HL)		; Compare lower byte of number
+	INC	HL		; Bump pointer
+	RET	NZ		; Return if not equal
+	LD	A,B		; Otherwise get upper byte
+;
+CMP8:	CP	(HL)		; Set flag for compare
+	RET
+;
+; 2's complement HL ==> HL
+;
+NEG:	LD	A,L
+	CPL
+	LD	L,A
+	LD	A,H
+	CPL
+	LD	H,A
+	INC	HL
+	RET
+;
+; Unsigned division.  Divide HL by DE.	Destroys register 'A'.	Return
+; HL = quotient, DE = remainder, carry clear if ok.  Carry set if DE > HL
+; or if DE = 0 else carry is clear.
+
+UDIVID:	PUSH	BC		; Save registers
+	LD	BC,0		; Initialize quotient
+	PUSH	HL		; Save HL
+	OR	A		; Clear carry
+	SBC	HL,DE		; Test if divisor > dividend
+	POP	HL		; Restore HL
+	JR	C,DIVBAD	; If so, it is bad
+	LD	A,E		; Else test divisor
+	OR	D		; For 0
+	JR	NZ,DIVLOP	; If <> 0 continue
+DIVBAD:	POP	BC		; Restore registers
+	SCF			; Set carry to show bad
+	RET
+;
+DIVLOP:	INC	BC		; Increment quotient
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; Division by subtract
+	JR	C,DIVOFL	; If borrow, done dividing
+	JR	NZ,DIVLOP	; If <> 0 more to do
+	JR	DIVREM		; Was 0, skip calc of remainder
+;
+DIVOFL:	ADD	HL,DE		; HL=negative remainder, DE=divisor
+	DEC	BC		; The even division was 1 less
+;
+DIVREM:	EX	DE,HL		; Positive remainder to DE
+	LD	H,B		; Put quotient
+	LD	L,C		; Into HL
+	POP	BC		; Restore register
+	OR	A		; Clear carry (valid result)
+	RET
+;
+; Multiply HL by DE, return result in HL
+;
+MULT:	PUSH	BC
+	PUSH	DE
+	EX	DE,HL
+	LD	B,D
+	LD	C,E
+	LD	A,B
+	OR	C
+	JR	NZ,MULCON
+	LD	HL,0		; Filter special case
+	JR	MLDONE		; Of multiply by 0
+;
+MULCON:	DEC	BC
+	LD	D,H
+	LD	E,L
+;
+MULTLP:	LD	A,B
+	OR	C
+	JR	Z,MLDONE
+	ADD	HL,DE
+	DEC	BC
+	JR	MULTLP
+;
+MLDONE:	POP	DE
+	POP	BC
+	RET
+;
+; Print string following the call. Return to spot after string.
+;
+PRINT:	EX	(SP),HL		; Get string pointer
+;
+PRINLP:	LD	A,(HL)
+	INC	HL
+	OR	A
+	JR	Z,PREX
+	LD	E,A
+	PUSH	HL
+	CALL	CONOUT
+	POP	HL
+	JR	PRINLP
+;
+PREX:	EX	(SP),HL
+	RET
+;
+;-----------------------------------------------------------------------
+;
+; Select disk whose number is in C (A=0, B=1, etc)
+;
+SELECT:	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,SELEC2	; Skip if 2.2
+	LD	DE,1		; Set 1st time flag for CP/M 3.0
+	LD	(DEREG),DE	; Into e of DPB
+	LD	(BCREG),BC	; Into c of DPB
+	LD	A,9		; BIOS SELDSK function
+	CALL	XBIOS3		; Do it
+	JR	SELEC3		; Skip over
+
+SELEC2:	LD	A,9		; BIOS SELDSK function
+	CALL	XBIOS2		; Do it
+;
+SELEC3:	LD	A,H		; Get result
+	OR	L
+	JP	Z,0000H
+;
+	LD	E,(HL)		; Get the record table pointer
+	INC	HL
+	LD	D,(HL)
+	DEC	HL
+	EX	DE,HL
+	LD	(RECTBL),HL	; Save the record table pointer
+	LD	HL,DPB2OF	; Default, CP/M 2.2 offset to DPB
+;
+DPBOF	EQU	$-2
+;
+	ADD	HL,DE
+	LD	A,(HL)		; Get DPB pointer
+	INC	HL
+	LD	H,(HL)
+	LD	L,A		; Into HL
+	LD	DE,DPB		; Copy dpb to local area
+	LD	BC,DPB2LN	; Default, DPB size for CP/M 2.2
+;
+DPBLN	EQU	$-2
+;
+	LDIR
+	LD	DE,(DSM)	; Get number of last group
+	CALL	GRP2SC		; Find out what track and record it is in
+	LD	(MAXTRK),DE	; Save the maximum track number
+	LD	HL,(PHYREC)	; This logic will tell
+	LD	A,H		; If first record
+	OR	L		; Is physical 0 or 1
+	LD	(FIRST0),A
+	RET
+;
+; Set DMA address in BC
+;
+SETDMA:	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,STDMA2	; Skip if 2.2
+	LD	(DMAADR),BC	; Do for CP/M 3
+	RET			; And return
+
+STDMA2:	LD	A,12		; BIOS SETDMA function
+	JP	XBIOS2		; Do it
+;
+; Set track # in DE
+;
+SETTRK:	PUSH	HL		; Save HL
+	LD	HL,(MAXTRK)	; Verify within limits
+	OR	A
+	SBC	HL,DE		; Error if > maximum track #
+	POP	HL		; Restore HL in case error
+	JP	C,OUTLIM	; If too big, abort
+;
+	LD	(CURTRK),DE	; Save desired track
+	LD	B,D		; BC=track number
+	LD	C,E
+	PUSH	HL		; Resave HL
+;
+; Is ok, so set track
+;
+	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,STTRK2	; Do it 2.2 way
+	LD	(LOGTRK),DE	; Setup track for CP/M 3
+	JR	STTRK3		; Skip 2.2 stuff
+;
+STTRK2:	LD	A,10		; BIOS SETTRK function
+	CALL	XBIOS2		; Do it
+;
+STTRK3:	POP	HL		; Restore HL
+	RET
+;
+;
+; Set record number in DE
+;
+SETREC:	PUSH	HL		; Save HL
+	PUSH	DE		; Save record #
+	LD	(CURREC),DE	; Store current record
+	LD	DE,(SYSTRK)	; Get number of sys trks
+	LD	HL,(CURTRK)	; Get current track
+	OR	A		; Clear carry for subtract
+	SBC	HL,DE		; See if in system tracks
+	POP	BC		; Restore record number to BD
+	LD	H,B		; And
+	LD	L,C		; To HL
+	JR	NC,NOTSYS	; If no carryy we're not in system tracks
+;
+	LD	A,(FIRST0)	; See if first record is 0
+	OR	A
+	JP	NZ,STREC1	; No, jump away
+	DEC	HL		; Yes, so decrement requested
+	JP	STREC1		; Then go
+;
+NOTSYS:	LD	DE,(RECTBL)	; Point to XLT table
+	DEC	BC		; Decr record
+	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,NOTSY2	; Do it 2.2 way
+	CALL	RECTRN		; Else do CP/M 3 way (see note)
+	JR	NOTSY3		; Skip 2.2 stuff
+;
+NOTSY2:	LD	A,16		; Bios RECTRAN function #
+	CALL	XBIOS2		; Do it
+;
+NOTSY3:	LD	A,(SPT+1)	; If SPT<256 (HI-ord = 0)
+	OR	A		; Then force 8-bit translation
+	JP	NZ,STREC1	; Else keep all 16 bits
+	LD	H,A
+;
+STREC1:	LD	(PHYREC),HL
+	LD	B,H
+	LD	C,L
+;
+	CALL	V3CHEK		; Cy set if not 3.0
+	JR	C,STREC2	; Do it 2.2 way
+	LD	A,L
+	LD	(LOGREC),A	; Setup track for CP/M 3
+	JR	STREC3		; Skip 2.2 stuff
+;
+STREC2:	LD	A,11		; BIOS SETREC function #
+	CALL	XBIOS2		; Do it
+;
+STREC3:	POP	HL		; Restore HL
+	RET
+;
+; Out of disk track limit
+;
+OUTLIM:	CALL	PRINT
+	DEFB	CR,LF,BEL,'Track Error',0
+	JP	0000H
+;
+; Read next block into dma address
+;
+READ:	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,READ2		; Skip if 2.2
+	CALL	READ3		; Do CP/M 3.0 way
+	JR	READ4		; Jump over
+;
+READ2:	LD	A,13		; BIOS READ function
+	CALL	XBIOS2		; Do it
+;
+READ4:	OR	A		; Check status
+	RET	Z		; Return if ok
+;
+	CALL	PRINT
+	DEFB	CR,LF,BEL,'Read Error',0
+	JP	0000H
+	RET
+;
+; Write block in DMA address to disk
+;
+WRITE:	CALL	V3CHEK		; Carry set if not 3.0
+	JR	C,WRITE2	; Skip if 2.2
+	CALL	WRITE3		; Do CP/M 3.0 way
+	JR	WRITE4		; Jump over
+;
+WRITE2:	LD	A,14		; BIOS WRITE function
+	CALL	XBIOS2		; Do it
+;
+WRITE4:	OR	A		; Check for write error
+	RET	Z
+;
+	CALL	PRINT
+	DEFB	CR,LF,BEL,'Write Error',0
+	JP	0000H
+;
+;-----------------------------------------------------------------------
+;
+; Test for CP/M 3.0, used by above routines
+;
+V3CHEK:	LD	A,(VERFLG)	; Check for version 3.0
+	CP	30H		; Carry set if not 3.0
+	RET
+;
+VERFLG:	DEFB	0		; Version number of CP/M
+;
+;-----------------------------------------------------------------------
+;
+; For CP/M 2.2, enter with BIOS function in A, eg.,  LD A,9  (DELDSK)
+;
+XBIOS2:	PUSH	DE		; Save registers
+	LD	HL,(0001H)	; Warmboot address
+	LD	L,A		; BIOS function number to L
+	LD	E,L		; And to E
+	LD	D,0		; Zero Dd
+	ADD	HL,DE		; Add so that HL
+	ADD	HL,DE		; Points to BIOS function address
+	POP	DE		; Restore DE
+	JP	(HL)		; Do it and return to call address
+;
+;-----------------------------------------------------------------------
+;
+; BDOS subroutines
+;
+CONST:	LD	C,CONSTF
+	JP	BDOS
+;
+CONIN:	LD	C,CONINF
+	JP	BDOS
+;
+CONOUT:	LD	C,CONOUF
+	JP	BDOS
+;
+CONBUF:	XOR	A		; Zero the character buffer
+	LD	(INBUF+2),A
+	LD	C,RDCBUF
+	LD	DE,INBUF
+	JP	BDOS
+;
+;-----------------------------------------------------------------------
+;
+; Used by some SYSLIB routines.  (Modified - SYSLIB used BIOS.)
+;
+COUT:	PUSHRG			; Save registers
+	PUSH	AF
+	LD	E,A
+	CALL	CONOUT
+	POP	AF
+	POPRG			; Restore registers
+	RET
+;
+;-----------------------------------------------------------------------
+;
+; Start of SYSLIB routines (by Richard Conn).
+; NOTE - some of these have been modified to Z80 code.
+;
+; Print register 'A' as decimal characters in N-character field floating
+; print, where 1-3 chars are used
+;
+PAFDC:	PUSH	BC		; Save registers
+	PUSH	DE
+	PUSH	AF		; Save 'A'
+	LD	D,1		; Turn on leading sapce flag
+;
+; Print routine
+;
+	LD	B,100		; Print 100's
+	CALL	PAC		; Print a character
+	LD	B,10		; Print 10's
+	CALL	PAC
+	ADD	A,'0'		; Convert to ASCII
+	CALL	COUT		; Print
+	POP	AF		; Restore 'A'
+	POP	DE		; Restore registers
+	POP	BC
+	RET
+;
+; Print result of division of 'A' by 'B' with leading space (integer
+; division)
+;
+PAC:	LD	C,0		; Set count
+;
+PACL:	SUB	B		; Compute count
+	JR	C,PACD
+	INC	C		; Increment count
+	JR	PACL
+;
+PACD:	ADD	A,B		; Add 'B' back in
+	LD	E,A		; Save 'A'
+	LD	A,C		; Get count
+	OR	A		; Zero?
+	JR	NZ,PACD1
+	OR	D		; 0 means no leading space
+	JR	Z,PACD1		; (A=0, A or D = 0 means D=0)
+	LD	A,E		; Restore 'A'
+	RET
+;
+PACD1:	LD	D,0		; D=0 for no leading space
+	LD	A,C		; Get count
+	ADD	A,'0'		; Convert to decimal
+	CALL	COUT		; Print it
+	LD	A,E		; Restore 'A'
+	RET
+;
+; Changed following to utilize some Z80 code
+;
+; Print HL as decimal characters in N-character field floating print,
+; where field size is from 1 to 5 characters
+;
+PHLFDC:	PUSH	AF		; Save all registers
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	LD	B,1		; B=1 for leading <sp>
+;
+; Print HL using leading space flag in 'B'
+;
+	LD	DE,10000	; Print 10000's
+	CALL	PHDC1
+	LD	DE,1000		; Print 1000's
+	CALL	PHDC1
+	LD	DE,100		; Print 100's
+	CALL	PHDC1
+	LD	DE,10		; Print 10's
+	CALL	PHDC1
+	LD	A,L		; Print 1's
+	ADD	A,'0'		; Convert to ASCII
+	CALL	COUT
+	POP	HL		; Restore all registers
+	POP	DE
+	POP	BC
+	POP	AF
+	RET
+;
+; Divide HL by DE and print quotient with leading spaces
+;
+PHDC1:	LD	C,0		; Set count
+;
+PHDC2:	OR	A		; Clear carry for Z80 way
+	SBC	HL,DE		; Subtract DE from HL with borrow
+	JR	C,PHDC3		; Done if carry set (further borrow)
+	INC	C		; Increment count
+	JR	PHDC2
+;
+PHDC3:	OR	A		; Clear carry
+	ADC	HL,DE		; Add DE to HL with carry Z80 way
+	LD	A,C		; Get result
+	OR	A		; Check for zero
+	JR	NZ,PHDC4
+	OR	B		; 0=no leading space
+	RET	NZ		; (A=0, A or B = 0 means B = 0)
+;
+PHDC4:	LD	B,0		; Turn off leading space
+	LD	A,C		; Get value
+	ADD	A,'0'		; Convert to ascii
+	JP	COUT
+;
+;
+; Print FCB file name and type pointed to by DE on console:  Format of
+; output:  xxxxxxxx.yyy  Modified.  (8 chars and/or spaces, period, 3
+; characters and/or spaces)
+;
+PFN1:	PUSH	DE		; Save registers
+	PUSH	BC
+	PUSH	AF
+	LD	B,8		; 8 characters first
+	CALL	PRFNX
+	LD	A,'.'		; Dot
+	CALL	COUT
+	LD	B,3		; 3 more characters
+	CALL	PRFNX
+	POP	AF		; Restore registers
+	POP	BC
+	POP	DE
+	RET
+;
+PRFNX:	LD	A,(DE)		; Get character
+	AND	7FH		; Mask out MSB
+	CALL	COUT		; Print it
+	INC	DE		; Point to next
+	DJNZ	PRFNX		; Loop until done
+	RET
+;
+; Clear the CRC accumulator
+;
+CRCCLR:	PUSH	HL
+	LD	HL,0		; Set CRC to zero
+	LD	(CRCACC),HL
+	POP	HL
+	RET
+;
+; Update the CRC accumulator.  This routine must be called once for each
+; byte in the byte stream for which the CRC is being calculated.
+;
+; Input parameters: A = byte to be included in CRC
+;
+CRCUPD:	PUSH	AF		; Save all registers
+	PUSH	BC
+	PUSH	HL
+	LD	B,8		; Rotate 8 bits
+	LD	C,A		; Byte in C
+	LD	HL,(CRCACC)	; HL=old CRC value
+;
+UPDLOP:	LD	A,C		; Rotate HLC as a 24-bit ACC left 1 bit
+	RLCA
+	LD	C,A
+	LD	A,L
+	RLA
+	LD	L,A
+	LD	A,H
+	RLA
+	LD	H,A
+	JR	NC,SKIPIT
+	LD	A,H		; The generator is x^16 + x^12 + x^5 + 1
+	XOR	10H		; As recommended by CCITT.
+	LD	H,A		; An alternate generator which is often
+	LD	A,L		; Used in synchronous protocols
+	XOR	21H		; Is x^16 + x^15 + x^2 + 1. this may be
+	LD	L,A		; Used by substituting xor 80h for xor 10h
+				; And XOR 05h for XOR 21h in the adjacent code.
+SKIPIT:	DEC	B		; Count down 8 bits
+	JR	NZ,UPDLOP
+	LD	(CRCACC),HL	; Save new CRC value
+	POP	HL		; Restore all
+	POP	BC
+	POP	AF
+	RET
+;
+; Complete the CRC calculation.  Called after the last byte of the byte
+; stream has passed through CRCUPD.  It returns the calculated CRC bytes
+; in HL.
+;
+; Output parameters:  HL = calculated CRC bytes
+;
+CRCDON:	PUSH	AF		; Save 'A'
+	XOR	A		; Send out 2 zeroes
+	CALL	CRCUPD
+	CALL	CRCUPD
+	LD	HL,(CRCACC)	; Return CRC value in HL
+	POP	AF
+	RET
+;
+; Print HL as 4 hex characters, no registers are to be affected
+;
+	 IF	DEBUG		; For dumping hex values
+PHL4HC:	PUSH	AF		; Save 'A'
+	LD	A,H		; Print H
+	CALL	PA2HC
+	LD	A,L		; Print L
+	CALL	PA2HC
+	POP	AF		; Restore 'A'
+	RET
+;
+; Print regiaster A as 2 hex characters on console
+;
+PA2HC:	PUSH	AF		; Save 'A'
+	PUSH	AF
+	RRCA			; Exchange nybbles
+	RRCA
+	RRCA
+	RRCA
+	CALL	PAHC		; Print low-order nybble as hex
+	POP	AF		; Get a
+	CALL	PAHC		; Print low-order nybble as hex
+	POP	AF		; Restore a
+	RET
+;
+PAHC:	AND	0FH		; Mask for low nybble
+	CP	10		; Letter or digit?
+	JR	C,PADIG		; Digit if carry
+	ADD	A,'A'-10	; Convert to 'a'-'f'
+	JP	COUT		; Print
+;
+PADIG:	ADD	A,'0'		; Convert to '0'-'9'
+	JP	COUT		; Print
+	 ENDIF
+;
+;-----------------------------------------------------------------------
+;
+; Start of the CP/M 3.0 specific subroutines for disk I/O.  Extracted
+; from CPM22E BIOS program, and slightly modified.  This portion most
+; probably could be utilized in almost any CP/M 2.2 program which uses
+; the BIOS for disk I/O.
+;
+; Translate records.  Records are not translated yet.  Wait until we
+; know the physical record number.  This works fine as long as a program
+; trusts the BIOS to do translation.  For programs that directly access
+; the XLAT table to do their own translation, this may give wrong idea
+; about disk skew but it shouldn't cause harm.
+;
+RECTRN:	LD	L,C		; Return record in HL
+	LD	H,B
+	RET
+;
+; Read the selected CP/M record
+;
+READ3:	LD	A,1
+	LD	(READOP),A	; Read operation
+	INC	A		; A=2 (WRUAL)
+	LD	(WRTYP3),A	; Treat as unallocated
+	JP	ALLOC		; Perform read
+;
+; Write the selected CP/M record
+;
+WRITE3:	XOR	A
+	LD	(READOP),A	; Not a read operation
+	LD	A,C
+	LD	(WRTYP3),A	; Save write type
+	CP	2		; Unallocated block?
+	JP	NZ,CHKUNA
+;
+; Write to first record of unallocated block
+;
+	LD	A,(BLM)		; Get block shift mask
+	INC	A		; Adjust value
+	LD	(UNACNT),A	; Unalloc record count
+	LD	A,(LOGDSK)	; Set up values for
+	LD	(UNADSK),A	; Writing to an unallocated
+	LD	A,(LOGTRK)	; Block
+	LD	(UNATRK),A
+	LD	A,(LOGREC)
+	LD	(UNAREC),A
+;
+CHKUNA:	LD	A,(UNACNT)	; Any unallocated records
+	OR	A		; In this block
+	JP	Z,ALLOC		; Skip if not
+	DEC	A		; --UNACNT
+	LD	(UNACNT),A
+	LD	A,(LOGDSK)
+	LD	HL,UNADSK
+	CP	(HL)		; LOGDSK = UNADSK ?
+	JP	NZ,ALLOC	; Skip if not
+	LD	A,(LOGTRK)
+	CP	(HL)		; LOGTRK = UNATRK ?
+	JP	NZ,ALLOC	; Skip if not
+	LD	A,(LOGREC)
+	LD	HL,UNAREC
+	CP	(HL)		; LOGTRK = UNASEC ?
+	JP	NZ,ALLOC	; Skip if not
+	INC	(HL)		; Move to next record
+	LD	A,(HL)
+	LD	HL,SPT		; Address of SPT
+	CP	(HL)		; Record > SPT ?
+	JP	C,NOOVF		; Skip if no overflow
+	LD	HL,(UNATRK)
+	INC	HL
+	LD	(UNATRK),HL	; Bump track
+	XOR	A
+	LD	(UNAREC),A	; Reset record count
+;
+NOOVF:	XOR	A
+	LD	(RSFLAG),A	; Do not pre-read
+	JP	RWOPER		; Perform write
+;
+ALLOC:	XOR	A		; Requires pre-read
+	LD	(UNACNT),A
+	INC	A
+	LD	(RSFLAG),A	; Force pre-read
+;
+RWOPER:	XOR	A
+	LD	(ERFLAG),A	; No errors yet
+	LD	A,(PSH)		; Get physical shift factor
+	OR	A		; Set flags
+	LD	B,A
+	LD	A,(LOGREC)	; Logical record
+	LD	HL,(HSTBUF)	; Addr of CP/M 3 record buffer
+	LD	DE,128
+	JP	Z,NOBLK		; No blocking
+	EX	DE,HL		; Shuffle registers
+;
+SHIFT:	EX	DE,HL
+	RRCA
+	JP	NC,SH1
+	ADD	HL,DE		; Bump buffer address
+;
+SH1:	EX	DE,HL
+	ADD	HL,HL
+	AND	07FH		; Zero high bit
+	DJNZ	SHIFT
+	EX	DE,HL		; HL=buffer address
+;
+NOBLK:	LD	(RECHST),A
+	LD	(RECBUF),HL
+	LD	HL,HSTACT	; Buffer active flag
+	LD	A,(HL)
+	LD	(HL),1		; Set buffer active
+	OR	A		; Was it already?
+	JP	Z,FILHST	; Fill buffer if not
+	LD	A,(LOGDSK)
+	LD	HL,HSTDSK	; Same disk ?
+	CP	(HL)
+	JP	NZ,NMATCH
+	LD	A,(LOGTRK)
+	LD	HL,HSTTRK	; Same track ?
+	CP	(HL)
+	JP	NZ,NMATCH
+	LD	A,(RECHST)	; Same buffer ?
+	LD	HL,HSTREC
+	CP	(HL)
+	JP	Z,MATCH
+;
+NMATCH:	LD	A,(HSTWRT)	; Buffer changed?
+	OR	A
+	CALL	NZ,WRTHST	; Clear buffer
+;
+FILHST:	LD	A,(LOGDSK)
+	LD	(HSTDSK),A
+	LD	HL,(LOGTRK)
+	LD	(HSTTRK),HL
+	LD	A,(RECHST)
+	LD	(HSTREC),A
+	LD	A,(RSFLAG)	; Need to read ?
+	OR	A
+	CALL	NZ,REDHST	; Yes
+	XOR	A
+	LD	(HSTWRT),A	; No pending write
+;
+MATCH:	LD	DE,(DMAADR)
+	LD	HL,(RECBUF)
+	LD	A,(READOP)	; Which way to move ?
+	OR	A
+	JP	NZ,RWMOVE	; Skip if read
+	LD	A,1
+	LD	(HSTWRT),A	; Mark buffer changed
+	EX	DE,HL		; Hl=dma  de=buffer
+;
+RWMOVE:	LD	BC,128		; Byte count
+	LDIR			; Block move
+	LD	A,(WRTYP3)	; Write type
+	CP	1		; To directory ?
+	JP	NZ,RWEXIT	; Done
+	LD	A,(ERFLAG)	; Check for errors
+	OR	A
+	JP	NZ,RWEXIT	; Do not write dir if so
+	XOR	A
+	LD	(HSTWRT),A	; Show buffer written
+	CALL	WRTHST		; Write buffer
+;
+RWEXIT:	LD	A,(ERFLAG)
+	RET
+;
+; Disk read, call bios to fill the buffer with one physical record
+;
+REDHST:	CALL	RWINIT		; Initialize CP/M 3.0 BIOS
+	LD	A,13		; BIOS READ function
+	JP	DORW		; Go do it
+;
+; Disk write, call BIOS to write one physical record from buffer
+;
+WRTHST:	CALL	RWINIT		; Initialize CP/M 3.0 BIOS
+	LD	A,14		; BIOS WRITEW function
+;
+; Call BIOS to read (or write) 1 physical record to (or from) buffer.
+;
+DORW:	CALL	XBIOS3		; Go do it to the record
+	LD	(ERFLAG),A
+	RET
+;
+; Read/write initialization routine does the following:  Translate re-
+; cord, set track, record, DMA buffer and DMA bank.
+;
+RWINIT:	LD	HL,(HSTTRK)	; Get physical track number
+	LD	(BCREG),HL	; Put track number in BC
+	LD	A,10		; BIOS SETTRK function
+	CALL	XBIOS3
+;
+	LD	A,(HSTREC)	; Get physical record number
+	LD	L,A
+	LD	H,0
+	LD	(BCREG),HL	; Put record number in BC
+	LD	HL,(RECTBL)	; Address of XLAT table
+	LD	(DEREG),HL	; XLAT address in DE
+	LD	A,16		; BIOS RECTRN function
+	CALL	XBIOS3		; Get skewed record #
+;
+	LD	A,L
+	LD	(ACTREC),A	; Actual record
+	LD	(BCREG),HL	; Record number in BC
+	LD	A,11		; BIOS SETREC function
+	CALL	XBIOS3		; Set CP/M 3.0 record
+;
+	LD	HL,(HSTBUF)	; Address of CP/M 3.0 record buffer
+	LD	(BCREG),HL	; Buffer address in BC
+	LD	A,12		; SETDMA function
+	CALL	XBIOS3
+;
+	LD	A,1		; DMA bank number
+	LD	(AREG),A	; Put bank number in 'A'
+	LD	A,28		; BIOS SETBNK function
+	CALL	XBIOS3		; Set DMA bank
+	RET
+;
+;
+; Under CP/M 3.0, direct bios calls via the bios jump vector are only
+; supported by the bios console i/o and list functions.  You must use
+; bdos function 50 to call any other bios function. Store appropriate
+; registers in the bios parameter block [eg: ld (bcreg),bc] and enter
+; this routine with the desired bios function number in register a.
+;
+; All CP/M 3.0 disk I/O calls are made through here
+;
+XBIOS3:	LD	(BIOSPB),A	; Set BIOS function
+	LD	C,50		; Direct BIOS call function
+	LD	DE,BIOSPB	; BIOS parameter block
+	JP	BDOS		; Jump to BDOS
+;
+;-----------------------------------------------------------------------
+;
+; Temporary storage area for the program
+;
+DATA	EQU	$
+;
+STATS:	DEFS	1
+SGPCTR:	DEFS	2
+SWPCTR:	DEFS	2
+GRDCTR:	DEFS	2
+GWRCTR:	DEFS	2
+DIRWCT:	DEFS	2
+;
+GRBUF1:	DEFS	2
+GRBUF2:	DEFS	2
+BLS:	DEFS	2
+DIRBYT:	DEFS	2
+DIRCTR:	DEFS	2
+DIRACT:	DEFS	2
+DIRGRP:	DEFS	2
+SRCHGP:	DEFS	2
+BADGRP:	DEFS	2
+GRPALL:	DEFS	1
+GRPNUM:	DEFS	1
+FILPTR:	DEFS	2
+ALLPTR:	DEFS	2
+GRPTR:	DEFS	2
+WRTYP:	DEFS	2
+WRFLG:	DEFS	2
+GRPCTR:	DEFS	1
+RECCTR:	DEFS	1
+DIRCHG:	DEFS	1
+;
+CRCACC:	DEFS	2		; Accumulator for CRC value (SYSLIB)
+CRCFLG:	DEFS	1
+CRCVAL:	DEFS	2
+CRCBEG:	DEFS	2
+CRCTRK:	DEFS	2
+CRCREC:	DEFS	2
+;
+TEMPC:	DEFS	1		; Used in "GRP2SC"
+;
+ASCDSK:	DEFS	1		; ASCII drive number
+FIRST0:	DEFS	1		; Sets 0 if first record number is 0
+FILECT:	DEFS	2		; File count
+CURTRK:	DEFS	2		; Current track number
+CURREC:	DEFS	2		; Current record number
+PHYREC:	DEFS	2		; Current physical record number
+MAXTRK:	DEFS	2		; Maximum track number
+;
+; Next 5 for low memory or high DRM
+;
+NEWMAX:	DEFS	2		; New faked memory directory capacity
+FAKDRM:	DEFS	2		; New faked DRM value
+BLMSIZ:	DEFS	2		; K size of blocks
+NEWGRP:	DEFS	1		; New faked number of directory groups
+STRTGP:	DEFS	2		; Starting group in case faked
+;
+DIRECT:	DEFS	2		; Pointer to directory buffer
+;
+;-----------------------------------------------------------------------
+;
+; Data area common to program and CP/M 3.0 subroutines
+;
+RECTBL:	DEFS	2		; Pointer to record XLT table
+;
+DPB:				; DPB for CP/M 2.2 & 3.0
+SPT:	DEFS	2		; Copy of disk parameter block
+BSH:	DEFS	1
+BLM:	DEFS	1
+EXM:	DEFS	1
+DSM:	DEFS	2
+DRM:	DEFS	2
+AL0:	DEFS	1
+AL1:	DEFS	1
+CKS:	DEFS	2
+SYSTRK:	DEFS	2
+PSH:	DEFS	1		; Physical shift count (CP/M 3.0)
+PHM:	DEFS	1		; Physical record mask (CP/M 3.)
+;
+BIOSPB:	DEFS	1		; BIOS function
+AREG:	DEFS	1		; A register
+BCREG:	DEFS	2		; BC registers
+DEREG:	DEFS	2		; DE registers
+HLREG:	DEFS	2		; HL registers
+;
+DMAADR:	DEFS	2		; Last DMA address
+LOGDSK:	DEFS	1		; Logical disk number
+LOGREC:	DEFS	2		; Logical recort number
+LOGTRK:	DEFS	2		; Logical track number
+HSTBUF:	DEFS	2		; Address of CP/M 3.0 record buffer
+;
+;-----------------------------------------------------------------------
+;
+; Data/variable storage area for CP/M 3.0 subroutines
+;
+HSTDSK:	DEFS	1		; Physical disk number
+HSTTRK:	DEFS	2		; Physical track number
+HSTREC:	DEFS	1		; Physical record number
+;
+ACTREC:	DEFS	1		; Skewed physical record
+RECHST:	DEFS	1		; Temp phyical racord
+HSTACT:	DEFB	0		; Buffer active flag, initial 0
+HSTWRT:	DEFB	0		; Buffer changed flag, initial 0
+;
+UNACNT:	DEFS	1		; Unallocated record count
+UNADSK:	DEFS	1		; Unallocated disk number
+UNATRK:	DEFS	2		; Unallocated track number
+UNAREC:	DEFS	1		; Unallocated record number
+RECBUF:	DEFS	2		; Logical racord address in buffer
+;
+ERFLAG:	DEFS	1		; Error reporting
+RSFLAG:	DEFS	1		; Force record read
+READOP:	DEFS	1		; 1 if read operation
+WRTYP3:	DEFS	1		; Write operation type
+;
+;-----------------------------------------------------------------------
+;
+; Start of stack and buffers
+;
+	DEFS	40		; Min stack depth (20 levels)
+EVEN	EQU	($+255)/256*256	; Start buffer on even page
+	ORG	EVEN		; Also increases stack greatly
+STACK	EQU	$-2
+DATSIZ	EQU	$-DATA		; Size of data area
+				; Buffers start here
+;
+	END
+

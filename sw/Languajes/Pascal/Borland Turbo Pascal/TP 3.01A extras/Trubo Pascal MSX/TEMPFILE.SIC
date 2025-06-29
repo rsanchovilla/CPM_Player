@@ -1,0 +1,56 @@
+type
+  _tempfilename = string[14];
+
+{$I-}
+
+
+(* ----------------------------
+procedure erasetempfiles;
+
+  var
+    tfile: file;
+
+  begin
+    assign (tfile, 'TEMP$???.$$$');
+    erase (tfile);
+    if IOresult<>0 then {do nothing, just reset error condition};
+  end;
+------------------------------*)
+
+
+function tempfile (path: _tempfilename): _tempfilename;
+
+  const
+    tempfilename: string[12] = 'TEMP#///.$$$';
+
+  var
+    f:     file;
+    i:     integer;
+
+  begin
+    while TRUE do
+     begin
+
+     i:=8;
+     repeat
+      tempfilename[i] := succ(tempfilename[i]);
+      if tempfilename[i]>'9' then tempfilename[i]:='0';
+      i:=pred(i);
+     until tempfilename[succ(i)]<>'0';
+
+     path := copy (path, 1, pos(':', path)) + tempfilename;
+
+     assign (f, path);
+     reset (f);
+
+     if IOresult <> 0
+     then begin
+       tempfile := path;
+       exit;
+       end;
+
+     close (f);
+
+     end;
+  end;
+

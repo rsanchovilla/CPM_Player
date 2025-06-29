@@ -1,0 +1,69 @@
+include "ratdefn.rtf"
+# unique - strip adjacent duplicate lines
+   character buf1(MAXLINE), buf2(MAXLINE)
+   integer equal, getlin, getarg
+   integer t, n, nflag
+ 
+   call initio
+
+   nflag = NO
+   if (getarg(1, buf1, MAXLINE) ^= EOF)
+      if (buf1(1) == MINUS & (buf1(2) == LETN | buf1(2) == BIGN) &
+	  buf1(3) == EOS)
+	     nflag = YES
+      else
+	 call error("usage: unique [-n].")
+   t = getlin(buf1, STDIN)
+   while (t ^= EOF) {
+      n = 1
+      for (t = getlin(buf2, STDIN); t ^= EOF; t = getlin(buf2, STDIN))
+	 if (equal(buf1, buf2) == NO)
+	    break
+	 else
+	    n = n + 1
+      if (nflag == YES) {
+	 call putdec(n, 5)
+	 call putch(TAB, STDOUT)
+	 }
+      call putlin(buf1, STDOUT)
+      if (t == EOF)
+	 break
+      n = 1
+      for (t = getlin(buf1, STDIN); t ^= EOF; t = getlin(buf1, STDIN))
+	 if (equal(buf1, buf2) == NO)
+	    break
+	 else
+	    n = n + 1
+      if (nflag == YES) {
+	 call putdec(n, 5)
+	 call putch(TAB, STDOUT)
+	 }
+      call putlin(buf2, STDOUT)
+      }
+   call putch(EOF, STDOUT)
+   stop
+   end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

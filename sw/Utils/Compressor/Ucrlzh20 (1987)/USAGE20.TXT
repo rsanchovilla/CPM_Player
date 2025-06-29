@@ -1,0 +1,251 @@
+-----------------------CRLZH/UNCRLZH v2.0 Usage----------------------------
+
+Since CRLZH and UNCRLZH are spawned from Steve Greenberg's CRUNCH and 
+UNCRunch V2.8, usage is exactly the same with the notable exceptions of the 
+file extensions used (LZH uses a 'Y' instead of a 'Z') and file limit of 256 
+rather than 512.  So...to avoid duplication, merely substitute CRLZH for 
+CRUNCH, UNCRLZH for UNCR and 2.0 for 2.8 in the following duplication of the 
+CRUNCH/UNCR usage notes:
+
+-------------------CRUNCH/UNCRunch v2.8 Usage follows:---------------------
+
+                         CRUNCH and UNCR
+                           Version 2.8
+
+             Copyright (c) 1987 by Steven Greenberg
+   This Version Released with the Permission of the Author by
+                          Gene Pizzetta
+                           May 5, 1991
+
+
+CRUNCH and UNCR are basic file compression and decompression 
+tools for ZCPR3 and CP/M.  A number options allow these utilities 
+to serve as hard disk backup and restoral tools, and make CRUNCH 
+a convenient tool for creating of archival libraries.  UNCR 
+handles crunched, squeezed, and LZH-encoded files.
+
+Under ZSDOS and ZDDOS file date stamps are embedded in the 
+crunched file and then restored to disk when the file is 
+uncrunched.  In addition, the source file's date stamp is 
+transferred to the crunched file's on-disk date stamp so the 
+create and modify dates can be checked without uncrunching it.
+
+CRUNCH USAGE:
+
+     CRUNCH {dir:}afn.aft {dir:} {[text]} {/options}
+
+UNCR USAGE:
+
+     UNCR {dir:}afn.aft {dir:} {/options}
+
+All command line parameters are optional, except the source 
+filename, which may be ambiguous.  The output filename is 
+generated automatically.
+
+The two DIR specifications, the first for the source file and the 
+second for the destination file, may be in DU (drive and user) 
+form or, if running under ZCPR3, named directories.  If no drive 
+or user is given, the current default directory is assumed.  
+Under ZCPR3 all 32 user areas are available, but only the first 
+16 users are accessible under vanilla CP/M.
+
+"[text]" is an optional text string (CRUNCH only) that can be 
+used to identify the file.  The text string must be enclosed with 
+square brackets.  During uncrunching UNCR will print on the 
+screen any text string contained in the crunched file.
+
+OPTIONS:  The option list must be preceded by a slash and contain 
+no embedded spaces.
+
+     A    Archive mode (CRUNCH only).  The only files crunched 
+          (or copied) are those that have been modified since 
+          they were last backed up, based on the archive 
+          attribute.  After each source file is crunched, its 
+          attribute will be changed to archived.  This option 
+          allows CRUNCH to be used as an simple archival backup 
+          tool.
+
+     C    Confirm mode.  Same as I.
+
+     E    Erase existing files without asking.  Suppresses the 
+          prompt "Erase existing file (Y/[N])?" when a file of 
+          the same name is found in the destination directory.  
+          Instead existing files will be erased and overwritten 
+          without notice.
+
+     I    Inspect mode.  Allows choosing the files to be 
+          processed interactively.  Each filename is displayed, 
+          one at a time, alphabetically, and can be tagged for 
+          processing, untagged if tagged previously, or skipped.  
+          Processing begins after selection is completed.  This 
+          mode works similarly to the SWEEP and NSWP tagging 
+          concept.
+
+     O    Overwrite mode.  Same as E.
+
+     Q    Quiet mode.  Suppresses continuous console output 
+          during the processing of a file.  Only the input and 
+          output filenames and sizes in kilobytes will be 
+          displayed.  Normally this mode uses only one screen 
+          line for each file, so it allows the display of as many 
+          as 24 filename pairs at one time.  This mode is also 
+          desirable for printing or other slow terminals because 
+          they will slow down file processing.
+
+     S    Include system files.  Allows system (hidden) files to 
+          be found and processed.  Normally system files are 
+          ignored.
+
+     T    Tag mode.  Same as I.
+
+All command line options can be set as the default mode of 
+operation (see "Configuration", below).  The command line option 
+will then toggle to the non-default mode.  The current effect of 
+the command line options is always correctly reflected by the 
+usage screen, which can be accessed by "CRUNCH //" or "UNCR //".
+
+DETAILS:  CRUNCH and UNCR cannot handle more than 512 matching 
+files.  When system files are being ignored, such files do not 
+count toward this file limit.  In archive (option A) mode, 
+however, archived files still count, even though they will not be 
+processed, because this mode works internally by "tagging" all 
+files which do have their archive attribute set.  That method can 
+be useful, however, because if inspect mode (options I or T) is 
+also selected, all filenames are presented as if inspect mode had 
+been selected alone, except unarchived files will already be 
+tagged.  It is then possible to tag any archived files that you 
+might want to include, or to untag any pre-tagged unarchived 
+files you might want to skip.
+
+Pressing ^C will abort either program immediately.  It may be 
+issued anytime the programs are running.  The partial output file 
+will be closed and erased, so zero-length files or files in an 
+unknown condition will not be left on the disk.  Although 
+probably of limited usefulness, ^S will pause the programs and 
+any key (except ^C) will resume operation.  Pressing ^C after a 
+^S will abort the program, but a partial file will not be erased.
+
+While crunching or uncrunching a file (unless in quiet mode) a 
+full running progress report is displayed, including the number 
+of input and output records, the compression ratio, the number of 
+codes assigned, and the number of codes reassigned.  Although 
+some of this information has limited usefulness, it is amusing to 
+watch.
+
+OUTPUT FILENAMES:  The CRUNCH destination file will have the same 
+name as the crunched file, except that the middle letter of the 
+filetype will be changed to "Z".  If the source file's filetype 
+already has a "Z" as the middle letter, then the last two letters 
+of the filetype will be changed to "ZZ"  If the source file's 
+filetype already ends in "ZZ", or if its filetype is blank, then 
+"ZZZ" will be used as the filetype of the crunched file.  Files 
+with filetypes of "ZZZ" cannot be crunched.  When a file is 
+uncrunched by UNCR, its original filename and filetype will be 
+restored.
+
+DIRECT COPYING:  If CRUNCH creates a file larger than the 
+original, this file will be automatically erased and replaced 
+with a direct copy of the original.  If the original is already 
+crunched or squeezed, or if the filetype matches a type on the 
+filetype exclusion list, such as .LBR or .ARK, no attempt will be 
+made to compress it.  Instead, a straight copy operation will be 
+substituted.  Thus all specified files will be transferred in the 
+most efficient manner, facilitating the use of CRUNCH for the 
+creation of LBR's or as a backup utility.  Similarly, UNCR will 
+either uncrunch or direct-copy all specified files for full 
+restoration.
+
+If the source and destination directories are the same, then 
+direct copying is inhibited.  In this case, CRUNCH will ask the 
+user whether he wants to keep a crunched file, if it is larger 
+than the original.
+
+LZH DECODING AND UNSQUEEZING:  UNCR also uncrunches LZH-encoded 
+files and unsqueezes as an added convenience.  The file's format 
+will be recognized automatically and the appropriate method will 
+be used.
+
+EXCLUSION LIST OVERRIDE:  While it is useful to have CRUNCH skip 
+attempts to compress certain filetypes when doing bulk transfers, 
+there may be instances where you want to crunch, for instance, a 
+LBR file.  (As distributed, excluded filetypes are ARC, ARK, LBR, 
+and FOR.)  To make that possible, CRUNCH will ignore the filetype 
+exclusion list if a filename is fully specified.  The exclusion 
+list will be used, however, whenever one or more wildcard 
+characters ("?" or "*") appear in the filename.
+
+SPANNING DISKETTES:  If an output disk fills during a wildcard 
+operation, the last (partial) file will be deleted and the user 
+will be prompted to change disks.  Operation will then continue, 
+starting  with that last file.  If the source and destination 
+drives are the same, however, then the prompt to change diskettes 
+will not be given, since changing the output diskette will remove 
+the input disk from which the program is reading.
+
+UNCR WILDCARD LIMITATIONS:  Normally when UNCR is given a "*.*" 
+wildcard specification, it transfers all files from one drive 
+and/or user area to another, uncrunching crunched files, 
+unsqueezing squeezed files, and copying the rest.  If your intent 
+is to only process crunched files, you must issue a file 
+specification with a filetype of "?Z?".
+
+When the source and destination directories are the same, 
+however, a file specification of "*.*" will be automatically 
+converted to "*.?Z?".  A side-effect is that squeezed and LZH- 
+encoded files will not be uncompressed unless a specific "*.?Q?" 
+or "*.?Y?" file specification is given.
+
+FILE DATE STAMPS:  When running under ZSDOS or ZDDOS, CRUNCH will 
+store the date and time stamp of the source file in the header of 
+the crunched file.  In addition, it will transfer the source 
+file's date stamp to the crunched file's on-disk date stamp.  
+Since crunching is used primarily for archival storage and the 
+crunched file will not be modified in place, this latter feature 
+allows you to check the original date stamp of the file without 
+uncrunching it.  The access date of the crunched file will be the 
+date it was crunched, until you type it with ZLT or uncrunch it.
+
+When UNCR uncrunches a file, it looks for a date stamp in the 
+header and, if it finds one, it restores the file's original 
+create and modify dates to the uncrunched file.  This restoral 
+works equally well with files crunched by CR23D.  If there is no 
+date stamp in the header of the crunched file, UNCR will transfer 
+the crunched file's on-disk date stamp to the uncrunched file, so 
+at least you will not lose whatever date stamp you have.  As with 
+CRUNCH, the access date will be the date the file is uncrunched.  
+The original access date is stored in the header by CRUNCH, but 
+it will not be restored.
+
+If the source file has no modify date, a non-standard condition, 
+the modify date of the output file will be filled in from the 
+create date.  A blank create date will be transferred as is.
+
+TELENET AND PC-PURSUIT SUPPORT:  CRUNCH monitors its output for a 
+sequence that would put Telenet or PC-Pursuit into command mode 
+and abort a file transfer.  If this sequence is detected, CRUNCH 
+inserts the CRUNCH null code to prevent disaster.
+
+CONFIGURATION:  All the modes of operation set by command line 
+options can be configured as default modes.  In that case the 
+corresponding command line option will toggle to the non-default 
+mode.  (The current effect of the command line options will 
+always be reflected by the usage screen.)  In addition, CRUNCH 
+contains a list of filetypes that will be ignored during wildcard 
+operations.  Up to 10 filetypes can be entered in the list.  
+There are also specific options that are only effective under 
+TurboDos or vanilla CP/M.
+
+Configuration for both CRUNCH and UNCR is accomplished using the 
+accompanying CRUNCHnn.CFG file and ZCNFG, which is available from 
+most Z-Nodes and RCP/M's.  The name of the configuration file 
+should not be changed.  More complete instructions are included 
+on the configuration help screens.
+
++---------------------------------------------------------------+
+| The source code, as well as any object code created from it,  |
+| are copyright (c) 1987 by Steven Greenberg.  It may be repro- |
+| duced for non-profit use only.  Public release of modifica-   |
+| tions is strictly prohibited without the expressed consent of |
+| the author.                                                   |
++---------------------------------------------------------------+
+

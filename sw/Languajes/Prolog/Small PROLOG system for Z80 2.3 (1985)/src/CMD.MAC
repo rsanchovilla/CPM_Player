@@ -1,0 +1,860 @@
+
+; ===========================================================
+; CMD.Z80
+;	built-in commands for E-Prolog
+;	June 1, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+; compare with given value
+;
+?CPHL	MACRO	?VALUE
+	PUSH	DE
+	LD	DE,?VALUE
+	CALL	CPHL##
+	POP	DE
+	ENDM
+
+; copy string
+;
+; input:
+;	HL -> source
+; all registers destroyed
+?COPY	MACRO	?ADDR
+	LD	DE,?ADDR
+	CALL	COPY##
+	ENDM
+
+; local storage
+	DSEG
+LOCST:	DS	8
+REST	EQU	LOCST
+LS	EQU	LOCST+2
+X	EQU	LOCST+4
+Y	EQU	LOCST+6
+SV	EQU	LOCST+4
+PTR	EQU	LOCST
+LSS	EQU	LS
+X1	EQU	LOCST+4
+X2	EQU	LOCST+6
+	CSEG
+
+;noretry(ast)
+;  ALPHASTATE * ast;
+;  {
+;  ast->datb = (PAIR)empty;
+;  }
+NORE::
+	LD	HL,EMPTY
+
+;setretry(ast,addr)
+;  ALPHASTATE * ast;
+;  char * addr;
+;  {
+;  ast->datb = (PAIR *)addr;
+;  }
+SETRE::
+	JP	XLDATB##
+
+;SYMBOL *
+;vnext(pexp,plsub)
+;  EXPR * pexp;
+;  LSUBST * plsub;
+;  {
+;  SYMBOL * x;
+;  SEXPR * y;
+	DSEG
+PEXP:	DW	0
+PLSUB:	DW	0
+VX:	DW	0
+VY:	DW	0
+	CSEG
+VNEXT::
+	LD	(PEXP),HL
+	LD	(PLSUB),DE
+;
+;  if (varp(pexp->list))
+	CALL	INDIR##
+	CALL	VARP##
+	JR	Z,VN1
+;    {
+;    y = value(vf(pexp->list,*plsub));
+	PUSH	HL
+	LD	HL,(PLSUB)
+	CALL	INDIR##
+	EX	DE,HL
+	POP	HL
+	CALL	VF##
+	CALL	VALUE##
+	LD	(VY),HL
+;    if (substp(y))
+	CALL	SUBSTP##
+	JR	Z,VN2
+;      return UNDEF;
+	LD	HL,UNDEF
+	RET
+VN2:
+;    pexp->list = y->sexp.list;
+	CALL	@EXPR##
+	EX	DE,HL
+	LD	HL,(PEXP)
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;    *plsub = y->slist;
+	LD	HL,(VY)
+	CALL	@SLIST##
+	EX	DE,HL
+	LD	HL,(PLSUB)
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;    }
+VN1:
+;  if (nelistp(pexp->list))
+	LD	HL,(PEXP)
+	CALL	INDIR##
+	CALL	NELP##
+	JR	Z,VN3
+;    {
+;    x = pexp->list->left.symbol;
+	CALL	@LEFT##
+	LD	(VX),HL
+;    if (varp(x))
+	CALL	VARP##
+	JR	Z,VN4
+;      {
+;      y = value(vf(x,*plsub));
+	PUSH	HL
+	LD	HL,(PLSUB)
+	CALL	INDIR##
+	EX	DE,HL
+	POP	HL
+	CALL	VF##
+	CALL	VALUE##
+	LD	(VY),HL
+;      x = y->sexp.symbol;
+	CALL	@EXPR##
+	LD	(VX),HL
+;      if (varp(x))
+	CALL	VARP##
+	JR	Z,VN4
+;        x = y;
+	LD	HL,(VY)
+	LD	(VX),HL
+;      }
+VN4:
+;    pexp->list = pexp->list->right.list;
+	LD	HL,(PEXP)
+	PUSH	HL
+	CALL	INDIR##
+	CALL	@RIGHT##
+	EX	DE,HL
+	POP	HL
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;    return x;
+	LD	HL,(VX)
+	RET
+;    }
+VN3:
+;  return UNDEF;
+	LD	HL,UNDEF
+	RET
+;  }
+
+RETT::	LD	HL,TRUE
+RETX:	LD	A,H
+	OR	L
+	RET
+RETF::	LD	HL,FALSE
+	JR	RETX
+
+;built-in commands called in this form:
+;	f(rest,ast,ls,pbst)
+;	PAIR rest;		(in HL) rest of atom
+;	ALPHASTATE * ast;	(in IX) this state
+;	LSUBST ls;		(in DE ) substs for rest
+;	BETASTATE * bst;	(in IY) empty, at first
+;
+;return TRUE to succeed, return FALSE to fail
+;call noretry() to prohibit further retries
+;call setretry() to set entry point for next retry
+
+; ====================  /  ====================
+;_cut(rest,ast,ls,pbst)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  LSUBST ls;
+;  BETASTATE ** pbst;
+;  {
+;  setretry(ast,&rcut);
+;  return TRUE;
+;  }
+_CUT::
+	LD	HL,RCUT
+	CALL	SETRE
+	JP	RETT
+
+;rcut()		/* retry of cut */
+;  {
+;  return EMPTY;
+;  }
+RCUT::
+	LD	HL,EMPTY
+	LD	A,H
+	OR	L
+	RET
+
+; ==================== APPEND ====================
+; APPEND command
+;
+; open file for output, position to the end of the file
+_APPEN::
+	PUSH	HL
+	PUSH	DE
+	CALL	NORE
+	CALL	CLOSE##		; close existing output file
+	POP	DE
+	POP	HL
+	CALL	DOOUT##
+	LD	A,(OUTF##)
+	DEC	A
+	JP	NZ,RETT		; not disk file
+	LD	DE,OUTFCB##
+	LD	C,15		; open file
+	CALL	BDOS
+	INC	A
+	JR	NZ,APPEN1
+	LD	(OUTF),A	; not found, revert to console
+	JP	RETF
+APPEN1:	LD	DE,OUTFCB##
+	LD	C,35		; compute file size
+	CALL	BDOS
+	LD	HL,(OUTFCB##+33) ; random record number
+	DEC	HL
+	LD	(OUTFCB##+33),HL ; last existing record
+	LD	DE,OUTDMA##
+	LD	C,26		; set DMA
+	CALL	BDOS
+	LD	DE,OUTFCB##
+	LD	C,33		; read random
+	CALL	BDOS
+	LD	HL,OUTDMA##
+APPEN2:	LD	A,(HL)
+	CP	CTLZ
+	JR	Z,APPEN3
+	INC	HL
+	?CPHL	OUTE##
+	JR	NZ,APPEN2
+	LD	DE,OUTFCB##	; read sequential to prepare
+	LD	C,20		;  next record field
+	CALL	BDOS
+	LD	HL,OUTE##
+APPEN3:	LD	(OUTP),HL
+	JP	RETT
+
+; ==================== CLOSE ====================
+;_close(rest,ast)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  {
+;  noretry(ast);
+;  close();
+;  }
+
+_CLOSE::
+	CALL	NORE
+CLOSEX:	CALL	CLOSE##
+	JP	RETT
+
+; ==================== CREATE ====================
+; CREATE command
+;
+; opens a new file as output
+; deletes any existing file with the same name
+; (cf. APPEND command)
+_CREA::
+	PUSH	HL
+	PUSH	DE
+	CALL	NORE
+	CALL	CLOSE##		; close existing output file
+	POP	DE
+	POP	HL
+	CALL	DOOUT##
+	CALL	SAVEX
+	JP	RETT
+
+; ==================== FAIL ====================
+;_fail()
+;  {
+;  return FALSE;
+;  }
+_FAIL::
+	JP	RETF
+
+; ==================== LESS ====================
+;_less(rest,ast,ls,pbst)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  LSUBST ls;
+;  BETASTATE ** pbst;
+;  {
+;  static EXPR x1;
+;  static EXPR x2;
+;  static LSUBST lss;
+_LESS::
+;
+;  lss = ls;
+	LD	(REST),HL
+	LD	(LSS),DE
+;  noretry(ast);
+	CALL	NORE
+;  x1.list = vnext(&rest,&lss);
+	LD	HL,REST
+	LD	DE,LSS
+	CALL	VNEXT
+	LD	(X1),HL
+;  if (x1.list == UNDEF)
+;    return FALSE;
+	?CPHL	UNDEF
+	JP	Z,RETF
+;  x2.list = vnext(&rest,&lss);
+	LD	HL,REST
+	LD	DE,LSS
+	CALL	VNEXT
+	LD	(X2),HL
+;  if (x2.list == UNDEF)
+;    return FALSE;
+	?CPHL	UNDEF
+	JP	Z,RETF
+;  if (numbp(x1.number) && numbp(x2.number))
+;    return (x1.number < x2.number);
+	LD	HL,(X1)
+	CALL	NUMBP##
+	JR	Z,LE1
+	LD	HL,(X2)
+	CALL	NUMBP##
+	JR	Z,LE1
+	LD	HL,(X1)
+	LD	DE,(X2)
+	CALL	CPHL##
+	JP	C,RETT
+	JP	RETF
+LE1:
+;  if (symbp(x1.symbol) && symbp(x2.symbol))
+;    return (strcmp(x1.symbol->string,x2.symbol->string) < 0);
+	LD	HL,(X1)
+	CALL	SYMBP##
+	JR	Z,LE2
+	LD	HL,(X2)
+	CALL	SYMBP##
+	JR	Z,LE2
+	LD	HL,(X2)
+	CALL	@STR##
+	PUSH	HL
+	LD	HL,(X1)
+	CALL	@STR##
+	POP	DE
+	CALL	STRCMP##
+	JP	C,RETT
+	JP	RETF
+LE2:
+;  *pbst = makebeta(ast,empty);
+	LD	HL,EMPTY
+	CALL	MKBETA##
+;  if (substp(x1.symbol))
+	LD	HL,(X1)
+	CALL	SUBSTP##
+	JR	Z,LE3
+;    {
+;    setretry(ast,&rless);
+	LD	HL,RLESS
+	CALL	SETRE
+;    if (numbp(x2.number))
+	LD	HL,(X2)
+	CALL	NUMBP##
+	JR	Z,LE5
+;      {
+;      lessv(x2.number-1,x1.symbol);
+	LD	HL,(X2)
+	DEC	HL
+	LD	DE,(X1)
+	CALL	LESSV
+;      return TRUE;
+	JP	RETT
+;      }
+LE5:
+;    if (substp(x2.symbol))
+	LD	HL,(X2)
+	CALL	SUBSTP##
+	JP	Z,LE6
+;      {
+;      lessv(0,x1.symbol);
+	LD	HL,0
+	LD	DE,(X1)
+	CALL	LESSV
+;      lessv(1,x2.symbol);
+	LD	HL,1
+	LD	DE,(X2)
+	CALL	LESSV
+;      return TRUE;
+	JP	RETT
+;      }
+LE6	EQU	RETF
+;    }
+LE3:
+;  else if (substp(x2.symbol))
+	LD	HL,(X2)
+	CALL	SUBSTP##
+	JP	Z,LE4
+;    {
+;    setretry(ast,&rless);
+	LD	HL,RLESS
+	CALL	SETRE
+;    if (numbp(x1.number))
+	LD	HL,(X1)
+	CALL	NUMBP##
+	JP	Z,LE4
+;      {
+;      lessv(x1.number+1,x2.symbol);
+	LD	HL,(X1)
+	INC	HL
+	LD	DE,(X2)
+	CALL	LESSV
+;      return TRUE;
+	JP	RETT
+;      }
+;    }
+LE4	EQU	RETF
+;  return FALSE;
+;  }
+;
+;rless()
+RLESS:			; needs more work to do retries
+;  {
+;  fatal("\r\nRetry on LESS.");
+	LD	HL,RLMSG
+	JP	FATAL##
+	DSEG
+RLMSG:	DB	CR,LF,'Retry on LESS.',0
+	CSEG
+;  }
+;
+;lessv(val,sub)
+;  NUMBER val;
+;  SUBST * sub;
+;  {
+;  unify(val,empty,sub->vname,sub);
+LESSV:
+	PUSH	DE
+	LD	DE,EMPTY
+	EXX
+	POP	HL
+	PUSH	HL
+	CALL	@VNAME##
+	POP	DE
+	EXX
+	JP	UNIFY##
+;  }
+
+; ==================== LIST ====================
+;_list(rest,ast)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  {
+_LIST::
+;  noretry(ast);
+	CALL	NORE
+;  listt((SYMBOL *)sbot);
+LISTX:	LD	HL,(SBOT##)
+	CALL	LISTT
+;  return TRUE;
+	JP	RETT
+;  }
+;
+;listt(ptr)	/* recursive */
+;  SYMBOL * ptr;
+;  {
+;  PAIR x;
+LISTT:
+	LD	(PTR),HL
+;
+;  if (ptr != (SYMBOL *)empty)
+	?CPHL	EMPTY
+	RET	Z
+;    {
+;    listt(ptr->lptr);
+	LD	HL,(PTR)
+	PUSH	HL
+	CALL	@LPTR##
+	CALL	LISTT		; recursive
+	POP	HL
+	LD	(PTR),HL
+;    if (nelistp(x = (PAIR)(ptr->addr)))
+	CALL	@ADDR##
+	LD	(X),HL
+	CALL	NELP##
+	JR	Z,LI1
+;      {
+;      do
+LI2:
+;        {
+;        listpr(x->left.list);
+	LD	HL,(X)
+	CALL	@LEFT##
+	CALL	LISTPR
+;        }
+;      while (nelistp(x = x->right.list)) ;
+	LD	HL,(X)
+	CALL	@RIGHT##
+	LD	(X),HL
+	CALL	NELP##
+	JR	NZ,LI2
+;      chrout('\r');
+;      chrout('\n');
+	CALL	CRLF##
+;      }
+LI1:
+;    listt(ptr->rptr);
+	LD	HL,(PTR)
+	CALL	@RPTR##
+	JR	LISTT		; tail recursion
+;    }
+;  }
+;
+;listpr(y)
+;  PAIR y;
+;  {
+LISTPR:
+	LD	(Y),HL
+;  chrout('(');
+	LD	A,'('
+	CALL	CHROUT##
+;  eprint(y->left.list,empty);
+	LD	HL,(Y)
+	CALL	@LEFT##
+	LD	DE,EMPTY
+	CALL	EPRINT##
+;  for (y = y->right.list ; nelistp(y) ; y = y->right.list)
+;    {
+LI4:
+	LD	HL,(Y)
+	CALL	@RIGHT##
+	LD	(Y),HL
+	CALL	NELP##
+	JR	Z,LI3
+;    msg("\r\n\t");
+	LD	HL,LI4MSG
+	DSEG
+LI4MSG:	DB	CR,LF,HT,0
+	CSEG
+	CALL	MSG##
+;    eprint(y->left.list,empty);
+	LD	HL,(Y)
+	CALL	@LEFT
+	LD	DE,EMPTY
+	CALL	EPRINT##
+;    }
+	JR	LI4
+LI3:
+;  msg(")\r\n");
+	LD	HL,LI3MSG
+	DSEG
+LI3MSG:	DB	')',CR,LF,0
+	CSEG
+	JP	MSG##
+;  }
+
+; ==================== LOAD ====================
+; LOAD command
+;
+; load from given disk file
+; default filetype 'PRO'
+_LOAD::
+	CALL	DOIN##
+	CALL	NORE
+	LD	A,(INF##)
+	DEC	A
+	JP	NZ,RETT		; not a disk file
+	LD	A,(INFCB##+9)
+	CP	' '		; no filetype?
+	JR	NZ,LOAD1
+	LD	HL,APRO##	; use default 'PRO'
+	?COPY	INFCB##+9
+LOAD1:	JP	LOADX
+
+; ==================== OPEN ====================
+; OPEN command
+;
+; opens an existing file as input
+_OPEN::
+	CALL	DOIN##
+	CALL	NORE
+	LD	A,(INF##)
+	DEC	A
+	JP	NZ,RETT		; not a disk file
+LOADX:	LD	DE,INFCB##
+	LD	C,15		; open file
+	CALL	BDOS
+	INC	A		; file found?
+	JR	NZ,OPEN1	; yes
+	XOR	A
+	LD	(INF##),A
+	JP	RETF
+OPEN1:	XOR	A
+	LD	(INFCB##+32),A	; zero current record
+	LD	HL,INE##	; pointer beyond end
+	LD	(INP##),HL
+	JP	RETT
+
+; ====================  READ  ====================
+;_read(rest,ast,ls,pbst)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  LSUBST ls;
+;  BETASTATE ** pbst;
+;  {
+;  PAIR x;
+_READ::
+	LD	(REST),HL
+	LD	(LS),DE
+;  noretry(ast);
+	CALL	NORE
+;  x = makepair(gtoken(),empty);
+	CALL	GTOKEN##
+	JR	READX
+
+; ====================  READCHAR  ====================
+;_readc(rest,ast,ls,pbst)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  LSUBST ls;
+;  BETASTATE ** pbst;
+;  {
+;  PAIR x;
+;
+_READC::
+	LD	(REST),HL
+	LD	(LS),DE
+;  noretry(ast);
+	CALL	NORE
+;  rdchar();
+	CALL	RDCHAR##
+;  x = makepair(character,empty);
+	LD	A,(CHR##)
+	LD	L,A
+	LD	H,0
+READX:	LD	DE,EMPTY
+	CALL	MKPAIR##
+	LD	(X),HL
+;  *pbst = makebeta(ast,empty);
+	LD	HL,EMPTY
+	CALL	MKBETA##
+;  if (unify(rest,ls,x,empty))
+;    return TRUE;
+	LD	HL,(X)
+	LD	DE,EMPTY
+	EXX
+	LD	HL,(REST)
+	LD	DE,(LS)
+	CALL	UNIFY##
+	JP	NZ,RETT
+;  release(x);
+	LD	HL,(X)
+	CALL	RLS##
+;  return FALSE;
+	JP	RETF
+;  }
+
+; ====================  READLIST  ====================
+;_readl(rest,ast,ls,pbst)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  LSUBST ls;
+;  BETASTATE ** pbst;
+;  {
+;  PAIR x;
+;
+_READL::
+	LD	(REST),HL
+	LD	(LS),DE
+;  noretry(ast);
+	CALL	NORE
+;  opar = 0;
+	XOR	A
+	LD	(OPAR##),A
+;  x = makepair(rdg1(),empty);
+	CALL	RDG1##
+	JR	READX
+
+; ====================  SAVE  ====================
+; SAVE command
+;
+; saves database to named file
+; default filetype 'PRO'
+_SAVE::
+	PUSH	HL
+	PUSH	DE
+	CALL	NORE
+	CALL	CLOSE##		; close existing output file
+	POP	DE
+	POP	HL
+	CALL	DOOUT##
+	LD	A,(OUTFCB##+9)
+	CP	' '		; no filetype?
+	JR	NZ,SAVE1
+	LD	HL,APRO##	; use default 'PRO'
+	?COPY	OUTFCB##+9
+SAVE1:	CALL	SAVEX		; create the file for output
+	CALL	LISTX		; send listing to file
+	JP	CLOSEX		; close file
+SAVEX:
+	LD	A,(OUTF##)
+	DEC	A
+	RET	NZ		; not disk file
+	LD	DE,OUTFCB##
+	LD	C,19		; delete file
+	CALL	BDOS
+	LD	DE,OUTFCB##
+	LD	C,22		; make file
+	CALL	BDOS
+	INC	A
+	JP	Z,RETF		; unsuccessful
+	LD	HL,OUTDMA##
+	LD	(OUTP##),HL
+	RET
+
+; ====================  WRITE  ====================
+;_write(rest,ast,ls,pbst)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  LSUBST ls;
+;  BETASTATE ** pbst;
+;  {
+;  static SUBVAL sv;
+_WRITE::
+	LD	(REST),HL
+	LD	(LS),DE
+;  noretry(ast);
+	CALL	NORE
+;  if (varp(rest))
+	LD	HL,(REST)
+	CALL	VARP##
+	JR	Z,WR1
+;    {
+;    if (substp(sv.val = value(vf(rest,ls))))
+;      ;
+	LD	DE,(LS)
+	CALL	VF##
+	CALL	VALUE##
+	LD	(SV),HL
+	CALL	SUBSTP##
+	JR	NZ,WR1
+;    else
+;      {
+;      rest = sv.assgn->sexp.list;
+	CALL	@EXPR##
+	LD	(REST),HL
+;      ls = sv.assgn->slist;
+	LD	HL,(SV)
+	CALL	@SLIST##
+	LD	(LS),HL
+;      }
+;    }
+WR1:
+;  while (nelistp(rest))
+	LD	HL,(REST)
+	CALL	NELP##
+	JR	Z,WR2
+;    {
+;    eprint(rest->left.list,ls);
+	CALL	@LEFT
+	LD	DE,(LS)
+	CALL	EPRINT##
+;    rest = rest->right.list;
+	LD	HL,(REST)
+	CALL	@RIGHT##
+	LD	(REST),HL
+;    if (varp(rest))
+	CALL	VARP##
+	JR	Z,WR3
+;      {
+;      if (substp(sv.val = value(vf(rest,ls))))
+;        ;
+	LD	DE,(LS)
+	CALL	VF##
+	CALL	VALUE##
+	LD	(SV),HL
+	CALL	SUBSTP##
+	JR	NZ,WR3
+;      else
+;        {
+;        rest = sv.assgn->sexp.list;
+	CALL	@EXPR##
+	LD	(REST),HL
+;        ls = sv.assgn->slist;
+	LD	HL,(SV)
+	CALL	@SLIST##
+	LD	(LS),HL
+;        }
+;      }
+WR3	EQU	WR1
+	JR	WR1
+;    }
+WR2:
+;  return TRUE;
+	JP	RETT
+;  }
+
+; ====================  WRITECHAR  ====================
+;_wrch(rest,ast,ls,pbst)
+;  PAIR rest;
+;  ALPHASTATE * ast;
+;  LSUBST ls;
+;  BETASTATE ** pbst;
+;  {
+;  NUMBER x;
+_WRCH::
+	LD	(REST),HL
+	LD	(LS),DE
+;  noretry(ast);
+	CALL	NORE
+;  x = vnext(&rest,&ls);
+	LD	HL,REST
+	LD	DE,LS
+	CALL	VNEXT
+;  if (! numbp(x))
+;    return FALSE;
+	CALL	NUMBP##
+	JP	Z,RETF
+;  if (x > 255)
+;    return FALSE;
+	LD	DE,256
+	CALL	CPHL##
+	JP	NC,RETF
+;  putc(x,outfile);
+	LD	A,L
+	CALL	CHROUT##
+;  return TRUE;
+	JP	RETT
+;  }
+
+	END
+

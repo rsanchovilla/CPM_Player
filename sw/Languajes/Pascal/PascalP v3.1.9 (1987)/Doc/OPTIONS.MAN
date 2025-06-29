@@ -1,0 +1,134 @@
+.macro chttl = Compiler Switches & Options
+.ch .chttl
+Pascal-P  recognizes  commands  placed in "pseudo-comments" of  the  form
+(*$...*)  or  {$...}.   Options are separated by commas  with  no  intervening
+spaces.  Unrecognized options will generate a warning.
+
+Compiler options never affect the sense of the compiled program,  but may
+alter the run-time environment.
+
+The following options are available (* marks defaults):
+.rem follow the itemized group with a .res command
+.sav .tabs 5 13 15 .lm 15 .p -10 1 5 .rm $$rm-5;
+.pp
+@nnnn .t # .t (nnnn  is an unsigned integer) Sets initial value for
+compiler generated labels.  Used with separate  
+compilations  so that internal procedure names are unique
+to segments.   Default 0.  Misuse can cause  unusable
+code.  Always assign increasing values, and allow for usage
+in earlier modules. .b
+.pp
+     B+ .t    * (default). Assign normal file buffer space.
+.pp
+     B- .t # .t   Assign  no file buffer space beyond that required for
+file flags and access to f^.  Normally used only with
+8080 and P-code interpreter systems for device  files
+which are accessed directly.
+.pp
+     Bnnn .t # .t nnn is an unsigned integer.  Assign nnn units of file
+buffer space.  Useful for special i/o drivers.
+Note  that this option takes effect during  the  file
+type definition.
+.b .pp
+     C+ .t   * (default). Emit object code.
+.pp
+     C- .t # .t   No object code. Useful for source syntax checks.
+.b .pp
+     D+ .t   * (default)  Emit run-time checks.
+.pp
+     D- .t # .t   No run-time checks.
+.b .pp
+     E+  .t # .t   Listing page eject.
+.pp
+     E-  .t # .t   Ignored.
+.b .pp
+     H+ .t # .t    Accept  extensions which allow compilation of  source
+for Per Brinch Hansens Solo system.  Also sets the S-
+option,  see below.  In this mode the " is recognized
+as  a comment delimiter (start and  end),  VAR, CONST  and
+TYPE declarations may be intermixed and "local" global
+variables may be declared (invisible to earlier portions
+of the source file), "OR" may be used
+in place of "+" for set union,  and characters may be
+defined  within  strings  by (:nn:) where nn  is  the
+ordinal value of the character.  All but "(:nn:) within
+strings and the "local module" VARS are
+normally executed with warnings in other modes.
+.pp
+     H- .t  * (default) Reject the above extensions.  If the system
+was in the H+ or S- modes it is left in the S- mode.
+.b .pp
+     I'filename'   A  second method for  including  other  source
+files.   This  can  appear  with other options  in  a
+single  line  (which must contain the *) or  }  char-
+acters).  This mode avoids the line number setting to
+a multiple of 1000 mentioned above,  and will not  be
+tracked  by the XREF cross-referencer program  unless
+the appropriate option bits are set.
+.b .pp
+     L+ .t   * (default). Generate a listing file.
+.pp
+     L- .t # .t   suppress listing until an L+ command encountered.
+.b .pp
+     N+ .t   * (default). Emit source line numbers in object code.
+.pp
+     N- .t # .t   No tracing line numbers.
+.b .pp
+     P+ .t   * (default). Allow use of nonstandard std procs.
+.pp
+     P- .t # .t   Warnings  whenever any non-standard "standard  
+Procedure" encountered.
+.b .pp
+     S+ .t   * (default)  Warnings  and/or errors signalled for  any
+use of nonstandard Pascal features, but not including
+use of nonstandard "standard procedures".
+.pp
+     S-  .t # .t   enables use of nonstandard Pascal features  including
+definition of character constants by (:nn:), where nn
+is  the  ordinal value of the character,  use of  the
+substring construct ARRAY[VAR FOR CONST],  use of the
+second  parameter  in  reset/rewrite  and  equivalent
+procedures, use of "OTHERWISE" in case statements.
+.pp
+     S'segmentname'  Controls segmentation of the generated code.
+Must appear outside the BEGIN END; of a procedure and
+before the BEGIN of the main program block.
+.b .pp
+     T+ .t # .t   Print  compiler internal tables,  showing  variables,
+types, etc.
+.pp
+     T- .t   * (default) Suppress table printing.
+.b .pp
+     W+ .t   * (default) Truncate input source at 80 characters.
+.pp
+     W- .t # .t   Truncate input source at 72 characters
+.pp
+     Wnnn .t # .t (nnn  is an unsigned integer).  Truncate input source
+at nnn characters.  nnn _<= 108.
+.b .pp
+     X+ .t # .t   save  option setting for  future  restoration.   This
+allows  modules  to set options as  desired,  without
+affecting option settings for the including text.
+.pp
+     X- .t # .t  restore  option  setting saved by previous  X+.   Note
+that only one level of storage is available.   An  X-
+without a preceding X+ restores the default settings.
+.b .pp
+     Y+ .t # .t    Not  for user use.   Enables ic listing on prr  file,
+and  renders that file unusable for code  generation.
+For compiler debugging only.
+.pp
+     Y- .t   * (default). Normal compiler operation.
+.b .pp
+     Z+ .t # .t   Not for user use.  Controls phase-in of new features,
+which may vary or be nonexistent, and may not work.
+.pp
+     Z- .t  * (default).  Undocumented features etc. are disabled.
+.b .pp
+     ^+ .t # .t    As  T+,  except that pointer variables and types  are
+traced through all nesting levels.
+.pp
+     ^- .t  * (default)  No  effect unless ^+ was in  effect,  when
+effectively sets T+ option.
+.res
+$

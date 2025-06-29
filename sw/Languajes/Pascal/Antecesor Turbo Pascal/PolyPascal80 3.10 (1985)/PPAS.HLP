@@ -1,0 +1,283 @@
+%*+-------------------------------------+-----------------+---------------------+
+!           Cursor movement           !      Block      !       Various       !
++-------------------------------------+-----------------+---------------------+
+! ^S    Left char   ^D    Right char  ! ^K^B  Begin     ! ^J    Help          !
+! ^A    Left word   ^F    Right word  ! ^K^K  End       ! ^K^D  Quit editor   !
+! ^Q^S  Start line  ^Q^D  End line    ! ^K^Y  Delete    ! ^K^X  Exit editor   !
+! ^E    Up line     ^X    Down line   ! ^K^C  Copy      ! ^V    INSERT on/off !
+! ^Q^E  Top line    ^Q^X  Bottom line ! ^K^V  Move      ! ^Z    AUTO on/off   !
+! ^R    Up page     ^C    Down page   ! ^K^P  Print     ! ^B    TABS on/off   !
+! ^Q^R  Start text  ^Q^C  End text    ! ^K^R  Read      ! ^W    ADJUST on/off !
+!                                     ! ^K^W  Write     ! ^P    Control char  !
+! Also use cursor arrows on keyboard  ! ^K^H  Del marks !                     !
++-------------------------------------+-----------------+---------------------+
+!               Delete                !      Edit       !       Search        !
++-------------------------------------+-----------------+---------------------+
+! ^H    Char left   ^G    Char right  ! RETN  New line  ! ^Q^F  Find string   !
+! ^Q^H  Start line  ^Q^Y  End line    ! ^I    Tabulate  ! ^Q^A  Find/replace  !
+! ^Y    Line all    ^T    Word right  ! ^N    Insert CR ! ^L    Find next     !
++-------------------------------------+-----------------+---------------------+
+! Search options: G = Global, N = No prompts, U = Ignore case, W = Words only !
++-----------------------------------------------------------------------------+
+
+% PolyPascal On-Line Help: The Command Mode.
+
+PolyPascal prompts by printing '>>'.  Each time this prompt appears,  Poly-
+Pascal  is ready to accept and process a command line.  The following  com-
+mands are available in the command mode.
+
+ LOAD     Load a new file.             SAVE     Save the workfile.
+ NAME     Set workfile name.           EDIT     Invoke the editor.
+ WHERE    Restart the editor.          COMPILE  Compile program in memory.
+ RUN      Run current program.         PROGRAM  Compile to program file.
+ OBJECT   Compile to object file.      FIND     Find run-time error.
+ DIR      Display disk directory.      USE      Set drive/directory.
+ MEMORY   Display memory size.         ZAP      Delete text or file.
+ HELP     Display help texts.          QUIT     Return to CP/M-86.
+
+Note that all commands may be shortened to their first letter, for instance 
+'L' instead of 'LOAD'.
+
+For further help on a specific command, enter 'H' or 'HELP' followed by the 
+command (or its first letter).
+
+%LPolyPascal On-Line Help: The LOAD Command.
+
+The LOAD command is used to load a new file into memory.  The command  line 
+format is:
+
+                              LOAD <filename>
+
+The  file type defaults to '.PAS'.  If <filename> is omitted,  the workfile 
+name is used.  If the workfile has been edited since it was loaded or  last 
+saved,  PolyPascal asks you if you want to save the old file before loading 
+the  new file.  If you answer no,  the modifications you may have made  are 
+lost.  When a file is loaded it becomes the workfile,  and its name will be 
+the default file name used by the LOAD,  SAVE, PROGRAM and OBJECT commands. 
+If the file you specify does not exist, PolyPascal displays 'No such file'. 
+If  there  is not enough room in memory for the file,  PolyPascal  displays 
+'File too big'.  In both these cases,  the memory buffer is cleared and the 
+workfile name is set to 'WORK.PAS'.
+
+%SPolyPascal On-Line Help: The SAVE Command.
+
+The  SAVE command is used to save the workfile on disk.  The  command  line 
+format is:
+
+                              SAVE <filename>
+
+The file type defaults to '.PAS'.  If <filename> is omitted,  the  workfile 
+name is used.  If a file of the same name and type already exists, its type 
+is changed to '.BAK' before the new file is created.  If the disk directory 
+is  full,  PolyPascal displays 'Directory is full'.  If there is not enough 
+room on the disk to create a new file,  PolyPascal displays 'Disk is full'. 
+If one of these errors are reported,  insert another disk,  log it in  with 
+the USE command, and try SAVE again.
+
+%NPolyPascal On-Line Help: The NAME Command.
+
+The  NAME  command  is used to display and change the  workfile  name.  The 
+workfile name is used by the LOAD, SAVE, PROGRAM and OBJECT commands when a 
+file name is not explicitly stated. The command line format is:
+
+                              NAME <filename>
+
+The file type defaults to '.PAS'.  If <filename> is omitted entirely,  NAME 
+displays the workfile name without changing it.
+
+The workfile name is set to 'WORK.PAS' when PolyPascal is initially run and 
+when a ZAP command is issued.
+
+%EPolyPascal On-Line Help: The EDIT Command.
+
+The EDIT command is used to invoke the editor. The command line format is:
+
+                              EDIT <filename>
+
+The file type defaults to '.PAS'. If <filename> is omitted (which it usual-
+ly  is),  the  editor started immediately,  and you may edit  the  text  in 
+memory.  If <filename> is specified,  the workfile is saved (if it has been 
+changed  since  it was loaded or last saved),  and the new file  is  loaded 
+before  the editor is started.  In this case,  if you exit the editor using 
+the ^K^D command,  PolyPascal will reverse the process, thus saving the new 
+file and reloading the original file. However, if you exit the editor using 
+^K^X, the new file becomes the workfile and remains in memory.
+
+%WPolyPascal On-Line Help: The WHERE Command.
+
+The  WHERE command is used to restart the editor.  Whenever you  leave  the 
+editor  (using ^K^D or ^K^X),  the position of the cursor is saved.  If you 
+use a WHERE command to start the editor again,  the cursor will be moved to 
+the position you just left.
+
+When the compiler reports an error,  it also tells the editor the  position 
+of  the error.  Thus,  if you use the WHERE command following a compilation 
+that went wrong, you are taken to the place of the error.
+
+%CPolyPascal On-Line Help: The COMPILE Command.
+
+When  the compiler is invoked from a COMPILE command,  the program code  is 
+stored directly into memory.
+
+Following  a successful compilation,  you are informed of the size  of  the 
+code segment, the data segment, and free memory (the stack segment):
+
+                   Code: rrrrrr bytes (aaaa paragraphs)
+                   Data: ssssss bytes (bbbb paragraphs)
+                   Free: tttttt bytes (cccc paragraphs)
+
+The  numbers displayed in parentheses are the paragraph sizes (in  hex)  of 
+each area in (one paragraph corresponds to 16 bytes).
+
+Note that whenever you invoke the editor, the program code is erased.
+
+%RPolyPascal On-Line Help: The RUN Command.
+
+The RUN command is used to run a program. The command line format is:
+
+                               RUN <params>
+
+where <params> is an optional parameter list which is passed to the program 
+in its command line buffer.  If no program code is present, the compiler is 
+invoked  to  compile the program (see 'HELP COMPILE'  screen).  Assuming  a 
+successful  compilation,  or if the program code was already  present,  the 
+program is started. When it ends, it automatically transfers control to the 
+command mode.
+
+If  a  run time error occurs,  the program will terminate displaying a  run 
+time error message, for instance:
+
+                       EXECUTION ERROR 04 AT PC=254E
+                       Program terminated
+
+You  may then use the FIND command to locate the statement that caused  the 
+error (see 'HELP FIND' screen).
+
+%PPolyPascal On-Line Help: The PROGRAM Command.
+
+The PROGRAM command is used to compile the program into a command file on a
+disk. The command line formats is:
+
+        PROGRAM <filename>,<ssegmin>,<ssegmax>,<csegmin>,<dsegmin>
+
+The  file type defaults to '.CMD'.  If <filename> is omitted,  the workfile 
+name is used, with its type changed to '.CMD'. <ssegmin>, <ssegmax>, <cseg-
+min>  and  <dsegmin> are hex numbers (up to four hex digits).  Any  one  of 
+these four parameters may be omitted, for instance 'PROGRAM TEST,800' (only 
+<ssegmin>) or 'PROGRAM TEST,,,CD8,12E4' (only <csegmin> and <dsegmin>).
+
+<ssegmin>  and  <ssegmax> specify the minimum and maximum sizes  (in  para-
+grahps) of the stack segment. <ssegmin> defaults to 100 hex (4K bytes), and 
+<ssegmax>  defaults to FFFF hex (up to 1M bytes).  <csegmin> and  <dsegmin> 
+specify  the  minimum sizes (in paragrahps) of the code and data  segments. 
+They default to the lowest possible values.  They may never be larger  than 
+hex FFF (64K bytes),  and usually they are only specified for programs that 
+will  chain to other programs with larger code and/or data  segments.  When 
+the  program has been compiled,  it may be executed from CP/M-86 simply  by 
+typing its name.
+
+%OPolyPascal On-Line Help: The OBJECT Command.
+
+The  OBJECT command produces an object file which contains only the  actual 
+program code,  i.e.  a code file without the run-time package.  The command 
+line format is:
+
+                             OBJECT <filename>
+
+The file type defaults to '.CHN' (short for chain).  If <filename> is omit-
+ted,  the workfile name is used,  with its type changed to  '.CHN'.  Object 
+(chain) files may only be activated through the chain procedure of PolyPas-
+cal.  For further details on program chaining, please refer to the PolyPas-
+cal Programming Manual.
+
+%FPolyPascal On-Line Help: The FIND Command.
+
+The  FIND  command is used to locate a statement in the source  text  which 
+corresponds  to  an offset address in the program code.  The  command  line 
+format is:
+
+                               FIND <offset>
+
+where  <offset> is the offset address of the statement to be  located.  The 
+offset address must be specified in hex (up to four hex  digits).  <offset> 
+may be omitted, in which case it defaults to the offset address of the last 
+run time error. Thus, to locate the statement that caused a run time error, 
+simply enter 'FIND'.
+
+If  the offset address is found,  the compiler stops and displays 'Found in 
+line xxx' followed by 'Press <RETURN> to edit or <ESC> to abort'.  When you 
+press RETURN,  the editor is invoked,  and the cursor is placed at or  just 
+after  the relevant section.  If the offset is out of range,  the  compiler 
+outputs 'Target address not found'.
+
+%DPolyPascal On-Line Help: The DIR Command.
+
+The  DIR command is used to display the directory of a  disk.  The  command 
+line format is:
+
+                              DIR <filename>
+
+where <filename> is an ambiguous file name as the one used in a CP/M-86 DIR 
+command,  i.e.  question  marks  (?) and asterisks (*) may be  interspersed 
+throughout the file name and type fields.
+
+A question mark will match any character in that position,  and an asterisk 
+will  match any combination of characters within the field in which  it  is 
+used.  If both the name field and the type field are omitted,  leaving only 
+the drive identifier and a colon,  then all files on that drive are listed. 
+If <filename> is omitted entirely,  then all files on the current drive are 
+listed.
+
+Note that system files are not displayed.
+
+%UPolyPascal On-Line Help: The USE Command.
+
+The  USE  command is used to display and/or set the current drive  and  the 
+current user number. The command line format is:
+
+                             USE <drive><user>
+
+where <drive> is a drive identifier (A-P) and user is a user number (0-15). 
+If <drive> is specified, the current drive is changed to that drive, and if 
+<user> is specified, the current user number is changed to that number.
+
+The USE command is furthermore used to log in new disks. Whenever a disk is 
+changed in one of the drives,  a USE command should be executed. Otherwise, 
+CP/M will report an R/O error if you try to write to that disk.
+
+%MPolyPascal On-Line Help: The MEMORY Command.
+
+The MEMORY command displays the size of free memory:
+
+        Free: rrrrrr bytes (aaaa paragraphs)
+
+The  number  is parentheses is the paragraph size (in hex) of free  memory. 
+One paragraph corresponds to 16 bytes.
+
+%ZPolyPascal On-Line Help: The ZAP Command.
+
+The  ZAP command is used to erase the text held in memory or to erase  disk 
+files. The command line format is:
+
+                              ZAP <filename>
+
+The default file type is '.PAS'. If <filename> is specified, ZAP will erase 
+the file(s) denoted by that name.  <filename> may contain '*' and '?' char-
+acters.  If  <filename> is omitted,  ZAP erases the text held in memory and 
+sets the workfile name to 'WORK.PAS'.  If the text has been edited since it 
+was loaded or last saved, PolyPascal asks you if you want to save it before 
+it  is erased.  If you answer no,  the modifications you may have made  are 
+lost.
+
+%QPolyPascal On-Line Help: The QUIT Command.
+
+The  QUIT command transfers control to CP/M-86.  If the workfile  has  been 
+edited  since it was loaded or last saved,  PolyPascal asks you if you want 
+to  save it before you quit.  If you answer no,  the modifications you  may 
+have made are lost.
+
+You  may later warm-start Poly-Pascal by entering 'PPAS *'.  This of course 
+requires that no vital memory areas have been overwritten by other programs 
+run in the meantime.
+
+

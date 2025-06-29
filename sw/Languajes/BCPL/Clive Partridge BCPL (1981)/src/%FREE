@@ -1,0 +1,39 @@
+/*  getblk  -  freestore management module
+ */
+
+     GET "LIBHDR"
+
+
+     MANIFEST $( sizebits = #x7FFE
+                 freebit = 1
+              $)
+
+     LET initblk(V,N) BE
+      $(   blklist:= V
+           V!0 := N+freebit
+           V!N := 0
+      $)
+
+     LET getblk(N) = VALOF
+      $(  LET P,Q = 0,blklist
+          IF N = 0 THEN RESULTIS 0
+          N := (N+1) & sizebits
+          $(  P := Q
+              WHILE (!P&freebit)=0 DO
+                 TEST !P=0 THEN RESULTIS 0
+                           ELSE P +:= !P
+              Q := P
+              UNTIL (!Q&freebit)=0 DO Q +:= !Q-freebit
+          $)  REPEATUNTIL Q-P >= N
+          UNLESS P+N = Q DO P!N := Q-P-N+freebit
+          !P := N
+          RESULTIS P
+     $)
+
+     LET freeblk(P) BE
+     $(  UNLESS P=0 THEN
+         !P := !P|freebit
+     $)
+
+
+

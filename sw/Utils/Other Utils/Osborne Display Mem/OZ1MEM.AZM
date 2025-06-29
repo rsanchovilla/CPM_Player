@@ -1,0 +1,266 @@
+;MEM.AZM
+BDOS	EQU	5
+	ORG	100H
+;header
+	LD	E,1AH		;clear screen
+	LD	C,2
+	CALL	BDOS
+	LD	A,(0F001H)	;check to see if this is an Osborne1 or Vixen
+	CP	20H		; by seeing if an Osborne1 screen memory 
+	JP	NZ,EXIT2	; location = SPACE
+	LD	DE,BANNER
+	LD	C,9		;print string
+	CALL	BDOS
+;highlight or underline header
+	LD	B,2CH
+	LD	HL,0F000H
+TOPLP:	SET	7,(HL)
+	INC	HL
+	DJNZ	TOPLP
+;display mem
+LOOP1:	LD	HL,0		;beginning of memory
+	LD	IX,0		;initialize cursor pointer
+	LD	IY,0F080H	;initialize cursor location
+LOOP2	LD	DE,0F080H	;beginning of screen memory location
+	CALL	CLRLIN		;clear first line and initialize (ROW)
+	LD	(TOPLEF),HL	;to hold memory location that goes into 0F080H
+LOOP3:	LD	B,80
+LOOP4:	LD	A,(HL)
+	CP	20H
+	JR	C,LPJP	;(HL) < SPACE
+	CP	7FH
+	JR	C,LOOP5	;(HL) < 'DEL'
+LPJP:	LD	A,2EH	;'.'
+LOOP5:	LD	(DE),A	;put char on screen
+	INC	DE
+	INC	HL
+	DEC	B
+	JR	NZ,LOOP4
+;put the next line on the screen
+NEXLIN:	PUSH	HL
+	CALL	NEWLIN
+	POP	HL
+	LD	A,D
+	CP	0FCH	;25th line
+	JR	C,LOOP3	;another line if A < 25th line
+;if 23 lines have been displayed then...
+CURSOR:	SET	7,(IY)	;highlight or underline cursor position
+	PUSH	IX
+	POP	DE
+	LD	BC,0F016H	;put memory location in header
+	LD	A,D
+	CALL	HEX1
+	LD	A,D
+	INC	BC
+	CALL	HEX2
+	LD	A,E
+	INC	BC
+	CALL	HEX1
+	LD	A,E
+	INC	BC
+	CALL	HEX2
+;
+	LD	A,(IX)
+	LD	BC,0F029H	;put memory contents in header
+	CALL	HEX1
+	LD	A,(IX)
+	INC	BC
+	CALL	HEX2
+;		
+WAIT:	PUSH	HL
+	LD	C,6	;wait for keypressed
+	LD	E,0FFH
+	CALL	BDOS
+	POP	HL
+	CP	0BH	;^K
+	JP	Z,EXIT
+	CP	11H	;^Q
+	JP	Z,LOOP1
+	CP	5	;^E
+	JR	Z,CURUP
+	CP	18H	;^X
+	JR	Z,CURDN
+	CP	4	;^D
+	JR	Z,CURRT
+	CP	13H	;^S
+	JP	Z,CURLFT
+	CP	1AH	;^Z
+	JP	Z,DOWN
+	CP	12H	;^R
+	JP	Z,PREV
+	CP	17H	;^W
+	JP	Z,UP
+	CP	3	;^C
+	JP	Z,NEXT	
+	JR	WAIT
+;
+CURUP:	RES	7,(IY)
+	PUSH	HL	;save HL
+	PUSH	IX
+	POP	HL	;put cursor pointer in HL
+	LD	BC,80
+	SBC	HL,BC
+	JR	C,CURUP1	;if cursor at memory beginning
+	PUSH	HL
+	POP	IX	;put it back
+	PUSH	IY
+	POP	HL	;put cursor location in HL
+	LD	A,H
+	CP	0F0H
+	JP	Z,CURSKP	;if cursor at top of screen
+	LD	BC,80H
+	SBC	HL,BC
+	PUSH	HL
+	POP	IY	;put it back
+CURUP1:	POP	HL	;get HL
+	JP	CURSOR
+;
+CURSKP:	POP	HL	;get HL
+	JP	UPSKP
+;
+CURDN:	RES	7,(IY)
+	LD	A,H
+	CP	0FFH	;see if at end of memory
+	JP	Z,LOOP1
+	PUSH	HL	;save HL
+	PUSH	IY
+	POP	HL	;put cursor screen location in HL
+	LD	BC,0FB4FH
+	SBC	HL,BC	;see if at line 24
+	POP	HL	;get HL
+	JR	NC,DOWNSK
+	LD	BC,80H
+	ADD	IY,BC
+	LD	BC,80
+	ADD	IX,BC
+	JP	CURSOR
+;
+CURRT:	RES	7,(IY)
+	INC	IX
+	PUSH	IY
+	POP	DE	;put cursor location in DE
+	LD	A,E
+	CP	0CFH	;right side of screen memory
+	JR	Z,LEFT1
+	CP	04FH	;also right side of screen memory
+	JR	Z,LEFT2
+	INC	IY
+	JP	CURSOR
+;
+CURLFT:	RES	7,(IY)
+	DEC	IX
+	PUSH	IY
+	POP	DE	;put cursor location in DE
+	LD	A,E
+	CP	0	;left side of screen memory
+	JR	Z,RIGHT1
+	CP	80H	;also left side of screen memory
+	JR	Z,RIGHT2
+	DEC	IY
+	JP	CURSOR
+;
+DOWN:	LD	A,H
+	CP	0FFH	;see if at end of memory
+	JP	Z,LOOP1
+DOWNSK:	LD	BC,80
+	ADD	IX,BC
+	LD	HL,(TOPLEF)
+	ADD	HL,BC
+	JP	LOOP2
+;
+PREV:	LD	BC,1840
+	JR	UP2
+UP:	LD	BC,80
+UP2:	PUSH	IX
+	POP	HL
+	SBC	HL,BC	;decrease cursor pointer by 80
+	PUSH	HL
+	POP	IX
+UPSKP:	LD	HL,(TOPLEF)
+	SBC	HL,BC	;decrease HL by 80
+	JP	C,LOOP1	;if at beginning of memory
+	JP	LOOP2
+;
+NEXT:	LD	A,H
+	CP	0FFH	;see if at end of memory
+	JP	Z,LOOP1
+	LD	BC,1840	;23*80
+	ADD	IX,BC
+	JP	LOOP2	;next page
+;
+LEFT1:	LD	A,D
+	CP	0FBH	;line 24
+	JR	Z,LEFBOT
+	INC	D
+	LD	E,0
+	JR	LEFTSK
+LEFT2:	LD	E,80H
+LEFTSK:	PUSH	DE
+	POP	IY
+	JP	CURSOR	
+;
+LEFBOT:	LD	E,80H
+	PUSH	DE
+	POP	IY	;put 0FB80H in IY
+	LD	HL,(TOPLEF)
+	LD	BC,80
+	ADD	HL,BC
+	JP	LOOP2
+;
+RIGHT1:	DEC	D
+	LD	E,0CFH	;column 79
+	JR	RIGHT3
+RIGHT2:	LD	A,D
+	CP	0F0H	;beginning of screen memory
+	JR	Z,RTTOP
+	LD	E,4FH	;also column 79
+RIGHT3:	PUSH	DE
+	POP	IY
+	JP	CURSOR	
+;
+RTTOP:	LD	IY,0F0CFH	;top right of screen memory
+	LD	BC,80
+	JP	UPSKP	
+;point to the next line on the screen and clear it
+NEWLIN:	LD	DE,(ROW)
+	LD	HL,80H
+	ADD	HL,DE
+	EX	DE,HL	;next line in DE
+CLRLIN:	LD	(ROW),DE	
+	LD	B,80
+	LD	A,20H	;space
+CLRLP:	LD	(DE),A	;clear line
+	INC	DE
+	DJNZ	CLRLP	;dec B & jump NZ
+	LD	DE,(ROW)
+	RET
+;
+HEX1:	RRA		;put left 4 bits on right
+	RRA
+	RRA
+	RRA
+HEX2:	AND	0FH	;mask off left 4 bits
+	ADD	A,30H	;move hex numbers up to decimal range
+	CP	3AH	;greater than '9'?
+	JR	C,NUM	;jump if not
+	ADD	A,7	;convert to A,B,C, etc
+NUM:	OR	80H	;highlight or underline it
+	LD	(BC),A	;put it in header
+	RET
+;
+EXIT:	LD	C,6	;direct console output
+	LD	E,A
+	CALL	BDOS
+	LD	C,2
+	LD	E,1AH	;clear screen
+	CALL	BDOS
+EXIT2:	RET		;to CP/M
+;
+BANNER:	DB	' MEMORY     LOCATION:          CONTENTS:$'
+ROW:	DS	2
+TOPLEF:	DS	2
+	END
+n
+	CALL	BDOS
+EXIT2:	RET		;to CP/M
+;

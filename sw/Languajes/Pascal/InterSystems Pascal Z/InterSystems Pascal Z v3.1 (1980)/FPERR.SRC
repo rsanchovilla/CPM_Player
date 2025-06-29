@@ -1,0 +1,26 @@
+; fperr - return a zero and set the carry bit
+;
+	NAME FPERR
+	ENTRY FPERR
+	EXT FLTERR
+	INCLUDE FPINIT.SRC
+;
+fperr:	xra	a		;clear acc
+	spix			;set stack pointer
+	pop	d		;de <- return address
+	pop	y		;restore iy....
+	cmp	intflg(x)	;test for internal operations
+	jc	flterr		;record a floating point error
+	pop	x		;...and ix
+	lxi	h,nbytes+7	;remove op2, 2 scratch bytes and op1
+	dad	s
+	sphl			;fix stack pointer
+	lxi	h,0		;save zero (op1) on the stack
+	push	h
+	push	h
+	xchg			;return addr -> hl
+	xra	a		;clear accumulator
+	stc			;set carry to indicate error
+	pchl			;return
+;
+

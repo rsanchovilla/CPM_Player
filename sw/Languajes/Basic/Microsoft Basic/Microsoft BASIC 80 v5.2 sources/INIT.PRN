@@ -1,0 +1,526 @@
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF
+  002F                          SWTCHR	SET	57O			;DEFAULT SWITCH CHARACTER IS SLASH
+                                	EXTRN	CNSGET
+                                	EXTRN	CHRGTR
+                                	EXTRN	OUTDO,LINPRT,MEMSIZ,CRDO,TXTTAB,OMERR
+                                	EXTRN	REASON
+                                	EXTRN	READY,STKINI,CURLIN,REPINI
+                                	EXTRN	DCOMPR
+                                	EXTRN	SYNCHR
+                                	EXTRN	ERRFLG
+                                
+                                	EXTRN	MAXFIL
+                                	EXTRN	LPTPOS
+                                	EXTRN	QINLIN,BUF,SNERR,FCERR,ATN,ATNFIX,COSFIX,TANFIX,SINFIX,COS
+                                	PAGE
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+Common file for BASIC interpreter
+
+                                
+                                	SUBTTL	SYSTEM INITIALIZATION CODE
+                                ;THIS IS THE SYSTEM INITIALIZATION CODE
+                                ;IT SHOULD BE LOADED AT THE END OF THE BASIC
+                                ;INTERPRETER
+                                
+                                	EXTRN	STROUT
+                                	PUBLIC	TSTACK
+                                	PUBLIC	INITSA,INIT
+  0000'                         INITSA:
+                                	EXTRN	NODSKS
+  0000'   CD 0000*              	CALL	NODSKS
+  0003'   2A 0000*              	LHLD	TXTTAB
+  0006'   2B                    	DCX	H
+  0007'   36 00                 	MVI	M,0
+                                	EXTRN	LRUN
+  0009'   2A 0150'              	LHLD	CPMFIL			;POINT TO START OF COMMAND LINE
+  000C'   7E                    	MOV	A,M			;GET BYTE POINTED TO
+  000D'   B7                    	ORA	A			;IF ZERO, NO FILE SEEN
+  000E'   C2 0000*              	JNZ	LRUN			;TRY TO RUN FILE
+  0011'   C3 0000*              	JMP	READY
+  0014'                         ENDIO:	DS	2
+  0016'                         INIT:
+  0016'   21 02C7'              	LXI	H,TSTACK		;SET UP TEMP STACK
+  0019'   F9                    	SPHL	
+  001A'   AF                    	XRA	A			;INITIALIZE PROTECT FLAG
+                                	EXTRN	PROFLG
+  001B'   32 0000*              	STA	PROFLG
+                                	EXTRN	TOPMEM,FRETOP
+  001E'   22 0000*              	SHLD	TOPMEM
+                                	EXTRN	SAVSTK
+  0021'   22 0000*              	SHLD	SAVSTK			;WE RESTORE STACK WHEN ERRORS
+  0024'   2A 0001               	LHLD	CPMWRM+1		;GET START OF BIOS VECTOR TABLE
+  0027'   01 0004               	LXI	B,0+4			;CSTS
+  002A'   09                    	DAD	B			;ADD FOUR
+  002B'   5E                    	MOV	E,M			;PICK UP CSTS ADDRESS
+  002C'   23                    	INX	H
+  002D'   56                    	MOV	D,M
+  002E'   EB                    	XCHG				;GET CSTS ADDRESS
+  002F'   22 0001*              	SHLD	CONST3##+1		;THIRD CONTROL-C CHECK
+  0032'   22 0001*              	SHLD	CONSTS##+1		;SAVE
+  0035'   22 0001*              	SHLD	CONST2##+1		;FAST CONTROL-C CHECK
+  0038'   EB                    	XCHG				;POINTER BACK TO [H,L]
+  0039'   23                    	INX	H			;POINT AT CI ADDRESS
+  003A'   23                    	INX	H
+  003B'   5E                    	MOV	E,M			;GET LOW BYTE OF CI ADDRESS
+  003C'   23                    	INX	H
+  003D'   56                    	MOV	D,M			;GET HIGH BYTE
+  003E'   EB                    	XCHG				;INPUT ADDRESS TO [H,L]
+  003F'   22 0001*              	SHLD	CONIN##+1		;SAVE IN CONSOLE INPUT CALL
+  0042'   EB                    	XCHG				;POINTER BACK TO [H,L]
+  0043'   23                    	INX	H			;SKIP "JMP" OPCODE
+  0044'   23                    	INX	H			;BUMP POINTER
+  0045'   5E                    	MOV	E,M			;GET OUTPUT ROUTINE ADDRESS
+  0046'   23                    	INX	H
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+SYSTEM INITIALIZATION CODE
+
+  0047'   56                    	MOV	D,M
+  0048'   EB                    	XCHG				;INTO [H,L]
+  0049'   22 0001*              	SHLD	CONOUT##+1		;SAVE INTO OUTPUT ROUTINE
+  004C'   EB                    	XCHG				;POINTER BACK TO [H,L]
+  004D'   23                    	INX	H			;NOW POINT TO PRINTER OUTPUT
+  004E'   23                    	INX	H			;ROUTINE ADDRESS
+  004F'   5E                    	MOV	E,M			;PICK IT UP
+  0050'   23                    	INX	H
+  0051'   56                    	MOV	D,M
+  0052'   EB                    	XCHG				;GET ADDRESS INTO [D,E]
+  0053'   22 0001*              	SHLD	LPTOUT##+1		;SET PRINT ROUTINE ADDRESS
+                                
+                                ;	Check CP/M Version Number
+                                
+                                	EXTRN	CPMVRN,CPMREA,CPMWRI
+                                
+  0056'   0E 0C                 	MVI	C,12			;Version Test
+  0058'   CD 0005               	CALL	CPMENT
+  005B'   32 0000*              	STA	CPMVRN			;[A] = Version Number (0 = 1.x)
+  005E'   B7                    	ORA	A			;Test version number
+  005F'   21 1514               	LXI	H,21*256+20+0		;1.x Read / Write
+  0062'   CA 0068'              	JZ	CPMVR1
+  0065'   21 2221               	LXI	H,34*256+33+0		;2.x Read / Write
+  0068'   22 0000*              CPMVR1:	SHLD	CPMREA			;Save Read/Write Codes
+  006B'   21 FFFE               	LXI	H,0+65534		;SAY INITIALIZATION IS EXECUTING
+  006E'   22 0000*              	SHLD	CURLIN			;IN CASE OF ERROR MESSAGE
+                                	EXTRN	CNTOFL
+  0071'   AF                    	XRA	A
+  0072'   32 0000*              	STA	CNTOFL
+                                	EXTRN	ENDBUF
+  0075'   32 0000*              	STA	ENDBUF			;MAKE SURE OVERRUNS STOP
+                                	EXTRN	CHNFLG,MRGFLG
+  0078'   32 0000*              	STA	CHNFLG			;MAKE SURE CHAINS AND MERGES
+  007B'   32 0000*              	STA	MRGFLG			;DONT TRY TO HAPPEN
+  007E'   32 0000*              	STA	ERRFLG			;DON'T ALLOW EDIT TO BE CALLED ON ERRORS
+  0081'   21 0000               	LXI	H,0			;GET 0
+  0084'   22 0000*              	SHLD	LPTPOS##		;ZERO FLAG AND POSITION
+                                	EXTRN	MAXREC
+  0087'   21 0080               	LXI	H,0+128			;DEFAULT MAX REC SIZE
+  008A'   22 0000*              	SHLD	MAXREC
+                                	EXTRN	TEMPST,TEMPPT
+  008D'   21 0000*              	LXI	H,TEMPST
+  0090'   22 0000*              	SHLD	TEMPPT
+                                	EXTRN	PRMSTK,PRMPRV
+  0093'   21 0000*              	LXI	H,PRMSTK		;INITIALIZE PARAMETER BLOCK CHAIN
+  0096'   22 0000*              	SHLD	PRMPRV
+  0099'   2A 0006               	LHLD	CPMENT+1		;GET LAST LOC IN MEMORY
+  009C'   22 0000*              	SHLD	MEMSIZ			;USE AS DEFAULT
+                                ;
+                                ;
+                                ; THE FOLLOWING CODE SCANS A CP/M COMMAND LINE FOR BASIC.
+                                ; THE FORMAT OF THE COMMAND IS:
+                                ;
+                                ; BASIC <FILE NAME>[/M:<TOPMEM>][/F:<FILES>]
+                                ;
+                                ;*
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+SYSTEM INITIALIZATION CODE
+
+  009F'   3E 03                 	MVI	A,3			;DEFAULT FILES
+  00A1'   32 0000*              	STA	MAXFIL			;BY SETTING MAXFIL=3
+  00A4'   21 014F'              	LXI	H,ZEROB			;POINT AT ZERO BYTE
+  00A7'   22 0150'              	SHLD	CPMFIL			;SO IF RE-INITAILIZE OK
+  00AA'   3A 0152'              	LDA	COMAGN			;HAVE WE ALREADY READ COMMAND LINE
+  00AD'   B7                    	ORA	A			;AND GOT ERROR?
+  00AE'   C2 0153'              	JNZ	ERRCMD			;THEN DEFAULT
+  00B1'   3C                    	INR	A			;MAKE NON-ZERO
+  00B2'   32 0152'              	STA	COMAGN			;STORE BACK NON-ZERO FOR NEXT TIME
+  0080                          TBUFF	SET	CPMWRM+128		;WHERE CP/M COMMAND BUFFER IS LOCATED
+                                
+  00B5'   21 0080               	LXI	H,TBUFF			;POINT TO FIRST CHAR OF COMMAND BUFFER
+  00B8'   7E                    	MOV	A,M			;WHICH CONTAINS # OF CHARS IN COMMAND
+  00B9'   B7                    	ORA	A			;IS THERE A COMMAND?
+  00BA'   22 0150'              	SHLD	CPMFIL			;SAVE POINTER TO THIS ZERO
+  00BD'   CA 0153'              	JZ	DONCMD			;NOTHING IN COMMAND BUFFER
+  00C0'   46                    	MOV	B,M			;AND [B]
+  00C1'   23                    	INX	H			;POINT TO FIRST CHAR IN BUFFER
+  00C2'   7E                    TBFLP:	MOV	A,M			;GET CHAR FROM BUFFER
+  00C3'   2B                    	DCX	H			;BACK UP POINTER
+  00C4'   77                    	MOV	M,A			;STORE CHAR BACK
+  00C5'   23                    	INX	H			;NOW ADVANCE CHAR TO ONE PLACE
+  00C6'   23                    	INX	H			;AFTER PREVIOUS POSIT.
+  00C7'   05                    	DCR	B			;DECREMENT COUNT OF CHARS TO MOVE
+  00C8'   C2 00C2'              	JNZ	TBFLP			;KEEP MOVING CHARS
+  00CB'   2B                    	DCX	H			;BACK UP POINTER
+  00CC'   36 00                 ENDCMD:	MVI	M,0			;STORE TERMINATOR FOR CHRGET (0)
+  00CE'   22 0150'              	SHLD	CPMFIL			;SAVE POINTER TO NEW ZERO (OLD DESTROYED)
+  00D1'   21 007F               	LXI	H,TBUFF-1		;POINT TO CHAR BEFORE BUFFER
+  00D4'   CD 0000*              	CALL	CHRGTR			;IGNORE LEADING SPACES
+  00D7'   B7                    	ORA	A
+  00D8'   CA 0153'              	JZ	DONCMD			;END OF COMMAND
+  00DB'   FE 2F                 	CPI	SWTCHR			;IS IT A SLASH
+  00DD'   CA 00F6'              	JZ	FNDSLH			;YES
+  00E0'   2B                    	DCX	H			;BACK UP POINTER
+  00E1'   36 22                 	MVI	M,34			;STORE DOUBLE QUOTE
+  00E3'   22 0150'              	SHLD	CPMFIL			;SAVE POINTER TO START OF FILE NAME
+  00E6'   23                    	INX	H			;BUMP POINTER
+  00E7'   FE 2F                 ISSLH:	CPI	SWTCHR			;OPTION?
+  00E9'   CA 00F6'              	JZ	FNDSLH			;YES
+  00EC'   CD 0000*              	CALL	CHRGTR			;SKIP OVER CHAR IN FILE NAME
+  00EF'   B7                    	ORA	A			;SET CC'S
+  00F0'   C2 00E7'              	JNZ	ISSLH			;KEEP LOOKING FOR OPTION
+  00F3'   C3 0153'              	JMP	DONCMD			;THATS EIT
+  00F6'   36 00                 FNDSLH:	MVI	M,0			;STORE TERMINATOR OVER "/"
+  00F8'   CD 0000*              SCANSW:	CALL	CHRGTR			;GET CHAR AFTER SLASH
+  00FB'                         SCANS1:
+  00FB'   FE 53                 	CPI	'S'			;IS IT /S: ? (SET MAX RECORD SIZE)
+  00FD'   CA 013D'              	JZ	WASS			;YES
+  0100'   FE 4D                 	CPI	'M'			;MEMORY OPTION
+  0102'   F5                    	PUSH	PSW			;SAVE INDICATOR
+  0103'   CA 010B'              	JZ	WASM			;WAS MEMORY OPTION
+  0106'   FE 46                 	CPI	'F'			;FILES OPTION
+  0108'   C2 0000*              	JNZ	SNERR##			;NOT "M" OR "F" ERROR
+  010B'   CD 0000*              WASM:	CALL	CHRGTR			;GET NEXT CHAR
+  010E'   CD 0000*              	CALL	SYNCHR
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+SYSTEM INITIALIZATION CODE
+
+  0111'   3A                    	DB	':'			;COLON SHOULD FOLLOW
+  0112'   CD 0000*              	CALL	CNSGET			;GET VALUE FOLLOWING COLON
+  0115'   F1                    	POP	PSW			;GET BACK M/F FLAG
+  0116'   CA 012A'              	JZ	MEM			;WAS MEMORY OPTION
+  0119'   7A                    	MOV	A,D			;FILES CANT BE .GT. 255
+  011A'   B7                    	ORA	A			;SET CC'S
+  011B'   C2 0000*              	JNZ	FCERR##			;FUNCTION CALL ERROR
+  011E'   7B                    	MOV	A,E			;GET LOW BYTE
+  011F'   FE 10                 	CPI	16			;MUST BE .LT. 16
+  0121'   D2 0000*              	JNC	FCERR##
+  0124'   32 0000*              	STA	MAXFIL			;STORE IN # OF FILES
+  0127'   C3 012F'              	JMP	FOK			;DONE
+  012A'   EB                    MEM:	XCHG				;PUT VALUE IN [D,E]
+  012B'   22 0000*              	SHLD	MEMSIZ			;SAVE INTO MEMSIZE
+  012E'   EB                    	XCHG				;GET BACK TEXT POINTER
+  012F'   2B                    FOK:	DCX	H			;RESCAN LAST CHAR
+  0130'   CD 0000*              	CALL	CHRGTR			;BY CALLING CHRGET
+  0133'   CA 0153'              	JZ	DONCMD			;END OF COMMAND
+  0136'   CD 0000*              	CALL	SYNCHR
+  0139'   2F                    	DB	SWTCHR			;SLASH SHOULD FOLLOW
+  013A'   C3 00FB'              	JMP	SCANS1			;SCAN NEXT SWITCH
+  013D'   CD 0000*              WASS:	CALL	CHRGTR			;GET CHAR AFTER "S"
+  0140'   CD 0000*              	CALL	SYNCHR
+  0143'   3A                    	DB	':'			;MAKE SURE COLON FOLLOWS
+  0144'   CD 0000*              	CALL	CNSGET			;GET VALUE FOLLOWING COLON
+  0147'   EB                    	XCHG				;SAVE IT
+  0148'   22 0000*              	SHLD	MAXREC
+  014B'   EB                    	XCHG	
+  014C'   C3 012F'              	JMP	FOK			;CONTINUE SCANNING
+  014F'   00                    ZEROB:	DB	0			;ZERO BYTE
+  0150'                         CPMFIL:	DS	2			;POINTER TO BASIC LOAD FILE
+  0152'   00                    COMAGN:	DB	0			;WE HAVENT SCANNED COMMAND YET
+  0153'                         ERRCMD:
+  0153'                         DONCMD:
+  0153'                         ASKMEM:
+  0153'   2B                    USEDEF:	DCX	H
+  0154'   2A 0000*              	LHLD	MEMSIZ			;GET SIZE OF MEMORY
+  0157'   E5                    	PUSH	H			;ALSO SAVE FOR LATER
+                                					;SET UP DEFAULT STRING SPACE
+  0158'   E1                    	POP	H
+  0159'   2B                    	DCX	H			;ALWAYS LEAVE TOP BYTE UNUSED BECAUSE
+                                					;VAL(STRING) MAKES BYTE IN MEMORY
+                                					;BEYOND LAST CHAR OF STRING=0
+  015A'   22 0000*              	SHLD	MEMSIZ			;SAVE IN REAL MEMORY SIZE
+  015D'   2B                    	DCX	H			;ONE LOWER IS STKTOP
+  015E'   E5                    	PUSH	H			;SAVE IT ON STACK
+                                
+                                
+                                
+                                					;KEEP ALL FUNCTIONS
+                                
+                                ;
+                                ; DISK INITIALIZATION ROUTINE
+                                ; SETUP  FILE INFO BLOCKS
+                                ; THE NUMBER OF EACH AND INFORMATION FOR
+                                ; GETTING TO POINTERS TO EACH IS STORED. NO LOCATIONS ARE
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+SYSTEM INITIALIZATION CODE
+
+                                ; INITIALIZED, THIS IS DONE BY NODSKS, FIRST CLOSING ALL FILES.
+                                ; THE NUMBER OF FILES IS THE FILE POINTER TABLE
+                                ;
+                                	PUBLIC	DSKDAT
+  0014'                         DSKDAT	SET	ENDIO			;START DATA AFTER ALL CODE
+  015F'                         ASKSK:
+  015F'   3A 0000*              	LDA	MAXFIL			;GET HIGHEST FILE #
+  0162'   21 0014'              	LXI	H,DSKDAT		;GET START OF MEMORY
+                                	EXTRN	FILPT1,FILPTR,MAXFIL,DBLK.C
+  0165'   22 0000*              	SHLD	FILPT1
+  0168'   11 0000*              	LXI	D,FILPTR		;POINT TO TABLE TO SET UP
+  016B'   32 0000*              	STA	MAXFIL			;REMEMBER HOW MANY FILES
+  016E'   3C                    	INR	A			;ALWAYS FILE 0 FOR INTERNAL USE
+  016F'   01 0000*              	LXI	B,DBLK.C		;SIZE OF A FILE INFO BLOCK PLUS $CODE
+  0172'   EB                    LOPFLB:	XCHG				;[H,L] POINT INTO POINTER BLOCK
+  0173'   73                    	MOV	M,E			;STORE THE POINTER AT THIS FILE
+  0174'   23                    	INX	H
+  0175'   72                    	MOV	M,D
+  0176'   23                    	INX	H
+  0177'   EB                    	XCHG	
+  0178'   09                    	DAD	B			;[H,L] POINT TO NEXT INFO BLOCK
+                                	EXTRN	FNZBLK
+  0179'   E5                    	PUSH	H			;SAVE [H,L]
+  017A'   2A 0000*              	LHLD	MAXREC			;GET MAX RECORD SIZE
+  017D'   01 0000*              	LXI	B,FNZBLK		;GET SIZE OF OTHER STUFF
+  0180'   09                    	DAD	B
+  0181'   44                    	MOV	B,H
+  0182'   4D                    	MOV	C,L			;RESULT TO [B,C]
+  0183'   E1                    	POP	H			;RESTORE [H,L]
+  0184'   3D                    	DCR	A			;ARE THERE MORE?
+  0185'   C2 0172'              	JNZ	LOPFLB
+  0188'                         HAVFNS:					;TEXT ALWAYS PRECEDED BY ZERO
+                                					;STORE IT
+  0188'   23                    	INX	H			;INCREMENT POINTER
+  0189'   22 0000*              	SHLD	TXTTAB			;SAVE BOTTOM OF MEMORY
+  018C'   22 0000*              	SHLD	SAVSTK			;WE RESTORE STACK WHEN ERRORS
+  018F'   D1                    	POP	D			;GET  CURRENT MEMSIZ
+  0190'   7B                    	MOV	A,E			;CALC TOTAL FREE/8
+  0191'   95                    	SUB	L
+  0192'   6F                    	MOV	L,A
+  0193'   7A                    	MOV	A,D
+  0194'   9C                    	SBB	H
+  0195'   67                    	MOV	H,A
+  0196'   DA 0000*              	JC	OMERR
+  0199'   06 03                 	MVI	B,3			;DIVIDE BY 2 THREE TIMES
+  019B'   B7                    SHFLF3:	ORA	A
+  019C'   7C                    	MOV	A,H
+  019D'   1F                    	RAR	
+  019E'   67                    	MOV	H,A
+  019F'   7D                    	MOV	A,L
+  01A0'   1F                    	RAR	
+  01A1'   6F                    	MOV	L,A
+  01A2'   05                    	DCR	B
+  01A3'   C2 019B'              	JNZ	SHFLF3
+  01A6'   7C                    	MOV	A,H			;SEE HOW MUCH
+  01A7'   FE 02                 	CPI	2			;IF LESS THAN 512 USE 1 EIGHTH
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+SYSTEM INITIALIZATION CODE
+
+  01A9'   DA 01AF'              	JC	SMLSTK
+  01AC'   21 0200               	LXI	H,0+512
+  01AF'   7B                    SMLSTK:	MOV	A,E			;SUBTRACT STACK SIZE FROM TOP MEM
+  01B0'   95                    	SUB	L
+  01B1'   6F                    	MOV	L,A
+  01B2'   7A                    	MOV	A,D
+  01B3'   9C                    	SBB	H
+  01B4'   67                    	MOV	H,A
+  01B5'   DA 0000*              	JC	OMERR
+  01B8'   22 0000*              	SHLD	MEMSIZ
+  01BB'   EB                    	XCHG	
+  01BC'   22 0000*              	SHLD	TOPMEM
+  01BF'   22 0000*              	SHLD	FRETOP			;REASON USES THIS...
+  01C2'   F9                    	SPHL				;SET UP NEW STACK
+  01C3'   22 0000*              	SHLD	SAVSTK
+  01C6'   2A 0000*              	LHLD	TXTTAB
+  01C9'   EB                    	XCHG	
+  01CA'   CD 0000*              	CALL	REASON
+  01CD'   7D                    	MOV	A,L			;SUBTRACT MEMSIZ-TXTTAB
+  01CE'   93                    	SUB	E
+  01CF'   6F                    	MOV	L,A
+  01D0'   7C                    	MOV	A,H
+  01D1'   9A                    	SBB	D
+  01D2'   67                    	MOV	H,A
+  01D3'   2B                    	DCX	H			;SINCE TWO ZEROS EXIST BETWEEN
+  01D4'   2B                    	DCX	H			;TXTTAB AND STREND, ADJUST
+  01D5'   E5                    	PUSH	H			;SAVE NUMBER OF BYTES TO PRINT
+  01D6'   21 021C'              	LXI	H,HEDING		;GET HEADING ("BASIC VERSION...")
+  01D9'   CD 0000*              	CALL	STROUT			;PRINT IT
+  01DC'   E1                    	POP	H			;RESTORE NUMBER OF BYTES TO PRINT
+  01DD'   CD 0000*              	CALL	LINPRT			;PRINT # OF BYTES FREE
+  01E0'   21 0210'              	LXI	H,WORDS			;TYPE THE HEADING
+  01E3'   CD 0000*              	CALL	STROUT			;"BYTES FREE"
+  01E6'   21 0000*              	LXI	H,STROUT
+  01E9'   22 0001*              	SHLD	REPINI+1
+  01EC'   CD 0000*              	CALL	CRDO			;PRINT CARRIAGE RETURN
+                                	EXTRN	READYR
+  01EF'   21 0000*              	LXI	H,READYR
+                                	EXTRN	JMPINI
+  01F2'   22 0001*              	SHLD	JMPINI+1
+  01F5'   C3 0000'              	JMP	INITSA
+                                
+                                
+  01F8'   0D                    AUTTXT:	DB	13
+  01F9'   0A                    	DB	10
+  01FA'   0A                    	DB	10
+  01FB'   4F 77 6E 65           	DB	'Owned by Microsoft'
+  01FF'   64 20 62 79           
+  0203'   20 4D 69 63           
+  0207'   72 6F 73 6F           
+  020B'   66 74                 
+  020D'   0D                    	DB	13
+  020E'   0A                    	DB	10
+  020F'   00                    	DB	0
+                                
+                                
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+SYSTEM INITIALIZATION CODE
+
+  0210'   20 42 79 74           WORDS:	DB	' Bytes free'
+  0214'   65 73 20 66           
+  0218'   72 65 65              
+  021B'   00                    	DB	0
+  021C'                         HEDING:
+  021C'   42 41 53 49           	DB	'BASIC-80 Rev. 5.2'
+  0220'   43 2D 38 30           
+  0224'   20 52 65 76           
+  0228'   2E 20 35 2E           
+  022C'   32                    
+  022D'   0D                    	DB	13
+  022E'   0A                    	DB	10
+                                
+                                
+                                
+  022F'   5B 43 50 2F           	DB	'[CP/M Version]'
+  0233'   4D 20 56 65           
+  0237'   72 73 69 6F           
+  023B'   6E 5D                 
+  023D'   0D                    	DB	13
+  023E'   0A                    	DB	10
+  023F'   43 6F 70 79           	DB	'Copyright 1988, 78, 79, 80 (C) by Microsoft'
+  0243'   72 69 67 68           
+  0247'   74 20 31 39           
+  024B'   38 38 2C 20           
+  024F'   37 38 2C 20           
+  0253'   37 39 2C 20           
+  0257'   38 30 20 28           
+  025B'   43 29 20 62           
+  025F'   79 20 4D 69           
+  0263'   63 72 6F 73           
+  0267'   6F 66 74              
+  026A'   0D 0A                 	DB	13,10
+  026C'   43 72 65 61           	DB	'Created: 14-Jul-80'
+  0270'   74 65 64 3A           
+  0274'   20 31 34 2D           
+  0278'   4A 75 6C 2D           
+  027C'   38 30                 
+  027E'   0D 0A                 	DB	13,10
+  0280'   00                    	DB	0
+  0281'                         LASTWR::				;LAST WORD OF SYSTEM CODE+1
+  0281'                         	DS	70+300*0+200*0+30*0	;SPACE FOR TEMP STACK
+  02C7'                         TSTACK:
+                                					;MAKE SURE LAST WORD PUNCHED IS OK
+                                	END	
+INIT INITAILIZATION FOR BASIC 8080/Z80 GATES/ALLEN/DAVIDOFF	MACRO-80 3.44	09-Dec-81	PAGE	S
+SYSTEM INITIALIZATION CODE
+
+Macros:
+
+Symbols:
+0153'	ASKMEM          015F'	ASKSK           0000*	ATN             
+0000*	ATNFIX          01F8'	AUTTXT          0000*	BUF             
+00FF 	BUFLEN          0079*	CHNFLG          013E*	CHRGTR          
+000E 	CLMWID          0145*	CNSGET          0073*	CNTOFL          
+0152'	COMAGN          0040*	CONIN           004A*	CONOUT          
+0036*	CONST2          0030*	CONST3          0033*	CONSTS          
+000F 	CONTO           0000*	COS             0000*	COSFIX          
+0005 	CPMENT          0150'	CPMFIL          0069*	CPMREA          
+0068'	CPMVR1          005C*	CPMVRN          0000*	CPMWRI          
+0000 	CPMWRM          01ED*	CRDO            006F*	CURLIN          
+0080 	DATPSC          0170*	DBLK.C          0000 	DBLTRN          
+0000*	DCOMPR          0153'	DONCMD          0014I'	DSKDAT          
+0076*	ENDBUF          00CC'	ENDCMD          0014'	ENDIO           
+0153'	ERRCMD          007F*	ERRFLG          0122*	FCERR           
+0166*	FILPT1          0169*	FILPTR          00F6'	FNDSLH          
+017E*	FNZBLK          012F'	FOK             01C0*	FRETOP          
+0188'	HAVFNS          021C'	HEDING          0016I'	INIT            
+0000I'	INITSA          00E7'	ISSLH           01F3*	JMPINI          
+0281I'	LASTWR          0050 	LINLN           01DE*	LINPRT          
+0172'	LOPFLB          0084 	LPTLEN          0054*	LPTOUT          
+0085*	LPTPOS          000F*	LRUN            016C*	MAXFIL          
+017B*	MAXREC          0003 	MD.RND          0001 	MD.SQI          
+0002 	MD.SQO          012A'	MEM             01B9*	MEMSIZ          
+007C*	MRGFLG          0028 	NAMLEN          0001*	NODSKS          
+001D 	NUMLEV          000A 	NUMTMP          01B6*	OMERR           
+0000*	OUTDO           0097*	PRMPRV          0094*	PRMSTK          
+001C*	PROFLG          0000*	QINLIN          0012*	READY           
+01F0*	READYR          01CB*	REASON          01EA*	REPINI          
+01C4*	SAVSTK          00FB'	SCANS1          00F8'	SCANSW          
+019B'	SHFLF3          0000*	SINFIX          01AF'	SMLSTK          
+0109*	SNERR           0000*	STKINI          01E7*	STROUT          
+0003 	STRSIZ          002F 	SWTCHR          0141*	SYNCHR          
+0000*	TANFIX          00C2'	TBFLP           0080 	TBUFF           
+0091*	TEMPPT          008E*	TEMPST          01BD*	TOPMEM          
+0000 	TRUROM          02C7I'	TSTACK          01C7*	TXTTAB          
+0153'	USEDEF          010B'	WASM            013D'	WASS            
+0210'	WORDS           014F'	ZEROB           
+
+
+
+No Fatal error(s)
+
+
+   01AF'	SMLSTK          
+0109*	SNERR           0000*	STKINI          01E7*	STROUT          
+0003 	STRSIZ     

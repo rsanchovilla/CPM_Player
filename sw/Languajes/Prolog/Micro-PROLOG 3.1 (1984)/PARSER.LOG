@@ -1,0 +1,292 @@
+
+
+
+
+Pars(top consult translate make_clause read_cl load bye "<USER>" "?ERROR?")
+    (member repeat append length op transl transl-mod
+     user xfx xfy yfx xf yf fx _ 
+     :- ?- ; , not is =.. = \= < > "<=" ">=" == \== . - + : * mod )
+
+
+(("<USER>")(prelude)/
+           (DELCL((prelude)|X))(ADDCL((prelude)))
+           /(top)/FAIL)
+((prelude)(PUTB "CON:" 12)(PUTB "CON:" 134)
+          (P "       m i c r o   -   P R O L O G")(PUTB "CON:" 132)
+          (P "        *** Standard Syntax Interface ***")(PP)
+          (P "                                  ")
+          (P "        <Befor executing goals load prolib2 !>")(PP) 
+          (LOAD prolib1)
+          (SPACE X)
+(P "                                                   [" X "KBytes Free ]")(PP))
+
+(("?ERROR?" X Y)/FAIL)
+
+((top)(repeat)(PP)(P "?-")(read_cl X Y "KBD:")
+                          (OR ((? X)/(print_vars Y Z)(P "yes")(PP)) 
+                              ((PP no)(PP))  )
+                          /(top))
+((bye)QT)
+((load X)(LOAD X))
+
+((print_vars () X))
+((print_vars ((X Y)|Z) x) (OR ((NUM X)) ((P X " = " Y)(PP)) )
+    /(print_vars Z ((X Y)|x)))
+
+((consult user)/(consult1 user))
+((consult Y)/(OPEN Y)(P "loading => " Y)(PP)(P "line    => ")
+             (consult1 Y)(CLOSE Y)) 
+((consult1 user)/(P "clause :")(read_cl X Y "KBD:")(ass X user)) 
+((consult1 X)/(read_cl Y Z X)(ass Y X))
+
+((ass () X)/)
+((ass X Y)/(ADDCL X)/(consult1 Y))
+
+((translate X)(LOAD trans)(transl X)/(KILL transl-mod))
+((translate X)(KILL transl-mod))
+
+((read_cl X Y Z)(OR ((readi X Y Z)) 
+                   ((P "*** Syntax error ***")(PP)(EQ X (FAIL)))))
+((readi X X1 Z1) 
+  (get_cl () () Y Z1)/
+  (OR  ((EQ Y ())/)
+       ((scan Y Z x y)/
+        (vartrans Z z X1)/
+        (parse 255 Y1 z ())/
+        (make_clause Y1 X)/)  ))
+
+((get_cl X Y (Z|x) y) (get X Y Z y)/(get_cl Y Z x y))
+((get_cl X Y () Z))
+
+((get X Y Z x)(GETB x y)/(cont_get X Y y Z x))
+
+((cont_get () () 26 X Y)(P " <EOF>")(PP)/FAIL)
+((cont_get  X  Y 26  Z "KBD:")(PP)/FAIL)
+((cont_get  X  Y 26  Z    x  )(PP)(P " <EOF> ")(PP)/FAIL)
+((cont_get  X 46 13  Y "KBD:")(PP)/FAIL)
+((cont_get 46 32 13  X "KBD:")(PP)/FAIL)
+((cont_get  X 46 13  Y    Z  )(P "*")/FAIL)
+((cont_get 46 32 13  X    Y  )(P "*")/FAIL)
+((cont_get  X 32 32  Y "KBD:")/(PUTB "CON:" 32)(get X 32 Y "KBD:"))
+((cont_get  X 32 32  Y    Z  )/(get X 32 Y Z))
+((cont_get  X  Y 13  Z    x  )(IF (EQ x "KBD:") ((PP)) ((P "*")))/(get X Y Z x))
+((cont_get  X  Y 10  Z    x  )/(get X Y Z x))
+((cont_get  X  Y  Z  Z "KBD:")/(PUTB "CON:" Z))
+((cont_get  X  Y  Z  Z    x  ))
+
+((scan (46 32) () () X)/)
+((scan (46) () () X)/)
+((scan () () () X)/)
+((scan (34|X) (Y|Z) x y)
+  (quoted X Y z)
+  (scan z Z x y)) 
+((scan (32|X) Y Z x)/
+  (scan X Y Z x))
+((scan (40|X) (Y|Z) x y)/
+  (scan X Y z X1)
+  (scan z Z x y))
+((scan (41|X) () X y)/)
+((scan (91|X) (Y|Z) x y)/
+  (scan (36|X) Y z l)
+  (scan z Z x y))
+((scan (93|X) () X Y)/)
+((scan (44|X) Y Z x)
+  (NOT VAR x)
+  (scan X Y Z x))
+((scan (124|X) Y Z x)/
+  (scan X (Y) Z x))
+((scan X (Y|Z) x y)
+  (spezial_sign X Y z)/
+  (scan z Z x y))
+((scan (X|Y) (Z|x) y z)
+  (number X X1)/
+  (num (X|Y) Z Y1)
+  (scan Y1 x y z))
+((scan X (Y|Z) x y)
+  (atomr X Y z)
+  (scan z Z x y))
+
+((quoted X Y Z)
+  (quot X x Z)
+  (append ("~""|x) ("~"") y)
+  (RLST y Y))
+
+((quot (34|X) () X)) 
+((quot (X|Y) (Z|x) y)
+ (CHAROF Z X)/
+ (quot Y x y))
+
+((number X Y)
+  (LESS X 58)
+  (LESS 47 X)/
+  (CHAROF Y X))
+
+((num X Y Z)
+  (numlist X x Z m ())
+  (RLST x Y))
+
+((numlist (69 45|X) (E -|Y) Z m x)/
+  (numlist X Y Z e x))
+((numlist (101 45|X) (E -|Y) Z m x)/
+  (numlist X Y Z e x))
+((numlist (69|X) (E|Y) Z m x)
+  (numlist X Y Z e x))
+((numlist (101|X) (E|Y) Z m x)
+  (numlist X Y Z e x)) 
+((numlist (46|X) (.|Y) Z m ())/
+  (numlist X Y Z m .))
+((numlist (X|Y) (Z|x) y z X1)
+  (number X Z)/
+  (numlist Y x y z X1))
+((numlist X () X Y Z))
+
+((atomr X Y Z)
+  (atomlist X x Z)
+  (STRINGOF x Y))
+
+((atomlist (X|Y) (Z|x) y)
+  (NOT spezial_sign (X|Y) z X1)
+  (NOT member X (32 40 41 91 93 124))
+  (CHAROF Z X)/
+  (atomlist Y x y))
+((atomlist (32|X) () X)/)
+((atomlist X () X))
+
+((spezial_sign (61 46 46 |X) =..  X))
+((spezial_sign (61 61    |X) ==   X)) 
+((spezial_sign (92 61 61 |X) \==  X))
+((spezial_sign (61       |X) =    X))
+((spezial_sign (60 61    |X) "<=" X))
+((spezial_sign (62 61    |X) ">=" X))
+((spezial_sign (63 45    |X) ?-   X))
+((spezial_sign (60       |X) <    X))
+((spezial_sign (62       |X) >    X))
+((spezial_sign (44       |X) ,    X))
+((spezial_sign (46       |X) .    X))
+((spezial_sign (59       |X) ;    X))
+((spezial_sign (33       |X) /    X))
+((spezial_sign (58 45    |X) :-   X))
+((spezial_sign (45       |X) -    X))  
+((spezial_sign (47       |X) :    X))
+((spezial_sign (92 61    |X) \=   X))
+((spezial_sign (43       |X) +    X))
+((spezial_sign (42       |X) *    X))
+((spezial_sign (36       |X) $    X))
+
+((vartrans () () X))
+((vartrans X X Y) 
+  (NUM X)/)
+((vartrans "_" X Y)/
+  (ADDCL ((anonym Y)))
+  (DELCL ((anonym Z)))
+  (length Z x)
+  (member (x X) Y)) 
+((vartrans X Y Z) 
+  (CON X) 
+  (LESS X [)(LESS @ X) 
+  (member (X Y) Z)/)
+((vartrans X X Y) 
+  (CON X)/)
+((vartrans ((X|Y)|Z) (x|y) z) 
+  (cont_vartrans (X|Y) x z) 
+  (vartrans Z y z) 
+  /)
+((vartrans (X|Y) (Z|x) y) 
+  (vartrans X Z y) 
+  (vartrans Y x y))
+
+((cont_vartrans (X|Y) (X|Z) x) 
+  (CON X) 
+  (NOT EQ "_" X)
+  (OR ((LESS X A)) ((LESS "Z" X)))
+  (vartrans Y Z x)/)
+((cont_vartrans (X|Y) (Z|x) y) 
+  (cont_vartrans X Z y) 
+  (vartrans Y x y)/)
+
+((parse X Y Y ())
+  (NOT LST Y)/) 
+((parse X Y (Z|x) y)
+  (VAR Z)/
+  (parse_rest X Z Y x y))
+((parse X Y ($|Z) ())/
+  (parse_list Z Y)) 
+((parse X Y (Z|x) y)
+  (NOT VAR Z)
+  (op z fx Z)
+  (parse z X1 x Y1)
+  (parse_rest X (Z X1) Y Y1 y))
+((parse X Y (Z (x|y)|z) X1)
+  (CON Z)
+  (arglist (x|y) Y1)/
+  (parse_rest X (Z|Y1) Y z X1))
+((parse X Y ((Z|x)|y) z)
+  (parse 255 X1 (Z|x) ())/
+  (parse_rest X X1 Y y z))
+((parse X Y (Z|x) y)
+  (parse_rest X Z Y x y))
+
+((parse_rest X Y Z (x|y) z)
+  (NOT VAR x)
+  (op X1 Y1 x)
+  (OR ((LESS X1 X)) ((EQ X1 X)))
+  (optail Y1 X1 Z1 y x1)/
+  (parse_rest X (x Y|Z1) Z x1 z))
+((parse_rest X Y Y Z Z))
+
+((parse_list X X)
+  (VAR X)/)
+((parse_list () ())/)
+((parse_list (X|Y) (Z|x))/
+  (parse 255 Z X ())
+  (parse_list Y x))
+ 
+((optail X Y (Z) x y)
+  (corr X Y z)/
+  (parse z Z x y))
+((optail xf X () Y Y)/)
+((optail yf X () Y Y))
+
+((corr yfx X Y)/
+  (SUM 1 X Y))
+((corr xfx X X)/)
+((corr xfy X X))
+
+((arglist X (Y|Z))
+  (parse 40 Y X x)
+  (arglist_tail x Z))
+
+((arglist_tail (,|X) (Y|Z))/
+  (parse 40 Y X x)
+  (arglist_tail x Z))
+((arglist_tail () ()))
+
+((make_clause (X Y Z) (x|y))
+  (OR ((EQ X ,)) ((EQ X :-)))
+  /
+  (make_clausehead Y x)
+  (unwrap Z y))
+((make_clause X ((X)))
+  (CON X)/)
+((make_clause X (X)))
+
+((unwrap X ((X)))
+  (CON X)/)
+((unwrap (X Y Z) ((OR x y)))
+  (EQ X ;)/
+  (unwrap Y x)
+  (unwrap Z y))
+((unwrap (X Y Z) (x|y))
+  (EQ X ,)/
+  (make_clausehead Y x)
+  (unwrap Z y))
+((unwrap X (X)))
+
+((make_clausehead X (X))
+  (CON X)/)
+((make_clausehead X X)) 
+CLMOD
+
+
+
+

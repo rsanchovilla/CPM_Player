@@ -1,0 +1,269 @@
+	      DISC FORMATS, KAYPRO II AND KAYPRO 4
+
+This documentation concerns chiefly people with old-type Kaypro 4
+computers, i.e. double-sided disc drives rather than single-sided
+Kaypro IIs, and with no Reverse Video screen display (a feature
+of the Kaypro 4s from the middle of l984 onwards.)   The
+practical point of difference is as follows:
+
+    --old-type Kaypro IIs can boot up (i.e. start with CP/M code
+    from the first disc in the A drive) only from Kaypro II
+    (SINGLE-sided) discs.   They cannot even read double-sided
+    discs.
+
+    --old-type Kaypro 4s can boot up from EITHER SS or DS discs; 
+    they can read from and write to either type, since the disc
+    drives reset themselves appropriately on a Warm Boot
+    (Control--C).
+
+    --new-model Kaypro IIX, 4E, etc., with Reverse Video, can
+    read and write both SS and DS discs but can boot up ONLY from
+    their own discs.   This is because CP/M system code (see
+    below) for Reverse Video machines is different from system
+    code in older machines.   Correspondingly, old Kaypros cannot
+    boot up from discs with RV system code, but can read and
+    write to them in the B drive.
+
+The outward and obvious differences are, first, between SS (with
+191K of available space per disk) and DS machines (390K), and
+secondly between DS machines with and without Reverse Video.  
+Kaypros with RV all (seem to) have push-button controls instead
+of door-latches on their disc drives.   But the difference that
+matters is in the "system" code--see below.
+
+The standard disc format in practically all Users' Groups is
+Single-Sided Kaypro II, because that is the only disc format
+every model of Kaypro can both read and write.   
+
+
+		       CP/M "SYSTEM" CODE
+
+SYSTEM code is the non-directory code which makes any computer
+go.   In all CP/M computers it is written onto its own special
+tracks on all disks by the last sequence of the COPY programme.  
+It is "non-directory" since this code does not have a filename of
+its own, and is not listed when you invoke DIR or any other
+screen directory.
+
+(Programmes which do have filenames can be altered by STAT to
+"system files" in order to make them "invisible", not appearing
+in directories.)
+
+When a Kaypro is first switched on or reset (by the rear-panel
+button) it loads into RAM its three operating systems (CCP =
+keyboard control, BIOS = screen and port controls, BDOS = disc
+control) by reading it off the system or CP/M tracks on the first
+disc in the A drive.   There are thus three basically different
+types of system code:
+
+    --for single-sided discs (c.f. BDOS) as in the old Kaypro II;
+
+    --for double-sided discs (c.f. BDOS);  if the system lacks
+    reverse video as in the old Kaypro 4 its BIOS can be the same
+    as above.
+
+    --for DS discs and reverse video (c.f. BIOS) as in the Kaypro
+    IIX and 4E.
+
+These systems are "upward compatible":  in general newer
+computers (e.g. with reverse video) can run older programmes
+(without R.V.) but not vice versa.   The only significant
+exceptions are programmes that handle system code, i.e. those
+that format and/or copy discs.
+
+Because system code has no filename, a special programme called
+SYSGEN is needed to transfer system code from one disc to
+another.   It does this by a simple menu, asking you which drive
+is to be the source of system code and which is to be the
+destination.   It then copies system code onto the appropriate
+tracks in the destination disc.
+
+The difference between the three types of system code is both in
+its contents and in its spatial layout on disc.   Unsurprisingly,
+old Kaypro II CP/M is all on one side, because all disc contents
+are on one side.   Kaypro 4 writes on both sides of the disc: 
+both CP/M and everything else.
+
+
+			 PRACTICAL USAGE
+
+In any double-sided machine, when you boot up, if the computer
+finds any system code written on both sides of the disc, it
+assumes the system is double-sided.   Where novice Kaypro users
+usually go wrong is by taking a disc that has once had DS code
+written on it and attempting to reformat it for SS use.   The
+standard COPY/FORMAT and SYSGEN programmes do not wipe out old
+system code on the "other" side of the disc.   So a DS machine
+will misidentify old code and read the disc as DS when you
+intended it to be SS.
+
+When only SS machines (old Kaypro IIs) were on the market, this
+problem did not exist.   The latest DS machines come with special
+a special Kaypro programme called MFDISK which does successfully
+erase unwanted system code when reformatting.   People with
+in-between machines, i.e. double-sided but lacking reverse video,
+need to adopt special procedures to use both SS and DS formats.
+
+To avoid delays and difficulties in swapping disc files:
+
+THE SIMPLE WAY is:
+
+	(1)  Use different discs for II (SS DD) and 4 (DS DD).
+	Think of Kaypro II (SS) format as something like
+        virginity:  once lost never restored, although you can
+        always use the same disc in Kaypro 4 (DS).
+
+	(2)  Similarly, do not store any Kaypro II utilities on a
+	Kaypro 4 disc until and unless you have verified that
+	they will work in that format.   For example FORMAT.COM
+	(to format Kaypro II blank discs) works right only
+	if it is stored on a Kaypro II formatted disc.   If you
+        load it from a Kaypro 4 disc it does not work.
+
+	(3)  Owners of new-model Kaypro 4s (with reverse video)
+        have been advised by PROFILES to use Kaypro II discs only
+        in the B drive:  they will not boot the computer if used
+        in the A drive.   Older model Kaypro 4s boot II and 4
+        discs equally well.   (NB:  always reboot (with a Control--C
+	or reset button) when you change discs in either drive.)
+
+The Kaypro II programmes needed by a Kaypro 4 or IIX owner for
+interchange with model II owners are Kaypro II single-sided
+versions of:
+
+		FORMAT.COM
+		COPY.COM
+		SYSGEN.COM
+
+    BEWARE--although these COPY and SYSGEN utilities have the
+    same names as those on your Kaypro 4 CP/M disc, they are
+    different.   You can of course rename them as you please,
+    e.g. COPY2.COM and SYSGEN2.COM.   The simplest method is
+    probably to keep these essential programmes on a Kaypro II
+    system disc, together with useful items (e.g. PIP) from your
+    Kaypro 4 system disc.
+
+SYSGEN is not a programme you need use routinely.   Its chief use
+is not laying CP/M onto a fresh disc (which is done automatically
+during formatting or copying) but in transferring your own
+custom-configured CP/M from one disc to another (e.g. if you have
+used CONFIG to alter the keypad on your word-processing programme
+disc.)   It is also used to restore CP/M on a used disc that
+refuses, for whatever reason, to boot up.
+
+IN A NUTSHELL:  
+
+(1) keep your backup or master copies of utilities for Kaypro II
+uncontaminated by Kaypro 4 material, and vice versa;  and 
+
+(2) bring to every KUG meeting a formatted Kaypro II disc with
+the PIP.COM programme and lots of blank space, so that you can
+take a copy of everything that is available.
+
+THE ADVANCED WAY:
+
+The special Kaypro programme MFDISK allows you to format new or
+used discs for either SS or DS Kaypro machines (and for a dozen
+other computers.)   There are several versions of MFDISK:
+
+    MFDISK2 version 2.0 for Kaypro IIs
+    MFDISK4 version 2.0 for DS Kaypros lacking reverse video
+	    (distributed in Kaypro Users Groups)
+    MFDISK version 3.0 for DS Kaypros with reverse video
+	    (supplied free with newer Kaypros).   
+
+These programmes are machine-specific and not "upwardly
+compatible."   Each will run only on the Kaypro model for which
+it was designed.
+
+To reformat a used disc for single-sided use proceed as follows:
+
+1.  With your used disc in the B drive, invoke (your machine-
+specific version of) MFDISK from the A drive by keying:
+
+		A>MFDISK	<CR>	  and then		
+
+2.  S to select disc format;
+    move pointer arrow (or RV highlight) to Kaypro 4 DS/DD;
+    <CR> for go signal and 
+    A to set the A drive for Kaypro 4 (which it is already, so #2
+may be a complete waste of time;  but it shows you how the
+programme operates.)
+
+3.  For the used disc you wish to reformat:
+    S to select disc format;
+    move arrow (or RV highlight) to Kaypro II SS/DD
+    <CR> for go signal and
+    B to set the B drive for Kaypro II.
+
+4.  F to lay Kaypro II format on disc in the B drive.
+
+5.  R to exit (return to CP/M).
+
+6.  Your two disc drives remain set the way MFDISK set them, as
+the prompts remind you.   (They make a dreadful clatter too:  the
+worst operating noise yet in my Kaypro.)  Use the rear reset
+button to put things back the way nature (or Mr. Kay) made them.
+
+7.  If discs reformatted thus fail to boot, give them a dose of
+Kaypro II SYSGEN, which is quite a simple procedure:
+
+	Boot from your Kaypro II system disc and	
+	invoke SYSGEN:  then key
+	A for A drive as the source of the SYSGEN you are going
+		to copy.   (If it weren't good, the disc in the A
+		drive would not have booted up.)
+	When the screen prompts you, a <CR> loads CP/M system code 
+		from the A drive into RAM.
+	B for B drive for the destination.
+	<CR> for the go signal.   It takes several seconds to
+		write the system code from RAM onto the disc. 
+
+When the screen reports FUNCTION COMPLETE, it also tells you you
+can exit (with <CR>) or insert any other discs, in either drive,
+onto which you want to copy the same system code.
+
+These steps give you a bootable Kaypro SS disc, even if you had
+earlier written Kaypro 4 system code onto both sides.   This
+method was successfully field-tested by me in March, 1985, viz.
+preparing on my Kaypro 4 used discs to copy the KUTE library on
+Mission Control's Kaypro II.
+
+In summary:
+	
+	1--Kaypro 4 users with older-model machines, lacking the
+        Reverse Video feature, may with confidence use MFDISK4
+        (Version 2.0) according to the advice above, dated 19
+        Jan. l985.
+
+	2--Owners of new Kaypro models IIX, 4E etc., since they
+        have Version 3.0 of MFDISK customized to the unique
+        hardware of their machines, should be able to use it with
+        equal confidence to reformat used discs with Kaypro II
+        (single-sided) CP/M.
+
+The various versions of MFDISK identify themselves by number in
+the upper right corner of the first screen display.   
+
+The practical difference between MFDISK and COPY is that MFDISK
+includes its own system code, for 3 varieties of Kaypro and a
+dozen other computers besides, written within the programme.  
+COPY does not have system code in its own content, but is set up
+to copy system code off its own disk's system tracks.
+
+It is partly for this reason that MFDISK is so bulky.  Version
+2.0 occupies 22K of disk space and exists in two different
+configurations, MFDISK2 for use on Kaypro II computers (to allow
+writing disks in SS formats for Osborne, Morrow, and other
+machines) and MFDISK4 for Kaypro 4 machines.   Version 3.0,
+requiring Reverse Video, occupies 30K of disc space.   It also
+differs from vers. 2.0 by offering a larger menu of alternative
+disc formats.   
+
+Neither programme will run on the wrong machine.   (They seem to
+hang up in the same way, by looping between the Selection
+sub-programme and the Go signal.)
+
+	  Don Phillipson, 19 Jan. 1985, revised 1 Aug. 1985
+the first screen display.   
+

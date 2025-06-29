@@ -1,0 +1,61 @@
+;MULT.PRECISION ADD AND SUB. AND NORMALIZE A FLOATING POINT NUMBER
+;
+	NAME MPNORM
+	ENTRY MPADD,MPSUB,FNORM
+	EXT FPERR
+	INCLG
+
+;
+; CONSET : A SUBROUTINE THAT SETS THE RELEVANT BIT(S) IN A SET TO INDICATE
+;	THE PRESENCE OF THAT ELEMENT IN THE SET.
+ (hl) -> (de)
+;
+mpadd:	xra	a		;clear carry
+	push	b		;save b
+	mvi	b,fracln	;add all bytes
+mpadd1:	ldax	d		;get byte from op1
+	adc	m		;add byte from op2
+	stax	d		;store it
+	inx	h		;bump pointers
+	inx	d
+	djnz	mpadd1		;any more?
+	pop	b		;restore b
+	ret			;no, return
+
+mpsub:	xra	a		;clear carry
+	push	b		;save b
+	mvi	b,fracln
+mpsub1:	ldax	d		;get byte from op1
+	sbb	m		;subtract byte from op2
+	stax	d		;store it
+	inx	h		;bump pointers
+	inx	d
+	djnz	mpsub1		;any more?
+	pop	b		;restore b
+	ret			;no, return
+;
+; normalize a floating point number
+;
+fnorm:	xra	a		;clear acc
+	mov	scr1(x),a	;set sign indicator to +ve num
+	bit	sign,msb(y)	;test sign of number
+	jrz	posit		;it's positive
+	inr	scr1(x)		;negative...set sign indicator
+	res	sign,msb(y)	;and negate fraction
+posit:	zchk	y		;check number = 0
+	jrnz	fpanz		;..fpacc <> 0
+	mvi	exp(y),0	;set exp = 0
+	ret
+fpanz:	bit	sign-1,msb(y)	;check msb
+	jrnz	allrot		;all rotated
+	rotate	y,left		;rotate left until msb is a one
+	dcr	exp(y)		;adjust exponent
+	jv	fperr		;floating point error
+	jr	fpanz		;try again
+allrot:	dcr	scr1(x)		;check sign indicator
+	rnz			;positive number, return
+	bset	sign,msb(y)	;negate number and return
+	ret
+
+;
+

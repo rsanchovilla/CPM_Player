@@ -1,0 +1,1177 @@
+% File:  MUSTAR.LIB	    09/13/83	     The Soft Warehouse %
+
+
+%	 * * *   U T I L I T Y   R O U T I N E S   * * *	%
+
+(LOOP (PRIN1 (QUOTE *)) (EVAL (READ)) ((NULL RDS)) )
+
+(PUTD 'DEFUN '(NLAMBDA EXP$
+  ((OR (ATOM EXP$) (ATOM (CDR EXP$)) (NOT (ATOM (CAR EXP$)))) NIL)
+  ( ((NAME (CADR EXP$))
+      ((OR (EQ (CADR EXP$) 'LAMBDA) (EQ (CADR EXP$) 'NLAMBDA)))
+      (SETQ EXP$ (CONS (CAR EXP$) (CONS 'LAMBDA (CDR EXP$)))) )
+    ((OR (NUMBERP (CADR EXP$))
+	 (EQ (CAADR EXP$) 'LAMBDA)
+	 (EQ (CAADR EXP$) 'NLAMBDA) )
+      (SETQ EXP$ (CONS (CAR EXP$) (CADR EXP$))) )
+    (SETQ EXP$ (CONS (CAR EXP$) (CONS 'LAMBDA (CDR EXP$)))) )
+  ((EQUAL (GETD (CAR EXP$)) (CDR EXP$)))
+  (PUTD (CAR EXP$) (CDR EXP$))
+  (CAR EXP$) ))
+
+(DEFUN SETQQ (NLAMBDA (NAM$ EXP$)
+  (SET NAM$ EXP$)
+  NAM$ ))
+
+(DEFUN PUTQQ (NLAMBDA (NAM$ ATM$ EXP$)
+  (PUT NAM$ ATM$ EXP$)
+  NAM$ ))
+
+(DEFUN FLAGQQ (NLAMBDA (NAM$ EXP$)
+  (FLAG NAM$ EXP$)
+  NAM$ ))
+
+
+(SETQQ SAVELIST NIL)
+(SETQQ SAVE T)
+(SETQQ DEF-LIST (PUTQQ SETQQ FLAGQQ))
+
+(PUTQQ DEFUN SAVE (GETD$ . 1))
+(PUTQQ SETQQ SAVE (EVAL . 1))
+(PUTQQ PUTQQ SAVE (GET. 2))
+
+(DEFUN GETD$ (LAMBDA (NAM)
+  ((AND (TRACED NAM) (GETD (PACK (LIST NAM '!)))))
+  (GETD NAM) ))
+
+(DEFUN TRACED (LAMBDA (NAM)
+  (EQ (CAR (CADDR (GETD NAM))) 'TRACE!) ))
+
+(DEFUN PACK$ (LAMBDA (TOK$)
+  ((NULL (CDR TOK$)) TOK$)
+  ((PACKX$ TOK$))
+  (CONS (PACK TOK$)) ))
+
+(DEFUN PACKX$ (LAMBDA (LST$ NUM$ EXP$)
+  ( ((EQ (CAR LST$) '-)
+      (POP LST$)
+      (SETQ EXP$ T) ) )
+  (SETQ NUM$ 0)
+  (LOOP
+    ((NULL LST$)
+      ((NOT EXP$)
+	(LIST NUM$) )
+      (LIST (MINUS NUM$)) )
+    ((NOT (NUMBERP (CAR LST$))) NIL)
+    (SETQ NUM$ (PLUS (TIMES (RADIX) NUM$) (POP LST$))) ) ))
+
+(DEFUN UNPACK$ (LAMBDA (TOK$
+    LST$ )
+  ((OR
+      (CDR TOK$)
+      (EQ (LENGTH (CAR TOK$)) 1) ) TOK$)
+  (SETQ TOK$ (UNPACK (CAR TOK$)))
+  (LOOP					;Convert numerals to numbers
+    ((NULL TOK$) (REVERSE LST$))
+    ( ((LESSP 47 (ASCII (CAR TOK$)) 58)
+	(PUSH (DIFFERENCE (ASCII (POP TOK$)) 48) LST$) )
+      (PUSH (POP TOK$) LST$) ) ) ))
+
+(DEFUN RDC$ (LAMBDA (LST$ EXP$)
+  (LOOP
+    ((EQ (CDR LST$) EXP$)
+      LST$ )
+    (POP LST$) ) ))
+
+(DEFUN CHOP$ (LAMBDA (LST$)
+  (LOOP
+    ((NULL (CDDR LST$))
+      (PROG1 (CADR LST$) (RPLACD LST$ NIL)) )
+    (POP LST$) ) ))
+
+(DEFUN SPLIT$ (LAMBDA (LST$ NUM$)
+  (LOOP
+    ((ATOM LST$) NIL)
+    (SETQ NUM$ (SUB1 NUM$))
+    ((ZEROP NUM$)
+      (PROG1 (CDR LST$) (RPLACD LST$ NIL)) )
+    (POP LST$) ) ))
+
+
+(DEFUN MENU$ (LAMBDA (LST$
+    % Local: % READCH READ )
+  (CLRSCRN)
+  ( ((NOT MENU))
+    (TERPRI 2)
+    (SPACES (QUOTIENT (DIFFERENCE LINELEN 14) 2))
+    (PRINT '"O P T I O N S")
+    (TERPRI)
+    (MAPC$ LST$ '(LAMBDA (LINE)
+      (SPACES (QUOTIENT (DIFFERENCE LINELEN 18) 2))
+      (PRIN1 (POP LINE))
+      (SPACES 2)
+      (MAPC$ LINE '(LAMBDA (ATM$)
+	(PRIN1 ATM$)
+	(SPACES 1) ))
+      (TERPRI) )) )
+  (TERPRI)
+  (SPACES 4)
+  (PRIN1 '"Enter Choice: ")
+  (LOOP
+    ((ASSOC (READCH) LST$)
+      (PRINT RATOM) ) ) ))
+
+(DEFUN QUERY$ (LAMBDA (ATM$)
+  (TERPRI)
+  (SPACES (DIFFERENCE 16 (LENGTH ATM$)))
+  (PRIN1 ATM$) (PRIN1 '":") (SPACES 1)
+  (READLINE) ))
+
+(DEFUN READLINE (LAMBDA (
+    % Local: % NAM$ LST$ READCH RDS )
+  (SETQ READCH T)
+  (LOOP
+    (LOOP
+      ((NOT (EQ (READCH T) '" "))) )
+    ((EQ RATOM CR))
+    (SETQ NAM$)
+    (LOOP
+      (PUSH (RATOM) NAM$)
+      ((OR (EQ (READCH T) '" ") (EQ RATOM CR))) )
+    (PUSH (PACK (REVERSE NAM$)) LST$)
+    ((EQ RATOM CR)) )
+  (REVERSE LST$) ))
+
+
+(DEFUN HOME$ (LAMBDA (LINELENGTH)
+  (HOME)
+  (PRIN1 CR) ))
+
+(DEFUN SPACE$ (LAMBDA (CHAR$)
+  (EQ CHAR$ '" ") ))
+
+(DEFUN PRIN2 (LAMBDA (EXP$ PRIN1)
+  (PRIN1 EXP$) ))
+
+(DEFUN ADD1 (LAMBDA (NUM$)
+  (PLUS NUM$ 1) ))
+
+(DEFUN SUB1 (LAMBDA (NUM$)
+  (DIFFERENCE NUM$ 1) ))
+
+(DEFUN MAPC$ (LAMBDA (LST$ FUN$)
+  (LOOP
+    ((NULL LST$) NIL)
+    (FUN$ (POP LST$)) ) ))
+
+%	* * *   E D I T O R   E X E C U T I V E   * * * 	%
+
+(MOVD 'DRIVER 'DRIVER$)
+
+(DEFUN DRIVER (LAMBDA ()		% muSTAR executive driver %
+  (RDS)
+  (SETQ WRS)
+  (SETQ ECHO)
+  (SETQ PRIN1 T)
+  (SETQ READCH T)
+  (CLRSCRN)
+  (TERPRI 6)
+  (SPACES (QUOTIENT (DIFFERENCE LINELEN 32) 2))
+  (PRINT '"*** muSTAR AIDS, Version 2.2 ***")
+  (RECLAIM) (RECLAIM)
+  (LOOP
+    (LINELENGTH (ADD1 LINELEN))
+    (APPLY (GET (MENU$ MENU$) 'EXECUTIVE)) ) ))
+
+(SETQ MENU T)				% DISPLAY MENU OPTION %
+
+(SETQQ MENU$ (				% MAIN OPTION MENU %
+  (F EDIT FUNCTION)
+  (V EDIT VARIABLE)
+  (P EDIT PROPERTY)
+  (E EVAL LISP)
+  (T TRACE FUNCTION)
+  (U UNTRACE FUNCTION)
+  (R READ FILE)
+  (W WRITE FILE)
+  (X EXIT TO DOS) ))
+
+
+(PUTQQ F EXECUTIVE (LAMBDA (		% EDIT FUNCTION OPTION %
+    LST$ )
+  (SETQ LST$ (QUERY$ '"Function Name(s)"))
+  ((NULL LST$))
+  (MAPC$ LST$ '(LAMBDA (ATM$)
+    ((TRACED ATM$)
+      (CLEAR ATM$)
+      (FLAG ATM$ 'TRACED) ) ))
+  (EDIT-TXT (DEF-TO-TXT LST$))
+  (MAPC$ LST$ '(LAMBDA (ATM$)
+    ((FLAGP ATM$ 'TRACED)
+      (TRACE ATM$)
+      (REMFLAG ATM$ 'TRACED) ) )) ))
+
+(PUTQQ V EXECUTIVE (LAMBDA (		% EDIT VARIABLE OPTION %
+    LST$ )
+  (SETQ LST$ (QUERY$ '"Variable Name(s)"))
+  ((NULL LST$))
+  (EDIT-TXT (SET-TO-TXT LST$)) ))
+
+(PUTQQ P EXECUTIVE (LAMBDA (		% EDIT PROPERTY OPTION %
+    NAM$ INDICATOR )
+  (SETQ NAM$ (QUERY$ 'Name))
+  ((NULL NAM$))
+  (SETQ INDICATOR (QUERY$ 'Indicator))
+  ((NULL INDICATOR))
+  (EDIT-TXT (PUT-TO-TXT (CAR NAM$) (CAR INDICATOR))) ))
+
+(PUTQQ E EXECUTIVE (LAMBDA ()		% EVAL LOOP DRIVER OPTION %
+  (LINELENGTH LINELEN)
+  (DRIVER$) ))
+
+(PUTQQ T EXECUTIVE (LAMBDA (		% FUNCTION TRACE OPTION %
+    SAVE )
+  ( ((GETD 'STUB T))
+    ((OR (RDS 'DEBUG 'LIB) (RDS 'DEBUG 'LIB 'A))
+      (PRINT '"Reading DEBUG.LIB")
+      (LOOP
+	(EVAL (SAVELIST (READ)))
+	((NULL RDS)) ) )
+    (PRIN1 '"DEBUG.LIB not found")
+    (RECLAIM) )
+  ((GETD 'STUB T)
+    (LOOP
+      ((STUB 'TRACE (QUERY$ '"Function Name(s)"))) ) ) ))
+
+(PUTQQ U EXECUTIVE (LAMBDA ()		% FUNCTION UNTRACE OPTION %
+  ((GETD 'STUB T)
+    (UNSTUB (QUERY$ '"Function Name(s)")) ) ))
+
+
+(PUTQQ R EXECUTIVE (LAMBDA (		% READ FILE OPTION %
+    NAM$ ECHO )
+  (LOOP
+    ((NULL (SETQ NAM$ (RD-FIL-NAM))))
+    ((RDS (CAR NAM$) (CADR NAM$) (CADDR NAM$))
+      (LOOP
+        (EVAL (SAVELIST (READ)))
+        ((NULL RDS)) ) )
+    (TERPRI)
+    (PRINT '"File NOT found") ) ))
+
+(PUTQQ W EXECUTIVE (LAMBDA ()		% WRITE FILE OPTION %
+  (W-EXEC) ))
+
+(DEFUN W-EXEC (LAMBDA (
+    NAM$ LST$ ECHO )
+  ((NULL (SETQ NAM$ (RD-FIL-NAM))))
+  ((NULL (WRS (CAR NAM$) (CADR NAM$) (CADDR NAM$))))
+  (PRIN1 '"; File: ")  (PRIN1 (CAR NAM$))
+  (PRIN1 '".")  (PRINT (CADR NAM$))
+  (TERPRI)
+  (PRINT '"(PUTD 'DEFUN '(NLAMBDA (NAM$ EXP$) (PUTD NAM$ EXP$) NAM$))" )
+  (SETQ LST$ DEF-LIST)
+  (LOOP
+    ((NULL LST$))
+    ( ((NULL (ASSOC (CAR LST$) SAVELIST)))
+      (PRT-TXT (DEF-TO-TXT (LIST (CAR LST$)))) )
+    (TERPRI)
+    (POP LST$) )
+  (MAPC$ SAVELIST '(LAMBDA (EXP$ LST$)
+    ((ATOM EXP$)
+      (PRIN2 EXP$)
+      (TERPRI) )
+    ((GET (CAR EXP$) 'SAVE)
+      (PRT-TXT (EXP-TO-TXT
+	  (APPLY (CAR (GET (CAR EXP$) 'SAVE)) (CDR EXP$)) EXP$))
+      (TERPRI) )
+    (LOOP
+      ((ATOM (CDR EXP$))
+	(PRT-TXT (EXP-TO-TXT (CAR EXP$) (REVERSE LST$))) )
+      (PUSH (POP EXP$) LST$) )
+    (TERPRI) ))
+  (PRINT '(RDS))
+  (WRS) ))
+
+(DEFUN RD-FIL-NAM (LAMBDA (
+    % Local: % NAM$ EXP$ NUM$ )
+  (SETQ NAM$ (CAR (QUERY$ '"File Name")))
+  ((NULL NAM$) NIL)
+  ( ((EQ (SUBSTRING NAM$ 2 2) '":")
+      (SETQ EXP$ (SUBSTRING NAM$ 1 1))
+      (SETQ NAM$ (SUBSTRING NAM$ 3)) ) )
+  ((SETQ NUM$ (FINDSTRING '"." NAM$))
+    (LIST (SUBSTRING NAM$ 1 (SUB1 NUM$))
+	  (SUBSTRING NAM$ (ADD1 NUM$))
+	  EXP$) )
+  (LIST NAM$ 'LIB EXP$) ))
+
+(DEFUN SAVELIST (LAMBDA (EXP$ NUM$)
+  ((AND (EQ (CAR EXP$) 'PUTD)
+	(OR (EQ (CADR EXP$) 'DEFUN) (EQUAL (CADR EXP$) ''DEFUN))) NIL)
+  ((AND (EQ (CAR EXP$) 'DEFUN)
+	(MEMBER (CADR EXP$) DEF-LIST)) NIL)
+  ((OR (NOT SAVE) (EQ (CAR EXP$) 'RDS)) EXP$)
+  ((ATOM EXP$)
+    (NCONC$ EXP$ EXP$) )
+  (SETQ NUM$ (CDR (GET (CAR EXP$) 'SAVE)))
+  ((NULL NUM$)
+    (NCONC$ EXP$ EXP$)
+    ((EQUAL EXP$ '(LOOP (PRIN1 '*) (EVAL (READ)) ((NULL RDS)))) NIL)
+    EXP$ )
+  ((EQ NUM$ 1)
+    (NCONC$ EXP$ (LIST (CAR EXP$) (CADR EXP$))) )
+  ((EQ NUM$ 2)
+    (NCONC$ EXP$ (LIST (CAR EXP$) (CADR EXP$) (CADDR EXP$))) )
+  (NCONC$ EXP$ EXP$) ))
+
+(DEFUN NCONC$ (LAMBDA (EXP$ LST$)
+  ((MEMBER LST$ SAVELIST) EXP$)
+  (SETQ SAVELIST (NCONC SAVELIST (LIST LST$)))
+  EXP$ ))
+
+(PUTQQ X EXECUTIVE (LAMBDA ()		% EXIT TO OPERATING SYSTEM %
+  (SYSTEM) ))
+%*****************  TEXT EDITING FUNCTIONS  *********************%
+
+(DEFUN EDIT-TXT (LAMBDA (*TEXT*
+    *PRE-TEXT* *POST-TEXT* *ROW* *COL* *INSERT* *STRING* CHAR$ READCH )
+  (SETQ *PRE-TEXT*)
+  (SETQ *POST-TEXT* (SPLIT$ *TEXT* PAGELEN))
+  (LOOP
+    (SETQ *ROW* *TEXT*)
+    (SETQ *COL* (CADR *ROW*))
+    (DISP-TXT *TEXT* *ROW* *COL*)
+    (LOOP
+      (SETQ CHAR$ (READCH))
+      ((EQ CHAR$ EXIT-CHR))		% EXIT EDIT CHAR %
+      ( ((FLAGP CHAR$ 'DEL-CHAR)
+	  (DEL-CHAR CHAR$) )
+	((OR (NUMBERP CHAR$) (LESSP 31 (ASCII CHAR$) 127))
+	  (PRT-CHAR CHAR$) )
+	(APPLY (EVAL CHAR$) (LIST *INSERT*)) ) )
+    (RHT-TOK)
+    (SETQ CHAR$ (MENU$ '(
+      (E EVALUATE TEXT)
+      (A ABANDON TEXT)
+      (C CONTINUE EDIT) )))
+    ((EQ CHAR$ 'A))
+    ((AND
+	(EQ CHAR$ 'E)
+	(EVAL-TEXT (CONS NIL (APPEND
+ 	  (REVERSE *PRE-TEXT*)
+	  (APPEND (CDR *TEXT*) *POST-TEXT*) ))) )) ) ))
+
+
+(DEFUN PRT-CHAR (LAMBDA (CHAR$			% PRINTABLE CHARS %
+    TOKEN )
+  ( ((LESSP (ADD1 (SPACES)) LINELEN))
+    (INS-LIN) (CAR-RET-TAB) )
+  (PRIN1 (COND
+    ((GET CHAR$ 'ALIAS))
+    (CHAR$) ))
+  ((NULL (CDR *COL*))
+    (INS-PRT CHAR$) )
+  ((NOT *INSERT*)
+    (SETQ TOKEN (DEL-CHR))
+    (INS-PRT CHAR$) )
+  (INS-PRT CHAR$)
+  ((LESSP (PRT-RST-LIN *ROW* *COL* 0) LINELEN))
+  (INS-LIN) ))
+
+
+(DEFUN DEL-CHAR (LAMBDA (CHAR$			% DELIMITER CHARS %
+    TOKEN )
+  ( ((LESSP (ADD1 (SPACES)) LINELEN))
+    (INS-LIN) (CAR-RET-TAB) )
+  (PRIN1 CHAR$)
+  ((NULL (CDR *COL*))
+    (INS-DEL CHAR$) )
+  ((NOT *INSERT*)
+    (SETQ TOKEN (DEL-CHR))
+    (INS-DEL CHAR$) )
+  (INS-DEL CHAR$)
+  ((LESSP (PRT-RST-LIN *ROW* *COL* 0) LINELEN))
+  (INS-LIN) ))
+
+(MAPC$ '( " " "," "(" ")" "." "[" "]" "'")
+  '(LAMBDA (CHAR$) (FLAG CHAR$ 'DEL-CHAR)) )
+
+
+(DEFUN ESC-CHR (LAMBDA (			% ESCAPE CHAR %
+    CHAR$ )
+  (SETQ CHAR$ (READCH))
+  (PRT-CHAR CHAR$) ))
+
+(PUTQQ "(" ALIAS {)
+(PUTQQ ")" ALIAS })
+(PUTQQ " " ALIAS _)
+
+
+(DEFUN INS-TOG (LAMBDA ()			% INSERT TOGGLE %
+  (SETQ *INSERT* (NOT *INSERT*)) ))
+
+(DEFUN RHT-CHR (LAMBDA (			% ADVANCE CHAR %
+    CHAR$ TOKEN )
+  (SETQ TOKEN (NXT-RHT-TOK))
+  ((NULL TOKEN)				% IF AT END OF CURRENT LINE	%
+    ((NULL (CDDR *ROW*)))			% AND NOT END OF TEXT,	%
+    (CAR-RET) )					% THEN NEW LINE.	%
+  ((ATOM TOKEN)				% IF TOKEN IS A DELIMITER	%
+    (PRIN1 TOKEN)				% PRINT TOKEN AND	%
+    (MOV-RHT-TOK) )				% ADVANCE COL.		%
+  (SETQ TOKEN (UNPACK$ TOKEN))
+  (SETQ CHAR$ (CONS (POP TOKEN)))
+  (PRT-TOK CHAR$)
+  ((ATOM (CAR *COL*))
+    ((NULL TOKEN)
+      (POP *COL*) )
+    (RPLACD *COL* (CONS CHAR$ (CDR *COL*)))
+    (POP *COL*)
+    (RPLACA (CDR *COL*) TOKEN) )
+  (RPLACA *COL* (APPEND (CAR *COL*) CHAR$))
+  ((NULL TOKEN)
+    (RPLACD *COL* (CDDR *COL*)) )
+  (RPLACA (CDR *COL*) TOKEN) ))
+
+
+(DEFUN RHT-TOK (LAMBDA (			% ADVANCE TOKEN %
+    TOKEN )
+  (SETQ TOKEN (MOV-RHT-TOK))
+  ((NULL TOKEN)
+    (LOOP
+      ((NULL (CDDR *ROW*)))
+      (CAR-RET-TAB)
+      ((CDR *COL*)) ) )
+  (PRT-TOK TOKEN)
+  (LOOP
+    ((NOT (SPACE$ (NXT-RHT-TOK))))
+    (MOV-RHT-TOK)
+    (SPACES 1) ) ))
+
+(DEFUN MOV-RHT-END (LAMBDA (			% MOVE RIGHT END %
+    TOKEN )
+  (LOOP
+    (SETQ TOKEN (MOV-RHT-TOK))
+    ((NULL TOKEN))
+    (PRT-TOK TOKEN) ) ))
+
+
+(DEFUN LFT-CHR (LAMBDA (			% RETREAT CHAR %
+    CHAR$ TOKEN )
+  (SETQ TOKEN (CAR *COL*))
+  ((ATOM TOKEN)
+    ((MOV-LFT-TOK)
+      (BACKSPACE) )
+    ((NULL (CAR *ROW*)))
+    (UP-LIN)
+    (MOV-RHT-END) )
+  (BACKSPACE)
+  (SETQ TOKEN (UNPACK$ TOKEN))
+  ((NULL (CDR TOKEN))
+    ((OR (NULL (CDR *COL*)) (ATOM (CADR *COL*)))
+      (SETQ *COL* (RDC$ (CADR *ROW*) *COL*)) )
+    (RPLACA (CDR *COL*) (PACK$ (APPEND TOKEN (CADR *COL*))))
+    (SETQ *COL* (RDC$ (CADR *ROW*) *COL*))
+    (RPLACD *COL* (CDDR *COL*)) )
+  (SETQ CHAR$ (CONS (CHOP$ TOKEN)))
+  (RPLACA *COL* TOKEN)
+  ((OR (NULL (CDR *COL*)) (ATOM (CADR *COL*)))
+    (RPLACD *COL* (CONS CHAR$ (CDR *COL*))) )
+  (RPLACA (CDR *COL*) (NCONC CHAR$ (CADR *COL*))) ))
+
+
+(DEFUN LFT-TOK (LAMBDA (			% RETREAT TOKEN %
+    TOKEN )
+  (LOOP
+    ((NUMBERP (CAR *COL*))
+      (SETQ TOKEN NIL) )
+    (SETQ TOKEN (MOV-LFT-TOK))
+    ((NOT (SPACE$ TOKEN)))
+    (BACKSPACE) )
+  ((NULL TOKEN)
+    (LOOP
+      ((NULL (CAR *ROW*)))
+      (UP-LIN)
+      ((CDR *COL*)
+	(MOV-RHT-END) ) ) )
+  (BACKSPACE (TOK-PRT-LEN TOKEN)) ))
+
+(DEFUN MOV-LFT-END (LAMBDA ()			% MOVE LEFT END %
+  (PRIN1 CR)
+  (SPL-TOK *COL*)
+  (SETQ *COL* (CADR *ROW*))
+  (SPACES (CAR *COL*)) ))
+
+
+(DEFUN UP-LIN (LAMBDA ()			% MOVE UP LINE %
+  ((NULL (CAR *ROW*))
+    ((NULL *PRE-TEXT*))
+    (SCR-DWN)
+    (UP-LIN) )
+  (UPLINE)
+  (SPL-TOK *COL*)
+  (SETQ *COL* (CAR *ROW*))
+  (SETQ *ROW* (RDC$ *TEXT* *ROW*))
+  (SPACES (CAR *COL*)) ))
+
+(DEFUN DWN-LIN (LAMBDA ()			% MOVE DOWN LINE %
+  ((NULL (CDDR *ROW*))
+    ((NULL *POST-TEXT*))
+    (SCR-UP)
+    (DWN-LIN) )
+  (CAR-RET-TAB) ))
+
+
+(DEFUN SCR-DWN (LAMBDA ()			% SCROLL DOWN %
+  ((NULL *PRE-TEXT*))
+  ( ((NULL (CDDR *ROW*))
+      (UP-LIN) ) )
+  (RPLACD *TEXT* (CONS (POP *PRE-TEXT*) (CDR *TEXT*)))
+  (PUSH (CHOP$ *TEXT*) *POST-TEXT*)
+  ( ((NULL (CAR *ROW*))
+      (POP *ROW*) ) )
+  (DISP-TXT *TEXT* *ROW* *COL*) ))
+
+(DEFUN UP-PAG (LAMBDA (				% MOVE UP PAGE %
+    NUM )
+  ((NULL *PRE-TEXT*))
+  (SETQ NUM (DIFFERENCE PAGELEN 6))
+  (LOOP
+    (PUSH (CHOP$ *TEXT*) *POST-TEXT*)
+    (RPLACD *TEXT* (CONS (POP *PRE-TEXT*) (CDR *TEXT*)))
+    ((NULL *PRE-TEXT*))
+    (SETQ NUM (SUB1 NUM))
+    ((ZEROP NUM)) )
+  (SETQ *ROW* *TEXT*)
+  (SETQ *COL* (CADR *ROW*))
+  (DISP-TXT *TEXT* *ROW* *COL*) ))
+
+
+(DEFUN SCR-UP (LAMBDA ()			% SCROLL UP %
+  ((NULL *POST-TEXT*))
+  ( ((NULL (CAR *ROW*))
+      (DWN-LIN) ) )
+  ( ((EQ *ROW* (CDR *TEXT*))
+      (SETQ *ROW* *TEXT*) ) )
+  (HOME$)
+  (TERPRI (SUB1 PAGELEN))
+  (PRT-ROW (CAR *POST-TEXT*))
+  (TERPRI)
+  (PUSH (CADR *TEXT*) *PRE-TEXT*)
+  (RPLACD *TEXT* (CDDR *TEXT*))
+  (NCONC *TEXT* (CONS (POP *POST-TEXT*)))
+  (MOVE-CUR *TEXT* *ROW* *COL*) ))
+
+(DEFUN DWN-PAG (LAMBDA (			% MOVE DOWN PAGE %
+    NUM )
+  ((NULL *POST-TEXT*))
+  (SETQ NUM (DIFFERENCE PAGELEN 6))
+  (LOOP
+    (PUSH (CADR *TEXT*) *PRE-TEXT*)
+    (RPLACD *TEXT* (CDDR *TEXT*))
+    (NCONC *TEXT* (CONS (POP *POST-TEXT*)))
+    ((NULL *POST-TEXT*))
+    (SETQ NUM (SUB1 NUM))
+    ((ZEROP NUM)) )
+  (SETQ *ROW* *TEXT*)
+  (SETQ *COL* (CADR *ROW*))
+  (DISP-TXT *TEXT* *ROW* *COL*) ))
+
+(DEFUN INS-LIN (LAMBDA (			% INSERT BLANK LINE %
+    NUM )
+  ( ((NULL (CDR *COL*)))
+    ((ATOM (CADR *COL*)))
+    (RPLACA (CDR *COL*) (PACK$ (CADR *COL*))) )
+  (RPLACD (CDR *ROW*) (CONS
+      (CONS 0 (CDR *COL*)) (CDDR *ROW*)))
+  (SPACES (ROW-PRT-LEN (CADDR *ROW*)))
+  (RPLACD *COL* NIL)
+  (RPLACA (CADDR *ROW*) (IND-NXT (CADR *ROW*)))
+  ( ((GREATERP (LENGTH *TEXT*) PAGELEN)
+      (PUSH (CHOP$ *TEXT*) *POST-TEXT*)
+      (SETQ NUM (ROW-PRT-LEN (CAR *POST-TEXT*))) )
+    (SETQ NUM 0) )
+  (ROLL-DWN-ROW (CDR *ROW*) NUM)
+  (MOVE-CUR *TEXT* *ROW* *COL*) ))
+
+(DEFUN CAR-RET-TAB (LAMBDA ()			% CARRIAGE RETURN & TAB %
+  ((NULL (CDDR *ROW*))
+    ((NULL *POST-TEXT*)
+      (CAR-RET)
+      (RPLACA *COL* (IND-NXT (CAR *ROW*)))
+      (SPACES (CAR *COL*)) )
+    (SCR-UP)
+    (CAR-RET-TAB) )
+  (SPL-TOK *COL*)
+  (POP *ROW*)
+  (TERPRI)
+  (SETQ *COL* (CADR *ROW*))
+  ((NULL (CDR *COL*))
+    (RPLACA *COL* (IND-NXT (CAR *ROW*)))
+    (SPACES (CAR *COL*)) )
+  (SPACES (CAR *COL*)) ))
+
+(DEFUN CAR-RET (LAMBDA (*INSERT*)		% CARRIAGE RETURN %
+  ((EVAL *INSERT*)
+    (INS-LIN)
+    (CAR-RET) )
+  ((NULL (CDDR *ROW*))
+    ((NULL *POST-TEXT*)
+      (SPL-TOK *COL*)
+      (POP *ROW*)
+      (TERPRI)
+      (SETQ *COL* (CONS 0))
+      (RPLACD *ROW* (CONS *COL*))
+      ((GREATERP (LENGTH *TEXT*) PAGELEN)
+	(TERPRI) (UPLINE)
+	(PUSH (CADR *TEXT*) *PRE-TEXT*)
+	(RPLACD *TEXT* (CDDR *TEXT*)) ) )
+    (SCR-UP)
+    (CAR-RET) )
+  (SPL-TOK *COL*)
+  (TERPRI)
+  (POP *ROW*)
+  (SETQ *COL* (CADR *ROW*))
+  (LOOP
+    ((ZEROP (CAR *COL*)))
+    (RPLACA *COL* (SUB1 (CAR *COL*)))
+    (RPLACD *COL* (CONS '" " (CDR *COL*))) ) ))
+
+
+(DEFUN DEL-RHT-CHR (LAMBDA (			% DELETE RIGHT CHAR %
+    TOKEN )
+  (SETQ TOKEN (DEL-CHR))
+  ((NULL TOKEN))
+  (PRT-RST-LIN *ROW* *COL* 1) ))
+
+(DEFUN DEL-LFT-CHR (LAMBDA ()			% DELETE LEFT CHAR %
+  (LFT-CHR)
+  (DEL-RHT-CHR) ))
+
+(DEFUN DEL-RHT-TOK (LAMBDA (			% DELETE RIGHT TOKEN %
+    TOKEN NUM)
+  (SETQ TOKEN (DEL-TOK))
+  ((NOT TOKEN))
+  (SETQ NUM (TOK-PRT-LEN TOKEN))
+  ( ((ATOM (CAR *COL*))
+      ((SPACE$ (NXT-RHT-TOK))
+	(SETQ NUM (ADD1 NUM))
+	(DEL-CHR) ) ) )
+  (PRT-RST-LIN *ROW* *COL* NUM) ))
+
+(DEFUN DEL-LIN (LAMBDA ()			% DELETE LINE %
+  (SPL-TOK *COL*)
+  (SETQ *DELETED* (CADR *ROW*))
+  ((NULL (CDDR *ROW*))
+    (PRIN1 CR)
+    (SPACES (ROW-PRT-LEN (CADR *ROW*)))
+    (PRIN1 CR)
+    (SETQ *COL* (CONS 0))
+    (RPLACA (CDR *ROW*) *COL*) )
+  ((AND (NULL *POST-TEXT*) *PRE-TEXT*)
+    (RPLACD *TEXT* (CONS (POP *PRE-TEXT*) (CDR *TEXT*)))
+    (RPLACD *ROW* (CDDR *ROW*))
+    (SETQ *COL* (CADR *ROW*))	
+    (DISP-TXT *TEXT* *ROW* *COL*) )
+  ( ((NULL *POST-TEXT*))
+    (NCONC *TEXT* (CONS (POP *POST-TEXT*))) )
+  (ROLL-UP-ROW (CDR *ROW*))
+  (RPLACD *ROW* (CDDR *ROW*))
+  (SETQ *COL* (CADR *ROW*))
+  (SPACES (CAR *COL*)) ))
+
+(SETQ *DELETED* NIL)
+
+(DEFUN GET-LIN (LAMBDA ()			% GET DELETED LINE %
+  ((NULL *DELETED*))
+  (MOV-LFT-END)
+  (INS-LIN)
+  (PRIN1 CR)
+  (PRT-ROW (RPLACD *COL* (APPEND (CDR *DELETED*))))
+  (PRIN1 CR)
+  (SPACES (CAR *COL*)) ))
+
+(DEFUN SRC-TOK (LAMBDA (  			% SEARCH TOKEN %
+    READCH )
+  (HOME$)
+  (SPACES (ROW-PRT-LEN (CADR *TEXT*)))
+  (PRIN1 CR)
+  (PRIN1 '"FIND NAME? ")
+  (SETQ READCH T)
+  (SETQ *STRING* (CAR (READLINE)))
+  (HOME$)
+  (SPACES LINELEN)
+  (HOME$)
+  (PRT-ROW (CADR *TEXT*))
+  ((NULL *STRING*)
+    (MOVE-CUR *TEXT* *ROW* *COL*) )
+  (RPT-SRC) ))
+
+(DEFUN RPT-SRC (LAMBDA ()			% REPEAT SEARCH %
+  ((NULL *STRING*))
+  (MOV-RHT-TOK)
+  (SRCH-TXT *STRING* *ROW* *COL*)
+  (MOVE-CUR *TEXT* *ROW* *COL*) ))
+
+(DEFUN SRCH-TXT (LAMBDA (TOKEN ROW COL)
+  (LOOP
+    ((SETQ COL (SRCH-ROW COL))
+      (SETQ *COL* COL)
+      (SETQ *ROW* ROW) )
+    (POP ROW)
+    ((NULL (CDR ROW))
+      (SETQ ROW *TEXT*)
+      (LOOP
+	(SETQ COL (CADR ROW))
+	((SETQ COL (SRCH-ROW COL))
+	  (SETQ *COL* COL)
+	  (SETQ *ROW* ROW) )
+	(POP ROW) ) )
+    (SETQ COL (CADR ROW)) ) ))
+    
+(DEFUN SRCH-ROW (LAMBDA (COL)
+  (LOOP
+    ((NULL (CDR COL)) NIL)
+    ((EQ TOKEN (CAADR COL)) COL)
+    (POP COL)
+    ((EQ COL *COL*) COL) ) ))
+
+%		* * *   CURSOR CONTROL PRIMITIVES   * * *	%
+
+(DEFUN INS-PRT (LAMBDA (CHAR$)			% INSERT NORMAL CHAR %
+  ((ATOM (CAR *COL*))
+    (RPLACD *COL* (CONS (CONS CHAR$) (CDR *COL*)))
+    (POP *COL*) )
+  (RPLACA *COL* (NCONC (UNPACK$ (CAR *COL*)) (CONS CHAR$))) ))
+
+(DEFUN INS-DEL (LAMBDA (CHAR$)			% INSERT DELIMITER %
+  ((AND (NUMBERP (CAR *COL*)) (SPACE$ CHAR$))
+    (RPLACA *COL* (ADD1 (CAR *COL*))) )
+  (RPLACD *COL* (CONS CHAR$ (CDR *COL*)))
+  (SPL-TOK *COL*)
+  (POP *COL*) ))
+
+(DEFUN DEL-CHR (LAMBDA (			% DELETE CHAR %
+    CHAR$ TOKEN )
+  (SETQ TOKEN (NXT-RHT-TOK))
+  ((ATOM TOKEN)
+    (DEL-TOK) )
+  (SETQ TOKEN (UNPACK$ TOKEN))
+  (SETQ CHAR$ (CONS (POP TOKEN)))
+  ((NULL TOKEN)
+    (RPLACD *COL* (CDDR *COL*))
+    CHAR$ )
+  (RPLACA (CDR *COL*) TOKEN)
+  CHAR$ ))
+
+(DEFUN DEL-TOK (LAMBDA (			% DELETE TOKEN %
+    TOKEN )
+  (SETQ TOKEN (NXT-RHT-TOK))
+  ((NULL TOKEN) NIL)
+  (RPLACD *COL* (CDDR *COL*))
+  ((OR (ATOM (CAR *COL*)) (ATOM (CADR *COL*)))
+    TOKEN )
+  (RPLACA *COL* (UNPACK$ (CAR *COL*)))
+  (RPLACA (CDR *COL*) (UNPACK$ (CADR *COL*)))
+  TOKEN ))
+
+(DEFUN MOV-RHT-TOK (LAMBDA (			% MOVE RIGHT TOKEN %
+    TOKEN )
+  (SETQ TOKEN (NXT-RHT-TOK))
+  ((NULL TOKEN) NIL)
+  ((AND (NUMBERP (CAR *COL*)) (SPACE$ TOKEN))
+    (RPLACA *COL* (ADD1 (CAR *COL*)))
+    (RPLACD *COL* (CDDR *COL*))
+    TOKEN )
+  ((SPL-TOK *COL*)
+    (POP *COL*)
+    TOKEN )
+  TOKEN ))
+
+(DEFUN NXT-RHT-TOK (LAMBDA ()			% NEXT RIGHT TOKEN %
+  ((NULL (CDR *COL*)) NIL)
+  (CADR *COL*) ))
+
+
+(DEFUN MOV-LFT-TOK (LAMBDA (			% MOVE LEFT TOKEN %
+    TOKEN )
+  (SETQ TOKEN (CAR *COL*))
+  ((NUMBERP TOKEN)
+    ((ZEROP TOKEN)
+      NIL )
+    (RPLACA *COL* (SUB1 TOKEN))
+    (RPLACD *COL* (CONS '" " (CDR *COL*)))
+    '" " )
+  (SPL-TOK *COL*)
+  (SETQ *COL* (RDC$ (CADR *ROW*) *COL*))
+  TOKEN ))
+
+
+(DEFUN SPL-TOK (LAMBDA (COL			% SPLICE TOKEN %
+    LST$ )
+  ((ATOM (CAR COL))
+    ((NOT (NUMBERP (CAR COL))))
+    (POP LST$)
+    (LOOP
+      ((OR (NULL LST$) (NOT (SPACE$ (POP LST$)))))
+      (RPLACA COL (ADD1 (CAR COL)))
+      (RPLACD COL LST$) ) )
+  ((OR (NULL (CDR COL)) (ATOM (CADR COL)))
+    (RPLACA COL (PACK$ (CAR COL)))
+    T )
+  (RPLACA COL (PACK$ (APPEND (CAR COL) (CADR COL))))
+  (RPLACD COL (CDDR COL))
+  NIL ))
+
+(DEFUN IND-NXT (LAMBDA (COL
+    NUM )
+  (SETQ NUM (POP COL))
+  (LOOP
+    ((NULL COL)
+      ((MINUSP NUM) 0)
+      NUM )
+    ( ((EQ (CAR COL) '"(")
+	(SETQ NUM (PLUS NUM 2)) )
+      ((EQ (CAR COL) '")")
+	(SETQ NUM (DIFFERENCE NUM 2)) ) )
+    (POP COL) ) ))
+
+%	* * *   T E X T   P R I N T E R   * * *		%
+
+(DEFUN ROLL-UP-ROW (LAMBDA (LINE
+    NUM LENGTH )
+  (SETQ LENGTH (SUB1 (LENGTH LINE)))
+  (SETQ NUM (REPL-ROW (CAR LINE) 0))
+  (POP LINE)
+  (LOOP
+    ((NULL LINE))
+    (SETQ NUM (REPL-ROW (POP LINE) NUM))
+    (TERPRI) )
+  (SPACES NUM)
+  (UPLINE LENGTH) ))
+
+(DEFUN ROLL-DWN-ROW (LAMBDA (ROW NUM)
+  (TERPRI (SUB1 (LENGTH ROW)))
+  (SETQ ROW (REVERSE ROW))
+  (LOOP
+    (SETQ NUM (REPL-ROW (POP ROW) NUM))
+    ((NULL ROW))
+    (UPLINE) )
+  (PRIN1 CR) ))
+    
+(DEFUN REPL-ROW (LAMBDA (COL LENGTH
+    NUM )
+  (PRIN1 CR)
+  (PRT-ROW COL)
+  (SETQ NUM (SPACES))
+  (SPACES (DIFFERENCE LENGTH NUM))
+  NUM ))
+
+(DEFUN DISP-TXT (LAMBDA (TEXT ROW COL)		% DISPLAY TEXT %
+  (CLRSCRN)					% CLEAR SCREEN %
+  (PRT-TXT TEXT)				% PRINT TEXT %
+  (MOVE-CUR TEXT ROW COL) ))			% RESTORE CURSOR %
+
+(DEFUN PRT-TXT (LAMBDA (TEXT)			% PRINT TEXT %
+  (MAPC$ (CDR TEXT) '(LAMBDA (COL)
+    (PRT-ROW COL)
+    (TERPRI) )) ))
+
+(DEFUN PRT-ROW (LAMBDA (COL)			% PRINT A ROW OF TEXT %
+  (SPACES (CAR COL))
+  (MAPC$ (CDR COL) 'PRT-TOK) ))
+
+(DEFUN MOVE-CUR (LAMBDA (TEXT ROW COL)
+  (HOME$)
+  (LOOP						% MOVE TO ROW %
+    ((EQ ROW TEXT))
+    (TERPRI)
+    (POP TEXT) )
+  (SETQ ROW (CADR ROW))
+  (SPACES (CAR ROW))
+  (LOOP						% MOVE TO COL %
+    ((EQ ROW COL))
+    (POP ROW)
+    (PRT-TOK (CAR ROW)) ) ))
+
+(DEFUN PRT-RST-LIN (LAMBDA (ROW COL NUM
+    NUM0 )
+  (SETQ NUM0 (SPACES))
+  (MAPC$ (CDR COL) 'PRT-TOK)
+  (SETQ NUM (DIFFERENCE (SPACES NUM) NUM0))
+  ((LESSP NUM NUM0)
+    (SETQ NUM0 (SPACES))
+    (BACKSPACE NUM)
+    (ADD1 NUM0) )
+  (SETQ NUM0 (SPACES))
+  (PRIN1 CR)
+  (SETQ ROW (CADR ROW))
+  (SPACES (CAR ROW))
+  (LOOP
+    ((EQ ROW COL)
+      (ADD1 NUM0) )
+    (POP ROW)
+    (PRT-TOK (CAR ROW)) ) ))
+
+(DEFUN PRT-TOK (LAMBDA (TOKEN)
+  ((ATOM TOKEN)
+    (PRIN1 TOKEN) )
+  ((NULL (CDR TOKEN))
+    ((NULL WRS)
+      (PRIN1 (COND
+	((GET (CAR TOKEN) 'ALIAS))
+	((CAR TOKEN)) )) )
+    (PRIN2 (CAR TOKEN)) )
+  ((NULL WRS)
+    (MAPC$ TOKEN 'PRIN1) )
+  (MAPC$ TOKEN 'PRIN2) ))
+
+(DEFUN ROW-PRT-LEN (LAMBDA (COL
+    NUM )
+  (SETQ NUM (POP COL))
+  (LOOP
+    ((NULL COL) NUM)
+    (SETQ NUM (PLUS NUM (TOK-PRT-LEN (POP COL)))) ) ))
+
+(DEFUN TOK-PRT-LEN (LAMBDA (TOKEN
+    LENGTH )
+  ((ATOM TOKEN) 1)
+  ((NULL (CDR TOKEN))
+    (LENGTH (CAR TOKEN)) )
+  (LENGTH TOKEN) ))
+
+%	* * *   S-EXPRESSION TO TEXT TRANSLATOR   * * *		%
+
+(DEFUN DEF-TO-TXT (LAMBDA (VAR			% TRANSLATE DEFINITION %
+    TXT )
+  (SETQ TXT (CONS))
+  (LOOP
+    (NCONC TXT (CDR 
+      (EXP-TO-TXT (GETD (CAR VAR)) (LIST 'DEFUN (POP VAR))) ))
+    ((NULL VAR) TXT)
+    (NCONC TXT (CONS (CONS 0))) ) ))  
+  
+(DEFUN SET-TO-TXT (LAMBDA (VAR			% TRANSLATE VALUE %
+    TXT )
+  (SETQ TXT (CONS))
+  (LOOP
+    (NCONC TXT (CDR
+      (EXP-TO-TXT (EVAL (CAR VAR)) (LIST 'SETQQ (POP VAR))) ))
+    ((NULL VAR) TXT)
+    (NCONC TXT (CONS (CONS 0))) ) ))
+
+(DEFUN PUT-TO-TXT (LAMBDA (VAR ATM)		% TRANSLATE PROPERTY %
+  (EXP-TO-TXT (GET VAR ATM) (LIST 'PUTQQ VAR ATM)) ))
+
+(DEFUN EXP-TO-TXT (LAMBDA (EXP LST$
+    *TEXT* *LINE* *LENGTH* TAB INDENT )
+  (SETQ TAB 0)
+  (SETQ INDENT 1)
+  ( ((LESSP LINELEN 60))
+    (SETQ INDENT 2) )
+  (NEW-LIN TAB)
+  (PUSH '"(" *LINE*)
+  (LOOP
+    ((NULL LST$))
+    (EXP-TO-LIN (POP LST$))
+    (PUSH '" " *LINE*) )
+  (TSK-TO-TXT EXP TAB)
+  (PUSH '")" *LINE*)
+  (NEW-LIN TAB)
+  (REVERSE *TEXT*) ))
+
+(DEFUN TSK-TO-TXT (LAMBDA (TSK TAB)		% TRANSLATE TASK %
+  (SETQ TAB (PLUS TAB INDENT))
+  ((ATOM TSK)
+    (EXP-TO-LIN TSK) )
+  ((ATOM (CAR TSK))
+    ((MEMBER (CAR TSK) '(LAMBDA NLAMBDA))
+      (PUSH '"(" *LINE*)
+      (EXP-TO-LIN (POP TSK))
+      (PUSH '" " *LINE*) 
+      (EXP-TO-LIN (POP TSK))
+      (BDY-TO-TXT TSK TAB)
+      (PUSH '")" *LINE*) )
+    ((MEMBER (CAR TSK) '(LOOP COND PROGN PROG1 AND OR))
+      (PUSH '"(" *LINE*)
+      (EXP-TO-LIN (POP TSK))
+      (BDY-TO-TXT TSK TAB)
+      (PUSH '")" *LINE*) )
+    ((EQ (CAR TSK) 'QUOTE)
+      (PUSH '"'" *LINE*)
+      (TSK-TO-TXT (CADR TSK) TAB) )
+    (EXP-TO-LIN TSK) )
+  ((ATOM (CAAR TSK))
+    (PUSH '"(" *LINE*)
+    (TSK-TO-TXT (POP TSK) TAB)
+    ((AND TSK (ATOM (CAR TSK)) (NULL (CDR TSK)))
+      (PUSH '" " *LINE*)
+      (EXP-TO-LIN (CAR TSK))
+      (PUSH '")" *LINE*) )
+    (BDY-TO-TXT TSK TAB)
+    (PUSH '")" *LINE*) )
+  (PUSH '"(" *LINE*)
+  (PUSH '" " *LINE*)
+  (BDY-TO-TXT1 TSK TAB)
+  (PUSH '")" *LINE*) ))
+
+(DEFUN BDY-TO-TXT (LAMBDA (BDY TAB)		% TRANSLATE BODY %
+  ((NULL BDY))
+  (NEW-LIN TAB)
+  (BDY-TO-TXT1 BDY TAB) ))
+
+(DEFUN BDY-TO-TXT1 (LAMBDA (BDY TAB)
+  (LOOP
+    (TSK-TO-TXT (POP BDY) TAB)
+    ((NULL BDY)
+      (PUSH '" " *LINE*) )
+    (NEW-LIN TAB) ) ))
+
+(DEFUN EXP-TO-LIN (LAMBDA (EXP)
+  ((ATOM EXP)
+    (PUSH (CONS EXP) *LINE*) )
+  (PUSH '"(" *LINE*)
+  (LOOP
+    (TSK-TO-TXT (POP EXP) TAB)
+    ((ATOM EXP)
+      ((NULL EXP))
+      (PUSH '" " *LINE*)
+      (PUSH '"." *LINE*)
+      (PUSH '" " *LINE*)
+      (PUSH (CONS EXP) *LINE*) )
+    (PUSH '" " *LINE*) )
+  (PUSH '")" *LINE*) ))
+
+
+(DEFUN NEW-LIN (LAMBDA (TAB)
+  (SETQ *LENGTH* TAB)
+  (SETQ *LINE* (REVERSE *LINE*))
+  ((NULL *LINE*)
+    (PUSH *LINE* *TEXT*)
+    (SETQ *LINE* (LIST *LENGTH*)) )
+  (SETQ TAB (PLUS (CAR *LINE*) (TIMES 2 INDENT)))
+  (CUT-LIN *LINE* (CAR *LINE*))
+  (SETQ *LINE* (LIST *LENGTH*)) ))
+
+(DEFUN CUT-LIN (LAMBDA (LINE LENGTH)
+  (PUSH *LINE* *TEXT*)
+  ((NULL *LINE*))
+  (SETQ LENGTH (PLUS LENGTH (UNIT-LEN (CDR LINE))))
+  (LOOP
+    ((NOT (LESSP LENGTH LINELEN))
+      (SETQ *LINE* (CONS TAB (CDDR LINE)))
+      (RPLACD LINE NIL)
+      (CUT-LIN *LINE* (CAR *LINE*)) )
+    (SETQ LINE (NXT-UNIT (CDR LINE)))
+    ((NULL LINE))
+    (SETQ LENGTH (PLUS LENGTH (ADD1 (UNIT-LEN (CDDR LINE))))) ) ))
+
+(DEFUN UNIT-LEN (LAMBDA (LINE
+    PRIN1 )
+  ((OR (NULL LINE) (SPACE$ (CAR LINE))) 0)
+  ((ATOM (CAR LINE))
+    (ADD1 (UNIT-LEN (CDR LINE))) )
+  ( ((NULL WRS)
+      (SETQ PRIN1 T) ) )
+  (PLUS (LENGTH (CAAR LINE)) (UNIT-LEN (CDR LINE))) ))
+
+(DEFUN NXT-UNIT (LAMBDA (COL)
+  (LOOP
+    ((NULL (CDR COL)) NIL)
+    ((SPACE$ (CADR COL)) COL)
+    (SETQ COL (CDR COL)) ) ))
+
+
+%	* * *   TEXT TO S-EXPRESSION TRANSLATOR   * * *		%
+
+(DEFUN EVAL-TEXT (LAMBDA (ROW
+    COL TOK$ LST$ ERROR )
+  (LOOP
+    (SETQ TOK$ (NXT-TOK))
+    ((NULL TOK$)
+      (SETQ LST$ (REVERSE LST$))
+      (LOOP
+	((NULL LST$) T)
+	(EVAL (SAVELIST (POP LST$))) ) )
+    ( ((EQ TOK$ '"]"))
+      (PUSH (TXT-TO-SEX TOK$) LST$) )
+    ((NONNULL ERROR) NIL) ) ))
+
+(DEFUN TXT-TO-SEX (LAMBDA (TOKEN
+    LST$ )
+  ((NULL TOKEN)
+    (SETQ ERROR T) )
+  ((ATOM TOKEN)
+    ((EQ TOKEN '"(")
+      (TXT-TO-LST (NXT-TOK)) )
+    ((EQ TOKEN '"[")
+      (SETQ LST$ (TXT-TO-LST (NXT-TOK)))
+      ((EVAL ERROR))
+      (SETQ TOKEN (NXT-TOK))
+      ((OR (EQ TOKEN '")") (EQ TOKEN '"]"))
+	LST$ ) 
+      (SETQ ERROR T) )
+    ((EQ TOKEN '"'")
+      (LIST 'QUOTE (TXT-TO-SEX (NXT-TOK))) )
+    (SETQ ERROR T) )
+  (CAR TOKEN) ))
+
+(DEFUN TXT-TO-LST (LAMBDA (TOKEN
+    LST$ TOK )
+  (LOOP
+    ((EQ TOKEN '")")
+      (REVERSE LST$) )
+    ((EQ TOKEN '"]")
+      (PUSH '"]" COL)
+      (REVERSE LST$) )
+    (PUSH (TXT-TO-SEX TOKEN) LST$)
+    ((EVAL ERROR))
+    (SETQ TOKEN (NXT-TOK))
+    ((EQ TOKEN '".")
+      (SETQ TOKEN (TXT-TO-SEX (NXT-TOK)))
+      ((EVAL ERROR))
+      (SETQ TOK (NXT-TOK))
+      ((EQ TOK '")")
+      	(REVERSE LST$ TOKEN) )
+      ((EQ TOK '"]")
+	(PUSH '"]" COL)
+	(REVERSE LST$ TOKEN) )
+      (SETQ ERROR T) ) ) ))
+
+(DEFUN NXT-TOK (LAMBDA (
+    TOKEN )
+  (LOOP
+    ((NULL COL)
+      (POP ROW)
+      ((NULL ROW) NIL)
+      (SETQ COL (CDAR ROW))
+      (NXT-TOK) )
+    (SETQ TOKEN (POP COL))
+    ((NOT (OR (SPACE$ TOKEN) (EQ TOKEN '",")))
+      TOKEN ) ) ))
+
+%	* * *   CONTROL CHARACTER ASSIGNMENTS   * * *		%
+
+(MAPC$ '(
+ 	(LFT-TOK 1)	(MOV-RHT-END 2)	(DWN-PAG 3)	(RHT-CHR 4)
+	(UP-LIN 5)	(RHT-TOK 6)	(DEL-RHT-CHR 7)	(LFT-CHR 8)
+	(GET-LIN 9)	(CAR-RET-TAB 10)(NONNULL 11)	(RPT-SRC 12)
+	(CAR-RET 13)	(INS-LIN 14)	(SRC-TOK 15)	(ESC-CHR 16)
+	(MOV-LFT-END 17)(UP-PAG 18)	(LFT-CHR 19)	(DEL-RHT-TOK 20)
+	(NONNULL 21)	(INS-TOG 22)	(SCR-DWN 23)	(DWN-LIN 24)
+	(DEL-LIN 25)	(SCR-UP 26)	(NONNULL 27)	(DEL-LFT-CHR 28)
+	(NONNULL 29)	(NONNULL 30)	(NONNULL 31)	(DEL-LFT-CHR 127) )
+      '(LAMBDA (LST$)
+	(SET (ASCII (CADR LST$)) (CAR LST$)) ) )
+
+(SETQ CR (ASCII 13))			% CARRIAGE RETURN CHAR %
+
+(SETQ EXIT-CHR (ASCII 11))
+
+(COND
+  ((RDS 'CURSOR 'LIB))
+  ((RDS 'CURSOR 'LIB 'A))
+  ((PROG1 (TERPRI)
+    (PRIN1 '"CURSOR.LIB not found")) ) )
+

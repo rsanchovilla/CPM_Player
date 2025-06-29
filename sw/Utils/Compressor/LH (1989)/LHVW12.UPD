@@ -1,0 +1,115 @@
+LHRD V. 1.2 UPDATE NOTES -- 5 April 1990
+
+	When I first saw LHRD, I was very interested in using it both on an 
+RCP/M and on personal CP/M machines still kicking around my work studio. But
+I had several concerns with v. 1.1. So I undertook to quick-hack the
+following:
+    --	Ensure that line noise or an evil-minded RCP/M caller couldn't
+	potentially crash the system by grossly overwriting the arcname and
+	member filename buffers. V. 1.1 didn't check for this, so I added
+	appropriate code.
+    --	I can barely manage with programs which don't accept user-area
+	arguments, requiring that you first change user areas, THEN run the
+	programs. (So few programs still omit this feature that it's hard to
+	remember that fact when using them.) The new v. 1.2 accepts drive,
+	user area, both or neither as part of the arcname argument. Related
+	to the first point, the arcname buffer was extended to allow this
+	feature.
+    --	A few remaining RCP/Ms don't protect against command-line arguments
+	specifying private drives and/or user areas. Even for those that do
+	(like one I run), it's useful to have "legal" drives and/or user areas
+	on which files can be hidden yet accessed by selected callers, yet for 
+	which a given program won't execute. Also, many vanilla CP/M
+	systems hang outright if the user inadertently specifies an 
+	unavailable drive. For both these reasons, I added code to declare
+	a maximum and user area at compile time.
+    --	Some systems also hang (or at best demolish the screen display) if an
+	attempt is made to display .EXE and similar files. To this end, .EXE,
+	.COM, .OBJ and wildcard member filenames have been disallowed. This
+	list certainly isn't definitive, but does cover the vast majority of 
+	problems.
+
+	The changes that have been made are less than polished, though have
+been tested as functionally sound. As such, they are released at this time.
+These modest changes involved efforts extending over five months, and enough 
+is enough!
+	Why five months? Several reasons, the least of which is that, though I
+develop software on a professional basis using C, I hadn't touched CP/M code 
+in some time. But far more significantly, I have no CP/M C compiler that would
+accept LHRC's source code without a significant rewrite, something I hadn't 
+the time or energy to do. So I put up a BBS flare for someone with AZTEC C 
+to "just compile and link" the changes. Poor, good-hearted Bill Mattson 
+responded.
+	In the intervening months filled with trips out of town by each of us,
+we communicated via a BBS. We discovered some "standard" C functions which I'd
+used in the modifications weren't available under AZTEC C or used compiler-
+specific syntax. And Bill wasn't familiar with some of the necessary linking 
+requirements for his compiler. And a typo or two somehow crept in when I 
+merged testing modules written under DOS into the original source code. And 
+lastly, an error in logic needed fixing. In many cases, Bill waded through my 
+hackings and some problems in the source code as I'd received it without
+requests or hints that he do so. In other cases, I reworked what he'd sent
+back my way.
+	In short, as all now tests well in practice, we're sending the baby
+out into the cold, cruel world. Good luck, kid. . . .
+
+	Because the two libraries as I received them (LH-CPM11.LBR and 
+LHCPMSRC.LBR) are quite small and contained some redundancy in member files,
+and as some users will STILL want the older version (see below), I've merged 
+the libraries into the new LH-CPM12.LBR. This library contains all of the
+original documentation files in both libraries and the latest version of the
+source code. It also contains FOUR executable (.COM) files:
+
+LHVWZ80.COM	This is the new version, compiled for Z-80 CP/M machines,
+		which covers just about all remaining CP/M machines these 
+		days. (If you're unsure, just try it and see if it bombs.)
+LHVW8080.COM	The new version, compiled with 8080 mnemonics. (Will run on
+		all CP/M machines, albeit a little slower than the above.)
+LHRD.COM	The earlier v. 1.1 untouched. This version EXTRACTS as well
+		as displays archive member files, and has no drive/user area
+		restrictions (or any of the other mentioned enhancements).
+LHVW.COM	V. 1.1 untouched. This is the VIEW-ONLY version.
+
+Why might someone prefer one of the older versions? Well, with apologies, 
+recompilations arn't readily feasible here for the mentioned reasons and the
+currently available .COM files created from the revised source code DON'T do 
+two things:
+
+1) They don't EXTRACT files--just display them.
+2) They don't accept arcnames for all drives and user areas on CP/M machines.
+   The maximum user area currently is set to 8, the maximum drive to C:.
+
+Both of these features are right for our RCP/M. If someone has access to
+AZTEC C and can offer a minimal amount of time (really!) on the (now-
+-syntactically-checked!) source code, I would urge you to:
+
+1) Set maximum the maximum user to 15 and maximum drive to B: (by far the most
+   common configuration for CP/M machines).
+2) Then recompile it twice, once with Z80 mnemonics, once with 8080.
+3) Set the VIEWONLY compiler directive to false, then repeat step 2.
+4) Finally, delete all the current .COM files in the library, replacing them
+   with the four newly-created copies.
+
+Doing so would make the latest enhancements more useful to a broader set of
+users and would be a real service to the CP/M community. LHARC is a wonderful
+tool and CP/M users should be capable of maximizing use of archives they'll
+inevitably receive created by it.
+
+For the cited reasons, I can't promise to undertake more work on this project
+(it was to be a night's work!). But if you discover bugs or envision major
+enhancements, I might be tempted. That temptation would be increased if
+someone with access to AZTEC C would be willing to share the chores Bill has
+so graciously accepted, far beyond his original commitment. (Depending upon
+his willingness to offer continued availability, it may even be necessary for
+someone to accept all compiling and linking responsibilities.) In any case, I
+would hesitate to ask him to continue to shoulder full responsibility.
+
+	-- Jerry Olsen
+	   Sysop, The Advocate / NOWAR RCP/M
+	   312.939.4411 (central Chicago, 24 hrs., 300/1200/2400, 8/n/1)
+	   Advocate Enterprises, Ltd.
+	   117 W. Harrison Bldg.
+	   6th Floor Mail Stop #A-408
+	   Chicago, IL  60605
+
+

@@ -1,0 +1,271 @@
+%File:  ANIMAL.LIB  (C)		12/09/83	The Soft Warehouse %
+
+
+% To read in this animal guessing game without having muSTAR loaded,
+simply enter the muLISP command:	(RDS ANIMAL LIB)
+followed by a <RETURN>.
+%
+
+(LOOP (PRIN1 (QUOTE *)) (EVAL (READ)) ((NULL RDS)) )
+
+(PUTD (QUOTE DEFUN) (QUOTE (NLAMBDA (NAM$ EXP$)
+  (PUTD NAM$ EXP$)
+  NAM$ )))
+
+(DEFUN SETQQ (NLAMBDA (NAM$ EXP$)
+  (SET NAM$ EXP$)
+  NAM$ ))
+
+
+(DEFUN ANIMAL (LAMBDA NIL
+  (TERPRI 2)
+  (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) 20) 2))
+  (PRTSENT (QUOTE (*** ANIMAL GAME ***)) 2)
+  (INSTRUCTIONS)
+  (TERPRI)
+  (FLUSH)
+  (SETQ *BASE* (LOAD-BASE))
+  (RDS)
+  (LOOP
+    (PRTSENT (QUOTE (Think of an animal and press RETURN key ".")))
+    (FLUSH)
+    (TERPRI)
+    (PLAY-ROUND *BASE*)
+    ((NOT (QUERY (QUOTE (Would you like to play another round ?))))) )
+  (SAVE-BASE *BASE*)
+  (PRTSENT (QUOTE (Have a nice day "," and do come back !)) 2)
+  T ))
+
+(SETQQ *NAME* *NAME*)
+
+(DEFUN INSTRUCTIONS (LAMBDA (RDS)
+  ((NOT (EQ *NAME* (QUOTE *NAME*))))
+  (PRTSENT (QUOTE (Hello "," I would like to play a simple game with you "."
+      But first I need to know your name so we can chat on a more friendly
+      basis "." Please type in your first name and then hit the RETURN key
+      ".")) 2)
+  (SPACES 10)
+  (PRTSENT (QUOTE (Your first NAME :)))
+  (SETQ *NAME* (RATOM))
+  (TERPRI)
+  (PRTSENT (CONS (QUOTE Thanks) (CONS *NAME* (QUOTE ("," now think of an
+      animal and I'll try to guess what it is "." Just answer my questions by
+      typing a """Y""" or """N""" ".")))) 2) ))
+
+(DEFUN LOAD-BASE (LAMBDA (ECHO RDS)
+  ((OR
+	(AND (RDS *NAME* (QUOTE MEM))
+	  (QUERY (QUOTE (Do you want to refresh my memory about
+		animals from our previous session ?))) )
+	(AND (RDS (QUOTE ANIMAL) (QUOTE MEM))
+	  (QUERY (QUOTE (Do you want to refresh my memory about
+		animals from the pre-built library file ?))) ) )
+    (READ-BASE) )
+  INITBASE ))
+
+(SETQQ INITBASE ((DOES IT HAVE A BACKBONE)
+    ((CAN IT FLY)
+	(WORM)
+	(MOSQUITO))
+    ((IS IT A WARM BLOODED ANIMAL)
+	((DOES IT HAVE GILLS AND LIVE ALL ITS LIFE IN WATER)
+	    ((DOES IT START LIFE WITH GILLS AND THEN BECOME AN AIR BREATHER)
+		((DOES IT HAVE LEGS)
+		    (SNAKE)
+		    (CROCODILE))
+		(FROG))
+	    (TUNA" FISH"))
+	((DOES IT NURSE ITS YOUNG WITH MILK)
+	    ((CAN IT FLY)
+		(CHICKEN)
+		(ROBIN))
+	    ((DOES IT LIVE IN WATER)
+		((IS IT A COMMONLY DOMESTICATED ANIMAL)
+		    (TIGER)
+		    (DOG))
+		(DOLPHIN)) ))) )
+
+(DEFUN READ-BASE (LAMBDA (TREE)
+  (SETQ TREE (READ))
+  ((ATOM TREE)
+    (LIST TREE) )
+  (LIST TREE (READ-BASE) (READ-BASE)) ))
+
+(DEFUN PLAY-ROUND (LAMBDA (TREE ANIMAL ANSWERS)
+  (LOOP
+    ((ATOM (CAR TREE))
+      ((QUERY (APPEND (QUOTE (I bet it's)) (LIST (@ (CAR TREE)) (CAR TREE)
+          (QUOTE ?))))
+        (PRTSENT (APPEND (QUOTE (Yea "," I got it ! Thanks for the game))
+            (CONS *NAME* (QUOTE ("."))))) )
+      (PRTSENT (QUOTE (I give up "," what animal were you thinking of ?)))
+      (SETQ ANIMAL (READ-ANIMAL))
+      (TERPRI)
+      ((EQ ANIMAL (CAR TREE))
+        (PRTSENT (APPEND (APPEND (QUOTE (Stop fooling around)) (LIST *NAME*))
+            (QUOTE ("," that is what I just guessed !)))) )
+      (SETQ NEW-TREE (ALREADY-EXISTS ANIMAL (REVERSE ANSWERS) *BASE*))
+      ((AND
+          (NOT (NULL NEW-TREE))
+          (PROG1 T 
+	    (PRTSENT (APPEND (QUOTE (I think you answered the question))
+              (APPEND (CAR NEW-TREE) (QUOTE (incorrectly "." However ","))))))
+          (NOT (QUERY (CONS *NAME* (QUOTE ("," if you are POSITIVE you
+              answered the question correctly this time "," type """Y"""
+              otherwise type """N""" :))))) ))
+      ( ((NOT (NULL NEW-TREE))
+          (PRTSENT (QUOTE (OK I will fix by memory so I won't make that
+              mistake again ".")))
+          (REMOVE-ANIMAL ANIMAL *BASE*) ) )
+      (PRTSENT (APPEND (QUOTE (What question can I ask for which a YES answer
+          	indicates))
+	  (LIST (@ ANIMAL) ANIMAL (QUOTE rather than) (@ (CAR TREE))
+          (CAR TREE) (QUOTE ?))) 1)
+      (DISPLACE TREE (LIST (READ-QUESTION) (LIST (CAR TREE)) (LIST ANIMAL)))
+      (FLUSH)
+      (TERPRI)
+      (PRTSENT
+	(QUOTE (Thanks for telling me that "." I'll try to remember it "."))))
+    (PUSH (QUERY (APPEND (CAR TREE) (QUOTE (?)))) ANSWERS)
+    ( ((CAR ANSWERS)
+        (SETQ TREE (CADDR TREE)) )
+      (SETQ TREE (CADR TREE)) ) ) ))
+
+(DEFUN ALREADY-EXISTS (LAMBDA (ANIMAL ANSWERS BASE)
+  ((ATOM (CAR BASE)) NIL)
+  ((CAR ANSWERS)
+    ((MEMBER-BASE ANIMAL (CADR BASE)) BASE)
+    (ALREADY-EXISTS ANIMAL (CDR ANSWERS) (CADDR BASE)) )
+  ((MEMBER-BASE ANIMAL (CADDR BASE)) BASE)
+  (ALREADY-EXISTS ANIMAL (CDR ANSWERS) (CADR BASE)) ))
+
+(DEFUN REMOVE-ANIMAL (LAMBDA (ANIMAL BASE)
+  ((MEMBER-BASE ANIMAL (CADR BASE))
+    (SETQ SUB-BASE (CADR BASE))
+    ((EQ ANIMAL (CAR (CADR SUB-BASE)))
+      (RPLACA (CDR BASE) (CADDR SUB-BASE)) )
+    ((EQ ANIMAL (CAR (CADDR SUB-BASE)))
+      (RPLACA (CDR BASE) (CADR SUB-BASE)) )
+    (REMOVE-ANIMAL ANIMAL (CADR BASE)) )
+  (SETQ SUB-BASE (CADDR BASE))
+  ((EQ ANIMAL (CAR (CADR SUB-BASE)))
+    (RPLACA (CDDR BASE) (CADDR SUB-BASE)) )
+  ((EQ ANIMAL (CAR (CADDR SUB-BASE)))
+    (RPLACA (CDDR BASE) (CADR SUB-BASE)) )
+  (REMOVE-ANIMAL ANIMAL (CADDR BASE)) ))
+
+(DEFUN MEMBER-BASE (LAMBDA (ANIMAL BASE)
+  (LOOP
+    ((ATOM (CAR BASE))
+      (EQ (CAR BASE) ANIMAL) )
+    ((MEMBER-BASE ANIMAL (CADR BASE)))
+    (SETQ BASE (CADDR BASE)) ) ))
+
+(DEFUN SAVE-BASE (LAMBDA (BASE)
+  ((QUERY (CONS *NAME* (QUOTE ("," do you want me to save all you have taught
+      me so I will remember it next time ?))))
+    (WRS *NAME* (QUOTE MEM))
+    (PRT-BASE BASE 0)
+    (TERPRI)
+    (WRS) ) ))
+
+(DEFUN PRT-BASE (LAMBDA (BASE TAB PRIN1)
+  (SPACES TAB)
+  ((ATOM (CAR BASE))
+    (PRINT (CAR BASE)) )
+  (PRINT (CAR BASE))
+  (PRT-BASE (CADR BASE) (PLUS TAB 2))
+  (PRT-BASE (CADDR BASE) (PLUS TAB 2)) ))
+
+(DEFUN DISPLACE (LAMBDA (LST1 LST2)
+  (RPLACA LST1 (CAR LST2))
+  (RPLACD LST1 (CDR LST2)) ))
+
+(DEFUN READ-QUESTION (LAMBDA (LST)
+  (LOOP
+    ((MEMBER (RATOM) TERMINATORS)
+      (REVERSE LST) )
+    (PUSH RATOM LST) ) ))
+
+(DEFUN READ-ANIMAL (LAMBDA (LST)
+  (LOOP
+    ((EQ (READCH) CR)
+      (PACK (REVERSE LST)) )
+    (PUSH RATOM LST) ) ))
+
+(DEFUN FLUSH (LAMBDA NIL
+  (LOOP
+    ((EQ (READCH) CR)) ) ))
+
+(DEFUN QUERY (LAMBDA (LST CHAR READ READCH RDS)
+  (LOOP
+    (PRTSENT LST)
+    (SETQ CHAR (PRINT (READCH)))
+    (TERPRI)
+    ((EQ CHAR (QUOTE Y)))
+    ((EQ CHAR (QUOTE N)) NIL)
+    (PRTSENT (QUOTE (I don't understand "," please re - enter ".")) 1) ) ))
+
+(DEFUN PRTSENT (LAMBDA (LST NUM)
+  (LOOP
+    ((NULL LST))
+    ((NULL (CDR LST))
+      (PRIN1 (CAR LST)) )
+    ( ((OR
+          (MEMBER (CADR LST) TRMLIS)
+          (MEMBER (CADR LST) PCTLIS) )
+        (PRETERPRI (ADD1 (LENGTH (CAR LST))))
+        (PRIN1 (POP LST)) )
+      ((MEMBER (CADR LST) SEPLIS)
+        ((NULL (CDDR LST))
+          (PRETERPRI (ADD1 (LENGTH (CAR LST))))
+          (PRIN1 (POP LST)) )
+        (PRETERPRI (PLUS (ADD1 (LENGTH (CAR LST))) (LENGTH (CADDR LST))))
+        (PRIN1 (POP LST))
+        (PRIN1 (POP LST)) ) )
+    (PRIN1 (CAR LST))
+    ((NULL (CDR LST)))
+    ( ((MEMBER (POP LST) TRMLIS)
+        ((EQ (ADD1 (SPACES)) (LINELENGTH))
+          (TERPRI) )
+        (SPACES 2) )
+      ((EQ (SPACES) (LINELENGTH))
+        (TERPRI) )
+      (SPACES 1) ) )
+  ((PLUSP NUM)
+    (TERPRI NUM) )
+  ((EQ (ADD1 (SPACES)) (LINELENGTH))
+    (TERPRI) )
+  (SPACES 2) ))
+
+(DEFUN ADD1 (LAMBDA (NUM)
+  (PLUS NUM 1) ))
+
+(DEFUN PRETERPRI (LAMBDA (NUM)
+  ((GREATERP (PLUS (SPACES) NUM) (LINELENGTH))
+    (TERPRI) ) ))
+
+(DEFUN @ (LAMBDA (NOUN)
+  ((MEMBER (CAR (UNPACK NOUN)) VOWELS) (QUOTE an))
+  (QUOTE a) ))
+
+(COND ((GETD (QUOTE APPEND)))
+      ((DEFUN APPEND (LAMBDA (LST TAIL)
+	((NULL LST) TAIL)
+	(CONS (CAR LST) (APPEND (CDR LST) TAIL)) ))) )
+
+
+(SETQQ TERMINATORS ("." ? !))
+
+(SETQQ VOWELS (A E I O U))
+
+(SETQQ TRMLIS ("." ! ?))
+
+(SETQQ PCTLIS ("," ";" ")" "(" ":"))
+
+(SETQQ SEPLIS ("'" "-"))
+
+(SETQ CR (ASCII 13))
+
+(ANIMAL (RDS))
+

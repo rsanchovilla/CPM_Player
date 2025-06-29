@@ -1,0 +1,572 @@
+;
+;	Small Integer Hex and Decimal Calculator
+;	Copyright (c) Poor Person Software 1985
+;
+	org	0
+base	equ	$
+;
+pstring equ	9
+dio	equ	6
+;
+bdos	equ	base+5
+home	equ	base+010h
+;
+;
+	org	0100h
+;
+start:
+	lxi	h,0		; get an integer 0
+	shld	n
+	shld	acc
+	xra	a
+	sta	op		; initialize variables
+	sta	result
+	call	doscrn		; display the calculator screen
+;
+loop:
+	call	dispn		; display the number
+	call	home		; home for the prompt
+	lxi	d,prmpts
+	mvi	c,pstring
+	call	bdos		; prompt string
+;
+lp1:
+	mvi	e,255
+	mvi	c,dio
+	call	bdos		; get a character
+	ora	a
+	jz	lp1		; loop till a character typed
+;
+	cpi	'0'
+	jc	noecho		; don't echo the control characters
+;
+	push	psw
+	mov	e,a
+	mvi	c,dio
+	call	bdos		; echo everything else
+	pop	psw
+noecho:
+;
+	cpi	'+'
+	jz	doplus		; add
+	cpi	'-'
+	jz	dominus 	; subtract
+	cpi	'/'
+	jz	dodiv		; divide
+	cpi	'*'
+	jz	domult		; multiply
+	cpi	'='
+	jz	doequal 	; equals
+	cpi	'!'
+	jz	donegate	; change sign
+	cpi	'x'
+	jz	doclr
+	cpi	'X'
+	jz	doclr		; clear the calculator
+	cpi	'r'
+	jz	dorad
+	cpi	'R'
+	jz	dorad		; change the radix
+	cpi	27		; escape
+	jz	base		; exit
+;
+	cpi	'0'		; must be a digit
+	jc	bell		; bad character
+	cpi	':'
+	jnc	hextest 	; could be ok in hex
+	jmp	dodigit 	; add digit to display
+bell:				; error sound the bell
+	mvi	e,7
+	mvi	c,dio
+	call	bdos
+	jmp	loop
+hextest:			; check for valid hex
+	sta	digit
+	call	radixc		; radix check nz means decimal
+	jnz	bell		; no
+	lda	digit
+	ani	05fh
+	cpi	'A'
+	jc	bell		; not within range a-f
+	cpi	'G'
+	jnc	bell		; not within range a-f
+	jmp	dodigit 	; ok add to number
+;
+dorad:				; change radix
+	lda	mode		; get current radix  10 or 16
+	ani	0fh
+	mov	b,a
+	mvi	a,6
+	sub	b		; toggle 6 to 0 and 0 to 6
+	ori	030h
+	sta	mode		; put back int screen
+	call	doscrn		; repaint the screen
+	jmp	loop
+;
+doclr:				; clear the calculator
+	lxi	h,0
+	shld	n		; zap entry
+	lda	clrflg		; is this the first time
+	inr	a
+	sta	clrflg		; set clear number
+	cpi	1		; was it first clear
+	jz	loop		; yes then stop
+	shld	acc		; second clear.  zap accumulator
+	xra	a		; and the operation code
+	sta	op
+	jmp	loop
+;
+doplus: 			; set operation to add
+	mvi	c,1		; 1=add
+	jmp	doop		; do the operation
+dominus:
+	mvi	c,2		; 2 = subtract
+	jmp	doop
+domult:
+	mvi	c,3		; 3 = multiply
+	jmp	doop
+dodiv:
+	mvi	c,4		; 4 = divide
+	jmp	doop
+doequal:
+	mvi	c,0		; clear operation pending
+	jmp	doop
+donegate:			; just complement the number
+	lhld	n
+	call	comp
+	shld	n
+	jmp	loop
+;
+doop:				; set pending operation 
+	call	setop		; set new opcode
+	jz	movop		; nothing to do old op=0
+	cpi	1		; must do the pending operation
+	jz	dopad
+	cpi	2
+	jz	dopsu
+	cpi	3
+	jz	dopmu
+	cpi	4
+	jz	dopdi
+	jmp	bell
+;
+movop:				; set up for next operation
+	lhld	n
+	shld	acc		; put first number in accumulator
+	lxi	h,0
+	jmp	setr		; set result flag and N
+;
+dopad:
+	call	getop		; get operands into b and d
+	call	addo		; do add
+	shld	acc		; store result in acc
+	jmp	setr		; set result
+dopsu:
+	call	getop
+	call	subo		; subtract
+	shld	acc
+	jmp	setr
+dopmu:
+	call	getop
+	call	mult		; multiply
+	shld	acc
+	jmp	setr
+dopdi:
+	call	getop
+	call	div		; divide, forget remainder
+	shld	acc
+	jmp	setr
+getop:				; fetch ops
+	call	n2bin		; convert n to binary
+	lhld	acc		; get acc to d
+	xchg
+	lhld	n		; get n to b
+	push	h
+	pop	b		; move h to b
+	ret
+setr:
+	mvi	a,1		; say result in N
+	sta	result
+	shld	n		; store result into N
+	jmp	loop
+;
+dodigit:			; put digit into N
+	sta	digit
+	lda	result
+	ora	a
+	jz	dodig1		; No result displayed
+	lxi	h,0		; result displayed must zap N
+	shld	n		; zap it
+	call	bin2n		; convert to display
+	xra	a
+	sta	result		; and clear result present flag
+dodig1:
+	lxi	h,n1		; shift display to the left
+	lxi	d,n2
+	mvi	b,4
+dig1:
+	ldax	d
+	mov	m,a
+	inx	d
+	inx	h
+	dcr	b
+	jnz	dig1
+	lda	digit		; add the entered digit on the right
+	sta	n5
+	call	n2bin		; convert to binary
+	jmp	loop
+;
+setop:				; set opcode
+	lda	op		; get pending operation
+	ora	a
+	push	psw		; save condition
+	mov	a,c		; get new operation
+	sta	op		; store it
+	xra	a
+	sta	clrflg		; forget sequential clears
+	pop	psw
+	ret			; return previous op and condition
+;
+comp:				; complement h
+	mov	a,h
+	cma			; complement
+	mov	h,a
+	mov	a,l
+	cma
+	mov	l,a
+	inx	h		; two's complement
+	ret
+addo:				 ; d+b -> h
+	push	d
+	pop	h
+	dad	b
+	ret
+subo:				 ; d-b -> h
+	push	b
+	pop	h
+	call	comp		; -b
+	dad	d		; +d
+	ret
+mult:				; d*b -> h
+	call	setsgn		; set the sign
+	lxi	h,0		; start with 0
+mul1:
+	mov	a,b
+	ora	c		; check for zero
+	jz	mldone
+	dad	d		; add d
+	dcx	b		; simply add b times
+	jmp	mul1					
+mldone: 			; done	correct the sign of result
+	lda	sign
+	ora	a
+	rz
+	call	comp
+	ret
+;
+div:				; d/b -> h  remaindr -> d
+;
+; use iterative subtraction.  for small number this is not too bad!
+;
+	call	setsgn
+	lxi	h,0
+	push	h		; set quotient
+	mov	a,b
+	ora	c
+	jz	divdon		; zero divid
+divl:
+	call	subo		; d-b to h
+	jnc	divdon		; done when can no longer subtract
+	xchg			; new d
+	pop	h
+	inx	h
+	push	h		; increment number of subtracts
+	jmp	divl
+divdon:
+	pop	h
+	lda	sign
+	ora	a
+	rz			; correct the sign of result
+	call	comp		; quotient
+	xchg
+	call	comp		; remaindr
+	xchg
+	ret
+;
+setsgn: 			; check signs of operands and set
+	xra	a		; sign of result
+	sta	sign		; assume positive
+	call	radixc
+	rz			; don't adjust if hex
+	push	h		; save this
+	push	b
+	pop	h		; b to h
+	mov	a,h
+	ora	a
+	jp	set1		; this is positive
+	cpi	080h		; special case
+	jnz	setsg1		; treat 8000 as a positive number
+	mov	a,l
+	ora	a
+	jz	set1		; is special case
+setsg1:
+	call	comp		; complement
+	push	h
+	pop	b		; and return to B
+	mvi	a,1  
+	sta	sign
+set1:				; do the same for d
+	push	d
+	pop	h
+	mov	a,h
+	ora	a
+	jp	set2
+	cpi	080h
+	jnz	setsg2
+	mov	a,l
+	ora	a
+	jz	set2
+setsg2:
+	call	comp
+	push	h
+	pop	d
+	lda	sign
+	inr	a
+	sta	sign
+set2:
+	lda	sign
+	ani	1
+	sta	sign		; parity of sign (number of negatives)
+	pop	h
+	ret			; return
+;
+n2bin:				; get N from display and get binary to N
+	lxi	h,0
+	shld	n
+	call	radixc
+	jz	n2binh		; do hex conversion
+;
+	lxi	h,n1		; first digit
+	mvi	b,5		; this many digits
+n2b1:
+	mov	a,m
+	ani	0fh
+	sta	digit		; temp
+	push	h
+	push	b
+	lhld	n
+	xchg
+	lxi	b,10		; multiply N by 10
+	call	mult
+	xchg			; to d
+	lda	digit
+	mvi	b,0
+	mov	c,a
+	call	addo		; and add in the new digit
+	shld	n
+	pop	b
+	pop	h
+	inx	h
+	dcr	b
+	jnz	n2b1		; loop
+;
+	lda	ns		; the sign
+	cpi	'-'
+	rnz
+	lhld	n
+	call	comp		; complement for negative numbers
+	shld	n
+	ret
+;
+bin2n:				; binary n to N in display
+	xra	a
+	sta	signd
+	call	radixc
+	jz	bin2nh		; hex conversion
+;
+	lhld	n
+	mov	a,h
+	ora	a
+	jp	bin2n1		; positive number
+;
+	mvi	a,1
+	sta	signd		; set negative
+	call	comp		; make positive
+bin2n1:
+	xchg			; doing it in this order
+	lxi	b,10000 	; means a maximum of 45 subtracts
+	call	div		; while doing it the other way (from
+	mov	a,l		; the right dividing by 10) means
+	ori	030h		; a maximum of 1100 subtracts 
+	sta	n1
+	lxi	b,1000		; caclulate next digit
+	call	div
+	mov	a,l
+	ori	030h
+	sta	n2
+	lxi	b,100		; and so forth
+	call	div
+	mov	a,l
+	ori	030h
+	sta	n3
+	lxi	b,10		; and finally
+	call	div
+	mov	a,l
+	ori	030h
+	sta	n4
+	mov	a,e
+	ori	030h
+	sta	n5 
+;
+	mvi	a,' '		; set sign
+	sta	ns
+	lda	signd
+	ora	a
+	rz			; done
+	mvi	a,'-'
+	sta	ns
+	ret
+;
+dispn:				; display n
+	call	bin2n		; get display form
+	lxi	h,n1		; replace leading zeros
+	mvi	c,4
+	mvi	a,'0'
+disp1:
+	cmp	m		; compare with 0
+	jnz	dodsp		; done when find first non-zero
+	mvi	m,' '
+	inx	h
+	dcr	c
+	jnz	disp1
+dodsp:				; now display the number
+	call	home
+	lxi	d,nstring
+	mvi	c,pstring
+	call	bdos
+	ret
+;
+bin2nh: 			; hex conversion binary to display
+	mvi	a,'0'		; zero here 
+	sta	n1
+	mvi	a,' '
+	sta	ns		; blank sign (assume positive)
+	lda	n+1		; high byte
+	call	gethigh 	; first nibble
+	call	getnh		; get display
+	sta	n2
+	lda	n+1
+	ani	0fh		; get second nibble
+	call	getnh		; get display
+	sta	n3
+	lda	n		; same for low byte
+	call	gethigh
+	call	getnh
+	sta	n4
+	lda	n
+	ani	0fh
+	call	getnh
+	sta	n5
+	ret
+gethigh:			; isolate the first nibble
+	ani	0f0h
+	rlc
+	rlc
+	rlc
+	rlc
+	ret
+getnh:				; get display value from table
+	mov	c,a
+	mvi	b,0
+	lxi	h,binhex
+	dad	b
+	mov	a,m
+	ret
+;
+n2binh: 			; convert hex to binary
+	lxi	d,n2
+	call	getbyte 	; convert the byte
+	sta	n+1		; store in high byte
+	lxi	d,n4
+	call	getbyte
+	sta	n		; store in low byte
+	ret
+;
+getbyte:
+	ldax	d		; get first of pair
+	call	gethn		; get binary from table
+	rlc
+	rlc
+	rlc
+	rlc
+	push	psw		; save upper nibble
+	inx	d
+	ldax	d
+	call	gethn
+	mov	b,a		; prepare to combine
+	pop	psw		; get upper nibble
+	ora	b		; combine
+	ret
+gethn:
+	ani	01fh		; look into table
+	mov	c,a
+	mvi	b,0
+	lxi	h,hexbin
+	dad	b
+	mov	a,m
+	ret
+radixc: 			; check radix
+	lda	mode
+	cpi	036h
+	ret
+;
+; home:
+;	mvi	e,01eh
+;	mvi	c,dio
+;	call	bdos
+;	ret
+;
+doscrn: 			; display the screen
+	call	home		; home cursor
+	lxi	d,scrn
+	mvi	c,pstring
+	call	bdos		; put up screen
+	ret
+;
+scrn:
+	db	'     ------    |',10,13
+	db	'    |      |   |',10,13
+	db	'     ------    |',10,13
+scrn1:
+	db	'   Base = 10   |',10,13
+	db	'   + - * / =   |',10,13
+	db	'   ! (negate)  |',10,13
+	db	'   R (Radix)   |',10,13
+	db	'   X (clear)   |',10,13
+	db	'      [ ]      |',10,13
+	db	'_______________|','$'
+prmpts:
+	db	10,10,10,10,10,10,10,10,'      [$'
+nstring: db	10,'    |',' 00000$'
+;
+hexbin: db	0,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9
+binhex: db	'0123456789ABCDEF'
+;
+ns	equ	nstring+6
+n1	equ	nstring+7
+n2	equ	nstring+8
+n3	equ	nstring+9
+n4	equ	nstring+10
+n5	equ	nstring+11
+;
+sign:	db	0	; sign temp
+signd:	db	0	; sign temp for display
+digit:	db	0	; digit temp
+acc:	dw	0	; accumulator
+n:	dw	0	; input number
+op:	db	0	; operation
+mode	equ  scrn1+11	; mode 0=decimal 1=hex
+result: db	0	; had a result
+clrflg: db	0
+	end	start
+u

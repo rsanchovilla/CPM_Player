@@ -1,0 +1,66 @@
+Statements:
+
+* ASSIGN <logical device number>,<physical device number>
+Assigns a physical device to a logical device.  Internally,
+this command sets a bit in the MODES table.  See Appendix E
+for a list of the logical and physical devices.
+Examples:  ASSIGN 3,1   ASSIGN PR,CRT   ASSIGN LOGICAL,PHYSICAL
+
+* BGET <variable name>
+Reads from Binary Input logical device into named variable.
+Example:   BGET ITEM(N)   BGET X   BGET ARRAY(X,Y)
+
+* BLOAD <string expression>
+Reads a program named <string expression> into memory from the
+binary input logical device.  All characters of string are used.
+Examples:   BLOAD "PAYROLL"   BLOAD PROGNAME$
+
+* BPUT <variable name>
+Writes the named variable onto the binary output logical device.
+Examples:   BPUT ITEM(N)   BPUT X   BPUT ARRAY(X,Y)
+
+* BSAVE <string expression>
+Writes a program named <string expression> onto the binary output
+logical device.  All characters of the string are used.
+Example:  BSAVE "PAYROLL"    BSAVE PROGNAME$
+
+CHANNEL
+Prints a table of the assignments of physical to logical
+devices.  See Appendix E for the default assignments.
+
+DATA <expression list>
+Specifies data to be read by a "READ" statement.  Expressions
+are allowed.  String constants must be enclosed by quotes.
+Example:  DATA 1,3,5,7,X+Y,Z^2,"DON"+"TARBELL"
+
+DEF FN<function name>(<variable list>)=<expression>
+Defines a function.  The function name can be any legal variable
+name.  The variable list is a list of dummy variables representing
+the variables in the function call.  The value of the function is
+determined by substituting the values of the variables into the
+expression.  Functions may be nested to any depth, and string
+functions are legal.  Any number of variables can be used.
+Examples:   DEF FNCUBE(X)=X*X*X   DEF FNL3(S$)=LEFT$(S$,3)
+	    DEF FNRMS(X,Y) = SQR(X^2+Y^2)
+
+DIM <array name>(integer)[,<array name>(integer)]...
+Allocates space for array variables.  Any number of dimensions
+per array are allowed. The value of each expression gives the
+maximum subscript permissible.  The smallest is 0.  If no "DIM"
+statement is encountered before a reference to an array,
+an error message is given.  Multiple arrays may be dimensioned.
+Arrays are cleared to zero (numeric) or null (string).  Real
+subscripts are allowed in array references, and if used, the
+integer part of the subscript will be used for the reference.
+Examples:  DIM PARTNO$(100),X(3,10),VERYLONGNAMESAREALLOWED(5)
+
+
+
+
+			    6
+
+
+
+
+
+

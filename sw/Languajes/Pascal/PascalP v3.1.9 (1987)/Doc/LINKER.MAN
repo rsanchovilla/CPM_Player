@@ -1,0 +1,142 @@
+.macro chttl = LINKER v1.1.4
+.ch .chttl
+
+.hl 1 GENERAL
+
+LINKER (and the companion program SCANRBMS,  documented separately)
+  scans relocatable binary module files and forms an  absolute
+load module.   The command structure is flexible, and designed to
+permit  either  interactive operation or complete control in  the
+command  line,  using the standard file  redirection  facilities,
+together  with  the "indirect" and library files detailed  below.
+The  "RBM"  (See RBMFILES documentation) format  code  files  are
+machine independant,  but do expect a byte addressing system with
+addresses up to 65535.   Byte and word externals/relocation, with
+either high byte or low byte first word order, separation of data
+areas  from code areas,  module alignment,  segmented _.PCD files,
+and "fixups" from one pass code generators are catered for.  Name
+length is controlled by a compile time constant, and is presently
+set to 8 characters.
+
+File names are accepted up to an empty line.   Any filename  preceded
+ by "@" specifies indirect access, i.e. that file contains a
+list of files, which may in turn use indirect access.
+
+In  interactive  (normal)  mode,  following  the  empty  filename
+prompts  are  made for the output file name,  code and data  load
+points.   After the input has then been scanned,  if any external
+names  remain  undefined,  the operator is prompted  for  further
+module names.   A "no" reply here causes any such undefined names
+to be evaluated as zero.
+
+A  file name beginning with "-" specifies a  library  file.   The
+default  extension is ".LBR".   The name "-" alone specifies  the
+default library file,  which is "RBMS.LBR".  Note that the "-" is
+not  part of the filename,  but must directly precede it  without
+any   intervening   spaces.    The   default  library   file   is
+automatically  selected unless a "-nul" (or other empty  or  non-existant
+  file)  file name is specified.   Note that nul  is  the
+system defined bit-bucket, and always exists.
+
+
+.hl 1 SEARCH ORDER:
+
+Files  and modules are searched in the following order (unless  a
+specific drive has been specified,  when the search is limited to
+a file on that drive): .b
+.sav .p -5 0 5 .tab 11 .lm $$lm+10; .rm $$rm-5; 
+.pp  1: .t  On the default drive.
+.pp  2: .t  On the system drive.
+.pp  3: .t If  a  module (not a library) is not yet found,  it  is
+          searched in the current library.   When the library was
+          selected it used the above search pattern.
+.res
+
+If a file is found on other than the default drive,  it's name is
+revised to show the drive.   If a module is found as a file  it's
+name is upshifted.  If found in a library the name is unchanged.
+
+Thus  files,  modules,  indirect  files,  may exist on up to  two
+drives,  and modules and indirect files may be found as files  or
+as  modules.   This  allows an existing library module to be  re-
+placed  by creating a file with the same name,  without  altering
+the library in any way.   If all is well the library may then  be
+permanently  altered with the public domain LU (library  utility)
+program and the replacement module file removed.
+
+
+.hl 1 BATCH OPERATION:
+
+A  numerical  input (hex with a leading digit) to the  "filename"
+prompt is a specification of the load point.   A second numerical
+input  specifies the data load point.   Any such numerical  input
+causes  the system to operate in the batch mode,  and no  further
+prompts are output.   In particular no opportunity then exists to
+resolve  undefined labels by adding further  modules.   Similarly
+any  end  of file on "INPUT" (or the file from which it has  been
+redirected) causes operation in the batch mode.
+
+
+.hl 1 CONNECTION TO PREVIOUSLY LINKED MODULES:
+
+Any  file  name whose group/extension begins with ".CON" is
+considered a connector file.   Any such file must contain only
+absolute entry points, (NOT CHECKED), and is used only to  resolve
+undefined  external referances at that point in the loading  process.
+A connector file can be created from the loaded module by
+specifying  file "cnct" in the run command with  PARM=2.  Such  a
+"cnct" file is in RBM format, specifying absolute values.
+
+
+.hl 1 RUN-TIME OPTIONS:
+
+Several  run-time  options  may be selected by  numerical  "parm"
+values,  specified within "[]" on the command line.  For multiple
+options use the sum of the values. .b
+.i 3  Value#Effect
+.sav .p -4 0 5 .tab 9 .lm $$lm+8; .rm $$rm-5; 
+.pp  2 .t Generate  a  "cnct" file with a listing  of  all  entry
+          points.  See above.
+.pp  4 .t Generate  an output listing (on "loadmap") of the
+          complete symbol table.
+.pp  10 .t Generate  output code in "RBM" absolute loader  format,
+          rather  than  as a "COM" format file.   This format  is
+          forced if initialized data segments exist in the  input
+          modules,  since a continuous output binary image cannot
+          be generated.
+.res
+
+.hl 1 MACHINE DEPANDANCIES:
+
+   On word addressing machines where an integer occupies only one
+unit of storage (e.g. HP3000) the sense of the parm=4 and parm=10
+bits  is  reversed.   Such output is normally used  to  down-load
+other  machines,  and  a binary file is useless.   Time and  disk
+space to generate complete symbol table listings are less  critical,
+  and the table is normally examined later by listing it.  In
+addition,  on such machines no libraries are presently used,  nor
+do drive specifiers or searches apply.
+
+
+
+.hl 1 EXAMPLE:
+
+To  link and relocate modules "a.y" and "b.y" to origin 0100h  on
+codefile "ab.com" .b .asis
+
+B>linker (ab.com, con)
+LINKER (objfile,  loadmap,  cnct, input, output); Ver. 1.1.4
+filename >a.y
+filename >b.y
+filename >
+Loadfile (code)   (default "objfile") = ?
+Code address (default 100H)       hex = ?
+Data address (default after code) hex = ?
+
+<<output showing modules loaded and starting addresses>>
+
+<<output showing the final loadmap, with data relocated>>
+<<this output is routed to formal file "loadmap", and  >>
+<<may contain a symbol table.  See parm=4 above        >>
+!
+S

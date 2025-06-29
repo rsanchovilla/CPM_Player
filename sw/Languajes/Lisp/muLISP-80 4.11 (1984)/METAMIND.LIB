@@ -1,0 +1,324 @@
+% File:  METAMIND.LIB		05/01/83	The Soft Warehouse%
+
+
+(LOOP (PRIN1 (QUOTE *)) (EVAL (READ)) ((NULL RDS)) )
+
+(PUTD (QUOTE DEFUN) (QUOTE (NLAMBDA (NAM$ EXP$)
+  (PUTD NAM$ EXP$)
+  NAM$ )))
+
+(DEFUN SETQQ (NLAMBDA (NAM$ EXP$)
+  (SET NAM$ EXP$)
+  NAM$ ))
+
+
+(DEFUN METAMIND (LAMBDA (KEYLIST HELPMK HELPBR SEED)
+  (SETQ RDS)
+  (TERPRI 5)
+  (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) 20) 2))
+  (PRTSENT (QUOTE (*** " " METAMIND " " ***)) 2)
+  (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) 31) 2))
+  (PRTSENT (QUOTE (A game of pure logical thought)) 3)
+  (SETQ KEYLIST (QUOTE (
+    (BLU GRN WHI YEL RED BLK)
+    (RED YEL GRN BLK BLU WHI)
+    (BLK BLU YEL GRN WHI RED)
+    (YEL WHI RED BLK BLU GRN)
+      )))
+  (LOOP
+    (PRTSENT (QUOTE (Please enter a random number between 1 and 100 :)))
+    ((PLUSP (SETQ SEED (RATOM))))
+    (TERPRI) )
+  (TERPRI 1)
+  (LOOP
+    ( ((QUERY (QUOTE (Would you like to be the code Maker
+          or Breaker "?")) (QUOTE M) (QUOTE B))
+	(TERPRI)
+	(HELPMK)
+	(CODEBREAKER) )
+      (TERPRI)
+      (HELPBR)
+      (CODEMAKER) )
+    (TERPRI)
+    ((NULL (QUERY (QUOTE (Do you want to play another round "?"))
+	   (QUOTE Y) (QUOTE N))))
+    (TERPRI 2) ) ))
+
+(DEFUN QUERY (LAMBDA (TEXT YES NO READCH CHAR)
+  (PRTSENT TEXT)
+  (PRIN1 (QUOTE "("))
+  (PRIN1 YES) (PRIN1 (QUOTE "/"))
+  (PRIN1 NO) (PRIN1 (QUOTE ") "))
+  (LOOP
+    (SETQ CHAR (READCH))
+    ((EQ CHAR YES)
+      (PRINT CHAR) )
+    ((EQ CHAR NO)
+      (PRINT CHAR)
+      NIL )
+    (PRIN1 (ASCII 7)) ) ))
+
+
+% HELPMK and HELPBR may be deleted to save atom and vector space. %
+
+(DEFUN HELPMK (LAMBDA ()
+  ((EVAL HELPMK))
+  (SETQ HELPMK T)
+  (PRTSENT (QUOTE (So you want to challenge the champ "."
+    Ok "," after I make my guess "," you type in the number
+    of blacks "(i.e." the number of guesses ")" of the right
+    color and right column ")" "," a space "," and then the
+    number of whites "(i.e." of the remaining non-black
+    guesses, the number of  correct colors ")" "." Then type
+    a carriage return ".")) 2) ))
+  
+(DEFUN HELPBR (LAMBDA (CTR)
+  ((EVAL HELPBR))
+  (SETQ HELPBR T)
+  (PRTSENT (QUOTE (So you want to out guess me "."  Let me
+    think of a code)) 1)
+  (SETQ CTR 900)
+  (PRIN1 (QUOTE "Hmmm . "))
+  (LOOP
+    ((ZEROP CTR))
+    ( ((ZEROP (REMAINDER CTR 150)) (PRIN1 (QUOTE ". "))) )
+    (SETQ CTR (SUB1 CTR)) )
+  (TERPRI 2)
+  (PRTSENT (QUOTE (Ok "," I have got one "," now make a guess by
+    typing in 4 of the colors in the following list of colors :)) 2)
+  (PRINT (CAR KEYLIST))
+  (TERPRI) ))
+
+
+(DEFUN CODEBREAKER (LAMBDA (MOVE GRAPH CTR KEYLST)
+  (SETQ KEYLIST (MAPLIST KEYLIST (QUOTE PERMUTE)))
+  (SETQ MOVE (FRSTMOV (CAR KEYLIST)))
+  (SETQ GRAPH (NUGRAPH MOVE))
+  (SETQ CTR 1)
+  (LOOP
+    (PRTMOVE MOVE)
+    ((EQ (RATOM) 4)
+      (RATOM) (TERPRI)
+      (PRTSENT (QUOTE (YEA "," I did it !  And it only took me)))
+      (PRIN1 CTR)
+      (PRINT (QUOTE " moves.")) )
+    (SETQ GRAPH (MKGRAPH MOVE RATOM (RATOM) MOVE NIL GRAPH KEYLIST))
+    (SETQ CTR (ADD1 CTR))
+    (SETQ ERROR NIL)
+    (SETQ KEYLST KEYLIST)
+    (SETQ MOVE (MKMOVE GRAPH (CAR KEYLST) (SETQ KEYLST (CDR KEYLST))))
+    (TERPRI)
+    ((EVAL ERROR) 
+      (PRTSENT (QUOTE (I am afraid you have made a mistake in your
+ 	counting "." Let's start over ".")) 1) ) ) ))
+
+(DEFUN MAPLIST (LAMBDA (LST FUN)
+  ((NULL LST) NIL)
+  (CONS (FUN (CAR LST)) (MAPLIST (CDR LST) FUN)) ))
+
+(DEFUN PERMUTE (LAMBDA (LST1 LST2 LST3)
+  ((NULL LST1)
+    (NCONC LST2 LST3) )
+  ((NULL (CDR LST1))
+    (NCONC (CONS (CAR LST1) LST3) LST2) )
+  ((NULL (CDDR LST1))
+    (NCONC (PERMUTE (CONS (CAR LST1) LST2))
+           (PERMUTE (CONS (CADR LST1) LST3))) )
+  (PERMUTE (CDDDR LST1) (CONS (CADR LST1) LST3)
+	 (CONS (CADDR LST1) (CONS (CAR LST1) LST2))) ))
+
+(DEFUN FRSTMOV (LAMBDA (KEY)
+  (LIST (CAR KEY) (CADDR KEY) (CAR KEY) (CADDR KEY)) ))
+
+(DEFUN NUGRAPH (LAMBDA (MOVE)
+  ((NULL MOVE) T)
+  (NUROW (NUGRAPH (CDR MOVE)) (CAR KEYLIST)) ))
+
+(DEFUN NUROW (LAMBDA (GRAPH KEY)
+  ((NULL KEY) NIL)
+  (CONS GRAPH (NUROW GRAPH (CDR KEY))) ))
+
+(DEFUN PRTMOVE (LAMBDA (MOVE)
+  (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) 32) 2))
+  (PRIN1 (QUOTE "Move: ")) (PRIN1 CTR) (SPACES 3)
+  (LOOP
+    ((NULL MOVE))
+    (PRIN1 (CAR MOVE))
+    (SPACES 2)
+    (SETQ MOVE (CDR MOVE)) ) ))
+
+(DEFUN MKMOVE (LAMBDA (GRAPH KEY)
+  (LOOP
+    ((NULL GRAPH)
+      (SETQ ERROR T) NIL)
+    ((CAR GRAPH)
+      ((ATOM (CAR GRAPH))
+        (LIST (CAR KEY)) )
+      (CONS (CAR KEY) (MKMOVE (CAR GRAPH) (CAR KEYLST)
+	(SETQ KEYLST (CDR KEYLST)))) )
+    (SETQ GRAPH (CDR GRAPH))
+    (SETQ KEY (CDR KEY)) ) ))
+
+(DEFUN MKGRAPH (LAMBDA (MOVE BLACKS WHITES FREE UNUSED GRAPH KEYLST)
+  ((NULL MOVE)
+    ((ZEROP BLACKS)
+      (EQ WHITES (INCOMMON FREE UNUSED)) ) )
+  (MKNODE GRAPH (CAR KEYLST)) ))
+
+(DEFUN MKNODE (LAMBDA (GRAPH KEY)
+  ((NULL KEY) NIL)
+  ((NULL (CAR GRAPH))
+    (CONSNIL (MKNODE (CDR GRAPH) (CDR KEY))) )
+  ((EQ (CAR MOVE) (CAR KEY))
+    ((PLUSP BLACKS)
+      (CONSNULL (MKGRAPH (CDR MOVE) (SUB1 BLACKS) WHITES
+	(REMBER1 (CAR KEY) FREE) UNUSED (CAR GRAPH) (CDR KEYLST))
+	  (MKNODE (CDR GRAPH) (CDR KEY))) )
+    (CONSNIL (MKNODE (CDR GRAPH) (CDR KEY))) )
+  (CONSNULL (MKGRAPH (CDR MOVE) BLACKS WHITES FREE
+    (CONS (CAR KEY) UNUSED) (CAR GRAPH) (CDR KEYLST))
+      (MKNODE (CDR GRAPH) (CDR KEY))) ))
+
+
+(DEFUN CODEMAKER (LAMBDA (CODE MOVE CTR)
+  (SETQ KEYLIST (MAPLIST KEYLIST (QUOTE PERMUTE)))
+  (SETQ CODE (MKCODE KEYLIST))
+  (SETQ CTR 1)
+  (LOOP
+    (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) 32) 2))
+    (PRIN1 (QUOTE "Move: ")) (PRIN1 CTR) (SPACES 3)
+    ((CODEMATCH CODE (READMOVE CODE) 0)
+      (TERPRI)
+      (PRIN1 (QUOTE "That took "))
+      (PRIN1 CTR)
+      ( ((EQ CTR 1)
+	  (PRINT (QUOTE " move.")) )
+	(PRINT (QUOTE " moves.")) )
+      ((LESSP CTR 6)
+	(PRTSENT (QUOTE (Hey you're good "," let's play again !)) 1) )
+      ((LESSP CTR 8)
+	(PRTSENT (QUOTE (That was a hard one "," want to try to
+ 	  improve your score ?)) 1) )
+      (PRTSENT (QUOTE (Better take a break and let me try one)) 1) )
+    (TERPRI)
+    (SETQ CTR (ADD1 CTR)) ) ))
+
+(DEFUN MKCODE (LAMBDA (KEYLST)
+  ((NULL KEYLST) NIL)
+  (CONS (NTHCAR (CAR KEYLST) (PLUS (RANDOM) 1))
+    (MKCODE (CDR KEYLST))) ))
+      
+(DEFUN CODEMATCH (LAMBDA (CODE1 MOVE1 BLACKS CODE2 MOVE2)
+  ((NULL CODE1)
+    (SPACES (PLUS (QUOTIENT (DIFFERENCE (LINELENGTH) 32) 2) 28))
+    ((EQ (PRIN1 BLACKS) 4))
+    (SPACES 2)
+    (SAMETYPE CODE2 MOVE2 0)
+    NIL )
+  ((EQ (CAR CODE1) (CAR MOVE1))
+    (CODEMATCH (CDR CODE1) (CDR MOVE1) (ADD1 BLACKS) CODE2 MOVE2) )
+  (CODEMATCH (CDR CODE1) (CDR MOVE1) BLACKS (CONS (CAR CODE1) CODE2)
+    (CONS (CAR MOVE1) MOVE2)) ))
+
+(DEFUN SAMETYPE (LAMBDA (CODE MOVE WHITES)
+  ((NULL CODE)
+    (PRINT WHITES) )
+  ((MEMBER (CAR CODE) MOVE)
+    (SAMETYPE (CDR CODE) (REMBER1 (CAR CODE) MOVE) (ADD1 WHITES)) )
+  (SAMETYPE (CDR CODE) MOVE WHITES) ))
+
+(DEFUN READMOVE (LAMBDA (CODE)
+  ((NULL CODE) NIL)
+  (CONS (RATOM) (READMOVE (CDR CODE))) ))
+
+(DEFUN ADD1 (LAMBDA (X)
+  (PLUS X 1) ))
+
+(DEFUN SUB1 (LAMBDA (X)
+  (DIFFERENCE X 1) ))
+
+(DEFUN REMBER1 (LAMBDA (X L)
+  ((NULL L) NIL)
+  ((EQ X (CAR L)) (CDR L))
+  (CONS (CAR L) (REMBER1 X (CDR L))) ))
+
+(DEFUN REPLACE (LAMBDA (X Y L)
+  ((NULL L) NIL)
+  ((EQ X (CAR L))
+    (CONS Y (REPLACE X Y (CDR L))) )
+  (CONS (CAR L) (REPLACE X Y (CDR L))) ))
+
+(DEFUN NTHCAR (LAMBDA (L N)
+  ((NOT (PLUSP N)) NIL)
+  (LOOP
+    ((EQ N 1) (CAR L))
+    (SETQ N (DIFFERENCE N 1))
+    (SETQ L (CDR L)) ) ))
+
+(DEFUN RANDOM (LAMBDA ()
+  (SETQ SEED (REMAINDER (PLUS 2113233 (TIMES SEED 271821)) 9999991))
+  (REMAINDER SEED 4) ))
+
+(DEFUN CONSNIL (LAMBDA (X)
+  ((NULL X) NIL)
+  (CONS NIL X) ))
+
+(DEFUN CONSNULL (LAMBDA (X Y)
+  ((NULL X)
+    (CONSNIL Y) )
+  (CONS X Y) ))
+
+(DEFUN INCOMMON (LAMBDA (LST1 LST2)
+  (SETQ TOT 0)
+  (LOOP
+    ((OR (NULL LST1) (NULL LST2)) TOT)
+    ( ((MEMBER (CAR LST1) LST2)
+	(SETQ LST2 (REMBER1 (CAR LST1) LST2))
+	(SETQ TOT (PLUS TOT 1)) ) )
+    (SETQ LST1 (CDR LST1)) ) ))
+
+(DEFUN PRTSENT (LAMBDA (LST NUM)
+  (LOOP
+    ((NULL LST))
+    ((NULL (CDR LST))
+      (PRIN1 (CAR LST)) )
+    ( ((OR
+          (MEMBER (CADR LST) TRMLIS)
+          (MEMBER (CADR LST) PCTLIS) )
+        (PRETERPRI (ADD1 (LENGTH (CAR LST))))
+        (PRIN1 (POP LST)) )
+      ((MEMBER (CADR LST) SEPLIS)
+        ((NULL (CDDR LST))
+          (PRETERPRI (ADD1 (LENGTH (CAR LST))))
+          (PRIN1 (POP LST)) )
+        (PRETERPRI (PLUS (ADD1 (LENGTH (CAR LST))) (LENGTH (CADDR LST))))
+        (PRIN1 (POP LST))
+        (PRIN1 (POP LST)) ) )
+    (PRIN1 (CAR LST))
+    ((NULL (CDR LST)))
+    ( ((MEMBER (POP LST) TRMLIS)
+        ((EQ (ADD1 (SPACES)) (LINELENGTH))
+          (TERPRI) )
+        (SPACES 2) )
+      ((EQ (SPACES) (LINELENGTH))
+        (TERPRI) )
+      (SPACES 1) ) )
+  ((PLUSP NUM)
+    (TERPRI NUM) )
+  ((EQ (ADD1 (SPACES)) (LINELENGTH))
+    (TERPRI) )
+  (SPACES 2) ))
+
+(DEFUN PRETERPRI (LAMBDA (NUM)
+  ((GREATERP (PLUS (SPACES) NUM) (LINELENGTH))
+    (TERPRI) ) ))
+
+
+(SETQQ TRMLIS ("." "!" "?"))
+
+(SETQQ PCTLIS ("," ";" ")" "(" ":"))
+
+(SETQQ SEPLIS ("'" "-"))
+
+(METAMIND (RDS))
+

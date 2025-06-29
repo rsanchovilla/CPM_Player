@@ -1,0 +1,27 @@
+; look -- routine to look one character ahead
+;
+	NAME LOOK
+	ENTRY LOOK
+	INCLUDE DEFLT.SRC
+;
+look:
+	xra	a		;check for console/disk file
+	cmp	h
+	jrz	fcons		;console file....
+	inx	h		;from disk....
+	mov	a,m		;...get look-ahead char from the buffer
+	dcx	h
+	ret			;....and done
+fcons:	push	d		;save de
+	lhld	6		;get the char from the txtin buffer
+	lxi	d,-getp
+	dad	d
+	mov	e,m
+	mov	d,a		;d <- 0
+	dad	d
+	inx	h		;point to the next char
+	mov	a,m		;get it
+	lxi	h,0		;restore the zero buffer pointer
+	pop	d		;restore de
+	ret			;...and done!
+

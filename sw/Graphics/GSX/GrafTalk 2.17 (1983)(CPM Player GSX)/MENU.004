@@ -1,0 +1,126 @@
+! May 1, 1983
+! FOR INTEGRATED SCREEN GRAPHICS VERSION
+
+NO ECHO
+VARIABLE MEN1, MC
+@1
+RECOVER 1
+CLEARSCREEN
+!!======================================================
+!!	LINE AND SYMBOL CHART MENU
+!!======================================================
+!!
+!!1  .. HELP ...........................................
+!!2  .. ERASE SCREEN ...................................
+!!3  .. RETURN TO MAIN MENU ............................
+!!4  .. CLEAR TEXT FROM SCREEN (CR BRINGS IT BACK) .....
+!!
+!!5  .. MAKE PLOTS FROM ONE LINE TYPE ..................
+!!6  .. MAKE PLOTS FROM A SEQUENCE OF LINE TYPES .......
+!!
+!!7  .. MAKE PLOTS FROM ONE SYMBOL .....................
+!!8  .. MAKE PLOTS FROM A SEQUENCE OF SYMBOLS ..........
+!!
+!!9  .. LEGEND, TITLE AND AXIS NAMES MENU ..............
+!!10 .. COLOR AND SHADING MENU .........................
+!!11 .. AXIS LABELING MENU .............................
+!!
+!!12 .. MAKE A PLOT ....................................
+!!======================================================
+!!ENTER YOUR CHOICE >
+MENU MEN1 12 1 ^
+COMPARE MEN1 1
+IF YES JUMP 2
+COMPARE MEN1 2
+IF YES ERASE
+COMPARE MEN1 3
+IF YES END
+COMPARE MEN1 5
+IF YES JUMP 4
+COMPARE MEN1 6
+IF YES JUMP 5
+COMPARE MEN1 7
+IF YES JUMP 6
+COMPARE MEN1 8
+IF YES JUMP 7
+COMPARE MEN1 9
+IF YES RUN MENU.005
+COMPARE MEN1 10
+IF YES RUN MENU.006
+COMPARE MEN1 11
+IF YES RUN MENU.008
+COMPARE MEN1 12
+IF YES JUMP  8
+COMPARE MEN1 4
+IF YES JUMP 40
+JUMP 1
+
+@2
+CLEARSCREEN
+!!HELP INFORMATION FOR LINE AND SYMBOL CHARTS
+!!========================================================================
+!!
+!!Line and  symbol plots are made from one  or	several rows or columns of
+!!data.	 You may not, however, mix rows and columns on a single chart.
+!!
+!!Several line	types are  available if	 you want to make plots with lines.
+!!These line types are represented by numbers.	Line type 1 is a solid and
+!!lines types 2 through 7 are various sorts of dashed lines.
+!!
+!!Almost any symbol at the keyboard is available for symbol plots and they
+!!are represented  directly as	*, $, A, etc.	If you use # followed by a
+!!number to represent symbols, you can use sepcial symbols.   #0 refers to
+!!a centered point; the others depend upon the device in use.
+!!
+!!You may mix lines and symbols on a single plot.
+!!
+!!Use the appropriate  menus to specify legends, names, title, axis labels,
+!!color and shading.
+
+!!Unless you specify otherwise, plots will be made from lines and the line
+!!types will be sequenced.  Color and shading will also be sequenced.
+!!
+!!TYPE <cr> TO RETURN TO MENU >
+STOP
+JUMP 1
+
+@4
+!!ENTER THE LINE TYPE AS AN INTEGER;
+!!ENTER CARRIAGE RETURN TO LEAVE IT UNCHANGED >
+LINE ^
+JUMP 1
+
+@5
+!!ENTER SEQUENCE OF LINE TYPES AS INTEGERS SEPARATED BY SPACES;
+!!ENTER CARRIAGE RETURN TO LEAVE THE SEQUENCE UNCHANGED
+SEQUENCE LINE ^
+JUMP 1
+
+@6
+!!ENTER THE SYMBOL TO BE USED;
+!!ENTER CARRIAGE RETURN TO LEAVE IT UNCHANGED >
+SYMBOL ^
+JUMP 1
+
+@7
+!!ENTER SEQUENCE OF SYMBOLS SEPARATED BY SPACES;
+!!ENTER CARRIAGE RETURN TO LEAVE IT UNCHANGED
+SEQUENCE SYMBOL ^
+JUMP 1
+
+@8
+!!ENTER ROWS OR COLUMNS TO PLOT >
+PLOT ^
+!!ENTER	  1 TO DUMP TO PRINTER	OR   2 TO ERASE >
+MENU MC 2 8 ^
+COMPARE MC 1
+IF YES DUMP
+ERASE
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+
+UM

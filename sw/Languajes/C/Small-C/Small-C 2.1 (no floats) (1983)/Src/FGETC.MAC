@@ -1,0 +1,88 @@
+EXT Uchrpos
+CC1:
+fgetc::
+PUSH B
+CC3:
+LXI H,0
+DAD SP
+PUSH H
+LXI H,6
+DAD SP
+CALL CCGINT##
+PUSH H
+CALL Uread
+POP B
+POP D
+CALL CCPINT##
+JMP CC7
+CC8:
+POP H
+PUSH H
+POP B
+RET
+CC9:
+LXI H,Uchrpos
+XCHG;;
+LXI H,4
+DAD SP
+CALL CCGINT##
+DAD H
+DAD D
+CALL CCGINT##
+JMP CC12
+CC13:
+LXI H,Uchrpos
+XCHG;;
+LXI H,4
+DAD SP
+CALL CCGINT##
+DAD H
+DAD D
+PUSH H
+CALL CCGINT##
+DCX H
+POP D
+CALL CCPINT##
+CC14:
+CC15:
+JMP CC11
+CC12:
+CALL CCSWITCH##
+DW CC14,0
+DW CC15,128
+DW 0
+JMP CC13
+CC11:
+LXI H,4
+DAD SP
+CALL CCGINT##
+PUSH H
+CALL Useteof
+POP B
+LXI H,-1
+POP B
+RET
+CC16:
+LXI H,10
+POP B
+RET
+CC17:
+JMP CC6
+CC7:
+CALL CCSWITCH##
+DW CC9,26
+DW CC16,13
+DW CC17,10
+DW 0
+JMP CC8
+CC6:
+JMP CC3
+CC4:
+POP B
+RET
+getc equ   fgetc
+     entry getc
+EXT Useteof
+EXT Uread
+END
+

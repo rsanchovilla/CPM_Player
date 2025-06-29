@@ -1,0 +1,125 @@
+
+NS5BAS is Basic 6 Vers 5.2
+
+Commands only allowed in UPPERCASE
+
+FILL 280,1\REM Disable Ctrl-C check during execution
+FILL 280,0\REM Enable Ctrl-C check during execution (default)
+
+FILL 4923,0\FILL 4924,0\REM Makes OUT command to act as BYE. 
+                        OUT can be used in program, BYE only in direct mode
+			e.g. 	10 OUT\REM return to CPM
+				RUN
+				A>
+
+
+    Execute the NorthStar BASIC interpreter, described below
+-----------------------------------------------------------------
+DIRECT COMMANDS:
+----------------
+LIST [#dev] [line[,line]] [interval] - List program
+DEL line,line                   - Delete multiple program lines
+SCR                             - Scratch: Erase program and workspace
+REN [line[,increment]]          - Renumber program
+AUTO [stert[,increment]]        - Automatic line entry
+CAT [#dev] [drive]              - Display disk catalog (directory)
+SAVE file[,drive]               - Save program to disk
+NSAVE file[,drive] [size]       - Save program to new file
+LOAD file[,drive]               - Load program from disk
+APPEND file[,drive]             - Appends program to disk file
+RUN [line]                      - Execute program
+CONT                            - Resume after STOP/CONTROL -C
+PSIZE                           - Display program size in file blocks
+MEMSET address                  - Set upper memory bound used by BASIC
+LINE [#dev,]value               - Set device line length
+BYE                             - Exit BASIC, return to DOS
+
+PROGRAM STATEMENTS:
+-------------------
+REM text                        - Comment - ignored
+DIM var(size[,size])[,...]      - Set variable array dimensions
+LET variable=expression         - Assign variable
+PRINT [#dev,]value[,...][,]     - Display variables and strings
+INPUT [#dev,][string,][vars]    - Input variables
+DATA constant[,constant]        - Set constant data block
+READ variable[,variable]        - Read constant data block
+RESTORE [line]                  - Reset/Set data block read pointer
+GOTO line                       - Jump to line
+IF expr THEN stmt [ELSE stmt]   - Conditional execution
+ON expr GOTO line[,...]         - Computed GOTO
+STOP                            - Halt execution with message
+END                             - Halt execution without message
+FOR v=value TO limit [STEP val] - Begin counted loop
+NEXT [v]                        - End counted loop
+EXIT line                       - Exit from within FOR loop (cleans stack)
+GOSUB line                      - Call subroutine
+RETURN                          - Return from subroutine
+DEF name(var[,var...])=stmt     - Define single line user function
+DEF name(var[,var...])          - Define multi-line user function
+        End with FNEND, pass back value with: RETURN value
+ERRSET line,Lvariable,Evariable - Define an error handler L=Line E=Errtype
+CHAIN "file"                    - Transfer to program on disk
+CREATE file,sise[,type]         - Create a disk file
+DESTROY file                    - Delete a file
+OPEN #fno[%type],file[,size-variable]   - Open a file
+CLOSE #fno                      - Close a file
+READ #fno[%address],variable-list   - Read data from file
+WRITE #fno[%address],expr-list  - Write data to file
+    During random-write, use NOENDMARK as last item in list to inhibit
+    writing the end mark (which would terminate the file).
+OUT port,value                  - Write to 8080 I/O port
+FILL address,value              - POKE (write memory)
+
+FUNCTIONS:
+----------
+ABS(value)                      - Absolute value
+SGN(value)                      - 1=Positive, -1=Negative, 0=Zero
+INT(value)                      - Integer component of FP value
+LOG(value)                      - Natural logarithm
+EXP(value)                      - e**value
+SQRT(value)                     - Square root
+SIN(value)                      - Sine
+COS(value)                      - Cosine
+ATN(value)                      - Arctangent
+LEN(string)                     - Length of string
+CHR$(value)                     - 1-char string with ASCII value char.
+ASC(string)                     - ASCII-Decimal value of first char
+VAL(string)                     - Value from string number "123" -> 123
+STR$(value)                     - String from value number 123 -> "123"
+INCHAR$(device)                 - Get char from device
+INP(0-255)                      - Read from 8080 I/O port
+TYP(file)                       - Type of next data item in open file:
+                                    0=EOF 1=String 2=Numeric
+FILE(string)                    - Get type of file (-1 = not found)
+RND(value)                      - Random number: -=BuildSeed 0=Next +=UseSeed
+EXAM(value)                     - PEEK (read memory)
+FREE(0)                         - Available memory
+TAB(value)                      - Tab to column (PRINT statement only)
+CALL(value[,DEvalue])           - Execute 8080 code, returns HL
+
+VARIABLES:
+----------
+    A/A0-A9 - Z/Z0-Z9           - Numeric variables
+    A$/A0$-A9$ - Z$/Z0$-Z9$     - String variables
+
+ARITHMETIC OPERATORS:
+---------------------
+    +       - Addition          *   - Multiplication
+    -       - Subtraction       /   - Division
+    ^       - Exponentation     ~   - Negation
+
+RELATIONAL OPERATORS:
+---------------------
+    =       - Equal to          <>  - Not equal to
+    >       - Greater than      >=  - Greater than or equal to
+    <       - Less than         <=  - Less than or equal to
+
+BOOLIAN OPERATORS:
+------------------
+    NOT     - Invert a single condition
+    AND     - Logical AND of two conditions
+    OR      - Logical OR  of two conditions
+
+STRING OPERATORS:
+-----------------
+    +       - Concatination

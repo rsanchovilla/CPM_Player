@@ -1,0 +1,120 @@
+{  K E Y . S I C           V 1.2     8-JUL-1989  }
+
+
+
+{ Vorausgesetzte Include-Files und Deklarationen: keine
+
+  Dieses Modul enthÑlt folgende Funktionen und Prozeduren:
+
+
+  procedure savekeys;        Rettet die aktuelle Funktionstastenbelegung.
+  procedure restorekeys;     Stellt die Funktionstastenbelegung wieder her.
+
+  Es kînnen beliebig viele Tastendefinitionen gleichzeitig mit savekeys
+  gerettet und spÑter mit restorekeys zurÅckgeholt werden!
+
+  procedure    Key (nummer, string);   definiert eine Taste um.
+  function  GetKey (nummer): string;   gibt die Belegung einer Taste an.
+}
+
+
+{$R+,W0}
+
+type
+  fknumber = 1..10;
+  fkdef    = array[1..16] of char;
+  fkeys    = array[fknumber] of fkdef;
+  fkstring = string[15];
+
+  _fksptr   = ^_fksave;
+  _fksave   = record
+               kdef: fkeys;
+               kptr: _fksptr;
+             end;
+
+
+
+var
+  fkey:   fkeys absolute $F87F;
+  _fkptr: _fksptr;
+
+
+
+procedure fnksb;
+
+  var fnkswi: byte absolute $FBCD;
+      sftkey: byte absolute $FBEB;
+
+  begin
+    fnkswi := (sftkey xor 1) and 1; BIOS(1);
+  end;
+
+
+
+
+procedure savekeys;
+
+  var
+    p: _fksptr;
+
+  begin
+    p := _fkptr;
+    new (_fkptr);
+    _fkptr^.kptr := p;
+    _fkptr^.kdef := fkey;
+  end;
+
+
+
+
+procedure restorekeys;
+
+  var
+    p: _fksptr;
+
+  begin
+    if _fkptr <> NIL
+    then begin
+      p    := _fkptr^.kptr;
+      fkey := _fkptr^.kdef;
+      dispose (_fkptr);
+      _fkptr := p;
+      fnksb;
+      end;
+  end;
+
+
+
+
+
+procedure key (n: fknumber; s: fkstring);
+
+  var
+    length: byte absolute s;
+
+  begin
+    fillchar (fkey[n], 16, 0);
+    if length>15
+    then length:=15;
+    move (s[1], fkey[n], length);
+    fnksb;
+  end;
+
+
+
+
+function getkey (n: fknumber): fkstring;
+
+  var s: fkstring;
+
+  begin
+    s[0]:=#0;
+    while fkey[n][succ(ord(s[0]))] <> #0 do
+      begin
+      s[0]         := succ(s[0]);
+      s[ord(s[0])] := fkey[n][ord(s[0])];
+      end;
+    keystring := s;
+  end;
+
+

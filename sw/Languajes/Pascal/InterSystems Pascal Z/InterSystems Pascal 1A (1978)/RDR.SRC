@@ -1,0 +1,75 @@
+; PROGRAM READ$AND$WRITE$REVERSE;
+; 
+; 
+; 	PROCEDURE READ$WRITE ;
+; 		VAR	CH : CHAR;
+; 		BEGIN
+L10023
+	ENTR	D,2,1
+; 			READ (CH);
+	STMT	D,1
+	PUSH	IX
+	POP	H
+	PUSH	H
+	LXI	D,769
+	PUSH	D
+	LXI	B,1
+	CALL	L10011
+	STMT	M,1
+; 			IF EOLN(0) <> TRUE THEN
+	STMT	D,2
+	MOV	H,A
+	MOV	L,A
+	CALL	L10018
+	STMT	M,2
+	JRNC	L10033
+	INR	A
+L10033
+	MOV	E,A
+	XRA	A
+	MOV	D,A
+	PUSH	H
+	LXI	H,1
+	NEQL	D,0
+; 			READ$WRITE;
+	JNC	L10031
+	STMT	D,3
+	CALL	L10023
+	STMT	M,3
+L10031
+; 			WRITE (CH);
+	STMT	D,4
+	LXI	H,769
+	PUSH	H
+	LXI	B,1
+	PUSH	B
+	MOV	H,A
+	MOV	L,0(IX)
+	MOV	H,L
+	PUSH	H
+	INX	S
+	LXI	B,5
+	CALL	L10010
+	STMT	M,4
+; 		END;
+	STMT	D,5
+	EXIT	D,0
+; 
+; 
+; BEGIN
+L9999
+	ENTR	D,1,0
+; READ$WRITE;
+	STMT	D,6
+	CALL	L10023
+	STMT	M,6
+; WRITELN;
+	STMT	D,7
+	LXI	B,0
+	CALL	L10008
+	STMT	M,7
+; END...
+	STMT	D,8
+	JMP	L0
+LAST	END	START
+

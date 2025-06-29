@@ -1,0 +1,109 @@
+     ****************************************************************
+     *		    Examples of	Print Commands for		    *
+     *			    Boilerplating			    *
+     ****************************************************************
+
+
+	 The following series of commands are offered for your
+	 study without comment.	 Feel free to use them,	change
+	 them or add your own.
+
+	 F1--Form letter using variables from keyboard
+
+	 F2--Form letter using Text data file
+
+	 F3--Form letter using fixed length data file
+
+	 H1--Heading using company name	and page number
+
+	 H2--Heading using company name, date and page number
+F1--Form letter	using variables	from keyboard
+\
+\SETUP
+\
+\COPY0,FORMS
+\GET DATE="Today's Date?
+\TEXT
+\
+\GET NAME="Full name? (First name first)
+\SET COMPANY="",GET COMPANY="Company, if any?
+\GET ADDR1="First line of address?
+\GET ADDR2="Second line of address, if any?
+\GET SALUT="Salutation?
+\
+\RIGHT,:DATE\
+\LEFT,LINE4
+\:NAME\
+\IF COMPANY<>"",:COMPANY,NL
+\:ADDR1\
+\:ADDR2\
+
+
+Dear \:SALUT\,
+F2--Form letter	using Text Data	File
+\
+\SETUP
+\
+\GET DATE="Today's Date?"
+\GET FNAME="Name of date file?"
+\GET START="Starting record number?"
+\GET STOP="Ending record number (if other than end of file)?
+\IF &START<>0,START#START
+\IF &STOP<>0,STOP#STOP
+\
+\FILE T12,:FNAME
+\DATA ,NAME,COMPANY,ADDR1,ADDR2,COUNTRY,SALUT,CODE,PS
+\
+\TEXT
+\
+\RIGHT,:DATE\
+\LEFT,LINE4
+\:NAME\
+\IF COMPANY<>"",:COMPANY,NL
+\:ADDR1\
+\:ADDR2\
+\IF COUNTRY<>"",:COUNTRY,NL
+
+
+Dear \:SALUT\,
+F3--Form letter	using fixed length data	file
+\
+\SETUP
+\
+\GET DATE="Today's Date?"
+\GET FNAME="Name of data file?"
+\GET START="Starting record number?"
+\GET STOP="Ending record number (if other than end of file)?
+\IF &START<>0,START#START
+\IF &STOP<>0,STOP#STOP
+\
+\FILE F128,:FNAME
+\DATA NAME(25),COMPANY(25),ADDRESS(20),CITY(15),STATE(2),ZIP(5),SALUT(15),10,CODE(2)
+\
+\TEXT
+\
+\RIGHT,:DATE\
+\LEFT,LINE4
+\:NAME\
+\IF COMPANY<>"",:COMPANY,NL
+\:ADDRESS\
+\:CITY\, \:STATE\  \:ZIP\
+
+
+Dear \:SALUT\,
+H1--Heading using company name and page	number
+\
+\HEAD2
+\SP0,LEFT,:COMPANY\
+\RIGHT\Page \%PAGE\
+\
+H2--Heading using company name,	date and page number
+\
+\HEAD3
+\SP0,LEFT,:COMPANY\
+\CTR\-\%PAGE\-
+\RIGHT,:DATE\
+\
+\
+\
+H2--Heading using compa

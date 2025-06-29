@@ -1,0 +1,2378 @@
+
+
+
+
+			     Chapter 7 - Redirection
+
+
+	Reading	program	input from a file, device, or  memory;	type-ahead
+	buffering;  diverting  screen output to	a file,	device,	or memory;
+	console	I/O redirection	options; screen	paging;'  sending  printer
+	output	to  a  file,  device,  memory, or via screen output; print
+	spooling; creating a pipeline from the output of  one  program	to
+	the input of another via disk or memory.
+
+
+				   - CONTENTS -
+	__________________________________________________________________
+
+
+	  7.  Redirection...........................................   7-1
+
+	    7.1	 Input File Redirection.............................   7-1
+
+	      7.1.1  Determining the End of a File..................   7-2
+
+	      7.1.2  Input Redirection Options......................   7-3
+
+		7.1.2.1	  [+] Use Default Settings..................   7-3
+
+		7.1.2.2	  [A] Auto Line	Feed........................   7-4
+
+		7.1.2.3	  [B] Boot After EOF........................   7-4
+
+		7.1.2.4	  [C] Disable Console Status................   7-4
+
+		7.1.2.5	  [D] Delete Input File	After EOF...........   7-5
+
+		7.1.2.6	  [E] Ignore the EOF Character..............   7-5
+
+		7.1.2.7	  [F] Enable Function Keys..................   7-5
+
+		7.1.2.8	  [G] Remove Glitch Characters..............   7-5
+
+		7.1.2.9	  [H] Hush Character Echo...................   7-6
+
+		7.1.2.10  [I] Interpret	Special	Characters..........   7-6
+
+		7.1.2.11  [K] Continue Input Read...................   7-6
+
+		7.1.2.12  [L] Remove Line Feeds.....................   7-6
+
+		7.1.2.13  [N] Count Lines/Characters................   7-7
+
+		7.1.2.14  [O] Turn Off Character....................   7-7
+
+		7.1.2.15  [P] Save Input Position...................   7-7
+
+		7.1.2.16  [Q] Quiet Line Input Echo.................   7-7
+
+
+
+				      -	i -
+
+
+
+
+
+
+
+		7.1.2.17  [R] Recognize	Warm Boot...................   7-8
+
+		7.1.2.18  [S] Skip Lines/Characters.................   7-8
+
+		7.1.2.19  [T] Read From	TTY After EOF...............   7-8
+
+		7.1.2.20  [U] Set Uniform Input	Delay...............   7-8
+
+		7.1.2.21  [V] Verbose Input Echo....................   7-9
+
+		7.1.2.22  [W] Set Input	Delay.......................   7-9
+
+		7.1.2.23  [X] Expand Input to Screen................   7-9
+
+	      7.1.3  Programs that Resist Redirection...............   7-9
+
+	      7.1.4  Special Character Substitute...................  7-10
+
+		7.1.4.1	  Control Characters........................  7-10
+
+		7.1.4.2	  Non-interpret.............................  7-11
+
+	      7.1.5  Function Key Substitute........................  7-11
+
+	      7.1.6  Input Redirection from a Device................  7-12
+
+		7.1.6.1	  :KBD Raw Console Keyboard.................  7-12
+
+		7.1.6.2	  :NUL Null Device..........................  7-13
+
+		7.1.6.3	  :RDR Reader...............................  7-13
+
+		7.1.6.4	  :TTY Console Keyboard.....................  7-13
+
+		7.1.6.5	  :UDI User Defined Device..................  7-13
+
+		7.1.6.6	  :UIA User Defined Address.................  7-14
+
+	      7.1.7  Redirection From Memory........................  7-14
+
+	      7.1.8  Some Input	Redirection Examples................  7-15
+
+	      7.1.9  Type-Ahead	Buffering...........................  7-16
+
+	    7.2	 Console Output	File Redirection....................  7-17
+
+	      7.2.1  Output Redirection	Options.....................  7-17
+
+		7.2.1.1	  [A] Auto Line	Feed........................  7-18
+
+		7.2.1.2	  [B] Boot After End of	Output..............  7-18
+
+		7.2.1.3	  [D] Append to	Binary Data File............  7-18
+
+		7.2.1.4	  [E] Disable EOF Termination...............  7-18
+
+
+
+				      -	ii -
+
+
+
+
+
+
+
+		7.2.1.5	  [G] Remove Glitch Characters..............  7-19
+
+		7.2.1.6	  [H] Strip Hi-Bit..........................  7-19
+
+		7.2.1.7	  [I] Set Invisible Attribute...............  7-19
+
+		7.2.1.8	  [L] Remove Extra Line	Feeds...............  7-19
+
+		7.2.1.9	  [N] Count Lines/Characters................  7-19
+
+		7.2.1.10  [O] Turn Off Character....................  7-20
+
+		7.2.1.11  [P] Print Output Characters...............  7-20
+
+		7.2.1.12  [S] Skip Lines/Characters.................  7-20
+
+		7.2.1.13  [T] Terminate	File with CR/LF.............  7-20
+
+		7.2.1.14  [X] Expand Tabs to Spaces.................  7-21
+
+	      7.2.2  Output Redirection	to a Device.................  7-21
+
+		7.2.2.1	  :CON Console Screen.......................  7-21
+
+		7.2.2.2	  :CRT Raw Console Screen...................  7-22
+
+		7.2.2.3	  :LST System Printer.......................  7-22
+
+		7.2.2.4	  :NUL Null Device..........................  7-22
+
+		7.2.2.5	  :PUN Punch Device.........................  7-22
+
+		7.2.2.6	  :UDO User Defined Device..................  7-22
+
+		7.2.2.7	  :UOA User Defined Address.................  7-22
+
+	      7.2.3  Output Redirection	to Memory...................  7-22
+
+	      7.2.4  Some Output Redirection Examples...............  7-23
+
+	      7.2.5  Auto Screen Paging.............................  7-24
+
+	    7.3	 Printer Output	File Redirection....................  7-25
+
+	      7.3.1  Printer Redirection Options....................  7-25
+
+	      7.3.2  Printer Output Redirection	to a Device.........  7-26
+
+	      7.3.3  Printer Redirection To Memory..................  7-26
+
+	    7.4	 Print Spooling.....................................  7-27
+
+	    7.5	 Multiple Redirections..............................  7-28
+
+	    7.6	 Pipe Redirection...................................  7-28
+
+
+
+				     - iii -
+
+
+
+
+
+
+
+	      7.6.1  Memory Pipelines...............................  7-30
+
+	      7.6.2  Using Pipes and Redirection....................  7-31
+
+	      7.6.3  Pipe Redirection Filename......................  7-31
+
+	    7.7	 Disabling Redirection..............................  7-32
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				      -	iv -
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.  Redirection
+
+	Did you	ever wish you could save the output of a program in a file
+	without	having to manually retype it yourself?	Did you	ever wish
+	you could get a	program	to read	its input from someplace other
+	than the keyboard?  If you haven't, then you've	probably never
+	experienced a UNIX system.  This concept is called Redirection,
+	and is a major foundation behind the flexibility of UNIX, and
+	ConIX as well.	Consider your wishes, if you had them, answered.
+
+	By definition, Redirection is the change in direction or flow of
+	either the input or output stream of a program.	 Programs
+	generally use the console keyboard for user input, and the console
+	screen or the printer device for output.  With ConIX, you can
+	redirect a program's input to read from	a file or another system
+	input device (like the reader).	 You can also redirect a program's
+	console	output to a file, a system output device (like the punch),
+	or into	the input of another program.  Both input and output
+	redirection can	also utilize memory as a file.	This feature
+	offers a major speed improvement speed over disk-file redirection.
+	All these forms	of redirection are described in	detail in the
+	sections that follow.
+
+
+	7.1  Input File	Redirection
+
+	The redirection	of program input to read from a	file instead of
+	the console keyboard is	called Input File Redirection.	When a
+	program	is redirected in such a	way, all that it sees is a steady
+	stream of characters, thinking that they are originating from the
+	user at	console	keyboard.  ConIX itself	feeds these characters to
+	the program from the specified file.
+
+	The syntax of Input File Redirection is:
+
+		<A:00> cmd (arg(s)) <([option(s)]) infile
+
+	where cmd represents the command whose input is	to be redirected
+	from the disk file infile.  The	[options] represent certain
+	optional features which	the user can specify to	modify certain
+	default	settings related to the	input redirection process.
+	Commands used with redirection may be either internal to ConIX or
+	regular	disk-based programs.
+
+	Take as	an example the internal	command	GETL which simply reads	a
+	line from the keyboard and retypes it to the screen as:
+
+		<A:00> getl
+		this is	the line you typed
+		this is	the line you typed
+		<A:00>
+
+	The first line shown above was typed by	the user and the second
+	repeated by GETL.  You can use GETL with its input redirected from
+	a file,	as:
+
+
+
+				       7-1
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+		<A:00> getl < foo.asm
+		this is	the first line of FOO.ASM
+		<A:00>
+
+	where GETL will	read its input line from the text file FOO.ASM
+	instead	of from	the console keyboard, and then output it to the
+	screen.	 The line which	is read	is the first line of the input
+	file.
+
+	NOTE:  The `<' input redirection specifier and its given input
+	file are internally stored on the parsed command line, thus
+	subtracting from the amount of space available to store	commands
+	and arguments (normally	255 characters).  All such redirection
+	specifications are preinterpreted by ConIX and not passed as
+	arguments to the running program.  In the above	example, there are
+	actually no arguments to the command GETL.  Any	spaces or tabs
+	around the `<' are optional.
+
+
+	7.1.1  Determining the End of a	File
+
+	ConIX determines the end of a file by one of two methods:
+
+	The EOF	Character
+
+	  There	is usually a character at the end of every text	file which
+	  indicates that there exist no	more characters	in the file beyond
+	  that point.  This is called the CP/M EOF character which is a
+	  CTRL-Z, or 1A	hex.  It is an actual character	that is	stored
+	  within the file.
+
+	  A text file may in no	way contain the	EOF character as part of
+	  itself since the CTRL-Z would	be interpreted as indicating the
+	  end of file.	Command	files, on the other hand, usually contain
+	  this character, which	may be part of a machine language
+	  instruction, or the program's	internal data.	It would be
+	  severely limiting to say that	no file	can contain this
+	  character, and it is for this	reason that there exists another
+	  method of determining	the end	of a file.
+
+	The Physical End-of-file
+
+	  There	is a condition internal	to CP/M	itself which prevents a
+	  program from reading past the	last written record of a file.
+	  This is called the physical EOF, and is generally used to
+	  determine the	end of a file which must contain the CP/M EOF
+	  character within it, as with command or object files.
+
+	  This method of determining the end of	a file is not as precise
+	  as with the use of the EOF character.	 This is because a
+	  physical EOF occurs at the end of the	last disk data record of
+	  the file.  Each record is 128	bytes long, with the true ending
+	  byte being somewhere between byte 1 to 128 in	the last record.
+	  Reading a file to the	physical EOF may cause up to 127 bytes of
+	  this record which are	not really part	of file	to be included
+
+
+
+				       7-2
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	  after	the last true byte in the file.
+
+	  Program (.COM) files loaded by ConIX from the	command	line are
+	  read until the physical EOF, and end at a 128	byte boundary in
+	  memory.  The fact that any spurious characters at the	end of the
+	  last record may be included has absolutely no	effect upon the
+	  operation of the program.  This is because its coded machine
+	  instructions lie before the last ``written'' byte of the file,
+	  and the program knows	not to execute anything	immediately past
+	  that byte.
+
+	In the case of input redirection, ConIX	assumes	that the named
+	file contains text, with its end marked	by a CTRL-Z.  Command or
+	object files passed to a program through input redirection would
+	probably get cut off somewhere before their end	if this	character
+	would (and usually does) appear	within them.  There are	options
+	available which	would allow you	to redirect a file until its
+	physical EOF if	desired.
+
+	In any case, once the end of file is reached, ConIX continually
+	sends the EOF character	if a program still requests input.  The
+	number of EOF characters sent is infinite and therefore, a program
+	which doesn't recognize	it can remain in an infinite loop, forever
+	receiving CTRL-Z as input.  There is another redirection option
+	which would prevent this from happening.  There	is also	a special
+	new BDOS syscall that allows a program to determine if a CTRL-Z
+	received is a part of the actual input data, or	was sent by ConIX
+	to indicate the	EOF condition.
+
+
+	7.1.2  Input Redirection Options
+
+	There are certain options available to Input Redirection which can
+	affect the characters passing through the redirection stream.  If
+	options	are to be used,	be sure	to include the square brackets
+	around them, and separate each option by a comma.  The left
+	bracket	of the option list must	be placed directly next	to the
+	redirection symbol (`<') without any intermediate characters.
+
+
+	7.1.2.1	 [+] Use Default Settings
+
+		<A:00> cmd <[+opt1,opt2, . . . ,optn] inspec
+
+	ConIX will normally reset all default options whenever an option
+	list is	specified to input redirection.	 If a plus-sign	appears
+	before the options list, the options requested will be set in
+	addition to the	default	console	input option settings.	These
+	default	options	are set	automatically by ConIX whenever	a program
+	is running with	its input unredirected.	 They are [e,f,x=0] and
+	will be	maintained if a	`+' is used.
+
+
+
+
+
+
+
+				       7-3
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	7.1.2.2	 [A] Auto Line Feed
+
+		<A:00> cmd <[a]	inspec
+
+	When this option is specified, ConIX will automatically	append a
+	Line Feed character (LF) after every Carriage Return (CR)
+	encountered in its input stream.
+
+
+	7.1.2.3	 [B] Boot After	EOF
+
+		<A:00> cmd <[b]	inspec
+
+	Many programs do not recognize the significance	of the EOF
+	character, normally sent through the redirection stream	to
+	indicate the end of a file.  In	many cases, all	that would be
+	necessary to terminate such a program is a warm	boot when the EOF
+	is reached.  Using the [B] option will cause a warm boot to be
+	provided automatically when program input reaches EOF.
+
+
+	7.1.2.4	 [C] Disable Console Status
+
+		<A:00> cmd <[c]	inspec
+
+	Some programs internally poll the system keyboard for certain
+	characters while they are running.  Such characters are	generally
+	used to	provide	some form of control function.	For example, a
+	BASIC interpreter may look for a CTRL-S	to start/stop the display,
+	or a CTRL-C to abort program execution.	 Generally, if you were	to
+	type any other character, it would be discarded	and the	program
+	will continue to wait for one of the special characters	it
+	recognizes as performing some action.
+
+	It is important	to realize that	a program which	has its	input
+	redirected receives the	characters from	the input file as a
+	constant stream.  If the program, as BASIC in our example, would
+	be redirected, it would	see a character	waiting	every time it
+	polled console status.	It would then read an actual character
+	from the input stream, thinking	it would be a special control
+	function character.  Obviously it won't	be, and	the input data
+	would be discarded and lost forever.
+
+	By using the [C] option, every time BASIC checked if a character
+	was ready, it would get	a ``no'' from ConIX.  This checking is
+	done by	a BDOS 6 or BDOS 11 system call, or by using the BIOS
+	console	status routine.	 In either of these cases, the value
+	returned would be a 0.	Therefore, only	those characters which a
+	program	requests in the	form of	a direct console input call
+	(BDOS 1	or BIOS	console	input) will be passed to the program.  If
+	the program does not directly request its input	but instead uses
+	this polling method to read its	regular	input characters, then
+	this option will not yield the desired results.
+
+
+
+
+
+				       7-4
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.1.2.5	 [D] Delete Input File After EOF
+
+		<A:00> cmd <[d]	inspec
+
+	If the [D] option is specified,	the named input	redirection file
+	will be	deleted	after the program completes its	execution.  This
+	option should be used with caution because of the obvious
+	implications.  It is useful, however, for quick	removal	of a
+	temporary or intermediate file.
+
+
+	7.1.2.6	 [E] Ignore the	EOF Character
+
+		<A:00> cmd <[e]	inspec
+
+	ConIX uses the CP/M EOF	character to indicate the end of the input
+	redirection file.  This	is the default since the file being
+	redirected is usually a	text file which	ends with the EOF
+	character.  It is sometimes necessary to redirect input	from files
+	which contain this character within them as actual data, as is
+	generally the case with	.COM or	object files.  In such instances,
+	it is necessary	to use the [E] option to prevent the file from
+	being cut off in the middle.
+
+	NOTE:  Although	ConIX will read	the file to the	last written
+	record,	it still returns the CP/M EOF character	at the Physical
+	EOF.  In order for a program to	determine whether or not this is
+	the actual EOF indicator or just another character in the file,
+	you must use a special ConIX system call.  This	syscall	is
+	available through the standard BDOS interface to languages that
+	support	direct BDOS calls.
+
+
+	7.1.2.7	 [F] Enable Function Keys
+
+		<A:00> cmd <[f]	inspec
+
+	By default, function key references within the input redirection
+	stream will not	be recognized or expanded.  This is primarily
+	because	a file may contain the special lead-in character as a part
+	of its data (especially	possible within	command	or object files).
+	Specifying the [F] option will allow any encountered function key
+	references to be expanded into the input stream.  The lead-in
+	character to be	used is	specified by the OPT +/-FK internal
+	command.  The function key feature is described	in detail later	on
+	in the chapter.
+
+
+	7.1.2.8	 [G] Remove Glitch Characters
+
+		<A:00> cmd <[g]	inspec
+
+	If the [G] option is supplied, ConIX will filter out and discard
+	from the input stream all control characters in	the range of 00	-
+	1F hex,	with the exception of the EOF character, 1A hex.
+
+
+
+				       7-5
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	7.1.2.9	 [H] Hush Character Echo
+
+		<A:00> cmd <[h]	inspec
+
+	Most programs read their input characters by using the standard
+	console	input (BDOS 1) system call.  It	is a function of the
+	operating system to echo to the	screen all characters that are
+	input via this syscall.	 The [H] option	allows this echo to be
+	suppressed.  This is especially	useful for Command Language
+	programs which may desire privacy when reading a password or
+	security code from the user.
+
+
+	7.1.2.10  [I] Interpret	Special	Characters
+
+		<A:00> cmd <[i]	inspec
+
+	By default, special characters within the input	redirection stream
+	will not be interpreted	by ConIX.  (For	a description of this
+	feature, see the section on Special Character Substitute, below.)
+	This is	because	the input file may contain these characters as a
+	part of	itself and therefore, is probably not intended for
+	modification.  Setting the [I] option will allow these characters
+	to be interpreted.
+
+
+	7.1.2.11  [K] Continue Input Read
+
+		<A:00> cmd <[k=&address] inspec
+
+	The [K]	option is used to continue reading a disk or memory file
+	from the position saved	by the [P] option (below) at the specified
+	memory address.	 Using these two options provides for programmed
+	manipulation of	records	in a file.
+
+
+	7.1.2.12  [L] Remove Line Feeds
+
+		<A:00> cmd <[l]	inspec
+
+	In general, lines within text files are	usually	terminated by the
+	Carriage Return	plus Line Feed (CR/LF) sequence.  By itself, the
+	Carriage Return	character (0D hex, CTRL-M) returns the cursor or
+	carriage to the	leftmost position of the current line.	The Line
+	Feed character (0A hex,	CTRL-J)	scrolls	the screen or platen to
+	the next line.	This sequence is necessary in order to make a file
+	readable on paper or on	a CRT.
+
+	Most programs request input from the user in the form of a
+	sequence of characters followed	by a Carriage Return.  If we were
+	to feed	such a program a file which contains the CR/LF sequence	at
+	the end	of each	line, the LF would be extra and, in many cases,
+	cause undesirable effects.  By specifying the [L] option, all LF's
+	will be	removed	from the input stream.
+
+
+
+
+				       7-6
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.1.2.13  [N] Count Lines/Characters
+
+		<A:00> cmd <[n=#count(c)] inspec
+
+	The [N]	option provides	the capability of cutting off the input
+	stream after a specified number	of lines or characters.	 ConIX
+	will simulate the EOF condition	once the requested count has been
+	achieved.  Characters will be counted if the character `c' is
+	placed after the decimal count number.	If `c' is omitted, and
+	only a number is supplied, lines will be counted.  (A line in a
+	file is	terminated by a	Line Feed (LF) character.)
+
+	NOTE:  The specified count may be as large as 65535, decimal.  No
+	input will be produced if a value of zero is given, thus flagging
+	an EOF as soon as input	is requested.
+
+
+	7.1.2.14  [O] Turn Off Character
+
+		<A:00> cmd <[o=&byte] inspec
+
+	The [O]	option turns off, or filters out, from the input stream
+	any character which matches the	specified hex byte code.  Legal
+	character codes	range from 00 -	FE hex.
+
+
+	7.1.2.15  [P] Save Input Position
+
+		<A:00> cmd <[p=&address] inspec
+
+	The [P]	option is used to save the position within a disk or
+	memory file at which an	EOF condition was forced (by the [N]
+	option), or actually occurred.	In many	cases there are	more lines
+	in the file after a forced EOF,	and the	[K] option can be used to
+	continue reading from that point.  To test whether an actual EOF
+	was hit, the $%E variable should be used.
+
+	Memory at the specified	address	is used	to hold	a pointer to the
+	next input character to	be read.  When used with redirection from
+	a file,	five bytes starting at this address are	used to	store the
+	pointer	information.  With memory redirection, only two	bytes are
+	used, and their	value is equal to the address at which the input
+	ended.	This data can prove to be useful within	Command	Language
+	programs.
+
+
+	7.1.2.16  [Q] Quiet Line Input Echo
+
+		<A:00> cmd <[q]	inspec
+
+	Many programs read their input in the form of editable lines by
+	using the Read Line system call	(BDOS 10).  ConIX normally echos
+	the input characters so	the user can see what is being typed.  The
+	[Q] option can be used to disable the echoing of input characters
+	for instances when privacy is needed.
+
+
+
+				       7-7
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	7.1.2.17  [R] Recognize	Warm Boot
+
+		<A:00> cmd <[r]	inspec
+
+	Programs that read their input in the form of editable lines
+	through	the Read Line system call (BDOS	10), recognize CTRL-C as
+	indicating a warm boot when entered at the beginning of	the input
+	line.  Using the [R] option allows a CTRL-C to cause a warm boot
+	at any point in	the input line,	or even	if the program uses
+	single-character input (BDOS 1/6), or direct BIOS calls.
+
+
+	7.1.2.18  [S] Skip Lines/Characters
+
+		<A:00> cmd <[s=#count(c)] inspec
+
+	The [S]	option provides	the ability to skip a specified	number of
+	lines or characters in the input stream	before any data	is
+	actually passed	to the running program.	 If the	decimal	number
+	count is followed by the character `c',	the requested number of
+	characters will	be skipped.  If	`c' is omitted,	entire lines (each
+	terminated by an LF) will be skipped.
+
+	NOTE:  The specified count may be as large as 65535, decimal.  A
+	value of zero will produce no action, thus ignoring the	option.
+
+
+	7.1.2.19  [T] Read From	TTY After EOF
+
+		<A:00> cmd <[t]	inspec
+
+	The [T]	option will cause program input	to be read from	the
+	console	keyboard (:TTY)	after the end of file is reached.  No EOF
+	character will be sent at the point of this switch-over.  All
+	redirection options specified when reading from	the file remain
+	active when input reverts to the keyboard.
+
+
+	7.1.2.20  [U] Set Uniform Input	Delay
+
+		<A:00> cmd <[u=#delay] inspec
+
+	When using the [U] option, programs which poll console status
+	(such as BASIC in the example for [C], above) must do so for delay
+	number of times	before a ready console status is returned.  No
+	resetting of this count	occurs,	as with	the [W]	option,	if a non-
+	status syscall is received.  The delay refers to the number of
+	times a	console-status system call must	be executed before
+	receiving a ``character	ready''	return value.  Using this option
+	should solve many problems with	programs which poll for	input
+	characters as well as special ``interrupt'' characters.
+
+	NOTE:  The delay constant may be as large as 65535, decimal.
+
+
+
+
+
+				       7-8
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.1.2.21  [V] Verbose Input Echo
+
+		<A:00> cmd <[v=#type] inspec
+
+	Using the [V] option causes all	characters read	from the input
+	stream to be echoed to the screen.  These characters may then be
+	caught by Output Redirection, which is useful for having input
+	appear in the output file (see Output Redirection, below).
+
+	The type argument determines what forms	of input characters will
+	be expanded.  If [V=0],	only characters	read by	BDOS 1 system
+	calls will be expanded.	 If [V=1], all input characters	will be
+	expanded to the	standard console output	stream (:CON).
+
+
+	7.1.2.22  [W] Set Input	Delay
+
+		<A:00> cmd <[w=#delay] inspec
+
+	Programs which poll console status (such as BASIC in the example
+	for the	[C] option, above) must	do so for delay	times in sequence
+	before console status is returned ready.  An internal counter is
+	kept of	all such system	calls (CP/M BDOS 6, 11,	or BIOS	console
+	status)	and if any other system	calls are received, this counter
+	is reset to zero and the delay restarted.  This	option differs
+	from the operation of the [U] option which does	not reset the
+	delay counter.
+
+	Using the [W] option should solve incompatibility problems with
+	programs which poll for	input characters as well as special
+	``interrupt'' characters.
+
+	NOTE:  The delay constant may be as large as 65535, decimal.
+
+
+	7.1.2.23  [X] Expand Input to Screen
+
+		<A:00> cmd <[x=#type] inspec
+
+	This option is similar to [V] (above), except that, in this case,
+	characters are sent directly to	the screen and cannot be caught	by
+	output redirection.  The type argument determines the form of
+	input characters which will be expanded.  If [X=0], only
+	characters read	by BDOS	1 system calls will be expanded.  If
+	[X=1], any and all input characters will be output directly to the
+	console	screen.
+
+
+	7.1.3  Programs	that Resist Redirection
+
+	Some existing CP/M programs just don't take a liking to	input
+	redirection, simply because they weren't written with ConIX in
+	mind.  Redirecting such	programs may yield undesirable results
+	such as	lost characters, an infinite loop at the end of	the file,
+	or they	may just blow up.  To get around these problems	you can
+
+
+
+				       7-9
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	try using some of the redirection options that are available.
+
+	The [B]	option is useful for programs which hang at the	end of the
+	input file because they	do not recognize the meaning of	the EOF
+	character.  For	programs which gobble input characters,	the [C],
+	[U], or	[W] options should probably help.  It is up to you to
+	determine which	option(s) will work for	a particular program.
+	Only trial and error will tell.
+
+	Generally, you should first try	the [C]	option,	as this	usually
+	works for a majority of	the programs we	have tried to redirect.
+	Others are more	stubborn and may require the [U] or [W]	option.
+	You should first try these options with	a wait constant	from 1-10,
+	then 10	and up.	You could go as	high as	65535 if you so	desire,
+	but even if this number	worked,	the program would execute so
+	slowly that it probably	wouldn't be worth the wait.
+
+	If none	of these options work, then the	program	you are	trying to
+	redirect probably uses some obscure way	of reading its input.  We
+	have come across few such unredirectable programs.  Some of the
+	more extensive programs	generally give some problems, but there
+	are few	that can't be eliminated by using redirection options.
+	For the	most part, input redirection works, and	represents a
+	valuable part of the enhancements ConIX	provides for your system.
+
+
+	7.1.4  Special Character Substitute
+
+	When redirecting input with the	[I] option set,	ConIX will
+	interpret special characters encountered in the	redirection stream
+	as indicating certain functions.  These	characters are outlined	in
+	the following sections.
+
+
+	7.1.4.1	 Control Characters
+
+	If ConIX encounters a circumflex in the	input stream, it will be
+	interpreted as the lead-in to a	control	sequence.  The character
+	that follows it	will then be converted to its control equivalent.
+	For example, the line:
+
+		The terminal will now beep: ^g
+
+	when printed through input redirection,	will cause the `^' and `g'
+	characters to be replaced by their control equivalent, CTRL-G,
+	thus causing the terminal to beep.
+
+	This feature is	especially useful when working with text editors
+	that do	not allow control characters to	be entered into	the file.
+	When such characters are desired, ConIX	can be used as a filter	to
+	replace	the two-character control descriptor with the actual
+	desired	character.
+
+
+
+
+
+
+				       7-10
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.1.4.2	 Non-interpret
+
+	If you do not wish ConIX to interpret a	character as being
+	special, then precede it with a	backslash.  For	example, the line:
+
+		A CTRL-G (^g) will cause the terminal to beep.
+
+	when printed through input redirection with the	[I] option set,
+	would cause the	`^g' to	be interpreted as a control sequence.  If
+	desired, this interpreting can be defeated by precededing the
+	circumflex with	a backslash, as:
+
+		A CTRL-G (\^G) will cause the terminal to beep.
+
+	which would prevent the	circumflex from	being interpreted as
+	starting a control sequence.  If a backslash itself must be
+	entered, double	it as:
+
+		Place a	backslash (`\\') before	the circumflex.
+
+	which would cause one backslash	to be placed within the
+	parenthesis after being	passed through the input stream.
+
+
+	7.1.5  Function	Key Substitute
+
+	A major	innovation which has been added	to input redirection is
+	the ability to access the ConIX	letter variables ($a-$z	and $A-$Z)
+	from the redirection stream.  The actual contents of a referenced
+	variable can be	substituted directly into the input stream.  To
+	reference a variable, simply use a two character code, as:
+
+		<lead-in><variable>
+
+	The lead-in is a single	character which	indicates the start of a
+	variable reference.  The <variable> code is a letter corresponding
+	to the variable	you want to access (a-z, A-Z).	The value of the
+	lead-in	is undefined on	startup	but it may be set by using the OPT
+	+/-FK internal command.
+
+	As an example, assuming	lead-in	to be CTRL-F, you may have a file
+	INFILE.TXT which contains the line:
+
+		This is	the contents of	variable $A: <CTRL-F>a
+
+	If you typed the following command, you'd get:
+
+		<A:00> type <[f] infile.txt
+		This is	the contents of	variable $A: hello there
+		<A:00>
+
+	where the two-character	sequence `<CTRL-F>A' was changed to the
+	actual contents	of the variable	$A, namely, ``hello there''.
+	Notice that the	[F] option was used since function keys, by
+	default, are not enabled in the	redirection stream.  (However,
+
+
+
+				       7-11
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	they are enabled when commands are running unredirected.)
+
+	Similarly, the ConIX Programmable Character Keys may be	accessed
+	from the input stream, with the	sequence being changed to the
+	single character contained in the referenced key.  To access a
+	defined	key, enter a two-character code, as above, namely:
+
+		<lead-in><key>
+
+	where lead-in is a single character which indicates the	start of a
+	Character Key reference, and key refers	to the character value set
+	to be produced by that key.  The value of the lead-in is undefined
+	on startup, but	can be set by using OPT	+/-FC command.	Refer to
+	the chapter on OPT for complete	details.
+
+
+	7.1.6  Input Redirection from a	Device
+
+	Input redirection, thus	far, has only been explained in	terms of a
+	file.  However,	input may also be redirected from special devices
+	as well.  The syntax of	this form of redirection is:
+
+		<A:00> cmd (arg(s)) <([option(s)]) :device
+
+	This is	exactly	the same as input redirection using a file, except
+	that the filename, infile, is replaced with a device name.
+	Available input	devices	are given in the sections that follow.
+
+	NOTE: unlike file names, devices may not be specified in double
+	quotes.	 Specifying a device in	quotes as:
+
+		<A:00> getl < ":KBD"
+
+	causes ConIX to	search for the file ``KBD.'' in	the disk search
+	path.  This is because the `:' indicates an Automatic File Search
+	request	when used in quotes.  When not in quotes, it indicates a
+	device name.  Thus:
+
+		<A:00> getl < ":FOO.ASM"
+
+	is the way you can specify a file search when using input
+	redirection.  If you leave out the quotes, ConIX will interpret
+	FOO.ASM	as being a device, and will print an error since there is
+	no such	device.	 This restriction exists only on input redirection
+	in order to prevent a conflict between device and file search
+	specifications.
+
+
+	7.1.6.1	 :KBD Raw Console Keyboard
+
+	This is	the raw	console	input device, namely, the keyboard.  It
+	differs	from the :TTY device (below) in	that no	print spooling
+	will take place	while input is being read from this device.
+
+
+
+
+
+				       7-12
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.1.6.2	 :NUL Null Device
+
+	This is	the NULL or non-existent ``dummy'' system device which
+	always returns EOF when	read.
+
+
+	7.1.6.3	 :RDR Reader
+
+	This is	the system Reader device.  Although you	probably won't
+	have a paper tape reading machine attached to it, the name is
+	maintained for consistency with	existing CP/M devices.
+
+
+	7.1.6.4	 :TTY Console Keyboard
+
+	The :TTY device	refers to the standard console keyboard.  It is
+	important to note here that when a program runs	unredirected, it
+	reads its input	from this device, with certain options set.
+	Therefore, when	you type a command, such as DIR, it is executed
+	internally as:
+
+		<A:00> dir <[e,f,x=0] :tty
+
+	The [E]	option is used so that hitting a CTRL-Z	at the keyboard
+	will not be interpreted	as an EOF, thereby closing the input
+	stream.	 The [F] option	is used	to enable function key interpret,
+	and [X=0] is included to expand	syscall	1 input	(which is a
+	standard function of CP/M).
+
+	The :TTY device	would be used if you wanted to change the
+	redirection options that are in	effect when your program is
+	reading	from the keyboard.  For	example, let's say you had a text
+	editor which required the [W=1]	option in addition to the standard
+	defaults, you would type:
+
+		<A:00> edit foo.asm <[+w=1] :tty
+
+	The ``TTY'' is needed for the input specification that is required
+	when using redirection.
+
+	Note that, as you may already suspect, there is	also a default
+	setting	for the	console	output stream, which is	described later	in
+	the section on Output Redirection.
+
+
+	7.1.6.5	 :UDI User Defined Device
+
+	This is	a special user-definable input device.	ConIX uses
+	physical port addresses	and status check-bits to read characters
+	from this device.  It is set by	using the OPT +/-IP command,
+	described later	in the commands	section.  This device returns EOF
+	if it had not been previously defined by OPT.
+
+
+
+
+
+
+				       7-13
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	7.1.6.6	 :UIA User Defined Address
+
+	This device references an address at which a user-defined input
+	routine	is stored in memory.  The OPT +/-IA command is used to set
+	this address.  By default, this	device returns EOF if the address
+	had not	been previously	defined.
+
+
+	7.1.7  Redirection From	Memory
+
+	One of the greatest innovations	offered	by ConIX is the	freedom
+	the user has over the use of memory (see the section on	ConIX and
+	Memory).  This flexibility has been applied to input redirection,
+	allowing a program to read its input directly from system memory.
+	The syntax of this form	of redirection is:
+
+		<A:00> cmd (arg(s)) <([option(s)]) @(&start)(-&end)
+
+	The `@'	sign tells ConIX that the command will be reading its
+	input from memory.  The	optional starting address, start, gives
+	the location in	memory at which	the first character is stored.
+	The optional ending address, end, gives	the location in	memory at
+	which to set the `physical end of file'.  This address puts a
+	ceiling	on the memory file, just as available disk space puts a
+	ceiling	on the length of a disk	file.  The actual EOF is indicated
+	by the byte FF hex stored after	the last character to be sent
+	through	the input stream, and may occur	before the specified
+	ending address.
+
+	For example, the command line:
+
+		<A:00> getl < @3000-347f
+
+	sets the command GETL to read its input	line from memory starting
+	at location 3000 hex until location 347F hex.  It may actually
+	read less than the amount of memory allocated if there is a Memory
+	EOF (FF	hex) byte stored within	the specified address boundaries.
+	In any case, EOF will always occur at the ending address.
+
+	If the end address is omitted, a default length	of 128 bytes is
+	assumed, effectively setting the end address to	start +	128.  For
+	example, the command line:
+
+		<A:00> getl < @3000
+
+	is equivalent to:
+
+		<A:00> getl < @3000-307F
+
+	If both	the start and end addresses are	omitted, input is taken
+	from the default internal memory buffer, as in:
+
+		<A:00> getl < @
+
+
+
+
+
+				       7-14
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	which sets the GETL command to read its	input from a memory buffer
+	internal to ConIX which	is 128 bytes in	length.	 Data may be
+	stored in this buffer, or anywhere in memory, by using Output
+	Redirection, described later.
+
+
+	7.1.8  Some Input Redirection Examples
+
+	Some useful examples of	commands using input redirection are
+	presented here for your	edification:
+
+	Simplest Form:
+
+		<A:00> type < file.txt
+
+	where the TYPE command reads its input from FILE.TXT.
+
+	Using an Option:
+
+		<A:00> basic <[c] file.bas
+
+	where BASIC reads its input from FILE.BAS with all console-status
+	syscalls returning ``not-ready''.  The input file may contain
+	operating instructions such as:
+
+	   10 REM This program will compute the	sum (sigma)
+	   20 REM of all the numbers in	a range.
+	   30 print
+	   40 print "Please enter two numbers:";
+	   50 input s,e
+	   60 x=0
+	   70 for i=s to e
+	   80 x=x+i
+	   90 next i
+	   100 print "The sum of the numbers from";s;"to";e;"is";x
+	   110 end
+	   run
+	   10,30
+	   run
+	   1,3
+	   system
+
+	which is actually an automated procedure that drives BASIC, and
+	includes the program, instructions to run it, and the input data
+	to be used.  As	another	example, take:
+
+		<A:00> type <[s=3] file.bas
+		40 print "Please enter two numbers:";
+		. . .
+		<A:00>
+
+	where TYPE reads FILE.BAS, skipping the	first three lines, and
+	starting with the fourth through the end of file.
+
+
+
+
+
+				       7-15
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	Using Multiple Options:
+
+		<A:00> basic <[l,c,t] prog.bas
+
+	where BASIC takes its input from PROG.BAS, stripping off Line
+	Feeds and executing with console status	disabled.  After EOF is
+	reached	in FILE.BAS, input will	continue to be read from the
+	console	keyboard.  As another example:
+
+		<A:00> type <[s=3,n=8c]	FILE.BAS
+		40 print
+		<A:00>
+
+	where TYPE reads only eight characters of FILE.BAS, after skipping
+	the first three	lines.
+
+
+	7.1.9  Type-Ahead Buffering
+
+	ConIX contains a special buffer	which is used to store characters
+	entered	at the keyboard	while a	program	is running.  These
+	characters are held in the buffer until	input is requested by a
+	running	program	or ConIX when waiting at the prompt level.
+	Characters usually enter the buffer when input is being	polled for
+	a CTRL-S, as with Disk Wait Control and	during output to the
+	console.  Any character	not recognized internally as performing	a
+	predetermined special function relating	to ConIX, will be placed
+	into this buffer for further processing.
+
+	The type-ahead buffer is set to	hold up	to 80 characters.
+	Entering more than this	amount of characters will cause	the
+	console	bell to	sound every time a key is depressed.  The buffer
+	may be cleared and re-started at any time by typing a special
+	buffer-flush character.	 This is set to	CTRL-_
+	(control+underscore) by	default, and may be changed by the OPT
+	+/-TC internal command.	 Entering this character performs a cancel
+	operation equivalent to	the CTRL-U at the prompt level.
+
+	The ConIX type-ahead buffer does not interfere with buffering that
+	is built into some computers.  In fact,	it can even provide type-
+	ahead for systems which	do not support it internally.  This is
+	because	CP/M does not save characters after they are typed at the
+	console.  Entering more	than one character overwrites the previous
+	one until console input	is requested.
+
+	Some programs have the habit of	removing a character waiting at
+	the keyboard after they	execute.  This problem may be eliminated
+	by executing such programs with	one of the input redirection
+	options	that delay console status requests.  Therefore,	those
+	programs that do a quick, last minute check for	a waiting
+	character will not see one, and	the type-ahead buffer will remain
+	untouched.
+
+
+
+
+
+
+				       7-16
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.2  Console Output File Redirection
+
+	The redirection	of program output to a file instead of the console
+	screen is called Console Output	File Redirection.  The syntax of
+	this form of redirection is:
+
+		<A:00> cmd (arg(s)) >(>)(+)([option(s)]) outfile
+
+	where cmd represents the command whose output is to be redirected
+	to the disk file outfile.  If only one `>' is given, the output
+	file is	created	if it does not already exist.  If it does exist,
+	it is first deleted and	then re-created, thereby starting with an
+	empty file.  If	a second `>' is	specified, the output is appended
+	to the named file if it	exists,	and will be created if it does
+	not.  If a `+' is included after the last '>', output will go to
+	the screen as well as to the file.  The	[options] represent
+	certain	optional features which	the user may specify (see below)
+	to modify certain operational defaults.	 The `+' and left bracket
+	of the options list must be placed immediately after the `>',
+	without	any intermediate white-space.
+
+	For example, the command GETL which reads a line of input from the
+	keyboard and retypes it	to the screen can be used as:
+
+		<A:00> getl > user.inp
+		this is	the first line you typed
+		<A:00>
+
+	which gets a line of input from	the keyboard and saves it in the
+	file, USER.INP.	 Any spaces or tabs around the `>' are optional.
+	If, in addition, you were to type:
+
+		<A:00> getl >> user.inp
+		this is	the second line	you typed
+		<A:00>
+
+	the output of the second GETL would be appended	to the file
+	USER.INP.  Examining this file would show:
+
+		<A:00> type user.inp
+		this is	the first line you typed
+		this is	the second line	you typed
+		<A:00>
+
+	which is the combined output from the two separate invocations of
+	the GETL command.
+
+
+	7.2.1  Output Redirection Options
+
+	There are certain options that may be specified	to output
+	redirection which can affect the characters passing through the
+	output stream.	If you specify such options, you must include the
+	square brackets, `[]', around them, and	separate multiple options
+	by a comma.  Intermediate spaces or tabs are not permitted.  The
+
+
+
+				       7-17
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	following sections contain descriptions	of the available output
+	redirection options.
+
+
+	7.2.1.1	 [A] Auto Line Feed
+
+		<A:00> cmd >[a]	outspec
+
+	When the [A] option is specified, ConIX	will automatically insert
+	a line feed (LF) after every carriage return (CR) encountered in
+	the output stream of the executing command.
+
+
+	7.2.1.2	 [B] Boot After	End of Output
+
+		<A:00> cmd >[b]	outspec
+
+	The [B]	option will cause a warm boot (JMP 0000) to be generated
+	after the end of output	is reached, a condition	which can only
+	occur after the	number of lines/bytes specified	by the [N] option
+	have been output, or when there	is no more space available to
+	store the output in a memory file.  If this option is not used,
+	program	execution will continue	even though any	additional output
+	would be discarded.
+
+
+	7.2.1.3	 [D] Append to Binary Data File
+
+		<A:00> cmd >[d]	outfile
+
+	When using redirection to append output	to an existing file, ConIX
+	must first find	the end	of the file by searching for the
+	EOF (CTRL-Z) character.	 Since binary files usually contain this
+	character within them, output would be appended	too early, thereby
+	overwriting part of the	original file.
+
+	The [D]	option is used to prevent this from happening when
+	appending data to a binary file.  Instead of searching for the
+	EOF, ConIX will	append output after the	last physical record
+	previously written to the specified data file.
+
+
+	7.2.1.4	 [E] Disable EOF Termination
+
+		<A:00> cmd >[e]	outfile
+
+	ConIX normally places a	CP/M EOF character (CTRL-Z) after the last
+	byte written to	a disk output file.  This is the default, since
+	most output data is printable text and should contain this
+	character to indicate its true end.  If	the data being redirected
+	out is binary or object	code bytes, this extra character may be
+	removed	by specifying the [E] option.
+
+	Note that a CTRL-Z placed at the end of	a .COM file will cause no
+	harm to	the operation of the program.  It may, however,	enlarge
+
+
+
+				       7-18
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	the file by passing a minimum size boundary, in	which case EOF
+	termination may	be defeated by using this option.
+
+
+	7.2.1.5	 [G] Remove Glitch Characters
+
+		<A:00> cmd >[g]	outspec
+
+	Program	output may sometimes contain certain undesirable
+	characters in the control range	of 00 hex to 1F	hex.  If the [G]
+	option is specified, all such ``glitch'' characters will be
+	discarded from the output stream.
+
+
+	7.2.1.6	 [H] Strip Hi-Bit
+
+		<A:00> cmd >[h]	outspec
+
+	This option is used to zero the	hi-bit of all characters passing
+	through	the output stream.  This is most useful	for filtering
+	program	output that sets the 8th bit of	some characters, as this
+	may cause undesirable effects when read	by other programs.
+
+
+	7.2.1.7	 [I] Set Invisible Attribute
+
+		<A:00> cmd >[i]	outspec
+
+	When the [I] option is supplied, the output file will be created
+	with the invisible (SYS) attribute set.	 This means that the file
+	will not be printed in regular directory listings, although it
+	will actually be there.	 This may be useful for	certain
+	`transparent' operations where the user	need not see certain files
+	when manipulating the directory.  See the DIR internal command in
+	the commands section for a description of this feature.
+
+
+	7.2.1.8	 [L] Remove Extra Line Feeds
+
+		<A:00> cmd >[l]	outspec
+
+	Using the [L] option will cause	any Line Feed characters not
+	preceded by a Carriage Return to be discarded from  the	output
+	stream.	 Thus a	CR+LF+LF sequence will be changed to a CR+LF,
+	since there was	no CR before the last LF.
+
+
+	7.2.1.9	 [N] Count Lines/Characters
+
+		<A:00> cmd >[n=#count(c)] outspec
+
+	The [N]	option will cause the output stream to be closed after a
+	specified number of lines/characters have been output.	Characters
+	will be	counted	if the letter `c' is placed after the decimal
+	count number.  Otherwise, if `c' is omitted, lines will	be
+
+
+
+				       7-19
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	counted.  (The end of a	line is	determined by the Line feed (LF)
+	character.)  Any characters output by the running program after
+	the output stream is closed will be discarded.
+
+	NOTE: The number of lines may be as large as 65535, decimal.  A
+	value of zero will cause no characters to be output.
+
+
+	7.2.1.10  [O] Turn Off Character
+
+		<A:00> cmd >[o=&byte] outspec
+
+	The [O]	option is used to turn off, or remove from the output
+	stream any character which matches the specified hex byte code.
+	Legal character	codes range from 00 to FE, hex.
+
+
+	7.2.1.11  [P] Print Output Characters
+
+		<A:00> cmd >[p]	outspec
+
+	When this option is supplied, any characters passing through the
+	output stream will also	be sent	to the printer (LST) device.
+
+
+	7.2.1.12  [S] Skip Lines/Characters
+
+		<A:00> cmd >[s=#count(c)] outspec
+
+	The [S]	option is used to remove the first lines/characters that
+	pass from the running program through the output stream.
+	Individual characters will be removed if the decimal number count
+	is followed by the letter `c'.	Otherwise, if `c' is not supplied,
+	[S] will default to removing lines, where a line is defined as
+	ending with an LF character.  Output will begin	after the
+	specified number of lines/characters have been counted off.
+
+	NOTE: The number of lines may be as large as 65535, decimal.  A
+	count value of zero will produce no action.
+
+
+	7.2.1.13  [T] Terminate	File with CR/LF
+
+		<A:00> cmd >[t]	outfile
+
+	Using this option assures that the output stream will always
+	terminate in a CR/LF sequence.	This is	useful for some	programs
+	which leave the	last line of their output unterminated,	since they
+	expect the operating system to output a	CR/LF before the prompt	is
+	printed.  If the output	stream from the	program	already	ended in a
+	CR/LF, no extra	CR/LF will be added.
+
+
+
+
+
+
+
+				       7-20
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	7.2.1.14  [X] Expand Tabs to Spaces
+
+		<A:00> cmd >[x]	outspec
+
+	For storage efficiency,	most text editors convert multiple spaces
+	to tabs	when the file is written to disk.  In some cases, it may
+	be necessary to	convert	them back to spaces, especially	if the
+	receiving device or program does not recognize tabs.  The [X]
+	option will cause this conversion to be	done automatically.  Tab
+	stops are fixed	at multiples of	eight columns.
+
+
+	7.2.2  Output Redirection to a Device
+
+	Until now, we've been discussing output	redirection in terms of
+	disk files.  You can also use a	device in the same way as a file
+	and redirect program output to it, as:
+
+		<A:00> cmd (arg(s)) >(+)([option(s)]) :device
+
+	Available output devices are described in the following	sections.
+
+
+	7.2.2.1	 :CON Console Screen
+
+	The :CON device	references the system console screen.  It is
+	important to note here that when a program runs	unredirected,
+	output is normally sent	to this	device with the	[X] option set.
+	Therefore, when	you type a command, such as DIR, it is executed
+	internally as:
+
+		<A:00> dir >[x]	:con
+
+	This option is needed just in case the console device does not
+	know how to interpret tab characters.  With the	[X] option, tab
+	characters are changed to a series of spaces.
+
+	The :CON device	would be used if you wanted to change the options
+	in effect when a program is writing to the screen.  For	example,
+	let's say you wanted to	examine	the first 50 lines of a	long file.
+	You would type:
+
+		<A:00> type file.c >[x,n=50] :con
+
+	The `:CON' is needed for the output specification that is required
+	when using redirection.	 If your console terminal/computer handles
+	tabs in	hardware, [X] may be excluded.
+
+	Character output to the	:CON device may	be paused by hitting the
+	CTRL-S key.  Once paused, you may hit a	CTRL-C,	and the	program
+	which is executing will	be aborted.  Hitting any other key allows
+	the output to continue.	 Also, while output is being sent to the
+	screen,	you may	toggle printer transcript mode on/off by hitting
+	the CTRL-P key.
+
+
+
+
+				       7-21
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	7.2.2.2	 :CRT Raw Console Screen
+
+	The :CRT device	is used	to output characters to	the console screen
+	in `raw' mode, meaning that there will be no CTRL-S control as
+	with :CON output.  It may be necessary to use the :CRT device with
+	programs that use the CTRL-S and/or CTRL-P keys	for their own
+	purposes.  If you were to hit either of	these keys while a program
+	is outputting to the :CON device, they may be intercepted by ConIX
+	and not	sent to	the program.
+
+
+	7.2.2.3	 :LST System Printer
+
+	The :LST device	references the system printer.	Output to this
+	device will be spooled if the Print Spooling feature is	enabled.
+	Otherwise, characters will be sent immediately to the printer.
+
+
+	7.2.2.4	 :NUL Null Device
+
+	This is	the NULL or non-existent ``dummy'' system device, which
+	discards all characters	sent to	it.  It's a convenient place to
+	dump unwanted output.
+
+
+	7.2.2.5	 :PUN Punch Device
+
+	This is	the system Punch device.  Although you probably	won't have
+	a paper	tape punch attached to it, the name is maintained for
+	consistency with existing CP/M devices.
+
+
+	7.2.2.6	 :UDO User Defined Device
+
+	This is	a special user-definable output	device.	 ConIX uses system
+	I/O port addresses to write characters to this device.	It is set
+	by using the OPT +/-OP command,	described in the commands section.
+	By default, this device	acts as	a :NUL if referenced without being
+	previously defined, namely discarding any output sent to it.
+
+
+	7.2.2.7	 :UOA User Defined Address
+
+	The :UOA device	references an address, set by the OPT +/-OA
+	command, at which a user-defined output	routine	is stored in
+	memory.	 By default, output to this device is discarded	if
+	referenced without being previously defined.
+
+
+	7.2.3  Output Redirection to Memory
+
+	ConIX applies the concept of a `Memory File' to	output redirection
+	by allowing a program to output	directly to system memory.  The
+	syntax of this form of redirection is:
+
+
+
+
+				       7-22
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	    <A:00> cmd (args) >(>)(+)([options]) @(&start)(-&end)
+
+	As you can see,	the format is equivalent to that of output file
+	redirection, except that the filename has been replaced	by a
+	memory specification.  The `@' sign tells ConIX	that the specified
+	command	will be	sending	its output to memory.  The optional
+	starting address, start, gives the location in memory at which to
+	store the first	character.  The	optional ending	address, end,
+	gives the location in memory after which no more characters may	be
+	stored.	 This address puts a ceiling on	the memory file, as the
+	length of a disk file is limited by available disk space.  For
+	example, the command line:
+
+		<A:00> dir > @3000-347f
+
+	sets the DIR command to	send its output	into memory starting at
+	location 3000 hex until	location 347F hex.  The	memory buffer may
+	actually be larger than	the number of bytes needed to store the
+	output.	 In this case, the last	character will be terminated by
+	the `Memory EOF' byte, which is	an FF hex.  This byte must always
+	appear in the buffer, thereby subtracting one byte from	the amount
+	of space available to store characters.	 If the	buffer is too
+	small, excess characters will be discarded, although program
+	execution will continue.
+
+	If the end address is omitted, a default buffer	size of	128 bytes
+	is assumed, effectively	setting	the end	address	to start + 128.
+	For example, the command line:
+
+		<A:00> dir > @3000
+
+	is exactly equivalent to:
+
+		<A:00> dir > @3000-307f
+
+	which allows for storage of up to 127 characters.
+
+	If both	the start and end addresses are	omitted, output	will be
+	sent to	the default internal 128-byte memory buffer.
+
+
+	7.2.4  Some Output Redirection Examples
+
+	Here are some additional examples of redirected	program	output
+	that are intended for your edification:
+
+	Simplest Form:
+
+		<A:00> type file.old > file.new
+
+	where the TYPE command will read FILE.OLD and send its output to
+	FILE.NEW.  This	is effectively a simple	file-to-file copying
+	program.  Similarly:
+
+		<A:00> type file.old >+	file.new
+
+
+
+				       7-23
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	is same	as above, except that the output of TYPE will be sent to
+	the screen as well to the given	file.  Furthermore:
+
+		<A:00> type file.old >>+ file.new
+
+	is a variation of the above, where FILE.OLD is appended	to
+	FILE.NEW, if the latter	exists.	 Otherwise, the	file will be
+	created, with the output placed	at the beginning.
+
+	Using an Option:
+
+		<A:00> type file.mem >[g] file.prt
+
+	where the output of TYPE will be redirected to FILE.PRT	with any
+	control	(``glitch'') characters	discarded.  Similarly,
+
+		<A:00> type file.mem >>+[g] file.prt
+
+	output will be appended	to FILE.PRT and	simultaneously sent to the
+	console	screen.
+
+	Using Multiple Options:
+
+		<A:00> type file.dat >>[s=2,n=10] file.cmb
+
+	where lines 3 through 12 of FILE.DAT are appended to FILE.CMB (the
+	first two lines	of output were skipped and then	up to ten lines
+	were sent through).
+
+
+	7.2.5  Auto Screen Paging
+
+	We mentioned in	a previous section that	output to the :CON device
+	may be paused by hitting the CTRL-S key.  There	is a much more
+	sophisticated method of	pausing	output,	called Auto Screen Paging,
+	which is available for use with	characters sent	to the standard
+	:CON device.  This feature is enabled by using the OPT +/-SL
+	internal command, as:
+
+		<A:00> opt +sl <#length>
+
+	where length is	the maximum number of lines (in	decimal) that your
+	console	screen can display at one time.	 Setting the screen length
+	enables	Screen Paging, whereby program output will automatically
+	pause after a screenful	has been printed.  At this point, the
+	system will wait for you to finish reading the contents	of the
+	screen before proceeding.
+
+	When you are ready to receive the next screenful, hit <RETURN>.
+	If you want the	screen to advance by just one more line, hit any
+	letter or number on the	keyboard.  Otherwise, if you do	not want
+	the output to pause again, simply hit the <SPACEBAR>, which will
+	disable	screen paging for the currently	executing command.
+	Subsequent commands will still run with	this feature enabled.
+
+
+
+
+				       7-24
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	To determine when the screen has filled, ConIX internally counts
+	the number of Line Feed	characters output by the executing
+	program, and when equal	to the screen length, output is	paused.
+	In addition, if	a Form Feed (CTRL-L) character is output, the
+	screen will automatically be paused to prevent it from clearing,
+	which might have caused	you to miss any	characters previously
+	output.
+
+	The default screen length, as set by OPT +/-SL,	can be changed for
+	the execution of a single command by the [S] command line option,
+	as:
+
+		<A:00> [s=<#length>] <command> (arg(s))
+
+	where length is	the maximum number of lines that should	be
+	displayed before the screen is paused.	This setting overrides the
+	current	default	during the execution of	the given command.
+
+
+	7.3  Printer Output File Redirection
+
+	The redirection	of a program's printer (LST) output to a file is
+	called Printer Output File Redirection.	 The syntax of this form
+	of redirection is:
+
+		<A:00> cmd (arg(s)) >#(+) prtfile
+
+	where the printer output of cmd	is sent	to the disk file prtfile,
+	which is created if it does not	already	exist.	If it does exist,
+	it is first deleted and	then re-created.  If a `+' is specified,
+	output will go to the printer as well as to the	file.  The `+'
+	must be	typed immediately after	the `>#' without any intermediate
+	white-space.
+
+	Take, for example, a possible user-supplied command PRINT which
+	prints the named file to the system printer with pagination.  Its
+	printer	output can be redirected to a file as:
+
+		<A:00> print file.txt ># file.pag
+
+	where any characters which would have normally gone to the printer
+	will instead go	into FILE.PAG.	Similarly, if you typed:
+
+		<A:00> print file.txt >#+ file.pag
+
+	printer	output will be sent to the system printer as well as to
+	the designated output file.
+
+
+	7.3.1  Printer Redirection Options
+
+	There are no options available with printer output redirection as
+	there are with console output redirection.  If such options are
+	desired, you can use printer redirection to send the characters	to
+	a file and then	use the	TYPE command to	read from that file using
+
+
+
+				       7-25
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	the desired redirection	options.
+
+	For example, to	get only the first two pages (132 lines) from the
+	printer	output stream of PRINT requires	two commands:
+
+		<A:00> print file.txt ># file.tmp
+		<A:00> type <[n=132] file.tmp >	file.prt
+
+	The first command line sends the printer output	of PRINT to
+	FILE.TMP.  The following command reads the first two pages from
+	the intermediate file into the new FILE.PRT.  If desired, you can
+	erase the temporary file with:
+
+		<A:00> era file.tmp
+
+	This may not be	very elegant, but it sure saves	a great	deal of
+	extra coding within ConIX itself, and it most definitely works!
+
+	Note that this entire process can be condensed into a single
+	command	by redirecting printer output to the :CON device, as is
+	explained in the following section.
+
+
+	7.3.2  Printer Output Redirection to a Device
+
+	You can	use a device as	you would a file when redirecting printer
+	output.	 The syntax of this form of redirection	is:
+
+		<A:00> cmd (arg(s)) >#(+) :device
+
+	Devices	available through output redirection (above) may also be
+	used with printer redirection.	The only special consideration is
+	with :CON, the standard	console	output device used with	regular
+	output redirection.  Characters	sent to	this device will be caught
+	by any output redirection invoked on the command.  For example,
+	the command:
+
+		<A:00> print file.txt ># :con >[n=132] file.prt
+
+	will send printer output through the standard screen output to be
+	processed by regular output redirection, which will then send the
+	first 132 lines	of output to the file FILE.PRT.	 With this
+	capability, the	lack of	options	for printer redirection	does not
+	become limiting.
+
+
+	7.3.3  Printer Redirection To Memory
+
+	ConIX applies the concept of a `Memory File' to	printer
+	redirection by allowing	a program to route its :LST output
+	directly to system memory.  The	syntax of this form of redirection
+	is:
+
+		<A:00> cmd (arg(s)) >#(+)@(&start)(-&end)
+
+
+
+
+				       7-26
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	The '@'	sign tells ConIX that the given	command	will be	using a
+	memory file.  The optional starting address, start, gives the
+	location in memory at which to store the first character, and the
+	optional ending	address, end, defines the end boundary of the
+	buffer.	 For example, the command line:
+
+		<A:00> print file.txt ># @3000-347f
+
+	sets the PRINT command to send its printer output to memory
+	starting at location 3000 hex until location 347F hex.	If the
+	memory buffer is larger	than needed, the last byte of output will
+	be terminated by the `Memory EOF', an FF hex.  If the buffer is
+	too small, excess characters will be discarded.
+
+	If the end address is omitted, a default length	of 128 bytes will
+	be assumed.  If	the start and end addresses are	omitted, the
+	default	internal 128-byte buffer will be used.
+
+
+	7.4  Print Spooling
+
+	One of the slowest devices on your computer, by	far, is	the
+	printer.  These	machines can typically print at	a rate of only 30
+	to 120 characters per second, while a computer is capable of
+	sending	characters at over 1000	cps.  Whenever a program outputs
+	to the printer,	it spends a great deal of time in a loop, waiting
+	for the	printer	to become ready	to receive another character.
+	Even a small printout can sometimes take what seems to be an
+	eternity to complete.
+
+	The built-in ConIX Print Spooler allows	processing to continue
+	while your printer is slowly outputting	characters.  This feature
+	taps some hidden capability in your computer to	allow it to send
+	characters to the printer while	still continuing to execute your
+	program.  It's probably	the closest your standard CP/M system will
+	ever come to multitasking.
+
+	The print spooler uses a disk file to store the	output characters
+	until your printer is ready to receive them.  The size and
+	location of this file is determined by the OPT +PS command, as:
+
+		<A:00> opt +ps <#length> (D:)(#/)
+
+	where length is	the size of the	buffer file (CONIX.SPL)	in 128-
+	byte records, which may	be followed by an optional disk	and user
+	area to	specify	the directory (default A:0/) in	which the file is
+	to be created.	Should the spool file become filled, the system
+	will wait for it to empty enough to hold the remaining characters.
+	The size of the	spool file is limited only to the amount of
+	available disk space.
+
+	Console	input is a significant point of	inefficiency in	your
+	computer.  The system remains in a loop, constantly polling the
+	keyboard for you to hit	a character.  Since the	computer is often
+	requesting input, it was determined that this is the best time to
+
+
+
+				       7-27
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	check if the printer is	ready to receive the spool characters.
+
+	In effect, whenever your system	is actually working, the printer
+	will be	ignored	and full time will be devoted to the completion	of
+	the executing command.	While your system is waiting for console
+	input, the printer will	be serviced whenever it	becomes	ready.	If
+	you do not type	any characters at this point, the spool	file will
+	empty after a period of	time.
+
+	When input is requested, hitting a character will cause	spooling
+	to be delayed for a short period of time.  This	prevents input
+	characters from	being lost if you type while the disk spooler file
+	is being accessed.  This delay may be set at the time spooling is
+	enabled.  See the OPT +PS internal command for details.
+
+	NOTE:  This feature requires that the BIOS List	Status function	be
+	operational as per the guidelines in the Digital Research
+	Alteration Guide.  This	routine	must return the	current	status of
+	the printer without ever waiting in a loop for the printer to
+	become ready.
+
+	The Print Spooling feature can be temporarily disabled by the [W]
+	command	line option, as:
+
+		<A:00> [w] <command> (arg(s))
+
+	This option is used to suppress	spooling for the execution of the
+	given command.	This is	useful if you don't want a particular
+	command's output to be spooled while the print buffer is enabled.
+	Specifying this	option will cause the current contents of the
+	spooler	(if any) to be flushed to the printer, after which the
+	command	will be	executed.  Once	completed, spooling will be
+	reactivated as before.
+
+
+	7.5  Multiple Redirections
+
+	Yes, you can run Console Input,	Output and Printer Output
+	Redirection on one command, so don't bother worrying about some
+	limitation.  As	a really complex example, you can do:
+
+	    <A:00> basic <[l,c,t] file.bas >+[s=1] bas.out ># bas.prt
+
+	which, in a nutshell, would set	the BASIC interpreter to read its
+	input from FILE.BAS, send its screen output to BAS.OUT,	and its
+	printer	output to BAS.PRT.
+
+
+	7.6  Pipe Redirection
+
+	The next logical step ConIX takes from I/O Redirection is called
+	the Pipe.  It allows you to run	two or more programs, one
+	following the other, where the second reads the	output generated
+	by the first.  The syntax of pipe redirection is:
+
+
+
+
+				       7-28
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+		<A:00> cmd1 |(+)([(O-options)(:I-options)]) cmd2
+
+	where the output of cmd1 will be read by the input of cmd2.  If	a
+	`+' is specified, the characters passing through the pipe are also
+	sent to	the console screen.
+
+	The options to the pipe	are grouped in two categories.	The first
+	are called O-options which are the options corresponding to the
+	output of cmd1.	 This group is separated by a colon from the
+	second group called the	I-options, which are the options
+	corresponding to the redirected	input of cmd2.
+
+	A colon	is not necessary if only output	options	are used.  It is
+	necessary, however, to specify a colon before input options, even
+	if no output options are used.	This is	because	the colon is used
+	by ConIX to determine the start	of the input options list.
+
+	Note that the `+' must always follow the `|'.  The left	bracket	of
+	the options list must follow the `|', or the `+' if used, and the
+	right bracket must be followed by at least one space or	tab.
+
+	The syntax of the three-step equivalent	to the pipe is:
+
+		<A:00> cmd1 >(+)([O-options]) tempfile
+		<A:00> cmd2 <([I-options]) tempfile
+		<A:00> era tempfile
+
+	The entire pipe	function can be	illustrated by presenting a simple
+	example.  Let's	say we wanted to list all files	that have the word
+	``TEST'' in their name.	 Because there is no way to specify this
+	to the DIR command, you	just have to list all the files	and look
+	for a name with	``TEST'' in it.	 The ``looking'' can be	done by
+	the INDEX command, which checks	for a particular string	in every
+	line of	input it receives.  INDEX will only print those	lines
+	containing the specified string.
+
+	The first step in the process is to list all the files,	as:
+
+		<A:00> dir > files.lst
+
+	(In our	example, DIR was set to	format the disk	directory listing
+	in only	1 column by using the OPT +/-DC	command).  The output of
+	DIR will be saved in the file FILES.LST	for processing in the next
+	step, which is:
+
+		<A:00> index test < files.lst
+
+	which searches for the word ``TEST'' in	every line of FILES.LST,
+	printing all matches.  Now that	we have	our list of files, we can
+	perform	the last step:
+
+		<A:00> era files.lst
+
+	which removes the intermediate file.
+
+
+
+
+				       7-29
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	This entire three step process can be reduced to one simple
+	command	sequence by using a pipeline, as:
+
+		<A:00> dir | index test
+
+	where the output of DIR	is sent	to the input of	INDEX, which then
+	outputs	the matched lines to the screen.  A temporary file is used
+	by ConIX to store the directory	listing	from DIR, and is removed
+	after the execution of INDEX.
+
+	The name of the	temporary file takes the form of TMPIPnnn.$$$ and
+	its stored with	its SYS	(invisible) attribute set.  The	actual
+	name varies with each invocation, with nnn set to a three digit
+	number corresponding to	the number of previous invocations.  If
+	the pipe should	be broken, (by an abort, disk full, or reset), the
+	temporary file will not	be deleted.  The pipe file will	be created
+	on the disk from which the pipe	was invoked.  See the OPT +/-PF
+	command	to set a particular disk directory to be used for holding
+	the pipe file.
+
+
+	7.6.1  Memory Pipelines
+
+	ConIX can be directed to use memory instead of a temporary file	to
+	store the data passing through the pipeline.  The syntax of this
+	feature	is:
+
+		<A:00> cmd1 |(+)([option(s)])@(&start)(-&end) cmd2
+
+	where the `@' indicates	the usage of a memory file.  This
+	character must always follow the `|', `+', or `]', without any
+	intermediate white space.  The optional	starting address, start,
+	gives the location in memory at	which to store the first
+	character.  The	optional ending	address, end, defines the end
+	boundary of the	buffer.	 For example, the command line:
+
+		<A:00> dir |@1000-17ff index test
+
+	sets up	a pipeline between DIR and INDEX through memory	starting
+	at location 1000 to location 17FF.  If this memory buffer is too
+	small, excess characters will be discarded.
+
+	If the end address is omitted, a default length	of 128 bytes will
+	be assumed.  This is equivalent	to specifying the end address as
+	start +	128.  For example, the command line:
+
+		<A:00> dir |@1000 index	test
+
+	is equivalent to:
+
+		<A:00> dir |@1000-107f index test
+
+	Both the start and end addresses can be	omitted, as in:
+
+		<A:00> dir |@ index test
+
+
+
+				       7-30
+
+
+
+
+
+	ConIX Operating	System				       Redirection
+
+	where the pipeline characters will be stored in	the default 128
+	byte internal memory buffer.
+
+
+	7.6.2  Using Pipes and Redirection
+
+	It is perfectly	legal to specify redirection to	a command whose
+	execution is affected by a pipe, as long as it doesn't access the
+	same character stream as the pipe.  For	example, the command:
+
+		<A:00> cmd1 < inspec | cmd2 > outspec
+
+	is legal because none of the redirection specifications	conflict
+	with the pipeline.  However, the command line:
+
+		<A:00> cmd1 < inspec > outspec | cmd2
+
+	is illegal because the character stream	cannot go through the
+	specified file when it is already going	through	a pipe.
+
+
+	7.6.3  Pipe Redirection	Filename
+
+	Pipes are implemented using temporary files.  These files take on
+	the name TMPIPnnn.$$$, where nnn is set	to a different number
+	every time you pipe.  Some programs do not take	their input from
+	the keyboard, and require a filename as	an argument.  In order to
+	facilitate the convenience of using a pipe with	these programs,
+	they may be given the name of the temporary redirection	file as	an
+	argument.  This	filename is stored in the `$|' variable.
+
+	For example, the hypothetical program PRINT may	require	a file to
+	print as its argument.	You may	type:
+
+		<A:00> print foo.asm
+
+	and the	contents of FOO.ASM will be output to the printer.  To
+	PRINT the output, say, of the DIR directory list command, type:
+
+		<A:00> dir | print $|
+
+	where PRINT gets the current temporary output filename from the
+	`$|' variable.	If you would leave out this filename, PRINT would
+	probably output	an error message.  Now you can take advantage of
+	the automatic removal of the intermediary output file.	If not for
+	this variable, you'd have to type:
+
+		<A:00> dir > outfile; print outfile; era outfile
+
+	which would produce operationally equivalent results, except that
+	much more typing is involved.
+
+	Note that because `$|' references an actual disk file, it cannot
+	be used	when implementing a pipeline through memory.
+
+
+
+
+				       7-31
+
+
+
+
+
+	Redirection				    ConIX Operating System
+
+	7.7  Disabling Redirection
+
+	As we showed in	a previous section, whenever a command runs
+	unredirected, it is still passing characters through the standard
+	I/O streams, :TTY and :CON.  This means	that characters	are being
+	passed through all the same internal character handling	routines,
+	although not much work is being	done to	them.
+
+	The extra machine code executed	for each character I/O function
+	can sometimes cause a noticeable delay in screen output.  To
+	eliminate much of this delay for programs such as text editors
+	that perform very heavy	console	I/O, we've provided a special
+	command	line option, [O], that can speed up the	redirection
+	routines.  Its syntax is:
+
+		<A:00> [o(=#type)] <command> (arg(s))
+
+	This option disables console I/O redirection for the given
+	command, thereby causing console input and output functions to
+	perform	as when	running	under CP/M.  This setting does not affect
+	printer	output or the Print Spooling function.
+
+	If type	is not supplied, all input and output redirection, except
+	for printer redirection, will be disabled.  If a type of 0 is
+	given, only output redirection will be disabled.  If 1,	only input
+	redirection will be turned off.	 If type is omitted, all console
+	I/O redirection	functions will be disabled.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				       7-32
+
+
+
+
+continue
+	while your printer is slowly outputting

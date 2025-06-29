@@ -1,0 +1,690 @@
+.po10
+.pl68
+.op
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+veb mikroelektronik "wilhelm pieck" m}hlhausen
+
+
+Ohnå  Genehmigunç  deó Herausgeberó isô eó nichô  gestattet¬  daó 
+Bucè  odeò Teilå darauó nachzudruckeî odeò  auæ  fotomechanischeí 
+Wege zu vervielf{ltigen.
+
+Redaktionsschlu~ der vorliegenden Ausgabe: August 1989
+
+Š.heKC PASCAL                       #              Inhaltsverzeichnis
+I n h a l t s v e r z e i c h n i s
+
+1.         Einleitung...........................................3
+
+2.         Systemkern...........................................5
+2.1.       Editor...............................................6
+2.2.       Der Compiler und Start des }bersetzten Programms.....8
+
+3.         Systemservice.......................................10
+    
+4.         Sprachbeschreibung..................................14
+4.1.       Einleitung..........................................14
+4.2.       Grundelemente.......................................16
+4.2.1.     Bezeichner..........................................16
+4.2.2.     Zahlen..............................................17
+4.3.       Deklarationen und Definitionen......................18
+4.3.1.     Marken..............................................18
+4.3.2.     Konstanten..........................................18
+4.3.3.     Variablen...........................................19
+4.3.4.     Datentypen..........................................21
+4.3.4.1.   Einfacher Datentyp..................................23
+4.3.4.2.   Strukturierter Datentyp.............................24
+4.3.4.3.   Zeigertyp...........................................26
+4.4.       Faktoren, Operatoren, Ausdr}cke.....................26
+4.5.       Anweisungen.........................................28
+4.6.       Standardprozeduren und -funktionen..................32
+4.6.1.     Prozeduren und Funktionen zur Ein- und Ausgabe......32
+4.6.2.     Arithmetische Funktionen............................37
+4.6.3.     Skalarfunktionen....................................38
+4.6.4.     Konvertierungsfunktionen............................38
+4.6.5.     Weitere Funktionen und Prozeduren...................39
+4.7.       Compiler-Direktiven.................................48
+
+5.         Interne Datendarstellung............................50
+
+A.         Anhang..............................................53
+A1.        Fehlermeldungen des Compilers.......................53
+A2.        Laufzeit-Fehlermeldungen............................54
+A3.        Wortsymbole.........................................54
+A4.        Standardbezeichner..................................55
+A5.        Listing des Demonstrationsbeispiels.................56
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Redaktionsschlu~ der vorliegenden Ausgabe: Juli 1989
+Š.heKC PASCAL                       #                      Einleitung
+1® E i n l e i t u n g
+
+Diå  Kassettå  CC100² KÃ PASCAÌ  enth{lô  einå  schnelle¬  leichô 
+bedienbarå  PASCAL-Versioî (Compiler© f}ò deî  KÃ compact¬  sowiå 
+die Quelldatei eines Demonstrationsprogramms.
+Die Programme sind auf der Kassette wie folgt angeordnet:
+
+          Programm      !         Z{hlerstand
+                        !  Geracord         LCR-C
+     -------------------------------------------------
+          KCPASCAL      !    010             017
+          DEMO          !    090             125
+
+Auæ deò A-Seitå deò Kassettå sinä diå Programmå miô 100° Bauä unä 
+auæ  deò  B-Seitå miô 200° Bauä  ]bertragungsratå  abgespeichert¬ 
+wobeé diå B-Seitå nuò beé optimaì eingestellteî Kassettenrecordeò 
+eingeleseî werdeî kann.
+
+Aló  Grundlagå voî KÃ PASCAÌ dientå diå voî  Jensen/Wirtè  Seconä 
+Editioî  herausgegebenå  PASCAL-Version "PASCAÌ Useò  Manuaì  anä 
+Report"®  Abweichenä  voî dieseò Versioî existiereî folgendå Ein
+schr{nkungen:
+
+- Eó sinä keinå File-Typeî implementiert¬ jedocè k|nneî Variableî   
+  beliebigeî Typó auæ Magnetbanä odeò Diskettå abgespeicherô    
+  werden.
+- Ein Record-Typ darf keinen Variant-Teil enthalten.
+- PROCEDUREs und FUNCTIONs sind nicht als Parameter zugelassen.
+
+Nebeî dieseî Einschr{nkungen¬  diå sicè jedocè nuò geringf}giç iî 
+deò  Arbeiô  bemerkbaò  machen¬  beinhalteô  deò  Compileò  vielå 
+zus{tzlichå  Funktioneî  unä  Prozeduren¬  diå  diå  Vorz}gå  unä 
+Besonderheiteî  deó KC compacô ií Verkehò miô  deî  verschiedeneî 
+Umgebungeî  unterst}tzen¬  sowiå  Elemente¬  diå sicè iî  andereî  
+Programmierspracheî  bew{hrô  habeî  (z.B®   PEEK¬   POKE¬   TIN¬ 
+TOUT,...)® Eineó deò wichtigsteî Neuheiteî voî KC PASCAÌ isô  diå 
+F{higkeit¬  Ereignis-Bearbeitungeî (AFTER¬ EVERY,...© durchf}hreî 
+zõ  k|nnen¬  diå durcè diå Multitasking-Funktioneî deó  Betriebs
+systemó miô seineî ³ Zeitgeberî erm|glichô wird.
+Diå  Gesamtheiô deò zus{tzlicheî Funktioneî unä  Prozedureî  wirä 
+schlie~licè  nocè  voî umfangreicheî SOUND-Befehleî unä }beò  deî 
+Aufruæ    deò   USER-Prozeduò   zõ   erreichendå    Grafikbefehlå 
+abgeschlossen® Somiô sinä allå Befehlå unteò BASIÃ aucè iî PASCAÌ 
+erreichbar.
+
+Deò  Compileò ben|tigô einschlie~licè Editoò unä Runtimeó  cá. 2° 
+KBytå Speicherplatz®  F}ò deî Anwendeò steheî damiô nocè mehò aló 
+20 KByte freier Speicherplatz zur Verf}gung.
+
+Zuí Ladeî deó Compileró isô folgendeó zõ beachten:
+Nachdeí  eiî  kurzeó Vorprogramí iî BASIÃ  miô  RUN"KCPASCAL.BAS¢ 
+geladeî   unä   selbst{ndiç  gestarteô   wurde¬   erscheinô   diå 
+Bildschirmausschrift
+
+"memorù end(^RETURN_=45312© ?"
+
+ŠWirä  dieså  Fragå miô ^RETURN_ beantwortet¬ sï wirä  deò  gr|~t
+m|glichå  Speicherbereicè f}ò daó zõ erstellendå  PASCAL-Programí 
+bereitgestellt®  Durcè  Eingabå geringereò dezimaleò  Wertå  (aló 
+45312© kanî oberhalâ deó PASCAL-Programms¬  d.h® deò h|chsteî voî 
+PASCAÌ   verwendeteî   Speicherplatzadresså  nocè  Freirauí   f}ò 
+Maschinenprogrammå  geschaffeî  werden¬   diå  danî  voí  PASCAL-
+Programí aufrufbaò sind.
+Nacè  Eingabå voî ^RETURN_ odeò eineò Dezimalzahì wirä  KÃ PASCAÌ 
+geladeî unä meldeô sicè miô deí Servicemenı iî deò Kommandoebene.
+
+Ebenfalló  miô  auæ  deò  Kassettå  befindeô  sicè  einå  PASCAL-
+Quelldateé  unteò  deí Dateinameî  DEMO¬  diå  eindrucksvolì  diå 
+vielf{ltigeî M|glichkeiteî voî KÃ PASCAÌ demonstriert:
+
+- Schnelligkeiô deò Grafikausgabe
+- Tonausgabe
+- Ereignisbearbeitunç (Uhrzeit)
+ 
+Daó Listinç dieseò Quelldateé isô Anhanç Aµ zõ entnehmen.
+Voî deò Kommandoebenå kanî dieså Dateé miô deí Kommando
+
+g,,demo
+
+geladeî unä mitteló deí Kommandï 
+
+c
+
+}bersetzô  (compiliert©  werden®  Daraufhiî erscheinô  diå  Bild
+schirmausschrifô "RUN?"¬  diå miô ^y_ odeò ^Y_ zõ quittiereî ist® 
+Daó   Programí  zeigô  5°  verschiedene¬   zuf{lliç   entstehendå 
+Grafiken.
+   
+
+
+
+
+Hinweis:
+Dieseó  Handbucè isô eiî Nachschlagewerë f}ò KÃ PASCAÌ unä  nichô 
+geeignet, die Programmiersprache PASCAL zu erlernen.
+
+
+.paŠ.heKC PASCAL                       #                      Systemkern
+2. S y s t e m k e r n
+
+Zuí  Systemkerî  z{hleî deò relatiö  einfache¬  zeilenorientiertå 
+Editor¬  deò eiî einfacheó unä schnelleó Editiereî deò  Programmå 
+erlaubt¬ sowiå deò Compileò zuò Umwandlunç deó Quelltexteó iî eiî 
+abarbeitungsf{higeó Programm.
+Nacè   deí  Ladeî  voî  KÃ  PASCAÌ  befindeô  maî  sicè  iî   deò 
+Kommandoebenå unä eó erscheinô folgendå Bildschirmausschrift
+
+**ª KÃ PASCAÌ ***
+    ö 1.0
+
+veâ mikroelektronik
+"w® pieck¢ muehlhausen
+   
+
+Ií  weitereî  erscheinô einå kurzå erkl{rendå ]bersichô }beò  diå 
+voî deò Kommandoebenå ausf}hrbareî Kommandos®  Diå  Kommandoebenå 
+wirä durcè daó Promptzeicheî ">¢ angezeigt.
+
+Ií folgendeî isô diå Eingabå eineò Kommandozeilå deó Formates:
+
+Ã N1,N2,S1,S2
+
+gefolgô voî ^RETURN_ m|glich¬ wobei
+
+Ã            daó auszuf}hrendå Kommando,
+N± unä N²    Zahleî ií Bereicè ± bió 3276· und
+S± unä S²    Zeichenketteî  miô  eineò  maximaleî  L{ngå  voî  2° 
+             Zeichen
+
+darstellen.
+
+Daó  Kommá  wirä benutzt¬  uí diå einzelneî Argumentå zõ  trenneî 
+(kanî  durcè  daó Q-Kommandï  ver{nderô  werden)®  Au~erhalâ  deò 
+Stringó  werdeî Leerzeicheî ignoriert®  Keineó deò Argumentå  isô 
+obligatorisch¬ abeò einigå Kommandoó (z.B® daó 'D'elete-Kommando© 
+werdeî nichô ausgef}hrt¬  ohnå daş N± unä N² spezifizierô werden® 
+Parameter¬  diå  voî bestimmteî Kommandoó schoî miô standardm{~iç 
+vorgegebeneî  Werteî  belegô sind¬  werdeî iî  deò  nachfolgendeî 
+Beschreibunç iî eckige Klammerî gesetzt.
+
+Achtung:   Parameterangabeî auó fr}hereî Kommandoeingabeî bleibeî 
+           erhalteî  unä  k|nneî  beé  Kommandoó  ohnå  standard
+           m{~igeò Vorgabå wiederholô benutzô werden.
+
+Diå  Wertå  voî  N± unä N² werdeî anfangó  auæ  1°  gesetzt¬  diå 
+Stringó sinä leer® Wirä einå unzul{ssigå Zeile¬ wiå 
+
+F-10,10,PASCAÌ      
+
+eingeben¬  wirä  diå  Zeilå ignorierô unä  "Pardon?"  ausgegeben® 
+Dieså  Fehlermeldunç wirä aucè ausgegeben¬  wenî diå L{ngå voî S² 
+2° Zeicheî }bersteigt®  Wenî S± l{ngeò aló 2° Zeicheî ist¬ werdeî 
+diå  }berz{hligeî  Zeicheî ignoriert®  Diå Kommandoó  k|nneî  aló 
+Gro~- odeò Kleinbuchstabeî eingegebeî werden.
+.paŠ2.1. Der Editor
+
+Auó  deò  Kommandoebenå  herauó  k|nneî  nebeî  deò  Eingabå  voî 
+Kommandoó aucè Programmzeileî eingegebeî werdeî - zõ beachteî isô 
+aber¬  daş voò deò Programmzeilå diå Zeilennummeò unä  mindestenó 
+eiî Leerzeicheî steheî m}ssen.
+
+Einå  Eingabezeilå  kanî  maximaì 8°  Zeicheî  umfassen¬  weiterå 
+Zeicheî werdeî ignoriert® Miô ^RETURN_ wirä deò editiertå Texô iî 
+eineò kompakteî Forí ií Quelltextspeicheò abgelegt®  Diå Zahì deò 
+f}hrendeî  Leerzeicheî eineò Zeilå wirä iî eineí Bytå  aí  Anfanç 
+dieser Zeile abgespeichert.
+
+Wenî  einå  Zeilennummeò gefolgô voî ^RETURN_¬  d.h®  ohnå  nach
+folgendeî  Texô  eingegebeî  wird¬   wirä  einå  eventuelì  schoî 
+existierendå  Zeilå unteò dieseò Zeilennummeò auó deí  Quelltext
+speicheò gel|scht® 
+Beií   Eingebeî   voî  Texô  odeò   Kommandoó   k|nneî   folgendå 
+Steuertasteî verwendeô werden:
+
+^CTRL_-^X_      L|scht die Zeile bis zum Zeilenanfang.
+^ESC_           Kehrt in die Kommando-Schleife zur}ck.
+^CTRL_-^P_      Schalteô diå Ausgabå wechselweiså auæ Drucker/
+                Bildschirm um.
+^DEL_           L|scht das Zeichen links vom Cursor innerhalb
+                einer Zeile.
+^TAB_           Springt zur n{chsten Tabulatorposition.
+Hinweisº ^  _-^  _ bedeuteô gleichzeitigå Tastenbet{tigunç deò iî 
+         den Klammern aufgef}hrten Tasten!
+
+Deò Texô wirä immeò ersô iî eineî Eingabepuffeò  eingelesen®  Isô 
+dieseò voll¬  wirä daó Eingebeî weitereò Zeicheî verhindert®  Miô 
+^DEL_  odeò  ^CTRL_-^X_ k|nneî Zeicheî gel|schô unä  damiô  neueò 
+Speicherplatú   bereitgestellô  werden®  Miô  ^RETURN_  wirä  diå 
+betreffende Zeile in den Quelltextspeicher }bernommen.
+
+Der zeilenorientierte Editor wird mit dem 
+
+Kommando: E n
+
+auæ diå entsprechendå Zeilennummeò î gesetzt® Fehlendeó î bewirkô 
+diå Zur}ckweisunç deó Kommandos®  Diå angegebenå Zeilå î wirä auæ 
+deí  Bildschirí  dargestellô unä ebenfalló iî  deî  Eingabepuffeò 
+geladen¬ iî deí diå [nderungeî eingetrageî werdeî k|nnen® Dadurcè 
+kanî  deò urspr}nglichå Zeileninhalô jederzeiô  wiederhergestellô 
+werden®  Diå  aktuelì bearbeitetå Positioî ií Puffeò  wirä  durcè 
+eineî  Textzeigeò angezeigt¬  deò durcè  folgendå  Unterkommandoó 
+manipulierô werdeî kann:
+
+^SPACE_    - Bewegt den Textzeiger um ein Zeichen weiter.
+
+^DEL_      - Bewegt den Textzeiger um eine Position zur}ck.
+
+^RETURN_   - Unabh{ngiç  voî  deò  aktuelleî  Textzeiger-Positioî 
+             wirä  diå gesamtå editiertå Zeilå voí Puffeò iî  deî 
+             Quelltextspeicheò  zur}ckkopierô unä diå  Zeilenedi
+             tierunç beendet.Š^C_        - ("CHANGE"© Daó Zeicheî aî  deò  aktuelleî  Zeigerpo
+             sitioî  (dargestelô durcè "+"© wirä durcè daó einge
+             gebenå  Zeicheî  }berschriebeî  unä deò  Zeigeò einå 
+             Stellå   weiterger}ckt®   Mitteló  ^DEL_  kanî   deò 
+             Textzeigeò   uí  einå  Positioî  wiedeò  nacè  linkó 
+             verschobeî   unä   mitteló  ^RETURN_  dieseò   Moduó 
+             verlassen werden. 
+
+^F_        - ("FIND"©  suchô  daó  n{chstå Auftreteî  deó  vorheò 
+             miô deí  F-Kommandï definiertån  Suchstrings® Dieseó 
+             Unterkommandï  schlie~ô gleichzeitiç  daó  Editiereî 
+             deò    geradå    aufgerufeneî   Zeilå   aâ    (unteò              
+             Beibehaltunç alleò [nderungen)¬ falló deò Suchstrinç 
+             iî  dieseò  Zeilå nichô nocè einmaì  auftritt®  Nacè 
+             wiederholteò  Bet{tigunç voî ^F_ werdeî diå n{chsteî 
+             Zeileî  nacè  deí  Suchstrinç  durchsuchô  unä   beé 
+             Auffindeî  deò  Editoò  auæ  diå  betreffendå  Zeilå 
+             gesetzt®  Deò  Textzeigeò  befindeô  sicè  immeò  aí 
+             Anfanç deò gefundeneî Zeichenkette.
+
+^I_        - ("INSERT"© f}gô Zeicheî aî deò gegenw{rtigeî Zeiger
+             positioî  (dargestellô durcè "*"© ein®  Deò  I-Moduó 
+             wirä   ebenfalló  solangå   beibehalten¬   bió   diå              
+             ^RETURN_-Tastå  einmaì  gedr}ckô  wird®   Iî  dieseí              
+             Unterkommandï  l|schô  ^DEL_  daó  Zeicheî  voò  deí              
+             Zeigeò  auó deí Textpuffer®  Nacè deí  Verlasseî voî              
+             "INSERT¢  stehô  deò Textzeigeò hinteò  deí  zuletzô              
+             eingef}gteî Zeichen.
+
+^K_        - ("KILL"©   l|schô  daó   Zeicheî  aî  deò  aktuelleî              
+             Zeigerposition.
+
+^L_        - ("LIST"© listeô deî  Resô deò editierteî Zeile®  Deò              
+             Textzeigeò  stehô  anschlie~enä  aí  Anfanç  deò  zõ              
+             editierendeî Zeile.
+
+^Q_        - ("QUIT"©  brichô  daó   Editiereî  ab¬   ohnå    diå              
+             [nderungeî  zõ  ber}cksichtigen¬   d.h®  bel{~ô  diå              
+             Zeileî iî ihreí alteî Zustand.
+
+^R_        - ("RELOAD"© l{dô  deî Textpuffeò nocè einmaì miô  deò              
+             alteî  Versioî  deò  Zeilå  unä  bewirkô  somiô  eiî              
+             ]berschreibeî alleò gemachteî [nderungen.
+
+^S_        - ("SUBSTITUTE"©  wirä  ií   Zusammenhanç miô  deí  F-             
+             Kommandï  benutzô  unä ersetzô deî  ebeî  gefundeneî              
+             Suchstrinç  æ  durcè deî ií  F-Kommandï  definierteî              
+             Austauschstrinç  ó  unä f}hrô danî  automatiscè  daó              
+             Unterkommandï  Æ  aus¬   d.h®   eó  wirä  nacè   deí              
+             n{chsteî  Auftreteî voî æ gesucht®  Damiô  kanî  maî              
+             sicè  durcè  eineî  Quelltextfilå   hindurcharbeiteî              
+             unä  jedeî  Strinç  æ nacè Beliebeî gegeî  Strinç  ó              
+             austauscheî   (weiteò  miô  ^S_©  odeò  aucè   nichô              
+             (weiteò miô ^F_)® 
+
+^X_        - Setzô deî  Textzeigeò auæ  daó Zeilenendå  unä  rufô              
+             automatiscè deî Einf}ge(^I_)-Moduó auf.Š^Z_        - L|schô  allå  Zeicheî  aâ (unä  einschlie~lich©  deò              
+             aktuelleî Zeigerpositioî bió zuí Endå deò Zeile.
+
+
+2.2. Der Compiler und Start des }bersetzten Programms
+
+Deò Compileò }bersetzô deî PASCAL-Quelltexô iî eiî  abarbeitungs
+f{higes Maschinenprogramm und wird mit dem 
+
+Kommando: C ^n_
+
+aufgerufen.
+î  spezifizierô dabeé diå Zeilennummer¬  aâ deò }bersetzô  werdeî 
+soll®  Beé fehlendeí Werô î wirä deò gesamtå Quelltexô }bersetzt® 
+Nacè  deí  Aufruæ  deó Compileró wirä eiî Listinç  miô  folgendeî 
+Angabeî erzeugt:
+
+xxxx nnnn Zeileninhalt
+
+wobeé  xxxø  diå Anfangsadresså deó voî deò Zeilå  nnnî erzeugtån
+Maschinencodes darstellt.
+Mitteló  deò  Compilerdirektivå  (*$P*© kanî dieseó  Listinç  voí 
+Bildschirí auæ deî Druckeò umgelenkô werden.
+Wirä  w{hrenä  deò ]bersetzunç eiî syntaktischeò Fehleò  erkannt¬ 
+tritô diå Fehlerausschrifô "*ERRORª" unä einå Fehlernummeò (siehå 
+Anhanç  A1©  auf®  Daó deî Fehleò verursachendå Zeicheî  wirä  ií 
+Listinç   durcè  eineî  nachgestellteî  Aufw{rtspfeiì   kenntlicè 
+gemacht®  Nuî bestehô diå M|glichkeit¬  entwedeò mitteló ^E_  deî 
+Editoò f}ò dieså Zeilå aufzurufen¬ mitteló ^P_ deî Editoò auæ diå 
+vorhergehendå   Zeilå   zõ   setzeî  odeò  iî   deò   ]bersetzunç 
+fortzufahreî (jedå anderå Taste)¬  wobeé aí Endå deò  ]bersetzunç 
+danî diå Anzahì deò Fehleò ausgegebeî unä deò Objektcodå gel|schô 
+wird.
+Die Fehlerausschrift
+
+"No more text"
+
+weisô  auæ  eiî nichô korrekteó Endå deó  PASCAL-Quelltexteó  hiî 
+(z.B. fehlendes END.).
+
+"No table space"
+
+gibô an¬  daş deò Tabellenbereicè deó Compileró }bergelaufeî ist® 
+Eineî  gr|~ereî Tabellenbereicè kanî }beò daó Kommandï Á  (Alter© 
+eingestellô werden.
+Beé  eineò  erfolgreicheî  (fehlerlosen©  ]bersetzunç  folgô  diå 
+Abfragå "RUN?"¬ woraufhiî daó Programí miô deò Tastå ^y_ odeò ^Y_ 
+gestarteô  werdeî kann®  Treteî Laufzeitfehlermeldungeî  auf¬  sï 
+kann deren Bedeutung im Anhang A2 ermittelt werden.
+Diå Ausgabå deó Listingó sowiå diå Abarbeitunç deó Programmó kanî 
+durcè   Dr}ckeî  eineò  beliebigeî  Tastå  ausgesetzô  unä  durcè 
+nachfolgendeó Bet{tigeî deò ^ESC_-Tastå abgebrocheî werden®  Jedå 
+andere Taste setzt die Abarbeitung bzw. Ausgabe fort.
+.paŠMit dem 
+
+Kommando: R
+
+kanî  jederzeiô  deò Objektcodå deó miô  Kommandï  Ã  }bersetzteî 
+Programmó abgearbeiteô werden.
+
+Kommando: T ^n_
+
+Deò  Quelltexô  wirä wiederuí  beginnenä miô Zeilå  î  (bzw®  beé 
+Nichteingabå voî n¬ aâ deò ersteî existierendeî Zeile© }bersetzt® 
+Waò diå ]bersetzunç fehlerfrei¬ wirä diå Fragå "OË ?¢ ausgegeben® 
+Antworteô  maî miô ^y_ odeò ^Y_¬  sï wirä deò erzeugtå Objektcodå 
+aî  daó  Endå  deò Runtimeó verschobeî  (dabeé  wirä  jedocè  deò 
+Compileò  zerst|rt©  unä zusammeî miô dieseí iî bin{reò Forí  auæ 
+externeî Datentr{geò abgespeichert® Aló Filenamå wirä deò zuletzô 
+definiertå  Suchstrinç  verwendet®  Jedå anderå  Antworô  bewirkô 
+eineî Abbrucè deó Kommandos.
+Deò erzeugtå Objektcodå enth{lô Befehle¬  diå beé deò  Ausf}hrunç 
+diå Routinå MÃ STARÔ PROGRAÍ aufrufen® Dá dieså Routinå BASIÃ unä 
+allå iî deò Firmwarå existierendeî RSX-eî l|scht¬  muş voò  eineí 
+eventuelleî   RSX-Aufruæ voí }bersetzteî PASCAL-Programí heò }beò 
+diå PASCAL-Prozeduò USEÒ (#BCD1© diå Firmware-Routinå KÌ LOÇ  EXÔ 
+aufgerufeî  werden¬   diå  wiederruí  diå  entsprechendeî  RSX-eî 
+initialisiert.
+Nach dem Kommando T mu~ der Compiler erneut geladen werden.
+
+Mittels 
+
+Kommando: A
+
+k|nneî  diå  Grundeinstellungeî f}ò ]bersetzunç unä  Starô  eineó 
+Programmó  ge{nderô  werden® Wiòd auæ diå Abfragå  "Symboì  Tablå 
+Size?¢ nuò ^RETURN_ eingegeben¬ bleibô diå Standardgr|~å f}ò  diå 
+Symboltabellå voî 185¸ Bytå bestehen»  jedå anderå dezimalå  Zahì 
+kanî  siå  ver{ndern¬  waó abeò beé deî meisteî Programmeî  nichô 
+notwendiç ist®  Eó folgô diå Fragå "Translatå Stack?"®  ]beò  diå   
+Eingabå  eineò Dezimalzahì  unä ^RETURN_ kanî maî nuî  festlegen¬ 
+auæ welcheò Adresså deò Stacë liegeî soll¬  deò voî jedeí mitteló 
+deó  T-Kommandoó  }bersetzteî  PASCAL-Maschinenprogramí  ben|tigô 
+wird®  Standardm{~iç  isô deò zõ Beginî deó Ladenó voî KÃ  PASCAÌ 
+eingegebenå Werô f}ò MEMORÙ ENÄ aló Stack-Adresså festgelegt® Wiå 
+ií deò Einleitunç bereitó erw{hnt¬ isô diå  [nderunç deò Adresseî 
+aucè  hieò  }beò daó A-Kommandï  unbedingô  notwendig¬  wenî  maî 
+Speicherplatú  f}ò  Routineî  ií obereî  RAM-Bereicè  reserviereî 
+will¬  uí  siå  auó deí mitteló Kommandï Ô  }bersetzteî  Programí 
+anzusprechen® Durcè diå alleinigå Eingabå voî ^RETURN_ bleibô diå 
+Stack-Adresså unver{ndert.
+
+  
+.paŠ.heKC PASCAL                       #                  Systemservice
+3. S y s t e m s e r v i c e
+
+Diå  nachfolgenden¬  umfangreicheî  Kommandoó sicherî deí  Nutzeò 
+eineî  einfachen¬  schnelì erlernbareî Umganç miô deí KÃ  PASCAL-
+System.
+Zuò Unterst}tzunç deò Kommando- unä Programmzeileneingabå  dieneî 
+ebenfalló  diå  ^COPY_- unä diå ^SHIFT_- iî Zusammenhanç miô  deî 
+Cursortasten¬  miô  deneî eiî einfacheó Kopiereî voî Zeicheî  auæ 
+deí  Bildschirí m|glicè ist®  Dazõ wirä deò Cursoò aló  Lese- unä 
+Schreibcursoò  programmiert®  W{hrenä deò Schreibcursoò  auæ  deò 
+gegenw{rtigeî Positioî verbleibt¬ kanî maî }beò diå gleichzeitigå 
+Bet{tigunç  deò ^SHIFTß unä eineò deò Cursortasteî deî Lesecursoò 
+freé }beò deî Bildschirí bewegeî unä aî diå zõ kopierendå  Stellå 
+bringen®  Anschlie~endeó  Bet{tigeî deò ^COPY_-Tastå kopierô  diå 
+Zeicheî voí Lese- zuí Schreibcursor® Ebenfalló k|nneî aucè direkô 
+Zeicheî  }beò diå Tastatuò eingegebeî werden®  Miô ^RETURNß  wirä 
+deò Kopiermoduó wiedeò verlassen.
+
+
+Kommando: D n,m
+
+Allå    Zeileî   voî   Zeilennummeò   î   bió   Zeilennummeò    í 
+(einschlie~lich©  werdeî auó deí Quelltextspeicheò gel|scht®  Isô 
+m<î odeò werdeî wenigeò aló ² Argumentå eingegeben¬  sï wirä  daó 
+Kommandï  zuò  Vermeidunç  voî  Fehlerî  nichô  ausgef}hrt®  Einå 
+einzelnå  Zeilå  kanî  durcè m=n odeò einfacè durcè  Eingabå  deò 
+Zeilennummer und ^RETURN_ gel|scht werden.
+
+
+Kommando: F n,m,f,s
+
+Deò  Zeilenbereicè voî î bió í wirä nacè deí Strinç æ durchsucht® 
+Wirä  æ  gefunden¬  kanî diå Zeilå  ií  eingestellteî  Edit-Moduó 
+bearbeiteô  werden®  ]beò  daó Unterkommandï ó  (siehå  Abschnitô 
+2.1.©  kanî deò Strinç æ durcè deî Strinç ó ausgetauschô unä  diå 
+Suchå fortgesetzô werden® ]beò daó Unterkommandï æ wirä diå Suchå 
+ohnå [nderunç fortgesetzt® 
+Daó F-Kommandï kanî aucè alleiî }beò "F¢ aufgerufeî werden¬  wenî 
+die Zeilennummern und Strings schon vorher definiert wurden.
+
+
+Kommando: G,,s
+
+Deò externå Datentr{geò wirä nacè eineò PASCAL-Quelldateé miô deí 
+Dateinameî  ó  durchsucht®  Isô deò richtigå Dateinamå  gefunden¬ 
+wirä deò Quelltexô iî deî Quelltextspeicheò geladen¬  andernfalló 
+erscheinô  einå Fehlermeldung®  Existierô bereitó einå Quelldateé 
+ií  Speicher¬  sï  wirä diå neuå Dateé aî  diå  schoî  vorhandenå 
+angeh{ngô unä iî Einerschritteî umnumeriert.
+Durch ^ESC_ ist der Ladevorgang jederzeit abbrechbar.
+
+
+Kommando: H
+
+Dieseó  Kommandï  stellô  alle¬  iî deò  Kommandoebenå  wirksameî 
+Kommandoó iî ausgeschriebeneò Forí auæ deí Bildschirí dar.
+Š
+Kommando: I n,m
+
+É  rufô  deî automatischeî Einf}ge-Moduó auf®  Diå  Zeilennummerî 
+werdeî beginnenä miô î unä miô eineí Inkremenô voî í  automatiscè 
+erzeugô  unä angezeigt®  Deò gew}nschtå Texô kanî unteò Benutzunç 
+deò Steuertasteî   hinteò deò angezeigteî Zeilennummeò eingegebeî 
+unä miô ^RETURN_ abgeschlosseî werden® Diå n{chstå Zeilå miô  deò 
+Zeilennummer n+m wird bereitgestellt.
+Durcè ^ESC_ kanî maî deî Einf}ge-Moduó wiedeò verlassen® Erreichô 
+maî  ií  automatischeî Einf}ge-Moduó  einå  bereitó  existierendå 
+Zeile¬  sï wirä diå Zeilennummeò deò schoî bestehendeî Zeilå uí ± 
+erh|ht und die neue Zeile eingef}gt.
+Wenî  diå automatischå Inkrementierunç eine  Zeilennummeò  gr|~eò 
+aló  3276·  erzeugeî w}rde¬  wirä deò  Einf}ge-Moduó  automatiscè 
+verlassen.
+Erreichô   maî   beií   Eingebeî   voî  Texô   daó   Endå   eineò 
+Bildschirmzeilå ohnå daş deò Textpuffeò volì isô (8° Zeichen)¬ sï 
+wirä einå weiterå Bildschirmzeilå zuò Verf}gunç gestellt®    
+
+
+Kommando: L ^n_,^m_
+
+Listeô  deî  Quelltexô ií Zeilenbereicè voî î ¨ standardm{~iç  1© 
+bió  í (standardm{~iç 32767© auf¬  wobeé immeò 2´ Zeileî auæ  deí 
+Bildschirí dargestellô werdeî unä durcè Dr}ckeî eineò  beliebigeî 
+Tastå  dieseò Vorganç fortgesetzô werdeî kann®  ^ESC_ beendeô diå 
+Auflistung®  Uí  deî  gesamteî Quelltexô  aufzulisteî  kanî  aucè 
+einfacher nur "L" eingegeben werden.
+
+
+Kommando: M n,m,d
+
+Verschiebô  deî  Quelltexô  voî Zeilå î bió Zeilå í nacè  unä  aâ 
+Zeilå  d®  Einå  automatischå  Neunumerierunç  deò  Zeilennummerî 
+verhinderô eiî eventuelleó ]berschreibeî schoî beé ä  vorhandeneò 
+Zeilen®  Eiî  Quelltextbereicè kanî nichô auæ sicè selbsô kopierô 
+werden.
+Daó  Kommandï Í stellô einå Ausnahmå bez}glicè deó Formateó eineò 
+Kommandozeilå  dar®  Aló  dritteò Parameteò  muş  anstellå  eineó 
+Strings eine Zahl eingegeben werden.
+ 
+
+Kommando: N n,m
+
+Dieseó  Kommandï  bewirkô einå  Neunumerierunç  eineó  Quelltext
+bereiches¬  beginnenä aâ Zeilennummeò î miô Schrittweitå m® Beidå 
+Parameteò  sinä  immeò  anzugeben®  Wenî diå  Neunumerieunç  einå 
+Zeilennummeò   gr|~eò  3276·  erzeugeî  m}~te¬   wirä  diå   altå 
+Numerierunç beibehalten.
+
+
+Kommando: P n,m,s
+
+Deò  Zeilenbereicè  voî î bió í wirä unteò deí Dateinameî  ó  auæ 
+eineî externeî Datentr{geò abgespeichert® Diå Parameteò n,í unä ó 
+k|nneî bereitó voò deí P-Kommandï definierô wordeî sein®  Š
+Voò deò Anwendunç dieseó Kommandoó isô deò Kassettenrecordeò  auæ 
+Aufnahmå zõ stellen.
+
+
+Kommando: Q,,d
+
+Dieseó  Kommandï  bewirkô  einå  Ab{nderunç  deó   Trennzeichens¬ 
+welcheó  iî  deò Kommandozeilå zwischeî deî einzelneî  Parameterî 
+steht®  Aló neueó Trennzeicheî wirä daó erstå Zeicheî deó Stringó 
+ä  genommen®  Standardm{~iç  dient¬  wiå iî  dieseò  Beschreibunç 
+benutzt¬  daó  Kommá  aló Trennzeichen®  Eiî Leerzeicheî isô  aló 
+Trennzeicheî unzul{ssig.
+
+
+Kommando: S n
+
+Mitteló  deó  Kommandoó Ó isô eó  m|glich¬  diå  Aufzeichnungsge
+schwindigkeit¬  miô  deò  Dateî odeò Programmtextå  auæ  Kassettå 
+abgespeicherô werden¬ zõ variieren.
+Gibô   maî  einå  Zahì  ungleicè  °  an¬   sï  erh|hô  sicè   diå 
+Aufzeichnugsgeschwindigkeiô  voî  100° Bauä auæ  200°  Baud®  Daó 
+Kommandï  Ó  ohnå  Parameteò bewirkô diå  R}ckkehò  zuò  normaleî 
+Aufzeichnunggeschwindigkeit.
+
+
+Kommando: U
+
+Daó  Kommandï Õ bewirkô diå Ausgabå deò letzteî Zeilennummeò  deó 
+Quelltexteó  unä  erm|glichô dadurcè daó schnellå  Auffindeî  deó 
+Textendes.
+
+
+Kommando: V
+
+Eó  werdeî  deò  Quelltextspeicherinhalô  unä  deò  auæ  Kassettå 
+abgelegtå  Quelltexô miteinandeò auæ ]bereinstimmunç  verglichen® 
+Sinä beidå Dateieî gleich¬  wirä "VERIFIED"¬ andernfalló "FAILED¢ 
+ausgegeben.
+
+
+Kommando: W
+
+[nderô  wechselweiså  diå  Zeichenzahì prï Zeile voî  4°  Zeicheî 
+(Mode 1) auf 80 Zeichen (Mode 2) und umgekehrt.
+
+
+Kommando: X
+
+Gibô  diå  Anfangs- unä  Endadresså  deó  Quelltextspeicheró   iî 
+hexadezimaler Form an, wodurch die Textgr|~e berechenbar ist.
+
+
+Kommando: Y
+
+Gibô  daó  momentanå Trennzeichen¬  diå Parameteò Zahì î  unä  m¬ 
+sowie String f und s auf dem Bildschirm aus.Š
+Kommando: Z ^n_,^m_ 
+
+Funktionierô  analoç deí L-Kommando¬  nuò daş daó Listinç auæ deí 
+Druckeò  ausgegebeî  wird®  Isô keiî Druckeò  angeschlosseî  odeò 
+nichô   betriebsbereit¬   erscheinô  diå   Fehlerausschrifô   "NÏ 
+PRINTER!"®  Fehlendå  Parameteò  î unä í bewirkeî deî  Drucë  deó 
+gesamteî Quelltextes® Durcè Drucë eineò beliebigeî Tastå wirä diå 
+Ausgabå  unterbrochen»  anschlie~endeó ^ESC_ brichô daó  Kommandï 
+ab, jede andere Taste setzt die Ausgabe fort.
+
+
+Kommando:  
+
+Deò senkrechtå Stricè erm|glichô deî Aufruæ voî externeî Befehleî 
+ií Hintergrund-ROM® Dabeé isô zõ beachten¬ daş beé deò Verwendunç 
+voî  Zeichenketteî  nacè  deí  Befehlsworô  statô  deò  iî  BASIÃ 
+}blicheî   Anf}hrungszeicheî  nuò  Apostrophå  eingegebeî  werdeî 
+d}rfen®   Zwischeî  deí  Befehlsworô  unä  deî  Parameterî  sowiå 
+zwischeî deî Parameterî sinä Kommaó aló Trennzeicheî zõ setzen.
+z.B.
+
+ á                           Schalteô allå Ein- unä Ausgabeî  auæ 
+                             daó Diskettenlaufwerë á um.
+ ren,'neuname','altname'     Umbenennung der   Diskettendatei
+                             "altname" in "neuname".
+ dir                         Listeô  daó  Inhaltsverzeichnió  deò 
+                             Diskette auf.
+
+
+Einå  fehlerhaftå  Kommandozeilå  wirä miô  deò  Fehlerausschrifô 
+"PARDON?" quittiert.
+      
+
+

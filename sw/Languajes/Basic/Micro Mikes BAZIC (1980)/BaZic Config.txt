@@ -1,0 +1,207 @@
+How to Configure baZic for CP/M for Your System
+
+Make a copy of the baZic distribution disk and file the master disk in a 
+safe place. The Create Working Diskettes option on the Micro Decision should be 
+used to do this.  
+
+Turnkeying baZic
+
+In the following example, we will turnkey and set upper memory limits for 10-digit 
+software floating point baZic. We will load 10-digit software floating point baZic 
+into memory, toggle on the turnkey byte (271), enter a one-line turnkey program 
+to be saved as a part of baZic, exit baZic to CP/M and save the file "BAZIC10.COM," 
+54 blocks long, on the disk to preserve these changes.
+
+Either Sysgen the copy of the baZic disk or remove the CP/M boot disk from Drive A 
+and place the copy of the baZic disk in Drive A and then do a warm boot (press CTRL 
+and C keys simultaneously). The copy of the baZic distribution disk must be in 
+Drive A to continue with the configuration.
+
+Following is an example configuration of 10-digit software floating point baZic, 
+56K CP/M (your responses are underlined):
+
+   A>^C
+   A>BAZIC10 <CR>
+   READY
+   FILL 271,0 <CR>
+   READY
+   10 CHAIN "MENU" <CR>
+   BYE <CR>
+   A>SAVE 54 BAZIC10.COM <CR>
+   A>
+
+baZic includes built-in cursor-addressing and clear screen commands/statements. 
+If you want to run only existing NorthStar BASIC programs under baZic you do 
+not need to use these features. So that baZic users with a variety of CRTs 
+can use these cursor addressing and clear screen features, the baZic distribution 
+disk includes a CRT configuration program, "CRT.002." In the following example we 
+will configure 10-digit software floating point baZic for a SOROC IQ 120 terminal 
+(your responses are underlined):
+
+   COPYRIGHT 1981 - i - MICRO MIKE'S, INC.
+   A>BAZIC10 <CR>
+   READY
+   LOAD CRT <CR>
+   READY
+   RUN <CR>
+
+The program "CRT.002" will be executed. You will now see the following on the screen:
+
+   THIS PROGRAM IS DESIGNED TO CONFIGURE BAZIC FOR A PARTICULAR CRT. 
+   FOR THE PRINT@ AND THE CLS STATEMENTS TO WORK PROPERLY, BAZIC MUST KNOW 
+   THE CURSOR-ADDRESSING PREFIX AND OFFSET FOR YOUR CRT AS WELL AS THE 
+   CODES TO CLEAR THE SCREEN. THIS PROGRAM IS DESIGNED TO CHANGE BAZIC FOR 
+   THE TERMINALS LISTED AND TO ALLOW CUSTOM CHANGES IF YOU KNOW THE CODES 
+   FOR A CRT THAT IS NOT LISTED HERE. SOME CRTS MAY REQUIRE REWRITING THE 
+   CURSOR ADDRESSING AND CLEAR SCREEN ROUTINES. THIS PROGRAM CAN BE CHANGED 
+   SO THAT IT 'WRITES' THE PROPER ROUTINE BY ADDING AN ENTRY TO THE TABLE 
+   OF DATA STATEMENTS AT THE END OF THIS PROGRAM. THE FIRST FIELD IS THE 
+   NUMBER OF PAIRS THAT HAVE TO BE WRITTEN. EACH PAIR CONSISTS OF THE VALUE 
+   TO BE WRITTEN AND THE NUMBER OF BYTES FROM THE BEGINNING OF BAZIC OF WHERE 
+   THE BYTE IS TO BE WRITTEN.
+
+   THE BAZIC DISK MUST BE IN DRIVE ONE FOR THIS PROGRAM TO OPERATE.
+
+   PRESS RETURN TO CONTINUE
+
+Press Return and the program will display a menu of 6 CRT options and an "other" option.
+
+   1=ZENITH Z-19 OR HEATH WH-19
+   2=ADM-3A
+   3=INTERTEC INTERTUBE
+   4=HAZELTINE
+   5=SOROC
+   6=NORTHSTAR ADVANTAGE
+   7=DIGITAL VT-100
+   8=OTHER
+
+If your CRT is not one of those listed consult your CRT manual for the values 
+of your CRT and/or your programmer. We will, for the purposes of this example, 
+select 2 for ADM-3A.
+
+Next you will see:
+
+   1= 8 DIGIT SOFTWARE FLOATING POINT BAZIC
+   2= 10 DIGIT SOFTWARE FLOATING POINT BAZIC
+   3= 12 DIGIT SOFTWARE FLOATING POINT BAZIC
+   4= 14 DIGIT SOFTWARE FLOATING POINT BAZIC
+   5= 8 DIGIT HARDWARE FLOATING POINT BAZIC
+   6= 10 DIGIT HARDWARE FLOATING POINT BAZIC
+   7= 12 DIGIT HARDWARE FLOATING POINT BAZIC
+   8= 14 DIGIT HARDWARE FLOATING POINT BAZIC
+
+ENTER NUMBER OF BAZIC TO BE CHANGED (0 TO END) 2
+
+We will select 2 for 10-digit software floating point baZic. (Hardware floating 
+point baZic is for use with the NorthStar Floating Point Board.)
+
+   COPYRIGHT 1981 - ii - MICRO MIKE'S, INC.
+
+Now you will see:
+
+   THIS LINE SHOULD BE AT THE TOP OF THE CRT AND THE REST OF THE SCREEN 
+   SHOULD BE CLEAR. 1=YES, 0=NO 1
+
+Enter 1 if the above sentence is at the top of the screen and the rest of 
+the screen is clear. 
+
+At this point a series of loop-de-loops will appear on the screen. Below 
+the loop-de-loops the following will be displayed on the screen:
+
+   THIS COMPLETES THE TEST. IF EVERYTHING IS OK THERE SHOULD
+   BE A DISTINCT PATTERN FROM THE PREVIOUS !@ STATEMENTS
+   ENTER 1= EVERYTHING IS OK, 0= NOT OK
+
+If everything is okay enter 1 and the next prompt will be:
+
+   READY
+
+Configuration is now complete. To test the clear screen function type (your 
+response is underlined):
+
+   READY
+   CLS <CR>
+
+The screen should clear and 
+
+   READY 
+
+should appear at the top, left-hand corner of the screen.
+
+Adapting baZic for operation under the MP/M I operating system:
+
+The configuration process is the same as for CP/M.
+For baZic to function under the MP/M I operating system, you must disable 
+Control C. You can disable Control C by adding this line of code as the 
+first line number in the first program to be run:
+
+   1 FILL 280,1
+
+You must either add this line of code to the program or FILL this location 
+manually for baZic to operate under the MP/M I operating system. To disable 
+Control C manually (your response is underlined):
+
+   READY
+   FILL 280,1 <CR>
+   READY
+   COPYRIGHT 1981 - iii - MICRO MIKE'S, INC.
+
+baZic File Name Extensions
+
+Under CP/M baZic programs will have a ".002" extension, e.g., "PROGRAM.002." 
+baZic data files generally will have a ".003" extension, unless specified 
+otherwise. Type 1 machine language programs will have a ".001" extension.
+
+Moving NorthStar BASIC Programs and Data Files from a NorthStar DOS Disk 
+Format to a CP/M Disk Format
+
+A utility for moving NorthStar BASIC programs and data file from a 
+NorthStar DOS disk format to a NorthStar CP/M disk format is available 
+from Micro Mike's, Inc. COPYALL allows you to copy from a NorthStar DOS 
+disk format to one of four different NorthStar CP/M floppy disk formats. 
+COPYALL operates with the NorthStar Horizon only; the Advantage is not 
+supported currently.
+
+Machine Language Sort Subroutine and Powerful Editor for baZic
+
+SZ Software Systems has developed a fast machine language sort subroutine 
+which, once installed, becomes a part of baZic. N*SORT is many times faster 
+than the fastest Shell-Metzner sort written in BASIC. N*SORT is available 
+from Micro Mike's, Inc.
+
+N*BUS is a powerful global editor for baZic. It is available from 
+Micro Mike's, Inc.
+
+COPYRIGHT 1981 - iv - MICRO MIKE'S, INC.
+
+Application Software for Use with baZic
+
+Virtually any program written in NorthStar BASIC will run, with few or no 
+modifications, under baZic.
+
+Micro Mike's, Inc. offers a variety of application software to operate 
+under baZic and CP/M. Among many programs available:
+
+Most MMI application program manuals 25.00 
+MM-SO-CSUB CSUB (Common SUBroutines for baZic) 
+MM-SO-T&CTime & Charges Program 
+MM-SO-GPTGraphplot 
+MM-SO-OILOil/Gas Producer's Accounting Program 
+MM-SO-TRUCKLINETruckline Management Program 
+MM-SO-FEEDLOTFeedlot Management Program 
+MM-SO-G/LGeneral Ledger Program 
+MM-SO-A/RAccounts Receivable Program 
+MM-SO-PAYROLLPayroll Program 
+MM-SO-A/PAccounts Payable Program 
+MM-SO-INV3 Inventory Control III 
+MM-SO-EX-PAY Expanded Payroll (30+ employee cat.) 
+MM-SO-JC-PAY Job Costing Payroll 
+MM-SO-BRINVBranching Inventory Program 
+MM-SO-MAILMailMaster Mail List Program 
+MM-SO-ACRSACRS Depreciation Schedule 
+MM-SO-AMORTAmortization Schedule 
+MM-SO-CJC Contractor Job Cost 
+
+Prices and specifications are subject to change without notice.
+COPYRIGHT 1981 - v - MICRO MIKE'S, INC.
+

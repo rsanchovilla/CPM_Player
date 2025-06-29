@@ -1,0 +1,2720 @@
+
+
+
+PagePage
+Preface ................... ii
+
+            PART I - HINTS AND TECHNIQUESPART III@-MAILISTING
+
+FIND ......................1 Description/Capabilities... 23
+DO CASE vs. IF ............1 Files List ................ 24
+File Size .................1 Instructions .............. 25
+File Name Extensions ......2 Modifications ............. 26
+QUIT T.....................2 NAME.CMD .................. 27
+The S@nicolon .............2 NAME.FMT .................. 28
+NO FIND Hang-Up ...........3 NAMEGRAF.FMT .............. 29
+Justifying ................4 NAMECHG.CMD ............... 30
+Report Column Headings ....5 NAMEADD.CMD ............... 32
+STRing Function ...........5 NA@EDEL.CMD ............... 33
+@ 0,0 SAY .................5 NAMEARC.C@D ............... 34
+Terminal Commands .........6 NAMELIST.CMD .............. 36
+Printer Commands ..........7 NAMELAB.CMD ............... 38
+Sorting Mixed Data ........8 NAMECYAY.CMD .............. 41
+Sorting Dates .............8 NAMECYAN.CMD .............. 42
+Debugging .................9 NAMECNAY.CMD .............. 44
+CP/M Editor ...............10 NAMECNAN.CMD .............45
+Listing Programs ..........10 NAME2PRT.CMD .............. 46
+Displaying Logicals .......11 NAME3PRT.CMD .............. 46
+TRIM Function .............12 NAME4PRT.CMD .............. 46
+Linkage ...................12
+Miscellaneous .............13
+
+
+
+PART II - ROUTINES
+
+Two-Column Printouts ...... 14
+Menu Operations ........... 15
+Error Checking ............ 16
+File Name Check ........... 18
+Flashing Display .......... 20
+
+
+
+                              PREFACE
+
+
+    dBASE II Programmer's Notebook is a collection of techniques and
+hints I have used in writing programs in dBASE II. I learned most of
+them the "hard" way by experimenting with different routines to do some
+particular task. This book includes techniques, hints, and routines
+which I have not found in dB II documentation. Information from dB II
+documentation is included in this book o@ly as necessary to clarify the
+tips given.
+
+    From my poi.nt of view, dBASE II is a high level programming
+language. The publications on dBASE II merely scratch the surface on
+what can be done with it. I don't expect any book in the near future to
+complete the whole picture on everything possible with dBASE II. I do
+hope some of the tips in this book will give you some useful ideas,
+save you some valuable time, and possibly ease your effort in gaining
+more dBASE II programming effectiveness.
+
+    I have attempted to include techniques which can be used in a wide
+range of applications. Surely, no two people will run across the
+identical set of problems in a program as complex as dBASE II. You may
+have some techniques of your own which you prefer. I certainly don't
+suggest you have to know all of the ones in this book to be a good
+programmer.
+
+    Some reader familiarity with the dBASE II language is assumed in
+explaining the techniques and routines in this book. If you are not yet
+familiar with dBASE II, I suggest you review the techniques given here
+and know they exist for future reference.
+
+    I wish to thank Art Chuck and Tom Hawkins for sharing their
+knowledge with me and Art for his help in publishing this notebook.
+
+                                                             S.G.M.
+
+
+
+
+  Following are registered trademarks:
+
+  dBASE II - Ashton/Tate
+  CP/M - Digital Research Corporation
+  WordStar - MicroPro International Corporation
+  Magic Wand - Peachtree Software
+
+-                                                                 
+
+Copyright (c) 1983 by Steven G. Merson. Use of, or copying this
+material, including program listings, by anyone other than the original
+purchaser is prohibited.
+
+
+
+                      @ART |    D@@@@ .j-|  @INTS AND |ECHN|@UES
+
+  
+
+                                           FIND
+
+         FI@D is generally much faster than LOCATE. However, when using
+     FIND, there is a potential pitfall regarding leading blanks. This
+     pitfall is alluded to in the manuals, but not specifically stated. 
+     Leading blanks can be found in chara@ter fields which have been right-
+     justified. Although dBASE normally left-justifi@s character fields,
+     leading edge spaces can still appear. This usually happens when a user
+     enters blanks ahead of the data input to a character field or when
+     programmed intentionally (for example, you might want to right-justify
+     a character field to enhance the appearance of a report). These cases
+     require quotes [or brackets] to be used with the FIND command.
+
+         Suppose 'ABC' is stored right-justified in a five-place character
+     field named "Code". After INDEXing on that field, you now try FIND ABC. 
+     "NO FIND" is the result. The reason an exact match could not be found
+     is because ABC is stored in the field "Code" with two leading blanks. 
+     In other words, 'ABC' was not recognized as 'ABC'.
+
+            Either of the following methods could be used to program around the
+       problem in the above example (5-char field named Code):
+
+
+       1.  * If we know input is always 3 char.
+           FIND '  ABC'
+
+       2.  STORE '     ' TO blanks
+           @ x,y GET var
+           * Add needed blanks to user input. 
+           STORE "'"+$(blanks,1,5-LEll(var));
+            +var+"'" TO var
+           FIND &var
+
+
+                                D@ C@@E vs@ IF
+
+          In many instances DO CASE's and IF's can be used to accomplish the
+      same task (e.g. menu-type routi@es). If you need to use several of them
+      in a program, keep in mind @C C@@E/END CASE runs faster than IF/ENDIF.
+
+
+                            .------ @-i.!.@.Size           --- -- . -.  -.-- --.
+
+          PACK removes all deleted re--ords from a data base and reduces the
+      number of records accordin@l@. But it does NOT reduce the size of the
+      file on the disk, so no disk s@ace is saved by PACKing! This is because
+      the end-of-file marker is not @ oved with the pack. To reduce the file
+      size, use the COPY command i@@@ead. Reco@ds marked for deletion will
+      not be copied, of course, and ---.e file size will be reduced.
+
+
+
+                             File Name Extensions                                                                              
+
+     You might find it useful to use other than .CMD extensions f<r some
+command file names. For example if you have several nearly identical
+versions of a command file, and they all do the same task, you could
+name them FNAME.Vl, FNAM@V2, ets. Rem@nber, however, when you execute
+a command file with a non-.CMD extension, you need to specifyts
+extension each time you use i@
+
+   In the example stated, the command DO FNAME.Vl will execute the
+command file named FNAME.Vl. If no extension is specified (i.e. DO
+FNAME@, the default extension .CMD will be assumed, of course, and the
+file FNAM@CMD will be executed if it is on the disk.
+
+    This technique also applies to other types of files. For example
+you could create an index file named ORDERS.V2 by saying INDEX ON
+AFIELD TO ORDERS.V2. To access that index file, or  any other index
+  file with a non@@NDX extension, you need to specify its unique exten-
+  sion (e.g.  USE DATAFILE INDEX ORDERS.V2). Generally, when accessing any
+  file, you must remember to specify the file's extension if it is other
+  than the appropriate default extension: (.DBF/.MEM/.CMD/.FRM/.TXT/.NDX
+  or .FMT@.
+
+
+      Special case: It is possible to access a file with no extension at
+  all. If you do this, make sure to include a period after the file name
+  you select (e.g. FNAME@. Without that period, dBASE will automatically
+  assign its appropriate default extension to your file name.
+
+                                      QUIT TO
+
+    dBASE II uses the CP/M operating system to execute the QUIT TO
+  command.   Your list of commands followint QUIT TO is written to the
+system disk as a $$$.SUB file. Therefore QUIT TO will not work if the
+system disk is write-protected.
+
+                                    The Semicolon
+
+        The semicolon is a special character in dBASE II.        Its most common
+  use is to allow multiple-line commands in command files. It's also used
+  to make multiple-line column titles in reports.
+
+      Because of the semicolon's function, you have to be careful not to
+use it when you don't want to force a new line. It's very easy to
+inadvertently  use semicolons when entering data into data bases,
+especially when typing miscellaneous data into a remarks field. The
+remarks field will take one extra line to list for each semicolon.
+Certainly no disaster, but you might w@'der where those extra line(s)
+came from when you list the data base.
+
+    In general, it's a good @dea to avoid using words or characters
+which have a particular meaning to dBASE II. For example, don't use T
+or F as variable names. There are many others, but these two in
+
+
+                          NO FIND Hang-Up
+
+    If dBASE cannot FIND a record, it stops and displays NO FIND on the
+screen (unless talk is set off, in w|ich case it just dies without
+telling). The program will not continue until it is told to do so. To
+be more user-friendly, an error trap or safeguard should be placed in
+the program to a]low it to continue. In the following example, a loop
+is used to trap the error, notify the user, and accept another input. 
+Assume the data base in use is indexed on a field called "Name":
+
+
+  SET TALK OFF
+  STORE T TO again
+  DO WHILE again
+   ACCEPT TO namein
+   FIND &namei@
+   IF Name # namein
+   * Or: IF #=0
+    ? 'Can not locate '+namein
+   ELSE
+    STORE F TO again
+   ENDIF
+  ENDDO
+
+
+    One of the conveniences of the FIND command is it only needs the
+first few characters of the key, thus relieving the user from spelling
+out long names correctly. However, this coenience requires some
+special care in dBASE programming because of the different variable
+lengths. Note the input variable (namein) is shorter than the field
+variable (Name) in all cases except where the user enters full name and
+trailing blanks, if any. (In that case their length will be equal). The
+following paragraphs explain.
+
+    The line@F Name # namein is the error trap in the above technique. 
+The order of the variables in this line is very important. IF namein #
+Name would not work. When matching strings of unequal 1ength, a good
+way to avoid unwanted results is to PUT THE VARIABLE WITH THE LONGER
+STRING ON THE LEFT SIDE OF THE COMPARISON OPERATOR Following are dBASE
+results of selected comparisons. The first pair demonstrates the above
+rule. The second pair shows that padding the input with blanks will not
+work unless the input variable is TRIMmed (see third pair).
+
+  1.  ? 'ABC'='A'  [True]            ? 'A'='ABC'  [False]
+
+  2.  ? 'A  '='ABC'  [False]          ? 'ABC'='A     [False]
+
+  3.  ? 'ABC'=TRIM('A  ')  [True]     ? TRIM('A  ')='ABC'  [False]
+
+
+
+
+                                    Justifying                                                                                        
+
+    Normally, dBASE left-justifies strings in columns when producing
+reports. If you need to right-justify a string in a report, here's a
+way to do it  (::=field width):
+
+     COL     WIDT!!,CONTENTS
+     001     -1,$($(Fldname,@('  ',Fldname),n+1-@('  ',Fldname));
+              +TRIM(Fld:ame),2,n 1)
+     ENTER HEADING: Data
+
+    Example: Suppose you are REPORTi@g from a data base with dates
+listed in mixed length, such as 5/6/83, 11/12/83 and 10/83. Let's
+assume the field name is Date and the field width is nine (see follow-
+ing "catch"). The entry in the REPORT FORM mode is:
+
+  COL    WIDTH,CONTENTS
+  001   8,$($(Date,@(  ',Date),10 @(  ',Date))+TRIM(Date),2,8)
+  ENTER HEADING: DATE
+
+    Explanation: First, the date will be found left-justified in its
+data base field, assuming no leading blanks were inserted during data
+entry. The expression above moves the trailing blanks to the front and
+concatenates (adds) the date to the blanks.
+
+    The column width entered here is 8 since that will be the longest
+entry. The expression @(' ',Date) finds the position of the first
+blank @haracter in the Date field. 10-@(' ',Date) gives us the total
+,number of tr@ai@ing blanks in the field  The expression $(Date,@('
+ ,Date),10-@(   ',Date) grabs those trailing blanks from the field.
+TRIM(Date) grabs the non-bIank ch@racters= These two expressions are
+concatenated by the outer $(@ ) expression. Note since the field width
+is nine, the string is still nine characters long, including an extra
+leading blank. Since all blanks are now leading, the string is right-
+justified  The last two numbers (.2,8) chop off the extra leading blank
+by grabbing the portion of the new string starting from the second
+character.
+
+    One catch: The data in the field must contain at least one trailing
+blank for this form to work. That's usually no problem. Just be sure to
+make the @ield width in the data se one character wider than the
+longest expected entry. The report column width does not have to allow
+for the extra blank.
+
+    There are other methods to right-justify a string. One is to right-
+justify the data when it is entered into the data base. That can be
+done with the above formula by STOREing the result in an interim varia-
+ble and REPLACEing the field variable WITH the interim variable. An
+extra blank character is not needed. An 8-character entry and an 8-
+character field are assumed:
+
+
+
+Justifying (Continued):
+
+
+  * Entry stored in variable n@@ed idate
+  STORE $(idate,@(' 'idate),9-@(' ',idate)) TO blanks
+  STORE $(blanks+TRIM(idate)) TO idate
+  REPLACE Date WITH idate
+
+
+
+                       Report Column Headings
+
+    Have you ever tried to underline column titles using the REPORT
+FORM generator, and experienced the annoyance of having the underline
+characters not line up On the report the way you planned? Although not
+mentioned in the manual, the use of the full column width for your
+title and underline characters can cause undesired results.
+
+    Suppose while setting up the column heading, you type Title;=====. 
+Your intention here is to underline Title with =====. Since this title
+and its underline are five characters, you will need at least a six-
+character wide column to display it properly. If both title and column
+width are the same number of characters! the underline characters will
+be displayed 'two lines below the title @nstead of on the line directly
+beneath. Don t know the reason for that, but it can be avoided by
+either expanding the.width of the column or shortening the column title
+and/or underline characters.
+
+
+                          S@Ring Function
+
+    The STR function is used to convert a numeric expression to a
+string expression For reference here, its form is STR(<numeric
+expression>, <length>,[<decimals>]). If the specified 1ength of the
+numeric expression is greater than the number of digits in the numeric
+expression, leading blanks are added to the numeric expression. If the
+specified length is less than the number of digits in the numeric
+expression, then *'s are added for each "unspecified" digit. This can
+serve as a reminder that some digits were dropped in the conversion
+process.
+
+
+                           @ 0,0 SA@=.
+
+    Recognize this as a No-No? The manual says dBASE II reserves the
+top line (row 0) for messages to the user, and the user should avoid
+using it. To be prudent, avoid printing anything on the top line as the
+manual says. But the manual does not cover usinthe top line for non-
+printing commands (those are covered below). Keep in mind non-printing
+commands may alter the screen disay at the @ SAY location they are
+given. Since there will probably be nothing displayed on row 0, 2 0,0
+SAY... becomes a convenient location to write non-printing commands
+without destroying any part of your existing screen display.
+
+
+
+                                 Terminal Commands                                                                                 
+     Almost any command your computeror @eripheral(s) can recognize can
+be written inside a dBASE II program. The specific syntax for each
+command will vary among different type computers and printers, etc.
+Here are three ways to turn on the block cursor on a Heath/Zenith H/Z-
+19 terminal:
+
+  1.  @ 0,0 SAY CHR(27)+CHR(120)+CHR(52)
+
+  2.  @ 0,0 SAY CHR(27)+'x4'
+
+  3.  @ 0,0 SAY ' [x4'
+
+    (Continu@ed on next page)
+The " [" symbol in example 3 represents the escape code for the termi-
+nal. It is written with an editor into the program by pressing the
+escape key (not by typing the two characters separately!). It's a more
+convenient method than the others, but it has a possible drawback. Some
+editors will not process the symbol properly. In fact, some editors
+will destroy the symbol permanently when just reading it, even though
+it may have been written ok with a different editor. In that case, one
+of the other versions must be used. If you do use version 3, don't
+forget to use the quotes [or brackets] in addition to the escape key.
+Incidentally, the CP/M editor processes the escape key ok. Magic Wand
+and WordStar do not. Here are some more (#1 enters graphics mode, and
+#2 enters reverse video):
+
+  1. @ 0,0 SAY CHR(27)+CHR(70)
+
+  2. @ 0,0 SAY CHR(27)+CHR(112)
+
+Of course, you will have to use the particular codes for your own
+equipment. They should be listed in the operations manual. If you use
+these codes often in a program, you can "macro-ize" them. In the fol-
+lowing example, a "toggle switch" to turn the graphics function on and
+off has been created using the macro symbol (&). Variable names are
+esc, gr, and groff.
+
+  STORE '@ 0,0 SAY CHR(27)' TO esc
+  STORE esc+CHR(70) TO gr
+  STORE esc+CHR(71) TO groff
+
+  * Turn on graphics:
+  &gr
+
+  * Turn off graphics:
+  &groff
+  * Get the idea?
+
+
+
+    S@ecial notes on reverse video: A reverse video co@mand may need to
+bc o:' t|@ @@@c @rogram line with its text.
+
+  !..IG!@: 0 2,@ SAY &rv+'Text'
+         0 3,4 SAY &rv+'Morete::t'
+
+   @RONG: @ 0,0 SAY &rv
+          @ 2,4 SAY 'Text'
+          @ 3,4 SAY 'Moretext'
+
+     T|:e above does not hold true for exiting reverse video. The "Exit
+ Reverse Video" code may be placed on a line by itself with no ill
+ effects.  Also@ an error message will result if you attempt to display
+ a logical varlable in reverse video using the @ SAY command. Here is
+ one way around that (log represents any logical variable):
+
+   IF log
+    @ 2,4 SAY &rv+'Y'
+   ELSE
+    @ 2,4 SAY &rv+'N'
+   ENDIF
+
+   @ 2,4 GET log
+
+
+                          Printer Commands
+
+     Commands may be sent to your printer from dBASE command mode or
+ from within a program. You must know the codes for your particular
+ printer's special features. Suppose "Escape-8" is the command which
+ sets your printer to print at 8 lines per inch. The character function
+ for Escape is CHR(27) and the character function for 8 is CHR(56). (27
+ and 56 are the respective ASCII values for ESC and 8). Here are two
+ ways to send commands to a printer:
+
+   Method 1 (@ SAY):
+
+   .SET FORMAT TO PRINT
+   .* Set printer 81pi:
+   .@ 1,0 SAY Message
+   .* Return to 6 lpi:
+   .@ 1,0 SAY CHR(27)+CHR(54)
+
+   Method 2 (?
+
+   .SET PRINT ON
+   .? CHR(27)+CHR(56)
+   .? Message
+   .? CHR(27)+CHR(54)
+
+     The second method is slightly simpler, but the command itself will
+ be printed on the printer. Either method can be used from the command
+ mode (as shown) or within a program.
+
+
+
+                         Sorting Mixed Data
+
+    Suppose "Smith" and "SMYTH" are entries in a field called Name. If
+you SORT ON Name TO TEMP, SMYTH will appear before Smith, since all the
+upper case letters have lower ASCII values than the lower case letters. 
+There are several ways to sort them alphabetically without regard to
+whether they were entered in upper or lower case (or mixed).
+
+    One way is to INDEX ON !(Name) TO NAME, then SET INDEX TO NAME for
+the operation(s) you desire. If you later use the FIND command with
+this index, don't forget to use upper case only, e.g. FIND SMITH, not
+FIND Smith.
+
+    Note: You can not SORT ON !(Name) TO... This is because a SORT must
+be done only on a field. It can not be done on an expression such as
+!(Name), the way an INDEX can.
+
+    Another method is to take care of the problem at data entry time. 
+Force all entries to upper case when they are entered into the'data
+base. You can then use SORT ON Name TO... without INDEXing. Here s an
+example:
+
+  @ 2,4 SAY 'Name:' GET Name PICT '!!!!!!!!!!!!'
+
+    If you wish to save the entry exactly as entered and do not want to
+index, add a field to the data base containing the expression !(Name). 
+!(Name) can be inserted into that field at data entry time or later. 
+The data base can always be sorted on the added field to obtain the
+proper order.
+
+                           Sorting Dates
+
+    Many applications call for listing records in date order. The
+particular method used will depend on how the date was entered. In
+general, a restrictive date entry procedure (e.g. YYMMDD) makes pro-
+gramming easier, but is less user friendly. Suppose we allow the date
+tO be entered in the form MM/DD/YY using the following data base and
+routine segment:
+
+  STRUCTURE FOR FILE:  DATE.DBF
+  NUMBER OF RECORDS:   00000
+  DATE OF LAST UPDATE: 00/00/00
+  PRIMARY USE DATA BASE
+  FLD       NAME      TYPE WIDTH   DEC
+  001     DATE         C    008
+  002     CODEDATE      C    006
+  ** TOTAL **
+
+  APPEND BLANK                           '99/99/99'
+  @ 3,4 SAY 'Enter Date ' GET date PICTURE
+  READ
+  REPLACE Codedate WITH $(date,7,2)+$(date,1,2)+$(date,4,5)
+
+
+
+    The PICTURE phrase used here inserts tho "/"'s for t|:e user and
+allows only numbers to be entered. It does not error-check the input to
+see if the numbers entered are illegitimate (e.g. 05/32/83). The
+REPLACE Codedate WITH . statement transforms the numbers to the YY@|1DD
+form and removes the "/"'s. The data base can now be SORTed ON the
+Codedate field and LISTed in date order using the Date field.
+
+    Another method for listing in date order is to INDEX the data base. 
+By INDEXing, the Codedate field in the data base and the REPLACE
+Codedate WITH@. statement in the above routine could be eliminated:
+
+  .INDEX ON $(Date,7,2)+$(Date,1,2)+$(Date,5) TO FILENAME
+  .LIST
+
+
+                             Debugging
+    If you are modifying a program which accesses a very large data
+base, simply copy part of that data base (say, 100 records) to a
+temporary .DBF file. By accessing the shortened version of the data
+base instead of the entire data base, much time can be saved during the
+modification/debugging process. Another advantage of using a temporari-
+ly shortened data base is it can be altered freely without disturbin@
+the original data. Do make sure to preserve the original data base! 
+Here is a suggested method with explanation following (drives B: and C: 
+are assumed):
+
+ Ste@s  Comm@D@@/@@tions                       Co@ments
+
+  1.  .COPY DATABASE TO TEMP FOR #<=100 Copy 100 records. 
+
+  2.  .QUIT                             Go to CP/M.
+
+  3.  B>PIP C:=DATABASE.DBF              First copy main data base to
+                                        another disk.
+   4.  B>DIR C:                          Verify data transfered, store
+                                        disk in safe place.
+   5.  B>ERA DATABASE.DBF                 Erase original file.
+
+   6.  B>REN DATABASE.DBF=TEMPDBF         Rename shortened data base to
+                                         its original nameso it can
+                                         be accessed from the main
+                                         program.
+   7.  [Modify/debug program using shortened data base]
+
+   8.  [Retrieve original (large) data base and place in drive C]
+
+   9.  B>PIP B:=C:DATABAS@DBF             Replace shortened data base
+                                          the original data base.
+
+
+
+                            CP/M Editor
+
+    The CP/M editor (ED.COM) is an excellent tool for creating, edit-
+ing, and displaying dBASE II programs. Despite its many shortcomings,
+it seems to have been tailor-made for this particular task. It has
+several advantages over the popular word processors for programming in
+dBASE II:
+
+  - It loads the program into memory fast.
+
+  - The program lines are automatically and consecutively numbered on
+    the screen (the numbers are not part of the program itself). This
+    is very conv@nient for reference in a long program.
+
+  - Any line in a very long program can be viewed almost instantly
+    without having to search, scroll, or travel one screen at a time
+    through the file to locate a particular line or area in the program.
+
+  - Escape and control characters can be inserted in the program by
+    pressing the escape or control key as appropriate. Note: Either a
+    special list utility or a method such as the one described below
+    must be used to display these characters with a printer.
+  @ In summary, try it, you'll like it once you get used to it! (P.S. I
+    advise you to find an easier learning tool than the standard CP/M
+    manual furnished by Digital Research. Almost any tutorial is bound
+    to be easier).
+
+                          Listing Programs
+
+     If you don't have a list device which will process control or
+ escape characters, here is an alternate procedure to number and print
+ programs containing escape and/or control chacters. The original
+ program will be preserved without numbers.
+
+     The general procedure, using CP/M, PIP, and ED is:
+
+   1. Copy the original program to a temporary file and add line numbers.
+
+   2. Replace the special characters (if any) in the temp file with
+      standard characters.
+
+   3= Print, then erase, temporary file.
+
+     Step by step procedure:
+
+   ">" = System command prompt
+   "*" = Editor command prompt
+   (Press carriage return @fter each command):
+
+
+
+ >PIP TEMP=FNAME.CMD[N]   Copy program named FNAME.CMD to file named
+                        TEMP.  Parameter [N] numbers the lines.
+
+ >ED TEMP                Load editor and file.
+
+   *#a                   Append file to memory.
+
+   *#s.[.Z.[             Search for all instances of -[ (press escape
+                        key). Then press Control-Z to separate@ search
+                        and replace strings. Replace with :@[ (press
+                        "@-" and "[" separately here).
+
+   *b                    Go back to beginning of file. 
+
+   *#s@-G@.Z-@G             Replace Control-G with "@.G" (similar to above)
+
+   *-b                   The next four steps remove the last numbered
+                         line (which is an unwanted blank line added
+                         by PIP)..= First,go to bottom of file
+
+   *-                    Back up one line.
+
+   *(CR only)            Press carriage return to put character marker
+                         at beginning of blank line.
+
+    *k                    Kill blank line.
+
+    *e                    Save changes to TEMP.
+
+  Note: Now print TEMP file using a listing or printing program. Use
+         narrow print if command lines are long.
+
+   >ERA TEMP               Erase TEMP file when done printing. TEMP will
+                          probably contain non-functional characters,
+                          causing undesired results if run in dBASE. 
+                          Run original file (FNAM@ CMD), which has been
+                          left in its original form.
+
+
+                         Displaying Logicals
+
+    Here is a special case (bug?) to consider when formatting a screen
+for data input: The display of a logical variable takes three character
+positions on the screen. It consists of one of the allowed letters
+(T,F,Y,N,t,f,y, or n) followed by two blank spaces. The two blank
+spaces write over, or erase, any data previously on the screen in that
+position. Therefore, be sure to SAY the logical field/variable at least
+three character positions to the left of any border design, statement,
+or display on the screen.
+
+
+
+                                   TRIM Function
+
+       One blank will always remain after TRIMming an expression contain-
+ing only blanks. The LENgth of the TRIMmed expression is one (not
+zero). To demonstrate:
+
+  .? @X'+TRIM@' ')+'Y' (typed)
+  X Y                    (displayed)
+
+
+
+                              Linkage
+
+    Switching between PRIMARY and SECONDARY is much faster than using
+GOTO and/or SKIP to move the record poier around a data base. SET
+LINKAGE ON can offer even more speed. You can take advantage of this
+feature even if you are working with only one data base.
+
+    The next two routines produce exactly the same result: a two-column
+list of names and phone numbers from a single data base (NAMES.DBF). 
+The first routine can be several times faster than the second. The
+actual speed gained depends mostly on disk access time, which varies
+with equipment. For the following examples, there are 200 records in
+the data base. Both routines will output data from records 1-100 in the
+left column and records 101-200 in the right column.
+
+
+
+  * FASTER.CMD                              * SLCWER.CMD
+  CLEAR                                     CLEAR
+  ERASE                                     ERASE
+  SET TALK OFF                              SET TALK OFF
+  USE NAMES                                 USE NAMES
+  GOTO 101                                  GOTO 100
+  SELECT SECONDARY                          DO WHILE .NOT. EOF
+  USE NAMES                                  GOTO -99 '
+  SET LINKAGE ON                             ? Name+' +Phone
+     LIST OFF S.Name,S.Phone,P@Name,P.Phone             GOTO +100
+                                                        ?? Name+' '+Phone
+                                                       ENDDO
+
+     Note: dBASE rewinds the file in USE when it LISTs. It does not rewind
+ the file not in USE. For example, notice the faster routine does its
+ LISTing while in SECONDARY. The purpose of not switching back to
+ PRIMARY just before LISTing is to preserve the position of the record
+ pointer in the PRIMARY file at record number 101.
+
+
+
+                        Miscellaneous Hints
+
+    Establish variables at the beginning of your program. Use of
+remarks to list and describe variables can help maintain orderliness
+and understanding.
+
+    APPEND BLANK will append a blank record only at the @ND of a file,
+even if the record pointer is somewhere in the middle. Use INSERT BLANK
+for inserting a blank record in the middle.
+
+    Make sure to SET FORMAT TO SCREEN at the end of your program if you
+had previously SET FORMAT TO PRINT. If you forget, the characters you
+type will not be echoed back to the screen, but the computer and the
+program will still function normally. One wayo recover is to press
+RETURN, then type (very carefully) SET FORMAT TO SCREEN, and you're
+back in business Another way is to te QUIT, if you want to exit. 
+Once you are back to the operating system, screen display will be
+normal.
+    REPLACE will not work if it is used to replace data in a field of a
+record marked for deletion.
+
+    Long variable names (may be up to ten characters) slow program
+execution considerably. The actual amount of delay depends on the
+design of the program. Single-letter variable names are fastest. It's
+still a good idea to develop programs with meaningful variable names,
+regardless of length. After the program is written, the variable names
+can be converted to single letters using the editor's search and
+replace function. Keep a copy of the program with the long variable
+names. It will be much easier to modify later.
+
+
+
+                              TWO-C@@@@%~ PRINT@@TS                                                                            
+
+      Here is a program which prints two columns of record numbers from a
+  data base named NAME.DBF.   Each column is consecutively numbered from
+top to bottom and the column length is selectable.  It is not written
+for speed, but rather for ease in following its logic.  A faster ver-
+sion with more f]@xibility is included later.  This program can be
+easily modified to print other data from the records.
+
+    SET EJECT OFF
+    USE NAME
+    GOTO BOTTOM
+    STORE # TO lastrcd    ' TO bottrow
+       INPUT @How many rows?
+        STORE 1 TO leftrcd
+        STORE bottrow+1 TO rightrcd
+        SET FORMAT TO PRINT
+        DO WHILE .NOT. EOF
+         STORE 1 TO line
+         DO WHILE line<=bottrow
+          GOTO leftrcd
+          @ line,0 SAY #
+          GOTO rightrcd
+          @ line,40 SAY #
+          STORE leftrcd+1 TO leftrcd
+          STORE rightrcd+1 TO rightrcd
+          STORE line+1 TO line
+         ENDDO line
+         STORE rightrcd TO leftrcd
+         IF lastrcd-leftrcd>=2*bottrow
+          STORE leftrcd+bottrow TO rightrcd
+         ELSE
+          * Even up columns on last page
+          STORE leftrcd+INT((lastrcd-leftrcd+3)/2) TO rightrcd
+         ENDIF lastrcd
+        ENDDO EOF
+
+
+
+                          MENU OPERATIONS
+
+    Usually, the series of @ SAY commands which paint a menu appear
+near the beginning of a program.  If you can avoid putting these
+commands inside any loop which checks for valid entries, the menu will
+not be repainted each time an invalid selection is entered on the
+keyboard.  It makes the menu operat|on appear smoother to the operator. 
+The menu should then be repaint@d only after a valid operation (i.e. 
+return from a command file).
+
+    The DO CASE command is commonly used to branch tO a task selected
+from a menu.  The OTHERWISE command (used with DO CASE) can be used to
+retrigger only the DO CASE loop when an invalid selection is made. 
+This is done by placing the DO CASE commands inside their own "selec-
+tion" loop and separate from the screen painting loop (or routine). 
+The following routine demonstrates a very basic menu operation.  The
+OTHERWISE statement and the line below it eliminate "screen-blink" when
+invalid selections (e.g. 4,5,6, etc.) are made. The routine will work
+without those lines, but it will repaint the menu after each keystroke. 
+Try it both ways.
+
+    SET TALK OFF
+    ERASE
+    STORE 0 TO selection
+    STORE T TO pain@nenu
+    ****************************** Paint loop
+    DO WHILE paintmenu
+     @ 6,8 SAY 'Press #1 to get message #1'
+     @ 8,8 SAY 'Press #2 to get message #2'
+     @ 10,8 SAY 'Press #3 to quit'
+     ********************* Selection loop
+     STORE T T@ tryagain
+     DO WHILE tryagain
+      STORE F TO tryagain
+     @ 12,14 GET selection PICTURE '9'
+      READ
+      DO CASE
+       CASE selection=1
+       ERASE
+       @ 16,8 SAY 'This is message #1 '
+       CASE selection=2
+       ERASE
+       @ 16,8 SAY 'This  message #2.'
+       CASE selection=3
+       QUIT
+      OTHERWISE
+       STORE T TO tryagain
+      ENDCASE
+     ENDDO try
+    ENDDO paint
+
+
+
+
+                          ERROR CHECKI@G
+
+    dBASE READs @ GET statements in the order they are listed in the
+program, not necessarily left to right or top to bottom on the screen. 
+In general, the placement of READ statements determines how the program
+checks data input errors. For example, with a screen full of inputs,
+you might want to wait until the user inputs all the data before error-
+checking selected entries.  In this case, a single READ statement will
+follow a list or @ GET statements. Each error-checking routine which
+follows must have its own means to accept reentered data.
+
+    Another method is to error-check each item as it is entered.  A
+READ will then have to follow each @ GET statement and a loop can be
+set up to reenter data for each item to be error-checked.  There are
+probably at least as many ways to accomplish error-checking as there
+are programmers.
+
+    The routines below demonstrate the two methods mentioned.  Both
+routines accept two entries from the user: only A or B for the first
+entry, and only C or D for the second entry.  Lower case entries are
+accepted.  The first example checks for errors after both entries are
+made.  The second example checks each entry as it is made. Macros are
+used for prompts and error-checking in the second example (see remarks
+following example).
+
+
+  *    METHODl.CMD
+  * Check for errors after all entries are made
+  CLEAR
+  ERASE
+  SET TALK OFF
+  STORE ' ' TO choicel
+  STORE ' ' TO @hoice2
+  @ 1,0 SAY 'Press A or B' GET choicel
+  @ 3,0 SAY 'Press C or D' GET choice2
+  ***** Error-check each entry:
+  STORE T TO errorchk
+  DO WHILE errorchk
+   READ
+   CLEAR GETS
+   IF !(choicel)#'A' .AND. !(choicel)#'B'
+    @ 5,0 SAY '@ or B only, Please' GET choicel
+   ELSE
+    IF !(choice2)#'C' .AND. !(choice2)#'D'
+     @ 5,@ SAY 'C or D only, Please' GET choice2
+    ELSE
+     @ 7,0 SAY 'Entries Are OK'
+     STORE F TO errorchk
+    ENDIF choice2
+   ENDIF choicel
+  ENDDO errorchk
+
+
+
+  *   METHOD2.CMD
+  * Check for errors as each entry is made
+  CLEAR
+  ERASE
+  SET TALK'OFF
+  STORE ' ' TO choicel
+  STORE '   TO choice2
+  STORE 'A or B'' TO promptl
+  STORE 'C'or D To prompt2
+  STORE '@A  TO Xl
+  STORE  B' TO Yl
+  STORE 'C' TO X2
+  STORE 'D' TO Y2
+  STORE T TO moregets
+  STORE 1 TO whichget
+                  <3
+  DO WHILE whichget'+STR(whichget,l) TO choice
+   STORE 'choice
+   STORE 'prompt'+STR(whichget,l) TO prompt
+   STORE 'x'+STR@(whichget,l) TO x
+   STORE 'y +STR(whichget,l) TO y
+   @ 2@.@hichget,0 SAY 'Press '+&prompt GET &choice
+   READ
+   STORE T T@ errorchk
+   DO WHILE errorchk
+    IF !(&choice)#&X .AND. !(&choice)#&Y
+     @ 2*whichget,0
+     @ 2@.@hichget,0 SAY &prompt+' only, Please' GET &choice
+     READ
+    ELSE
+     STORE whichget+1 TO whichget
+     STORE F TO errorchk
+    ENDIF choice
+    CLEAR GETS
+   ENDDO errorchk
+   CLEAR GETS
+  ENDDO whichget
+  @ 2@@hichget,0 SAY 'Entries Are OK'
+
+    Remks: The advantage of using macros is realized when there are
+more data entries with similar type error checks.  The beauty of this
+method is only one data entry loop and one error-checking loop are
+needed, no matter how many GETs, or entries, are added. Without macros,
+loops would have to be added to enter and check each entry.  With
+macros, only single statements need be added to set up prompts and
+error condi@ions.
+
+
+
+42 IF firstchar<CHR(65) .OR. firstchar>CHR(90)
+43 @ line+2,0 SAY 'First character of file name must be a';
+44 +' letter.Please reenter'
+45 * Set up loop again to input another filename
+46 STORE T TO getname
+47 ELSE
+48 * Strip lst char, spaces and period from filename. 
+49 STORE TRIM($(filename,2,7)) TO segment
+50 STORE se@sent+TRIM($(filename,10,3)) TO segment
+51 * Trim again.(Adjusts LEN function used in loop below). 
+52 STORE TRIM(se@nent) TO segment
+53 * Ck remaining characters
+54 ****************************
+55 * If 1-letter filename, skip check.
+56 IF segment=' '
+57 STORE 15 TO charnmbr
+58 ELSE
+59 STORE 1 TO charnmbr
+60 ENDIF segment
+61 DO WHILE charnmbr<=LEN(segment)
+62 * Step through each remaining character
+63 STORE $(segment,charnmbr,l) @0 char
+64 * If not a letter or number. 
+65 IF char<CHR(47) .OR. char>CHR(90) .OR. (char>CHR(57) ;
+66 .AND. char<CHR('65))
+67 @ line+2,0 SAYLetters and numbers only (no embedded';
+68 +' spaces).Please reenter '
+69 * Set up to exit loop.Don't ck any more chars. 
+70 STORE LEN(segment)+1 TO charnmbr
+71 STORE T TO getname
+72 ELSE
+73 * Move along to next char
+74 STORE charnmbr+1 TO charnmbr
+75 ENDIF char
+76 ENDDO charnmbr
+77 ****************************
+78 ENDIF firstchar
+79 *****************************************
+80 CLEAR GETS
+81 ENDDO getname
+82 ************************************************************
+83 * Strip trailing blanks from stem. 
+84 STORE TRIM($(filename,1,8)) TO stem
+85 * Add a leading char to extension
+86 STORE 'X'+$(filename,10,3) TO ext
+87 STORE TRIM(ext) TO ext
+88 * If no extension, retain period
+89 IF LEN(ext)=1'
+90 STORE stem+'.TO filename
+91 ELSE
+92 *Strip lst char (added pre,iously) and add to stem
+93 STORE stem+'='+$(ext,2,LEN(ext)-1) TO filename
+94 ENDIF LEN
+95 RETURN
+                *** Turn to Page 21 for program explanation ***
+
+
+
+    Note: The narrative for the file name check routine (p. 18-19) is
+on the facing page (p.21) to permit easier program following.
+
+
+                         FL@@HING DISP1@Y
+
+    Here is a routine to demonstrate a blinking display:
+
+     1  * BLINK.CMD
+     2  CLEAR
+     3  ERASE
+     4  SET TALK OFF
+     5  @ 0,0 SAY CHR(27)+'x5'
+     6  STORE 1 TO again
+     7  DO WHILE again<=5
+     8   STORE 1 TO flipflop
+     9   DO WHILE flipflop<=2
+    10    IF flipflop=1
+    11     @ 10,25 SAY 'FLASHING MESSAGE!'
+    12     STORE 2 TO delay
+    13    ELSE
+    14     @ 10,25
+    15     STORE 1 TO delay
+    16    ENDIF flipflop
+    17    STORE flipflop+1 TO flipflop
+    18    STORE 1 TO delay
+    19    DO WHILE delay<5
+    20     STORE delay+1 TO delay
+    2   ENDDO delay
+    22   ENDDO flipflbp
+    23   STORE again+1 TO again
+    24  ENDDO again
+    25  @ 0,0 SAY CHR(27)+'y5'
+
+    Remarks: The routine can be modified in many .ays to suit your
+needs and/or cleverness.  Line 5, which is optional, removes the cursor
+during the display. Line 25 returns it.  The number (5) in line 7 sets
+the number of blinks.  The loop at 9-22 flip-flops the display on and
+off and is executed twice.  Lines 12 and 15 set different delay times
+for on and off. Lines 19-21 form the delay loop.  Any meaningless
+computation or task can be put inside the loop (line 20) to kill the
+amount of time desired.
+
+    Other terminal features could be used.  For example, on a Hea@@Ze-
+ nith H/Z-19 terminal, to ring the bell and blink the message between
+ normal and reverse video, change line 14 to:
+
+   @ 10,20 SAY CHR(7)+CHR(27)+'p'+'FLASHING MESSAGE'+CHR(27)+'q'
+
+
+
+ FILE NAME CHECK ROUTINE (Continued from Page 19@
+
+    Lines 17-20 set up screen. Without SET TALK OFF, everything will
+scroll off the screen.  Line 23 allows you to control vertical screen
+position of the characters with only a one line change.  The same
+technique could be used to control horizo''tal positioning. Lines 25,26
+initialize variables. The PICTURE phrase at line 34 inserts a period at
+the ninth character positions and forces entry to upper case, which
+simplifies subsequent string manipulations.  It al@o limits the number
+of characters entered for both the stem and the extension.
+
+    Lines 40-42 check if first character is letter, as required by
+CP/M. If it's ok, lines 49-52 put the remaining characters (without
+blanks and period) into a variable named segment.  The function
+TRIM($(filename,10,3)) in line 50 removes the trailing blanks from the
+extension.  However, if no extension was entered, the TRIM function
+will still retain one blank.  The second TRIM at line 52 will remove
+that blank.
+
+    The next loop (lines 61-76@ checks the remaining characters.  If
+the file name is only one letter, we can bypass it. To do that, line 57
+stores a number higher than the maximum string length (11) to the loop
+control variable (charnmbr).  Otherwise, the loop (lines 61-76) steps
+through each remaining character to insure they are all letters or
+numbers. CP/M and dBASE will accept soae other characters (e.g. -,/,!)
+embedded in file names. Lines 65-66 can be modified to accept them if
+you wi@h.  They may also be modified to be more restrictive, accepting
+only certain combinations or groups of characters. If a non-acceptable
+character is found, a message (67-68) is displayed and line 71 resets
+the input loop.
+
+    If additional file name checks are desired, the extra lines should
+be inserted before the GETs are CLEARed (line 80).  For example, you
+might want to ask the user to confirm overwriting a file if the file
+specified is already on the disk.  Note the GETs are CLEARed inside the
+loop to avoid accumulation of GETs and possible "bombing" of the
+program.
+
+         If all characters checked ok, the getname loop is exited and the
+ TRIMs of the stem and extension are joined (with a period in between)@. 
+ Once again, if no extension was entered, TRIM(ext) will leave an unwan
+ ted blankith a string LENgth of 1.  Lines 86-87 clean off the blank. 
+Line 90 adds a period to the stem if no extension is used.  The added
+period p@ecludes dBASE from using its own default extension.  Line 93
+will add the extension (if any) specified by the user.
+
+
+                                              S-@AlL
+                                      by  Steven G. Meyerson
+         S-MAIL is written in dBASE II ahd requires Ashton/Tate's dBASE II package to run.
+     It has some nice features named below which are not available in more cxpensive
+     programs. One of its unique features is ease of user modificatio@  For example, if you
+     decide to change the structure (fields) of the data base, major modifications to the
+     programs will not be necessary. As another example, it can be fairly easily modified to
+     print more than four labels across the sheet if you should desire. Plenty of room tor
+     expansion has been built into the program. However: 1 hope this aP@lication will meet
+     your needs entirely. If you want customization for this or other applicatious, my
+     services are available at a reasonable cost (c/o CompuTech, P.0. Box 2027, Poquoson, VA
+     23662. (804)868-8055.
+
+         The files for S-@@IL are listed with brief descriptions. The data bases(NAME.DBF
+     and NAMEARC.DBF) should be CREATEd wit@ the structure as shown. Note: They have already
+     been CREATEd (without records) on the disk version of this program. The program is verY
+     simple to operate. Explanations are given on-screen where needed and prompts are givc"
+     for all user options and inputs. Here are the capabilities:
+       1. REVIEW OR CHANGE A RECOR@ User may input all or part of last name and first name
+     of r@c@@d to be reviewed/changed. The spelling of the portion entered must be correct. 
+     @he record is found without regard to whether upper or lower case was entered. Displays
+     entire selected record on single screen, asks if you want to make changes, and gives
+   you chance to confirm your entry before record is changed. Capitalizes first @etter of
+     names. RETURN key is used to step rough fields as in normal dBASE II operatio@
+
+       2. ADD A RECORD. Uses same screen display as above and allows user-confirmation of
+     entry. Program accepts use of upper or lower case. Printout will be in the case
+     entered.
+       3. DELETE RECOR@  Displays entire selected record as above before asking for confir-
+     mation to delete. If user confirms negative, next record (if any) with same selected
+     last name will be displayed. When user confirms deletion, record is marked for
+     deletion. Record will still be listed but will not be printed out on 1abels. Archiviug
+     will remove record completely from file.
+
+       4. LIST RECORDS. Lists current records (including those marked for deletion) or
+     archived records to printer, screen@  or disk file (NAMELIST.TXT). Lets user designate
+     fields to be listed. Displays runnrng total of characters (line width) as fields are
+     selected to help user accommodate paper width and/or printer capability. Does NOT
+     c@ange cracter pitch of printer (codes differ for various printers), however, t@e
+     program can be modified to do so.
+
+       5. PRINT LABELS. Prints one to four labels across in alphabetical or zip code order
+     with selectable horizontal and vertical spacing between labels. Company name line and
+     second address line are optional (total 3-5 lines@  Blank company and 2nd address lines
+     are suppressed. Printout may be started at any point in file. Output can also go to
+     disk or scree@  Specific capabilities/limits are:
+
+         Number of labels across: 1 to 4
+         Horizontal spacing: 1 - 60 Character spaces per label
+           Note: Printer width may further limit parameters above.
+         Vertical spacing: 3 - 66 lines per label
+         Printing order: By last name or zip code
+         Output destination: Printer, screen, or disk
+         Start point: At any specified last n:@e or zip code
+         Number of printed lines each label: 3,4, or 5 (can leave lines 1,2,3 blank)
+       6. AR@!IVE DELETED RECORDS. Records marked for deletion are purged from current data
+     base and placed in archive file wit@ same data structure as main data base. Archived
+     records are indexed @lphabetically by last @ame. Main data base is reindexed.
+
+
+
+                                      FILES LIST
+
+ FILENAME:    Kb:  FUNCTION:      (* = On Disk Only)
+NAME.DBF*         Main data base.
+ NAM@NDX*        Indexed on !(Last+First).
+ NAMEZIP.NDX*     Indexed on Zip.
+NAMEARC.DBF*      Archived (deleted) records.
+ NAMEARC.NDX*     Indexed on 1(Last+First)
+NAME.CMD       2  Master menu.
+NAMECHG.CMD 4 Review/change record. Called by NAME.CMD. 
+NAMEADD.CMD 2 Add record. Called by NAME.CMD.
+NAMEDEL.CMD    2  Delete record. Called by NAME.CMD.
+ NAME.FMT      2  Screen format for chg, add, del.
+ NAMEGRAF.FMT 2 H/Z-19graphicsformat (optional). Replaces NAM@FM@ 
+NAMELIST.CMD 4 Lists records. Called by NAME.CMD.
+ NAMELIST.TXT* (If used) Created by listing records to disk using NAMELIST.CMD. 
+NAMELAB.CMD 5 Gets label parameters/options. Called by NAME.CMD. 
+ NAMECYAY.CMD 4 Gets 3 lines+company+2nd addr. Called by NAMELAB.CMD. 
+ NAMECYAN.CMD 3 Gets 3 lines + company line. Called by NAMELAB.CMD. 
+ NAMECNAY.CMD 3 Gets 3 lines + 2nd addr line. Called by NAMELAB.CMD. 
+ NAMECNAN.CMD 2 Gets 3 lines only. Called by NAMELAB.CMD.
+  NAME2PRT.CMD 1 Prints 2-part labels. Called by NAMEC?A?.CMD. 
+  NAME3PRT.CMD 1 Prints 3-part labels. Called by NAMEC?A?.CMD. 
+  NAME4PRT.CMD 2 Prints 4-part labels. Called by NAMEC?A.@.CMD.
+NAMEARC.CMD 3 Purge/archive records. Called by NAME.CMD. 
+NAME.MEM* 3 Saved variables for dbfilename, drive, & label parameters.
+
+                Screen Format for Change/Add/Delete Operations:
+                              Name, Address, Phone                             
+                                                                               |
+|FIRST NAME                                |LAST NAME
+|                                                                              |
+                                            |!ADDRESS
+!COMPANY                                                                       
+|CITY                                |ST @ZIP          @|PHONE               !@
+|                                    |                                          
+:ADDR (2ND LINE)                           'ALTERNATE PHONE/EXT               ,|
+
+                              Additional Information
+                                                                                 
+ |REMARKS
+ 1                                           .        |RESERVED                 |
+ |RESERVED                 @RESERVED
+ [                                                                              |;
+ :RESERVED                 ;RESERVED                 @RESERVED                   
+
+
+                       STRUCTURE FOR FILES:  NAME.DBF/NAMEOLD.DBF
+
+ FLD       NAME      TYPE WIDTH   DEC     FLD       NAME      TYPE WIDTH   DEC
+ 001     FIRST        C    030            010     ALTPH        C    013
+ 002     LAST         C    015            011     RMKS         C    030
+ 003     COMPANY      C    030            012     DATAl        C    001
+ 004     ADDR         C    025            013     DATA2        C    001
+ 005     ADDR2             025            014     DATA3        C    001
+ 006     CITY         C    020            015     DATA4        C    001
+ 007     ST           C    002            016     DATA5        C    001
+ 008     ZIP          C    005            017     DATA6        C    001
+ 009     PHONE        C    013            ** TOTAL **             00215
+
+
+                                  INSTRUCTIONS AND HINTS
+
+      @f you are typing the programs, you will want to type only the ones you will need
+  to use, or possibly just enough to get you started. NAME.CMD is needed for all
+  func@ions. NAME.MEM is needed for all except archiving. Only one .FMT file (your
+  choice) will be needed for the file maintenance functions. The remaining .CMD files are
+  used as shown in tle list. The line numbers in the programs are for reference only. Do
+  not type them.
+      One-Drive Configuration: It is easy to use this program (or parts of it) with only
+  one drive if the data base is not too large. The files needed for data base mainteuance
+  take about 22 Kbytes of disk space. Abo@t 13-27 Kb are needed to do labels. More disk
+  space can be saved if your dBASE II overlays are in individual files on the disk. The
+  browse, joi@, modify, report, sort, and update overlays are not needed and can be
+  removed from the disk. This will leave 20-30 Kb on a 90 Kb disk (depending which
+  Program files remain on the disk) for your data base and index files.
+      Multi-Drive: The .CMD, .FMT, and .MEM files should be on the logged-on drive. If
+  they are not, and are on drive B (for example), the program must be initiated from the
+  dBASE II command prompt (dot) after typing .SET DEFAULT TO B. Then type .DO NAM@ 
+  The .DBF and .NDX files should reside together, but may be on any drive (designated at
+  beginning of program).
+      Do not write-protect the logged-on drive. There are two reasons for this. The
+  memory file (NAM@MEM) must be written to at certain times to remember drive and label
+  Parameters. (Putting the memory file on the data base disk will not work because it
+  cannot be accessed from the main program that way). The other reason is the arc@ive
+           writes a $$$.SUB fe to the operating disk when it uses the QUIT TO.. command
+    rogram                                typing the CP/M commands listed on the last line
+   @@you could get around this by manually                  have back-up copies of all your
+   of NAMEARC.CMD). In any case, it is good practice to
+   Programs and data basesl
+       Set-Up: The disk version comes with all the files needed to use t@e program imme-
+   diately. This includes an empty data base structure (NAME.DBF) and its index files
+   (NAM@NDX and NAMEZIP.NDX). You may move these to another disk if you desire. Additio-
+   nal data bases and indexes can be created using the procedure below (#1&2). The memory
+1 file (NAM@MEM) has been created with arbitrary values (which can be changed during the
+   Program) and is included on the dis@ NAM@MEM must reside on the program dis@
+       If you have typed the program (or part), you will need to do the following:
+
+     1. Create a data base (NAME.DBF) exactly as shown in the structure. (Creation of
+   NAMEAR@DBF is not necessary since the archive function will do tbis for you the first
+   time you use it).
+
+     2. Create the index files on the same disk using the following commands:
+
+         @SE NAME
+         .INDEX ON 1(LAST+FIRST) TO NAME
+         .INDEX ON ZIP TO NAMEZIP
+
+     2. Create the memory file using the following commands:
+         .RELEASE ALL
+         .STORE 3 TO PARTS
+         .STORE 34 TO HORSP
+                     VERSP
+         .STORE 6'PTO,TO OUT
+         .STORE @N' TO ORDER
+         .STORE @B:' TO DR
+         .STORE 'N' TO CO
+         .STORE 'N' TO AD2
+         .STORE 'NAME' TO DBF
+         .STORE 'NAME' TO NDXl
+         .STORE 'NAMEZIP' TO NDX2
+         .STORE
+         .SAVE TO NAME
+
+
+                            FILE N@@@ @@E@K ROUTINE                                                                       
+
+    In many programs, the user is asked to input the name of a file.
+The reason may be to name a newly created data base, or to retrieve a
+previously c:eated file with a non s&andard file name, or possibly to
+output a listing from a data.base in use to a new file on a disk.  This
+routine checks a file name input from the terminal to make sure it is a
+legal name for CP/M and dBASE I!.  lt outputs the name in upper case.
+Line numbers have been added fur r.&erence only, and must be removed,
+of course, for the routine to work. This listing contains comments
+  (which may be omitted in your listing) and uses varying lengths of                       |'
+ "*** ." strings to help visualize the nested loops.   More comments and
+ explanation are given on Page 21.
+
+      1 * FNAMECHK.CMD *
+      2 *
+      3 * This routine checks file name input by user
+      4 * for compatibility with CP/M.
+      5 * Legal file name is output in upper case.
+      6 *
+      7 * line       (N)  Base number for screen lines
+      8 * filename  (C)   File name input
+      9 * getname   (L)  Loop toggle
+     10 * firstchar (C)  lst character of file name input
+     11 * segment   (C)  Fname less lst char.! blanks, & pd.
+     12 * charnmbr  (N)  Character #nside fIle name string
+     13 * char       (C@  Single character in string segment                    |'
+     14 * stem       (C)  File name stem                                          ,|
+     15 * ext        (C)  File name stem
+     16 *
+     17 CLEAR
+     18 ERASE
+     19 SET COLON OFF
+     20 SET TALK OFF
+     21 **** Loop for input ****************************************
+     22 * Set up loop to get filename as often as necessary.
+     23 STORE 1 TO line
+     24 * First time through.
+     25 STORE '             ' TO filename
+     26 STORE T TO getname
+     27 DO WHILE getname
+     28 * But don't loop again unless user inputs bad file name
+     29 STORE F TO getname
+     30 @ line,5 SAY 'Name of Output File:                (Extension';
+     31 +' Optional)'                                                             
+     32 * Force input to upper case.
+     33 * (Numbers and symbols will both be accepted)
+     34 @ line,26 GET filename P!CT '!!@@!@!!.!!!@                            
+     35 READ
+     36 * @rase previous screen comments/instructions each loop.
+     37 @ line+2,0
+     38 ******* Error ck filename ***************
+     39 * Ck first char letter only
+     40 STORE $(filename,l,l) TO firstchar                                     !|   |
+     41 * Is ASCII value of lst letter <A or >Z?
+
+
+      NOTES: The .CMD, .FMT, and .MEM files used must all reside on the same disk. 
+  NAMEGR.FMT is an H/Z-19 graphics versibn of NAME.FMT. It uses solid lines instead of
+  dotted lines on the screen during the file maintenance (add,change,delete,review)
+  operations. It is not required, but if used, you m@st discard NAME.FMT and rename
+  NAMEG@FMT to NAME.FMT to give the program access to :t.
+
+      Safeguards in the archive function have been included to prevent loss of data
+  should a power glich occur during the operation. For example, the main data base is
+  copied to @ temporary file before the archiving begins. This extra copy adds precau-
+  tion, but :t will take extra disk space to accomplish the operations. It may seem lik@
+  a round-about way of doing a simple task, but it adds one more precaution by makin@
+  sure the new file exists before erasing the old file. @nce again@ though, do make sure
+  you have backup copies of everything before you start file operations! Good Luck!
+
+
+                                       MODIFICATIONS
+    As with most programs, the possible modifications are limitless. Some room for
+ modification has been placed in the program without affecting its perfo'mance. The most
+ obvious example is in the menu program. Two menu choices are labeled "Reserved" and
+ references to the ",ould-be" routines appear as remarks in the appropriate place in the
+ listing (NAME.CMD). So two more routines can be added with only minor changes in the
+ menu listin@  One mod is already furnished.
+
+     A total of 17 fields are in the data base. This should be enough for nearly
+ everyone. The width of the fields should also be sufficient. Six one-character fields
+(named DATAl....DATA6) can be used in any way desired. The width and type
+ (character/numeric/logical) of these fields can be changed, using dBASE II procedures,
+ without @dverse effect  program executio@ Data base field names can be changed too,
+ but you will also need to change them wherever they appear throughout the program
+ (macros have been used to keep these to a minimum@
+
+     Although the variables in the programs are not listed and described separately,
+ their names give clues to their functio@ However, shorter variable names can increase
+ the execution speed some. Therefore, you might want to shorten them all to one or two
+ characters with the search and replace function of a word processor (the programs on
+ the disk are compatible with Magic Wand, WordStar, and CP/M Editor as a minimum@  You
+ may actually notice some increase in speed, but do keep a copy of the longer version
+ for future use if you plan on doing further modification to the program.
+
+     The printing programs for 1,2,3, and 4-part labels are all very similar. If you
+ need to print more than four labels across, the same pattern can be used to write 5 (or
+ more) part label routines. Incident'all'@, a much shorter version of these routines was
+ written, using macros, but the @onger version was found to execute faster. It is also
+ more understandable.
+
+     The program is more efficient printing 4-part labels than 1-part labels. It does 1-
+ part labels fine, but if @t did not have to check to see if the company or second 1! 
+ address line were needed and if it did not have to '@hink" how many lines it should
+ print for each label, it might run a little faster. If you have only one straight 1
+ forward way you will ever print labels, you might want to customize it for that
+ particular task@ For example if you only need to print 1-part labels and will never
+ need a fourth or fifth line, you could replace the 1-part label printing routine with a
+ shorter, customized routine.
+     You may also find some of the routines and/or techniques used in this program are
+ useful for her applications. Some of the techni'@ues may not appear obvious at first
+ glance, but there surely is no intention to @ide the In fact, if you find a bettcr
+ way to do something, I would appreciate your sharing with me. Hope you enjoy using the
+ program.
+
+ 3 *  M.:u
+ 4 E@@SE
+ 5 S@r TALK OFF
+ 6 SET COl.ON OFF
+ 7 C!@AR
+                NAME
+ 8 RESTuRE FROM@TO dr
+ 9 STORE ''        , TO dbf                              , GET dr PICT '1'
+                                      data base l'ocated? ,
+10 STORE 'On which drive is main'GET dbf PICT 1!!!!!!! 
+11 @ 2,2 SAY 'Name of data base?
+12 @ 4,2 SAY
+13 READ     ' , TO dr
+14 STORE dr+
+              dbf)' TO dbf                                   @1111'!!!1'
+15 STORE TRIM('NAME                                        PICT'!!!!!!! 
+16 IF dbf# 'N@se of ALPHABETICAL index? ' GET ndxl
+17 @ 6.2 SAY 'Name of ZIP CODE index? ' GET ndx2 PICT
+18 @ 8,2 SAY
+19  READ                ndxl
+20  STORE TRlM(ndxl) TO
+21  STORE TRIM(ndx2) TO ndx2
+22 ELSE   'NAME' TO ndxl
+23  STORE 'NAMEZIP@ TO ndx2
+24  STORE
+25 ENDIF dbf' TO go
+26 STORE 'Y   'OK? ' GET go PICT '1'
+27 @ 10,2 SAY
+28 READ
+29 IF 1(go)#'Y'
+30  QUIT
+31 ENDIF go
+32 RELEASE go
+33 SAVE TO NAME
+34 ERASE
+35 STORE 0 TO what
+36 DO WHILE what#9           ============="
+37  @  4,24 SAY "============
+38  @  5,27 SAY "NAMES - MASTER MENU"
+39  @  6,24 SAY "======================="
+40  @  8,24 SAY "1. Review/Change"
+41  @  9,24 SAY "2. Add"
+42  @ 10,24 SAY "3. Delete"
+43  @ 11,24 SAY "4. List"
+44  @ 12,24 SAY "5. Labels"
+45  @ 13,24 SAY "6. Purge/Archive"
+46  @ 14,24 SAY "7. Reserved"
+47  @ 15,24 SAY "8. Reserved"
+48  @ 16,24 SAY "9. Quit - Return to System"
+49 @ 18,22 SAY "Selection Number"              68 CASE what=5
+50 STORE T TO redo                             69 DO NAMELAB
+51 * Loop til valid entry                      70 STORE F TO redo
+52 DO WHILE redo                                      CASE what=6
+53 @ 18,39 GET what PICTURE '9'               71 NAMEARC
+                                                 72    DO
+54 READ                                       73 STORE F TO redo
+55 DO CASE                                    74 * CASE what=7
+56 CASE what=1                               75 * CASE what=8
+57 DO NAMECHG                                       CASE what=9
+58 STORE F TO redo                           76                OFF
+                                                 77    SET CONSOLE
+59 CASE what=2                               78 QUIT
+60 DO NAMEADD                                79 OTHERWISE
+61 STORE F TO redo                           80 STORE T TO redo
+62 CASE what=3                                81 ENDCASE
+63 DO NAMEDEL                                82 ENDDO redo
+64 STORE F TO redo                           83 STORE 0 TO what
+65 CASE what=4                               84 ERA@E
+66 DO NAMELlST                               85 ENDDO what
+67 STORE F TO redo
+
+
+   l  * NAME.FMT
+ 2 * Draw screen for .CMD files
+ 3 * NAMECHG, NAMEADD, and NAMEDEL
+ 4 @ 1,30 SAY 'NAME, ADDRESS, PHONE'
+                 @------------------------------------------+;
+  5 @ 2@ 0-_SAY-----"+-___-----------------+"
+ 6 ----
+ 7 @  3, 0 SAY "|FIRST NAME"
+ 8 @  3,44 SAY "|LAST NAME"
+ 9 @  3,79 SAY "|"
+                            --------------------------------+;
+                         --- _ _----- "
+10 @  4, 0 SAY "|--------_---
+11 ---------- ----
+12 @  5, 0 SAY "|COMPANY"
+13 @  5,44 SAY "|ADDRESS"
+14 @ 5,79 SAY "|" @---_ _----------------------------+-----+;
+ 15 @ 6,-_0@------+SAY"|---@-- _  ------------|"
+16 ----
+17 @  7, 0 SAY "|CITY"
+18 @  7,38 SAY "|ST"
+19 @  7,44 SAY "|ZIP"
+20 @  7,58 SAY "|PHONE"
+21 @  7,79 SAY "|"
+22 @ 8, 0 SAY "|--------------------- --- __   ----  +-    +;
+23 -------------+--------------------|"
+24 @  9, 0 SAY "|ADDR (2ND LINE)"
+25 @  9,44 SAY "@ALTERNATE PHONE/EXT"
+26 @  9,79 SAY "|"
+                          ----------------------------------+;
+27 @ 10, 0-SAY----"+-------___---------------+"
+28 ------- --- --
+29 @ 12,29 SAY "ADDITIONAL INFORMAT-_--ION"___ _------------- ----;
+30 @ 13, 0 SAY "+---------------
+31 ----------------------------------+"
+32 @ 14, 0 SAY "|REMARKS"
+33 @ 14,79 SAY "|"
+                      --------------------+------------------;
+ 34 @ 15, 0- SAY+----"-|------------------------|"
+ 35  -----
+36 @ 16, 0 SAY "@RESERVED"
+37 @ 16,26 SAY "|RESERVED"
+38 @ 16,53 SAY "|RESERVED"
+39 @ 16,79 SAY "|"
+                          ----------------+------ -- _ _ _  
+ 40 @ 17@,@ 0--+SAY@--"|@--------------------------|"
+ 41 -
+42 @ 18, 0 SAY "@RESERVED"
+43 @ 18,26 SAY "ESERVED"
+44 @ 18,53 SAY "|RESERVED"
+45 @ 18,79 SAY "|" 
+ 46 @ 19, 0 SAY------"+-----------   ----- --- + -         __  ___ 
+47 - -- -+-- -----------------+"
+
+
+ 2 * H-19 Graphics version of
+ 3 @  0, 0 SAY C!!R(27)+C!!R(70)
+ 4 @ 2@ 0 SAY "faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaas;
+ 5 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac"
+  6 @  3, 0 SAY "@.FIRSTNAME"NAME"
+ 7 @  3,44 SAY "@LAST
+ 8 @ 3,79 SAY " "           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab;
+ 9 @ 4, 0 SAY "vaaaaaaaaaaaa aaaaaaat"
+10 aaaaaaaaaaaaaaaaaaaa.PANYaaaaaaa
+ 11 @   5, 0 SAY "@COMADDRESS""
+12 @  5,44 SAY ".
+13 @  5,79 SAY "."
+                                  aaaaaaaaaaaaaaaaaaaaasaaaaab;
+14 @ 6, 0 SAY "vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaat"
+15 aaaaaaaaaaaaasaa
+16 @  7, 0 SAY "@.CITY"
+17 @  7,38 SAY "@ST"
+18 @  7,44 SAY ".ZIP"
+19 @  7,58 SAY "@PHONE"
+20 @ 7,79 SAY "@"          aaaaaaaaaaaaaaaaaaaaaaaaaauaaaaab;
+ 21 @ 8, 0 SAYaaauaaaa"vaaaaaaaaaaa aaaaaaaat"
+                     aaaaaaaa
+22 aaaaaaaaaa   .ADDR (2ND LINE)"
+23 @  9, 0 SAY "@ALTERNATE PHONE/EXT"
+24 @  9,44 SAY "@
+25 @ 9,79 SAY "."           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaau;
+26 @ 10, 0 SAY "eaaaaaaaaaaaa
+27 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaad"
+28 @ 12,29 SAY "ADDITIONAL INFORMATION"            aaaaaaaaaa;
+29 @ 13, 0 SAY "faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                              aaaaaaaac"
+ 30 aaaaaaaaaaaaaaaaaa.REMARKS"
+31 @ 14, 0 SAY "@"
+32 @ 14,79 SAY "@ aaaaaaaaaaaaaaaaasaaaaaaaaaaaaaaaaaa;
+33 @ 15, 0 SAY "vaaaaaaaa
+                    aaaaaaaaaaaaaaaaaat"
+ 34 aaaaaaaasaaaaaaa.RESERVED"
+ 35 @ 16, 0 SAY ".RESERVED"
+ 36 @ 16,26 SAY "@ ESERVED"
+ 37 @ 16,53 SAY "@"R
+ 38 @ 16,79 SAY "@ aaaaaaaaaaaaaaaaaaaaaaabaaaaaaaaaaaaaaaaaa;
+ 39 @ 17, 0 SAY "vaa aaaaaaaaaaaat"
+ 40 aaaaaaaabaaaaa.aaaaaaaa"
+ 41 @ 18, 0 SAY "@RESERVED
+ 42 @ 18,26 SAY "@RESERVED"
+ 43 @ 18,53 SAY "@RESERVED"
+ 44 @ 18,79 SAY ":eaaaaaaa"aaaaaaaaaaaaaaaaaauaaaaaaaaaaaaaaaaaa;
+ 45 @ 19, 0 SAY " aaaaaaaaaaaaaaaaaad"
+ 46 aaaaaaaauaaaaaaa
+ 47 @  0, 0 SAY CHR(27)+CHR(71)
+
+
+
+ l * NAMEC!!G.CMD
+ 2 *
+ 3 * Review or change record
+ 4 ERASE
+ 5 CLEAR
+ 6 SET TALK OFF
+ 7 SET C@.ON OFF
+ 8 RESTORE FROM NAME
+ 9 USE &dr&dbf'TOINDEXcont &dr&ndxl,&dr&ndx2
+10 STORE ''Y' TO rcall
+11 STORE 'YN, TO stop
+12 STORE 'Y, TO change
+13 STORE 'Y' TO ok
+14 STORE
+15 SET FORMAT TO NAME
+16 READ
+17 SET FORMAT TO 'SCREEN'
+18 DO WHILE@ cont= Y       ' TO sp15
+19  STORE                ' , TO namein
+20  STORE sp15+sp15+s@p15+'GET namein PICTURE
+21  '@!!!21,0 SAY  Name?
+        !!!!!!!!'!!!!%!!!!!!!!!!!!!!!!!'!!!!!!!!!!!!!'
+22  @ 21,55 SAY'Lastpress RETURN for Menu@
+23  @ 22,6 SAY                  First
+24  READ
+25  @ 20,0
+26  IF namein'=@ TO cont
+27   STORE  N
+28   LOOP
+29  ENDIF namein
+30  * Remove "%" from namein
+31  STORE $(namein,1,15)+$(namein,17,30) TO namein
+32  STORE TRIM(namein) TO namein
+33  FIND &namein
+                rst)#namein
+34  IF !(Last+Fi',TO cont
+35   STORE  Y   'UNABLE TO LOCATE "'+namein+'"'
+36   @ 20,0 SAY
+37  ELSE
+38   STORE T TO show
+39   DO WHILE show
+40    * In rev. video using GETs vice SAYs
+41    @  3,12 GET FIRST
+42    @  3,55 GET LAST
+43    @  5, 9 GET COMPANY
+44    @  5,53 GET ADDR
+45     7, 6 GET CITY
+46    @  7,42 GET ST
+47    @  7,49 GET ZIP
+48    @  7,65 GET PHONE
+49    @  9,17 GET ADDR2
+50    @  9,65 GET ALTPH
+51    @ 14, 9 GET RMKS
+52    * @ 16@10 GET DATAl
+53    * @ 16,36 GET DATA2
+54    * @ 16,63 GET DATA3
+55    * @ 18,10 GET DATA4
+56    * @ 18@36 GET DATA5
+57    * @ 18,63 GET DATA6
+58    * Just show for now
+59    CLEAR GETS
+60    IF *
+61     @ 22,0
+62 @ 22,0 SAY 'Record is marked for deletion@.Recall it? ' GET rcall PICT'!'
+63     READ
+64     IF rcall='Y'
+65      RECALL
+66      @ 22,0
+67 @ 22,0 SAY 'Record is now active. Press any key to continue.'
+68 SET CONS OFF
+69      WA@T
+70      SET CONS ON
+71     ENDIF rcall
+72    ENDIF *
+73    @ 21,0
+74 @ 22,0                                to make to this record? 'GET change PICT'!'
+75 @ 21,0 SAY 'Do you have any changes
+76    READ
+77    @ 21 0
+78    DO W@lLE change='Y'                      XXXXXXvvvvvxxx'
+                               ,!XXXX@@@XXXXXXXX'
+79     @  3,12 GET FIRST PICT'!XXX  vvvvvvxvx
+80 @ 3,55 GET LAST PICT              XXXXXXXXXXXX@ vvvvvxx'
+81 @ 5, 9 GET COMPANY PICT '!XXXXXXXX
+82     @  5,53 GET ADDR
+                              '!XX)@@@O@XXXXXXXXXXXX'
+83     @  7, 6 GET CITY PICT'l!'
+84     @  7,42 GET ST PICT  '99999'
+85     @  7,49 GET ZIP PICT
+86     @  7,65 GET PHONE PICT '(999)999-9999'
+87     @  9,17 GET ADDR2
+88     @  9,65 GET ALTPH PICT '(999)999-9999'
+89     @ 14, 9 GET RMKS
+90     * @ 16,10 GET DATAl
+91     * @ 16,36 GET DATA2
+92     * @ 16,63 GET DATA3
+93     * @ 18,10 GET DATA4
+94     * @ 18,36 GET DATA5
+95     * @ 18,63 GET DATA6
+96     READ  @N' TO change
+97     STORE
+98     @ 21,0
+99     @ 22,0 'Y' TO ok
+100     STORE      'Are changes OK? 'GET ok PICT '1'
+101     @ 21,0 SAY
+102     READ
+103     @ 22,0'Y'
+104     IF ok#
+105 STORE 'Y' TO'Changeschange may be corrected as desired.'
+106 @ 21,0 SAY
+107     ENDIF ok
+108     CLEAR GETS
+109    ENDDO change
+110    @ 22,0
+111    @ 20,0
+112    * Check if dup
+113    STORE Last+First TO match
+114    STORE F TO show
+115    SKIP                                  tch)
+116    IF .NOT. EOF'.AND. !(Last+First)=!(ma
+117 @ 20,,0 SAY Displaying different record with same name.'
+118 STORL T TO show
+119    ENDIF EOF
+120    CLEAR GETS
+121   ENDDO show
+122  ENDIF namein
+123  @ 22,0
+124  @ 21@54
+125  CLEAR GETS
+126 ENDDO cont
+127 ERASE
+128 CLEAR
+129 READ
+130 STORE 0 TO what
+
+
+
+
+l * NAMEADD.CMD                               67  ENDDO redo                                    
+ 2 *                                          68  CLEAR GETS
+ 3 *  Add record.                             69 ENDDO more
+ 4 CLEAR                                      70 CLEAR
+ 5 ERASE                                      71 ERASE
+ 6 SET TALK OFF                               72 STORE 0 TO what
+ 7 SET COLON OFF                              73 RETURN
+ 8 RESTORE' FROM NAME
+ 9 STORE  Y' TO more
+10 USE &dr&dbf INDEX &dr&ndxl,&dr&ndx2
+11 SET FORMAT TO NAME
+12 READ
+13 SET FORMAT TO SCREEN
+14 * Append      'Y,
+15 DO WHILE more=
+16  APPEND'BLANK'TO redo
+17  STORE  Y
+18  DO WHILE redo='Y'       @!xvxvvxvxvvxvvxvvvxxxxrxrxxx'
+19   @  3,12 GET FIRST PICT' XXXXXXXXXXXXXX'
+20   @  3,55 GET LAST PICT  1 '!XXXXXXXXXXXXXXXXXXXXXvxvvvxxx'
+21   @  5, 9 GET COMPANY PICT
+22   @  5,53 GET ADDR      '!XXXXXXXXvvvvvvvvvxx'
+23   @  7, 6 GET CITY PICT
+24   @  7,42 GET ST PICT ''1!
+25   @  7,49 GET ZIP PICT  99999'
+26   @  7,65 GET PHONE PICT  (999)999-9999'
+27   @  9,17 GET ADDR2
+28   @  9,65 GET ALTPH PICT '(999)999-9999'
+29   @ 14, 9 GET RMKS
+30   * @ 16,10 GET DATAl
+31   * @ 16,36 GET DATA2
+32   * @ 16,63 GET DATA3
+33   * @ 18,10 GET DATA4
+34   * @ 18,36 GET DATA5
+35   * @ 18,63 GET DATA6
+36   @ 21,0
+37   @ 23,0
+38   @ 21,26 SAY  **** Please Enter Data ****'
+39   READ
+40   @ 21,0
+41   * Delete',record if blank entered
+42   STORE   @ ,TO redo
+43   IF Last=
+44    @ 21;0 SAY  Any more additions? (Y/N) ' GET redo PICT '1'
+45    READ    'Y,
+46    IF redo#
+47     DELETE
+48    @ 21,0 SAY 'A blank record has been added.'
+       It will be 'removed when file is archived'
+49     @ 23,0 SAY  Press Any Key To Continue
+50     SET CONSOLE OFF
+51     WAIT
+52     SET CONSOLE'N,TOON
+53     STORE        more
+54    ENDIF redo
+55   ELSE   @Y, TO ok
+56    STORE
+57    @ 21,0 SAY 'Are entries correct? (Y/N) ' GET ok PICT '!'
+58    READ  'Y,
+59    IF ok=
+60     @ 21,35 SAY 'More Additions? (Y/N) ' GET more PICT '!'
+61     READ                                                                              |
+62    ELSE
+63     STORE 'Y' TO redo                                                                 1
+64    ENDIF ok
+65   ENDIF Last
+66   CLEAR GETS
+
+
+ 3 *  Delete record.
+ 4 CLEAR
+ 5 ERASE
+ 6 SET T@.K OFF
+ 7 SET COLON OFF
+ 8 RESTORE'Y'FROM NAME
+ 9 STORE @N' TOTO contrcall
+10 STORE
+11 USE &dr&dbf INDEX &dr&ndxl,&dr&ndx2
+12 SET FORMAT TO NAME
+13 READ
+14 SET FORMAT TO @SCREEN'
+15 DO WHILE cont= Y
+16  @ 21,0
+17  @ 22,0'               , TO sp15
+18  STORE
+19  STORE sp15+sp15+sp15+' ' TO ns@ein '   11 !!!!!!!!!%!!!!!!!!!!11!!!!!!!!!!!!!!!!!!'
+                      ,GET namein PICT' !1
+20  @ 21,0 SAY 'Name?'Press RETURN For Menu'
+21  @ 21,55 SAY'Last            First
+22  @ 22,6 SAY
+23  READ
+24  @ 20,0
+25  IF namei'n=' TO cont
+26   STORE  N
+27   LOOP
+28  ENDIF namein
+29  *Remove "%" from namein
+30  STORE $(namein,1,15)+$(namein,17,30) TO namein
+31  STORE TRIM(namein) TO namein
+32  FIND &namein
+33  * Found?
+                    #namein
+34  IF !(Last+Fi@,TOrst)cont
+35   STORE  Y
+36   @ 20,0     'UNABLE TO LOCATE "'+namein+'"'
+37   @ 20,0 SAY
+38  ELSE
+39   * Show
+40   STORE T TO s@ow
+41   DO WHILE show
+42    STORE F TO show
+43    @  3,12 GET FIRST
+44    @  3,55 GET LAST
+45    @  5, 9 GET COMPANY
+46    @  5,53 GET ADDR
+47    @  7, 6 GET CITY
+48    @  7,42 GET ST
+49    @  7,49 GET ZIP
+50    @  7,65 GET @lONE
+51    @  9,17 GET ADDR2
+52    @  9,65 GET ALTPH
+53    @ 14, 9 GET RMKS
+54    * @ 16,10 GET DATAl
+55    * @ 16,36 GET DATA2
+56    * @ 16,63 GET DATA3
+57    * @ 18,10 GET DATA4
+58    * @ 18,36 GET DATA5
+59    * @ 18,63 GET DATA6
+60    CLEAR GETS
+61    @ 20,0
+62    IF *
+63 @ 20,0 SAY 'Record is already marked for deletio@  Please enter another nam@'
+64    ELSE
+65 STORE ' ' TO'Isconfirmthisthe record you wa to delete? (Y/N) ' GET confirm PICT '!'
+66 @ 20,0 SAY
+67     READ
+68     @ 23,0     'Y,
+69     IF confirm=
+70      DELETE
+71      @ 20,0
+72      @ 20,0 SAY 'This record has been marked for deletion.'
+73     ELSE
+74      * Check if dup
+75      STORE Last+First TO match
+76      SKIP
+77      IF .NOT. EOF .AND. 1(Last+First)=!(match)
+78       @ 20,0
+79       @ 23,0 SAY 'Displaying another record with same names'
+80       STORE T TO show
+81      ENDIF EOF
+82     ENDIF confirm
+83    ENDIF *
+84   ENDDO show
+85  ENDIF namein
+86  CLEAR GETS
+87 ENDDO cont
+88 ERASE
+89 CLEAR
+90 STORE 0 TO what
+91 RETURN
+
+
+
+NAMEAR@.CMD
+
+ 1 * NAMEARC.CMD
+ 2 *
+ 3 * Appends & indexes current records from main data base into archive
+ 4 * data base on any drive(s). Purges & reindexes main data base.
+ 5 *
+ 6 CLEAR
+ 7 SET TALK OFF
+ 8 ERASE ' , TO arcdr
+ 9 STORE ' , TO mdr
+10 STORE
+11 @ 2,2 SAY ''Which drive are you using for ARCHIVE fi'les? ' GET arcdr',PICT '1'
+12 @ 4,2 SAY Which drive is your Main data base on?  GET mdr PICT
+13 READ
+14 STORE arcdr+',':' TO arcdr
+15 STORE mdr+ :  TO dr
+16 @ 6,2
+17 ACCEPT 'Main data base name (no extension)' TO dbf'  ndxl
+18 ACCEPT @  Primary Index name for main data base  'TOTO ndx2
+19 ACCEPT '  Secondary Index name for main data base'
+20 ACCEPT @ARCHIVE data base name (no extensio'n)  TO arcdbf
+21 ACCEPT    Index name for Archive data base  TO arcndx
+22 ? '
+23 ?  CONTINUE? (Y/N) '
+24 SET CONSOLE OFF
+25 WAIT TO go
+26 SET CONSOLE',ON
+27 IF 1(go)# Y
+28  CLxAR
+29  STORE 0 TO what
+30  RETURN
+31 ENDIF go
+32 USE &dr&dbf
+33 ? 'ARC!!@VE OPE!@TIONS:'                           copy of main data base...'
+34 ? @Making precauti'TEMPDBFonary,TO tmpdbf
+35 ?
+36 STORE arcdr+
+37 CY TO &tmpdbf
+38 * Rcwind
+39 GOTO TOP
+40 * Flip-flop deleted/current rcds
+41 DO W!!ILE .NOT. EOF
+42  IF *
+43   RECA::
+44  ELSE
+45   DELETE
+46  ENDIF *
+47  SKIP
+         EOF
+48 ENDDO'Copying deleted 'records'...'
+49 ?
+                 cdbf+' .DBF  TO arcfile
+50 STORE arcdr+ar'&arcfile )  ' TO tmparc
+51 IF FILE(
+52  STORE arcdr+'TEMPARC
+53  COPY TO &tmparc
+54  USE &arcdr&arcdbf
+55  APPEND FROM &tmparc
+56 ELSE
+57  COPY TO &arcdr&arcdbf
+58  USE &arcdr&arcdbf
+59 END'IF FILE
+60 ?  Indexing Archive and main files...'
+61 INDEX ON 1(Last+First) TO &arcdr&arcndx
+62 USE &tmpdbf
+63 INDEX ON!(Last+First) TO &dr&ndxl
+64 INDEX ON Zip TO &dr&ndx2
+                  file names'
+65 * Restore disk@TMPFILE'  TO tmpfile
+66 STORE @rcdr+ '.DBF  TO dbfile
+67 STORE dr+dbf+'.DBF@ TO tmpfi12'  tmpfi13
+68 STORE tmpdbf+@TEMPARC,+' DBF  TO
+69 STORE arcdr+  '&tmpfi12;)
+70 IF .NOT.'CannotFILE(find precautionary copy of main data base.'
+71 ? 'Terminating to system without erasing old main data base.'
+72 ? 'PRESS ANY KEY'
+73
+74  SET CONSOLE OFF
+75  WAIT
+76  QUIT
+         FILE                                     Please wait'
+77 ENDIF@Operating system restoring files on disks.'
+78 ? 'for all system operations to terminate.
+79 ?
+80 SET CONSOLE@ERAOFF&dbfile','ERA &tmpfi13','PIP &dbfile=&tmpfi12','ERA &tmpfi12'
+81 QUIT TO
+
+
+
+ l * NAMIST.CMD
+ 2 *
+ 3 * Lists Selected Fields
+ 4 *
+ 5 ERASE
+ 6 SET TALK OFF
+ 7 SET COLON OFF
+ 8 SET EJECT OFF
+ 9 CLEAR
+                NAME
+10 RESTORE@NFROM,TO arc
+11 STORE ' , TO arcdr
+12 STORE '        , TO arcdbf
+13 STORE
+14 @ 1,0 SAY 'Do you want to list the ARCHIVE file? (Y/N) ' GET arc
+15 READ
+                                                            PICT''!'
+16 IF !(arc)='Y@Which drive is Archive' file on? ' GET arcdr'lll!!!!! '
+17 @ 3,1 SAY 'Name of Archive file @GETGETarcdbf PICT '1!!!!!!1
+18 @ 5,1 SAY 'Name of Archive index arcndx PICT
+19  @ 7,1 SAY
+20  READ
+21  STORE TRIM(arcdbf) TO arcdbf
+22  STORE TRIM(arcndx) TO arcndx
+23  USE &arcdr&arcdbf INDEX &arcdr&arcndx
+24 ELSE
+25  USE &dr&dbf INDEX &dr&ndxl
+26 ENDIF 'arc' TO wover,output,all,cont
+27 STORE 'LAST' TO fldl
+28 STORE 'FIRST' TO fld2
+29 STORE 'COMPANY'' TO fld3
+30 STORE 'ADDR  TO fld4
+31 STORE @ADDR2@ TO fld5
+32 STORE 'CITY, TO fld6
+33 STORE '  , TO fld7
+34 STORE 'ZIPST, TO fld8
+35 STORE 'PHONE'@ TO fld9
+36 STORE 'ALTpH  TO fldlO
+37 STORE 'RMKS' TO fldll
+38 STORE @DATAl' TO fld12
+39 STORE 'DATA2' TO fld13
+40 STORE 'DATA3' TO fld14
+41 STORE 'DATA4@ TO fld15
+42 STORE 'DATA5, TO fld16
+43 STORE @DATA6' TO fld17
+44 STORE 'NOFIELD' TO fld18
+45 STORE
+46 ERASE      @@ISTING"
+47 @ 1,31 SAY
+48 @ 2,30 SAY'"========="
+49 @ 4,4 SAY '@his option lists only the fields you select. IF NARROW PAPER IS USED"
+50 @ 5,0 SAY @ITH THE PRINTER OPTION, CARE MUST BE TAKEN SO TOTAL DISPLAY WIDTH DOES NO
+51 @ 6,0 SAY "EX@EED PAPER WIDTH. Records are listed alphabetically by last name. If dis
+52 @ 7,0 SAY "option is selected, out@ut file will be named NAMELIST.TXT."
+53 @ 9,4 SAY "Do you want listing to @P)rinter, (S)creen, or (D)isk (P/S/D):"
+54 @ 9,67 GET output
+55 READ  'NAMELIST.TXT' TO altfile'&dr&altfile')
+56 STORE          ' .AND. FILE(
+57 IF 1(output)='D@ AMELIST.TXT already exists. Do you wish to write over it? (Y/N)"
+58 @ 11, 0 SAY
+59  @ 11,64 GET wover
+60  READ
+61  IF 1(wover)#'Y'
+62   RETURN
+63  ENDIF wover
+64 ENDIF FILE
+65 @ 13, 4 SAY  '.ist ALL fields? " GET all
+66 READ
+67 CLEAR GETS
+                                        st :        pace  ount
+ 69 STOR@ 1 TO "fld
+ 70 STORE 1 TO "Jgt
+ 71 STORE 0@ TO dlen'TO fld
+ 72 STORE @f'ldl
+ 73 STORE @   TO fldlst
+ 74 STORE                    TO bks
+ 75 DO W!!ILE &fld#'NOFIELD'
+ 76  STORE STR(LEN@&&fld),3) TO flen
+ 77 ? &fld'$@.b@ks 1,15-LEN(&fld))+flen+' ?(Y/N):'
+ 78 IF !(all'Y),@ Y
+ 79   STORE     TO dfld
+ 80  ELSE
+ 81   SET CONSOLE OFF
+ 82   WAIT TO dfld
+ 83   SET CONSOLE'ON'
+ 84   IF 1(dfl@d)#'TOY dfld
+ 85    STORE  N
+ 86   ENDIF dfld
+ 87  ENDIF all
+ 88  ?? 1(dfld) @Y'
+ 89  IF 1(dfld)=        ',, TO fldlst
+ 90   STORE fldlst+&fld+
+ 91   STORE' ,dlen+LEN(&&fld)'+1 TO dlen
+ 92   ??     +STR(dlen,3)+  Spaces (Total)'
+ 93  ENDIF dfld
+ 94  STORE nfld+1 TO nfld
+ 95  IF nfld>9
+ 96   STORE 2 TO ndgt
+ 97  ENDIF 'nfld'+STR(nfld,ndgt)  TO fld
+ 98  STORE  fld
+ 99 ENDDO &fld
+100 ?
+101 ? 'Fields to be Listed: '+$(fldlst,l,LEN(fldlst)-1)
+102 ? @
+103 ?  Length of Display Line for Each Record: '+STR(dlen,3)+' Characters'
+104 ? @OK? (Y/N) '
+105 ?
+106 SET CONSOLE OFF
+107 WAIT TO cont
+108 SET CONSOLE ON
+109 ?? 1(cont)'  , .AND. !(cont)='Y'
+110 IF fldlst#
+111  IF !(output)'='D'   ' TO afile
+112   STORE dr+ NAMELIST
+113   SET ALTERNATE TO &altfile
+114   SET ALTERNATE ON
+115  ELSE
+116   IF !(output)='P'
+117    SET PRINT ON
+118   ENDIF OUT=P
+119  ENDIF OUT=D
+120            'Y,
+121  IF 1(all)=
+122   LIST OFF
+123  ELSE
+124   LIST OFF &fldlst
+125  ENDIF all
+126  SET PRINT OFF
+127  SET ALTE!@ATE OFF
+128  ? @
+129     PRESS ANY KEY TO CONTINUE:'
+130  SET CONSOLE OFF
+131  WAIT
+132  SET CONSOLE ON
+133 ENDIF fldlst
+134 RETURN
+
+
+ 1 * NAMELAB.CMD
+ 2 *
+ 3 * Sets up parameters for printing labels
+ 4 CLEAR
+ 5 ERASE
+ 6 SET TALK OFF
+ 7 SET COLON OFF
+ 8 SET EJECT OFF
+ 9 RESTORE@ ,FROM NAME
+10 STORE     TO ok
+11 STORE '@N'' TO change
+12 STORE  Y  TO top'
+13 STORE ''          TO fname@
+                           TO startname
+14 STORE '     ' TO startzip
+15 STORE
+16 @ 1,2 SAY '@The label dimensions set@for this operation are:'
+17 @ 3,6 SAY 'Number of labels across:' +STR(parts',2)
+18 @ 5,6 SAY  Horizontal Spacing: +STR(horsp 3)'+  spaces'
+19 @ 7,6 SAY 'Vertica'l Spacing:'+STR(versp,3@.+  lines
+20 @ 10,2 SAY  Do you want to',CHANGE these parameters? (Y/N)'
+21 @ 10,48 GET change PI@T
+22 READ
+23 IF change#'N'' ,
+24  DO WHILE ok# Y
+25   ERASE
+26   @  1,23 SAY "=============================="
+27   @  2,23 SAY "*****  LABEL PARAMETERS  *****"
+28   @  3,23 SAY "=============================="
+29   @  5,11 SAY "1.  How many''labels across? (1-4)"
+30   @  5,45 GET @arts PICT  9
+31 @ 7,11 SAY 2.  Horizontal Spacing How many spaces (at 10 cpi)"
+32 @ 8,15 SAY "between left edges of two adjacent labels.'
+33   @ 10,19 SAY 'Example Horizontal spacing of 3" labels'
+                       1/8" separation would be 31.
+34 @ 11,28 SAY 'with@'lorizontal Spacing (Enter 0 if one-wide labels):"
+35 @ 13,15 SAY
+36   @ 13,64 GET horsp PI@T '999'
+37 @ 15,11 SAY "3.  Vertical Spacing How many lines (at 6 lpi)"
+38 @ !6,15 SAY "between top edges of two adjacent labels.'"
+39   @ 18,19 SAY @'Example Vertical spacing of 15/16"' labels
+40   @ 19,28 SAY  with 1/16" separation would be 6.
+41   @ 21,15 SAY "Vertical S@acing@:"
+42   @ 21,33 GET versp PICT  999
+43   READ
+44   DO WHILE parts<1 .OR. parts>4
+45 @ 22,2 SAY 'Please reenter number of labels across (1-4) ' GET parts PICT '9'
+46    READ
+47   ENDDO parts err ck
+48   DO WHILE horsp>60'
+49 @ 22,2 SAY Please reenter horiz. spacing (1-60) ' GET horsp PICT '999'
+50    READ
+51   ENDDO horsp err<ck
+52   DO WHILE versp 3
+53 @ 22,2 SAY 'Please reenter vert. spacing (at least 3) ' GET versp PICT '999'
+54    READ
+55   ENDDO versp err ck
+56   @ 23,2 SAY 'ARE PARAMETERS OK? (Y/N) ' GET ok PICT '!'
+57   READ
+58   CLEAR GETS
+59  ENDDO ok', TO change
+60  STORE  N
+61 ENDIF change
+62 ERASE
+63 @ 2,2 SAY '1.'!Output, to (P)rinter, (D)isk File, or (S)creen? (P/D/S) '
+   GET out PICT
+64 @ 4,2 SAY ''2. In which order do you want labels? '
+                                                                     ,GET order PICT '!'
+65 @ 6,4 SAY Alphabetically by Last (N)ame or by (Z)ip code? (N/Z)'GET co PICT '!'
+66 @ 8,2 SAY '3. Include COMPANY NAME (if any) on labels? (Y/N)
+ 67 @ 10,2 SAY '4.@!I,nclude SECOND ADDRESS LINE (if y) on labels? (Y/N) '
+    GET ad2 PICT'            TOP of data file? (Y/N) ' GET top PICT '1'
+ 68 @ 12,2 SAY 5. Start at
+ 69 READ
+ 70 * F rce' ,co & ad2 to N if not Y
+ 71 IF co# 'Y ' TO co
+ 72  STORE  N
+ 73 ENDIF co'Y,
+ 74 IF ad2#
+ 75  STORE 'N  To ad2
+ 76 ENDIF ad2
+                                              ,S'
+ 77 * Error checks'P, .AND. out#'D' .AND'P'.,out#',or 'S'"
+ 78 DO WHILE out#
+ 79  @ 14,0 SAY "Output Please@l, type    @ D
+ 80  @ 14,36 GET out PICT
+ 81  READ
+ 82 ENDDO out
+ 83 DO WHILE order#'N' .AND. order#'Z'
+ 84  @ 16,0 SAY "Order of listing'l' Please type 'N' or 'Z'"
+ 85  @ 16,41 GET order PICT
+ 86  READ
+ 87 CLEAR GETS
+ 88 ENDDO order'.AND. ad2='Y' .AND. versp<5) .OR. ((co='Y' .OR. ad2='Y') .AND. vers'p<4)
+ 89 IF (co='Y 'Vert. spacing'too small for lines selected. Please start over. 
+ 90 @ 18,2 SAY
+ 91  @ 22,0 SAY 'PRESS ANY KEY
+ 92  SET CONSOLE OFF
+ 93  WAIT
+ 94  SET CONSOLE ON
+ 95  CLEAR
+ 96  STORE 0 TO what
+ 97  RETURN
+ 98 ENDIF co'/ad2' err ck
+ 99 IF out= D
+100  @ 18,2 SAY ''Disk Output:'
+101  @ 19,4 SAY  Drive (Press' RETURN if same drive):'
+102  @ 19,40 GET 'drive PICT  !'
+103  @ 19,48 SAY '.TXTFilen,sme ' GET fname PICT '1!!!!!!!'
+104  @ 19,66 SAY
+105  READ     ' ,
+106  IF drive=
+107   STORE TRIM(fname) TO fname
+108  ELSE         ' ,+fname TO fname
+109   STORE drive+
+110  ENDIF drive
+111  SET ALTERNATE TO &fname
+112  SET ALTERNATE ON
+113 ENDIF outD@Z,
+114 IF order=
+115  USE &dr&dbf INDEX &dr&ndx2
+116 ELSE
+117  USE &dr&dbf INDEX &dr&ndxl
+118 ENDIF order'Y@
+119 IF top#   @Z@
+120  IF order=
+121   @ 21,4 SAY 'Start at (Zip Code) ' GET startzip PICT '99999
+122   R@@n
+123   DO WHILE startzip>Zip
+124    SKIP
+125   ENDDO startzip
+126  ELSE
+127 @ 21,4 SAY 'Start At (Last Name) ' GET startname PICT '!!!!!!!!!!!!!!1'
+128   READ
+129   DO W!!ILE startname>Last
+130    SKIP                                               ::
+131   ENDDO startname
+132  ENDIF order
+133 ENDIF top
+134 RELEASE change,ok,cont,top,fname,startname,startzip,drive
+135 SAVE TO'NAME'
+136 IF out='P
+137  STORE   (Printer Set) ' TO pset
+138 ELSE
+139  STORE ' ' TO pset
+140 ENDIF out
+141 STORE ' ' TO' cont '+pset+, (Y/N) ' GET cont PICT '!'
+142 @ 23,4 SAY  READY?
+143 READ    'Y,
+144 IF cont#
+145  CLEAR
+146  STORE 0 TO what
+147  RETURN
+148 ENDIF cont
+149 RELEASE'cont'
+150 IF out= P
+151  SET PRINT ON
+152 ENDIF out
+153 IF out='D'
+154  STORE versp+1 TO versp
+155 ENDIF 'out
+                                                                           TO sp
+156 STORE '     ,+co+,A'+ad2 TO getfile
+157 STORE  NAMEC
+158 DO &getfile
+159 SET PRINT OFF
+160 SET ALTERNATE OFF
+161 SAVE TO TEMP
+162 CLEAR
+163 STORE 0 TO what
+164 RETURN
+
+
+ 1 * NAMECYAY.CMD                             63   ENDIF First' ,
+ 2 *                                          64   IF C@ pany=
+ 3 * Prints (1-4)-part labels                 65    STORE Addr', TOTO word25word22
+ 4 * With c@=pany and 2nd Address line        66    STORE
+ 5 *                                           67    IF Addr2=' '
+ 6 STORE 'NAME'+STR(parts,l)+'PRT'            68     STORE TRIM(City)+', '+St+' '+Zip
+   TO prfile                                          TO word23'' TO word24
+ 7 DO WHILE .NOT. EOF                       69     STORE
+ 8  * Get data for lst label across           70    ELSE
+ 9  DO WHILE * .AND. .NOT. EOF                71     STORE Addr2 TO word23',+St+, ,+Zip
+10   SKIP                                      72     STORE TRIM(City)+ ,
+11  ENDDO *                                           TO word24
+12  STORE TRIM'('First)+' '+Last TO wordll      73    ENDIF Addr2
+13  IF First=                                  74   ELSE
+14   STORE $(word11,3,15) TO wordll           75    STORE Company TO word22
+15  ENDIF First                               76    STORE Addr' ,TO word23
+16  IF Company=' '                            77    IF Addr2=
+17   STORE @Addr@ TO word12                     78     STORE TRIM(@ity)+', '+St+' .'+Zip
+18   STORE      @TO word15                             TO word24', TO word25
+19   IF Addr2='                               79     STORE
+20    STORE TRIM(City)+'@ '+St+' '+Zip      80    ELSE
+       TO word13@                               81     STORE Addr2 TO word24',+St+@ @+Zip
+21    STORE '    TO word14                    82     STORE TRIM(City)+ ,
+22   ELSE                                             TO word25
+                                               83    ENDIF Addr2
+23    STORE Addr2 TO word13@,,+St+@ '+Zip             ENDIF Company
+24    STORE TRIM(City)+@                      84
+      TO word14                                85   IF EOF @
+25   ENDIF Addr2                               86    STORE @  @. TO word21
+26  ELSE                                       87    STORE '  '' TOTO word22
+                                                                   word23
+27   STORE Company TO word12                  88    STORE @    TO word24
+28   STORE Addr@ ,TO word13                      89    STORE '  @ TO word25
+29   IF Addr2=                                 90    STORE
+30    STORE TRIM(City)+', '+St+' '+Zip        91   ENDIF EOF
+      TO word14'                                92   SKIP
+31    STORE      TO word15                     93   *
+32   ELSE                                      94   DO WHILE nparts>2
+                                               95   * Get data for 3rd label across
+33    STORE Addr2 TO word14',+St+' '+Zip             DO WHILE * .AND. .NOT. EOF
+34    STORE TRIM(City)+@,                     96
+      TO word15                                97    SKIP
+35   ENDIF Addr2                               98   ENDDO *             '+Last TO word31
+36  ENDIF Company                              99   STORE TRIM'(Fir'st)+.' ..
+37  IF parts=1                                100   IF First=
+38   ? wordll                                 101    STORE $(wo:@31,3,15) TO word31
+39   ? word12                                 102   ENDIF First@ ,
+40   ? word13                                 103   IF Company=
+41   ? word14                                 104    STORE Addr@@ TOTO word32
+42   ? word15                                 105    STORE         word35
+43   SKIP                                     106    IF Add 2=' '
+44  ELSE                                      107     STORE TRIM(City)+'@ .'+St+''+Zip
+                                                      TO word33@
+45   IF EOF @ ,                              108     STORE      TO word34
+46    STORE ' , TO wordll
+47    STORE ' ; TOTO word12                  109    ELSE
+48    STORE @ @ TO wordword13                    110     STORE Addr2 TO word33
+49    STORE '          14                    111     STORE TRIM(City)+', '+St+' '+Zip
+50    STORE     TO word15                             TO word34
+51   ENDIF EOF                                112    ENDIF Addr2
+@2   SKIP                                     113   ELSE
+@3   *                                        114    STORE Company TO word32
+@4   STORE parts TO nparts                   115    STORE Addr' ,TO word33
+@5   DO WI!ILE nparts>1                        116    IF Addr2=
+@6   * Get data for 2nd label across         117     STORE TRIM@City)+', '+St+' '+Zip
+@7   DO WHILE * .AND. .NOT. EOF                       TO word34@
+ 8    SKIP                                    118     STORE    .' TO word35
+@9   ENDDO *                                  119    ELSE
+     STORE TRIM(First)'+' '+Last TO word21    120     STORE Addr2 TO word34
+il   IF First='
+;2    STORE $(word21,3@15) TO word21         (Continu+d on uext page)
+
+
+
+NAMECYAY.CMD (Continued)
+
+121     STORE TRIM(City)+', '+St+' '+Zip TO word35
+122    ENDIF Addr2
+123   ENDIF Company
+124   IF EOF '  , TO word31
+125    STORE '  , TO word32
+126    STORE '  , TO word33
+127    STORE '  , TO word34
+128    STORE '  , TO word35
+129    STORE
+130   ENDIF F
+131   SKIP
+132   *
+133   DO WHILE nparts>3
+134   * Get data for 4th label across
+135   DO WHILE * .AND. .NOT. EOF
+136   KIP
+137   ENDDO *
+138   STORE TRI'M(First')+' '+Last TO word41
+139   IF First=
+140    STORE $(word41,3,15) TO word41
+141   ENDIF First@ ,
+142   IF Company=
+143    STORE Addr', TO word42
+144    STORE    ' ,TO word45
+145    IF Addr2=
+146     STORE'TRI@M(City)+', '+St+' '+Zip TO word43
+147     STORE      TO word44
+148    ELSE
+149 STORE Addr2 TO word43','+St+' '+Zip TO word44
+150 STORE TRIM(City)+
+151    ENDIF Addr2
+152   ELSE
+153    STORE Company TO word42
+154    STORE Addr' TO' word43
+155    IF Addr2=
+156 STORE TR'IM('City)+', '+St+' '+Zip TO word44
+157 STORE TO word45
+158    ELSE
+159 STORE Addr2 TO word44',,+St+' '+Zip TO word45
+160 STORE TRIM(City)+
+161    ENDIF Addr2
+162   ENDIF Company
+163   IF EOF @ , TO word41
+164    STORE ' , TO word42
+165    STORE ' , TO word43
+166    STORE ' , TO word44
+167    STORE @ , TO word45
+168    STORE
+169   ENDIF EOF
+170   SKIP
+171   *
+172   STORE 0 TO nparts
+173   ENDDO n>3
+174   STORE 0 TO nparts
+175   ENDDO n>2                  1 * NAMECYAN.CMD
+176   STORE 0 TO nparts          2 *
+177 ENDDO n>1                  3 * Prints (1-4)-part labels
+178 DO &prfile                 4 * With Company line
+179 ENDIF parts                 5 * @NAME'+STR(parts,l)+'PRT' TO prfile
+180 STORE 5 TO bot              6 STORE
+181 DO WHILE bot<versp          7 DO WHILE .NOT. EOF
+ 182                                    8 * Get data for lst label across
+ 183 STORE bot+1 TO bot          9 DO WHILE * .AND. .NOT. EOF
+184 ENDDO bot
+185 ENDDO EOF                  (Continued on next page)
+
+
+                                               72 STORE TRIM'(@First)+' '+Last TO word31
+10 SKIP                                     73 !F First=
+11 ENuDO *                                   74 ST..RE $(word31,3,15) TO wd31
+12 STORE TRIM(Fi',rst)+' '+Last TO wordll 75 ENDIF First' ,
+13 IF First=                                 76 IF Company=
+14 STORE $(word11,3,15) TO wordll           77 STORE Addr TO word32',+St+' '+Zip
+15 ENDIF First' ,                            78 STORE TRIM(City)+ ,
+16 IF Company=                                    TO word33', TO word34
+17 STORE Addr TO word'12'+St+, ,+Zip 79 STORE
+18   STORE TRIM(City)+ ,                      80  @.SE
+                                                          Company TO word32
+     TO word13@, TO word14                     81   STORE
+19 STORE                                    82 STORE Addr TO word33',+St+' ,+Zip
+20 ELSE                                      83 STORE TRIM(City)+ ,
+21 STORE Company TO word12                       TO word34
+22   STORE Addr TO word13@,+St+' '+Zip         84  ENDIF Company
+23   STORE TRIM(City)+ ,                      85  IF EOF ' , TO word31
+     TO word14                                86 STORE ' , TO word32
+24 ENDIF Company                             87 STORE ' , TO word33
+25 IF parts=1                                88 STORE ' , TO word34
+26 ? wordll                                 89 STORE
+27   ? word12                                 90  ENDIF EOF
+28   ? word13                                 91  SKIP
+29   ? word14                                 92  *
+30 SKIP                                     93 DO WHILE nparts>3
+31 ELSE                                      94 * Get data for 4th label across
+32 IF EOF ' , TO wordll                      95 DO WHILE * .AND. .NOT. EOF
+                                                    SKIP
+33   STORE ' , TO word12                      96
+34   STORE @ , TO word13                      97  ENDDO *
+35 STORE ' , TO word14                      98 STORE TRIM'(Fir@st)+' '+Last TO word41
+36 STORE                                    99 IF First=
+37 ENDIF EOF                                100 STORE $(word41,3,15) TO word41
+38 SKIP                                     101 ENDIF First'
+39  *                                        102  IF Company=
+40 STORE parts TO nparts                    103 STORE Addr TO word42',@+St+' '+Zip
+41 DO WHILE nparts>1                        104 STORE TRIM(City)+
+42 * Get data for 2nd label across                TO word43'' TO word44
+43 DO WHILE * .AND. .NOT. EOF               105 STORE
+44   SKIP                                    106  ELSE
+45 ENDDO *                                  107 STORE Company TO word42
+46 STORE TRIM'('First)+' '+Last TO word21 108 STORE Addr TO word43',+St+@ ,+Zip
+47 IF First=                                109 STORE TRIM(City)+ ,
+48 STORE $(word21,3,15) TO word21                TO word44
+49  ENDIF First' ,                           110  ENDIF Company
+50 IF Company=                              111 IF EOF ' , TO word41
+51 STORE Addr TO word22@,@+St+@ '+Zip 112 STORE , , TO word42
+52 STORE TRIM(City)+                       113 STORE @ , TO word43
+     TO word23@, TO word24                    114 STORE ' , TO word44
+53 STORE                                   115 STORE
+54  ELSE                                     116  ENDIF EOF
+55   STORE Company TO word22                 117  SKIP
+56   STORE Addr TO word23',,+St+' '+Zip        118  *
+57   STORE TRIM(City)+                     119 STORE 0 TO nparts
+     TO word24                               120 ENDDO n>3
+58 ENDIF Company                            121 STORE 0 TO nparts
+59 IF EOF ' , TO word21                     122 ENDDO n>2
+60   STORE @ , TO word22                     123  STORE 0 TO nparts
+                                              124  ENDDO n>1
+61   STORE @ , TO word23                     125  DO &prfile    
+62 STORE @ , TO word24                     126 ENDIF parts(1 wide)
+63   STORE
+64  ENDIF EOF                                127  STORE 4 TO bot
+65 SKIP                                     128 DO WHILE bot<versp
+66 *                                        129
+67 DO WHILE nparts>2                        130 STORr bot+1 TO bot
+68 * Get data for 3rd label across . 131 ENDDO bot
+69  DO WHILE * .AND. .NOT. EOF               132 ENDDO EOF
+70   SKIP
+
+
+
+    l * NAMECNAY.CMD                             63  * Get data for 3rd label across
+   2 * Priu@t 2nd'Address line                         ) WHILE * .AND. .NOT. EOF
+   3 STORE  NAME +STR(parts,l)+ PRT'            64
+     TO pr:ile                                  65   @;KiP
+   4 DO W!!ILE .NOT. EOF                         66  ENDDO *
+   5  * Get data for lst label across           67  STORE TRI!'!(First')+' '+Last TO word31
+   6  DO WHILE * .AND. .NOT. EOF                68  IF First=
+   7   SKlP                                      69   STORE $(First,3,15) TO word31
+   8  ENDDO *                                    70  END!F First
+   9  STORE TRIM@(Fir@st)+' '+Last TO wordll      71  @TORE Addr TO word32
+  10  IF First=                                  72  IF A@dr2@' '
+  11   STORE $(word11,3,15) TO wordll           73   S@@.@E TRIM(City)+', '+St+' '+Zip
+                                                      10 wo@d33', TO word34
+  12  ENDIF First                                74   STORE
+  13  STORE Addr@ TO' word12                      75  @.SE
+  14  IF Addr2=                                  76   STORE Addr2 TO word33',+St+@ ,+Zip
+  15   STORE TRIM(City)+', '+St+' '+Zip         77   STORE TRIM(City)+ ,
+       TO word13@, TO word14                           TO word34
+  16   STORE                                     78  ENDIF Addr2
+  17  ELSE                                       79  IF EOF ' , TO word31
+  18   STORE Addr2 TO word13',+St+, ,+Zip              STORE ' , TO word32
+  19   STORE TRIM(City)+                        80
+       TO word14                                 81   STORE ' , TO word33
+  20  ENDIF Addr2                                82   STORE ' , TO word34
+  21  IF parts=1                                 8483   STORE
+                                                     ENDIF EOF
+  22   ? wordll                                  85  SKIP
+  23   ? word12                                  86  *
+  24   ? word13                                  87  DO WHILE nparts>3
+  25   ? word14                                  88  * Get data for 4th label across
+  26   SKIP                                      89  DO WHILE * .AND. .NOT. EOF
+  27  ELSE                                       90   SKIP
+  28  IF EOF                                         ENDDO *
+  29   ORE '' '' TO wordll                      91
+  30   STORE ' , TOTO word12                      92  STORE TRIM@(Fir'st)+' '+Last TO word41
+                                                 93  IF First=
+  31   STORE ' , TO word13word14                            STORE $(word41,3,15) TO word41
+  32   STORE                                     94
+  33  ENDIF EOF                                  95  ENDIF First
+  34  SKIP                                       96  STORE Addr' TO' word42
+  35  *                                          9897  IF Addr2@
+  36  STORE parts TO nparts                           STORE TRIM(City)+', '+St+' '+Zip
+  37  DO WHILE nparts>1                               STORETO word43', TO word44
+  38  * Get data for 2nd label across           99
+  39  DO WHILE * .AND. .NOT. EOF               101100  ELSE
+                                                      STORE Addr2 TO word43','+St+' '+Zip
+  40   SKIP                                     102   STORE TRIM(@ity)+
+  41  ENDDO *                                         TO word44
+  42  STORE TRIM(Fir',st)+' '+Last TO word21     103  ENDIF Addr2
+  43  IF First=                                      IF EOF ' ' TO word41
+  44   STORE $(word21,3,15) TO word21          104
+  45  ENDIF First                               105   STORE ' , TO word42
+  46  STORE Addr' TO' word22                     106   STORE
+  47  IF Addr2=                                 107   STORE '' @@ TO word43
+  48   STORE TRIM(City)+', '+St+' '+Zip        108   STORE     TO word44
+                                                109  ENDIF EOF
+       TO word23', TO word24                    110  SKIP
+  49   STORE                                    111  *
+  50  ELSE                                      112  STORE 0 TO nparts
+                                                     ENDDO n>3
+  51   STORE Addr2 TO word23',,+St+' '+Zip        114  STORE 0 TO nparts
+  52   STORE TRIM(City)+                       113
+       TO word24                                115  ENDDO n>2
+  53  ENDIF Addr2                               116  STORE 0 TO nparts
+  54  IF EOF ' , TO word21                     117  ENDDO n>1
+  55   STORE ' , TO word22                     118  DO &prfile
+  56   STORE ' , TO word23                     119  ENDIF parts(1-wide label)
+  57   STORE ' , TO word24                     120  STORE 4 TO bot
+- 58   STORE                                    121  DO WHILE bot<versp
+  59  ENDIF EOF                                 122
+  60  @KIP
+  61  *                                         123   STORE bot+1 To bot
+  62  DO WHILE nparts>2                        124  ENDDO bot
+                                                125 ENDDO EOF
+
+ @ * NAMECNAN.CMD                             52  DO W!!ILE nparts>2
+ 2 *                                          53  * Get data for 3rd label across
+ 3 * Prints (1-4)-part labels                     DO WHILE * .AND. .NOT. EOF
+                                               54
+ 4 * With no Company or 2nd Address line      55   SKIP
+ 5 *                                                     *
+ 6 STORE  NAME'+STR(parts,l)+'PRT'            56  ENDDO
+   TO prfile                                  57  STORE TRIM(@First@)+' '+Last TO word31
+ 7 DO WHILE .NOT. EOF                       58  IF First=
+ 8  * Get data for lst label across           59   STORE $(word31,3,15) TO word31
+ 9  DO @!ILE * .AND. .NOT. EOF                60  ENDIF First
+10   SKIP                                     6261  STORE Addr TO word32@,,+St+' @+Zip
+11  ENDDO *                                       STORE TRIM(City)+
+12  STORE TRIM(Fir@,st)+' '+Last TO wordll      63TO word33
+13  IF First=                                      IF EOF ' , TO word31
+14   STORE $(word11,3,15) TO wordll           6564   STORE , ,
+                                                              TO word32
+15  ENDIF First                               66STORE , , TO word33
+                                                    STORE ' , TO word34
+16  STORE Addr TO word'12                      67   STORE
+17  STORE TRIM(City)+ , '+St+' '+Zip          68  ENDIF EOF
+    TO word13                                 69  SKIP
+18  IF parts=1                                70  *
+19   ? wordll                                 71  DO WHILE nparts>3
+20   ? word12                                 72  * Get data for 4th label across
+21   ? word13                                  73  DO WHILE * .AND. .NOT. EOF
+22   SKIP                                     74   SKIP
+23  ELSE                                      75  ENDDO *
+24  IF EOF @ , TO wordll                      76  STORE TRIM'(First')+' '+Last TO word41
+25   STORE @ , TO word12                      77  IF First=
+26   STORE ' , TO word13  .                   78   STORE $(word41,3,15) TO word41
+27   STORE                                         ENDIF First
+28   STORE ' ,' TO word14                      79
+29  ENDIF EOF                                 80  STORE Addr TO word42',+St+, ,+Zip
+30  SKIP                                       81  STORE TRIM(City)+ ,
+31  *                                         82TO word43
+32  STORE parts TO nparts                     83IF EOF , ,
+33  DO WHILE nparts>1                               STORE ' , TOTO word42word41
+34  * Get data for 2nd label across           84   STORE ' , TO word43
+35  DO WHILE * .AND. .NOT. EOF                85   STORE ' , TO word44
+36   SKIP                                     8786   STORE
+37  ENDDO *                                        ENDIF EOF
+38  STORE TRIM(Fir@,st)+' '+Last TO word21      88  SKIP
+39  IF First=                                 89  *
+40   STORE $(word21,3,15) TO word21           90  STORE 0 TO nparts
+41  ENDIF First                               91  ENDDO n>3
+                                               92  STORE 0 TO nparts
+42  STORE Addr TO word22@,+St+@ ,+Zip          93  ENDDO n>2
+43  STORE TRIM(City)+ ,
+    TO word23                                 94  STORE 0 TO nparts
+                                               95  ENDDO n>1
+44  IF EOF ' , TO word21                      96  DO &prfile
+45   STORE ' , TO word22                      97  ENDIF parts(1-part label)
+46   STORE ' , TO word23                      98  STORE 3 TO bot
+47   STORE @ , TO word24                      99  DO WHILE bot<versp
+48   STORE
+49  ENDIF EOF                                101100
+50  SKIP                                           STORE bot+1 TO bot
+51  *                                        103102  ENDDO bot
+                                                ENDDO EOF
+
+
+     1 * NAME2PRT.CMD                              1 * NAME4PRT.CMD
+     2 *                                            2 *
+     3 *Pri"ts 2-part labels                       3 *Prints 4-part labels
+     4 STORE $(wordll,l,horsp-2) TO wordll         4 STORE $(wordll@@l,horsp-2) TO wordll
+     5 ? wordll+$(sp,l,horsp-1-LEN(wordll))        5 ? wordll+$(sp,l,horsp-1-LEN(wordll))
+     6 ?? $(word21,1,horsp-2)                      6 STORE $(word21,1,horsp-2) TO word21
+     7 STORE $(word12,1,horsp-2) TO word12         7 ?? word21+$(sp,l,horsp-1 LEN(word21))
+     8 ? word12+$(sp,l,horsp-1-LEN(word12))        8 STORE $@word31,1,horsp-2) TO word31
+     9 ?? $(word22,1,horsp-2)                      9 ?? word31+$(sp,l,hors@-1-LEN(word31))
+    10 STORE $(word13,1,horsp-2) TO word13        10 ?? $(word41,1,horsp-2,
+    11 ? word13+$(sp,l,ho'sp-1-LEN(word13))       11 STORE $(word12,1,horsp-2) TO word12
+    12 ?? $(word2'Y'3.OR.'l,@orsp-'Y2')                     12 ? word12+$(sp,l,horsp-1-LEN(word12))
+    13 IF co=         ad2=                      13 STORE $(word22@1,horsp-2) TO word22
+    14  STORE $(word14,1,horsp-2) TO word14       14 ?? word22+$(sp,l,hsp-1-LEN(word22))
+    15  ? word14+$(sp,l,horsp-1-LEN(word14))      15 STORE $(word32,1,horsp-2) TO word32
+    16  ?? $(word24,1:!:orsp-2)                   16 ?? word32+$(sp,l,hors@-1-LEN(word32))
+                                                   17 ?? $(word42,1,ho'sp-2@
+    17 ENDIF 'OR' .AND. ad2='Y'                    18 STORE $(word13,1,horsp-2) TO word13
+    18 IF co= Y
+    19  STORE $(word15,1,horsp-2) TO word15       19 ? word13+$(sp,l,horsp-1 LEN(word13))
+    20  ? word15+$(sp,l,horsp-1-LEN(word15))      20 STORE $(word23,1,horsp-2) TO word23
+    21  ?? $(word25,1,horsp-2)                    21 ?? word23+$(sp,l,horsp-1-LEN(word23))
+    22 ENDIF AND                                  22 STORE $(word33,1,horsp-2) TO word33
+    23 RETURN                                      23 ?? word33+$(sp,l,horsp-1-LEN(word33))
+                                                   24 ?? $(word4',3,1,horsp-2)'Y@
+                                                   25 IF co= Y  .OR. ad2=
+                                                   26  STORE $(word14,1,horsp-2) TO word14
+                                                   27  ? word14+$(sp,l,horsp-1-LEN(word14))
+                                                   28  STORE $(word24,1,horsp-2) TO word24
+                                                   29  ?? word24+$(sp,l,horsp-1-LEN(word24))
+     1 * NAME3PRT.CMD                             30  STORE $(word34,1,horsp-2) TO word34
+     2 *                                          31  ?? word34+$(sp,l,hors@-1 LEN(word34))
+     3 *Prints 3-part labels                      32  ?? $(word44,1,horsp-2@
+     4 STORE $(wordll,l,horsp-2) TO wordll        33 ENDIF OR'Y' .AND. ad2='Y'
+     5 ? wordll+$(sp,l,@orsp-1-LEN(wordll))       34 IF co=
+     6 STORE $(word21,1,horsp-2) TO word21        35  STORE $(word15,1,horsp-2) TO word15
+     7 ?? word21+$(sp,l,hors@-1-LEN(word21))      36  ? word15+$(sp,l,horsp-1-LEN(word15))
+     8 ?? $(word31,1,@orsp-2@                     37  STORE $(word25,1,horsp@2) TO word25    9 STORE $(word12,1,horsp-2) TO word12        38  ?? word25+$(sp,l,horsp-1 LEN(word25))
+    10 ? word12+$(sp,l,horsp-1 I.EN(@ord12))       39  STORE $(@ord35,1,horsp-2) TO word35
+    11 STORE $(word22,1,horsp-2) TO word22        40  ?? word35+$(sp,l,hors@-1 LEN(word35))
+    12 ?? word22+$(sp,l,hors@-1 LEN(word22))      41  ?? $(word45,1,horsp-2@
+    13 ?? $(word32,1,hozsp-2@                     42 ENDIF AND
+    14 STORE $(word13,1,horsp-2) TO word13        43 RETURN
+    15 ? word13+$(sp,l,horsp-1 LEN(@ord13))
+    16 STORE $(word23,1,horsp-2) TO word23
+    17 ?? word23+$(sp,l,hors@,-1 LEN(word23))
+                  ,l,horsp-2'Y,
+    18 ?? $@word33'Y,.OR. ad2=
+    19 IF co=
+    20  STORE $(word14,1,horsp-2) TO word14
+    21  ? word14+$(sp,l,horsp-1-LEN(word14))
+    22  STORE $(word24,1,horsp-2) TO word24
+    23  ?? word24+$(sp,l,hors@-1-LEN(word24))
+    24  ?? $(word34,1,horsp-2,
+    25 ENDIF OR'Y, .AND. ad2='Y'
+    26 IF co=
+    27  STORE $(word15,1,horsp-2) TO word15
+    28  ? word15+$(sp,l,horsp-1-LEN(word15))
+    29  STORE $(word25,1,horsp-2) TO word25
+    30  ?? word25+$(sp,l,horsp-1-LEN(word25))
+    31  ?? $(word35,1,horsp-2)
+    32 ENDIF AND
+    33 RETURN
+
+
+*** END OF DOCUMENT ***

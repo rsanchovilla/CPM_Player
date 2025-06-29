@@ -1,0 +1,133 @@
+;This file contains several programming examples from the book ARTIFICIAL
+; INTELLIGENCE PROGRAMMING (henceforth: AIP; supplied with Cromemco LISP).
+; These examples include the use of read macros to develop the "liberal
+; approach" advocated in section 4.4 of AIP.  Comments are included to
+; explain the code and to point out differences between the two LISPs.
+
+;First, note that Cromemco LISP has a different commenting convention
+; from AIP LISP.
+
+;------------------------------------------------------------------------
+
+;Below are the basic read-macro facilities of section 3.3:
+
+;NOTE: $, rather than ", is used for for quasi-quote. " can be used if desired.
+
+(dmc \| (&aux (char(readch)))
+  (cond ((eq char \@)  (list '*splice-unquote* (read)))
+	((eq char \$) (quasi-quote (read)))
+	(t (list 'error char))))
+
+;NOTE: the super-bracket, ], does not exist. When accepting input from the
+; console, Cromemco LISP will react when parentheses balance.
+; When creating files that will be LOADed into LISP,
+; one can simply build a right-parentheses "fence", since excess right
+; parentheses are simply ignored.  (e.g.:
+))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+(dmc \@ () (list '*unquote* (read)))
+
+(de readch ( &OPTIONAL (src current-source) 
+	     &AUX (tem (typeread src)))
+	(prog1 (read src 1) (typeread src tem)))
+
+;NOTE: we define readch as an instance of read
+
+(de quasi-quote (skel)
+  (cond ((null skel) nil)
+	((atom skel) (list 'quote skel))
+	((eq (car skel) '*unquote*) (cadr skel))
+	((and (listp (car skel))(eq (caar skel) '*splice-unquote*))
+		(list 'append (cadar skel)(quasi-quote (cdr skel))))
+	(t (combine-skels (quasi-quote (car skel))
+			(quasi-quote (cdr skel))
+			skel))))
+
+;NOTE: we use listp, not consp
+
+(de combine-skels (lft rgt skel)
+  (cond ((and (isconst lft)(isconst rgt))(list 'quote skel))
+	((null rgt)(list 'list lft))
+	((and (listp rgt)(eq (car rgt) 'list))
+		(cons 'list (cons lft (cdr rgt))))
+	(t (list 'cons lft rgt))))
+
+(de isconst (x) (or (null x) (eq x t)(numberp x)
+		    (and (listp x) (eq (car x) 'quote))))
+
+)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+;Below are examples from the record package of section 4.3:
+
+(dm record-type (l) (let ((*type* (cadr l)) 
+			  (slots (caddr l)))
+	(list 'de *type* (slot-funs-extract slots nil)
+			(struc-cons-form slots))))
+
+;NOTE: the let syntax is slightly different
+
+(de slot-funs-extract (slots path)
+  (cond	((null slots) nil)
+	((atom slots) (eval  |$(dm @(insert (string (pname slots)
+						  \:
+						  (pname *type*)))
+				 (l)
+				 (list  ' @(insert (apply string 
+							  |$(\c |@path \r)))
+					(cadr l))))
+ 		(list slots))
+	(t (nconc (slot-funs-extract (car slots)(cons \a path))
+		(slot-funs-extract (cdr slots)(cons \d path))))))
+
+;NOTE: several differences occur in slot-funs-extract. Cromemco LISP
+; has better string facilities, so this function is simpler, and takes
+; fewer cons-es.
+; Note also the use of apply. This occurs because string takes an arbitrary
+; number of arguments.
+
+(de struc-cons-form (struc)
+  (cond	((null struc) nil)
+	((atom struc) struc)
+	(t (list 
+	    'cons 
+	    (struc-cons-form (car struc))
+	    (struc-cons-form (cdr struc)))))))
+
+; an example
+
+(record-type goalnode (char state . plans))
+
+(setq xx (goalnode 'macbeth '(eq macbeth king) '((murder )(treason))))
+
+(char:goalnode xx)
+
+(state:goalnode xx)
+
+(plans:goalnode xx)
+
+)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+;Regarding section 5.4, LOOP can be defined
+; as a macro expansion to the Cromemco LISP DO expression.
+
+)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+;Below is the := macro definition from section 9.2:
+
+(DM := (EXPRESSION)
+	(LET ((LFT (CADR EXPRESSION))
+	      (RGT (CADDR EXPRESSION)))
+	     (COND ((ATOM LFT) |$(SETQ @LFT @RGT))
+		   ((GETPROP (CAR LFT) 'SET-PROGRAM)
+			(CONS (GETPROP(CAR LFT) 'SET-PROGRAM)
+			      (APPEND (CDR LFT) (LIST RGT))))
+		   (T (ERROR)))) )
+
+(PUTPROP 'CAR 'SET-PROGRAM 'RPLACA)
+
+(PUTPROP 'CDR 'SET-PROGRAM 'RPLACD)
+
+(PUTPROP 'GETPROP 'SET-PROGRAM 'PUTPROP)
+
+;NOTE: the different order in the arguments to the property-list function,
+; PUTPROP.

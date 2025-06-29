@@ -1,0 +1,121 @@
+
+
+prolib2-mod(func functor cap arg clause space read write 
+         writeln nl list listall assert asserta assertz retract 
+         retractall fail true var nonvar atom atomic integer chr getel trunc
+         call save name :- ?- ; , not is =.. = \= 
+         < > "<=" ">=" == \== . - + : * mod )(make_clause length fx)
+   
+
+
+
+
+((* X Y Z)
+  (is x X)
+  (is y Y)
+  /
+  (TIMES x y Z))
+
+((: X Y Z)
+  (is x X)
+  (is y Y)
+  /
+  (TIMES y Z X))
+ 
+((+ X Y Z)
+  (is x X)
+  (is y Y) 
+  /
+  (SUM x y Z))
+ 
+((- X Y Z)
+  (is x X)
+  (is y Y) 
+  /
+  (SUM y Z x))
+
+((is X X)
+  (NUM X)/)
+((is X (Y Z x))
+  (func Y)
+  /
+  (is y Z)
+  (is z x)
+  (Y y z X))
+((is X (- Y))/
+  (is Z Y)
+  (SUM X Z 0))
+
+ 
+((func *))
+((func +))
+((func -))
+((func :))
+
+
+
+((cap X)(LESS X [)(LESS @ X))
+
+((read X)(R X))
+((write |X)(P |X))
+((writeln |X)(P |X)(PP))
+((nl)(PP))
+((list X)(LIST (X)))
+((listall)(LIST ALL))
+
+((asserta X)(make_clause X Y)(ADDCL Y 0))
+((assert X)(make_clause X Y)(ADDCL Y))
+((assertz X)(make_clause X Y)(ADDCL Y))
+((retract X)(make_clause X Y)(DELCL Y))
+((retractall X)(DELCL ((X|Y)|Z))
+               (retractall X))
+((retractall X))
+((clause X Y)(CL (X|Y)))
+((space X)(SPACE X))
+
+((call |X)(make_clause X Y)/|X)
+((load X)(LOAD X))
+((save X)(SAVE X))
+
+((name X Y)(NOT VAR X)(STRINGOF Z X)/(chr Z Y))
+((name X Y)(chr Z Y)(STRINGOF Z X))
+((chr () ()))
+((chr (X|Y) (Z|x))(CHAROF X Z)(chr Y x))
+  
+((functor (X|Y) X Z)(length Y Z))
+
+((fail)FAIL)
+((true))
+
+((var X)(VAR X))
+((nonvar X)(VAR X)/FAIL)
+((nonvar X))
+((atom X)(CON X))
+((integer X)(INT X Y)(SUM X 0 Y))
+((trunc X Y)(INT X Y))
+((atomic X)(CON X))
+((atomic X)(integer X))   
+
+
+((arg X (Y|Z) x)(getel X Z x))
+((getel 1 (X|Y) X))
+((getel X (Y|Z) x)
+  (SUM y 1 X)
+  (getel y Z x))
+
+((?- X)(? X))
+((=.. X X))
+((; X Y)(OR X Y))
+((not|X)(NOT|X))
+((= X X))
+((\= X X)/FAIL)
+((\= X Y))
+((== X X)(NOT VAR X))
+((\== X Y)(NOT == X Y))
+((< X Y)(LESS X Y))
+((> X Y)(LESS Y X))
+(("<=" X Y)(NOT LESS Y X))
+((">=" X Y)(NOT LESS X Y)) 
+CLMOD
+
+

@@ -1,0 +1,27 @@
+; Do not include .PAS extension in param source file name
+; Compile, Translate (generate 8080 code in PROG.COM), rename and run .COM
+XSUB
+NS5BAS
+;expect "READY"
+MEMSET 45056
+LOAD PASCOMP
+RUN
+;expect "CLEAR P-CODE AREA?"
+Y
+;expect "WANT CODE PRINTED?"
+Y
+;expect "0 "
+$$1.PAS
+;expect "EXIT (E), INTERPRET (I) OR TRANSLATE (T)?"
+T
+;expect "HEX ADDRESS OF 8080 RUNTIME CODE (<CR>=1A00):"
+;send #13  ; press enter
+;expect "HEX ADDRESS OF TINY PASCAL PCODE (<CR>=C000):"
+;send #13 
+;expect "HEX ADDRESS OF 8080 PROGRAM CODE (<CR>=B000):"
+;send #13 
+;expect "STACK START ADDR.(<CR>=A000):"
+;send #13 
+ERA $1.COM
+REN $1.COM=PROG.COM
+$1

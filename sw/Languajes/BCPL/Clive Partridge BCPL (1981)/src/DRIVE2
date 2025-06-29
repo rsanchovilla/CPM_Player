@@ -1,0 +1,294 @@
+	NAME DRIVE2
+ 
+	PSECT ABS
+ 
+	ORG 100H
+ 
+* This is the module that the system enters
+* at the start of execution of the BCPL
+* program. This module must be loaded at
+* address 100H (or whatever the load address
+* given to the linker was). On entry
+* the CIS and COS are set to the terminal,
+* the space for the global vector is
+* allocated and the modules scanned for
+* definitions of globals which are
+* loaded accordingly into the global
+* vector. The global PARMS is set to the
+* rest of the command line. BC is set to
+* a boot sequence before execution begins.
+* When execution ends (by a FINISH),
+* all streams are closed if not so 
+* already and control is returned to 
+* to the system.
+ 
+REBOOT	EQU 0
+BDOS	EQU 5
+ 
+* External globals.
+ 
+	GLOBAL INIT
+	GLOBAL PROG
+	GLOBAL CLOSE
+ 
+* Internal globals.
+ 
+	GLOBAL INCON
+	GLOBAL OUTCON
+	GLOBAL IOTAB
+	GLOBAL IOAREA
+	GLOBAL FINISH
+ 
+* Disc buffers parameters.
+ 
+BUFFSIZ	EQU 128+38
+NOBUFF	EQU 8
+ 
+* Offsets from IY.
+ 
+DYNP	EQU 0
+GLOB	EQU 2
+STACKP	EQU 4
+MAXIY	EQU 6
+ 
+* Initial start-up point here.
+ 
+	LD HL,(BDOS+1)
+	LD SP,HL
+	LD IY,AREAIY
+	LD B,NOBUFF*2
+	LD HL,IOTAB
+LOOP9:	LD (HL),0
+	INC HL
+	DJNZ LOOP9
+	LD BC,0
+	LD HL,PROG
+ 
+* The loop invariant here is that BC is the
+* maximum global number found so far, HL
+* points to the base of the next module
+* to be looked at.
+ 
+LOOP1:	LD D,H
+	LD E,L
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A
+	OR H
+ 
+* If the relative pointer to the end of the
+* module is 0 then we have processed the last
+* module.
+ 
+	JR Z GDONE
+	ADD HL,DE
+ 
+* HL now points to the last two bytes of the
+* module where is stored the maximum global
+* number of the module.
+ 
+	LD E,(HL)
+	INC HL
+	LD D,(HL)
+	INC HL
+ 
+* HL points to start of next module, DE
+* is the highest global.
+* If it exceeds the previous maximum, update maximum.
+ 
+	EX DE,HL
+	OR A
+	SBC HL,BC
+	JR C NOPE
+	ADD HL,BC
+	LD B,H
+	LD C,L
+NOPE:	EX DE,HL
+	JR LOOP1
+ 
+* Here with DE pointing to end of program.
+* Put global vector here. Set (IY+GLOB) to
+* the BCPL address of it.
+ 
+ 
+GDONE:	EX DE,HL
+	SRL H
+	RR L
+	INC HL
+	LD (IY+GLOB),L
+	LD (IY+GLOB+1),H
+	ADD HL,BC
+	INC HL
+	PUSH HL
+	ADD HL,HL
+	LD (IY+STACKP),L
+	LD (IY+STACKP+1),H
+	POP HL
+ 
+* Put stack after global vector. HL is the 
+* BCPL address of it.
+* (SP) is byte address of first byte of
+* stack.
+* HL is STACKBASE so set in global 54.
+ 
+	LD BC,54
+	CALL FASSGLB
+ 
+* Set up STACKEND as well.
+ 
+	INC BC
+	LD HL,(BDOS+1)
+	SRL H
+	RR L
+	CALL FASSGLB
+	LD HL,80H.SHR.1
+	LD BC,45
+	CALL FASSGLB	;initialise PARMS
+ 
+* Initialise global vector.
+ 
+	LD HL,PROG
+ 
+* Loop invariant is HL points to next module.
+ 
+LOOP2:	PUSH HL
+	POP IX
+	LD D,H
+	LD E,L
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A
+	OR H
+ 
+* If last module done exit loop.
+ 
+	JR Z GDONE2
+	ADD HL,DE
+	PUSH HL
+	DEC HL
+	LD D,(HL)
+	DEC HL
+	LD E,(HL)
+	DEC HL
+ 
+* DE is number of globals defined in the
+* module that have yet to be put in the global
+* vector, HL points to last byte of the next
+* definition, IX is base of module.
+ 
+LOOP3:	LD A,D
+	OR E
+	JR Z GDONE3
+	PUSH DE
+	LD D,(HL)
+	DEC HL
+	LD E,(HL)
+ 
+* DE is displacement of address of the value
+* of the global from the base of the module.
+ 
+	PUSH IX
+	ADD IX,DE
+	EX (SP),IX
+	POP DE
+ 
+* DE is absolute address of the global routine.
+ 
+	DEC HL
+	LD B,(HL)
+	DEC HL
+	LD C,(HL)
+ 
+* BC is the associated global number.
+ 
+	DEC HL
+	PUSH HL
+ 
+* BC is global number,
+* DE is absolute value.
+ 
+	CALL ASSGLB
+	POP HL
+	POP DE
+	DEC DE
+	JR LOOP3
+ 
+* FASSGLB assigns HL to GLOBAL BC inserting
+* the value forwards.
+ 
+FASSGLB:LD D,L
+	LD E,H
+ 
+* ASSGLB initialises word BC of the global
+* vector to the value DE.
+ 
+ASSGLB:	LD H,(IY+GLOB+1)
+	LD L,(IY+GLOB+0)
+	ADD HL,BC
+	ADD HL,HL
+	LD (HL),E
+	INC HL
+	LD (HL),D
+	RET
+ 
+GDONE3:	POP HL
+	INC HL
+	INC HL
+	JR LOOP2
+ 
+GDONE2:	LD HL,1
+	LD (INCON),HL
+	LD (OUTCON),HL
+ 
+* Set program counter (BC) onto initial boot 
+* sequence and now we can start interpreting
+* Y-codes galore.
+ 
+	LD BC,BOOT
+	JP INIT
+ 
+* Some space for odds and ends.
+ 
+AREAIY:	DEFS MAXIY
+IOAREA:	DEFS NOBUFF*BUFFSIZ
+IOTAB:	DEFS NOBUFF*2
+INCON:	DEFS 2
+OUTCON:	DEFS 2
+ 
+* When finished ensure all disc files are closed.
+ 
+FINISH:	LD B,NOBUFF
+	LD HL,IOTAB
+FINL1:	PUSH BC
+	LD E,(HL)
+	INC HL
+	LD D,(HL)
+	INC HL
+	PUSH HL
+	EX DE,HL
+	CALL CLOSE
+	POP HL
+	POP BC
+	DJNZ FINL1
+	JP REBOOT
+ 
+* The boot sequence is:
+*     YDPSHGLOB 1
+*     YPCALL0
+*     YFINISH
+* i.e. call START and finish.
+ 
+BOOT:	DEFB 3AH,1,41H,1H 	;very Y-code dependant
+ 
+* Align on two byte boundary.
+ 
+	IF ($.AND.1)=1
+	DEFB 0
+	ENDIF
+ 
+	END
+
+	END
+?ºOù?ºæOù?ºOù?ºæoöGG6á_—QëWZOOù?ºOù?ºOù?º?ùoöoº?ùoöoºﬂöﬂöæöööæöæﬂüüöﬂﬂæööﬂö

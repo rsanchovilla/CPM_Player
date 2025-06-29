@@ -1,0 +1,67 @@
+	title	'TIMEDAY overlay for Kaypro only (84/11/11)'
+;
+; Allow PCD/Pascal system V 2.4.4 to read date and time.
+; Assemble to .HEX file and overlay.  CPMLINK must be first
+; module of .COM file linked to use this.
+;
+	org	03bh;		avail. in Kaypro II/4
+year:	ds	1
+month:	ds	1
+day:	ds	1
+hour:	ds	1
+min:	ds	1
+;
+	org	0124h;		CPMLINK connector vector
+	jmp	dotime
+        jmp	timers
+;
+; Organized so that power on values of 00 or 0ff act as if
+; the timer has never been set.
+	org	0139h;		CPMLINK patch space
+dotime:	lxi	h,year-1
+	add	l
+	mov	l,a
+	mov	a,m
+	cma
+	ora	a
+	rz;			was 0ffh, not set
+	cma
+	ret;			if was 0, not set
+;
+; Dummy timers to set etc time of day
+timers:	ora	a
+	jz	setdat
+	dcr	a
+	jz	stoptm
+	dcr	a
+	jz	sethr
+	lxi	h,0
+	mov	d,h
+	mov	e,h
+	stc
+	ret;			other functions not implemented
+;
+; set hour/min, d=hr, e=min
+sethr:	mov	l,d;		set hour
+	mov	h,e;		and min
+	jmp	hrmin
+;
+; d=day, e=month, hl=year (use low part only)
+setdat:	mov	a,l
+	lhld	hour
+	jmp	setall
+;
+stoptm:	mov	h,a;		all zeroes
+	mov	l,a
+	mov	d,a
+	mov	e,a
+setall:	sta	year;		zero year
+	xchg
+	shld	month;		zero month/day
+	xchg
+hrmin:	shld	hour;		zero/set hour/min
+	ora	a
+	ret
+;
+	end
+Å˙

@@ -1,0 +1,98 @@
+{  OVERLAY.MIC    Overlay-Manager fr MSX mit Memory-Mapper V 1.2 21-NOV-1987 }
+
+{  Aufruf:  MapInit; LoadOverlay (addr(xyz));
+
+            xyz ist eine beliebige Overlay-Funktion oder -Prozedur.
+
+   Es wird die gesamte Overlay-Datei, in der xyz enthalten ist, in den
+   Mapper geladen. Alle folgenden Overlay-Aufrufe greifen nicht mehr
+   auf die Diskette zu!
+
+   Wenn kein Mapper vorhanden oder die Overlaydatei zu groá ist, wird der
+   LoadOverlay-Aufruf stillschweigend ignoriert, und die Overlays werden
+   wie gewohnt von der Diskette geladen.
+
+   Falls im Mapper-Speicher genug Platz ist, k”nnen selbstverst„ndlich auch
+   mehrere Overlay-Files gleichzeitig geladen werden. Der Versuch, dieselbe
+   Overlaydatei mehrfach zu "Mappern", ist Unfug und wird ignoriert.
+
+   Achtung: Es k”nnen nur globale Overlays global gemappt werden!
+   Overlays, die lokal innerhalb einer Funktion/Prozedur deklariert sind,
+   mssen auch innerhalb dieser Funktion/Prozedur mit LoadOverlay geladen
+   werden. Verschachtelte Overlays sind nicht erlaubt.
+}
+
+{$W0,A+,R-}
+
+
+procedure LoadOverlay (pos: integer);
+
+  type
+    buffer = array[0..MAXINT] of byte;
+
+  var
+    p:       ^MapPointer;
+    c:       MapPointer;
+    s, m, i: integer;
+    OvrBuf:  ^buffer;
+
+  procedure OverlayManager;
+
+    var
+      offset:  integer absolute $E6;
+      records: integer absolute $E8;
+      pc:      ^MapPointer absolute $E2;
+
+    begin
+      inline ($ED/$53/RECORDS/$22/OFFSET/$EB/$E1/$4E/$73/$23/$46/$72/$23/$22/
+              PC/$C5/$01/$0B/$00/$09/$C1/$22/M/$E5/$EB/$AF/$ED/$42/$C8/$E1);
+      c := pc^;
+      MapIncrement (c, offset shl 7);
+      getmem (OvrBuf, 128);
+      while records > 0 do
+        begin
+        ReadMap (c, OvrBuf^, 128);
+        MapIncrement (c, 128);
+        move (OvrBuf^, mem[m], 128);
+        m       := m + 128;
+        records := pred(records);
+        end;
+      freemem (OvrBuf, 128);
+      inline ($2A/PC/$01/$0B/$00/$09/$E9);
+    end;
+
+
+  begin
+    if not MapperFound then exit;
+
+    inline ($2A/POS/$01/$05/$00/$09/$22/P/$11/$5D/$00/$01/$0B/$00/$ED/$B0/$3A/
+            $DC/$00/$32/$5C/$00/$AF/$32/$68/$00);
+
+
+    if BDOS(15,92) <> 0 then exit;
+
+    inline ($21/$80/$00/$22/$6A/$00/$6C/$22/$7D/$00/$AF/$32/$7F/$00);
+
+    i := ((mem[$6C]+127) shr 7) + (mem[$6D] shl 1) + (mem[$6E] shl 9);
+    if (i * 128.0 <= MapMaxAvail)
+    then begin
+      s := MaxAvail;
+      if s < 0 then s := MAXINT;
+      getmem    (OvrBuf, s);
+      MapGetMem (p^, i shl 7);
+      c := p^;
+      inline ($ED/$5B/OVRBUF/$0E/$1A/$CD/$05/$00);
+      while i > 0 do
+        begin
+        inline ($11/$5C/$00/$2A/S/$29/$6C/$26/$00/$0E/$27/$CD/$05/$00/$22/M);
+        WriteMap  (c, OvrBuf^, m shl 7);
+        MapIncrement (c, m shl 7);
+        i := i - m;
+        end;
+      freemem (OvrBuf, s);
+      mem[succ(pos)]       := lo(addr(OverlayManager));
+      mem[succ(succ(pos))] := hi(addr(OverlayManager));
+      end;
+    BDOS (16,92);
+  end;
+

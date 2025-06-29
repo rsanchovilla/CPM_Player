@@ -1,0 +1,315 @@
+INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.
+                                	SUBTTL	INLIN - LINE INPUT ROUTINE
+                                	PUBLIC	INLIN,QINLIN
+                                	EXTRN	FININL
+                                	EXTRN	BUF,CRDO,INCHR,OUTDO
+                                	EXTRN	LISPRT
+                                	EXTRN	CTRLPT
+                                
+                                
+                                ; THIS IS THE LINE INPUT ROUTINE
+                                ; IT READS CHARACTERS INTO BUF USING _ AS THE
+                                ; CHARACTER DELETE CHARACTER AND @ AS THE LINE DELETE CHARACTER
+                                ; IF MORE THAN BUFLEN CHARACTER ARE TYPED, NO ECHOING
+                                ; IS DONE UNTIL A  _ @ OR CARRIAGE-RETURN IS TYPED.
+                                ; CONTROL-G WILL BE TYPED FOR EACH EXTRA CHARACTER.
+                                ; THE ROUTINE IS ENTERED AT INLIN, AT QINLIN TO TYPE A QUESTION MARK
+                                ; AND A SPACE FIRST
+                                
+  0000'   3E 3F                 QINLIN:	MVI	A,'?'			;GET A QMARK
+  0002'   CD 0000*              	CALL	OUTDO			;TYPE IT
+  0005'   3E 20                 	MVI	A,' '			;SPACE
+  0007'   CD 0000*              	CALL	OUTDO			;TYPE IT TOO
+  000A'   C3 001B'              	JMP	INLIN			;NO CRUNCHING IN THIS CASE
+  000D'   CD 0000*              INLINC:	CALL	INCHR			;GET A CHAR
+  0010'   FE 01                 	CPI	1			;CONTROL A?
+  0012'   C2 006D'              	JNZ	INLNC1			;NO, TREAT NORMALLY
+  0015'   36 00                 	MVI	M,0			;SAVE TERMINATOR
+  0017'   C3 002B'              	JMP	INLED1			;GO EDIT FROM HERE
+                                
+  001A'   70                    INLINQ:	MOV	M,B			;STORE ZERO IN BUF
+  001B'                         INLIN:
+  001B'   AF                    	XRA	A			;CLEAR TYPE AHEAD CHAR
+                                	EXTRN	CHARC
+  001C'   32 0000*              	STA	CHARC			;LIKE SO
+                                	PUBLIC	SINLIN
+                                	EXTRN	TEMPA
+  001F'   AF                    	XRA	A
+  0020'   32 0000*              	STA	TEMPA			;FLAG TO DO CR
+  0023'                         SINLIN:
+                                					;SAVE CURRENT CURSOR ADDRESS (TTYPOS)
+  0023'   CD 0000*              	CALL	INCHR			;GET CHAR
+  0026'   FE 01                 	CPI	1			;CONTROL-A?
+  0028'   C2 0062'              	JNZ	INLINS			;GO DO IT
+  002B'                         INLED1:
+  002B'   CD 0000*              	CALL	CRDO			;TYPE CRLF
+  002E'   21 FFFF               	LXI	H,0+65535		;GET SPECIAL LINE #
+                                	EXTRN	INLED
+  0031'   C3 0000*              	JMP	INLED			;GO TO EDIT CODE.
+                                					;GET CHAR
+  0034'                         RUBOUT:
+                                	EXTRN	RUBSW
+  0034'   3A 0000*              	LDA	RUBSW			;ARE WE ALREADY RUBBING OUT?
+  0037'   B7                    	ORA	A			;SET CC'S
+  0038'   3E 5C                 	MVI	A,'\'			;GET READY TO TYPE BACKSLASH
+INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+INLIN - LINE INPUT ROUTINE
+
+  003A'   32 0000*              	STA	RUBSW			;MAKE RUBSW NON-ZERO IF NOT ALREADY
+  003D'   C2 0048'              	JNZ	NOTBEG			;NOT RUBBING BACK TO BEGGINING
+  0040'   05                    	DCR	B			;AT BEGINNING OF LINE?
+  0041'   CA 001A'              	JZ	INLINQ			;SET FIRST BYTE IN BUF TO ZERO
+  0044'   CD 0000*              	CALL	OUTDO			;SEND BACKSLASH
+  0047'   04                    	INR	B			;EFFECTIVELY SKIP NEXT INSTRUCTION
+  0048'   05                    NOTBEG:	DCR	B			;BACK UP CHAR COUNT BY 1
+  0049'   2B                    	DCX	H			;AND LINE POSIT
+  004A'   CA 005C'              	JZ	INLINN			;AND RE-SET UP INPUT
+  004D'   7E                    	MOV	A,M			;OTHERWISE GET CHAR TO ECHO
+  004E'   CD 0000*              	CALL	OUTDO			;SEND IT
+  0051'   C3 000D'              	JMP	INLINC			;AND GET NEXT CHAR
+                                
+  0054'   05                    LINLIN:	DCR	B			;BACK ARROW SO DECREMENT COUNT
+  0055'   2B                    LINLN2:	DCX	H			;BACK UP POINTER
+  0056'   CD 0000*              	CALL	OUTDO
+  0059'   C2 000D'              	JNZ	INLINC			;NOT TOO MANY SO CONTINUE
+  005C'   CD 0000*              INLINN:	CALL	OUTDO			;PRINT THE @, OR A SECOND _ IF THERE
+                                					;WERE TOO MANY
+  005F'   CD 0000*              INLINU:	CALL	CRDO			;TYPE A CRLF
+  0062'   21 0000*              INLINS:	LXI	H,BUF
+  0065'   06 01                 	MVI	B,1			;CHARACTER COUNT
+  0067'   F5                    	PUSH	PSW
+  0068'   AF                    	XRA	A			;ALWAYS CLEAR RUBOUT SWITCH
+  0069'   32 0000*              	STA	RUBSW			;BY STORING IN
+  006C'   F1                    	POP	PSW
+  006D'                         INLNC1:
+  006D'   4F                    	MOV	C,A			;SAVE CURRENT CHAR IN [C]
+  006E'   FE 7F                 	CPI	177O			;CHARACTER DELETE?
+  0070'   CA 0034'              	JZ	RUBOUT			;DO IT
+  0073'   3A 0000*              	LDA	RUBSW			;BEEN DOING A RUBOUT?
+  0076'   B7                    	ORA	A			;SET CC'S
+  0077'   CA 0083'              	JZ	NOTRUB			;NOPE.
+  007A'   3E 5C                 	MVI	A,'\'			;GET READY TO TYPE SLASH
+  007C'   CD 0000*              	CALL	OUTDO			;SEND IT
+  007F'   AF                    	XRA	A			;CLEAR RUBSW
+  0080'   32 0000*              	STA	RUBSW			;LIKE SO.
+  0083'   79                    NOTRUB:	MOV	A,C			;GET BACK CURRENT CHAR
+  0084'   FE 07                 	CPI	7			;IS IT BOB ALBRECHT RINGING THE BELL
+  0086'   CA 00ED'              	JZ	GOODCH			;FOR SCHOOL KIDS?
+  0089'   FE 03                 	CPI	3			;CONTROL-C?
+                                
+  008B'   CC 0000*              	CZ	CTRLPT			;TYPE ^ FOLLOWED BY CHAR, AND CRLF
+  008E'   37                    	STC				;RETURN WITH CARRY ON
+  008F'   C8                    	RZ				;IF IT WAS CONTROL-C
+  0090'   FE 0D                 	CPI	13			;IS IT A CARRIAGE RETURN?
+  0092'   CA 012E'              	JZ	GFNINL
+  0095'   FE 09                 	CPI	9			;TAB?
+  0097'   CA 00ED'              	JZ	GOODCH			;SAVE IT
+  009A'   FE 0A                 	CPI	10			;LF?
+  009C'   C2 00A7'              	JNZ	CHKFUN			;NO, SEE IF FUNNY CHAR
+  009F'   05                    	DCR	B			;SEE IF ONLY CHAR ON LINE
+  00A0'   CA 001B'              	JZ	INLIN			;IT IS, IGNORE
+  00A3'   04                    	INR	B			;RESTORE B
+  00A4'   C3 00ED'              	JMP	GOODCH			;IS LF AND NOT NULL LINE
+  00A7'                         CHKFUN:
+INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+INLIN - LINE INPUT ROUTINE
+
+  00A7'   FE 15                 	CPI	'U'-100O		;LINE DELETE? (CONTROL-U)
+  00A9'   CC 0000*              	CZ	CTRLPT			;PRINT ^U
+  00AC'   CA 001B'              	JZ	INLIN
+  00AF'   FE 08                 	CPI	8			;BACKSPACE? (CONTROL-H)?
+  00B1'   C2 00C5'              	JNZ	NTBKSP			;NO
+  00B4'   05                    DRBKSP:	DCR	B			;AT START OF LINE?
+  00B5'   CA 0023'              	JZ	SINLIN
+  00B8'   CD 0000*              	CALL	OUTDO			;SEND BACKSPACE
+  00BB'   3E 20                 	MVI	A,' '			;SEND SPACE TO WIPE OUT CHAR
+  00BD'   CD 0000*              	CALL	OUTDO
+  00C0'   3E 08                 	MVI	A,8			;SEND ANOTHER BACKSPACE
+  00C2'   C3 0055'              	JMP	LINLN2
+  00C5'                         NTBKSP:
+  00C5'   FE 18                 	CPI	24			;IS IT CONTROL-X (LINE DELETE)
+  00C7'   C2 00CF'              	JNZ	NTCTLX			;NO
+  00CA'   3E 23                 	MVI	A,'#'			;SEND NUMBER SIGN
+  00CC'   C3 005C'              	JMP	INLINN			;SEND # SIGN AND ECHO
+  00CF'                         NTCTLX:
+  00CF'   FE 12                 	CPI	18			;CONTROL-R?
+  00D1'   C2 00E8'              	JNZ	NTCTLR			;NO
+  00D4'   C5                    	PUSH	B			;SAVE [B,C]
+  00D5'   D5                    	PUSH	D			;SAVE [D,E]
+  00D6'   E5                    	PUSH	H			;SAVE [H,L]
+  00D7'   36 00                 	MVI	M,0			;STORE TERMINATOR
+  00D9'   CD 0000*              	CALL	CRDO			;DO CRLF
+  00DC'   21 0000*              	LXI	H,BUF			;POINT TO START OF BUFFER
+  00DF'   CD 0000*              	CALL	LISPRT			;HANDLE LINE-FEEDS PROPERLY
+  00E2'   E1                    	POP	H			;RESTORE [H,L]
+  00E3'   D1                    	POP	D			;RESTORE [D,E]
+  00E4'   C1                    	POP	B			;RESTORE [B,C]
+  00E5'   C3 000D'              	JMP	INLINC			;GET NEXT CHAR
+  00E8'                         NTCTLR:
+  00E8'   FE 20                 	CPI	32			;CHECK FOR FUNNY CHARACTERS
+  00EA'   DA 000D'              	JC	INLINC
+                                					;PHILIPS MUST ECHO CONTROLS
+  00ED'   78                    GOODCH:	MOV	A,B			;GET CURRENT LENGTH
+                                					;*** SPECIAL CHECK IF BUFFER 255 LONG FOR LEN2
+  00EE'   3C                    	INR	A			;BUMP LINE LENGTH
+                                	EXTRN	PTRFIL,LINGET,CURLIN
+  00EF'   C2 010B'              	JNZ	OUTBND			;NO CAUSE FOR BELL
+  00F2'   E5                    	PUSH	H			;SAVE [H,L]
+  00F3'   2A 0000*              	LHLD	PTRFIL			;SEE IF READING FROM DISK
+  00F6'   7C                    	MOV	A,H			;BY TESTING FOR PTRFIL
+  00F7'   B5                    	ORA	L			;NON-ZERO
+  00F8'   E1                    	POP	H			;RESTORE [H,L]
+  00F9'   3E 07                 	MVI	A,7			;GET BELL CHAR
+  00FB'   CA 010F'              	JZ	OUTBEL			;NOT READING FROM DISK, SEND BELL
+  00FE'   21 0000*              	LXI	H,BUF			;MAKE [H,L] POINT TO BUFF
+  0101'   CD 0000*              	CALL	LINGET			;GET LINE NUMBER
+  0104'   EB                    	XCHG				;GET LINE # IN [H,L]
+  0105'   22 0000*              	SHLD	CURLIN			;SAVE IN CURRENT LINE #
+                                	EXTRN	ERROR
+                                	EXTRN	LBOERR
+  0108'   C3 0000*              	JMP	LBOERR			;GIVE LINE BUFFER OVERFLOW ERROR
+  010B'                         OUTBND:
+  010B'   79                    	MOV	A,C			;RESTORE  CURRENT CHARACTER INTO [A]
+INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+INLIN - LINE INPUT ROUTINE
+
+  010C'   71                    	MOV	M,C			;STORE THIS CHARACTER
+  010D'   23                    	INX	H			;BUMP POINTER INTO BUF
+  010E'   04                    	INR	B			;INCREMENT CHARACTER COUNT
+  010F'                         OUTBEL:
+  010F'   CD 0000*              	CALL	OUTDO			;SEND THE CHAR
+                                					;SEND CHAR
+  0112'   D6 0A                 	SUI	10			;LF??
+  0114'   C2 000D'              	JNZ	INLINC			;NO, GET NEXT CHAR
+                                	EXTRN	TTYPOS
+  0117'   32 0000*              	STA	TTYPOS			;MAKE SURE TTYPOS=0.
+                                					;MAKE SURE TTYPOS=0
+  011A'   3E 0D                 	MVI	A,13			;SEND CR.
+  011C'   CD 0000*              	CALL	OUTDO			;BY CALLING OUTCHR
+  011F'   CD 0000*              EATNUL:	CALL	INCHR			;EAT NEXT CHAR
+  0122'   B7                    	ORA	A			;NULL AFTER LF?
+  0123'   CA 011F'              	JZ	EATNUL			;DONT LET IT GET BY
+  0126'   FE 0D                 	CPI	13			;A CARRIAGE RETURN??
+  0128'   CA 000D'              	JZ	INLINC			;EAT IT & GET NEXT CHAR
+  012B'   C3 006D'              	JMP	INLNC1			;USE IT
+                                					;MUST ECHO THE CHAR
+                                	PAGE
+INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+INLIN - LINE INPUT ROUTINE
+
+                                
+                                	EXTRN	TEMPA
+                                	PUBLIC	SCNSEM
+                                	EXTRN	CHRGTR,BUFMIN
+  012E'                         GFNINL:
+  012E'   3A 0000*              	LDA	TEMPA			;DO CR OR NOT?
+  0131'   B7                    	ORA	A			;TEST
+  0132'   CA 0000*              	JZ	FININL			;YES
+  0135'   AF                    	XRA	A			;MAKE ZERO
+  0136'   77                    	MOV	M,A			;STORE TERMINATOR
+  0137'   21 0000*              	LXI	H,BUFMIN		;GET POINTER TO START OF BUF
+  013A'   C9                    	RET				;DONE
+                                
+  013B'   F5                    SCNSEM:	PUSH	PSW			;SAVE CHAR
+  013C'   3E 00                 	MVI	A,0			;ASSUME NO SEMI
+  013E'   32 0000*              	STA	TEMPA
+  0141'   F1                    	POP	PSW			;GET BACK CHAR
+  0142'   FE 3B                 	CPI	';'			;IS IT A SEMI?
+  0144'   C0                    	RNZ				;NO
+  0145'   32 0000*              	STA	TEMPA			;FLAG NO CR FROM INLIN
+  0148'   C3 0000*              	JMP	CHRGTR
+                                	END	
+INLIN BASIC Interpreter Input Line routine/WHG/PGA/MBM, etc.	MACRO-80 3.44	09-Dec-81	PAGE	S
+INLIN - LINE INPUT ROUTINE
+
+Macros:
+
+Symbols:
+00FF*	BUF             00FF 	BUFLEN          0138*	BUFMIN          
+001D*	CHARC           00A7'	CHKFUN          0149*	CHRGTR          
+000E 	CLMWID          000F 	CONTO           0005 	CPMENT          
+0000 	CPMWRM          00DA*	CRDO            00AA*	CTRLPT          
+0106*	CURLIN          0080 	DATPSC          0000 	DBLTRN          
+00B4'	DRBKSP          011F'	EATNUL          0000*	ERROR           
+0133*	FININL          012E'	GFNINL          00ED'	GOODCH          
+0120*	INCHR           0032*	INLED           002B'	INLED1          
+001BI'	INLIN           000D'	INLINC          005C'	INLINN          
+001A'	INLINQ          0062'	INLINS          005F'	INLINU          
+006D'	INLNC1          0109*	LBOERR          0102*	LINGET          
+0054'	LINLIN          0050 	LINLN           0055'	LINLN2          
+00E0*	LISPRT          0084 	LPTLEN          0003 	MD.RND          
+0001 	MD.SQI          0002 	MD.SQO          0028 	NAMLEN          
+0048'	NOTBEG          0083'	NOTRUB          00C5'	NTBKSP          
+00E8'	NTCTLR          00CF'	NTCTLX          001D 	NUMLEV          
+000A 	NUMTMP          010F'	OUTBEL          010B'	OUTBND          
+011D*	OUTDO           00F4*	PTRFIL          0000I'	QINLIN          
+0034'	RUBOUT          0081*	RUBSW           013BI'	SCNSEM          
+0023I'	SINLIN          0003 	STRSIZ          0146*	TEMPA           
+0000 	TRUROM          0118*	TTYPOS          
+
+
+
+No Fatal error(s)
+
+
+ 0028 	NAMLEN          
+0048'	NOTBEG          0083'	NOTRUB          00C5'	NTBKSP          
+00E8'	NTCT

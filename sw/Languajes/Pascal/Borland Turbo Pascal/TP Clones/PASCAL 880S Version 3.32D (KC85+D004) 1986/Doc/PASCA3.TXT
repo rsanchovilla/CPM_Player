@@ -1,0 +1,1384 @@
+.pl68
+..15. 01. 90/ 29.01.90
+.pn39
+.op
+.po10
+.hePASCAL                         #              Sprachbeschreibung
+4. S p r a c h b e s c h r e i b u n g
+
+4.1. Beschreibungsform (Metasprache)
+
+Diå  Beschreibunç deò Sprachå erfolgô iî deò erweiterteî  BACKUS-
+NAUR-Form®  Diå Beschreibungselementå sinä ií Anhanç È erl}utert® 
+Deò Verweió voî deò Textdarstellunç auæ Anhanç È wirä miô 
+   Syntax:  Nichtterminalsymbol<   vorgenommen.
+
+
+4.2. Grundelemente
+
+4.2.1. Morpheme und Regelungen
+-------------------------------
+
+4.2.1.1. Wortsymbole
+- - - - - - - - - - -
+Folgendå  Wortå  sinä  fesô definierô unä  d{rfeî  nuò  f{ò  diå 
+entsprechendeî  Zwecke  verwendeô  werden®  Miô Sterî  versehenå 
+Worte sind nicht in Standard-Pascal enthalten:
+
+  *ABSOLUTE   AND      ARRAY     BEGIN      CASE        CONST
+   DIV        DO       DOWNTO    ELSE       END        *EXTERNAL
+   FILE       FOR      FORWARD   FUNCTION   GOTO        IF
+   IN        *INLINE   LABEL     MOD        NIL         NOT
+   OF         OR      *OVERLAY   PACKED     PROCEDURE   PROGRAM
+   RECORD     REPEAT   SET      *SHL       *SHR        *STRING
+   THEN       TO       TYPE      UNTIL      VAR         WHILE
+   WITH      *XOR
+
+
+4.2.1.2. Standardbezeichner
+- - - - - - - - - - - - - -
+PASCAÌ  880/Ó  verwendeô einå Anzahì voî Standardbezeichnerî  aló 
+Nameî f{ò Konstanten¬  Typen¬ Variableî ¬ Prozedureî unä Funktio
+nen®  Dieså Standardbezeichneò sollteî nichô umdefinierô  werden® 
+Als Standardbezeichner werden verwendet:
+
+ABS        ADDR      ARCTAN      ASSIGN      AUX         AUXINPTR
+AUXOUTPTR  BDOS      BDOSHL      BLOCKREAD   BLOCKWRITE  BIOS
+BIOSHL     BOOLEAN   BUFLEN      BYTE        CHAIN       CHAR
+CHR        CLOSE     CLREOL      CLRSCR      CON         CONINPTR
+CONOUTPTR  CONCAT    CONSTPTR    COPY        COS         DELAY
+DELETE     DISPOSE   EOF         EOLN        ERASE       EXIT
+EXECUTE    EXP       FALSE       FILEPOS     FILESIZE    FILLCHAR
+FLUSH      FRAC      FREEMEM     GETMEM      GOTOXY      HALT
+HEAPPTR    HI        IORESULT    INPUT       INSERT      INT
+INTEGER    KBD       KEYPRESSED  LENGTH      LN          LO
+LST        LSTOUTPTR MARK        MAXINT      MAXAVAIL    MEM
+MEMAVAIL   MOVE      NEW         NORMSCR     ODD         ORD
+OUTPUT     OVRDRIVE  PI          PARAMCOUNT  PARAMSTR    PORT
+POS        PRED      PTR         RANDOM      RANDOMSIZE  READ
+READLN     REAL      RECURPTR    RELEASE     RENAME      RESET
+REWRITE    ROUND     SEEK        SEEKEOF     SEEKEOLN    SIN
+SIZEOF     SQR       SPECSCR     SQRT        STACKPTR    STR
+SUCC       SWAP      TEXT        TRUE        TRUNC       USR
+UPCASE     VAL       WRITE       WRITELNŠ4.2.1.3. Spezialsymbole
+- - - - - - - - - - - - 
+
+Folgende Spezialsymbole gelten:
+Index- und Elementeklammern:          ^ ~
+Ausdrucks- und
+Funktions-/Prozedurklammern:          ( )
+Zeigermarkierung:       
+Kommentar- und Direktivklammern:           
+
+Operatoren ohne Wortsymbole:
+Arithmetische 
+Operatoren:              * ! - ! + ! /
+Zuweisungsoperator:      :=
+Vergleichsoperatoren:     < !   = ! <= !   ! < ! =
+Teilbereichsbegrenzer:    ..
+
+Als Transkriptoren sind erlaubt:
+Klammern:        (. .) gleichbedeutend mit  ^ ~
+                 (* *) gleichbedeutend mit  
+
+
+4.2.1.4. Begrenzer
+- - - - - - - - - -
+
+Sprachelementå  m{sseî  durcè  wenigstenó  eineî  deò   folgendeî 
+Begrenzeò getrennô werden:
+
+       Leerzeichen,
+       Zeilenende,
+       Kommentar.
+
+
+4.2.1.5. Zeilenl}nge
+- - - - - - - - - - -
+
+Diå maximalå L}ngå eineò Programmzeilå betr}gô 12· Zeichen®  Allå 
+weiteren Zeichen werden ignoriert.
+
+
+4.2.2. Nutzerdefinierte Sprachelemente
+--------------------------------------
+4.2.2.1. Bezeichner
+- - - - - - - - - -
+
+Bezeichneò werdeî zuò Bezeichnunç voî Marken¬  Konstanten¬ Typen¬ 
+Variablen¬  Prozedureî  unä Funktioneî verwendet®  Ihrå Zuordnunç 
+mu\ iî ihreí G{ltigkeitsbereicè (z.B®  innerhalâ eineò  Prozedur© 
+eindeutiç sein.
+
+Syntax:    Bezeichner<
+
+Eiî  Bezeichneò  bestehô auó eineí  Buchstaben¬  deí  Buchstaben¬ 
+Zifferî odeò Unterstreichungsstricè folgeî k>nnen®  Diå L}ngå isô 
+maximaì 12· Zeichen¬  unä allå Zeicheî sinä signifikant®  Dadurcè 
+sinä   Programmå   m>glich¬   diå   sicè  iî  hoheí  Ma\å  selbsô 
+dokumentieren.ŠBeispiele:
+
+    Pascal
+    Preis
+    Art Nummer
+    3teWurzel      Fehler! Ziffer am Anfang.
+    zwei Worte     Fehler! Leerzeichen nicht erlaubt.
+
+Wortsymbolå   d{rfen¬   Standardbezeichneò  sollteî   nichô   aló 
+nutzerdefinierte Bezeicher verwendet werden.
+Deò Unterstreichungsstricè ¨ © isô iî Bezeichnerî zul}ssig¬  wirä 
+abeò   voí   Compileò  ignorierô  (z.B®   Arô Nummeò   entsprichô 
+ArtNummer). Bezeichner k>nnen prinzipiell  mit "J" beginnen.
+Eiî  Bezeichneò gilô immeò aló definierô iî deí Block¬  iî desseî 
+Deklarations- bzw® Definitionsteiì eò eingef{hrô wurde® Ií Haupt-
+programm definierte Bezeichner sind immer global.
+
+
+4.2.2.2. Zahlen
+- - - - - - - -
+
+Zahleî sinä Konstanteî deò Typeî INTEGER¬  BYTÅ odeò REAL®  Inte-
+gerzahleî  sinä  ganzå  Zahlen¬   diå  dezimaì  unä   hexadezimaì 
+dargestellô  werdeî  k>nnen®  Hexadezimalå  Integerzahleî  werdeî 
+durch vorangestellte J-Zeichen erkl}rt.
+Integerzahlen  haben  einen  Bereich von -32767 .. +32767.
+Hexadezimalzahlen haben einen Bereich von J0000 .. JFFFF.
+BYTÅ  isô  aló Teilbereicè 0..25µ voî  INTEGEÒ  aufzufassen®  Deò 
+Bereicè  deò Realzahleî betr}gô 1E-38..1E+3¸ miô 1± signifikanteî 
+Ziffern®  Diå Exponentialdarstellunç kanî verwendeô werdeî miô  Å 
+aló  "maì 1° hoch"®  Einå Integerkonstantå gilô {beralì dort¬  wï 
+einå Realzahì g{ltiç ist® Trennzeicheî d{rfeî nichô innerhalâ voî 
+Zahleî  stehen®  F{ò Zahleî wirä diå  {blichå  Dezimaldarstellunç 
+genutzô (Punkô statô Komma).
+Unmittelbar vor einer Dezimalzahl darf ein Vorzeichen stehen.
+
+Syntax:  Vorzeichen< vorzeichenlose Zahl<
+
+Zahleî  miô  Dezimalpunkô  habeî voò deí  Punkô  mindestenó  einå 
+Ziffer.
+
+Beispiele:
+
+   5
+   62.12E+8
+   0.691  (nicht.691)
+   J3A
+   J12G   Fehler! G keine Hexadezimalzahl.
+   J12.3  Fehler! Punkt, keine Hexadezimalzahl.
+   -345 
+   -1.2345678901E+12
+   1      erlaubt, ist aber eine Integerkonstante.
+.paŠ4.2.2.3. Zeichenketten
+- - - - - - - - - - - -
+
+Zeichenketteî  sinä  Folgeî voî  Zeichen¬  welchå  iî  Apostrophå 
+eingeschlosseî  sind®  Zeichenketteî sinä Dateî voí Tyğ CHAÒ bzw® 
+STRING.
+
+Syntax:  Zeichenkette<
+
+Solleî  innerhalâ voî Zeichenketteî Apostrophå verwendeô  werden¬ 
+dann ist der Apostroph zweimal zu schreiben.
+
+Beispiele:
+
+   'Zeichenkette'
+   'Artikel-Nummer Menge'
+   'Mach''s m>glich!'
+   '63'
+   ''     (*= leere Zeichenkette*)
+
+Einå Zeichenkettå isô kompatibeì miô eineí ARRAÙ OÆ CHAÒ gleicheò 
+L}nge und mit allen String-Typen gleicher oder gr>\erer L}nge.
+
+
+4.2.2.4. CTRL-(Steuer) Zeichen
+- - - - - - - - - - - - - - - -
+
+PASCAÌ   880/Ó  erlaubô  diå  Verwendunç  voî  CTRL-Zeicheî   aló 
+Zeichenketten. Dabei gibt es zwei M>glichkeiten der Darstellung:
+
+- aló  #-Symbol¬  gefolgô voî eineò dezimaleî odeò  hexadezimaleî 
+  Zahl®  Damiô  wirä eiî Zeicheî miô deí entsprechendeî Werô  deó 
+  Zeichensatzes definiert.
+- aló   -Symbol¬  gefolgô  voî eineí Zeicheî  deó  Zeichensatzes® 
+  Damit wird das entsprechende CTRL-Zeichen definiert.
+
+Beispiele:
+
+  #10     entspricht    CTRL-@ oder LINE FEED
+  #J1B    entspricht    CTRL-^ oder ESCAPE
+   G      entspricht    CTRL-G oder BELL
+
+Folgeî voî Steuerzeicheî k>nneî ohnå Begrenzeò  aneinandergereihô 
+werden:
+
+Beispiele:
+
+  #13#10
+  #27 U#20
+   G G G G
+
+Steuerzeicheî  k>nneî  aucè  miô andereî  Zeichenketteî  gemischô 
+auftreten:
+
+Beispiel:
+
+  'Fehler!  ' G G G'Bitte  korrigieren!'Š4.2.2.5. Kommentare
+- - - - - - - - - -
+
+Kommentarå   dieneî   deò   Erl}uterunç  voî   Anweisungeî   odeò 
+Programmteilen®  Kommentarå sinä Bestandteiì deó  Quellprogramms® 
+Sie beeinflussen das ausf{hrbare Programm nicht.
+Kommentarå  k>nneî aî jedeò beliebigeî Stellå ií Programí stehen® 
+Siå  werdeî  iî      odeò (ª *© eingeschlosseî unä  k>nneî  Buch
+staben¬ Zifferî unä Sonderzeicheî enthalten.
+Siå  sollteî  zuò  Kennzeichnunç  voî  Programmteileî  odeò   zuò 
+Erl}uterunç  spezieller¬  nichô soforô interpretierbareò  Befehlå 
+benutzt werden.
+
+Beispiel:
+
+(* Kanalumschaltung Bildschirm --< Drucker *)
+    :
+    .
+   Zwischenspeicher := conoutptr;
+   conoutptr :=lstoutptr;
+   writeln('Diese Ausgabe erfolgt {ber Drucker');
+   conoutptr := Zwischenspeicher;               (*R{ckschaltung*)
+    :
+    .
+
+Iî  Kommentarå  k>nneî  nichô  wiedeò  Kommentarå  eingeschlosseî 
+werden.
+
+
+4.2.2.6. Compiler-Direktiven
+- - - - - - - - - - - - - - -
+
+Diå  Arbeitsweiså  deó Compileró kann durcè Direktiveî  gesteuerô 
+werden®  Siå  werdeî iî deî Quelltexô miô eineò spezielleî Syntaø 
+eingef{gt®  Diå Direktiveî k>nneî {beralì dorô ií Texô stehen¬ wï 
+Kommentarå  steheî k>nnen®  Einå Compiler-Direktivå  bestehô  auó 
+eineò >ffnendeî Kommentarklammer¬  deò unmittelbaò eiî  J-Zeicheî 
+unä  danî  diå  eigentlichå  Direktivå odeò  einå  Listå  solcheò 
+Direktiven folgt, die durch Komma untereinander getrennt sind.
+
+Beispiele:
+
+  (*JI-*)
+  (*JI INCLUDE.PAS*)
+  (*JR-,B+,V-*)
+  (*JS-*)
+
+Achtunç ¡   Voò  odeò  nacè  deí  Zeicheî J isô keiî  Leerzeicheî 
+            erlaubt®  Eiî Plus-Zeicheî bewirkô  einå  Aktivierunç 
+            deò  Compiler-Direktivå unä  eiî  Minus-Zeicheî  eiîe
+            Deaktivierung.
+
+Allå  Compiler-Direktiveî  habeî Standardwerte®  Dieså wurdeî  sï 
+ausgew}hlt¬ da\ diå Ausf{hrungszeiô deò Programmå schnelì unä diå 
+Programmgr>\å minimaì ist®  Dieó bedeuteô beispielsweise¬ da\ diå 
+Codeerzeugunç  f{ò  rekursivå Prozedureî unä diå ]berpr{funç  deò 
+Indexbereichå standardm}\iç abgeschalteô ist.ŠMaî  solltå  deshalâ  genaõ  pr{fen¬  oâ iî  deî  Programmeî  diå 
+ben>tigten Compiler-Direktiven richtig  gesetzt wurden.
+
+INCLUDE-Direktive
+
+Die allgemeine Form ist
+
+  (*JI  Dateiname<*)
+
+Diå   miô    Dateiname<  bezeichnetå  Dateé  wirä   geladeî   unä 
+bearbeitet®  Existierô  siå nicht¬  entstehô eiî  Compilerfehler® 
+Include-Dateieî  d{rfeî  nichô selbsô  wiedeò  Include-Direktiveî 
+enthalten® Einå Include-Schachtelunç isô alsï nichô erlaubt® @edå 
+Include-Direktive mu\ auf einer gesonderten Zeile stehen.
+
+
+A-Compiler-Direktive
+
+Standard: A+
+
+Diå A-Direktivå steuerô diå Generierunç voî absolutem¬ d.h® nichô 
+rekursiveí  Code®  Wenî  aktiö (*JA+*)¬  wirä eiî absoluteò  Codå 
+generiert®  Wenî  passiö (*JA-*)¬  generierô deò  Compileò  eineî 
+Code¬  deò rekursivå Aufrufå erlaubt® Dieså Programmå sinä gr>\eò 
+und langsamer.
+
+
+B-Compiler-Direktive
+
+Standard: B+
+
+Diå B-Direktivå steuerô deî Ein-/Ausgabe-Auswahlmodus® Wenî aktiö 
+(*JB+*)¬  wirä  daó  CON:-Ger}ô  deî Standard-Dateieî  INPUÔ  unä 
+OUTPUÔ zugewiesen¬  d.h®  deí Standarä  INPUT-OUTPUT-Kanal®  Wenî 
+passiö (*JB-*)¬  wirä daó TRM:-Ger}ô zugewiesen®  Dieså Direktivå 
+isô  globaì  zuí  gesamteî  Blocë  unä  kanî  ií  Programí  nichô 
+umdefiniert werden.
+
+
+C-Compiler-Direktive
+
+Standard: C+
+
+Diå C-Direktivå steuerô diå Interpretatioî beé Eingabå voî CTRL-Ó 
+unä CTRL-C® Wenî aktiö (*JC+*)¬ wirä durcè diå Eingabe voî CTRL-Ã 
+eiî   Programmabbrucè   realisiert®    Beé   CTRL-Ó   h}lô    diå 
+Bildschirmausgabå aî bzw®  wirä fortgesetzt® Beé Aktivierunç wirä 
+diå Bildschirmausgabå verlangsamt® Dieså Direktivå isô globaì zuí 
+gesamten Block und kann im Programm nicht umdefiniert werden.
+.paŠI-Compiler-Direktive
+
+Standard: I+
+
+Diå I-Direktivå steuerô diå Behandlunç deò I/O-Fehler® Wenî aktiö 
+(*JI+*)¬  werdeî  allå I/O-Fehleò durcè MicroDOÓ behandelô unä iî 
+deò Regeì diå Programmausf{hrunç unterbrochen.
+Wenî passiö (*JI-*)¬  isô eó notwendig¬ da\ deò Programmiereò diå 
+I/O-Fehleò  miô  deò Standardfunktioî IORESULÔ pr{fô  unä  selbsô 
+behandelt® Diå Anwendunç deó IORESULÔ bewirkô zugleicè diå erfor
+derlichå  R{cksetzunç deó Fehlerflags®  Siå mu\ voò deò  n}chsteî 
+Ein- unä  Ausgabeoperatioî  unbedingô  erfolgen®   Folgô  deò  I-
+Direktivå  eiî Dateiname¬  sï erkennô deò Compileò  auæ  Include-
+Direktive.
+
+
+R-Compiler-Direktive
+
+Standard: R-
+
+Diå   R-Direktivå  steuerô  diå  Indexpr{funç  zuò  Laufzeiô  deó 
+Programms®  Wenî aktiö (*JR+*)¬  werdeî allå Indexoperationeî voî 
+ARRAYÓ  gepr{ft¬  oâ  diå  Indizeó iî   deî  definierteî  Grenzeî 
+liegen®   Allå  zugewieseneî  Skalar- unä  Teilbereichs-Variableî 
+werdeî  gepr{ft¬  oâ siå iî deî entsprechendeî Bereicheî  liegen® 
+Wenî passiö (*JR-*)¬  werdeî keinå Pr{fungeî  durchgef{hrt®  Danî 
+k>nneî  Indexfehleò zõ falscheî Programmabl}ufeî f{hren®  w}hrenä 
+deò   Programmentwicklunç  solltå  maî  stetó   dieså   Direktivå 
+aktivieren®  Nacè  Beseitigunç  alleò Fehleò kanî maî danî  dieså 
+Direktive deaktivieren, um das Programm schneller zu machen.
+
+
+U-Compiler-Direktive
+
+Standard: U-
+
+Diå   U-Direktivå  steuerô  Nutzer-Unterbrechungen®   Wenî  aktiö 
+(*JU+*)¬  kanî  deò  Nutzeò zõ jedeò Zeiô daó Programí  durcè   Ã 
+unterbrechen®  Wenî  passiö (*JU-*)¬  haô  Ã keinå  Wirkung®  Beé 
+Aktivierunç wirä diå Ausf{hrungszeiô etwaó verlangsamt®  Diå  miô 
+U« {bersetzteî Programmå sinä deutlicè gr>\er® Eó empfiehlô sich¬ 
+w}hrenä  deò  Programmentwicklunç stetó aucè dieså  Direktivå  zõ 
+aktivieren.
+
+
+V-Compiler-Direktive
+
+Standard: V+
+
+Diå  V-Direktivå  steuerô  diå Typpr{funç  beé  STRING-Variablen-
+Parametern®  Wenî  aktiö  (*JV+*)¬  wirä einå  genauå  Typpr{funç 
+durchgef{hrt¬  d.h.¬ diå L}ngå deò aktuelleî unä formaleî STRING-
+Parameteò  mu\ {bereinstimmen®  Wenî passiö (*JV-*)¬  k>nneî  beé 
+aktuellen und formalen STRING-Parametern die L}ngen abweichen.
+.paŠW-Compiler-Direktive
+
+Standard: W2
+
+Diå   W-Direktivå  steuerô  diå  Schachtelungstiefå   deò   WITH-
+Anweisung¬  d.h®  diå  Anzahì  deò Records¬  diå iî  eineí  Blocë 
+er>ffneô werdeî k>nnen®  Deí × mu\ stetó einå Zahì zwischeî ± unä 
+9 folgen.
+
+
+X-Compiler-Direktive
+
+Standard: X+
+
+Diå  X-Direktivå steuerô diå Optimierunç deò Zugriffsgeschwindig
+keit®  Wenî aktiö (*JX+*)¬  wirä diå Code-Generierunç f{ò  ARRAYÓ 
+zugunsteî  maximaleò  Geschwindigkeiô  vorgenommen®  Wenî  passiö 
+(*JX-*)¬ minimierô deò Compileò diå Programmgr>\e.
+
+
+4.3. Deklarationen und Definitionen
+
+4.3.1. Programmrahmen
+---------------------
+
+Diå  Programmiersprachå PASCAÌ unterst{tzô diå strukturiertå Pro
+grammierung®  Auó  dieseí Grunä sinä  zusammengeh>rigå  Programm
+schrittå  zõ Bl>cken¬  Prozedureî odeò Funktioneî zusammengefa\t® 
+Eiî PASCAL-Programí bestehô auó dem
+
+             ..  Programmkopf und
+             ..  Programmblock.
+
+sowie dem Punkt als Endekennzeichen.
+Der Programmblock selbst besteht aus dem
+
+             ..  Deklarationsteil (Vereinbarungsteil) und dem
+             ..  Anweisungsteil.
+
+Diå  PASCAL-Syntaø verlangô auó Gr{ndeî deò Sicherheit¬  da\ allå 
+Objektå ií Deklarationsteiì definierô odeò deklarierô werden®  Ií 
+Anweisungsteiì  steheî  allå Aktionen¬  diå miô  dieseî  Objekteî 
+ausgef{hrt werden sollen.
+.paŠGrundaufbau eines PASCAL-Programms:
+
+    ------------------------------------------
+    !  PROGRAM  Name<( Programmparameter<)   !    Programmkopf
+    !----------------------------------------!
+    !  Deklarationsteil                      !    <
+    !                                        !    <
+    !----------------------------------------!    <
+    !                                        !    < Block         
+    !                                        !    <
+    !  Anweisungsteil                        !    <
+    !                                        !    <
+    !----------------------------------------!
+    !                                        !    Endekennzeichen
+    !  .                                     !
+    ------------------------------------------
+
+Syntax:   Programm<
+
+Diå Programmparameteò beschreibeî Dateien¬ durcè diå daó Programí 
+miô seineò Umgebunç verbundeî ist®  Werdeî siå  aufgef{hrt¬  sinä 
+sie im Hauptprogramm zu spezifizieren.
+
+Diå  Standard-Dateinameî  INPUÔ  (Eingabå  Tastatur©  unä  OUTPUÔ 
+(Ausgabå  Bildschirm©  braucheî  ií Programí  nichô  spezifizierô 
+werden.
+Deò Programmkopæ kanî entfallen® Eò solltå jedocè auó Gr{ndeî deò 
+]bersichtlichkeit geschrieben werden.
+
+Beispiele:
+
+  PROGRAM Test;                            (*beide Beispiele *)
+  PROGRAM Test (INPUT, OUTPUT);            (*sind aequivalent*)
+  PROGRAM Fakt (Drucker, Artikel, Kunde);
+
+
+4.3.2. Markendeklaration
+------------------------
+
+@edå  Anweisunç  iî eineí PASCAL-Programí kanî  miô  eineò  Markå 
+verseheî  werden®  Diå sï gekennzeichneteî Anweisungeî k>nneî miô 
+deò  Sprunganweisunç  (GOTO© voî jedeò Stellå deó  Programmó  auó 
+erreicht werden.
+Allå  Markeî (Label© m{sseî deklarierô werden®  Siå sinä  nuò  ií 
+Anweisungsteiì deó Blockeó g{ltig¬ iî desseî Deklarationsteiì siå 
+definiert wurden.
+
+Syntax:  Markendeklarationsteil<
+
+Beé  deò  Bildunç voî Markennameî isô sowohì diå  Verwendunç  voî 
+Zahlen als auch von Bezeichnern erlaubt.
+
+Beispiel:
+
+  LABEL Ende,10,20,30;
+
+Š4.3.3. Konstantendefinition
+---------------------------
+
+Durcè   diå   Konstantendefinitioî   k>nneî   Bezeichnerî   Wertå 
+zugeordnet werden.
+Dieså Konstantenbezeichneò k>nneî ií Programí aló Synonyí f{ò diå 
+jeweiligå  Konstantå verwendeô werden®  Eó isô abeò aucè m>glich¬ 
+Typkonstanteî zõ definieren®  Daó sinä Variablen¬  diå miô  CONSÔ 
+eineî  Anfangswerô erhalten¬  sonsô abeò wiå Variableî gehandhabô 
+werden k>nnen.
+Die Verwendung der Konstantendefinition hat folgende Vorteile:
+
+- Der Programmtext ist besser lesbar.
+- Beé  [nderungeî voî Konstanteî (z.B®  Feldgrenzen© mu\ nuò  diå 
+  Definition¬   nichô   abeò  diå  Konstantå  iî  deî   einzelneî 
+  Anweisungen ge}ndert werden.
+- Anfangswertbelegung f{r Variablen ist m>glich.
+
+Syntax:  Konstantendefinitionsteil<
+
+Beé  deò  Konstantendefinitioî wirä impliziô odeò  expliziô  (beé 
+Typkonstanten© aucè deò Tyğ deklariert®  Beé einfacheî Konstanteî 
+legt der Wert den Typ fest.
+
+Beispiele:
+
+  CONST Datum        = '12.12.85'; (*STRING oder ARRAY OF CHAR*)
+        Leerstring   = '';         (*CHAR oder STRING*)
+        Index        = 130;        (*INTEGER*)
+        Anker        = NIL;        (*Zeiger*)
+
+Vordefinierte Konstanten:
+
+  PI      = 3.1415926536           (*REAL*)
+  FALSE   = falsch                 (*BOOLEAN*)
+  TRUE    = wahr                   (*BOOLEAN*)
+  MAXINT  = 32767                  (*INTEGER*)    
+
+Typisierte Konstanten werden unter Ziffer 4.3.6. dargestellt.
+
+
+4.3.4. Datentypen und Typdefinitionen
+-------------------------------------
+
+@edå  Variablå unä Konstantå eineó PASCAL-Programmó besitzô eineî 
+Datentyp¬  welcheò diå entsprechendå Darstellungsforí ií Speicheò 
+und den Wertevorrat spezifiziert.
+Grunds}tzlich ist zu unterscheiden zwischen
+
+- Standard-Typen (sind vordefiniert) und
+- benutzerdefinierten Typen.
+
+Iî  Ausnahmef}lleî (beé Datentypeî unä Typeî formaleò  Parameter© 
+mu\  deò Tyğ nichô aufgef{hrô werdeî (ungetypt)®  Danî  gilô  deò 
+Datentyp BYTE.
+.paŠBeé  deò  Definitioî  voî  Datentypeî  sinä  folgendå  Regelî  zõ 
+beachten:
+
+- @ede Variable kann nur einen Typ besitzen.
+- Deò  Tyğ jedeò  Variableî mu\ vor deò ersteî Verwendunç verein-
+  barô werden.
+- Beé  Operationeî  miô Dateî verschiedeneî  Typó  sinä  Typ- unä 
+  Zuweisungsvertr}glichkeit zu beachten.
+
+Syntax:  Type<
+
+
+4.3.4.1. Typdefinition
+- - - - - - - - - - - -
+
+Diå Festlegunç deó Datentypó erfolgô entwedeò ií  Variablendekla
+rationsteiì odeò ií Typdefinitionsteiì durcè eineî Typbezeichner® 
+Deò Nutzeò haô diå M>glichkeit¬ vordefiniertå Typbezeichneò anzu
+wendeî odeò eigenå festzulegen® 
+Die Definition von Datentypen erfolgt in folgender Form:
+
+Syntax:  Typdefinitionsteil<
+
+Eine Definition von Datentypen mit TYPE hat folgende Vorteile:
+
+- Vereinfachung des Entwurfs eines PASCAL-Programms;
+- Geringereò  Schreibaufwanä  beé Verwendunç  mehrereò  Variableî 
+  gleichen Typs;
+- Hilfe beim Verh{ten und Suchen von Fehlern;
+- Herstellung von Typvertr}glichkeit f{r Felder;
+- Schaffunç   voî  Voraussetzungeî  zuí  Parameteraustauscè   miô 
+  Unterprogrammen f{r strukturierte Variablen.
+
+
+4.3.4.2. Einfacher Typ
+- - - - - - - - - - - -
+
+Syntax:  einfacher Typ<
+
+
+4.3.4.2.1. Ordinaler Typ
+- - - - - - - - - - - - -
+
+Syntax:  ordinaler Typ<
+
+
+4.3.4.2.1.1. Ordinaler Standardtyp
+- - - - - - - - - - - - - - - - - -
+
+Deò   ordinalå   Standardtyğ  bezeichneô  einå  endlichå   lineaò 
+geordnete Menge von Werten.
+.paŠFolgende ordinale Standardtypen sind in PASCAL vordefiniert:
+
+CHAR
+BOOLEAN
+INTEGER
+BYTE
+
+-----------------------------------------------------------------
+! Standardtyp !  Gr>\e  !          Wertebereich                 !
+!-------------!---------!---------------------------------------!
+! CHAR        ! 1 Byte  !   Zeichensatz (CHR(J0)..CHR(J7F))     !
+! BOOLEAN     ! 1 Byte  !       TRUE            FALSE           !
+! INTEGER     ! 2 Byte  !   -32767..+32767     J0000..JFFFF     !
+! BYTE        ! 1 Byte  !              0..255                   !
+-----------------------------------------------------------------
+
+CHAR
+CHAÒ  definierô  eineî Datentyğ aló Elementå  deó  Zeichensatzes® 
+CHAR-Variableî   k>nneî  Wertå  zwischeî  CHR(0©   unä   CHR(127© 
+annehmen®  Ihrå  Wirkunç  (Steuerzeicheî unä  druckbarå  Zeichen© 
+richtet sich nach der Codevereinbarung (vgl. Anhang A).
+
+BOOLEAN
+Deò   Datentyğ  BOOLEAÎ  repr}sentierô  logischå  Wertå  miô  deí 
+Wertevorrat TRUE ("wahr") und FALSE ("falsch").
+
+INTEGER
+Deò Datentyğ INTEGEÒ definierô einå Untermengå deò ganzeî Zahlen® 
+Dabeé  wirä  zun}chsô daó nieder-¬  danî  daó  h>herwertigå  Bytå 
+abgelegt (umgekehrtes Byteformat):
+
+              -------------  -------------
+     367   =  ! 0110 1111 !  ! 0000 0001 !      (6F 01)
+              -------------  -------------
+                               !
+                               !--< Vorzeichen   0 = Plus
+                                                 1 = Minus
+
+Deò   Wertebereicè  umfa\ô  -3276·  ..®   +3276·  (MAXINT=32767)® 
+INTEGER-Konstantå  k>nneî  hexadezimalå Zahleî  seiî  (z.B®  J3A¬ 
+J016F)®  Ihò  Wertebereicè reichô danî voî J000° bió  JFFFF®  Eiî 
+]berlauæ  zwischeî  positiveí  unä negativeí Bereicè  wirä  nichô 
+{berwacht.
+
+BYTE
+Deò   Datentyğ  BYTÅ  belegô  eiî  Bytå  ií  Speicheò   unä   isô 
+zuweisungsvertr}glich zum Typ INTEGER.
+.paŠ4.3.4.2.1.2. Aufz}hlungstyp
+- - - - - - - - - - - - - -
+
+Eiî  Aufz}hlungstyğ  definierô  einå geordnetå Mengå  voî  Werteî 
+durcè Aufz}hlunç deò Bezeichner¬  diå aló Konstanteî dereî  Wertå 
+ausdr{cken.
+
+Syntax:  Aufz}hlungstyp<
+
+Beispiele:
+
+  TYPE Material   = (Grisuten, Baumwolle, Wolle, Polyesterseide);
+  TYPE Wochentage = (Montag, Dienstag, Mittwoch, Donnerstag,
+                     Freitag, Sonnabend, Sonntag);
+
+
+4.3.4.2.1.3. Teilbereichstyp
+- - - - - - - - - - - - - - -
+
+Durcè  diå  Angabå  deó kleinsteî unä deó  gr>\teî  Werteó  eineó 
+ordinaleî  Typó kanî eiî Tyğ aló Teilbereicè eineó ordinaleî Typó 
+definiert werden:
+
+Syntax:  Teilbereichstyp<
+
+Diå erstå Konstante legô diå unterå Grenzå fest®  Ihò  Werô  daræ 
+nicht gr>\er als die obere Grenze sein.
+
+Beispiele:
+
+  TYPE Integerzahl  = 1..1000;
+       Bereich      = -10..+10;
+       Wochentag    = (Montag,Dienstag,Mittwoch,Donnerstag,
+                       Freitag,Samstag,Sonntag) ;
+       Werktag      = Montag..Freitag ;
+
+Werktag ist ein Teilbereich des ordinalen Typs Wochentag.
+
+
+4.3.4.2.2. Realtyp
+- - - - - - - - - -
+
+Syntax:  Vorzeichen< vorzeichenloses Real<
+
+Deò  Datentyğ  REAÌ  erm>glichô  diå  Darstellunç  positiveò  unä 
+negativeò gebrocheneò Zahlen®  Einå REAL-Zahì belegô ¶ Bytes® Daó 
+erstå  Bytå enth}lô deî Exponenteî unä daó Vorzeicheî (indirekt)¬ 
+daó  zweitå  bió sechstå Bytå diå Mantisse®  Daó  Vorzeicheî  deò 
+Mantisse ist im h>chsten Bit des sechsten Byte verschl{sselt.
+.paŠ-----------------------------------------------------------------
+! Byte   !       1       !   2   !   3   !   4   !   5   !  ! 6 !
+!--------------------------------------------------------!--!---!
+! Inhalt ! Exponent als  !          Mantisse             !  !   !
+!        ! Offset zu 128 !    NWT  ----------<           !  !HWT!
+!        !               !                               !  !   !
+-----------------------------------------------------------------
+                                                           !
+                                                           !
+                                       Vorzeichen f{r --<  !
+                                       Mantisse            !
+NWT - niederwertiger Teil
+HWT - h>herwertiger Teil
+
+Diå  6-Byte-REAL-Darstellunç  sicherô  einå  Genauigkeiô  voî  1± 
+signifikanteî Ziffern®  Deò Wertebereicè liegô zwischeî 1E-3¸ unä 
+1E+38®  Weiterå  Einzelheiteî  zuò interneî  Darstellunç  enth}lô 
+Anhang F.
+
+
+4.3.4.3. Strukturierter Typ
+- - - - - - - - - - - - - - 
+
+Eiî  strukturierteò Tyğ wirä durcè diå Typeî  seineò  Komponenteî 
+unä durcè diå Methodå deò Strukturierunç gekennzeichnet.
+
+Syntax:  strukturierter Typ<
+
+PACKEÄ  wirä  voí Compileò akzeptiert¬  haô abeò  keinå  Wirkung® 
+Einzelheiten zur internen Darstellung enth}lt Anhang F.
+
+
+4.3.4.3.1. Feld-Typ
+- - - - - - - - - -
+
+Deò  Feld-Tyğ  isô einå auó eineò festeî Anzahì  voî  Komponenteî 
+bestehendå  Struktur®  Dieså  Komponenteî sinä allå voí  gleicheî 
+Typ®  Diå Komponenteî deó Feldeó werdeî durcè Indizeó  angegeben¬ 
+dereî  Wertå  zuí  ordinaleî Tyğ geh>ren®  Siå werdeî  iî  eckigå 
+Klammern geschrieben und an den Bezeichner des Feldes angeh}ngt.
+
+Syntax:  Feldtyp<
+
+Eó gibô Feldeò voî Feldern¬ Feldeò voî Feldeò voî Feldern¬ Feldeò 
+voî  Recordó  usw®  Eiî  Feld-Tyğ  hei\ô  n-dimensional¬  wenî  î 
+Indextypen spezifiziert sind.
+
+Beispiele:
+
+  TYPE Kette  = ARRAY ^Anfang..Ende~ OF ARRAY ^1..10~ OF CHAR;
+       Matrix = ARRAY ^1..50,1..50~ OF REAL;
+       Satz   = ARRAY ^'a'..'z'~ OF BYTE;
+       B100   = ARRAY ^1..10,1..20~ OF 0..99;
+  VAR  Tabelle:Kette;
+       .
+       :
+       Tabelle^Anfang~^1~:='A';ŠEó  bestehô  diå M>glichkeit¬  Feldeò zõ kopieren¬  wenî siå  aló 
+Ganzeó voí gleicheî Tyğ sind¬  d.h®  miô deò gleicheî  Typverein
+barunç  eingef{hrô wurden®  Diå Pr{funç zul}ssigeò Indexausdr{ckå 
+isô miô deò Compiler-Direktivå Ò m>glich®  Standarä isô  (*JR-*)¬ 
+beé  gew{nschteò Zul}ssigkeitspr{funç mu\ (*JR+*© gesetzô  werdeî 
+(vgl® Ziffeò 4.2.2.6.).
+
+
+4.3.4.3.2. Record-Typ
+- - - - - - - - - - - 
+
+Eiî   Record-Tyğ  isô  einå  Struktur, welchå auó  eineò   Anzahì 
+Komponenteî  gleicheò odeò unterschiedlicheò Typeî  besteht®  F{ò 
+jedå Komponentå wirä eiî  Bezeichneò unä eiî Tyğ festgelegt®  Eiî 
+Record-Tyğ   kanî  mehrerå  Varianteî  haben®   Dabeé  kanî  einå 
+bestimmtå  Komponentå  aló Kennzeicheî  verwendeô  werden¬  durcè 
+dereî  Werô festgelegô wird¬  welchå Struktuò zõ  einer gegebeneî 
+Zeit verwendet werden soll.
+@edå    Variantå    wirä    durcè    einå    Kennzeichenkonstantå 
+charakterisiert® @edå dieseò Konstanteî isô eiî Wert deó Typó deò 
+Kennzeichenvariablen®  Deò Zugriæf zõ eineò Recordkomponentå wirä 
+erreicht¬  indeí  deò Variablenbezeichner¬  getrennô durcè  eineî 
+Punkt, angegeben wird.
+Ií Fall¬  da\ Datens}tzå voí gleicheî Tyğ sind¬  isô eó  m>glich¬ 
+dieså  einandeò  zuzuweiseî odeò miteinandeò zõ  vergleicheî  unä 
+somit einen Datensatz von Datens}tzen zu bilden.
+
+Syntax:  Recordtyp<
+
+Beispiele:
+
+  TYPE TypArtikel = RECORD
+                      Bezeichnung : STRING ^30~;
+                      Preise      : ARRAY ^1..5, 1..10~ OF REAL;
+                      Bestand     : REAL;
+                      Kennziffer  : CHAR
+                    END;
+    Tagesdatum    = RECORD
+                      Tag    : 1..31;
+                      Monat  : 1..12;
+                      @ahr   : INTEGER
+                    END;
+    TypName       = RECORD
+                      Name, Vorname  : ARRAY ^1..25~ OF CHAR;
+                      Alter          : 0..120;
+                      Verheiratet    : BOOLEAN
+                    END;
+    Form          = (Rechteck,Kreis,Dreieck);
+    TypBerechnung = RECORD
+                      x, y        : REAL;
+                      Flaeche     : REAL;
+                      CASE S      : Form OF
+                        Dreieck   : (Seite : REAL;
+                                Neigung,Winkel1,Winkel2:Winkel);
+                        Kreis     : (Radius : REAL);
+                        Rechteck  : (Seite1,Seite2 : REAL)
+                    END;     (*Ó isô einå Variablå voí Tyğ Form*)Š4.3.4.3.3. Datei-Typ
+- - - - - - - - - - -
+
+Miô  deò  Definitioî  eineó Datei-Typó wirä  eiî  Speicherbereicè 
+festgelegt¬    deò    deò   Steuerunç   unä    Pufferunç    eineò 
+Daten{bertragunç zõ eineò Dateé dient® Diå Anzahì deò Komponenteî 
+(Gr>\å deò Datei© wirä durcè diå Definitioî nichô festgelegt® Diå 
+Struktuò   deò   Dateivariableî   bestimmô   diå   Struktuò   deò 
+Dateikomponente.
+
+Syntax:  Dateityp<
+
+Diå  Definitioî  nuò miô FILÅ spezifizierô einå Dateé  beliebigeî 
+Typó (typlos¬  ungetypt)¬  diå Definitioî FILÅ OÆ  Struktur< einå 
+Bin}rdateé  unä diå Definitioî TEXÔ einå Textdateé (TYPÅ  TEXÔ  ½ 
+FILE OF CHAR).
+
+F{ò  Programmverkettungeî werdeî typloså Dateieî vereinbart®  Daó 
+sparô Speicherplatz®  Eiî Konstruktioî iî deò Forí TYPÅ Ø ½  FILÅ 
+OF FILE OF ... ist nicht zul}ssig.
+
+Beispiele:
+
+  TYPE Artikeldatei = FILE OF Artikel;
+       Kette1       = FILE;
+       Quelle       = TEXT;
+
+Dateivariableî    k>nneî    nuò   aló    Variablenparameteò    aî 
+Unterprogramme {bergeben werden.
+Einzelheiten zur internen Darstellung enth}lt Anhang F.
+
+
+4.3.4.3.4. Mengen-Typ
+- - - - - - - - - - - 
+
+Unteò  eineò  Mengå verstehô maî iî  PASCAÌ  diå  Zusammenfassunç 
+mehrereò Objektå deó gleicheî Typs® Zõ eineò Mengå k>nneî maximaì 
+25¶  Elementå  geh>ren®  Diå Ordnungswertå deó Typó  deò  Objektå 
+liegeî folglicè ií Bereicè 0..255.
+
+Syntax:  Mengentyp<
+
+@edeó  Elemenô deó Satzeó wirä iî eineí Biô gespeichert®  Isô daó 
+jeweiligå  Elemenô iî deò Mengå enthalten¬  isô daó Biô  gesetzt¬ 
+sonst nicht.
+Eó  werdeî jeweiló sovieì Byteó reserviert¬  wiå zuò  Darstellunç 
+der Elemente ben>tigt werden (maximal 32).
+
+Beispiele:
+
+  TYPE TypSpiel   = (Skat,Halma,Dame,Schach);
+  TYPE Spiel      = SET OF TypSpiel;
+  TYPE Fuhrpark   = SET OF (Trabant, Wartburg, Lada, Skoda);
+
+Einzelheiten zur internen Darstellung enth}lt Anhang F.
+.paŠ4.3.4.3.5. Dynamischer Zeichenkettentyp
+- - - - - - - - - - - - - - - - - - - -
+
+Syntax:  Zeichenkettentyp<
+
+Miô  deí  Tyğ STRINÇ wirä einå Zeichenkettå durcè diå Angabå  deò 
+Anzahl maximal m>glicher Zeichen definiert.
+
+    STRING ^ Zahl<~  = Zeichenkette f{r max.  Zahl< Zeichen
+                       (Zahl = 1..255)
+
+Einå Variablå deó Typó STRING^ n<~ belegô  n<+± Byte®  Ií  ersteî 
+Bytå  (dynamischeó  Byte© wirä diå aktuellå L}ngå  deò  Variableî 
+gespeichert®   Diå   einzelneî  Zeicheî  deò  Zeichenkettå   sinä 
+indizierbar.
+Wenî  diå  Anzahì  deò Zeicheî eineò Kettå kleineò  isô  aló  diå 
+definiertå  L}nge¬  danî  sinä diå aí Endå ií Speicheò  stehendeî 
+Bytes undefiniert (sie werden nicht gel>scht).
+
+Beispiel:
+
+ TYPE TypString = STRING^20~;
+
+Einzelheiten zur internen Darstellung enth}lt Anhang F.
+
+
+4.3.4.3.6. Standardfelder
+- - - - - - - - - - - - -
+
+Eó bestehô diå M>glichkeit¬  zweé Standardfeldeò voí Tyğ BYTÅ  zõ 
+nutzen.
+Daó Standardfelä MEÍ wirä eingesetzt¬ uí deî Zugrifæ zuí Speicheò 
+zõ realisieren®  Deò Indeø jedeò Feldkomponentå isô identiscè miô 
+seineò  Adresså ií Speicher®  @edå Komponentå deó Feldeó isô  eiî 
+Byte¬  deò  Indextyğ isô INTEGER.  Erfolgô einå Wertzuweisunç auæ 
+einå  Komponentå deó Feldeó MEM¬  sï wirä dieseò Werô auæ deò miô 
+deí Indexausdrucë spezifizierteî Adresså abgelegt®  Zugriffå  auæ 
+daó Felä aló Ganzeó sinä nichô erlaubt.
+
+Beispiele:
+
+  Laufwerk := chr((mem^4~ AND 15)+65);
+  Iobyte   := mem^3~;
+
+Daó  Standardfelä  PORÔ  wirä  genutzt¬  uí deî  Zugrifæ  zõ  deî 
+Datenportó  zõ  realisieren®  @edå  Feldkomponentå  stellô  eineî 
+Datenporô  dar¬  desseî Adresså deí Werô deó Indexausdruckeó ent
+spricht®  Deò Indextyğ isô INTEGER®  PORÔ daræ nuò iî Zuweisungeî 
+unä Ausdr{ckeî verwendeô werden»  seinå Komponenteî d{rfeî  keinå 
+Variablenparameteò iî Unterprogrammeî sein.
+Standardfeldeò  sollteî nuò voî erfahreneî Programmiererî benutzô 
+werden¬  dá unmittelbare¬  nichtkontrollierbarå Eingriffå iî  daó 
+Laufzeitsystem erfolgen k>nnen.
+.paŠ4.3.4.4. Zeigertyp
+- - - - - - - - - - 
+
+Dateî  voí  Zeigertyğ nehmeî Adresseî auf®  Deò Werô deó  Zeigeró 
+wirä  durcè diå Prozedureî NEW¬  MARK¬  GETMEM odeò direkô  unteò 
+Nutzung der Konvertierungsfunktion PTR zugewiesen.
+
+Syntax:  Zeigertyp<
+
+Beispiel:
+
+  TYPE   Zeigertyp =  Element;
+         Element   = RECORD
+                       Wert1        : REAL;
+                       Wert2        : REAL;
+                       Wert3        : INTEGER;
+                       Nachfolger   : Zeigertyp
+                     END;
+  VAR    DynamischeVariable: Zeigertyp;
+
+Anmerkung
+Diå Variablå voí Tyğ Zeigertyğ isô hieò eiî Zeigeò auæ eiî Objekô 
+vom  Typ Element.
+Diå  Bezugnahmå  auæ einå nocè nichô  definiertå  Struktuò  (hieò 
+Element©  isô  iî  dieseí  Ausnahmefalì  m>glich®  Miô  z.B®  NE× 
+(DynamischeVariable©  wirä deò Zeigervariableî einå freé  Adresså 
+zugewiesen.
+
+
+4.3.4.5. Typumwandlungen und Bereichspr{fungen
+- - - - - - - - - - - - - - - - - - - - - - - -
+
+Typumwandlungeî werdeî auæ konventionellå Arô miô Konvertierungs
+funktioneî  odeò miô Retypinç erm>glicht®  Bereichspr{fungeî  f{ò 
+Skalar- unä Teilbereichsvariableî sinä miô deò Compiler-Direktivå 
+(*JR+*©  realisierbar®  Standarä  isô  dabeé  (*JR-*)¬  d.h®  beé 
+gew{nschteò   Bereichspr{funç   mu\  deò  Schalteò   (*JR+*©   ií 
+Programmtext gesetzt werden.
+
+
+4.3.4.5.1. Retyping
+- - - - - - - - - -
+
+Diå Typbezeichneò CHAR¬  BYTÅ unä BOOLEAÎ sowiå  nutzerdefiniertå 
+Typbezeicheò deó Aufz}hlungstypó sinä gleichzeitiç aló Funktions
+bezeichneò zuò Konvertierunç verwendbar® 
+
+Beispiele:
+
+y:= INTEGER('A')    (*y := ord('A')*)
+x:= CHAR(78)        (*x := chr(78)*)
+
+Ø  isô  hieò voí Tyğ CHAR¬  ù voí Tyğ INTEGEÒ  odeò  BYTE®  Dieså 
+Vorgehensweiså hei\ô Retyping.
+REAL und STRING sind nicht f{r das Retyping zugelassen.
+.paŠBeispiele:
+
+  VAR   Monat = (@an,Feb,Maerz,April,Mai,@uni,@uli,Aug,Sept,Okt,
+                 Nov,Dez);
+        Farbe = (Rot,Gelb,Gruen);
+
+Diå  Anwendunç  voî Retypinç auæ diå obigeî  Definitionsbeispielå 
+erm>glicht (Vergleich jeweils TRUE):
+
+        Monat(10)      = Nov
+        INTEGER(Gelb)  = 1
+                J41    = BYTE ('A')
+
+Die interne Skalierung von Aufz}hlungstypen beginnt mit Null.
+
+
+4.3.4.5.2. Pseudofunktionen zur Konvertierung
+- - - - - - - - - - - - - - - - - - - - - - -
+
+Diå  Pseudofunktioneî dieneî zuò Herstellunç deò  Vertr}glichkeiô 
+eineó Skalartypó miô eineí andereî (Pseudo¬  weiì iî Wirklichkeiô 
+keinå Operationeî stattfinden)®  Pseudofunktioneî sinä  ORD¬  PTÒ 
+und CHR.
+
+
+ORD-Funktion
+
+ ORD ( Ausdruck<)
+
+Diå Funktioî lieferô deî Ordinalwerô (Tyğ INTEGER© deó Ausdrucks.
+
+Beispiele:
+
+  write (ord('A'));          (*= 65*)
+  write (ord(chr(86)));      (*= 86*)
+
+Miô  ORÄ  kanî  aucè deò INTEGER-Werô  voî  Zeigerî  festgestellô 
+werden.
+
+
+CHR-Funktion
+
+ CHR ( Ausdruck<)
+
+Diå  Funktioî lieferô daó Zeichen¬  desseî  Ordinalwerô deí  Werô 
+deó   Ausdruckó   entspricht®   Grundlagå   isô   deò   jeweiligå 
+Zeichensatz.
+
+Beispiele:
+
+  write(chr(66));            (*= B*) 
+  write(chr(ord('L')));      (*= L*)
+
+Miô  ORÄ isô aucè eiî Zugrifæ auæ daó dynamischå  Bytå  (Index=0© 
+eineó  STRINÇ m>glich®  Eó sollten  jedocè diå  STRING-Funktioneî 
+den Prozeduren vorgezogen werden.
+.paŠPTR-Funktion
+
+  PTR ( Ausdruck<)
+
+Deò Ausdrucë mu\ voí Tyğ INTEGEÒ sein® Miô deò Pseudofunktioî PTÒ 
+isô  eó m>glich¬  diå iî eineí Pointeò stehendå Adresså direkô zõ 
+steuern®  PTÒ  konvertierô  dabeé eiî INTEGER-Argumenô  iî  eineî 
+Pointer.
+
+Beispiel:
+
+  TYPE  Zeiger =  INTEGER;
+  VAR   Pufferzeiger:Zeiger;
+  :
+  .
+  Pufferzeiger := PTR(J8000);
+
+
+4.3.5. Variablendeklaration und Variablenzugriff
+------------------------------------------------
+
+4.3.5.1. Deklaration von Variablen
+- - - - - - - - - - - - - - - - - -
+
+Allå Variablen¬ diå iî PASCAÌ verwendeô werden¬ m{sseî deklarierô 
+werden® Beé deò Deklaratioî werdeî eineò Variableî eiî Bezeichneò 
+unä eiî Tyğ zugeordnet.
+W}hrenä  miô  deò TYPE-Definitioî nur  eiî  Datentyğ  beschriebeî 
+wird¬  wirä  miô  deò Variablendeklaratioî Speicherplatú  bereit
+gestellt.
+
+Syntax:  Variablendeklarationsteil<
+
+Absolutå  Variableî  (Variableî auæ eineò festeî Adresse©  werdeî 
+durcè  daó Schl{sselworô ABSOLUTÅ gekennzeichnet®  Diå  Variableî 
+werdeî ií Speicheò aî diå durcè  ADDRESS< gekennzeichnetå Adresså 
+gelegt®  Dieså  Adresså  solltå  au\erhalâ  deó  PASCAL-Programmó 
+liegen®   Deò   Programmiereò  isô  f{ò  diå  Verwaltunç   selbsô 
+verantwortlich.
+
+Beispiele:
+
+  VAR  IObyte    : BYTE ABSOLUTE J0003;
+       CmdZeile  : STRING^127~ ABSOLUTE J80;
+
+ABSOLUTÅ kanî aucè verwendeô werden¬  uí Variableî zõ {berlagern® 
+Diå  einå Variablå beginnô danî auæ deò gleicheî Adresså wiå  diå 
+anderå  Variable®  Dieó  isô leichô zõ erreichen®  Folgô  iî  deò 
+Variablendefinitioî   deí  Worô  ABSOLUTÅ  deò  Bezeichneò  eineò 
+Variableî (odeò eineó Parameters)¬ danî beginnô diå neuå Variablå 
+auf der Adresse dieser Variablen (oder des Parameters).
+
+Beispiele:
+
+  VAR
+      Eins  : STRING^22~;
+      Zwei  : BYTE ABSOLUTE Eins;ŠIî  dieseí  Beispieì beginnô Zweé auæ deò  gleicheî  Adresså  wiå 
+Eins®  Dá abeò aî dieseò Stellå diå L}ngå deò Stringó Einó steht¬ 
+enth}lt Zwei die aktuelle L}nge von Eins.
+Eó  isô zõ beachten¬  da\ iî eineò absoluteî Deklaratioî nuò  eiî 
+Bezeichneò  erkl}rô  werdeî kann®  Diå folgendå Konstruktioî  isô 
+also nicht erlaubt: Ident1,Ident2 : INTEGER ABSOLUTE J8000;
+
+Weitere Beispiele:
+
+  TYPE   TypArtikel = RECORD
+                        Bezeichnung    : STRING^30~;
+                        Preise: ARRAY^1..5,1..10~ OF REAL;
+                      END;
+  VAR x             : REAL;
+      y             : ARRAY ^1..100~ OF REAL;
+      Artikel       : TypArtikel;
+      Matrix        : ARRAY ^1..30,1..50~ OF INTEGER;
+      Anschrift     : ARRAY ^1..5~ OF ARRAY ^1..30~ OF CHAR;
+      Artikeldatum  : FILE OF TypArtikel;
+      Zeiger1       :  Element;
+      Element       : RECORD
+                        Wert1       : REAL;
+                        Wert2       : REAL;
+                        Wert3       : INTEGER;
+                        Nachfolger  : Zeiger1
+                      END;
+      Satz          : RECORD
+                        r : REAL;
+                        i : INTEGER;
+                        m : ARRAY^1..10,1..10,1..100~ OF INTEGER;
+                      END;
+      Text1         : STRING ^20~;
+      Bildschirm    : ARRAY^0..23~ OF ARRAY^0..79~ OF CHAR
+                      ABSOLUTE JF800;
+      k             : INTEGER;
+
+
+4.3.5.2. Variablenzugriff
+- - - - - - - - - - - - -
+
+Deò  Zugrifæ  zõ  deî Werteî deò  Variableî  erfolgô  durcè  ihrå 
+Auff{hrung im Programmtext. Es gibt mehrere M>glichkeiten:
+
+Syntax:  Variable<
+
+Vollst}ndige Variable
+
+Deò  Werô eineò Variableî kanî durcè ihreî Bezeichneò  aufgerufeî 
+werden®   Eó  kanî  sicè  uí  einfachå  Variablen¬  strukturiertå 
+Variablen oder Zeiger handeln.
+
+Beispiele:        
+
+  Satz
+  Text1
+  x
+.paŠIndizierte Variable
+
+Diå Komponentå eineò n-dimensionaleî Feldvariableî wirä durcè diå 
+Angabå  deò Variableî bezeichnet¬  deò eiî n-dimensionaleò  Indeø 
+folgt.
+
+Syntax:  Indizierte Variable<
+
+Diå  Typeî  deò  Indexausdr{ckå m{sseî miô  deî  Indextypeî  ver
+tr}glicè  sein¬  diå  iî deò Definitioî deó Feld-Typó  vereinbarô 
+wurden.
+
+Beispiel:
+
+  Matrix^5,6~
+  y^10~
+  y^i+14~
+
+
+Recordkomponentenvariable
+
+Diå  Komponentå eineò Recordvariableî wirä bezeichneô  durcè  diå 
+Angabå  deò  Recordvariablen¬  gefolgô  voî  deí  Bezeichneò  deò 
+Komponente.
+
+Syntax:  Recordkomponentenvariable<
+
+Beispiele:
+
+  Artikel.Bezeichnung
+  Satz.r
+  Satz.m^i,j,k~
+
+
+Dynamische Variable (Inhalt einer Zeigervariablen)
+
+Syntax:  Dynamische Variable<
+
+Wenî  ğ  einå  aî deî Tyğ ô gebundenå  Zeigervariablå  ist¬  danî 
+bezeichneô  ğ  dieså  Variablå unä  deî  Werô ihreó  Zeigers»  ğ  
+bezeichneô  diå  Variablå deó Typó t¬  auæ diå durcè ğ  verwieseî 
+wird.
+
+
+Beispiel f{r Variablenzugriff
+
+Nachfolgenä  wirä aî einigeî Beispieleî deò Zugrifæ zõ  Variableî 
+dargestellt.
+Verwendeô wirä daó Beispieì zuò Variablendeklaratioî (vgl®  Punkô 
+4.3.5.1.).
+.paŠ-----------------------------------------------------------------
+!  Variablenzugriff  ! Bereitgestellte Daten !       Typ        !
+-----------------------------------------------------------------
+! x                  !    1 * REAL           ! REAL             !
+! y                  !  100 * REAL           ! ARRAY OF REAL    !
+! y ^66~             !    1 * REAL           ! REAL             !
+! Artikel            !    1 * 31 BYTE        ! RECORD           !
+!                    !        STRING(CHAR)   !                  !
+!                    !   50 * REAL           !                  !
+! Artikel.Preise     !   50 * REAL           ! ARRAY OF REAL    !
+! Artikel.Preise^i,j~!    1 * REAL           ! REAL             !
+! Matrix             ! 1500 * INTEGER        ! ARRAY OF INTEGER !
+! Matrix^20,20~      !    1 * INTEGER        ! INTEGER          !
+! Anschrift          !  150 * CHAR           ! ARRAY OF ARRAY   !
+!                    !                       ! OF CHAR          !
+! Anschrift^2~^3~    !    1 * CHAR           ! CHAR             !
+! Zeiger1.           !    1 * REAL           ! RECORD           !
+!                    !    1 * REAL           !                  !
+!                    !    1 * INTEGER        !                  !
+!                    !    1 * Zeiger         !                  !
+! Satz               !    1 * REAL           ! RECORD           !
+!                    !    1 * INTEGER        !                  !
+!                    !10000 * INTEGER        !                  !
+! Satz.m             !10000 * INTEGER        ! ARRAY OF INTEGER ! 
+! Satz.m^I,6,89~     !    1 * INTEGER        ! INTEGER          !
+! Bildschirm^12~^8~  !    1 * CHAR           ! CHAR             !
+! k                  !    1 * INTEGER        ! INTEGER          !
+-----------------------------------------------------------------
+
+
+4.3.6. Typisierte Konstante
+---------------------------
+
+Einå  typisiertå  Konstantå  kanî  wiå  einå  Variablå  verwendeô 
+werden®  Siå isô aló initialisiertå Variablå zõ betrachten¬ dereî 
+Werô  voî  Anfanç aî definierô ist®  Diå  Verwendunç  typisierteò 
+Konstanteî  ersparô Laufzeit¬  dá diå Anfangsbelegunç bereitó voí 
+Compileò  vorgenommeî  wird®  Typisiertå  Konstanteî  werdeî  wiå 
+normalå  Konstanteî definiert¬  siå erhalteî nuò zus}tzlicè  aucè 
+ihreî  Typ®  Maî  beachte¬  da\ diå definierteî  Wertå  nuò  beií 
+Neustarô  deò COM/CHN-Dateieî zuò Verf{gunç steheî unä danî ihreî 
+Wert }ndern k>nnen.
+
+Syntax:  Konstantendefinitionsteil<
+         typisierte Konstante<
+
+
+4.3.6.1. Einfache typisierte Konstante
+- - - - - - - - - - - - - - - - - - - -
+
+Einå  einfache¬  typisiertå  Konstantå  wirä  wiå  einå  einfachå 
+Variable, erg}nzt um einen Anfangswert, definiert.
+
+Syntax:  einfach typisierte Konstante<
+.paŠBeispiele:
+
+  CONST  Anzahl     : INTEGER = 1267;
+         Zahl       : REAL = 12.67;
+         Zeichen    : CHAR =  Q;
+         Buchstabe  : CHAR = #65;
+
+Typisiertå   Konstanteî  d{rfeî  anstellå  eineò  Variableî   aló 
+Parameteò  iî Unterprogrammeî verwendeô  werden®  Einå typisiertå 
+Konstantå  stellô einå Variablå miô eineí definierteî  Werô  dar® 
+Siå  kanî  somiô nichô iî deò Definitioî andereò Konstanteî  odeò 
+Typeî verwendeô werden.
+
+Beispiel:    (Unzul}ssig!)   
+
+  CONST
+      Unten : INTEGER = 0;
+      Oben  : INTEGER = 50;
+  TYPE
+      Feld = ARRAY ^Unten..Oben~ OF INTEGER;
+
+
+4.3.6.2. Strukturierte typisierte Konstante
+- - - - - - - - - - - - - - - - - - - - - -
+
+Strukturierte typisierte Konstanten sind
+      Feldkonstanten,
+      Recordkonstanten und 
+      Mengenkonstanten.
+
+Syntax:  strukturierte typisierte Konstante<
+
+
+4.3.6.2.1. Typisierte Feldkonstante
+- - - - - - - - - - - - - - - - - -
+
+Syntax:  typisierte Feldkonstante<
+
+Beispiele:
+
+  TYPE
+       Zustand        = (Kalt,Hei\,Warm);
+       Feld           = ARRAY ^Zustand~ OF STRING ^5~; 
+  CONST
+       TempZustand : Feld = ('Kalt','Hei\','Warm');
+    
+Ií  Beispieì  wirä diå  Feldkonstantå  "Zustand¢  definiert¬  diå 
+genutzô  werdeî  kann¬   uí  Wertå  voí  Aufz}hlungstyğ  iî  ihrå 
+entsprechende Stringdarstellung zu konvertieren:
+
+          TempZustand^Kalt~   = 'Kalt'
+          TempZustand^Hei\~   = 'Hei\'
+          TempZustand^Warm~   = 'Warm'
+
+@edeò Typ¬  au\eò eineí Feld- odeò Zeigertyp¬ stellô eineî zul}s
+sigeî Komponententyğ eineò Feldkonstantå dar®  Beé Characterfeld
+typeî sinä einzelnå Zeicheî unä Zeichenketteî erlaubt.Š4.3.6.2.2. Mehrdimensionale typisierte Feldkonstante
+- - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Beé  deò  Definitioî  eineò typisierteî  mehrdimensionaleî  Feld
+konstanteî  wirä jedå Dimensioî iî separatå Klammernpaarå  einge
+schlossen¬ diå durcè Kommá voneinandeò getrennô sind.
+Dabeé  entsprichô  diå innerå Konstantå deò aí  weitesteî  rechtó 
+stehenden Dimension.
+
+Beispiele:
+
+  TYPE
+       Feld = ARRAY^0..1,0..1,0..1~ OF INTEGER;
+  CONST
+       Zahl : Feld = (((0,1),(2,3)),((4,5),(6,7)));
+  BEGIN
+       writeln (Zahl^0,0,0~,' =0');
+       writeln (Zahl^0,0,1~,' =1');
+       writeln (Zahl^0,1,0~,' =2');
+       writeln (Zahl^0,1,1~,' =3');
+       writeln (Zahl^1,0,0~,' =4');
+       writeln (Zahl^1,0,1~,' =5');
+       writeln (Zahl^1,1,0~,' =6');
+       writeln (Zahl^1,1,1~,' =7')
+  END;
+
+
+4.3.6.2.3. Typisierte Recordkonstante 
+- - - - - - - - - - - - - - - - - - -
+
+Syntax:  typisierte Recordkonstante<
+
+Beispiele:
+
+  TYPE
+       Zahl  = RECORD
+                 a,b,c : INTEGER
+               END;
+       Farbe = (Rot,Gelb,Gruen,Blau);
+       Stoff = (Wolle,Seide,Tweet);
+       Kleid = RECORD
+                 Design   : ARRAY^1..4~ OF Farbe;
+                 Material : Stoff
+               END;
+  CONST
+       Nummer: Zahl  = (a:0; b:0; c:0);
+       Modell: Kleid = (Design:(Rot,Gelb,Gruen,Blau);
+                        Material:Tweet);
+       Matrix: ARRAY^1..3~ OF Zahl =
+                     ((a:1;  b:4;   c:5),
+                      (a:13; b:8;  c:55),
+                      (a:200;b:16;  c:-65));
+
+Diå  Feldkonstanteî sinä iî deò gleicheî Reihenfolgå zõ  definie
+ren¬  wiå siå iî deò Recorddefinitioî auftreten® Ií Fall¬ da\ eiî 
+Datensatú Feldeò voí Datei- odeò Zeigertyğ enth}lt¬  isô eó nichô 
+m>glich¬   typisiertå   Konstanteî   f{ò  dieseî   Recordtyğ   zõ Šdefinieren®  Wenî einå Recordkonstantå Varianteî enth}lt¬  sï isô 
+deò  Programmiereò  selbsô  daf{ò  verantwortlich¬  da\  nuò  diå 
+Datenfeldeò deò g{ltigeî Variableî spezifizierô  werden®  Enth}lô 
+diå  Variablå  eiî  Kennzeichnungsfeld¬  danî mu\ aucè  ihò  Werô 
+spezifizierô werden.
+
+
+4.3.6.2.4. Typisierte Mengenkonstante
+- - - - - - - - - - - - - - - - - - -
+
+Syntax:  typisierte Mengenkonstante<
+
+Einå  typisiertå  Mengenkonstantå wirä auó  eineò  odeò  mehrereî 
+Elementenspezifikationen¬ diå durcè Komma  getrennô unä iî eckigå 
+Klammerî eingeschlosseî sind¬  gebildet® Einå Elementenspezifika
+tioî  kanî  einå Konstantå odeò eiî Bezeichnerausdrucë  sein®  Eò 
+bestehô auó zweé Konstanten¬ getrennô durcè zweé Punkte.
+
+Beispiele: 
+
+  TYPE
+       Gross = SET OF 'A'..'Z';
+       Klein = SET OF 'a'..'z';
+  CONST
+       Grossbuchstabe : Gross = ^'A'..'Z'~;
+       Vokale         : Klein = ^'a','e','i','o','u'~;
+       Zeichen        : SET OF CHAR =
+                         ^' '..'/',':'..'?','^'..' ',' '~;
+
+
+4.3.7. Prozedur- und Funktionsdeklaration
+-----------------------------------------
+
+Einå Prozedur-/Funktionsvereinbarunç definierô eiî  Unterprogramí 
+innerhalâ  eineó Programmó odeò eineò andereî  Prozedur/Funktion® 
+Dieså  Prozedur/Funktioî isô g{ltiç f{ò deî  gesamteî  Block¬  iî 
+desseî Vereinbarungsteiì siå deklarierô wurde®  Einzelheiteî ent
+halteî diå Ziffeò 4.6® unä 4.7.
+                

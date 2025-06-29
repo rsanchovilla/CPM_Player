@@ -1,0 +1,555 @@
+                       HANDY
+                    Version 2.00
+                 Copyright 1982 by,
+                 Peter C. Hawxhurst
+
+                   DOCUMENTATION
+
+This documentation and the HANDY System programs may 
+be  freely  distributed for  noncommercial  purposes 
+provided that the copyright notice is retained.
+
+The HANDY System includes the following programs  in 
+their object (.BAS), interpreted (.INT) and squeezed 
+(.BQS) form:
+
+                      HANDYSYS
+                      AGGENDAS
+                      DO-TODAY
+                      REMINDER
+                      PLANNING
+                      CALENDAR
+                      ACTIONPL
+                      NOTEBOOK
+                      FONEBOOK
+                      DECISION
+
+The  HANDY  System programs were written  in  CBASIC 
+(version 2.07), and will initially be distributed in 
+their interpreted form (.INT extension).  The source 
+code  for  these programs will only  be  provied  on 
+request  to myself or at Chicago First Osborne Group 
+(CFOG) meetings, and will be in squeezed form within 
+an archive (HANDY200.ARC & HANDY200.DIR).
+
+CBASIC  is a trademark of Compiler Systems.  Osborne 
+is a trademark of the Osborne Computer  Corporation. 
+CP/M is a trademark of Digital Research Corporation.
+
+
+                    DESCRIPTION
+
+
+HANDY is a personal time management system.  It  was 
+written around my particular business needs,  but no 
+doubt will be of significant value to a wide variety 
+of  individuals.  The system is menu  driven.  After 
+initial  sign-on  a menu will be displayed  and  the 
+user   will  be  prompted  to  select  a  particular 
+application.  Upon exiting each application the menu 
+will  reappear for further application selection  or 
+return to the CP/M operating system. 
+
+Each  application in the HANDY System has a  command 
+selection menu and command input prompt on the lower 
+portion of the application display. User input for a
+particular application is queried and promted  below 
+the command line. Input provided by the user is then 
+posted  to the appropriate place on the  application 
+display.
+
+Applications  included  in the HANDY system  are  as 
+follows:
+
+     -    A  personal  appointment calendar for  the 
+          display  and maintenance in one half  hour 
+          increments of daily appointments.
+
+     -    A personal TO DO LIST for the display  and 
+          maintenance  of nonscheduled activities on 
+          a daily basis.
+
+     -    A reminder list of important  dates/events 
+          to remember on a monthly basis.
+
+     -    A  planning calendar for blocking out  and 
+          displaying  large  portions  of  scheduled 
+          time.
+
+     -    A calendars program for displaying monthly 
+          calendars a quarter of a year at a time.
+
+     -    An action planning notebook for displaying 
+          and maintaining future activity records by 
+          categories.
+
+     -    A  notebook or log for the maintaining and 
+          displaying of miscellaneous notes, records 
+          or whatever by category.
+
+     -    A quick reference phone number listing.
+
+     -    A  decision support routine  for  rational 
+          decision making assistance.
+
+A typical application's command line would appear as 
+follows:
+
+----------------------------------------------------
+(A)dd (C)ontinue (D)elete (E)xit (R)estart (S)can >
+
+
+Some will vary according to the application type.
+
+HANDY  is  intended to be an on line desk  companion 
+for  the busy professional.  It was designed  to  be 
+extremely  user  friendly so I will not go to  great 
+lengths  to  describe the use of  each  application. 
+More  so how to get started and how how  to  recover 
+from  operation errors,  both of which are also very 
+uncomplicated. 
+                    LIMITATIONS
+
+
+The HANDY System was written and designed for use on 
+an OSBORNE 1 computer in a 52 column, 24 row format. 
+The  following  should be noted about  modifications 
+for other systems capable of running in CBASIC:
+
+     print chr$(7)       rings bell
+
+     print chr$(26)      clears the screen
+
+     print chr$(27)      begins  escape sequences as 
+                         specified below:
+
+     +")"                initiates  half   intensity 
+                         display
+
+     +"("                ends half intensity display
+
+     +"T"                erases  to end of line from 
+                         cursor   position   without 
+                         moving lower lines up
+
+     +chr$(ypos%)+chr$(xpos%)  moves cursor  to  the 
+                         screen  positions specified 
+                         by  ypos% (row number)  and 
+                         xpos% (column number)
+
+     Note that on the OSBORNE 1 ypos% is the  actual 
+     row  number  plus  32 and xpos% is  the  actual 
+     column number plus 32.  Thus row 12,  column 26 
+     (a point at the center of the screen) is 32+12, 
+     32+26 (ypos%=44,xpos%=58).  In the HANDY system 
+     I have handled the differance with a subroutine 
+     that equates ypos% and xpos% to the actual  row 
+     and  column  numbers  so in the  above  example 
+     ypos%=12 and xpos%=26.
+
+HANDY  and  CRUN2 which is necessary for  the  HANDY 
+programs  to  run occupy the better portion  of  one 
+diskette (single density on the OSBORNE 1) so it was 
+necessary to make it a two disk system: HANDY System 
+programs and CRUN2 on a program disk in drive A  and 
+a  data diskette in drive B for the data files  that 
+are created and used by HANDY.
+
+SPECIAL  NOTE:  To  make HANDY a fully  useful  desk 
+companion   for  myself  I  keep  a  copy  of   Mike 
+Rubenstein's  fine calculator program on my drive  A 
+diskette.  This  with the HANDY programs,  CRUN2 and 
+the  AUTOST.COM  program  included  with  the  HANDY 
+System  distribution  fills  one  OSBORNE  1  single 
+density diskette. If you did not receive the program 
+AUTOST.COM  in your distribution copy it  is  simple 
+enough to create using the SYNONYM.COM program. With 
+the HANDY program diskette in drive B and a diskette 
+with SYNONYM.COM in drive A type:
+
+     SYNONYM B:AUTOST.COM CRUN2 HANDYSYS
+
+Certain  entries  in HANDY must be short for  screen 
+formatting purposes. Error messages will appear when 
+input is too long.
+
+RETURN  or  ENTER (possibly CR or EXECUTE  on  other 
+systems) must be pressed after each user input  item 
+is ready.
+
+Dates  must be entered in the form MM/DD/YYYY.  This 
+means  that a date such as January 1,  1983 must  be 
+entered 01/01/1983.
+
+Only two applications permit print out of data;  the 
+appointment calendar and the To Do List.
+
+Data from dates prior to the date each time HANDY is 
+started  up  is eliminated from certain data  files. 
+However  there is a programed opportunity  to  print 
+this data out.
+
+
+               INSTALLATION & STARTUP
+
+HANDY is basically self installing.  Place a copy of 
+CRUN2.COM on the diskette with the HANDY interpreted 
+files (.INT extension) on it and place this diskette 
+in  drive A.  Place a blank,  formatted diskette  in 
+drive B.  If the HANDY AUTOST.COM program is on  the 
+HANDY diskette you can:
+
+     -    Cold  boot the system (push RESET or start 
+          with  the  system off  - insert  diskettes 
+          after turning on a system that is off).
+
+     -    Type AUTOST.
+
+     -    Set  one of your special function keys  to 
+          AUTOST   <CR>  and  press   this   special 
+          function   key  and  CTRL   simultaneously 
+          (OSBORNE  1  systems must be RESET   after 
+          setting  special  function keys  and  cold 
+          booted  in  order for  newly  set  special 
+          function keys to work). I use CTRL 0.
+
+Otherwise  simply type CRUN2 HANDYSYS.  Drive A must 
+be the logged drive.
+
+Shortly you will see CRUN2...  appear on the  screen 
+after  which the screen will go black and the  HANDY 
+logo will appear. You will be asked to enter today's 
+date  and then be asked to verify that today is  the 
+day  of  the  week and the date  specified.  If  you 
+answere  yes (y) you will see your B drive light  go 
+on  and shortly the HANDY SYSTEM PROGRAM  MENU  will 
+appear and prompt you to select an application. That 
+is all there is to it. HANDY has already created two 
+files on your data diskette in drive B; APPOINTS.DAT 
+and DOTHINGS.DAT. Other files are created as you use 
+particular applications. The amount of various types 
+of  data that can be stored on the data diskette  is 
+only  limited by the amount of data your diskette is 
+capable of storing.  I believe you will find this is 
+quite  a bit for the HANDY System  applications  you 
+use.
+
+Keep in mind the following:
+
+     -    Back-up your data diskettes periodically!
+
+     -    Each time you startup the HANDY System you 
+          will be asked to enter today's date.  This 
+          date  is  stored  for use by  the  various 
+          HANDY applications. Data on file preceding 
+          this date is erased upon initialization of 
+          HANDY. The first time you enter HANDY each 
+          day you will be asked if you want to print 
+          out  prior dates' data  (for  appointments 
+          and To Do Lists only). Pay close attention 
+          to the date you enter at initialization!
+
+
+             RECOVERY FROM INPUT ERRORS
+
+
+Generally,  HANDY will self recover from most normal 
+input  errors such as input lines that are too  long 
+or  erronious  dates.  In  most cases  you  will  be 
+informed in a nice way that an error has occured and 
+in  some  instances  particulars  about  the  error. 
+However  it  is not possible to preprogram  recovery 
+for every possible type of error.  For  example,  if 
+you  misspell a word,  HANDY will not catch  it.  In 
+case  of other not so obvious situations observe the 
+following:
+
+     -    The  easiest (but not always best) way  to 
+          get  out of a sticky situation is to press 
+          CTRL  and C simultaneously or press  RESET 
+          to  restart  HANDY.   If  you  find   this 
+          necessary,  before you restart HANDY check 
+          your  data  diskette in drive B to see  if 
+          there  is  a file  called  TRANS.  If  so, 
+          delete this file before restarting.
+
+     -    If  while  using a particular  application 
+          you  enter a command and then decide  that 
+          it is not the command you want to  execute 
+          (except  for (E)xit) try pressing ESC then 
+          RETURN.  I  have  preprogramed  this  into 
+          HANDY  in  some  areas for  just  such  an 
+          instance.
+
+     -    If you find your back arrow does not  move 
+          back  and rubout bad data input press CTRL 
+          and X simultaneously.  This is a  function 
+          of  how your disk is set up.  You may want 
+          to  resetup your disk for arrows to be  in 
+          CP/M mode instead of another mode.
+
+It will not take much experience with HANDY to  find 
+there is a minimum possibility for unnatural errors.
+Every  effort  has  been made to protect  your  data 
+files,  but  no guarantees are made in this  regard. 
+Every  effort  has been made as well  to  keep  your 
+application screens free from errors and scrolling.
+
+I   always  like  to  recommend  that  users  become 
+familiar with their data file structures by  looking 
+at  them  with  their  word  processor  in  the  NON 
+DOCUMENT  mode,  and with the potential of modifying 
+them  on their own for particular needs.  A  typical 
+line in a data file for HANDY might look as follows:
+
+     "01/01/1982",26.2,"9:00","Peter/Meeting"
+
+Items contained in quotation marks are  alphanumeric 
+entries  (words generally).  Those that are not  are 
+numeric   (numbers).   Individual  data  items   are 
+separated by commas.  Why would the date or the time 
+in   the  above  example  be  alphanumeric  when  it 
+contains  so  many  numbers,  you  ask.  Because  it 
+contains other characters besides numbers.  In HANDY 
+almost every file entry is alphanumeric (enclosed in 
+quotation marks),  even pure numbers.  This is a way 
+of controlling input errors.  Each number entered is 
+checked  to  be sure it is a  number.  If  you  were 
+otherwise  asked  to  enter  a  number  and  instead 
+entered a letter a system error would occur and your 
+application  screen would be comprimised.  This  and 
+many similar conditions should not occur in HANDY.
+
+If  you  cannot determine HANDY file  structures  on 
+your  own  for your own applications  programming  I 
+will  make  this information available  on  request. 
+
+Every  effort will be made to correct bugs found  in 
+the  HANDY System and maintain it up to date in  the 
+public domain.  Queries should be addressed as noted 
+at the end of this documentation.
+                   PROGRAM NOTES
+
+
+General:  Unlike some other time management systems, 
+HANDY  is  designed to handle the activities of  one 
+individual,  not several unless the user uses it  in 
+some other way.  It is not a task force or team time 
+management  system unless applied in that way by the 
+user.  It may be applied in one of these ways by the 
+maintenance   of   seperate   data   diskettes   for 
+particular individuals.
+
+It is not necessary to use uppercase entries for any 
+input,  including  yes (y) or no (n) entries  unless 
+the  user  of  the  HANDY System  has  a  particular 
+preferance (like capitalizing the first letter of  a 
+name) in their own input. Also, it is only necessary 
+to enter the first letter of a command which appears 
+within  parenthesis,   and  this  too  need  not  be 
+capitalized.
+
+AGGENDAS
+
+This is the personal apointment calendar program. It 
+is preformated for appointments from 7:00 a.m. until 
+6:30  p.m.  at half hour increments.  This cannot be 
+modified without changing the source code.
+
+Primary input is the time for an appointment and the 
+name or nature of the appointment. The length of the 
+appointment is not automatically displayed. Such can 
+only  be done manually and is left to the wants  and 
+needs  of  the  user.  I in most cases do  not  show 
+appointment lengths for reasons of flexibility. Also 
+entries  are not automatically wrapped to  the  next 
+line.  Formatting  of entries is totally left to the 
+user.  An  error message will appear if  any  single 
+line entry is too long.
+
+This  application also allows for deleting  entries, 
+looking  at  the  very next  day's  appointments  by 
+pressing the N command, looking well into the future 
+using the F command and entering the future date and 
+even  searching  for a particular entry using a  key 
+word. Note that searches for entries will not appear 
+in chronological order but will be displayed in  the 
+order they entered.
+
+Time entries must be in the form 0:00 like 9:30. 
+
+The appointment calendar may be printed to a printer 
+if  so desired by the user.  The format for  printed 
+output is pretty much the same as the screen  format 
+and  can  be  cut to size for insertion in  a  small 
+notebook for log purposes if desired.
+DO-TODAY
+
+This  is the To Do List application and allows entry 
+of up to nine (9) none scheduled activities one must 
+try  to  perform in a day like making  a  particular 
+phone call or writing a report.  Future days may  be 
+planned  in  advance  and entries  may  be  deleted. 
+Entries  may also be sorted in order of  importance. 
+The  To  Do  List may be printed to the  printer  if 
+desired.
+
+REMINDER
+
+This  is  a  simple application  to  quickly  remind 
+oneself  of important dates and events coming up  in 
+the current month like birthdays and  anniversaries. 
+The  user  can scan ahead to future months one at  a 
+time and return to the current month if necessary.
+
+PLANNING
+
+This  application  allows  blocking  out  of   large 
+segments  of  time  over a month like  traveling  or 
+vacation periods. Entries may be as small as one day 
+but the size of verbiage is limited by the number of 
+days selected and only one entry can be made for any 
+given day.
+
+The format is that of a normal monthly calendar. The 
+length  of  a  particular entry is  quiried  and  is 
+displayed  on the calendar according to  space  left 
+from  the  entry's length in words or  letters.  The 
+user  may move ahead month by month or far ahead  by 
+specifying  a  particular month and year  using  the 
+future (F) command.
+
+I  should  point  out that the  future  (F)  command 
+appearing  in  many of the HANDY  applications  also 
+allows  going back in time by specifying a  previous 
+date.  Note though that in the case of AGGENDAS  and 
+DO-TODAY, no prior data is retained on file from the 
+current date at start up.
+
+I  should  also  point out that the current  day  or 
+month  depending  on the HANDY application  will  be 
+displayed when each application is selected and  its 
+screen appears.  In the case of PLANNING,  the month 
+for  the  date entered at HANDY startup will  appear 
+initially when it is envoked.
+
+One  final note about PLANNING,  this  routine  does 
+save prior month's data. If it is necessary to purge 
+the  data  file for this program simply go  to  some 
+prior month and delete an entry using the D command.
+This  will  rebuild the complete file  deleting  all 
+entries prior to the current month.
+
+CALENDAR
+
+This  is  another very simple routine that  displays 
+months on a quarterly basis.  Four monthly calendars 
+are displayed on the screen; three in half intensity 
+and  one in full intensity.  Initially  the  current 
+month  is  displayed in full intensity at the  upper 
+right corner of the screen.  In half intensity,  the 
+month prior to the current month is displayed in the 
+upper  left corner of the screen and the two  months 
+following  the  current month are displayed  at  the 
+bottom of the screen in order from left to right.
+
+When advancing (or going back in time) the specified 
+month or month beginning the next quarter takes  the 
+place of the current month.
+
+ACTIONPL
+
+If  your  not  familiar with the concept  of  action 
+planning I suggest you take a seminar on it. It is a 
+very  power  tool but I cannot go  into  a  complete 
+tutorial  on  it here.  However this application  is 
+fairly straight forward.
+
+In ACTIONPL there are two applications screens.  One 
+displays  action planning categories.  These can  be 
+months,  years,  personal  or other goals,  shopping 
+lists,  projects, virtually whatever the user wants. 
+Twenty-four (24) categories may be specified by  the 
+user.  I  had a difficult time using all twenty-four 
+and for the last three used the coming three months.
+
+At least one category must be entered before  action 
+planning  may  commence.  In order to  begin  action 
+planning  the user enters the scan (S) command  then 
+specifies  the category to be scanned or planned.  A 
+second  screen  will appear  displaying  the  action 
+plans  for the specified category and allow  further 
+action planning or deletion of completed activities. 
+To return to the category screen the user enters the 
+restart (R) command.
+
+Action  plans  are simply something one wants to  do 
+regarding a particular thing.
+
+NOTEBOOK
+
+This application is very similar to ACTIONPL.  It is 
+simply  intended  to be what  its  name  implies,  a 
+notebook.  It  has  a category screen like  ACTIONPL 
+that  allows  up  to twenty-four  categories  to  be 
+entered  and notation screens for each  category.  I 
+use  it as an important phone call log and a log  of 
+completed activities.
+
+FONEBOOK
+
+This  application  is intended as a quick  reference 
+phone  number  listing.  The format is a  series  of 
+pages  with a double column list of names and  phone 
+numbers. Names are limited to eleven (11) characters 
+and numbers to twelve (12) such as 800-555-1212. The 
+user  may move ahead one page at a time or  all  the 
+way back to the beginning.  The number of entries is 
+limited  only  by  disk space and  the  other  HANDY 
+files,  but  try  to fill it up.  I have only  three 
+pages or about 2K of storage so far.
+
+DECISION
+
+Again another very simple application to help  users 
+with  prioritizing  or  decision  making.  The  user 
+enters  up  to  nine (9) factors  or  considerations 
+bearing on a situation and then is asked to  compare 
+each  one  against  all the others in terms  of  the 
+greater in importance. Once this is done the factors 
+are displayed in highest to lowest order of priority 
+for the user's evaluation.
+
+
+                      SUMMARY
+
+At this point there is not much more I can think  of 
+to tell you about HANDY.  It has been very useful to 
+me  and  I hope you will find it to be the same  for 
+you.  And  it is you who will help to improve it  by 
+letting me know your comments, suggestions, problems 
+and experience with bugs.
+
+Please direct responce to the HANDY System to:
+
+                 Peter C. Hawxhurst
+                 705  Bayside Court
+                 Wheeling, Illinois
+                       60090
+                   (312) 398-6184
+
+And...
+
+Please enjoy the HANDY System.
+
+
+P.S.  Please  remove the HANDY200.DOC file from  the 
+program  diskette for HANDY and print it or save  it 
+on  another diskette.  
+
+P.C.H.
+
+
+e HANDY200.DOC file from  the 
+program  diskette for HANDY and print it or save  it 
+on

@@ -1,0 +1,46 @@
+Profiling Pascal programs                by C.B. Falconer 84/11/02
+
+This  package  allows dynamic execution time profiles to be made of  Pascal
+programs executed under interpreter 2.4.4, CP/M installation 3.1, ONLY.  Do
+not use on other versions.
+
+To  check the version number execute some program (the default  PCDHELP  is
+suitable if present) with parm = 1, i.e. enter:
+
+    A>runpcd [1]
+
+and the version numbers will display.  You may then exit with control-c.
+
+If  the version is correct,  load the interpreter with DDT and overlay  the
+"faketime.hex" module by:
+
+    A>ddt runpcd.com
+    .....signon etc......
+    -Ifaketime.hex
+    -R
+    ^C                                      exit with control-c and do
+
+    A>save 59 RUNPCDP.COM                   (suggested name)
+
+(If you are using CCPLUS then use "SAVE 58+ RUNPCDP.COM" )
+
+The  source  file for TESTPRF is included,  which demonstrates the  changes
+needed in a source file to prepare for profiling.  They are concentrated in
+several global declarations,  inclusion of PROFILER.INC,  and calls to  the
+startprofiler procedure and the stoptimer intrinsic.   The result is a data
+file named PROFDATA, which can then be plotted with PLOTPROF.
+
+If  you  already  have  timers on your system,  and  have  implemented  the
+auxiliary  calls detailed under "timers" in CPMLINK,  you need not  install
+this  overlay at all.  The timer system is useless on versions before 2.4.4
+because no code to use them has been installed.
+
+The overlay fakes a timer interrupt by replacing 5 milliseconds with  about
+6000  p-code executions.   This is approximately correct for 2 Mhz systems,
+but  does  not count time waiting for console input or  disk  accesses,  as
+would an actual timer.  This may be an advantage at times.
+
+If  any  program calls the "STARTPROFILER" intrinsic (quasi-standard  proc)
+and the timer system is not installed,  the program will abort with a  "not
+implemented" error.
+z`

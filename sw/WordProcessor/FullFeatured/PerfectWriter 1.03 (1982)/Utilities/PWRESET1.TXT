@@ -1,0 +1,87 @@
+	*****************************************
+	*					*
+	*		PWRESET			*
+	*					*
+	*      DISK RESET patch for PW.COM	*
+	*					*
+	*	 Original idea from an		*
+	*	  anonymous hacker in		*
+	*	   Portland, Oregon		*
+	*					*
+	*	   This version by:		*
+	* 	    Peter Brawley		*
+	* 	    16 Hazel Ave.,		*
+	* 	    Toronto M4E 1C5,		*
+	* 	    Canada			*
+	*	    (416) 699 8757		*
+	*					*
+	*****************************************
+
+	Redefines the Perfect Writer command 
+	<ctrl-x s>, which called (im)Perfect Speller, 
+	as a DISK RESET call, to allow disk changes
+	while editing.  You can now write or rewrite
+	all or part of your text to files of any name
+	on as many disks as you like, so long as you hit
+	<ctrl-x s> BEFORE each disk change.
+
+	For Perfect Writer version 1.20.
+
+	When this patch is installed, the command
+	<ctrl-x s> or <ctrl-x S> sets all on-line disks 
+	to read/write status.  The message "Reset Disks"
+	is printed on the bottom line of the screen.
+	The keyboard click is also turned off (but it
+	will be turned on again by the first error bleep
+	sent your way by Perfect Writer).
+
+	To write all or part of a file to a new disk:
+	change disks, then hit <ctrl-x s>,
+	then write the whole file with
+	<ctrl-x ctrl-s> or <ctrl-x ctrl-w>,
+	or write a marked block with <ctrl-x r>.
+
+	As before, you MUST prefix a filename with a disk
+	letter and colon if you are logged to A: and writing to
+	B: or vice versa.
+
+
+---------------PERFECT WRITER PATCH by Peter Brawley
+
+This is my implementation of the patch described in a recent
+KUTE newsletter.  It sets all disks to read/write, re-selects
+the current disk, and echoes <Reset> on line 24.
+
+The files are
+
+**	PWRESET.ASM	source listing for the patch
+**	PWRESET.HEX	hex file for patch
+**	PWRESET.SUB	submit file will install patch
+**	PWRESET.DOC	documentation
+
+
+If you wish to modify and re-assemble PWRESET, you need CPMMAC.LIB.
+
+*********************************************************
+
+Alternatively, you can do the thing manually with DDT as follows.  
+Put on a fresh disc in the A drive holding DDT.COM
+					   PWRESET.HEX
+					   PW.COM 
+Key Control-C and then these commands (only the left column, of
+course!)	  
+
+ddt				; loads DDT
+f100,9000,0			; clears memory space
+ipw.com				; loads and
+r				; reads PW.COM
+f5ec9,5fc4,0			; clears small chunk of memory
+ipwreset.hex			; inserts 
+r				; and reads PWRESET.HEX there
+g0				; exits DDT
+save 137 pw.com			; writes new PW.COM to disc
+
+**********************************************************
+This patch used 6 months or more by Phillipson and Balkwill with
+no complaints:  Nov. 1985
+ disk, and e

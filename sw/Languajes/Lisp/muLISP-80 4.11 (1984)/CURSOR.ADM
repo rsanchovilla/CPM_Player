@@ -1,0 +1,73 @@
+; File:  CURSOR.ADM  (C)	06/04/83	The Soft Warehouse
+
+
+;	   * * *   A D M - 3 A   T e r m i n a l   * * *
+;	  m u S T A R   S c r e e n   P r i m i t i v e s
+
+% To adapt muSTAR for the ADM-3A terminal, change the name of
+  this file from CURSOR.ADM to CURSOR.LIB using the operating
+  system's REName command.  Next start up muLISP and following the
+  dollar-sign prompt, issue the commands
+
+	$ (RDS 'MUSTAR 'LIB)  (SAVE 'MUSTAR)  RETURN NIL
+
+  This will read in and save muSTAR as a SYS file on the logged
+  drive.  Then the muSTAR header message and menu will be displayed,
+  indicating that muSTAR is ready to accept commands as described
+  in the muLISP Reference Manual. %
+
+(SETQ ESC (ASCII 27))			;Escape code.
+(SETQ BS (ASCII 8))			;Backspace.
+(SETQ UPLINE (ASCII 11))		;Upline.
+(SETQ CR (ASCII 13))			;Carriage return.
+(SETQ CLRSCRN (ASCII 26))		;Clear screen.
+(SETQ HOME (ASCII 30))			;Home.
+
+(DEFUN CLRSCRN (LAMBDA ()		;Clear screen and
+  (PRIN1 CLRSCRN) ))			;home cursor.
+
+(DEFUN HOME (LAMBDA ()			;Home cursor.
+  (PRIN1 HOME) ))
+
+(DEFUN UPLINE (LAMBDA (NUM)		;Move cursor to leftmost
+  ((ZEROP NUM))				;column and up NUM lines.
+  (PRIN1 CR)
+  (LOOP
+    (PRIN1 UPLINE)
+    ((OR (NOT (NUMBERP NUM)) (EQ NUM 1)))
+    (SETQ NUM (SUB1 NUM)) ) ))
+
+(DEFUN BACKSPACE (LAMBDA (NUM)		;Move left NUM columns.
+  ((ZEROP NUM))
+  (LOOP
+    (PRIN1 BS)
+    ((OR (NOT (NUMBERP NUM)) (EQ NUM 1)))
+    (SETQ NUM (SUB1 NUM)) ) ))
+
+
+(SETQ LINELEN 78)				;Screen width.
+
+(SETQ PAGELEN 24)				;Screen lines.
+
+(SETQ INDENT 2)					;Indentation space.
+
+
+% Although not required by muSTAR, CURSOR is a useful utility
+  function.  CURSOR[row,col] repositions the cursor to row <row>
+  and column <col>.  The upper left hand corner of the screen
+  is row 0, column 0.  The maximum value of <row> is 23 and the
+  maximum value of <col> is 79. %
+
+(DEFUN CURSOR (LAMBDA (ROW COL)
+  ((AND (NUMBERP ROW) (NUMBERP COL)
+	(LESSP -1 ROW 24) (LESSP -1 COL 80))
+    (PRIN1 ESC)
+    (PRIN1 '"=")
+    (PRIN1 (ASCII (PLUS ROW 32)))
+    (PRIN1 (ASCII (PLUS COL 32)))
+    ROW ) ))
+
+(SETQ SAVE T)				;Turn on muSTAR SAVE flag.
+
+(RDS)
+

@@ -1,0 +1,673 @@
+.pl68
+..16.1.90/ 30.1.90
+.po10
+.pn26
+.op
+.hePASCAL                         #                   Systemservice
+3. S y s t e m s e r v i c e (Dienstprogramme)
+
+3.1. Start und Men{
+
+Deò   Starô   erfolgô   {beò  daó   Grundmen{   deó   Systemkernó 
+(Kommandobuchstabe K) oder von MicroDOS aus durch die Eingabe 
+
+   PLUS
+   oder 
+   PLUS  Buchstabe<.
+
+Nach dem Kommando PLUS erscheint das Servicemen{:
+
+-----------------------------------------------------------------
+!                                                               ! 
+¡ PASCAÌ 880/Ó (c© 01/08/8¶ VEÂ ROBOTROÎ BWÓ                    !
+! Systemservice / Version 2.40D / SCPX 1715                     !
+!                                                               !
+! L-aufwerk:  Lw<                                               !
+!                                                               !
+! K-opieren   Q-uelltextliste  R-ename  C-rossreferenzliste     !
+! T-ype       M-oduldiagramm   E-rase   D-atenschutz            !
+! A-nzeige    S-tatus          Z-urueck                         !
+!                                                               !
+! <                                                             !
+!                                                               !
+!                                                               !
+-----------------------------------------------------------------
+
+Copyright¬  Bezeichnunç   unä Versionsnummeò werdeî nuò beé  Neu
+starô sichtbar.
+Eineò  deò  angegebeneî Kommandobuchstabeî isô zõ  w}hlen¬  sonsô 
+bleibt das Men{ erhalten.
+Es bedeuten:
+
+L   Laufwerkwechsel.
+    Eó  bestehô diå M>glichkeiô zuí R{cksetzeî  deó  Diskettensy-
+    stemó unä zuò Wahì eineó andereî aktuelleî Laufwerks®  Kommu-
+    nikation und Wirkung sind wie im Grundmen{ des Systemkerns.
+
+K   Kopieren von Dateien beliebigen Typs.
+
+Ñ   Druckeî  voî Textdateieî miô wahlweiser¬  umfassendeò  Druck-
+    aufbereitung.
+    Die Textdatei bleibt unver}ndert.
+
+R   Umbenennen von nicht schreibgesch{tzten Dateien.
+
+Ã   Druckeî  eineò  Crossreferenzlistå deò  ausgew}hlteî  PASCAL-     
+    Quelltextdatei.
+
+T   Durchmustern von Dateien oder des Hauptspeichers.
+    Diå  Anzeigå  erfolgô hexadezimaì miô  versuchteò  ASCII-Dar-
+    stellung.
+.paŠM   Moduldiagramm drucken.
+    Daó  isô  einå gegliedertå ]bersichô {beò  allå  Programmein-
+    heiteî eines Programms einschlie\lich ihrer Schachtelungen.
+
+E   L>schen von nicht schreibgesch{tzten Dateien.
+
+Ä   Chiffriereî  eineò nichô schreibgesch{tzteî  Dateé  (unleser-
+    licè machen)¬  sï da\ diå entstehendå Dateé ohnå Kenntnió deó 
+    verwendeten Passworts nicht verwendbar ist.
+    Ist die Datei bereits chiffriert, wird sie dechiffriert.
+
+Á   Anzeigå deò Diskettenbelegunç  (Dateien¬  Dateigr>\en¬  Kapa-
+    zit}t, belegter und freier Speicherplatz).
+
+S   Status }ndern.
+    Schreibgesch{tztå  Dateieî werdeî iî deî Schreibzustanä  ver-
+    setzt»   nichô   schreibgesch{tztå  Dateieî  erhalteî   eineî 
+    Schreibschutz.
+
+Z   Der Systemservice wird verlassen.
+    Eó  wirä  zuí  Systemkerî odeò (jå nacè  Start©  zõ  MicroDOÓ     
+    zur{ckgekehrt.
+
+Daó Servicegrundmen{ kanî voî jedeò Stellå auó miô ^ESC~ erreichô 
+werden.
+
+Erfolgte der Start mit
+
+  PLUS  Buchstabe<
+
+sï wird¬  f{ò deî Fall¬ da\  Buchstabe< ½ K¬ E¬ R¬ C¬ D¬ M¬ S¬ A¬ 
+Q¬ Ô ist¬  diå jeweiligå Funktioî ausgef{hrt®  Eó erscheinô  keiî 
+Servicemen{  aí  Anfang®  Isô  Buchstabe< keiî g{ltigeó  Kommandï 
+(oder Z), wird wie beim Kommando PLUS gestartet.
+Allå  Kommandoó  werdeî miô Langtexô  quittiert®  Wurdå  miô  deí 
+Hilfsprogramí   PASINSÔ  (vgl®   Ziffeò  5.2.©  eiî  Kopierschutú 
+installiert, meldet sich der Systemservice nach K mit 
+
+  Kopierschutz. Codewort:
+
+Eó  isô  daó generiertå Codeworô einzugebeî unä  miô  ^ET~  abzu-
+schlie\en. Die Eingabe erfolgt ohne Echo auf dem Bildschirm.
+Isô daó Codeworô richtig¬  wirä diå Kopierroutinå gerufen¬  sonsô 
+wird zum Systemservicemen{ zur{ckgekehrt.
+Ein installierter Printschutz f{hrt nach Q zu der Ausschrift:
+
+  Printschutz. Codewort:
+
+Es ist wie beim Kopierschutz zu verfahren.
+
+Wurdå  nichô  Ë odeò Ñ eingegeben¬  deò Schutú nichô  installierô 
+odeò daó richtigå Codeworô eingegeben¬  werdeî diå Dateieî deò ií 
+aktuelleî  Laufwerë  befindlicheî Diskettå  wiå  folgô  angezeigô 
+(Anzeigemen{, Beispiel):
+.paŠ-----------------------------------------------------------------
+!                                                               !
+!  1 = CROSZREF 880    2 = PASCAL   COM*   3 = PASCAL   RES*    !
+!  4 = PASCAL   TXT*   5 = PASRINST COM    6 = PASRETT  COM     !
+!  7 = PLUS     COM    8 = PROBE    COM    9 = SORTIERT PAS*    !
+! 10 = TEST     PAS                                             !
+!                                                               !
+! Auswahl:                                                      !
+!                                                               !
+-----------------------------------------------------------------
+
+Die Namen sind alphabetisch sortiert.
+Es kennzeichnen die Zus}tze
+      *     Schreibschutz
+            chiffriert.
+
+Erlaubte Eingaben sind:
+
+a) Zahlen im Bereich der Anzeige (im Beispiel 1 bis 10)
+b) Bindestrich im Sinne von "bis"
+c) beliebig viele Leerzeichen
+d© Dateinameî einschlie\licè @okerzeicheî (*,?)®  Dabeé stehô '*§ 
+   f{ò  eineî  gesamteî Namenbestandteiì (z.B®  *.BAK©  odeò  f{ò 
+   restlichå Zeicheî deó Namenbestandteiló (z.B®  P*.BAK© unä '?§ 
+   f{r einzelne Zeichen.
+
+Die maximale L}nge betr}gt 64 Zeichen.
+
+Erlaubt sind hier zum Beispiel die Eingaben
+1-        f{r 1 2 3 4 5 6 7   
+1 2 4-    f{r 1 2 4 5 6 7
+- 5       f{r 1 2 3 4 5
+Beispiel.*
+DATU??R.DAT
+
+G{ltige Eingaben werden erzwungen.
+^ET~  f{hrô  zur{cë iî daó Servicemen{¬  daó jedocè nichô  soforô 
+angezeigt wird.
+Diå  folgendeî  Funktioneî werdeî f{ò  diå  ausgew}hlteî  Dateieî 
+durchgef{hrt.
+
+
+3.2. Kopieren
+
+Es erfolgt die Eingabeaufforderung
+
+   Ziellaufwerk:
+
+f{ò diå Kopie®  Diå Eingabå wirä gepr{fô auæ deî Bereicè A..Æ unä 
+mu\  voí aktuelleî Laufwerë verschiedeî sein®  Diå Fehleò  werdeî 
+miô  "?¢  angezeigt®  Nuò ^ET~ f{hrô zuò Ablehnunç deò  Funktion® 
+Existierô  einå  Dateé miô deí Nameî deò Quellå bereitó  auæ  deò 
+Diskette im Ziellaufwerk, erfolgt die Ausschrift:
+
+   Datei  Dateiname< existiert bereits.
+   U)eberschreiben, D)uplikat(.DPL), W)eiter
+Šunä  deò Nutzeò mu\ sicè zwischeî dieseî M>glichkeiteî  entschei-
+den®  Einå deò Antworteî wirä erzwungen®  Wirä Ä gew}hlt¬  erh}lô 
+diå  kopiertå  Dateé auæ deò Zieldiskettå  diå  Namenserweiterunç 
+DPL®  Beé  × wirä diå Dateé {bergangen®  Õ isô nuò m>glicè   (unä 
+wirä  nuò  angezeigt)¬  wenî diå zõ {berschreibendå  Dateé  nichô 
+schreibgesch{tzô ist.
+
+Eine erfolgreiche Kopie wird dateiweise mit dem Text
+
+     Ziellaufwerk<:   --  Quellaufwerk<:   Dateiname<
+
+quittiert®  Ziellaufwerë miô Pfeiì erscheinô zõ Beginî deó Kopie
+rens¬ Quellaufwerë unä Dateinamå nacè erfolgreicheí Kopieren.
+Sonst erfolgt eine Fehlermitteilung nach Anhang E.
+
+
+3.3. Quelltextliste
+
+Diå ausgew}hlteî Textdateieî werdeî {beò Druckeò ausgegeben®  Deò 
+Anwendeò  kanî diå Forí deó Druckeó wesentlicè beeinflussen®  Diå 
+Dateé selbsô bleibô davoî unber{hrt®  F{ò allå gew}hlteî  Dateieî 
+erscheint das Men{:
+
+-----------------------------------------------------------------
+!                                                               !
+!  Listenformatierung                                           !
+!                                                               !
+!     Z-eilen numerieren                                        !
+!     A-bs}tze zusammenhalten                                   !
+!     R-eservierte Worte markieren                              !
+!     S-chachtelungstiefe anzeigen                              !
+!     E-inr{cken                                                !
+!     I-nklusive Includedatei/laufende Numerierung              !
+!     M-it Includedateien/gesonderte Numerierung                !
+!     K-opfzeile ergaenzen                                      !
+!     B-EGIN/END paarweise numerieren                           !
+!     Q-uelldateinamen unterdruecken                            !
+!     P-ause nach jeder Seite                                   !
+!                                                               !
+!  Auswahl (+ oder   ET< f{r ZREB):                             !
+!                                                               !
+-----------------------------------------------------------------
+
+Durcè  Angabå deó jeweiló gekennzeichneteî Buchstabenó k>nneî diå 
+Optioneî  zusammengestellt¬  ZREÂ miô z.B®  +É uí É erg}nzô  odeò 
+ZREÂ akzeptierô  werden® Falló alsï Zeilennumerierung¬ Markierunç 
+reservierteò Worte¬ Einr{ckeî unä paarweiså Numerierunç voî BEGIÎ 
+und END gew{nscht wird, gen{gt ^ET~.
+Werdeî  weiterå Optioneî gew{nschô, m{sseî entwedeò allå  Auswahl-
+m>glichkeiteî  angegebeî  werden¬  wobeé ihrå  Reihenfolgå  keinå 
+Rollå spielt¬ odeò diå Standardoptioneî miô « unä diå Eingabå deó 
+entsprechendeî Buchstabenó erweiterô werden® Einå g{ltigå Eingabå 
+wird erzwungen.
+.paŠDie Optionen bewirken:
+
+Ú   @edå  Quellzeilå erh}lô beií Drucë linkó voí Texô einå  fort-
+    laufende Nummer.
+
+A   Abs}tze zusammenhalten.
+    Dieså  Optioî  verhindert¬  da\  Programmabschnittå  zwischeî 
+    Leerzeilen durch Seitenvorschub getrennt werden.
+    Iî  dieseí  Falì erfolgô deò Seitenvorschuâ bereitó nacè  deò 
+    vorangestellten Leerzeile.
+
+R   Markieren reservierter W>rter.
+    Diå  Markierunç erfolgô durcè Gro\schreibunç unä  Doppeldrucë 
+    deò  entsprechendeî  Worte®   Markierô  werdeî   Wortsymbole¬ 
+    Standardtypbezeichneò unä diå vordefinierteî Konstanteî TRUE¬ 
+    FALSE, MAXINT und PI.
+
+S   Schachtelungstiefe anzeigen.
+    Diå  Schachtelungstiefå  wirä aló Zahì voò  diå entsprechendå 
+    Quelltextzeile geschrieben.
+
+E   Einr{cken.
+    Ií   Vereinbarungsteiì   wirä   jå  nacè   Schl{sselworô   ií 
+    Anweisungsteiì   uí   zweé  Stelleî   jå   Schachtelungstiefå 
+    einger{ckt®  Diå voí Nutzeò editierteî f{hrendeî  Leerzeicheî 
+    werden bei der Ausgabe ignoriert.
+
+I   Include-Dateien mit laufender Numerierung drucken.
+    Dateien¬ diå ií Quelltexô durcè diå Include-Compilerdirektivå 
+    vertreteî sind¬ k>nneî durcè dieså Optioî mitgedruckô werden® 
+    F{ò diå Include-Dateé erfolgô keinå gesondertå Zeilennumerie
+    rung.
+
+M   Include-Dateien mit gesonderter Numerierung drucken.
+    Dateien¬   diå   ií  Quelltexô  durcè  diå  Include-Compiler
+    direktiveî vertreteî sind¬  k>nneî durcè dieså Optioî  mitge-    
+    druckô werden®  F{ò diå Include-Dateé erfolgô einå gesondertå     
+    Numerierung.
+
+K   Kopfzeile erg}nzen.
+    Es erfolgt die Aufforderung:
+
+      Ergaenzung der Kopfzeile (max. 40 Zeichen):
+
+    Diå  Kopfzeilå  wirä auæ jedå  Seitå  geschrieben®  Besonderó 
+    eignen sich Datum oder Name des  Programmierers.
+
+B   BEGIN/END paarweise numerieren.
+    Daó  Auszifferî erfolgô zwischeî BEGIN¯ RECORD¯ CASÅ unä  ENÄ 
+    iî Kommentarklammerî (ª *)®  Dabeé erhalteî diå zusammengeh>-
+    rigen Worte dieselbe Zahl.
+
+Q   Der Quelldateiname wird unterdr{ckt.
+    Die Seitennumerierung erfolgt.
+.paŠP   Seitenvorschub f{r Einzelbl}tter.
+    Nacè  Positionierunç  auæ deî Anfanç  eineò  Folgeseitå  wirä 
+    pausiert und das Einf{hren eines neuen Blattes erm>glicht.
+
+    Die Pause wird mit
+
+    Fortsetzung mit ^ET~
+
+    auæ deí Bildschirí angezeigt®  Einå beliebigå Tastå f{hrô zuò 
+    Fortsetzung.
+
+Diå  Optioneî  ZREÂ  sinä  voreingestellô  unä  k>nneî  miô  ^ET~ 
+akzeptierô  werden®  Isô lediglicè einå Erg}nzunç dieseò Optioneî 
+erforderlich¬  kanî daó miô deí Zeicheî « unä danacè diå  weiterå 
+Option angegeben werden. Die Eingabe
+
++I^ET~
+
+(Leerzeichen sind nicht signifikant) entspricht der Eingabe 
+
+ZERBI^ET~.
+
+Wird + nicht verwendet, also zum Beispiel
+
+ZEB^ET~
+
+so gelten nur die aufgef{hrten Optionen.
+Eine g{ltige Eingabe wird erzwungen.
+
+Nacè   beendeteò   Auswahì  erscheinô  auæ  deí  Bildschirí   diå 
+Aufforderung
+
+  Bitte Blattanfang einstellen und ^ET~:
+
+Miô ^ESC~ kanî zuí Servicemen{ zur{ckgekehrô werden® Nacè Eingabå 
+voî ^ET~ beginnô deò Listvorgang®  Eó kanî miô  Ó Ã  unterbrocheî 
+werden.
+
+Voò  deí  Drucë  deò n}chsteî Dateé  erfolgô  eiî  Blattvorschub® 
+Zus}tzlicè  bestehô ií Quelltexô diå M>glichkeit¬  durcè  Lister-
+Direktiven die Druckausgabe zu beeinflussen.
+Die Lister-Direktiven haben die allgemeine Form:
+
+   (*. Punktkommando<(*,  Punktkommando<*)*)
+
+wobei die }u\eren Kommentarklammern mitzuschreiben sind.
+Listerdirektiven sind als gesonderte Zeilen zu notieren.
+
+Folgende Kommandos sind m>glich:
+
+Punktkommando    Wirkung                           Voreinstellung
+  SL  Zahl<    Seitenl}nge                                72
+  RO  Zahl<    Rand oben                                   3
+  RU  Zahl<    Rand unten                                  3
+  RL  Zahl<    Rand links                                  0
+  KV  Zahl<    Neue Seite b. weniger als  Zahl< Zeilen     0
+  NS           Neue SeiteŠ  L+/L-        Listing ein/aus
+  A+/A-        Abs}tze zusammenhalten ein/aus
+  AT  Zahl<    Automatische Zeilentrennung bei Spalte  
+                Zahl<                                     80
+  E+/E-        Einr{cken ein/aus
+  B+/B-        Paarweises Beziffern BEGIN/END ein/aus
+  R+/R-        Reservierte Worte markieren ein/aus
+  ET  Zahl<    Einr{cktiefe                                2
+
+Es bewirken:
+
+SL  Zahl<:  Ver}nderung der Seitenl}nge auf  Zahl< Zeilen.
+RÏ  Zahl<º  Setzeî  deó  obereî  Randeó (voò deò  Kopfzeile©  auæ  
+             Zahl<  Zeile®   Ranä  obeî  bezeichneô  deî  Abstanä 
+            zwischeî  deò Kopfzeilå (z.B®  Quelltexô f{ò ...© unä 
+            dem Beginn des Textes.
+RU  Zahl<:  Setzen des unteren Randes auf  Zahl< Zeile.
+RÌ  Zahl<º  Verschiebeî deó linkeî Druckrandeó uí   Zahl< Spalteî 
+            nach rechts.
+KÖ  Zahl<º  Durcè dieseó Kommandï wirä  eiî Seitenvorschuâ ausge-
+            l>st¬  wenî auæ deò Seitå wenigeò aló  Zahl<  Zeicheî 
+            zur Verf{gung stehen.
+NSº         Ií  Unterschieä zõ 'KÖ  Zahl<§ wirä  hieò diå festge-
+            legtå  Seitenl}ngå  nichô  ver}ndert¬   sonderî   eiî 
+            Vorschuâ  auæ diå neuå Seitå vorgenommen¬  unabh}ngiç 
+            von der Anzahl der noch freien Zeilen.
+L+/L-º      Durcè  'L-§ kanî daó  Druckeî unterbrocheî unä  durcè 
+            'L+§  wiedeò eingeschalteô werden®  Diå  Standardein-
+            stellunç isô 'L+'® 'U§ unterbrichô daó Druckeî aâ deò 
+            Zeile¬  diå deí Kommandï folgt®  Durcè 'L+§ wirä  deò 
+            Listvorgang ab der darauffolgenden Zeile fortgef{hrt.
+A+/A-º      Diå  Wirkunç  isô wiå Á  (Abs}tzå zusammenhalten©  ií 
+            Druckermen{® Einå dorô getroffenå Festlegunç kanî miô 
+            A« (ein© unä A- (aus© daó Zusammenhalteî deò  Abs}tzå 
+            hier noch separat gesteuert werden.
+AÚ  Zahl<º  Beií  Druckeî werdeî  Zeilen¬  diå einå L}ngå  gr>\eò  
+             Zahl< besitzen¬  automatiscè getrennt®  Diå Fortset-
+            zung erfolgt am Anfang einer neuen Zeile.
+E+/E-º      Diå  Wirkunç  isô wiå  Å beií  Druckmen{®  Einå  dorô 
+            getroffenå  Festlegunç kanî miô E« (ein© unä E- (aus© 
+            gesondert gesteuert werden.
+B+/B-º      Diå  Wirkunç  isô wiå  Â beií  Druckmen{®  Einå  dorô 
+            getroffenå Festlegunç kanî miô B« (ein© unä  B- (aus© 
+            gesondert getroffen werden.
+R+/R-º      Diå  Wirkunç  isô wiå  Ò beií  Druckmen{®  Einå  dorô 
+            getroffenå Festlegunç kanî miô R« (ein© unä  R- (aus© 
+            gesondert gesteuert werden. 
+EÔ  Zahl<º  Beií  Druckeî eineò Quelltextdateé k>nneî  ií  Anwei-
+            sungsteiì  miô   Zahl< diå Stelleî f{ò daó  Einr{ckeî 
+            gesondert festgelegt werden. 
+
+Beispielº   (*.SL60,RL5*©  Ver}nderunç  deò Einstellunç  deò Sei-
+                           tenl}ngå  voî 7² (Voreinstellung©  auæ 
+                           6°  Zeilen¬   Einstellunç  deó  linkeî 
+                           Randeó auæ µ Spalteî 
+                           (Voreinstellunç 0)
+.paŠDiå  Ausf{hrunç  deò  Funktioî Druckeî wirä  auæ  deí  Bildschirí 
+mitgeteilt. Bearbeitete Include-Dateien werden mit
+         Bearbeitung --<  Dateiname<
+unä  deò  Anzeigå deò laufendeî  Zeilennummeò  angezeigt®  Fehleò 
+werdeî mitgeteilt® Fehlô einå zõ druckendå Include-Datei¬ sï wirä 
+der Abbruch der Funktion Quelltextliste angeboten.
+
+
+3.4. Rename
+
+Diå ausgew}hlteî Dateieî werdeî umbenannt® Voraussetzunç ist¬ da\ 
+sie nicht schreibgesch{tzt sind.
+Im letzteren Fall werden sie mit 
+
+   Datei  Dateiname< schreibgeschuetzt.
+
+abgewiesen.
+@e Datei wird mit
+
+   Neuer Dateiname:
+
+zuò  Eingabå deó neueî Namenó aufgefordert®  Deò Namå daræ  keinå 
+Laufwerkangabå  enthalteî  unä nichô bereitó auæ dieseò  Diskettå 
+vorhandeî sein®  Beé nuò ^ET~ wirä diå Dateé {bergangen» deò altå 
+Dateinamå   bleibô  erhalten®   Eó  wirä  einå  g{ltigå   Eingabå 
+erzwungen. Gegebenenfalls erfolgt die Fehlermitteilung 
+
+    Dateiname< existiert bereits.
+
+Die erfolgreiche Umbenennung wird mit
+
+    neuer Dateiname<    --  alter Dateiname<
+
+auæ deí Bildschirí quittiert®  Isô diå Umbenennunç nichô m>glich¬ 
+erfolgô einå  Fehlermitteilunç nacè  Anhanç E¬ unä diå Dateé wirä 
+{bergangen.
+
+
+3.5. Crossreferenzliste
+
+Eó erfolgô einå alphabetischå Auflistunç deò ií  PASCAL-Quelltexô 
+vorhandeneî  anwenderdefinierteî Konstanten-¬  Typ-¬  Variablen-¬ 
+Funktions- unä Prozedurbezeichneò unä diå Angabå deò  Zeilen¬  iî 
+deneî  siå auftreten®  @å nacè Installatioî wirä diå  Reihenfolgå 
+des lateinischen oder kyrillischen Alphabets eingehalten.
+F{ò  diå 8-Bit-Versioî erfolgô diå Ausgabå deò Crossreferenzlistå 
+durcè deî Moduì CROSZREF.880¬  deò sicè iî eineí  Online-Laufwerë 
+oder dem Laufwerk A befinden mu\.
+.paŠNacè deí Starô deó Moduló voî PLUS.COÍ auó meldeô sicè dieseò unä 
+bietet das nachfolgende Men{ an:
+
+-----------------------------------------------------------------
+!                                                               ! 
+!  Optionen f{r Crossreferenzliste                              !
+!                                                               !
+!          K-opfzeile ergaenzen                                 !
+!          A-usgabe {ber Bildschirm                             !
+!          E-inzelne Bezeichner auswaehlen                      !
+!          D-eklarationen mit ":" markieren                     !
+!          W-ertzuweisung mit "+" kennzeichnen                  !
+!          P-ause nach jeder Seite                              !
+!                                                               !
+! Auswahl oder  ET<:                                            !
+!                                                               !
+-----------------------------------------------------------------
+
+Diå Optioneî Ë unä Ğ sinä wiå diå Listeroptioneî zõ benutzen® Diå 
+andereî Kommandoó bewirken:
+
+Á   Diå  Crossreferenzlistå wirä statô  {beò deî Druckeò auæ  deí 
+    Bildschirm ausgegeben.
+Å   Diå Crossreferenzlistå wirä auæ diå  voí Nutzeò  festgelegteî 
+    Bezeichneò begrenzt®  Dieså werdeî einzelî abgefordert®  ^ET~ 
+    beendeô  diå  Eingabå  deò voí Nutzeò  eingegebeneî  max®  1° 
+    Zeichen f{r den Bezeichner.
+Ä   Diå Zeilennummeò iî deò Crossreferenzlistå erh}lô deî  Zusatú 
+    ":"¬  wenî  deò  Bezeichneò selbsô eingef{hrô wirä  odeò  zuò 
+    Definition anderer Bezeichner benutzt wird.
+×   Diå Zeilennummeò iî deò Crossreferenzlistå  erh}lô deî Zusatú 
+    "+"¬  wenî  deí Bezeichneò iî eineò Ergibtanweisunç eiî  Werô 
+    zugewiesen wird.
+
+Diå einzelneî Optioneî k>nneî beliebiç kombinierô  werden®  ^ESC~ 
+f{hrô  zuí  Abbrucè  deò Funktion®  Voò deò  Ausgabå  deò  ersteî 
+Crossreferenzlistå  {beò  deî  Druckeò wirä zuò  Einstellunç  deó 
+Blattanfangeó  aufgefordert®  Miô ^ESC~ kanî abgebrocheî  werden® 
+]bersteigô  einå  {bergro\å Crossreferenzlistå (beé  sehò  gro\eî 
+Programmeî  unä 4¸ KByte-TPA© diå verf{gbarå  Hauptspeichergr>\e¬ 
+wird die Funktion C abgeschaltet. Das wird mit dem Text 
+
+       Ueberlauf.
+       Crossreferenzliste zu gross.
+
+auæ  deí Bildschirí angezeigô unä abgebrochen®  Beé deò  R{ckkehò 
+mu\ PLUS.COM in einem der Online-Laufwerke sein.
+
+
+3.6. Type
+
+Diå Dateieî ií selektierteî Laufwerë unä deò Hauptspeicheò k>nneî 
+durchgemusterô  werden®  Uí  diå  Auswahì deó  Hauptspeicheró  zõ 
+erm>glichen¬  enth}lô daó folgendå Men{ nebeî deî Dateinameî  aló 
+zus}tzlichå  Komponentå  *ª Speicheò **®  
+.paŠWirä deò  Hauptspeicheò gew}hlt, fordert das System mit
+
+        Anfangsadresse:
+und     Endadresse:
+
+Angabeî  zõ deí Teiì deó Hauptspeicheró  an¬  deò  durchgemusterô 
+werdeî soll®  Diå Eingabeî k>nneî dezimaì odeò hexadezimaì erfol-
+gen. Das erste Zeichen einer hexadezimalen Zahl ist "J".
+G{ltige Eingaben werden erzwungen.
+
+Daó Durchmusterî erfolgô aló DUMĞ iî hexadezimaleò unä versuchteò 
+ASCII-Darstellunç  f{ò 1¶ Bytå jå Zeile®  Voò deò DUMP-Zeilå wirä 
+einå  Adresså ausgegeben®  Beé Hauptspeicherausz{geî isô  eó  diå 
+realå Adresse® Beé deò Darstellunç voî Dateieî wirä sï verfahren¬ 
+als beg}nne die Datei auf der Adresse J100.
+
+Eó wirä stetó eiî Sichtblocë (miô geringeò Zeitverz>gerung© ange
+zeigt®  Diå  Fortsetzunç  kanî miô eineò beliebigeî  Zeichentastå 
+odeò ^ET~ erfolgen® Eó wirä deò n}chstå Sichtblocë angezeigt® Eiî 
+Sichtblocë  bestehô beií Starô deò TYPE-Funktioî auó 12¸ Bytå  (¸ 
+Zeilen)®  Wirä  zuò Fortsetzunç einå deò Tasteî  1< bió  8< (Zif
+ferntasteî   Zahl<©  benutzt¬  }nderô sicè diå Gr>\å  deó  Sicht
+blockeó  auæ  Zahl< maì 12¸ Byte®  Eó kanî beliebiç  umgeschalteô 
+werden®  Diå  Gr>\å deó Sichtblockeó bleibô bió zuò n}chsteî  Um
+schaltunç unver}ndert.
+Wegeî  deò  m>glicheî  Auswahì mehrereò  Dateieî  werdeî  jeweiló 
+Beginn und Ende der Datei mitgeteilt.
+
+
+3.7. Moduldiagramm
+
+F{ò  diå  ausgew}hlteî  Dateieî  wirä  eiî  Strukturdiagramí  deò 
+folgenden Form gedruckt:
+
+ Dateiname<  Programmname<
+ Dateiname<  Schachtelungsnomenklatur<  Teilprogrammname<
+
+Zum Beispiel:
+
+Moduldiagramm von PLUS.PAS 
+Physischer Modul    :   Logischer Modul
+                  
+PLUS.PAS            :   PROGRAM Plus
+PLUS.PAS            :  1.  FUNCTION Menue
+ANZIDT.PLS          :  2.  ANZEIGE
+ANZIDT.PLS          :  2. 1.  PROCEDURE Directory
+ANZIDT.PLS          :  2. 1. 1.  PROCEDURE Speichern
+ANZIDT.PLS          :  2. 2.  PROCEDURE Ordnen
+ANZIDT.PLS          :  3.  PROCEDURE Ident
+ :
+
+Include-Dateieî  werdeî  miô verarbeitet®  Eó mu\ sicè  nichô  uí 
+Hauptprogramme handeln.
+.paŠAm Anfang wird mit
+
+   Bitte Blattanfang einstellen und ^ET~:
+
+dazu aufgefordert, den Drucker bereitzumachen.
+Es folgt dann f{r jede ausgew}hlte Datei die ]berschrift
+
+   Moduldiagramm f{r  Name des Programms<
+
+diå  Einteilunç  iî physischeî Moduì (Datei© unä logischeî  Moduì 
+(Programmeinheit© unä danacè daó Moduldiagramm® Daó Schl{sselworô 
+OVERLAY wird mitgedruck.
+Diå  Nameî  deò  jeweiló  bearbeiteteî  Dateieî  werdeî  auæ  deí 
+Bildschirm mit
+
+   Bearbeitung --<  Dateiname<
+
+mitgeteilt sowie auch die Nummer der bearbeiteten Zeile.
+
+M>gliche Fehlermitteilungen sind im Anhang E aufgef{hrt.
+
+
+3.8. Erase
+
+Diå  ausgew}hlteî Dateieî ií aktuelleî Laufwerë werdeî  gel>scht¬ 
+vorausgestzô siå sinä nichô schreibgesch{tzt®  Ií letztereî  Falì 
+werden sie mit
+
+   Datei  Dateiname< schreibgeschuetzt.
+
+abgewiesen.
+Miô   Ó   kanî   deò   Schreibschutú   aufgehobeî   werden®   Auó 
+Sicherheitsgr{nden wird f{r jede ausgew}hlte Datei gefragt
+
+    Dateiname< loeschen (@/N):
+
+unä  einå  g{ltigå  Antworô erzwungen®  Beé Î  bleibô  diå  Dateé 
+erhalten, bei @ wird sie gel>scht. Das L>schen wird mit
+
+    Dateiname< geloescht.
+
+quittiert.
+
+
+3.9. Datenschutz
+
+Diå  ausgew}hlteî Dateieî werdeî anhanä eineó voí Nutzeò eingege-
+beneî  Codeworteó  verschl{sselt¬  wenî siå  bisheò  ií  Klartexô 
+vorlageî odeò entschl{sselt¬  wenî siå bisheò verschl{sselô wareî 
+(Kennzeichnung " " im Anzeigemen{).
+Schreibgesch{tzte Dateien werden mit
+
+   Datei  Dateiname< schreibgeschuetzt.
+
+abgewiesen.
+.paŠF{r alle Dateien erfolgt die Anforderung des Schl{ssels mit
+
+   Codewort:
+
+Diå maximalå L}ngå deó Codeworteó isô 1¶ Zeichen® Beé deò Eingabå 
+erfolgt kein Echo.
+
+Achtung¡  F{ò  diå Auswahì deó Codeworteó beií  Verschl{sselî unä 
+          sp}teò desselbeî Codeworteó beií Entschl{sselî isô  deò 
+          Anwendeò  selbsô  verantwortlich®   Wirä  daó  Codeworô 
+          vergessen¬  isô  diå Dateé verloren®  Eó empfehleî sicè 
+          deshalâ Codeworte¬  diå sicè deò Anwendeò leichô merkeî 
+          kann (Name, Vorname, Geburtstag, Einrichtung).
+          Wurdå  beií  Dechiffriereî versehentlicè  eiî  falscheó 
+          Codeworô  benutzt¬  sï  isô zun}chsô miô  deí  falscheî           
+          Codeworô  wiedeò  zõ  verschl{sselî unä  danî  miô  deí 
+          richtigeî Codeworô zõ entschl{sseln.
+
+^ET~  f{hrô voò begonneneò Codeworteingabå unä ^ESC~ w}hrenä  deò 
+Codeworteingabe zuò Ablehnunç deò gesamteî Funktioî  Chiffrieren® 
+Nacè  Eingabå  deó  Codeworteó  (Beendeî  miô ^ET~)  erfolgô  diå 
+Ausschrift
+
+   Bitte warten.
+
+unä  diå  Dateé wirä transformiert®  Dazõ wirä  auó  Sicherheits
+gr{ndeî zun}chsô einå tempor}rå Dateé angelegt® Diå Diskettå daræ 
+alsï nichô volì unä nichô schreibgesch{tzô sein®  Iî dieseí  Falì 
+erfolgô einå Fehlermitteilunç nacè Anhanç E.
+Der erfolgreiche Vorgang  wird je nach Richtung mit
+
+    Dateiname< chiffriert.
+
+oder
+
+    Dateiname< dechiffriert.
+
+quittiert®  Deò  Anwendeò kanî sicè aucè durcè erneuteó Rufeî deó 
+Anzeigemen{ó  davoî  {berzeugen®  Diå Dateé tr}gô daó Kennzeicheî 
+¢  ¢  (bzw®   eó  isô  aufgehoben)®  Miô  TYPÅ  kanî  deò  Erfolç 
+kontrolliert werden.
+
+
+3.10. Anzeige
+
+F{r die Diskette im selektierten Laufwerk werden angezeigt
+
+   - Dateinamen, Dateiattribute (*,  ) und Dateigr>\en
+   - Diskettenkapazit}t, belegter und freier Speicherplatz
+
+jeweils in KByte.
+Verschiedenå Diskettengr>\en¬  Schreibdichten¬ Formatå unä Anzahì 
+Systemspuren werden erkannt.
+
+.paŠ3.11. Status
+
+Deò Statuó (Schreib/Lese- odeò Nur-Lese-Status© deò  ausgew}hlteî 
+Dateien wird in sein Gegenteil ge}ndert (getriggert).
+Der Vorgang wird mit
+
+ Dateiname< Schutzzeichen neu<  -  Dateiname< Schutzzeichen alt<
+
+quittierô  odeò  durcè  Fehlermitteilunç  diå  Unm>glichkeiô  deò 
+Ausf{hrunç angezeigt® Daó Schutzzeicheî isô '*§ beé Schreibschutú 
+oder Leerzeichen bei Nicht-Schreibschutz.
+
+
+3.12. Zur{ck
+
+Dieseó Kommandï beendeô diå Arbeiô deó Systemservice®  Eó wirä zõ 
+deò  Systemkomponentå  zur{ckgekehrt¬  voî deò auó deò Starô  er-
+folgte, also zum Systemkern oder zum Laufzeitsystem MicroDOS.
+

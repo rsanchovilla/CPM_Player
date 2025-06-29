@@ -1,0 +1,410 @@
+=================================================================
+
+                               H P
+
+              A Programmer's Integer RPN Calculator
+
+                  Version 1.1    July 20, 1989
+
+                       Copyright (c) 1989
+                               by
+                           Terry Hazen
+                      21460 Bear Creek Road
+                       Los Gatos, CA 95030
+
+                 Voice.......... (408) 354-7188
+                 Saratoga RBBS.. (408) 354-5934
+                 Zee-Machine.... (408) 245-1420
+
+
+  HP11 and its documentation may not be circulated in any
+  incomplete or modified form without written permission of the
+  author.  Any commercial use of HP11 where the user receives
+  revenue by duplicating or distributing HP11 by itself or in
+  conjunction with any hardware or software product is expressly
+  prohibited unless authorized in writing by the author.  All
+  rights reserved.
+
+=================================================================
+
+
+Introduction
+------------
+
+HP11.COM is a simple and very useful programmer's integer
+calculator modeled after a Hewlett-Packard calculator with RPN
+notation.  It is an extensive upgrade of Eric Meyer's HP10 and
+was rewritten and enhanced to reduce code size, to increase the
+number of memory storage registers, to add stack roll and last-x
+functions, and to improve the user interface and input error
+trapping.
+
+If you are not familiar with RPN notation, you should review the
+file RPN.DOC for more information on RPN.  RPN.DOC also has more
+detail on how HP11 uses its stack during stack and numeric
+operations.
+
+HP11 can operate in any of four display modes:  hexadecimal,
+decimal, binary, and character, making it very useful for quickly
+converting integer numbers from one base to another.  It can do
+integer addition, subtraction, multiplication, division,
+exponentiation and bitwise logical AND and OR operations.  It has
+a 4 level stack and 6 memory storage registers.
+
+All HP11 internal storage and arithmetic is unsigned 16 bit.
+Thus 65537 becomes 00001, -1 becomes 65535, and so on.
+Multiplication and exponentiation overflow and division by 0 will
+generate errors.  In binary and character modes, the display
+shows only the lowest 8 bits of 16, so 8-bit overflow does not
+usually cause an error.
+
+
+HP11 CP/M 2.2 RSX version
+-------------------------
+
+The utility HPRSX.COM will install a version of HP11.COM into
+memory as a CP/M 2.2 resident system extension (RSX).  The RSX
+remains resident in memory and can be called from the command
+line or from within other programs.  The RSX version of HP11
+operates just like HP11.COM.  See the file HPRSX.DOC for more
+information on the HP11 RSX.
+
+
+Running HP11
+------------
+
+When you invoke HP11, it will display its single operating line
+and wait for your input:
+
+  A0>hp11
+  HP 1.1 - T.Hazen 7/89           H>     0000
+
+The 'H>' indicates hexadecimal display mode (the default display
+mode), and '0000' is the four digit hex calculator display of
+register X, which is the register always displayed.  The HP11
+stack and memory are initialized to zero when HP11 is first
+loaded from disk.
+
+
+Exiting HP11
+------------
+
+Use control-C (^C) to exit HP11.  If you operate under ZCPR3, you
+may use the ZCPR3 'GO' command after exiting HP11 and before any
+other command is executed and it will return you to HP11 exactly
+where you left off.
+
+
+Changing Display Modes
+----------------------
+
+To change the display mode, use the escape key (<ESC>) followed
+by the first letter of the desired mode.  Either upper or lower
+case letters may be used to select the mode.  The display
+indicates which mode is currently being used, and the number in
+the X register will be displayed in the current mode.  You may
+translate numbers from one base to another by simply changing
+display modes.
+
+
+Hex Display Mode:
+     To select the hex display mode, enter <ESC>H.  In hex mode,
+     numbers display as four hex digits from 0000-FFFF.
+
+Decimal Display Mode:
+     To select the decimal display mode, enter <ESC>D.  In
+     decimal mode, numbers display as five decimal digits from
+     00000-65535.
+
+Binary Display Mode:
+     To select the binary display mode, enter <ESC>B.  In binary
+     mode, the least significant byte of the number displays as 8
+     binary digits, 00000000-11111111.
+
+Character Display Mode:
+     To select the character display mode, enter <ESC>C.  In
+     character mode, the least significant 7 bits of the number
+     display as an ASCII character.  Control characters are
+     indicated by a '^' prefix.  For example, 03H will display as
+     '^C' and DEL (7FH), will display as '^?'.
+
+     All non-command characters can be directly entered as data
+     in the character display mode.  Characters that have command
+     functions such as 'L', '/', '=', ^C, <RET> (^M), etc, can be
+     entered as data in the character mode by prefixing them with
+     the <ESC> character.  See the section on Entering Special
+     Characters for more information.
+
+
+The HP11 Stack
+--------------
+
+The structure of HP11's 4 level stack is shown below:
+
+               T -> 0000      Stack register 4
+               Z -> 0000      Stack register 3
+               Y -> 0000      Stack register 2
+               --------------------------------------------
+               X -> 0000      Stack register 1 <- Displayed
+
+HP11 always displays the contents of the X register and all
+values entered are entered into the X register.  When a number is
+entered into the X register, the previous contents of the X
+register are automatically moved up to the Y register, the
+previous contents of the Y register are moved up to the Z
+register, etc.  See the section on Stack Operations for more
+information on how HP11's operations use the stack.
+
+
+Entering Numbers
+----------------
+
+Invoke HP11 and try entering the following sequence of keys:
+
+               ^X  <ESC>D  1 <RET>  2  +  4  *
+
+You have cleared the stack, selected the decimal mode, entered
+the decimal numbers '1' and '2', added them, entered '4' and
+multiplied 4 times the previous result.  The display should show
+'00012', which is (1+2)*4.
+
+Your <ENTER> or <RET> key corresponds to the HP <ENTER> key.  It
+is used to separate two numbers as they are being entered one
+after the other or to copy the number in the displayed X register
+into the Y register.  You normally key in a string of digits,
+then press <RET> to enter the number in the displayed X register.
+You do not need to use <RET> after every number entry, however,
+as the use of the function keys also automatically terminates
+digit entry.
+
+Depending on the current display mode, a maximum number of digits
+can be entered into the display, after which the leading digits
+will begin to be discarded.  HP11 accepts a maximum of four
+digits in the hex display mode, five digits in the decimal
+display mode, eight digits in the binary display mode and one
+digit in the character display mode.  The console bell will ring
+if you enter a character that is not acceptable in the current
+display mode.
+
+
+Correcting Entries
+------------------
+
+The backspace key (^H) works like the left arrow '<--' key on an
+HP calculator.  It has two functions.  During digit entry, it
+will delete the last digit typed.  Otherwise it will clear the X
+register and leave the stack lift disabled.
+
+
+Entering Special Characters
+---------------------------
+
+The <ESC> key may be used as a prefix in the character display
+mode to allow you to enter as a digit those characters that would
+otherwise be interpreted by HP11 as calculator functions:
+
+                       +-*^/&|~=lLsSrR<>.,
+
+as well as the control characters ^X, ^C and <RET> (^M).
+
+To enter the character 's', for example, enter '<ESC>s' instead
+of 's', since entering 's' initiates a store to a memory
+register.
+
+
+Numeric Functions
+-----------------
+
+HP11's integer numeric functions and the keys to invoke them are:
+
+     +    Addition, Y+X
+     -    Subtraction, Y-X
+     *    Multiplication, Y*X
+     ^    Exponentiation, Y^X  (Y to the Xth power)
+     /    Integer quotient, INT(Y/X)
+               - Remainder, X*(Y/X-INT(Y/X)) -> Register R
+     &    Bitwise AND, X&Y
+     |    Bitwise OR, X|Y
+     ~    Negation [2's complement], ~X
+
+Negation affects only the X register.  The other operations use
+the numbers in the first two registers X and Y as operands, and
+display the result in the X register, dropping the stack.
+
+When an integer division is performed, you are often interested
+in both the quotient and the remainder.  To obtain both values
+with HP10, the operations had to be performed separately.  With
+HP11, the remainder is saved in the special reserved memory
+register R during the division operation.  Memory register R is
+accessed just like any of the regular memory registers 0-5.  It
+may also be used to store numbers, but any contents will be
+overwritten by the remainder during integer division operations.
+
+The console bell will ring if an undefined key is pressed as an
+operator.  It will also ring and the current multiplication (*),
+division (/) or exponentiation (^) function will not operate if
+16-bit overflow occurs or if division by 0 is attempted.  The
+stack is left unchanged.  Use the backspace key to delete the
+offending operand if you wish to try again.
+
+
+Stack Operations
+----------------
+
+See the file RPN.DOC for more detail on how HP11's functions
+affect the stack registers.
+
+Entering a Number:
+     <RET> lifts the stack, copying the number in register X
+     into register Y.  The number being entered is then placed in
+     register X.  Stack lift is disabled.
+
+Clearing the Stack:
+     You can clear the entire stack with Control-X (^X) at any
+     time.  Memory and Last-X registers are not affected.
+
+Exchanging X and Y:
+     You can exchange the contents of the two lowest stack
+     registers X and Y with the '=' function (X<>Y).  No other
+     registers are affected.  This function is useful when you
+     need to reverse the order of operands before performing a
+     function sensitive to operand order such as subtraction,
+     divison or exponentiation.
+
+Last-X:
+     When a numeric function is executed, a copy of the last
+     value in the X register before the function is executed is
+     saved in the Last-X register.  That value can be restored to
+     the X register using the 'L' (or 'l') key.  The stack is
+     lifted, moving the current contents of the X register to the
+     Y register, etc, unless stack lift has been disabled by the
+     <RET> or backspace key.  The value in the Last-X register is
+     not affected.  The Last-X function saves you from having to
+     reenter numbers you wish to use again and can assist you in
+     error recovery.
+
+
+Stack Roll:
+     You can roll the stack by using '>' (or the unshifted
+     equivalent '.') to roll it up one level and '<' (or ',') to
+     roll it down one level.  When the stack is rolled up, the
+     contents of all stack registers are moved up one level and
+     the value in the top stack register is moved down to the X
+     register.  When the stack is rolled down, the contents of
+     all stack registers are moved down one level and the value
+     in the X register is moved up to the top stack register.  No
+     stack values are lost as a result of stack roll operations.
+
+
+Memory Storage Registers
+------------------------
+
+There are 6 memory storage registers numbered 0-5 that may be
+used to store constants or intermediate values during
+calculations, for recalled as needed later.  The contents of
+memory registers are not affected by the clear stack (^X)
+operation.  Either upper or lower case letters may be used to
+specify memory register Store or Recall functions.
+
+Storing a Number:
+     The number in the X register may be stored in any of the
+     memory registers using the command 'S' followed by the
+     number of the desired memory register.  The previous
+     contents of the memory register will be overwritten, but the
+     number in the X register will not be affected.  For example,
+     to store the number in register X in memory register 2,
+     enter 'S2'.
+
+
+Recalling a Number:
+     Numbers may be recalled from a memory register to register X
+     using the 'R' command followed by the number of the memory
+     register.  The stack will be lifted, putting the previous
+     contents of register X into register Y, but the number in
+     the memory register will not be affected.  For example, to
+     recall memory register 0 to register X, enter 'R0'.
+
+Remainder Register:
+     An additional memory register R is used by the division
+     operation to store the remainder.  It may also be used to
+     store and recall numbers, but any contents will be
+     overwritten during a division operation.  The command 'RR'
+     (Recall Remainder) after a division operation will store a
+     copy of the remainder in register X and put the quotient in
+     register Y.  An exchange (=) operation will swap them if
+     desired.
+
+
+Examples
+--------
+
+Try the following sample calculations.  Press the keys shown, and
+see whether the answer you get matches the example and if you
+understand the process.  In the sample problems, the 'h' suffix
+indicates a hex number.
+
+1)  Whatis(122+31)*8 ?
+          KEYSTROKES:  <ESC>D122<RET>31+8*
+          ANSWER:  D>    01224
+
+2)   How many 128-byte records are there between addresses D000h
+     and E100h?
+          KEYSTROKES:    <ESC>H E100<RET> D000 - <ESC>D 128 /
+          ANSWER:   D>    00034    (E100h-D000h)/128d
+
+3)   What character results from 'w' AND 5Fh ?
+          KEYSTROKES:  <ESC>Cw <ESC>H5F& <ESC>C
+          ANSWER:  C>   W    ('w'&5Fh)
+
+4)   Whatdoes-115looklikeinbinary?
+          KEYSTROKES:  <ESC>D115~<ESC>B
+          ANSWER:  B>10001101
+
+5)  Whatis5tothe4thpower?
+          KEYSTROKES:  <ESC>D5<RET>4^
+          ANSWER:  D>    00625
+
+6)   What is 6+7+8+9 ?
+          KEYSTROKES:    6<RET> 7<RET> 8<RET> 9 + + +
+          ANSWER:   H>     001E    (What is that in decimal?)
+
+7)   What is 1+2+3+4+5+6+7 ?  (Why can't you do it exactly the
+     same way as in example 6?)
+          KEYSTROKES:    <ESC>D 1<RET> 2<RET> 3<RET> 4 + + +
+                         5<RET> 6<RET> 7 + + +
+          ANSWER:   D>    00028    (The stack has 4 levels)
+
+
+Acknowledgements
+----------------
+
+HP11 is based on HP10, copyright (c) 1984 by Eric Meyers, and was
+upgraded with his kind permission.  Eric's many contributions to
+CP/M include the famous Video Display Editor (VDE), recently
+upgraded to the amazing ZDE by Carson Wilson.
+
+My original intention was to write a CP/M 2.2 RSX version of
+HP10, following the conventions set by Bridger Mitchell, so that
+I could access the calculator from within programs such as text
+editors and patchers (Eric had already written the HP+ RSX for
+CP/M 3.0).
+
+Along the way, however, I got inspired by recent articles in The
+Computer Journal by Hal Bower and Cameron Cotrill on ZSDOS and
+Lee Hart on Programming for Performance as well as Bridger
+Mitchell's columns on Advanced CP/M (including his columns on
+relocation and CP/M 2.2 RSX's) and Jay Sage's ZCPR3 Corner
+columns on the Z-System (including his column on PRL files).  So
+I decided to extensively reorganize and rewrite HP using some of
+the code size reduction and other programming techniques I was
+learning.
+
+The result was a new and smaller (less than 1200 bytes) utility
+that has more functions and an improved user interface, including
+better input error trapping.  Plus it makes a really great RSX!
+
+Thanks to all of you for the inspiration and the shared
+knowledge!
+
+=================================================================
+

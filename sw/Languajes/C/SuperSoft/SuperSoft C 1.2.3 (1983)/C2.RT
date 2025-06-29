@@ -1,0 +1,47 @@
+; Copyright (c) by SuperSoft, Inc., 1983
+;	for C 1.2.0
+
+;		DSEG
+
+		IF DIV0
+DIV0MSG:	DB	'Division by 0!',13,10,7,'$'
+		ENDIF
+
+CCEDATA:	DW	EDATA
+
+STDIN:		DW	0	; standard input stream pointer
+STDOUT:		DW	0	; standard output stream pointer
+STDERR:		DW	0	; standard error stream pointer
+
+CCEXPC:		DW	0,0	; save area for setexit/reset
+		DS	2	; saves: pc, sp, and bc
+
+CCCPU:		DS	1	; 1 if Z80, 0 if 8080
+
+CCLJRV		equ	$	; recycle XXKLG for longjmp()'s temp
+XXKLG:		DS	2	; handy place to save bc when lazy
+errno:		dw	0	; "stderr"
+BERRFL:		dw	0	; float error values
+
+	IF	REL
+	PUBLIC	EDATA
+	ENDIF
+EDATA	EQU	$
+
+CCIDSTR: DB	'C Run time V1.4.0',9,'SuperSoft Copyright 1983'
+	DB	0DH,0AH,'$'
+
+	END	CCSTAR	; Pad a little bit for effect -- Don't ask...
+	END	CCSTAR	; Pad a little bit for effect -- Don't ask...
+	END	CCSTAR	; Pad a little bit for effect -- Don't ask...
+	END	CCSTAR	; Pad a little bit for effect -- Don't ask...
+	END	CCSTAR	; Pad a little bit for effect -- Don't ask...
+	END	CCSTAR	; Pad a little bit for effect -- Don't ask...
+
+;	for C 1.2.0
+
+;		DSEG
+
+		IF DIV0
+DIV0MSG:	DB	'Division by 0!',13,10,7,'$'
+		END

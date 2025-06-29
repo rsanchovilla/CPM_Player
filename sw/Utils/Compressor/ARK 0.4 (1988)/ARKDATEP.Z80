@@ -1,0 +1,333 @@
+; ARKDATE - support for Time and Date stamping		 December 4,1988
+;
+;
+;-----------------------------------------------------------------------
+;			  recent changes
+;
+; 04 Dec 88 - Fixed overlay structure
+;	    - Added CP/M+ file timestamps
+;					- Jon Saxton
+;
+; 82 Nov 88 BEM - changed to overlay structure
+;					- Brian Moore
+;
+;-----------------------------------------------------------------------
+;
+;	M80:		M80 =ARKDATEP.Z80
+;			L80 ARKDATE.ARKDAT/N/X/E
+;			MLOAD ARKP=ARK.COM,ARKDATE
+;
+;	SLR'S Z800ASM:	Z80ASM ARKDATE
+;			MLOAD ARKP=ARK.COM,ARKDATE
+;
+;	Other assemblers like the public domain Z80MR and CROWE could
+;	be used, but with some modifications to this source code.
+;
+; Patch your time routine entry into the jump at TDate_ (for systems
+; without individual file stamping) or at FDate (for systems that DO
+; have date stamps on each file).  Your routine should call CDate_ to
+; convert the date to the ARK format.  The TDate_ call is made immed-
+; iately after printing the signon message, and may include a message
+; indicating what date-stamping routine is used.  You may call the PUTS
+; function to output a null-terminated message addressed by HL.  Note
+; that PUTS will convert a LF (ASCII 0Ah) to a CR-LF sequence.
+;
+;-----------------------------------------------------------------------
+;
+;	A plea to all those writing date display routines.......
+;
+;	If you live in the USA please remember that yours is just about
+;	the only country in the world which puts the month first in an
+;	all-numeric date.   (Such as 12/03/88.)  The rest of the world
+;	reads this as 12 March 1988, rather than December 3, 1988.  When
+;	writing your code, take notice of the country information (OS/2,
+;	MS-DOS and others) or make provision for patching the source or
+;	object.  If you are REALLY nice, you'd even allow for some Scan-
+;	dinavians who write 3rd December 1988 as 88/12/03.
+;
+;			Jon Saxton,
+;			10/9 Maxim St,
+;			West Ryde, NSW 2158
+;			Australia
+;
+;-----------------------------------------------------------------------
+;
+CPM	EQU	0005h
+PUTS_	EQU	21CFh		; Fixed addresses within ARK.  Note
+ARCDATE_ EQU	353Ch		;    these are likely to change with
+ARCTIME_ EQU	353Eh		;    each release.
+;
+;
+GCURDRV	EQU	25
+GLABEL	EQU	101
+GFSTAMP	EQU	102
+GTIME	EQU	105
+;
+;
+	.Z80			; For M80's benefit, Z80ASM doesn't care
+	ASEG			; Ditto
+;
+;
+	ORG	103H
+;
+YR:	DEFB	88		;				; [103h]
+MO:	DEFB	11		;				; [104h]
+IDAY:	DEFB	27		;				; [105h]
+HOUR:	DEFB	16		;				; [106h]
+MIN:	DEFB	0		;				; [107h]
+;
+; Public TDATE_, FDATE_
+;
+TDATE_:	JP	TDOSDATE	; Today's-Date (called at init-time)
+FDATE_:	JP	FSTAMP		; File-Date (called just after F_OPEN)
+CDATE_:	JP	GET_DATE	; Convert and save date
+PUTS:	JP	PUTS_		; Print null-terminated string at HL
+;
+; Start of user-supplied date routine
+;
+; Get date from operating system, convert to YYMMDDHHMM and save at
+; 0103h.  DO NOT CHANGE IX, IY or BC.  Any and all other registers can
+; be destroyed.
+;
+TDOSDATE:
+	PUSH	IX
+	PUSH	IY
+	PUSH	BC
+	LD	HL,VSNMSG
+	CALL	PUTS
+;
+NOFILETS:
+	LD	C,GTIME		; CP/M+ "GET DATE" function
+	LD	DE,VSNMSG	; Re-use message as buffer area
+	CALL	5
+	LD	IX,VSNMSG
+	JP	TCONV
+;
+FSTAMP:	PUSH	IX
+	PUSH	IY
+	PUSH	BC		; Save FCB address
+	LD	H,B		; Make a copy of the FCB so that our
+	LD	L,C		; Fiddling doesn't interfere with
+	LD	DE,FCB		; The open file
+	LD	BC,32
+	LDIR
+;
+; Interrogate the specified or default drive to see if timestamps are
+; enabled.
+
+	LD	A,(FCB)		; Get specified drive number
+	DEC	A		; Adjust so A=0, B=1 etc.
+	JP	P,CHKLBL	; Skip if explicit drive
+	LD	C,GCURDRV	; Otherwise interrogate CP/M
+	CALL	CPM		; For currently logged-in disk
+;
+CHKLBL:	LD	E,A		; Drive number to E for CP/M
+	LD	C,GLABEL	; Get directory label information
+	CALL	CPM		; Returns A=0 if no directory label,
+;				;   otherwise
+;				;    Bit 7 - password protection enabled
+;				;    6 - "access" timestamps enabled
+;				;    5 - "update" timestamps enabled
+;				;    4 - "create" timestamps enabled
+;				;    0 - directory label exists
+	OR	A		; Test directory label data byte
+	JP	Z,NOFILETS	; Skip if no label (and so no timestamps)
+	AND	70H		; Mask out everything except the timestamp bits
+	JP	Z,NOFILETS	; Skip if no timestamp enabled
+;
+; Here we fetch the timestamps for the specified file.	They are returned
+; in the FCB.
+;
+; Bytes 24-27:	"Create" or "Access" timestamp field
+; Bytes 28-31:	"Update" time stamp field
+;
+; Note that "Create" and "Access" timestamps are mutually exclusive.
+;
+STAMPS:	PUSH	AF		; Save timestamp flag bits
+	LD	DE,FCB		; Point at FCB
+	LD	C,GFSTAMP	; Get file timestamps
+	CALL	CPM
+	LD	IX,FCB+28
+	POP	AF		; Recover timestamp flag bits
+	AND	20H		; Check for "update" timestamp
+	JR	NZ,NEXTLINE	; Use it if enabled
+;
+	LD	IX,FCB+24	; Use "create" or "access" timestamp
+;
+NEXTLINE:
+	JP	TCONV
+;
+;-----------------------------------------------------------------------
+;
+FCB:	DEFB	0
+	DEFB	'????????'
+	DEFB	'???'
+	DEFW	0,0,0,0,0,0,0,0,0,0
+;
+; Convert date and time to ARK format
+;
+TCONV:	LD	H,(IX+3)	; Move hour and minute into place
+	LD	L,(IX+2)
+	LD	(HOUR),HL
+	LD	H,(IX+1)	; Get days since end of 1978
+	LD	L,(IX+0)
+	LD	DE,6F0DH	; Convert to number of days so far
+	ADD	HL,DE		; This century
+	LD	DE,4		; 4*JDATE +3
+	CALL	MULWW		; DE*HL to (DE,HL)
+	LD	BC,3
+	ADD	HL,BC
+	JP	NC,JTOC1
+	INC	DE
+;
+JTOC1:	LD	BC,1461		; Y = (4*JDATE+3)/1461
+	CALL	DIVLW		; (DE,HL)/BC to DE(Q) and HL(R)
+	PUSH	DE		; Save year, HL has d (REMAINDER)
+	LD	BC,4		; D = d/4 +1
+	LD	DE,0
+	CALL	DIVLW
+	INC	DE
+	LD	HL,5		; 5 * d - 3
+	CALL	MULWW		; DE*HL TO (DE,HL)
+	LD	BC,3
+	OR	A
+	SBC	HL,BC
+	JP	NC,JTOC2
+	DEC	DE
+;
+JTOC2:	LD	BC,153		; M = (5*d - 3)/153
+	CALL	DIVLW
+	PUSH	DE		; Save m, HL has d (remainder)
+	LD	BC,5		; Day = d/5 + 1
+	LD	DE,0
+	CALL	DIVLW
+	INC	DE
+	LD	A,E
+	LD	(IDAY),A
+	POP	HL		; M
+	POP	DE		; Y
+	LD	A,L		; Month = m + 3
+	ADD	A,3
+	CP	12+1		; If month > 12
+	JP	C,JTOC3
+	SUB	12		; Month = month - 12
+	INC	DE		; Y = y + 1
+;
+JTOC3:	LD	(MO),A
+	LD	A,E
+	LD	(YR),A
+;
+JTOC4:	OR	A
+	CALL	CDATE_		; Make it readable to ARK
+	POP	BC
+	POP	IY
+	POP	IX
+	RET
+;
+MULWW:	LD	B,H		; 16 * 16 multiplication   DE*HL to (DE,HL)
+	LD	C,L
+	LD	HL,0
+	LD	A,10H
+;
+MULW1:	ADD	HL,HL
+	EX	DE,HL
+	ADC	HL,HL
+	EX	DE,HL
+	JP	NC,MULW2
+	ADD	HL,BC
+	JP	NC,MULW2
+	INC	DE
+;
+MULW2:	DEC	A
+	JP	NZ,MULW1
+	RET
+;
+DIVLW:	EX	DE,HL		; 32-bit divide   (DE,HL)/BC to DE(Q) and HL(R)
+	LD	A,10H
+;
+DIVL1:	EX	DE,HL
+	ADD	HL,HL
+	EX	DE,HL
+	ADC	HL,HL
+	SBC	HL,BC
+	JP	NC,DIVL3
+	ADD	HL,BC
+;
+DIVL2:	DEC	A
+	JP	NZ,DIVL1
+	RET
+;
+DIVL3:	INC	DE
+	JP	DIVL2
+;
+VSNMSG:	DEFB	'CP/M Plus version',10,0
+;
+; Put date om ARC format (YYYYYYYM MMMDDDDD)
+;
+GET_DATE:
+	LD	A,(MO)
+	LD	L,A
+	LD	A,(YR)
+	SUB	80
+	SLA	L
+	SLA	L
+	SLA	L
+	SLA	L
+	SLA	L
+	RLA
+	LD	H,A
+	LD	A,(IDAY)
+	AND	01FH
+	OR	L
+	LD	L,A
+	LD	(ARCDATE_),HL	; Save in ARK.COM
+;
+; Put time in ARC format (HHHHHMMM MMMSSSSS) ignoring seconds
+;
+	LD	HL,HOUR
+	XOR	A
+	RLD			; A = 1, (HL) = 80
+	LD	D,A
+	SLA	A		; A = 2
+	SLA	A		; A = 4
+	ADD	A,D		; A = 5
+	SLA	A		; A = 10
+	LD	D,A		; D = 10
+	XOR	A
+	RRD			; A = 0, (HL) = 08
+	LD	A,(HL)
+	ADD	A,D		; A = 12
+	LD	D,A
+	INC	HL		; OOOPS!!! -- replaced for ARK 0.33
+	XOR	A
+	RLD
+	LD	E,A
+	SLA	A
+	SLA	A
+	ADD	A,E
+	SLA	A
+	LD	E,A
+	XOR	A
+	RRD
+	LD	A,(HL)
+	ADD	A,E
+	LD	E,A
+	SLA	E
+	SLA	E
+	SLA	E
+	RL	D
+	SLA	E
+	RL	D
+	SLA	E
+	RL	D
+;
+; Save in ARK.COM
+;
+	EX	DE,HL
+	LD	(ARCTIME_),HL
+	RET
+;
+;;	EXT	ARCDATE_, ARCTIME_, PUTS
+;
+	END
+

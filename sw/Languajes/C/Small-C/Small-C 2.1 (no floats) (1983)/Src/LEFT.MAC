@@ -1,0 +1,44 @@
+CC1:
+left::
+PUSH B
+LXI H,0
+DAD SP
+XCHG;;
+LXI H,4
+CALL CCDSGI##
+CALL CCPINT##
+CC3:
+POP H
+PUSH H
+CALL CCGCHAR##
+XCHG;;
+LXI H,32
+CALL CCEQ##
+MOV A,H
+ORA L
+JZ CC4
+LXI H,0
+CALL CCINCI##
+JMP CC3
+CC4:
+CC5:
+LXI H,4
+CALL CCINCI##
+DCX H
+PUSH H
+LXI H,2
+CALL CCINCI##
+DCX H
+CALL CCGCHAR##
+POP D
+MOV A,L
+STAX D
+MOV A,H
+ORA L
+JZ CC6
+JMP CC5
+CC6:
+POP B
+RET
+END
+

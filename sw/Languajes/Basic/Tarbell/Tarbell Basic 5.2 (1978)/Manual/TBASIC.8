@@ -1,0 +1,68 @@
+[LET] <variable name>=<expression>
+Assigns the value of <expression> to <variable name>.  The word
+"LET" is optional.  Examples:  LET X$=Y$+Z$    LET INDEX=5
+
+NEXT [<variable list]
+Terminates a "FOR" loop.  Without the optional variable list,
+it terminates the most recent loop.  See the "FOR" statement.
+Examples:  NEXT        NEXT N        NEXT I,J,K
+
+ON <numeric expression> GOTO <line descriptor list>
+Transfers execution (branches) to the line in the list corresponding
+to the value of INT(<numeric expression>).  If <numeric expression>=0 or
+if it's greater than the number of line descriptors, execution
+continues with the next statement.  If it's <0 an error results.
+Examples:  ON N GOTO 10,20,30,40    ON N-2 GOTO FIRST,CALC,LAST
+
+ON <integer expression> GOSUB <line descriptor list>
+Calls a subroutine at the line in the list corresponding to
+the value of <integer expression>.  If <integer expression>
+equals zero, or if it's greater than the number of line
+descriptors, execution continues with the next statement.  If
+it's less than zero, an error results.
+Examples:  ON I GOSUB 20,5,100,10     ON 2*I GOSUB TEST+2,SUBR5
+
+OUT <expression1>,<expression2>
+Sends byte resulting from <expression2> to port <expression1>.
+Examples:  OUT 1,7    OUT PORT,DATA    OUT X-5,Z+2
+
+POKE <expression1>,<expression2>
+Stores byte <expression2> in memory location <expression1>.
+Examples:  POKE 4096,255    POKE ADDRESS,BYTE    POKE A+256,48+N
+
+PRINT <expression list>  or   ?<expression list>
+Prints the value of each expression on the expression list
+onto the console device.  Spacing between elements is defined
+by punctuation.  A comma starts the following element at the
+next 14 column field.  A semicolon starts the following
+element immediately after the preceeding element.  If the last
+character of the list is a comma or a semicolon, no carriage
+return will be printed at the end of the statement.  Otherwise,
+a carriage return will be printed at the end of the statement.
+Examples:  PRINT "X=",X    PRINT 33*X,A$,CHR$(7)
+
+* PROCEDURE <variable list>
+Used to declare local variables.  The variables on the list can be
+used without disturbing their original values.  The original value
+of each variable will be restored by the next RETURN statement.
+See RECEIVE and RETURN statements.
+Examples:  PROCEDURE ANS$,X    PROCEDURE A,B,RESULT
+
+READ <variable list>
+Assigns the value of each expression of a "DATA" statement to
+a variable on the variable list, starting with the first element
+of the first "DATA" statement.  Expressions of the "DATA"
+statement(s) are evaluated when the first element of the "DATA"
+statement is read.  Examples:  READ X,Y,z$    READ TABLE(N)
+
+
+			   8
+
+
+
+
+
+
+
+
+

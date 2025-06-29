@@ -1,0 +1,501 @@
++ 1 DB
+           ** Relational DataBase Management TOPIC Help Menu **
+ 
+          * Commands *                     * Starting Out *   ..............
+   ...........................                                :            :
+   :                         :           DataBase Definition  :   DBMS     :
+   :   UPDATE     ORDER      :           Record Definition    :   RECORD   :
+   :   SELECT     GROUP      :           Form   Definition    :   FORM     :
+   :   SET        COMPLETE   :           Rules  Definition    :   RULES    :
+   :                         :           Rule  Equations      :   EQ       :
+   :.........................:                                :            :
+                                                              :............:
+ 
+   * Getting Around A DataBase *                * Other Stuff *
+                           ..........                          .............
+  DataBase KeyStrokes      :  DBKS  :    Efficient DataBases   :   EFF     :
+  Revising Records         :  RR    :    Changing DB Structure :   CDB     :
+  Searching a DataBase     :  SE    :    Report Generation     :   RG      :
+                           :........:    Linking DataBases     :   LINK    :
+                                         Redundant Records     :   UNIQUE  :
+                                                               :...........:
++ 1 DBMS
+                 _____DataBase Management with T/Maker_____
+ 
+   Doing a DataBase with T/Maker is as simple as using the Word Processor -
+      that's because we use the Word Processor to create our DataBase !
+ 
+ ----------
+ 
+   A T/Maker DataBase has up to  3  components :
+ 
+ 
+   (must have)    (1) RECORD DEFINITION
+ 
+ 
+   (optional)     (2) FORM DEFINITION
+ 
+ 
+   (optional)     (3) RULES DEFINITION
++ 2 RECORD
+                          _____RECORD DEFINITION_____
+ 
+    **  A Record Definition ALWAYS begins with         <RECORD>
+                        and ALWAYS ends with           <END>
+    **  "Fields" are placed in BETWEEN these two markers.
+    **  Each "Field" should exist on a separate line, and start with a
+            Unique Number  (actually called the Field "Label".)
+    **  The order of the Fields in the Record Definition is NOT important.
+    **  Is ALWAYS defined AFTER the Form Definition and Rules Definition.
+    **  NO BLANK lines should be in a Record Definition.
+ -----------------------------------------------------------------------------
+EXAMPLE: Employee Address Record
+ 
+ <RECORD>
+ 1 {lastmame }
+ 2 {firstname}
+ 3 {address             }
+ 4 {city                }
+ 5 {zip}
+ <END>
++ 2 FORM
+                          _____FORM DEFINITION_____
+ 
+     While the Record Definition describes the basic  "pool" of information
+   fields,  the FORM DEFINITION allows us to dip into the "record pool" and
+   present info-fields in any order, manner, and design we wish.
+ 
+  ----------
+ 
+     *  A Form Definition ALWAYS begins with    <FORM>
+                      and ALWAYS ends with      <END>
+ 
+     *  Fields can be placed ANYWHERE on the screen.
+ 
+     *  A FORM can be a maximum of:   80 characters wide and 23 rows long.
+ 
+     *  You can attach up to 7 DIFFERENT FORMS to one DataBase.
+ 
+     *  A Form Definition is defined BEFORE the Rules and Record Definitions.
+ 
+     *  You can insert as much "design-text" as you wish.
++
+                       _____EXAMPLE: ADDRESS CARD_____
+ 
+ 
+ 
+ 
+ 
+ <FORM>
+ ________________________________ Address Card _____________________________
+ 
+ Last Name: {lastname }   FirstName: {firstname}
+ Address: {address             }
+ City: {city                }     State: {#state}    Zip Code: {zip}
+ ___________________________________________________________________________
+ <END>
++ 2 RULES
+                          _____RULES DEFINITION_____
+      We can turn our DataBase in to a type of "SpreadSheet" by defining
+               "RULES" between different FIELDS in our DataBase.
+ 
+      The RULES DEFINITION expresses the relationships that we want to SET.
+ 
+        --> (See   SET     for more information on the   SET Command  )
+ -----------------------------------------------------------------------------
+   ** A Rules Definition ALWAYS begins with    <RULES>
+                      and ALWAYS ends with     <END>
+   ** ALWAYS is defined BEFORE a Record Definition and AFTER a Form Definition.
+ -----------------------------------------------------------------------------
+                                Rules EXAMPLE
+ <RULES>
+ Tax = (Quantity * Price) * 0.065  when State = CALIF
+ Total = (Quantity * Price) + Tax
+ <END>
+ _____________________________________________________________________________
+     * (See  FIELDS    for more information on     FIELDS     )
+     * (See  EQ        for more information on  the Equations used in RULES)
++ 2 EQ
+                           _____RULE EQUATIONS_____
+ 
+     A "RULE" will define or calculate the value of a Field in relation
+to other Fields in a DataBase.
+ 
+     Defining a "relationship" is just like writing a simple (or complex)
+formula on a ChalkBoard.
+ 
+        *  The following Operators may be used for Rule Equations  *
+ 
+ 
+  +  Addition         |   <  Less Than      |    <= Less Than or Equal To
+  -  Subtraction      |   >  Greater Than   |    >= Greater Than or Equal To
+  *  Multiplication   |   =  Equal To       |
+  /  Division         |  <>  Not Equal To   |
+ _____________________|_____________________|________________________________
+                                         |
+  contains  e.g. "the" contains "h"      |       not    a logical "not"
+  within    e.g. "h" within "the"        |       and    a logical "and"
+  among     e.g. "A" among " A  B"       |       or     a logical "or"
++ 3 WHEN
+                           _____WHEN Statements_____
+ 
+  A WHEN Statement allows you to "selectively" calculate DataBase Rules
+                  "if" certain conditions or criteria are met.
+ 
+  WHEN Statements are placed in the RULES DEFINITION.
+ 
+  The WHEN CONDITION is the "situation" that must be "true" in order to carry
+        out the first part of the equation.
+ 
+ 
+ -----------------------------------------------------------------------------
+<rules>
+tax = (price * 0.65)  WHEN  (State = California)
+<end>
+ -----------------------------------------------------------------------------
++
+                            WHEN EXAMPLES
+ <RULES>
+ Quantity 999 =  Quantity
+ Price 9,999.99 = Price
+ Shipping 99.99 = Shipping
+ 
+ Tax = (Quantity * Price) * 0.065 WHEN State = CA
+ Tax = 0                          WHEN State >< CA
+ 
+ Total 999,999.99 = (Quantity * Price) + Tax + Shipping
+ Comment = "Great Sale!"  WHEN Total > 1,000
+ <END>
+ __________
+ 
+NOTES:
+     Note that we can specify the "format" and  "accuracy" of numerical
+fields if we wish.  The "Model Number" is placed after the Field Name and
+before the = sign.
++ 1 SET
+1/1 WHAT NEXT?  SET
+                ---
+ 
+ 
+     SET "sets" in motion the numeric or character equations as defined
+        in the RULES DEFINITION.
+ 
+ 
+ 
+     Numerical or Character Equations:
+        Any field in the Record can be the result of a relationship
+        between other fields in the Record.
+ 
+ 
+                   (See   FIELDS  for more on Fields)
+ 
+                   (See   RULES   for Rules Examples)
++ 1 FIELDS
+                            _____DataBase FIELDS_____
+ 
+     A FIELD is a piece of information.  It is defined by a FIELD NAME
+surrounded by a  {  and  a   }    .
+ 
+ -----------------------------------------------------------------------------
+EX:  {lastname}  is a DataBase FIELD for a Last Name and is 10 chars wide.
+ -----------------------------------------------------------------------------
+ 
+ Numerical Fields are defined by a     >    symbol  (and are RIGHT JUSTIFIED)
+ Character Fields are defined by a     <    symbol  (and are LEFT JUSTIFIED)
+                           or by a     -    symbol  (centered in Field)
+   These Field Justifiers can be placed anywhere between the   {   and   }   .
+ 
+ -----------------------------------------------------------------------------
+EX:  {>total} is a FIELD for the number Total and is 8 chars wide.
+ -----------------------------------------------------------------------------
+ 
+If you do not specify the "type" of field:
+  The Field defaults to a CHAR FIELD, or To the PREVIOUSLY DEFINED FIELD TYPE.
++ 1 UPDATE
+1/1 WHAT NEXT?  UPDATE
+                ------
+ 
+     UPDATE is used to input or revise information into a DataBase.
+ 
+ 
+     UPDATE will allow you to use almost all of your standard Editing
+KeyStrokes ONLY in the areas as defined in the FORM and RECORD DEFINITION -
+that is, in the FIELD areas between the  {  and  }  .
+ 
+ 
+ -----------------------------------------------------------------------------
+             To Exit a T/Maker UPDATE, type:    <CTRL>Q
+ -----------------------------------------------------------------------------
+ 
+     WARNING:  T/Maker will NOT automatically save your update.
+  To SAVE your UPDATE session, leave the T/Maker Editor and type: SAVE.
++ 1 DBKS
+                    _____T/Maker DataBase KEYSTROKES_____
+ 
+Record Up   :  <ESC> Up Arrow Key
+Record Down :  <ESC> Down Arrow Key
+ 
+ 
+Move to First Record:  <ESC> A
+Move to Last Record :  <ESC> Z
+ 
+ 
+Move to Top of Record:  <CTRL>O
+Advance to Next Word :  <CTRL>P
+Advance to Next Field:  TAB
+ 
+Next Field Up:   Up Arrow Key           Cursor Left :  Left Arrow Key
+Next Field Down: Down Arrow Key         Cursor Right:  Right Arrow Key
+ 
+Return to Previous Field:  <ESC> TAB
+Return to First Field on Next Line:   <Return>
++
+         _____Changing Screen Forms_____
+ 
+  You can display data with up to 7 different types of Screen FORMS.
+                         (Viewing one at a time)
+ 
+       To Scroll through each FORM DEFINITION, type:   <ESC> F
+ 
+EXAMPLE:
+ 
+<FORM>
+  Form 1: Enter First Name: {FIRSTNAME}
+<END>
+ 
+<FORM>
+  Form 2: Enter Last Name : {LASTNAME }
+<END>
+ 
+ 
+       In UPDATE,  Type:   <ESC> F   to view FORM 2.
+                   Type:   <ESC> F   to get back to FORM 1.
++ 2 RR
+                  _____Inserting and Deleting Records_____
+ 
+ Insert A Record:   <CTRL> >   (Inserts a BLANK Record)
+ 
+ Delete A Record:   <CTRL> <   (Deletes the currently displayed Record)
+ 
+ 
+                   _____Moving and Copying Records_____
+ 
+ Copy to the Buffer  :   <CTRL>F
+ 
+ Move to the Buffer  :   <CTRL>G
+ 
+ Insert (Dump) Buffer:   <CTRL>D
+ 
+ Clear Buffer        :   <CTRL>C
+ 
+ 
+     NOTE:  The Buffer will only hold one complete Record.  Also, the
+         Buffer automatically EMPTIES when you Exit the UPDATE Mode.
++ 2 SE
+         _____Searching a DataBase_____
+ 
+ 
+SEARCH for a String by typing:     <ESC> '
+ 
+CONTINUE the Search by typing:     <ESC> &
+ 
+ 
+  ----------
+ 
+     HINT:     The T/Maker "Visor" Principal applies to SEARCHes through a
+   DataBase.  Remember to ALWAYS HOME THE SCREEN  (go to top line!)
+   before attempting a SEARCH.
++ 1 COMPLETE
+   1/1 WHAT NEXT?  COMPLETE
+                   --------
+ 
+      COMPLETE  links information from two or more separate DataBase Files.
+   It brings in data into the work file on the basis of a KEY FIELD.
+ 
+      If you have partial data in one file that can be "COMPLETEd" with
+   the data in another file,  simply specify the NAME of that other FILE,
+   and the KEY FIELD that is common to both files.
+ 
+ 
+ 
+         ( See Reference Manual under "COMPLETE" for Examples. )
++ 1 GROUP
+1/1 WHAT NEXT?  GROUP
+                -----
+ 
+     GROUP summarizes data in a DataBase workfile and presents a report of its
+results.  (For numerical values, GROUP will "total" the values in the Key
+Field.  For character values, GROUP will simply present the Key Field Label.)
+ 
+ 
+GROUP on as many KEY FIELDS as you wish. * Type  LIST  for a list of KeyFields.
+ 
+ 
+ 
+ 
+                (See Reference Manual for GROUP Examples.)
++
+                             GROUP   hints !
+ 
+    *  ALWAYS RENAME a GROUP Report if you intend to SAVE it, or else you
+will LOSE the DataBase Records that made up the Report.
+ 
+(Remember, GROUP actually CHANGES the DataBase - that is, collapses all
+the values of each Field into a single, additive Field.  We don't want
+              to lose all that specific information!)
+ 
+ 
+    *  ALWAYS enter Names in the EXACT same way they are spelled.
+(T/Maker thinks  "Wally Krengle"  and  "Wally F. Krengle" are different people)
+ 
+ 
+    *  You will get a T/Maker "Summary Report Message" at the top of the
+screen.  This Message lets you know how many  Records were initially in the
+DataBase, and how many Records the Report "summarized" on.
+ 
+ 
+    *  After a GROUP, view the new work area by typing at WHAT NEXT?:   UPDATE
++ 1 UNIQUE
+                  _____"Weeding Out" Redundant Records_____
+ 
+ 
+        To "Weed Out" Redundant Records from a DataBase, perform a
+                             GROUP on EVERY KEY FIELD.
+ 
+              Example:  Suppose we have a Record that has 3 KeyFields.
+   To make sure we do not have any redundant Records in our DataBase, type:
+ 
+         1/1 WHAT NEXT?     GROUP   KeyField1  KeyField2  KeyField3  END
+                            ---------------------------------------------
+ 
+(Type  GROUP LIST  to get a Listing of all the Key Fields in a Record listing.)
+       ----------
+ 
+ 
+  NOTE: You must type in EACH Key Field EXACTLY as it appears in the listing.
++ 1 SELECT
+   1/1 WHAT NEXT?  SELECT
+                   ------
+      SELECT allows you to extract particular information from a DataBase.
+ 
+   SELECT Options:
+ 
+   *  FILE-NAME  (or choose  IT when SELECTing from the current work space).
+ 
+   *  LIST       (To "list" all the possible Field Names you can SELECT on).
+ 
+   *  CONDITION  (SELECT "conditionally" - that is, using WHEN statement.)
+ 
+  EXAMPLE:
+  --------------------------------------------------------------------------
+      1/1 WHAT NEXT? select it WHEN FIRSTNAME = Liz and REVENUES > 5500 end
+  --------------------------------------------------------------------------
+   NOTE: SELECT "cuts out" the UN-SELECTED records from current work space.
+    Therefore, NEVER do a SAVE after a SELECT unless you RENAME the current
+    work space FIRST. (ALWAYS  RENAME the DataBase subset, then SAVE so you
+                   do not lose the temporarily discarded DataBase Records)
++ 1 CDB
+     _____Changing a DataBase_____
+ 
+ 
+Accomplish changes to the STRUCTURE of a DataBase by using the SELECT Command
+ 
+ 
+       1)  Make sure you have the DataBase SAVEd on disk.
+ 
+       2)  GET DataBase file and jump into the EDITor.  Make appropriate
+             changes to the RECORD DEFINITION and FORMS DEFINITION.
+ 
+       3)  Move your cursor to the <END> line of RECORD DEFINITION, and
+             Exit the Editor. ( <END>  should be at Top of your Screen.)
+ 
+       4)  Type:   CLIP AFTER
+ 
+       5)  Type:   SELECT filename END
++ 1 RG
+   _____Report Generation_____
+ 
+ 
+ 
+     * Set up report as a RECORD DEFINITION (Summary Reports don't take up
+            much space).
+ 
+     * Make sure all Field Names in all RECORD DEFINITIONS match EXACTLY.
+ 
+     * Use the SELECT Command to "select" the information from an existing
+            DataBase into your "custom-made" report.
+ 
+ 
+  -----------
+ 
+     NOTE:  The resulting Report should be RENAMEd and SAVEd if you want
+     to use the Report "Mask" to create future Reports.
++ 1 EFF
+                 _____Setting Up a DataBase EFFICIENTLY_____
+ 
+  To increase performance and flexibility, T/Maker runs strictly within
+  memory.  Therefore, setting up your DataBases efficiently is important.
+ 
+  1) Use a FORM DEFINITION whenever possible.
+  That way, non-Field entries (like fancy borders) do not chew up memory space.
+ 
+  2) Use DOUBLE BRACES  (Optional Field Symbols) whenever possible.
+  That way, if you do not enter data into a Field, space won't be save for it.
+ 
+     NOTE:  NEVER use Double Braces on the first record in a Record Def.
+ 
+  3) In a RECORD DEFINITION, place each Field on a SEPARATE LINE when possible.
+......................
+:  <RECORD>          :
+:  1{FirstName}      :
+:  2{LastName } }}  <-----EXAMPLE of "Ending Double Braces"
+:  <END>             :
+:....................:
++ 1 LINK
+                          _____Linking DataBases_____
+ 
+     You can "Link" Identical DataBases together with the <CONTINUE> filename
+option.  With the CONTINUE, you can SELECT and COMPLETE across DataBases.
+ 
+     *  DataBase RECORD DEFINITIONS MUST BE IDENTICAL.
+     *  The last line of each file will contain   <CONTINUE>  and the name of
+         DataBase that is next in line.
+ 
+ -----------------------------------------------------------------------------
+EXAMPLE:  To  "link"  DBASE1  and  DBASE2 together, at the end of DBASE1, type:
+<CONTINUE> DBASE2
+ -----------------------------------------------------------------------------
+ 
+     *  To SELECT certain information from "linked"  DataBases, type:
+     1/1 WHAT NEXT?   SELECT "filename" when   . . .      to begin the process.
+                      ---------------------------------
+ 
+     When using SELECT with the IT instead of specifying a filename,
+                    the <CONTINUE> request is ignored.
++
+ -----  Linking Con't
+ 
+ 
+ 
+    *  When you SELECT across DataBases, the resulting database or report must
+ fit in the work file.  If you still need more space, try SELECTing in blocks.
+ 
+ 
+     EXAMPLE:      SELECT "filename" from 1 to 100 when . . . end
+                   SELECT "filename" from 101 to 200 when . . . end  , etc....
++ 1 ORDER
+   1/1 WHAT NEXT?  ORDER
+                   -----
+ 
+        Use ORDER to  sort a DataBase.
+ 
+ 
+   T/Maker will prompt you for the following information:
+ 
+ 
+        ascending or descending?             A     or     D
+ 
+        numerical or characters?             N     or     C
+ 
+        field name?                          KEY FIELD to be sorted on.
+

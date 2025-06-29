@@ -1,0 +1,535 @@
+(*  M A P P E R . M I C    V 2.4        Memory-Mapper-Routinen  03-Mrz-1988  *)
+
+
+
+type
+  MapPointer = record
+                 seg: byte;
+                 ofs: 0..$3FFF;
+               end;
+
+const
+  MapNIL:     MapPointer = (seg: 0; ofs: 0); (* "Verbotener" Pointer-Wert    *)
+  MapHeapPtr: MapPointer = (seg: 4; ofs: 0); (* U-Grenze des freien Bereichs *)
+  MapTop:     MapPointer = (seg: 4; ofs: 0); (* O-Grenze des freien Bereichs *)
+
+
+var
+  MapperCheck:  boolean;        (* nur fÅr internen Gebrauch   *)
+  MapFreeChain: MapPointer;     (* dito *)
+  MapperFound:  boolean;        (* TRUE, wenn Mapper vorhanden *)
+
+
+{$R-,U-,W0}
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapIncrement (var p: MapPointer; i: integer);
+
+(* MapIncrement inkrementiert den MapPointer p um den Betrag i.
+
+   Achtung:
+   i wird als vorzeichenlose Zahl behandelt; ein Inkrementieren
+   um $FFFF bewirkt tatsÑchlich eine Erhîhung von p um 65535 Bytes!
+*)
+
+begin
+  p.seg := p.seg + hi(i shr 6);
+  p.ofs := p.ofs + (i and $3FFF);
+
+  while hi(p.ofs) > $3F do
+    begin
+    p.ofs := p.ofs - $4000;
+    p.seg := succ(p.seg);
+    end;
+end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapDecrement (var p: MapPointer; i: integer);
+
+(* MapDecrement dekrementiert den MapPointer p um den Betrag i.
+
+   Achtung:
+   i wird als vorzeichenlose Zahl behandelt; ein Dekrementieren
+   um $FFFF bewirkt tatsÑchlich eine Verringerung von p um 65535 Bytes!
+*)
+
+begin
+  p.seg := p.seg - hi(i shr 6);
+  p.ofs := p.ofs - (i and $3FFF);
+
+  while hi(p.ofs) > $3F do
+    begin
+    p.ofs := p.ofs + $4000;
+    p.seg := pred(p.seg);
+    end;
+end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+function MapDifference (p1, p2: MapPointer): real;  (* integer reicht nicht! *)
+
+(* MapDifference bestimmt die Differenz in Bytes zwischen zwei MapPointern *)
+
+  begin
+    MapDifference := 16384.0 * (p1.seg - p2.seg) + (p1.ofs - p2.ofs);
+  end;
+
+
+{-------------------------------------------------------------------}
+
+
+function MapEqual (p1, p2: MapPointer): boolean;
+
+(* MapEqual testet zwei MapPointer auf Gleichheit *)
+
+  begin
+    MapEqual := (p1.seg = p2.seg) and (p1.ofs = p2.ofs);
+  end;
+
+
+{-------------------------------------------------------------------}
+
+
+function MapNotEqual (p1, p2: MapPointer): boolean;
+
+(* MapNotEqual testet zwei MapPointer auf Ungleichheit *)
+
+  begin
+    MapNotEqual := (p1.seg <> p2.seg) or (p1.ofs <> p2.ofs);
+  end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapEnable (seg: integer);
+
+(* MapEnable schaltet das Mapper-Segment 'seg' ein;
+   es kann im Adre·bereich von 0 bis $3FFF angesprochen werden.
+
+   Die Mapper-Segmente 0 bis 3 sind der normale MSX-DOS-Bereich und
+   fÅr MapEnable tabu!!!
+*)
+
+  begin
+    if MapperCheck and ((seg < 4) or (seg >= MapTop.Seg))
+    then begin
+      CrtExit;
+      writeln ('Invalid MapPointer'#13#10'Program Aborted');
+      Halt;
+      end;
+
+    inline ($F3);                           (* Disable Interrupt *)
+    port[252] := seg;
+  end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapDisable;
+
+(* MapDisable schaltet das Mapper-Segment wieder aus und den
+   normalen Systemspeicher ein.
+
+   Achtung:
+   Zwischen den Aufrufen von MapEnable und MapDisable ist kein
+   Zugriff auf Turbo-Standardfunktionen oder das Betriebssystem
+   mîglich!
+*)
+
+
+  begin
+    port[252] := 3;
+    inline ($FB);                           (* Enable Interrupt *)
+  end;
+
+
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapPoke (p: MapPointer; value: byte);
+
+(* MapPoke schreibt ein Byte an die adressierte Stelle *)
+
+  begin
+    MapEnable (p.seg);
+    mem[p.ofs] := value;
+    MapDisable;
+  end;
+
+
+{-------------------------------------------------------------------}
+
+
+function MapPeek (p: MapPointer): byte;
+
+(* MapPeek liest ein Byte von der adressierten Stelle *)
+
+  begin
+    MapEnable (p.seg);
+    MapPeek := mem[p.ofs];
+    MapDisable;
+  end;
+
+
+{-------------------------------------------------------------------}
+
+
+procedure WriteMAP (p: MapPointer; var RAMaddress; n: integer);
+
+  var ma, nn: integer;
+      q:      MapPointer;
+
+  begin
+    ma := addr(RAMaddress);
+
+    (* Mapper-Segment Åberschritten? *)
+
+    q := p;
+    MapIncrement (q, n);
+    while p.seg <> q.seg do
+      begin
+      nn := $4000 - p.ofs;
+      MapEnable (p.seg);
+      inline ($DD/$21/p/        { LD    IX, p           }
+              $DD/$5E/$01/      { LD    E, (IX+1)       }
+              $DD/$56/$02/      { LD    D, (IX+2)       }
+              $2A/ma/           { LD    HL, (ma)        }
+              $ED/$4B/nn/       { LD    BC, (nn)        }
+              $ED/$B0);         { LDIR                  }
+      MapDisable;
+      n     := n  - nn;
+      ma    := ma + nn;
+      p.seg := succ(p.seg);
+      p.ofs := 0;
+      end;
+
+    (* Was gibts noch zu tun? *)
+
+    if n <> 0
+    then begin
+      MapEnable (p.seg);
+      inline ($DD/$21/p/        { LD    IX, p          }
+              $DD/$5E/$01/      { LD    E, (IX+1)      }
+              $DD/$56/$02/      { LD    D, (IX+2)      }
+              $2A/ma/           { LD    HL, (ma)       }
+              $ED/$4B/n/        { LD    BC, (n)        }
+              $ED/$B0);         { LDIR                 }
+      MapDisable;
+      end;
+  end;
+
+
+{-------------------------------------------------------------------}
+
+
+procedure ReadMAP (p: MapPointer; var RAMaddress; n: integer);
+
+  var ma, nn: integer;
+      q:      MapPointer;
+
+  begin
+    ma := addr(RAMaddress);
+
+    (* Mapper-Segment Åberschritten? *)
+
+    q := p;
+    MapIncrement (q, n);
+    while p.seg <> q.seg do
+      begin
+      nn := $4000 - p.ofs;
+      MapEnable (p.seg);
+      inline ($DD/$21/p/       { LD    IX, p           }
+              $DD/$6E/$01/     { LD    L, (IX+1)       }
+              $DD/$66/$02/     { LD    H, (IX+2)       }
+              $ED/$5B/ma/      { LD    DE, (ma)        }
+              $ED/$4B/nn/      { LD    BC, (nn)        }
+              $ED/$B0);        { LDIR                  }
+      MapDisable;
+      n     := n  - nn;
+      ma    := ma + nn;
+      p.seg := succ(p.seg);
+      p.ofs := 0;
+      end;
+
+    (* Was gibts noch zu tun? *)
+
+    if n <> 0
+    then begin
+      MapEnable (p.seg);
+      inline ($DD/$21/p/       { LD    IX, p           }
+              $DD/$6E/$01/     { LD    L, (IX+1)       }
+              $DD/$66/$02/     { LD    H, (IX+2)       }
+              $ED/$5B/ma/      { LD    DE, (ma)        }
+              $ED/$4B/n/       { LD    BC, (n)         }
+              $ED/$B0);        { LDIR                  }
+      MapDisable;
+      end;
+  end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapInit;
+
+  var i:      integer;
+      mem0:   integer;
+      start:  integer;
+      stadr:  integer absolute $101;
+      MEMflg: byte    absolute $FD09;
+
+  begin
+    MapFreeChain := MapNIL;
+
+    i := port[255];
+    MapperFound := (port[254] = succ(i))
+               and (port[253] = i+2)
+               and (port[252] = i+3)
+               and ((MEMflg and $20) = 0);
+
+    if not MapperFound then exit;
+
+
+    if hi(addr(MapEnable)) < $40
+    then begin
+      CrtExit;
+      start := stadr + $4000 - addr(MapEnable);
+      write ('Recompile with start address $');
+      for i := 1 to 4 do
+        begin
+        mem0  := hi(start) shr 4;
+        start := start shl 4;
+        case mem0 of
+         0..9: write (mem0);
+         else  write (chr(mem0+55));
+         end {case};
+        end;
+      writeln;
+      halt;
+      end;
+
+    start := 255;
+
+  (* jetzt haben wir den Mapper; aber wieviel Speicher ist dran? *)
+
+    MapperCheck := FALSE;
+    mem0        := mem[0];             (* Byte retten vor Speichertest *)
+
+    MapHeapPtr.Seg := 4;
+    MapHeapPtr.Ofs := 0;
+
+    MapTop.Seg     := start;
+    MapTop.Ofs     := 0;
+
+    repeat
+      MapPoke (MapTop, MapTop.Seg);      (* Testbyte schreiben *)
+      MapTop.Seg := MapTop.Seg - 4;      (* nÑchster 64K-Block *)
+    until MapTop.Seg = start;
+
+    repeat
+      MapTop.Seg := MapTop.Seg + 4;      (* nÑchster 64K-Block *)
+    until (MapTop.Seg = start)
+       or (MapPeek(MapTop) <> MapTop.Seg); (* nachsehen, was angekommen ist *)
+
+    mem[0]      := mem0;             (* gerettetes Byte wiederherstellen *)
+    MapTop.Seg  := MapTop.Seg and $FC;
+    MapperCheck := TRUE;
+  end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+function MapSizeOf (p: MapPointer): integer;
+
+(* MapSizeOf liefert die Grî·e der von MapGetMem zugewiesenen
+   Speicherzelle, auf die p zeigt.
+
+   Achtung:
+   Die tatsÑchliche Grî·e des Speicherbereichs kann einige Bytes grî·er
+   sein, als im MapGetMem-Aufruf gefordert. Es ist deshalb nicht sinnvoll,
+   die 'MapSizeOf'-Funktion als Grî·enangabe bei 'ReadMap' zu verwenden!
+*)
+
+  var m: integer;
+
+  begin
+    MapDecrement (p, 2);
+    ReadMap (p, m, 2);
+    MapSizeOf := m;
+  end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+function MapAvail: real;
+
+  var r: real;
+      p: MapPointer;
+
+  begin
+    r := MapDifference (MapTop, MapHeapPtr);
+    p := MapFreeChain;
+
+    while MapNotEqual (p, MapNIL) do
+      begin
+      r := r + (MapSizeOf(p) + $8000) + 32768.0;
+      ReadMap (p, p, sizeof(p));
+      end;
+
+    MapAvail := r;
+  end;
+
+
+{-------------------------------------------------------------------}
+
+
+function MapMaxAvail: real;
+
+  var r: real;
+      p: MapPointer;
+
+  begin
+    r := MapDifference (MapTop, MapHeapPtr);
+    p := MapFreeChain;
+
+    while MapNotEqual (p, MapNIL) do
+      begin
+      if (MapSizeOf(p) + $8000) + 32768.0 > r
+      then r := (MapSizeOf(p) + $8000) + 32768.0;
+      ReadMap (p, p, sizeof(p));
+      end;
+
+    MapMaxAvail := r;
+  end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapDispose (var p: MapPointer);
+
+  var p2, oldp: MapPointer;
+      heapfree: boolean;
+
+  begin
+    p2 := p;
+    MapIncrement (p2, MapSizeOf(p2));
+    if MapNotEqual (p2, MapHeapPtr)           (* Ist das die oberste Zelle ? *)
+    then begin                             (* Nein, Zelle liegt in der Mitte *)
+      WriteMap (p, MapFreeChain, sizeof (MapPointer));
+      MapFreeChain := p;
+      end
+    else begin                                      (* Zelle liegt obendrauf *)
+      MapDecrement (p, 2);
+      MapHeapPtr := p;
+      p    := MapFreeChain;
+      oldp := MapNIL;
+      while MapNotEqual (p, MapNIL) do         (* ganze FreeChain durchsehen *)
+        begin
+        p2 := p;
+        MapIncrement (p2, MapSizeOf (p2));
+        if MapEqual (p2, MapHeapPtr)
+        then begin                                 (* Zelle liegt obendrauf *)
+          if MapNotEqual (oldp, MapNIL)          (* aus FreeChain entfernen *)
+          then begin
+            ReadMap  (p,    p2, sizeof(MapPointer));
+            WriteMap (oldp, p2, sizeof(MapPointer));
+            end
+          else ReadMap (p, MapFreeChain, sizeof(MapPointer));
+          MapHeapPtr := p;                   (* freie Zelle dem unbenutzten *)
+          MapDecrement (MapHeapPtr, 2);                 (* Bereich zuteilen *)
+          end
+        else oldp := p;
+        ReadMap (p, p, sizeof(p));           (* nÑchste Zelle der FreeChain *)
+        end;
+      end;
+    p := MapNIL;                    (* Pointer fÅr weitere Zugriffe sperren *)
+  end;
+
+
+
+{-------------------------------------------------------------------}
+
+
+procedure MapGetMem (var p: MapPointer; n: integer);
+
+(* Auch hier wird 'n' als Vorzeichenlose Zahl von 0..65535 interpretiert *)
+
+  var nn:          real;
+      linkp, oldp: MapPointer;
+      csize:       integer;
+
+  begin
+    if n < sizeof(MapPointer)
+    then n := sizeof(MapPointer);           (* Platz fÅr "MapDispose" lassen *)
+
+    oldp  := MapNIL;
+    linkp := MapFreeChain;      (* Zuerst die gebrauchten Zellen untersuchen *)
+    while MapNotEqual (linkp, MapNIL) do
+      begin
+      csize := MapSizeOf (linkp);                  (* Grî·e der freien Zelle *)
+      if (n + $8000) <= (csize + $7FFE)         (* Vorzeichenloser Vergleich *)
+      then begin
+        if MapNotEqual (oldp, MapNIL)   (* Zelle aus der FreeChain entfernen *)
+        then begin
+          ReadMap  (linkp, p, sizeof(MapPointer));
+          WriteMap (oldp,  p, sizeof(MapPointer));
+          end
+        else ReadMap (linkp, MapFreeChain, sizeof(MapPointer));
+        p := linkp;                                     (* Speicher zuteilen *)
+        if (csize - n) > 8     (* wenn sich ein Aufteilen der Zelle lohnt... *)
+        then begin
+          MapDecrement (p, 2);                (* zeigt jetzt auf Zellengrî·e *)
+          WriteMap (p, n, 2);                      (* Zellengrî·e festhalten *)
+          MapIncrement (p, 2);                             (* Pointer fertig *)
+
+          MapIncrement (linkp, n);    (* Zeiger auf Grî·enfeld der Restzelle *)
+          csize := csize - (n+2);           (* Grî·e der Restzelle berechnen *)
+          WriteMap (linkp, csize, 2);                    (* Grî·e festhalten *)
+          MapIncrement (linkp, 2);                   (* Zeiger auf Datenteil *)
+          MapDispose (linkp);            (* Restzelle in FreeChain einreihen *)
+          end;
+        exit;                                      (* Speicher ist zugeteilt *)
+        end;
+      oldp := linkp;
+      ReadMap (linkp, linkp, sizeof(linkp));(* sonst zu klein; nÑchste Zelle *)
+      end;
+
+    (* keine gebrauchte Zelle ist gro· genug,    *)
+    (* also gehen wir an die unbenutzten VorrÑte *)
+
+    nn := (n + $8000) + 32768.0;               (* Grî·e in "real" umrechnen *)
+    if nn > MapDifference (MapTop, MapHeapPtr)
+    then p := MapNIL                                (* pa·t auch hier nicht *)
+    else begin
+      WriteMap (MapHeapPtr, n, 2);                (* Grî·e der Zelle merken *)
+      MapIncrement (MapHeapPtr, 2);
+      p := MapHeapPtr;                                 (* Speicher zuteilen *)
+      MapIncrement (MapHeapPtr, n);                   (* vom Heap abtrennen *)
+      end;
+  end;
+
+
+

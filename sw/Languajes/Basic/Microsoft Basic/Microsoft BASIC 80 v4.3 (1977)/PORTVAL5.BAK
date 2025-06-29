@@ -1,0 +1,189 @@
+
+5 PRINT CHR$(26)
+10 REM ****  "PORTVAL"  revised 29 Jan 81 for double chain
+20 CLEAR
+30 N=5
+40 IF N<=10 GOTO 60
+50 DIM A$(N),D$(N),S(N),C(N),P(N),P1(N),V(N),D(N),G(N),Y(I)
+60 RESTORE
+70 FOR I=1 TO N
+80 READ A$(I),D$(I),S(I),C(I),Y(I)
+90 NEXT I
+100 DATA Carlisle, 29Sep80,160,9991,251.7
+110 DATA Crown Cork,18Mar71,100,2231,119.8
+120 DATA Humana," 7Mar77",900,4900,178.2
+130 DATA Kysor,18Dec69,200,2758,112.9
+140 DATA Travelers," 2Dec68",100,3511,106.4
+150 FOR I=1 TO N
+160 READ P(I)
+170 NEXT I
+180 READ D1$    'date of "new" prices--type w/o commas as item n+1
+190 FOR I=1 TO N
+200 READ P1(I)       'To update, input new prices just ABOVE line 230;
+210 NEXT I           'keep old prices on 230,delete 240,then RENUM
+220 READ D2$    'date of "old" prices
+230 DATA 85,32,74.8,10.4,39.3,21 Jan 81
+240 DATA 84.0,28.4,71.4,10.6,38.9,30 Dec 80
+250 FOR I=1 TO N
+260 V(I)=S(I)*P(I)
+270 D(I)=V(I)-C(I)
+280 G(I)=100*D(I)/C(I)
+290 T1=T1+C(I)
+300 T2=T2+V(I)
+310 T3=T3+D(I)
+320 T4=100*T3/T1
+330 NEXT I
+340 PRINT "Complete this run before chaining TIMEGAIN or CPINDEX"
+350 INPUT"To run TIMEGAIN enter 1; CPINDEX enter 2; NEITHER hit RETURN  ";W
+360 IF W=1 THEN 370 ELSE 380
+370 GOTO 910
+380 IF W=2 THEN 390 ELSE 400
+390 GOTO 1610
+400 PRINT CHR$(12)       'clear screen
+410 PRINT"'PORTVAL'        Portfolio Valuation      prices as of ";D1$
+420 PRINT
+430 PRINT"    Stock        Date  Shares Cost  Price  Value    Diff   %Gain"
+440 PRINT
+450 FOR I=1 TO N
+460 PRINT USING"##  ";I;
+470 PRINT USING"\        \ ";A$(I);
+480 PRINT USING"\     \  ";D$(I);
+490 PRINT USING"###  ";S(I);
+500 PRINT USING"#####  ";C(I);
+510 PRINT USING"##.#   ";P(I);
+520 PRINT USING"#####   ";V(I);
+530 PRINT USING"#####  ";D(I);
+540 PRINT USING"####.#";G(I)
+550 NEXT I
+560 PRINT"****************************************************************"
+570 PRINT "Totals";
+580 PRINT TAB(28)USING"######        ######   ";T1;T2;
+590 PRINT USING"#####   ###.#";T3;T4
+600 PRINT
+610 INPUT "Hard copy?--YES enter 1 (printer on!)--NO hit RETURN  ";J
+620 IF J=1 THEN 650 ELSE 640
+630 GOTO 650
+640 GOTO 5
+650 LPRINT "'PORTVAL'      Portfolio Valuation       prices as of ";D1$
+660 LPRINT
+670 LPRINT"   Stock         Date  Shares Cost  Price  Value    Diff   %Gain"
+685 LPRINT
+690 FOR I=1 TO N
+700 LPRINT USING"## ";I;
+710 LPRINT USING"\        \  ";A$(I);
+720 LPRINT USING"\     \  ";D$(I);
+730 LPRINT USING"###  ";S(I);
+740 LPRINT USING"#####  ";C(I);
+750 LPRINT USING"##.#   ";P(I);
+760 LPRINT USING"#####   ";V(I);
+770 LPRINT USING"#####  ";D(I);
+780 LPRINT USING"####.#";G(I)
+790 NEXT I
+800 LPRINT"****************************************************************"
+810 LPRINT"Totals";
+820 LPRINT TAB(28)USING"######        ######  ";T1;T2;
+830 LPRINT USING" #####   ###.#";T3;T4
+840 GOTO 640
+910 REM **** TIMEGAIN ****  use with PORTVAL and CPINDEX
+920 DIM C1(N),D1(N),G1(N),R(N)
+930 T5=0:T6=0:T7=0:T8=0
+940 FOR I=1 TO N
+950 C1(I)=S(I)*P1(I)
+970 D1(I)=V(I)-C1(I)
+980 G1(I)=100*D1(I)/C1(I)
+990 T5=T5+C1(I)
+1010 T7=T7+D1(I)
+1020 T8=100*T7/T5
+1030 NEXT I
+1040 FOR I=1 TO N
+1050 R(I)=100*V(I)/T2
+1060 T6=T6+R(I)
+1070 NEXT I
+1080 PRINT CHR$(12)
+1090 PRINT"'TIMEGAIN' Stock Value Change Over Time-New prices as of ";D1$
+1200 PRINT TAB(42)"Old prices as of ";D2$
+1210 PRINT
+1220 PRINT"                     Old   Total   New   Current"
+1230 PRINT"   Stock     Shares Price   Cost  Price   Value   %Port  Diff   %Gain"
+1240 PRINT
+1250 FOR I=1 TO N
+1260 PRINT USING"## \        \ #### ###.#  ######  ";I;A$(I);S(I);P1(I);C1(I);
+1270 PRINT USING"###.#  ######  ###.# ######  ####.#";P(I);V(I);R(I);D1(I);G1(I)
+1280 NEXT I
+1290 PRINT"*********************************************************************"
+1300 PRINT "Totals";
+1310 PRINT TAB(26)USING"######         ######  ";T5;T2;
+1320 PRINT USING"###.# ######  ####.#";T6;T7;T8
+1330 PRINT
+1340 INPUT "Hard copy?--YES enter 1 (printer on!)--NO hit RETURN  ";J
+1350 IF J=1 THEN 1370 ELSE 1360
+1360 GOTO 5
+1370 LPRINT"'TIMEGAIN' Stock Value Change Over Time-New prices as of ";D1$
+1380 LPRINT TAB(42)"Old prices as of ";D2$
+1390 LPRINT
+1400 LPRINT"                     Old   Total   New   Current"
+1410 LPRINT"   Stock     Shares Price   Cost  Price   Value   %Port  Diff   %Gain"
+1420 LPRINT
+1430 FOR I=1 TO N
+1440 LPRINT USING"## \        \ #### ###.#  ######  ";I;A$(I);S(I);P1(I);C1(I);
+1450 LPRINT USING"###.#  ######  ###.# ######  ####.#";P(I);V(I);R(I);D1(I);G1(I)
+1460 NEXT I
+1470 LPRINT"*********************************************************************"
+1480 LPRINT "Totals";
+1490 LPRINT TAB(26)USING"######         ######  ";T5;T2;
+1500 LPRINT USING"###.# ######  ####.#";T6;T7;T8
+1510 GOTO 1360
+1610 REM ****  CPINDEX  **** UNIVERSAL CHAIN/COMMON PROGRAM
+1620 DIM D1(N),F(N),V1(N),G1(N)
+1630 T5=0:T6=0:T7=0
+1640 INPUT"LATEST CONSUMER PRICE INDEX:  ";Z
+1650 INPUT"DATE OF LATEST CPI:  ";D3$
+1660 FOR I=1 TO N
+1670 F(I)=Z/Y(I)
+1680 V1(I)=F(I)*C(I)
+1690 D1(I)=V(I)-V1(I)
+1700 G1(I)=100*D1(I)/V1(I)
+1710 T5=T5+V1(I)
+1720 T7=T7+D1(I)
+1730 T6=100*T7/T5
+1740 NEXT I
+1750 PRINT CHR$(12)
+1760 PRINT"'CPINDEX' Inflation Performance Comparison--Latest CPI: ";D3$;Z
+1770 PRINT TAB(37)"Stock prices as of:  ";D1$
+1780 PRINT
+1790 PRINT"                              Purch   Current         Theo.  %Variance"
+2000 PRINT"   Stock      Date      CPI    Cost    Value   %Gain  Value  from Theo."
+2010 PRINT
+2020 FOR I=1 TO N
+2030 PRINT USING"## \        \ \     \  ###.#  ##### ";I;A$(I);D$(I);Y(I);C(I);
+2040 PRINT USING"   #####  ####.# ######  ###.#";V(I);G(I);V1(I);G1(I)
+2050 NEXT I
+2060 PRINT"******************************************************************"
+2070 PRINT "Totals";
+2080 PRINT TAB(29) USING"######   ######  ";T1;T2;
+2090 PRINT USING" ###.# ###### ####.#";T4;T5;T6
+2300 PRINT
+2310 INPUT "HARD COPY?--YES ENTER 1 (PRINTER ON!)--NO HIT RETURN  ";J
+2320 IF J=1 THEN 2340 ELSE 2330
+2330 GOTO 5
+2340 LPRINT"'CPINDEX' Inflation Performance Comparison--Latest CPI: ";D3$;Z
+2350 LPRINT TAB(37)"Stock prices as of:  ";D1$
+2360 LPRINT
+2370 LPRINT"                              Purch   Current         Theo.  %Variance"
+2380 LPRINT"   Stock      Date      CPI    Cost    Value   %Gain  Value  from Theo."
+2395 LPRINT
+2400 FOR I=1 TO N
+2410 LPRINT USING"## \        \ \     \  ###.#  ##### ";I;A$(I);D$(I);Y(I);C(I);
+2420 LPRINT USING"   #####  ####.# ######  ###.#";V(I);G(I);V1(I);G1(I)
+2430 NEXT I
+2440 LPRINT"******************************************************************"
+2450 LPRINT "Totals";
+2460 LPRINT TAB(29) USING"######   ######  ";T1;T2;
+2470 LPRINT USING" ###.# ###### ####.#";T4;T5;T6
+2475 INPUT "DO YOU WANT ANOTHER PROBLEM-Y=YES,N=NO";X$
+2476 IF X$="Y" THEN 2330 ELSE 2480
+2480 GOTO 2330
+ ####.#";T4;T5;T6
+2475 INPUT "DO YOU WANT ANOTHER PROBLEM-Y=YES,N=NO";X$
+2476 IF X$="Y" THEN 2330 ELSE 2480
+2480 GOTO 2330

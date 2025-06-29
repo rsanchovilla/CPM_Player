@@ -1,0 +1,658 @@
+	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                ;
+                                ;	GSX-80 driver for HP 7400 plotter commands
+                                ;	Copyright (C) 2024 by Roberto Sancho
+                                ;      
+                                ;       hooks BDOS function 5 (send char to printer/LIST port)
+                                ;       receive chars as HP74XX HP/GL commands
+                                ;       issue GSX calls to draw image on screen instead of plotter
+                                ;
+                                	.z80
+                                	.list
+  0000'                         	CSEG
+                                
+                                ;	PRL Initialization entry point: 
+                                ;	- print welcome message
+                                ;	- hook BDOS function 5 
+                                ;	- adjust end of TPA
+                                ;
+                                ;       first 512 bytes of PRL are initialization code
+                                ;       and thus discarded after init
+                                ; 
+                                
+  0000'                         Init:	
+  0000'   2A 0006               	ld	hl,(0006)	; save real BDOS
+  0003'   22 0209'              	ld 	(BDOS+1),hl	
+  0006'   21 0200'              	ld	hl,MAIN		; hook BDOS call
+  0009'   22 0006               	ld	(0006),hl	; sets new TPA end
+                                	
+  000C'   0E 09                 	ld	c,9		; print string
+  000E'   11 002B'              	ld	de,wtext	; welcome message
+  0011'   CD 0005               	call	0005	
+                                	
+  0014'   0E 09                 	ld	c,9		; print string
+  0016'   11 0100'              	ld	de,hf5txt	; Hook address report
+  0019'   CD 0005               	call	0005	
+  001C'   2A 0006               	ld	hl,(0006)
+  001F'   CD 011B'              	call 	DispHLhex	; print addr in hex
+  0022'   0E 09                 	ld	c,9		; print <CR><LF>
+  0024'   11 00FD'              	ld	de,txtend	
+  0027'   CD 0005               	call	0005	
+                                	
+  002A'   C9                    	ret			; return, end of initialization of GTPLTGSX
+                                	
+  002B'   2D 2D 2D 2D           wtext: 	DB	'---------------------------------------------------',13,10
+  002F'   2D 2D 2D 2D           
+  0033'   2D 2D 2D 2D           
+  0037'   2D 2D 2D 2D           
+  003B'   2D 2D 2D 2D           
+  003F'   2D 2D 2D 2D           
+  0043'   2D 2D 2D 2D           
+  0047'   2D 2D 2D 2D           
+  004B'   2D 2D 2D 2D           
+  004F'   2D 2D 2D 2D           
+  0053'   2D 2D 2D 2D           
+  0057'   2D 2D 2D 2D           
+  005B'   2D 2D 2D 0D           
+  005F'   0A                    
+	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+  0060'   48 50 37 34           	DB	'HP74XX to GSX Driver                    Version 1.0',13,10
+  0064'   58 58 20 74           
+  0068'   6F 20 47 53           
+  006C'   58 20 44 72           
+  0070'   69 76 65 72           
+  0074'   20 20 20 20           
+  0078'   20 20 20 20           
+  007C'   20 20 20 20           
+  0080'   20 20 20 20           
+  0084'   20 20 20 20           
+  0088'   56 65 72 73           
+  008C'   69 6F 6E 20           
+  0090'   31 2E 30 0D           
+  0094'   0A                    
+  0095'   43 6F 70 79           	DB	'Copyright (c) 2024 by Roberto Sancho               ',13,10
+  0099'   72 69 67 68           
+  009D'   74 20 28 63           
+  00A1'   29 20 32 30           
+  00A5'   32 34 20 62           
+  00A9'   79 20 52 6F           
+  00AD'   62 65 72 74           
+  00B1'   6F 20 53 61           
+  00B5'   6E 63 68 6F           
+  00B9'   20 20 20 20           
+  00BD'   20 20 20 20           
+  00C1'   20 20 20 20           
+  00C5'   20 20 20 0D           
+  00C9'   0A                    
+  00CA'   2D 2D 2D 2D           	DB	'---------------------------------------------------'
+  00CE'   2D 2D 2D 2D           
+  00D2'   2D 2D 2D 2D           
+  00D6'   2D 2D 2D 2D           
+  00DA'   2D 2D 2D 2D           
+  00DE'   2D 2D 2D 2D           
+  00E2'   2D 2D 2D 2D           
+  00E6'   2D 2D 2D 2D           
+  00EA'   2D 2D 2D 2D           
+  00EE'   2D 2D 2D 2D           
+  00F2'   2D 2D 2D 2D           
+  00F6'   2D 2D 2D 2D           
+  00FA'   2D 2D 2D              
+  00FD'   0D 0A 24              txtend:	DB	13,10,'$'
+  0100'   48 6F 6F 6B           hf5txt: DB	'Hook BDOS function 5 at 0x','$'
+  0104'   20 42 44 4F           
+  0108'   53 20 66 75           
+  010C'   6E 63 74 69           
+  0110'   6F 6E 20 35           
+  0114'   20 61 74 20           
+  0118'   30 78 24              
+                                
+                                ;
+                                ; Display a 16- or 8-bit number in hex.
+                                ; The value to be shown should be stored in HL
+                                ; code based on https://github.com/skx/z80-examples/blob/master/number-output.z80
+                                ;
+  011B'                         DispHLhex:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  011B'   E5                    	push	hl
+  011C'   7C                    	ld  	a,h
+  011D'   CD 0126'                 	call  	OutHex8		; Show the high-value
+  0120'   E1                       	pop 	hl
+  0121'   7D                    	ld  	a,l		
+  0122'   CD 0126'                 	call 	OutHex8		; Show the low-value
+  0125'   C9                    	ret
+                                
+                                	; Output 2-hex value of the 8-bit number stored in a
+  0126'                         OutHex8:
+  0126'   F5                       	push	af
+  0127'   1F                       	rra
+  0128'   1F                       	rra
+  0129'   1F                       	rra
+  012A'   1F                       	rra
+  012B'   CD 012F'                 	call  	Conv
+  012E'   F1                       	pop	af
+  012F'   E6 0F                 Conv:	and  	0fh
+  0131'   C6 90                    	add  	a,90h
+  0133'   27                       	daa
+  0134'   CE 40                    	adc  	a,40h
+  0136'   27                       	daa
+                                   	; Show the value.
+  0137'   5F                       	ld	e,a
+  0138'   0E 02                    	ld	c,2
+  013A'   CD 0005                  	call	0005	; out one char
+  013D'   C9                       	ret
+                                
+                                ; reserve storage to fill up to 512 bytes
+                                ; of discardable init space
+                                
+  013E'                         IniPad:	DS	512-(IniPad-Init)
+                                
+                                ;
+                                ; PRL BDOS Hook
+                                ;
+  0200'                         MAIN:
+  0200'   F5                    	push 	af
+  0201'   79                    	ld	a,c	
+  0202'   FE 05                 	cp	5		; is BDOS func 5 = print char in printer  ?
+  0204'   CA 020B'              	jp 	z, HookFn5
+  0207'   F1                    	pop	af
+  0208'   C3 0000               BDOS:	jp	0000		; jump to real BDOS
+                                	
+  020B'                         HookFn5:			; process HP 7400 command char
+  020B'   F1                    	pop	af
+                                
+  020C'   7B                    	ld	a,e
+  020D'   32 04EF'              	ld	(ch),a		; saves the received char
+                                
+  0210'   3A 04F0'              	ld	a,(EscMode)	; chech if we are in Esc Mode
+  0213'   B7                    	or	a
+  0214'   CA 0227'              	jp	z,NoEscMode	
+                                	
+  0217'   3A 04EF'              	ld	a,(ch)		; we are in ESC mode. Skip any char
+  021A'   FE 3A                 	cp	':'		; received until receiving ':' (terminator)
+	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+  021C'   C2 0226'              	jp	nz,NoEscTerminator
+  021F'   AF                    ClrRx:	xor	a		; disable ESC mode
+  0220'   32 04F0'              	ld	(EscMode),a	; next char will be processed
+  0223'   32 0532'              	ld	(RxBufLen),a	; init rxbuf
+  0226'                         NoEscTerminator:
+  0226'   C9                    	ret
+                                
+  0227'                         NoEscMode:
+  0227'   3A 04EF'              	ld	a,(ch)
+  022A'   FE 1B                 	cp	27
+  022C'   C2 0235'              	jp	nz,NoEscChar	
+                                	
+                                	; received an ESC char
+  022F'   3E 01                 	ld	a,1		; activate ESC mode: will skip any char
+  0231'   32 04F0'              	ld	(EscMode),a	; until reception of ':'
+  0234'   C9                    	ret
+                                
+  0235'                         NoEscChar:
+  0235'   11 04F1'              	ld	de,RxBuf	; save the received char 
+  0238'   3A 0532'              	ld	a,(RxBufLen)	; RxBuf[RxBufLen]=ch
+  023B'   6F                    	ld	l,a
+  023C'   26 00                 	ld	h,0
+  023E'   19                    	add	hl,de
+  023F'   3A 04EF'              	ld	a,(ch)
+  0242'   77                    	ld	(hl),a
+  0243'   3A 0532'              	ld	a,(RxBufLen)	; RxBufLen=(RxBufLen + 1) and 63
+  0246'   C6 01                 	add	a,1
+  0248'   E6 3F                 	and	RxBufSize-1
+  024A'   32 0532'              	ld	(RxBufLen),a
+                                	
+                                	; check if command terminator
+  024D'   3A 04EF'              	ld	a,(ch)
+  0250'   FE 20                 	cp	32
+  0252'   DA 0271'              	jp	c,CmdTerminated	; if a<32 -> non-printable char terminates the command
+  0255'   FE 3B                 	cp	';'
+  0257'   C0                    	ret	nz		; any char <>';' is stored as part of incomming command 
+  0258'   3A 0532'              	ld	a,(RxBufLen)	
+  025B'   FE 03                 	cp	3
+  025D'   DA 021F'              	jp	c,ClrRx		; ';' char with less than 3 chars -> invalid command -> clear rx buf
+  0260'   3A 04F1'              	ld	a,(RxBuf)	; get first char of received command
+  0263'   FE 4C                 	cp	'L'
+  0265'   C2 0271'              	jp	nz,CmdTerminated	; if command is not LB
+  0268'   3A 04F2'              	ld	a,(RxBuf+1)		; the ';' is interpreted as		
+  026B'   FE 42                 	cp	'B'			; command terminator
+  026D'   C2 0271'              	jp	nz,CmdTerminated
+  0270'   C9                    	ret			; char ';' is part of LB command
+                                
+  0271'                         CmdTerminated:	
+                                	; add a 0 as terminator (followed by $ to allow print it for debug)
+  0271'   11 04F1'              	ld	de,RxBuf	
+  0274'   3A 0532'              	ld	a,(RxBufLen)	; RxBuf[RxBufLen]='$'
+  0277'   6F                    	ld	l,a
+  0278'   26 00                 	ld	h,0
+  027A'   19                    	add	hl,de
+  027B'   3A 04EF'              	ld	a,(ch)
+  027E'   36 00                 	ld	(hl),0
+	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+                                	
+                                     ; uncoment the following code to print on
+                                     ; console the command to be processed
+                                     ;
+                                     ;  inc	hl
+                                     ;  ld	(hl),'$'	
+                                     ;  ; print cmd in console for debug
+                                     ;  ld	c,9		; print string
+                                     ;  ld	de,RxBuf	; print received command
+                                     ;  call	0005	
+                                     ;  ld	e,13
+                                     ;  ld	c,2
+                                     ;  call	0005		; print in console
+                                     ;  ld	e,10
+                                     ;  ld	c,2
+                                     ;  call	0005		; print in console
+                                
+                                	; locate the command handling routine
+  0280'   21 0535'              	ld	hl,CmdTable
+  0283'   22 0533'              	ld	(pCmd),hl
+                                	
+  0286'   2A 0533'              cmd0:	ld	hl,(pCmd)	; search cmd in CmdTable
+  0289'   7E                    	ld	a,(hl)
+  028A'   B7                    	or	a
+  028B'   CA 021F'              	jp	z,ClrRx		; command not found -> discard command
+  028E'   4E                    	ld	c,(hl)
+  028F'   23                    	inc	hl
+  0290'   46                    	ld	b,(hl)
+  0291'   2A 04F1'              	ld	hl,(RxBuf)
+  0294'   B7                    	or	a		; force clear carry 
+  0295'   ED 42                 	sbc	hl,bc
+  0297'   C2 02A4'              	jp	nz,cmd1
+  029A'   2A 0533'              	ld	hl,(pCmd)
+  029D'   23                    	inc	hl
+  029E'   23                    	inc	hl		; command found
+  029F'   5E                    	ld	e,(hl)		; get addr of routine to process the command
+  02A0'   23                    	inc	hl
+  02A1'   56                    	ld	d,(hl)
+  02A2'   EB                    	ex	de,hl
+  02A3'   E9                    	jp	(hl)		; jump to routine to process the command
+  02A4'   2A 0533'              cmd1:	ld	hl,(pCmd)
+  02A7'   23                    	inc	hl
+  02A8'   23                    	inc	hl
+  02A9'   23                    	inc	hl
+  02AA'   23                    	inc	hl
+  02AB'   22 0533'              	ld	(pCmd),hl
+  02AE'   C3 0286'              	jp	cmd0
+                                	
+  02B1'                         GetDecimalParam:
+                                	; Converts an ASCII string to an unsigned 16-bit integer
+                                	; Quits when it reaches a non-decimal digit
+                                	; based on https://github.com/Zeda/Z80-Optimized-Routines/blob/master/conversion/string_to_uint16.z80
+  02B1'   21 0000               	ld 	hl,0
+  02B4'   1A                    dec0:	ld 	a,(de)
+  02B5'   D6 30                   	sub 	30h
+  02B7'   FE 0A                   	cp 	10
+	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+  02B9'   D0                      	ret 	nc
+  02BA'   13                      	inc 	de
+  02BB'   44                      	ld 	b,h
+  02BC'   4D                      	ld 	c,l
+  02BD'   29                      	add 	hl,hl
+  02BE'   29                      	add 	hl,hl
+  02BF'   09                      	add 	hl,bc
+  02C0'   29                      	add 	hl,hl
+  02C1'   85                      	add 	a,l
+  02C2'   6F                      	ld 	l,a
+  02C3'   30 EF                   	jr 	nc,dec0
+  02C5'   24                      	inc 	h
+  02C6'   C3 02B4'                	jp 	dec0
+                                	
+  02C9'                         CmdPA:
+  02C9'   AF                    	xor	a
+  02CA'   32 0550'              	ld	(LastOpWasPD),a	; init
+  02CD'   CD 042F'              	call	ChkGsxOpen	; check GSX Workstation is Open
+  02D0'   2A 0551'              	ld	hl,(PenX)	; save current pen pos
+  02D3'   22 0555'              	ld 	(X0),hl
+  02D6'   2A 0553'              	ld	hl,(PenY)
+  02D9'   22 0557'              	ld 	(Y0),hl
+  02DC'   11 04F3'              	ld	de,RxBuf+2	; start of param
+  02DF'   CD 02B1'              	call	GetDecimalParam	; get new pen pos from command params
+  02E2'   22 0551'              	ld	(PenX),hl
+  02E5'   13                    	inc 	de
+  02E6'   CD 02B1'              	call	GetDecimalParam
+  02E9'   22 0553'              	ld	(PenY),hl
+  02EC'   3A 054F'              	ld	a,(PenDown)
+  02EF'   B7                    	or	a
+  02F0'   CA 021F'              	jp	z,ClrRx		; pen up -> no drawing done
+  02F3'                         CmdLine:
+                                	; call GSX Draw polyLine
+  02F3'   21 0006               	ld	hl,6		; gsx func 6 = Draw Poly Line
+  02F6'   22 0565'              	ld	(gsxfunc),hl
+  02F9'   21 0002               	ld	hl,2
+  02FC'   22 0567'              	ld	(Nptsin),hl	; num pts in = 2
+  02FF'   21 0000               	ld	hl,0		
+  0302'   22 056B'              	ld	(Nintin),hl	; num int in = 0
+  0305'   2A 0555'              	ld	hl,(X0)
+  0308'   CD 0490'              	call	hl_x3		; mult x-coord by 3
+  030B'   22 0577'              	ld	(ptsin+0),hl	; set the line coords
+  030E'   2A 0557'              	ld	hl,(Y0)	
+  0311'   CD 0497'              	call	hl_x4		; mult y-coord by 4
+  0314'   22 0579'              	ld	(ptsin+2),hl	
+  0317'   2A 0551'              	ld	hl,(PenX)
+  031A'   CD 0490'              	call	hl_x3		; mult x-coord by 3
+  031D'   22 057B'              	ld	(ptsin+4),hl
+  0320'   2A 0553'              	ld	hl,(PenY)
+  0323'   CD 0497'              	call	hl_x4		; mult y-coord by 4
+  0326'   22 057D'              	ld	(ptsin+6),hl	
+  0329'   11 055B'              	ld	de,pblock
+  032C'   0E 73                 	ld	c,115
+  032E'   CD 0005               	call	0005
+  0331'   C3 021F'              	jp	ClrRx
+  0334'                         CmdPU:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+  0334'   AF                    	xor	a
+  0335'   32 054F'              	ld	(PenDown),a
+  0338'   CD 042F'              	call	ChkGsxOpen	; check GSX Workstation is Open
+  033B'   3A 0550'              	ld	a,(LastOpWasPD)
+  033E'   B7                    	or	a
+  033F'   C2 0345'              	jp	nz,CmdPoint
+  0342'   C3 021F'              	jp	ClrRx
+                                	
+  0345'                         CmdPoint:	
+  0345'   AF                    	xor	a
+  0346'   32 0550'              	ld	(LastOpWasPD),a	; reset	
+                                	; draw a point
+  0349'   2A 0551'              	ld	hl,(PenX)	; save current pen pos
+  034C'   CD 0490'              	call	hl_x3		; mult x-coord by 3
+  034F'   22 0555'              	ld 	(X0),hl
+  0352'   2A 0553'              	ld	hl,(PenY)
+  0355'   CD 0497'              	call	hl_x4		; mult y-coord by 4
+  0358'   22 0557'              	ld 	(Y0),hl
+  035B'   C3 02F3'              	jp	CmdLine
+  035E'                         CmdPD:
+  035E'   3E 01                 	ld	a,1
+  0360'   32 054F'              	ld	(PenDown),a
+  0363'   32 0550'              	ld	(LastOpWasPD),a	; set
+  0366'   CD 042F'              	call	ChkGsxOpen	; check GSX Workstation is Open
+  0369'   C3 021F'              	jp	ClrRx
+  036C'                         CmdLB:
+                                	; label: draw an ascii char
+  036C'   AF                    	xor	a
+  036D'   32 0550'              	ld	(LastOpWasPD),a	; init
+  0370'   CD 042F'              	call	ChkGsxOpen	; check GSX Workstation is Open
+  0373'   3A 04F3'              	ld	a,(RxBuf+2)	; get param = the char to print
+  0376'   5F                    	ld	e,a
+  0377'   16 00                 	ld	d,0		; de=reg a = the char
+                                	
+                                	; call GSX Draw Text
+  0379'   21 0008               	ld	hl,8		; gsx func 8 = Draw Text
+  037C'   22 0565'              	ld	(gsxfunc),hl
+  037F'   21 0001               	ld	hl,1		
+  0382'   22 0567'              	ld	(Nptsin),hl	; num pts in = 1
+  0385'   22 056B'              	ld	(Nintin),hl	; num int in = 1
+  0388'   ED 53 056F'           	ld	(intin),de	; store the char
+  038C'   2A 0551'              	ld	hl,(PenX)
+  038F'   CD 0490'              	call	hl_x3		; mult x-coord by 3
+  0392'   22 0577'              	ld	(ptsin+0),hl	; set the pos to
+  0395'   2A 0559'              	ld	hl,(ChHeight)
+  0398'   EB                    	ex	de,hl
+  0399'   2A 0553'              	ld	hl,(PenY)	; place the char
+  039C'   B7                    	or	a
+  039D'   ED 52                 	sbc	hl,de
+  039F'   CD 0497'              	call	hl_x4		; mult y-coord by 4
+  03A2'   22 0579'              	ld	(ptsin+2),hl	
+  03A5'   11 055B'              	ld	de,pblock
+  03A8'   0E 73                 	ld	c,115
+  03AA'   CD 0005               	call	0005
+  03AD'   C3 021F'              	jp	ClrRx
+  03B0'                         CmdSP:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+
+
+                                	; set pen color
+  03B0'   AF                    	xor	a
+  03B1'   32 0550'              	ld	(LastOpWasPD),a	; init
+  03B4'   32 054F'              	ld	(PenDown),a	; pen is UP
+  03B7'   CD 042F'              	call	ChkGsxOpen	; check GSX Workstation is Open
+  03BA'   3A 04F3'              	ld	a,(RxBuf+2)	; get param = pen color
+  03BD'   D6 30                 	sub	30h
+  03BF'   DA 021F'              	jp	c,ClrRx		; invalid pen. Should be '0'..
+  03C2'   CA 03F7'              	jp	z,CmdErase	; SP0 is interpreted as erase graphic
+  03C5'   16 00                 	ld	d,0
+  03C7'   5F                    	ld	e,a		; de=reg a = the color
+                                	
+                                	; call GSX Set Line color
+  03C8'   21 0011               	ld	hl,17		; gsx func 17 = Set Line Color
+  03CB'   22 0565'              	ld	(gsxfunc),hl
+  03CE'   21 0000               	ld	hl,0		
+  03D1'   22 0567'              	ld	(Nptsin),hl	; num pts in = 0
+  03D4'   21 0001               	ld	hl,1		
+  03D7'   22 056B'              	ld	(Nintin),hl	; num int in = 1
+  03DA'   ED 53 056F'           	ld	(intin),de	; store the value
+  03DE'   11 055B'              	ld	de,pblock
+  03E1'   0E 73                 	ld	c,115
+  03E3'   CD 0005               	call	0005
+                                	; call GSX Set text color
+  03E6'   21 0016               	ld	hl,22		; gsx func 22 = Set text Color
+  03E9'   22 0565'              	ld	(gsxfunc),hl
+  03EC'   11 055B'              	ld	de,pblock
+  03EF'   0E 73                 	ld	c,115
+  03F1'   CD 0005               	call	0005
+  03F4'   C3 021F'              	jp	ClrRx
+  03F7'                         CmdErase:
+                                	; call GSX Clear Picture
+  03F7'   21 0003               	ld	hl,3		; gsx func 3 = Clear Picture
+  03FA'   22 0565'              	ld	(gsxfunc),hl
+  03FD'   21 0000               	ld	hl,0		
+  0400'   22 0567'              	ld	(Nptsin),hl	; num pts in = 0
+  0403'   22 056B'              	ld	(Nintin),hl	; num int in = 0
+  0406'   11 055B'              	ld	de,pblock
+  0409'   0E 73                 	ld	c,115
+  040B'   CD 0005               	call	0005
+                                	; now call GSX CloseWorkStation 
+  040E'   21 0002               	ld	hl,2		; gsx func 2 = CloseWorkstation
+  0411'   22 0565'              	ld	(gsxfunc),hl
+  0414'   21 0000               	ld	hl,0		
+  0417'   22 0567'              	ld	(Nptsin),hl	; num pts in = 0
+  041A'   21 0000               	ld	hl,0		
+  041D'   22 056B'              	ld	(Nintin),hl	; num int in = 0
+  0420'   11 055B'              	ld	de,pblock
+  0423'   0E 73                 	ld	c,115
+  0425'   CD 0005               	call	0005
+  0428'   AF                    	xor	a
+  0429'   32 054E'              	ld 	(GsxOpen),a	; GSX WorkStation is closed
+  042C'   C3 021F'              	jp	ClrRx
+                                	
+  042F'                         ChkGsxOpen:	; check if GSX WorkStation is open. If not, open it
+  042F'   3A 054E'              	ld 	a,(GsxOpen)
+	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+
+
+  0432'   B7                    	or	a
+  0433'   C0                    	ret	nz		; return. WorkStation already open
+  0434'   3E 01                 	ld	a,1
+  0436'   32 054E'              	ld 	(GsxOpen),a	; Mark GSX WorkStation as Open
+                                	; now OpenWorkStation
+  0439'   21 0001               	ld	hl,1		; gsx func 1 = OpenWorkstation
+  043C'   22 0565'              	ld	(gsxfunc),hl
+  043F'   21 0000               	ld	hl,0		
+  0442'   22 0567'              	ld	(Nptsin),hl	; num pts in = 0
+  0445'   21 000A               	ld	hl,10		
+  0448'   22 056B'              	ld	(Nintin),hl	; num int in = 10
+  044B'   21 0001               	ld	hl,1
+  044E'   22 056F'              	ld	(INTIN + 0*2),hl	; open device number = 1
+  0451'   21 0000               	ld	hl,0
+  0454'   22 0571'              	ld	(INTIN + 1*2),hl	; line style
+  0457'   21 0001               	ld	hl,1
+  045A'   22 0573'              	ld	(INTIN + 2*2),hl	; line color (0=black, 1=white)
+  045D'   21 0000               	ld	hl,0
+  0460'   22 0575'              	ld	(INTIN + 3*2),hl	; marker style
+  0463'   21 0001               	ld	hl,1
+  0466'   22 0577'              	ld	(INTIN + 4*2),hl	; marker color
+  0469'   21 0000               	ld	hl,0
+  046C'   22 0579'              	ld	(INTIN + 5*2),hl	; text style
+  046F'   21 0001               	ld	hl,1
+  0472'   22 057B'              	ld	(INTIN + 6*2),hl	; text color
+  0475'   21 0000               	ld	hl,0
+  0478'   22 057D'              	ld	(INTIN + 7*2),hl	; fill style
+  047B'   21 0000               	ld	hl,0
+  047E'   22 057F'              	ld	(INTIN + 8*2),hl	; fill index (0=solid)
+  0481'   21 0001               	ld	hl,1
+  0484'   22 0581'              	ld	(INTIN + 9*2),hl	; fill color
+  0487'   11 055B'              	ld	de,pblock
+  048A'   0E 73                 	ld	c,115
+  048C'   CD 0005               	call	0005
+  048F'   C9                    	ret
+                                
+  0490'                         hl_x3:	; mult x-coord in HL by 3 to traslate from HP74XX coords to GSX coords
+  0490'   C5                    	push	bc
+  0491'   E5                    	push 	hl
+  0492'   29                    	add	hl,hl
+  0493'   C1                    	pop	bc
+  0494'   09                    	add	hl,bc
+  0495'   C1                    	pop 	bc
+  0496'   C9                    	ret
+                                	
+  0497'                         hl_x4:	; mult y-coord in HL by 4 to traslate from HP74XX coords to GSX coords
+  0497'   29                    	add	hl,hl
+  0498'   29                    	add	hl,hl
+  0499'   C9                    	ret
+                                
+  049A'                         CmdSI:	; character size
+  049A'   CD 042F'              	call	ChkGsxOpen	; check GSX Workstation is Open
+  049D'   3A 04F4'              	ld	a,(RxBuf+3)	; get param = 1st digit of size
+  04A0'   21 006E               	ld	hl, 110
+  04A3'   22 0559'              	ld	(ChHeight),hl
+  04A6'   11 0AF0               	ld	de,2800
+	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+
+
+  04A9'   FE 33                 	cp	'3'
+  04AB'   CA 04C5'              	jp	z,settext
+                                	
+  04AE'   21 00C8               	ld	hl, 200
+  04B1'   22 0559'              	ld	(ChHeight),hl
+  04B4'   11 01F4               	ld	de,500
+  04B7'   FE 31                 	cp	'1'
+  04B9'   CA 04C5'              	jp	z,settext
+                                	
+  04BC'   21 0082               	ld	hl, 130
+  04BF'   22 0559'              	ld	(ChHeight),hl
+  04C2'   11 0578               	ld	de,1400
+  04C5'                         settext:	
+                                	; call GSX Set text size
+  04C5'   21 000C               	ld	hl,12		; gsx func 12 = Set text size
+  04C8'   22 0565'              	ld	(gsxfunc),hl
+  04CB'   21 0001               	ld	hl,1		
+  04CE'   22 0567'              	ld	(Nptsin),hl	; num pts in = 0
+  04D1'   EB                    	ex 	de,hl
+  04D2'   22 0577'              	ld	(ptsin+0),hl	
+  04D5'   22 0579'              	ld	(ptsin+2),hl	
+  04D8'   21 0000               	ld	hl,0		
+  04DB'   22 056B'              	ld	(Nintin),hl	; num int in = 0
+  04DE'   11 055B'              	ld	de,pblock
+  04E1'   0E 73                 	ld	c,115
+  04E3'   CD 0005               	call	0005
+  04E6'   C3 021F'              	jp	ClrRx
+                                	
+                                
+  04E9'   DA 021F'              	jp	c,ClrRx		; invalid pen. Should be '1', '2' or '3'
+                                	
+  04EC'   CA 03F7'              	jp	z,CmdErase	; SP0 is interpreted as erase graphic
+                                
+  04EF'   00                    ch:		DB	0	; the received char from GrafTalk
+  04F0'   00                    EscMode:	DB	0	; ESC mode flag
+  0040                          RxBufSize	equ	64	; max chars in buffer (must be power of 2)
+  04F1'                         RxBuf:		DS	RxBufSize	; the received plotter command buffer 
+  0531'   00                    		DB	0	; safety
+  0532'   00                    RxBufLen:	db	0	; number of received chars in RxBuf
+                                	
+  0533'   0000                  pCmd:		DW 	0;
+  0535'   50 41                 CmdTable:	DB	'P','A'
+  0537'   02C9'                 		DW	CmdPA
+  0539'   50 55                 		DB	'P','U'
+  053B'   0334'                 		DW	CmdPU
+  053D'   50 44                 		DB	'P','D'
+  053F'   035E'                 		DW	CmdPD
+  0541'   4C 42                 		DB	'L','B'
+  0543'   036C'                 		DW	CmdLB
+  0545'   53 50                 		DB	'S','P'
+  0547'   03B0'                 		DW	CmdSP
+  0549'   53 49                 		DB	'S','I'
+  054B'   049A'                 		DW	CmdSI
+  054D'   00                    		DB	0	; end of table
+                                		
+                                ; driver variables
+	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+
+
+                                
+  054E'   00                    GsxOpen:	DB	0
+  054F'   00                    PenDown:	DB	0
+  0550'   00                    LastOpWasPD:	DB	0
+  0551'   0000                  PenX:		DW 	0
+  0553'   0000                  PenY:		DW 	0
+  0555'   0000                  X0:		DW 	0
+  0557'   0000                  Y0:		DW 	0
+  0559'   0000                  ChHeight:	DW	0
+                                	
+                                ; GSX variables
+                                
+  055B'   0565'                 pblock:	DW	CONTRL		; Address of control array
+  055D'   056F'                 	DW	INTIN		; Address of integer input array
+  055F'   0577'                 	DW	PTSIN		; Address of pixel input array
+  0561'   057F'                 	DW	INTOUT		; Address of integer output array
+  0563'   05BF'                 	DW	PTSOUT		; Address of pixel output array	
+  0565'                         CONTRL:	
+  0565'   0000                  gsxfunc:	DW	0	; Input:  GSX function to call, 1-33
+  0567'   0000                  Nptsin:		DW   	0	; Input:  Number of points in PTSIN array.
+  0569'   0000                  Nptsout:	DW   	0	; Output: Number of points in PTSOUT array.
+  056B'   0000                  Nintin:		DW   	0	; Input:  Number of integers in INTIN array.
+  056D'   0000                  Nintout:	DW   	0	; Output: Number of integers in INTOUT array.	
+  056F'                         INTIN:	DS	8		; room for 4 input words
+  0577'                         PTSIN:	DS	8		; room for 4 input coords (2 points)
+  057F'                         INTOUT:	DS	64		; room for 32 output words
+  05BF'                         PTSOUT:	DS	32 		; room for 16 output coords (8 points)
+                                
+  05DF'   EEEE                  	DW      0EEEEh		; end of PRL signature
+                                	END
+	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+0208'	BDOS            04EF'	CH              0559'	CHHEIGHT        
+042F'	CHKGSXOPEN      021F'	CLRRX           0286'	CMD0            
+02A4'	CMD1            03F7'	CMDERASE        036C'	CMDLB           
+02F3'	CMDLINE         02C9'	CMDPA           035E'	CMDPD           
+0345'	CMDPOINT        0334'	CMDPU           049A'	CMDSI           
+03B0'	CMDSP           0535'	CMDTABLE        0271'	CMDTERMINATED   
+0565'	CONTRL          012F'	CONV            02B4'	DEC0            
+011B'	DISPHLHEX       04F0'	ESCMODE         02B1'	GETDECIMALPARAM 
+0565'	GSXFUNC         054E'	GSXOPEN         0100'	HF5TXT          
+0490'	HL_X3           0497'	HL_X4           020B'	HOOKFN5         
+013E'	INIPAD          0000'	INIT            056F'	INTIN           
+057F'	INTOUT          0550'	LASTOPWASPD     0200'	MAIN            
+056B'	NINTIN          056D'	NINTOUT         0235'	NOESCCHAR       
+0227'	NOESCMODE       0226'	NOESCTERMINATOR 0567'	NPTSIN          
+0569'	NPTSOUT         0126'	OUTHEX8         055B'	PBLOCK          
+0533'	PCMD            054F'	PENDOWN         0551'	PENX            
+0553'	PENY            0577'	PTSIN           05BF'	PTSOUT          
+04F1'	RXBUF           0532'	RXBUFLEN        0040 	RXBUFSIZE       
+04C5'	SETTEXT         00FD'	TXTEND          002B'	WTEXT           
+0555'	X0              0557'	Y0              
+
+
+
+No Fatal error(s)
+
+
+    0235'	NOESCCHAR       
+0227'	NOESCMODE       0226'	NOESCTERMINATOR 0567'	NPTSIN          
+0569'	NPTSOUT         0126

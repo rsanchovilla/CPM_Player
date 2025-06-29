@@ -1,0 +1,2755 @@
+                     INTRODUCTION TO S-BASIC
+
+1. What is S-BASIC?
+
+S-BASIC stands for "structured BASIC."  S-BASIC is a native-code 
+compiler for a structured dialect of the BASIC programming 
+language.  It runs on 8-bit microcomputers using the Z80 CPU chip 
+and the CP/M operating system.  The compiler and the language it 
+compiles were developed during the period 1979-1981 by Gilbert 
+Ohnysty, who saw a need for a true native-code compiler and a 
+language implementation that preserved BASIC's ease of use and 
+straight-forward syntax, while incorporating the control-flow 
+constructs associated with modern programming languages.
+        
+The original BASIC programming language was developed by John 
+Kemeny and Thomas Kurtz at Dartmouth College in 1964.  It 
+borrowed syntax from both FORTRAN and ALGOL, but more heavily 
+from the former than the latter.  S-BASIC reaches back to BASIC's 
+ALGOL roots to incorporate features from that language 
+indispensable to the writing of good structured programs, 
+including local variables, recursion, statement grouping with 
+BEGIN and END, looping with WHILE and REPEAT statements, 
+multi-way decisions with a CASE statement, and user-defined 
+procedures and functions.  S-BASIC also incorporates a number of 
+other useful features: COMMENT and TEXT statements that 
+eliminate the need for multiple REM or PRINT statements, a FIXED 
+(binary coded decimal) variable type for financial calculations, 
+BASED variables that may be positioned at run-time, and a 
+powerful $INCLUDE command that allows functions and procedures to 
+be gathered into library files and selectively extracted at 
+compile time.
+
+
+2.  Getting Started
+
+     The S-BASIC compiler consists of four files, all of which 
+need to be present when programs are being compiled:
+
+          SBASIC.COM
+          OVERLAYB.COM
+          BASICLIB.REL
+          USERLIB.REL
+
+     In a dual-floppy system, it is convenient to have the 
+compiler files (which together aggregate 75K) plus your favorite 
+text editor (more on that in a moment) located on the same disk.  
+This will probably not leave enough room on the disk to store the 
+S-BASIC programs you create, so they will be stored on another 
+disk (and in any event you will not want to limit the number of 
+programs you write to those that will fit on a single disk).  On 
+a hard-disk system, the compiler files and the programs you write 
+must be in the same CP/M user area.  If you are copying files 
+from a distribution disk using the CP/M PIP utility, be sure to 
+specify the "O" option with the two .REL files so that PIP will 
+understand they are object files and will not prematurely 
+terminate the copy operation upon encountering a control-Z byte.  
+For example, to copy BASICLIB.REL from a disk in drive A to a 
+disk in drive B, you would type PIP B:=A:BASICLIB.REL[OV].
+
+     S-BASIC programs can be written using any ASCII text editor. 
+A good choice for this purpose is Eric Meyer's VDE: it is small, 
+fast, and loads quickly.  Although less convenient, you can also 
+use WordStar in "non-document" mode (choose "N" from the opening 
+menu) or Perfect Writer in "normal" mode (Ctrl-X,m,normal).  In a 
+pinch, you could even use the CP/M line editor ED, although it 
+would certainly take most of the fun out of S-BASIC programming!
+        
+     Whatever editor you use, it is vital that the last line of 
+text be terminated with a carriage return and line feed.  Some 
+editors, such as Perfect Writer, do not automatically terminate 
+the last line of a file.  The result, when you go to compile, is 
+that the compiler will continue to process the lines leading up 
+to the end of file again and again and again, until at some point 
+the stack overflows.  So make sure before saving your program 
+that the cursor is below the last line of your program.
+
+     So let's get started.  The traditional first program in any 
+programming language is "Hello, World."  It does nothing more 
+than display the greeting "Hello" (or some variant) on the user's 
+terminal.  To create an S-BASIC version of "Hello, World" fire up 
+your text editor and type in the following text:
+
+     rem - Hello World in S-BASIC
+     print "Hello, there!"
+     end
+
+Save the text under the filename HELLO.BAS.  If your program 
+files are to be stored on a different drive than the drive on 
+which your text editor is located, you will need to include the 
+drive designation as part of the filename, e.g., B:HELLO.BAS.   
+After saving the file, exit from the text editor to the CP/M 
+operating system.  Assuming the compiler files are on drive A: 
+and the program files on drive B:, you would then invoke the 
+compiler by typing:
+
+     A>SBASIC b:hello
+
+If you haven't made any mistakes, you should see the following:
+
+            tm
+     S-BASIC Compiler Version 5.4b
+     
+     0001:00 rem - Hello, World in S-BASIC
+     0002:00 print "Hello, there!"
+     0003:00 end
+     0004:00
+     0005:00         ****** End of program ******
+     
+     Compilation complete
+     
+     A>_
+     
+Assuming there were no errors, you should now see a file named 
+HELLO.COM on drive B.  HELLO.COM is a stand-alone executable file 
+and can be run from the CP/M prompt by simply typing its name 
+(minus the ".COM"):
+
+     A>hello
+     Hello, There!
+     Warm Boot
+     A>_
+
+So that's it.  You've created and run your first S-BASIC program.
+
+     Before going on, it is worthwhile to note a couple of 
+details.  HELLO.BAS, which contains the text of your program, is 
+usually referred to as the "source file" and the text itself is 
+referred to as the "source code."   S-BASIC source files must 
+have the filename extension .BAS or they will not be recognized 
+by the compiler.  
+
+    The compiler translates the source code into instructions 
+(called "machine code" or "object code") that can be understood 
+by the computer's central processing unit (CPU).  The compiler 
+then links the object code with necessary support routines from 
+the two library files (BASICLIB.REL and USERLIB.REL) to create 
+the final .COM file.   The output file (which is referred to as 
+the "object file") is a stand-alone program which can be run 
+under the CP/M operating system without the presence of other 
+files.  S-BASIC differs in this respect from some other BASIC 
+compilers which either generate intermediate code that must be
+executed using a run-time interpreter or that require that a 
+special file containing library routines be present when the 
+program is run.
+
+     Note that when running the compiler you do not include the 
+.BAS extension as part of the filename.  Instead, the compiler 
+supports a special syntax.  If no extension is specified, then 
+the compiler will look for the source file on the current drive, 
+unless you have prefixed the filename with a drive designator (as 
+we did above), in which case it will look on that drive for a 
+file of the name specified with the extension .BAS.  A "listing" 
+(printout) of the file will be displayed on the screen (with line 
+numbers added for reference purposes).  Alternatively, you can 
+specify the drives for the source and object files, as well as 
+control the program listing, by using a special form of filename 
+extension.  This is done by adding a dot (.) and three letters to 
+the name of the source file, as follows:
+                   /---> source file drive (A-P)
+                  //---> object file drive (A-P or Z)             
+                 ///---> listing file drive (A-P or X-Z) 
+A>sbasic myprog.xxx 
+
+     A "z" for the object file drive instructs the compiler not 
+to generate an object file.  For the listing file, "x" refers to 
+the console, "y" refers to the CP/M list device (normally 
+the printer) and "z" means to omit.  So, for example, instead of 
+the command given above to compile HELLO.BAS,  you could have 
+typed:
+
+     A>SBASIC hello.bbx
+
+This tells the S-BASIC compiler, "Look for a source file named 
+HELLO.BAS on drive B, place the object file HELLO.COM on drive B, 
+and send the listing to the console."   Note that ".bbx" (in this 
+example) is simply treated as information you are giving to the 
+compiler.  You do not change the actual filename extension of the 
+source file, which must remain .BAS. 
+
+3.  Organizaton of an S-BASIC Program
+
+When explaining a programming language, sometimes a listing 
+is worth a thousand words.  Figure 1 is an example, written in 
+Microsoft BASIC-80 (MBASIC), of a fairly simple program to cal- 
+culate the number of elapsed days from one date to another. 
+
+----------------------------------------------------------------
+Figure 1 -- MBASIC version of DAYS.BAS
+----------------------------------------------------------------
+10 REM	* * * DAYS.BAS * * *  revised 7/30/87
+20 REM
+30 REM	MBASIC programa to calculate number of elapsed
+40 REM	days from one date to another
+50 REM
+60 VERS$="7/30/87"
+70 PRINT CHR$(26);
+80 PRINT "DAYS  vers. ";VERS$: PRINT
+90 PRINT "Calculate number of elapsed days from one date to another."
+100 PRINT "Enter dates in MMDDYY format--e.g., 070487 for July 4, 1987."
+110 PRINT "Years '00 through '30 are assumed to be 21st century."
+120 PRINT
+130 INPUT "First Date   : ";D$
+140 GOSUB 270
+150 DATE1=DAYNUM
+160 INPUT "Second Date  : ";D$
+170 GOSUB 270
+180 DATE2=DAYNUM
+190 DAYS=DATE2-DATE1
+200 PRINT "Elapsed Days = ";DAYS
+210 INPUT "Do another (y/n)";MSG$
+220 IF MSG$="Y" OR MSG$="y" THEN GOTO 120
+230 END
+240 REM
+250 REM	-- Parse and validate date
+260 REM
+270 M=VAL(MID$(D$,1,2))
+280 D=VAL(MID$(D$,3,2))
+290 Y=VAL(MID$(D$,5,2))
+300 IF Y<=30 THEN Y=Y+2000 ELSE Y=Y+1900
+310 IF M<1 OR M>12 OR D<1 OR D>31 THEN OK=0 ELSE OK=-1
+320 IF Y<1931 OR Y>2030 THEN OK=0
+330 IF OK THEN 400
+340	PRINT CHR$(7);
+350	INPUT "Bad date -- try again:";D$
+360	GOTO 280
+370 REM
+380 REM	-- Compute numeric date
+390 REM
+400 DAYNUM=365*Y+D+31*(M-1)
+410 IF M>=3 THEN DAYNUM=DAYNUM-INT(.4*M+2.3) ELSE Y=Y-1
+420 DAYNUM=DAYNUM+INT(Y/4)
+430 DAYNUM=DAYNUM-INT(.75*(INT(Y/100)+1))
+440 RETURN
+
+-----------------------End of Figure 1--------------------------
+
+
+Essentially, the program prompts for the two dates in question, 
+converts each date to the number of days elapsed since the begin- 
+ning of the Christian or common era (using the assumptions of the 
+Gregorian calendar reform), and then subtracts the two resulting 
+day numbers.  
+
+The program could be made to compile, with only minimal changes, 
+under SBASIC.  The significant points of difference are that 
+variables must always be declared under SBASIC and multiple 
+statements cannot be combined on the same line using ":".  But 
+although the program will run fine with such minimal changes, it 
+offers no improvement in elegance or clarity over its MBASIC 
+equivalent.  Figure 2, by contrast, illustrates SBASIC's 
+expressiveness.
+
+----------------------------------------------------------------
+Figure 2  -- SBASIC version of DAYS.BAS
+----------------------------------------------------------------
+comment
+	DAYS	revised 7/29/85
+
+	An SBASIC program to calculate the number of
+	elapsed days from one date to another
+end
+
+$constant ok = FFFFH
+
+var date = string : 20
+var m, d, y = integer
+var date1, date2 = real
+var another = char
+
+rem  Clear Kaypro screen
+procedure cls
+    print #0; chr(26);
+end
+
+rem  Sound console bell
+procedure beep
+    print #0; chr(7);
+end
+
+comment
+	Given month, day, and year, return a numeric date which
+	is equal to the number of days since the start of the 
+	Christian era. The result will be valid only for dates 
+	subsequent to the adoption of the Gregorian calendar 
+	reform.
+end
+function daynum(mo, da, yr = integer) = real
+    var n = real
+    n = 365 * yr + da + 31 * (mo - 1)
+    if mo >= 3 then 
+        n = n - int(.4 * mo + 2.3) 
+    else
+        yr = yr - 1
+    n = n + int(yr/4)
+    n = n - int(.75 * (int(yr/100) + 1))
+end = n
+ 
+procedure parse_date
+    m = val(mid(date,1,2))
+    d = val(mid(date,3,2))
+    y = val(mid(date,5,2))
+    if y <= 30 then
+        y = y + 2000
+    else
+        y = y + 1900
+end parse_date
+
+function check_date(mo, da, yr = integer) = integer
+    var result = integer
+    if mo < 1 or m > 12 or da < 1 or da > 31 then
+        result = not ok
+    else if yr < 1931 or yr > 2030 then 
+        result = not ok
+    else
+        result = ok
+end = result
+
+procedure get_date
+    var good_date = integer
+    repeat
+        begin
+            input date
+            parse_date
+            good_date = check_date(m, d, y)
+            if not good_date then
+                begin
+                    beep
+                    print "Invalid date. Try again: ";
+                end
+          end
+    until good_date
+end get_date
+
+rem	--  main program begins here
+
+cls
+text 0,\
+DAYS vers. 7/29/85
+
+Calculates number of elapsed days from one date to another.
+Enter dates in MMDDYY format, e.g., 070485 for July 4, 1985
+Years '00 through '30 are assumed to be 21st century.
+\
+
+repeat
+    begin
+        print
+        print "First date   : ";
+        get_date
+        date1 = daynum(m, d, y)
+        print "Second date  : ";
+        get_date
+        date2 = daynum(m, d, y)
+        print "Elapsed days = "; date2 - date1
+        input "Do another (y/n)"; another
+    end
+until not another
+
+end
+
+----------------------End of Figure 2---------------------------
+
+Perhaps the most obvious difference is that the SBASIC version 
+has no line numbers and no GOTO or GOSUB statements. Line numbers 
+are allowed in SBASIC but not needed unless the line in question 
+is the target of a GOTO or GOSUB, both of which can usually be 
+avoided thanks to SBASIC's support for named procedures and 
+functions, statement grouping with BEGIN and END, and the two 
+looping constructs WHILE...DO and REPEAT...UNTIL.  The actual 
+source code is longer than its MBASIC counterpart but hopefully 
+easier to follow, since the program is broken down into discrete 
+tasks and the flow of control is easy to visualize.  What's more, 
+once a particular function or procedure is written and debugged, 
+it becomes available as a building block for subsequent 
+programming efforts. (SBASIC has a powerful $include command that 
+allows functions and procedures to be gathered into library files 
+and then extracted as needed at compile time, saving not only the 
+labor of retyping a function or procedure known to be working, 
+but also avoiding the risk of silly typing errors.)
+
+     Any S-BASIC statement may be preceded by a line number.  
+Line numbers are optional, however, and need to appear only where 
+a reference is necessary, such as when the statement is the 
+target of a GOTO or GOSUB statement.  Line numbers need not be in 
+any particular order and do not control the sequence in which 
+statements are executed.  They are treated purely as labels.
+
+     A valid line number consists of at least one digit 
+optionally followed either by digits or non-reserved characters.  
+Non-reserved characters consist of alphabetic characters plus the 
+dot (.), dollar sign ($), ampersand (&), at-sign (@), and 
+underbar (_).  Thus, the following are valid line "numbers":
+
+     0025
+     100
+     99end
+     0test.routine
+
+     A statement may be either upper case or lower case ASCII 
+characters, as the compiler will internally convert all lower 
+case (except for text within quotation marks) into upper case.  
+Because quoted strings are not converted, filename arguments to 
+functions such as OPEN must be specified in upper case, or there 
+will be problems if an attempt is made to access the file from 
+the CP/M prompt.  Additionally, hexadecimal values must be 
+specified using upper case or they will not be recognized by the 
+compiler as numbers (thus 0DH, not 0dh).
+
+     The input buffers of the compiler are token-oriented.  This 
+means there is no limit to how long a physical line can be.  As a 
+practical matter, however, many text editors limit the length of 
+a physical line or do not properly display lines that are longer 
+than the width of the terminal.  In such instances, a backslash 
+(\) can be used to continue a logical line on to the next 
+physical line.  Everything from the backslash to the end of the 
+physical line is ignored, which means that you can, if you wish, 
+put a comment after the backslash. For example, the following 
+statement will be treated as a single line:
+
+     PRINT     FIRST.NAME,    \ student's first name
+               LAST.NAME,     \ student's last name
+               PHONE.NUMBER   \ student's phone number
+
+     Although the compiler itself is token-oriented, the S-BASIC 
+language is definitely line-oriented in the sense that an 
+end-of-line is treated as a statement termination.  S-BASIC 
+differs in this respect from some other structured programming 
+languages, such as PASCAL and C, which use semi-colons to 
+terminate or separate statements.  As a result, an individual 
+statement cannot be split willy-nilly over more than one physical 
+line unless the backslash is used to continue the line.  The only 
+exception is that S-BASIC does permit certain statements   in 
+particular, the IF ...THEN ... ELSE statement, the WHILE ... DO 
+statement, and the REPEAT ... UNTIL statement to be split at 
+defined points without having to use the backslash continuation 
+character.
+
+     Unlike some BASIC dialects, S-BASIC does not allow two or 
+more statements to be placed on the same physical line.  The only 
+exception is that a REM (remark) statement may follow on the same 
+line as another statement
+
+    For information concerning S-BASIC keywords, see the help 
+file (SBASIC.HLP)
+
+S-BASIC is a native-code compiler for a "structured" dialect of 
+the BASIC programming language for 8-bit microcomputers having a 
+Z80 CPU and running under the CP/M operating system.  S-BASIC 
+achieved a reasonably wide distribution as a result of being 
+included with the bundled software for the Kaypro II, IV and 10. 
+(Its creator, Gilbert Ohnysty, became Kaypro's chief of software 
+engineering). However, it never obtained much popularity, due in 
+part to its terse and often cryptic reference manual (which 
+lacked sufficient tutorial material) but also due, one suspects, 
+to the introduction of Turbo Pascal into the market place.  
+Nevertheless, S-BASIC remains a neat and elegant experiment in 
+programming language design.
+
+The files included with this distribution of S-BASIC are as 
+follows:
+
+SBASIC.COM     SBASIC compiler
+OVERLAYB.COM   compiler support file
+BASICLIB.REL   compiler support file
+USERLIB.REL    compiler support file
+
+SBASIC.HLP    a "help" file with information on key words, etc.
+
+Several example programs
+    XAMN.BAS        -  Disk editor
+    LIBRARY.BAS     -  A collection of useful functions
+    MEM.BAS         -  Display CP/M memory map
+
+NOTES.LBR     Explanations and tips
+    INTRO.TXT       - Introduction to SBASIC
+    EOF.TXT         - How to test for EOF on disk files
+    BDOSCALL.TXT    - How to call BDOS and BIOS functions
+    STRUCT.TXT      - Writing "structured" programs in SBASIC
+
+The "help" file is a straight ASCII file that is formatted for 
+viewing using any of the many CP/M public domain "help" 
+utilities.  One of those, HELP.COM,* is included in the event
+you don't have one.  Just type:  HELP SBASIC
+
+
+About SBASIC
+Creating SBASIC programs
+A short course in compiling
+Keywords
+Declaring variables
+Arithmetic and Logical Operators
+Declaring and calling procedures
+Declaring and calling functions
+Program control statements
+I/O statements
+Built-in functions
+Compiler directives
+Error codes
+: About SBASIC
+
+SBASIC is a native-code compiler for Z80-based computers using the CP/M
+operating system.  It implements an ALGOL-like "structured" dialect of
+the BASIC programming language and produces stand-alone .COM files.
+
+SBASIC supports local variables; recursion; statement grouping with 
+BEGIN ... END; looping with FOR ... NEXT, WHILE ... DO, and REPEAT ...
+UNTIL; multi-way decision-making with CASE; and user-defined procedures 
+and functions.  Line numbers are optional unless the line is the target 
+of a GOTO or GOSUB statement.
+
+: Creating SBASIC programs
+
+SBASIC programs may be created using any text editor that produces straight
+ASCII files without embedded control characters and without high bits set.
+The filename must have the extension .BAS, and the last line of the source
+file must be terminated with a carriage-return and line feed.  In general,
+SBASIC is not case sensitive either with respect to its own keywords or to
+user-defined names (variables, procedures, and functions)  Thus, "string",
+"STRING", and "String" are identical.  However, hexidecimal values must be
+specified using upper case: thus, "0DH" and not "0dh".  Also, file names 
+given as arguments to CREATE, OPEN, RENAME, and DELETE should be upper 
+case.
+
+: A short course in compiling
+
+When the compiler (SBASIC.COM) is invoked, the name of the source file is
+specified on the command line without the .BAS extension.  Instead, the
+filename is followed by a dot and 3 letters that specify the drives for 
+the source, object, and listing file, as follows:
+
+                      /---> source file drive (a to p)
+                     //---> object file drive (a to p, or z to omit)
+                    ///---> listing file drive (a to p, x for console,
+   A>sbasic myprog.xxx                          y for printer, or z to omit)
+
+It is also possible to specify the drive of the source file in the
+normal manner without any extension, in which case the object file will
+go on the same drive and the listing file will be displayed on the
+console, e.g.,
+
+   A>sbasic b:myprog
+
+The support files OVERLAYB.COM, BASICLIB.REL and USERLIB.REL must be on the
+logged-in drive while compiling.
+
+: SBASIC Keywords
+
+$CONSTANT       $INCLUDE        $LINES          $LIST           $LOADPT
+$PAGE           $STACK          $TRACE          ABS             AND
+ASC             ASCII           ATN             BASE            BASED
+BEGIN           CALL            CASE            CHAIN           CHR
+CHR$            CLOSE           COM             COMMENT         COMMON
+CONSOLE         COS             CREATE          DATA            DELETE
+DIM             DIMENSION       DO              ECHO            ELSE
+END             EQV             EXECUTE         EXP             FCB
+FCB$            FFIX            FILES           FINT            FIXED
+FOR             FRE             FUNCTIONS       GO              GOSUB
+GOTO            HEX$            IF              IMP             INITIALIZE
+INP             INPUT           INPUT1          INPUT2          INPUT3
+INPUT4          INSTR           INT             LEFT            LEFT$
+LEN             LET             LOCATE          LOCATION        LOG
+LPRINTER        MID             MID$            NEXT            NOT
+NUM$            OF              ON              OPEN		OR
+OUT             PEEK            POKE            POS		PRINT
+PROCEDURE       READ            REM             REMARK		RENAME
+REPEAT          RESTORE         RET             RETURN		RIGHT
+RIGHT$          RND             SGN             SIN		SIZE
+SPACE$          SPC             SQR             STEP		STOP
+STR$            STRING          STRING$         SUB		TAB
+TAN             TEXT            THEN            TO		UNTIL
+VAL             VAR             VARIABLE        WHILE		WRITE
+XLATE           XOR
+
+Note: the SBASIC manual suggests that there is a built-in function called
+LOG10 (in some editions of the manual, misprinted as LOGIC). However, the
+function is not actually implemented.
+: Declaring variables
+
+All variables must be declared in SBASIC.  Variables are of six types:
+
+    CHAR (or BYTE)              FIXED
+    STRING                      REAL
+    INTEGER                     REAL.DOUBLE
+
+Simple variables may be declared using the VAR, COMMON, and BASED kewyords.
+Arrays are declared using the DIM keyword and, if applicable, the COMMON
+or BASE keyword. The maximum length of a string variable may be specified
+as part of the declaration; if omitted, the default length is 80.
+
+Examples follow:
+
+   VAR INFILE = STRING:30
+   VAR X, Y, Z = INTEGER
+   VAR RATE = REAL
+
+   BASED IOBYTE = BYTE
+   COMMON ERROR_NUMBER = INTEGER
+
+   DIM REAL TEMPERATURES(20)
+   DIM INTEGER MATRIX(4,4)
+   DIM STRING:20 LASTNAMES(100)
+   DIM BASE BYTE DISK_PARAMETERS(16)
+   DIM COMMON INTEGER HISCORES(10)
+
+Simple variables declared with VAR are placed in the data segment of the
+compiled code.  Variables declared using the COMMON statement are placed
+in a special data segment that will be preserved during program chaining.
+Variables declared using the BASED statement are positioned at run-time
+using the BASE statement to specify the address, e.g.,
+
+   BASE IOBYTE AT 0003H
+
+Arrays are dynamically created at run-time and do not occupy space in the
+compiled code unless they are declared as COMMON.  Arrays declared as BASE
+are positioned at run-time using the LOCATE statement.
+
+CHAR or BYTE variables occupy 1 byte.  Character constants may be specified
+using single quotes, e.g., 'A', or in decimal or hexidecimal form, e.g., 64
+or 40H.
+
+INTEGER variables occupy 2 bytes and may take signed decimal values from
+-32768 to +32767 or unsigned hexadecimal values from 0000H to FFFFH.
+
+FIXED variables occupy 6 bytes and can represent a sign and 11 digits in
+packed BCD form, with 3 digits to the right of the decimal point. The
+maximum value that can be represented is 99,999,999.995.
+
+REAL variables occupy 4 bytes and can represent floating point values up
+to 6 digits. Constants may be expressed as, e.g., 3.14159 or 3.14159E+1. 
+
+REAL.DOUBLE variables occupy 7 bytes and can represent floating point values
+up to 14 digits.
+
+: Arithmetic and logical operators
+
+SBASIC supports the following operators:
+
+    ^ (or **)           exponentiation
+    +, -                absolute value and unary negation
+    +, -                addition and substraction
+    *, /                multiplication and division
+    <> (or #)           not equal
+    =                   equals
+    >                   greater than
+    <                   lesser than
+    >=                  greater than or equals
+    <=                  less than or equals
+    NOT, AND, OR,
+    XOR, IMP and EQV    logical operators
+
+For integers, -1 is evaluated as true and 0 as false.
+For fixed, real and real.double, 0 is false and any non-zero value is true.
+For characters, 'T','t','Y', and 'y' are true; any other value is false.
+For strings, only the first character is compared.
+
+: Declaring and calling procedures
+
+An example of a procedure declaration is as follows:
+
+    PROCEDURE WARNING(VALUE=INTEGER; MESSAGE=STRING)
+        PRINT MESSAGE; VALUE
+    END
+
+The procedure is called simply by invoking its name and arguments (if any),
+separated by commas and without using parentheses, e.g.,
+
+    WARNING "Value is out of range: ", x
+
+All arguments are passed by value.  Procedures may be defined within another
+procedure or within a function and may themselves contain procedure and
+function declarations.  Precedures may call themselves.
+
+: Declaring and calling functions
+
+An example of a function declaration is as follows:
+
+    FUNCTION SUM(X, Y = INTEGER) = INTEGER
+        VAR Z = INTEGER
+        Z = X + Y
+    END = Z
+
+The function is called simply by invoking its name, followed by its
+arguments in parentheses, e.g.,
+
+    PRINT SUM(78,56)
+
+All arguments are passed by value.  Functions may be defined within other
+functions and may call themselves.
+
+: Program control statements
+
+GOTO     transfers control to the indicated line number, e.g.,
+         GOTO 200 or GOTO 99end
+GOSUB    transfers control to the statement with the specified
+         line number, e.g., GOSUB 300 or GOSUB 0calc.  The subroutine
+         must be terminated with a RETURN statement, which will
+         transfer control to the statement following the GOSUB
+         statement.
+ON...GOTO
+         branch to one of several statements, depending on the value of
+         the integer expression following ON, e.g.,
+              ON X GOTO 1000, 2000, 3000
+         will branch to line numbers 1000, 2000, or 3000 depending on
+         whether the value of X is 1, 2, or 3
+ON...GOSUB
+         transfer to one of several subroutines, depending on the value
+         of the integer expression following ON.  When the subroutne is
+         complete, a RETURN statement will transfer control to the
+         statement immediately following the ON...GOSUB statement
+ON ERROR GOTO
+         transfer control to the specified line number if a fatal
+         error occurs.
+REPEAT...UNTIL
+         loop until the specified logical test is satisfied
+         syntax is REPEAT statement UNTIL expression
+         statement can be a compound statement using BEGIN and END
+WHILE...DO
+         loop while a specified logical test is true
+         syntax is WHILE expression DO statement
+         statement can be a compound statment using BEGIN and END
+IF...THEN...ELSE
+         execute a statment if the specified condition is satisfied, or,
+         optionally, an alternate statement if the condition is not
+         satisfied.
+         syntax is IF condition THEN statement [ELSE statement2]
+         either statement may be a compound statement using BEGIN and END
+FOR...TO...STEP
+         repeat execution of statement until the counting variable
+         exceeds the value of limit.
+         syntax is 
+              FOR variable = expression TO limit [STEP expression2]
+              NEXT [variable]
+         if STEP is omitted, the variable inreases by 1 each iteration
+         of the loop
+CHAIN    transfer control to another SBASIC program.
+         syntax is CHAIN "filename"
+EXECUTE  transfer control to a .COM file
+         syntax is EXECUTE "filename" [,"command line"]
+         "command line" will be executed *after* the .COM file returns control
+         to the operating system as though it were a line in a CP/M SUBMIT file
+
+: SBASIC input/output (I/O) statements
+
+SBASIC I/O statements are used to obtain data from a device (such as the
+keyboard or a modem) or file and to send data to a device or file.  Devices
+or files are normally designated by a number known as the file channel,
+although the channel need not be explicitly specified if input is from the 
+keyboard or output is to the console display, as these are the default.
+
+Device channels for PRINT and INPUT statements
+         Channel #              Input Device          Output Device
+         0                      Console               Console
+         1                      dummy                 List
+         2                      dummy                 Punch
+         3                      Reader                dummy
+         4                      Console Status        dummy
+         5                      Keyin                 dummy
+INPUT	syntax is INPUT [#channel]["prompt"{;,}] variable,...
+	if a semicolon follows the prompt, input will be accepted
+	immediately following the prompt, while a comma will cause
+	input to be accepted at the next 14-character tab position
+	If only one variable is given and it is type STRING, everything 
+	typed until the <RETURN> or <ENTER> key is pressed (including 
+	commas and quotes) will be assigned to the variable.
+	If only one variable is given and it is type CHAR, only a single 
+	key press is required (i.e., the user need not press <RETURN> or 
+	<ENTER>.
+INPUT1	Same as INPUT, except cursor does not advance to next line
+INPUT2	Same as INPUT, except a question mark is not printed 
+INPUT3	Same as INPUT, except a question mark is not printed and cursor 
+	does not advance to next line
+PRINT	syntax is PRINT [#channel][data{;,}][data...{;,}]
+        a semicolon between data items causes them to be printed
+        one immediately following the other, while a comma causes
+        them to be displayed in columns 14 characters apart.
+        a semicolon following the last data items causes the 
+        cursor to remain at the position immediately following the
+        last character printed, while omission of such punctuation
+        causes the cursor to move to the next line.
+CONSOLE makes the console the default destination of all subsequent
+	PRINT statements
+LPRINTER makes the printer the default destination of all subsequent
+	 PRINT statements
+TEXT    multiline equivalent of the PRINT statement
+        syntax is TEXT channel,delimiter text delimiter{;,}
+        delimiter can be any character that is not in the text, such
+        as %, &, \, or "
+        note that the channel number is not preceded by a # character
+        a terminal semicolon or comma operates just as in the PRINT
+        statement
+PRINT USING
+         formatted print statment
+         syntax is PRINT USING "format string" [#channel]; data...
+         following formatting characters are recognized:
+         .    decimal point
+         ,    inset comma ever three digits
+         #    one digit of numeric output
+         ^    exponential format
+         **   fill field with leading asterisks
+         $$   place floating dollar sign at beginning of number
+         !    first character of string
+         &    entire string
+         /    beginning and end of string field
+         +    display sign of number whether positive or negative
+         -    disply sign of number only if negative
+         \    treat next character literally
+
+CREATE   create a directory entry for the specified file name, e.g.,
+              CREATE "DATAFILE.DAT"
+DELETE   erase the file having the specified name, e.g.,
+              DELETE "DATAFILE.DAT"
+RENAME   change the name of an existing file, e.g.,
+              RENAME "OLDDATA.DAT" TO "NEWDATA.DAT"
+INITIALIZE
+         reset all disks to read/write status
+         allows writing to disk after a disk change
+FILES    declare file channels
+         syntax is FILES {S,SA,R,or RA}(size), ...
+         R indicates a random access file, S a sequential access
+         file. An A added to the S or R means that the file is an ASCII
+         rather than binary file.  For a random access file, size is the 
+         number of bytes per record (with multiples of 128 bytes being most
+         efficient), while for sequential access files, size is the
+         buffer size in 128-byte sectors. The first file declared
+         will be channel 0, the next channel 1, etc.  To preserve
+         device channels with the same number, D (for "dummy")
+         can be used. Thus, to declare two sequential access
+         disk files with 4-sector buffers while preserving
+         device channels 0 and 1 (the console and printer), use
+              FILES D, D, S(4), S(4)
+OPEN     assign a disk file to a file channel (note: the channel
+         must have been previously declared with the FILES statement
+         syntax:  OPEN #channel; "filename"
+CLOSE    close a previously-opened disk file
+         systax:  CLOSE #channel
+WRITE    write data to a disk file (note that the PRINT statement
+         can be used instead to write ASCII (i.e., text) data to
+         a sequential access file)
+         syntax: WRITE #channel; expression,...    (sequential file)
+                 WRITE #channel,record; expression,... (random file)
+READ     read data from a disk file (the INPUT statement can be
+         used instead to read ASCII (i.e., text) data from a 
+         sequential access file)
+         syntax: READ #channel; variable,...     (sequential file)
+                 READ #channel,record; variable,...  (random file)
+          
+: Built-in functions
+
+ABS(real expression) - return absolute value of expression
+ASC(string) - return ASCII value of first character in string
+ASCII(string) - same as ASC
+ATN(real expression) - return angle (in radians) whose tangent is expression
+CHR(integer expression) - return character having specified value
+CHR$(integer expression) - same as CHR
+COS(radians) - return cosine of specified angle
+EXP(real expression) - return e (2.71828) to the specified power
+FCB$(filename) - return string properly formatted for a CP/M FCB
+FCB(filename) - same as FCB$
+FFIX(fixed value) - integer part of FIXED type value
+FINT(fixed value) - greatest integer not greater than FIXED type value
+FIX(real expression) - integer part of expression
+FRE(0 or 1) - if 0, amount of free memory, otherwise blocks used on
+    current drive
+HEX$(numeric expression) - string of hexidecimal representaton of expression
+INP(integer expression) - return value at port specified by expression
+INSTR(n,string1,string2) - position of string2 within string1 beginning at
+    position n; returns 0 if not found
+INT(real expression) - greatest integer not greater than expression
+LEFT$(string,n) - leftmost n characters in string
+LEN(string) - length of string
+LOG(real expression) - natural logarithm of expression
+MID$(string,i,n) - substring of n characters in string beginning at i
+NUM$(real expression) - string representation of expression
+PEEK(address) - byte value at address in memory
+POS(integer expression) - if expression is positive, returns print position on
+    corresponding output channel; if negative, returns current line count for
+    that channel. (To determine line count for console, specify 255 rather 
+    than "-0").  Print position and line positions are reset by CR and FF, 
+    respectively.
+RIGHT$(string,n) - rightmost n characters of string
+RIGHT(string,n) - returns characters beginning at n through end of string 
+    (note that this is *not* the same as RIGHT$)
+RND(real expression) - random number between 0 and 1 if expression <> 0, 
+    last random number if expression = 0 
+SGN(numeric expression) - 1 if positive, -1 if negative, 0 if zero
+SIN(radians) - return sine of specified angle
+SIZE(filename) - return size of disk file in blocks; filename may include 
+    wildcards
+SPACE$(integer expression) - string of specified number of spaces
+SPC(integer expression) - same as SPACE$
+SQR(real expression) - square root of expression
+STR$(numeric expression) - same as NUM$
+STRING$(n,c) - string of length n composed of characters having value c;
+    note that c can be either a character or integer constant, e.g.,
+    STRING$(20,'-') and STRING(20,45) both print 20 dashes
+STRING(n,c) - same as STRING$
+TAB(integer expression) - string of spaces sufficient to move print head to 
+    position specified by expression
+TAN(radians) - return tangent of specified angle
+VAL(string) - return numeric value of string argument
+XLATE(string1,string2) - replace each character in string1 by character
+    in string2 based on ASCII values (i.e., string2 is a translation
+    table).
+
+: Compiler directives
+$LINES        suppresses line number generation during compilation;
+              this speeds up program execution, at the cost of
+              meaningful error messages, and should be used only
+              after the program is fully debugged
+		This also stops ^C aborting the program 
+$PAGE         advance listing to a new page
+$TRACE        enable program tracing in which the current line
+              being executed is displaced on the console; can be
+              turned on and off with Control-T
+$CONSTANT     give a meaningful name to an integer constant, e.g.,
+                  $CONSTANT MAX=100
+$INCLUDE      inserts the contents of another SBASIC source file or
+              of a module within that file.
+              syntax is $INCLUDE filename [module name]
+              note that filename should not be enclosed in quotes and
+              is assumed to have .BAS extension
+$MODULE       mark start of named module in library source file, e.g.
+                  $MODULE ALLCAPS
+              the module name may be the same as an existing function,
+              procedure, or variable
+$END.MODULE   mark end of named module in library source file
+$STACK        set runtime stack location, e.g., $STACK DE00H
+$LOADPT       change location of compiled code from 100H to another location
+              in memory, e.g., $LOADPT DE00H
+
+: Error codes
+
+01    LOG <= 0				16    READ on unopened file
+02    CHAIN/EXECUTE open		17    Fixed division by zero
+03    Sequential-type file not found	18    Overflow/Underflow
+04    Random-type file not found	19    Out of string data
+05    Sequential-type file close	20    Out of numeric data
+06    Random-type file read		21    Real division by zero
+07    Extending file			22    Real.double division by zero
+08    End of disk data			23    Subscript out of bounds
+09    Random record			24    String input
+10    Random-type file not open		28    Number too large/small
+11    No more directory space		29    Insufficient input
+12    Read/write past end of record	31    Too many characters; max is 255
+13    Sequential-type write		33    Out of memory
+14    WRITE on unopened file		37    Bad channel number
+15    Read past end of file		38    Input file read
+
+The error code is placed in memory at location 0103H.
+
+
+                STRUCTURED PROGRAMMING IN SBASIC
+
+The "S" in S-BASIC stands for "structured."  If you are new to 
+programming you may be excused for wondering exactly what is 
+meant by "structured programming."  Sometimes it seems as if 
+there are as many definitions as there are writers who have 
+undertaken to define it.  Structured programming is sometimes 
+(superficially) described as "GOTO-less programming," since its 
+proponents strongly urge the use of WHILE and REPEAT loops in 
+place of unrestrained branches using the GOTO statement.  But 
+structured programming is based on more than simply avoiding 
+GOTOs.  Local variables, statement grouping, the decomposition of 
+programs into modules, "top-down" design, and "step-wise" 
+refinement are all important concepts.
+
+Among the earliest proponents of structured programming was the 
+noted computer scientist Edsger W. Dijkstra, whose classic paper 
+"Notes on Structured Programming," written in 1969, takes the 
+positon that "the art of programming is the art of mastering 
+complexity, of mastering multitude and avoiding its bastard chaos 
+as effectively as possible."  Dijkstra argues that 
+well-structured programs not only increase confidence in their 
+correctness, but are much easier to modify and maintain.  In 
+support of his position concerning program correctness and 
+clarity, he presents an example program -- coded in ALGOL 60 -- 
+to print the first 1000 prime numbers.  Since S-BASIC's syntax 
+borrows heavily from ALGOL 60, the program he describes is easily 
+translated into S-BASIC and provides a working example for the 
+beginning programmer.
+
+Before tackling Dijkstra's example, some general comments are 
+appropriate concerning S-BASIC program structure.  The S-BASIC 
+manual suggests the following order for program elements:
+
+        Common variables
+        Variables global to the total program
+	Functions and procedures
+	Variables global to main program only
+	Main body of program
+	Data statements
+
+Although the manual does not explicitly say so -- and although S- 
+BASIC is not particularly fussy and allows functions and 
+procedures, as well as variables, to be declared throughout a 
+program, not just at the beginning -- a function or procedure 
+must nevertheless be declared before it is actually used. This 
+means that a program cannot literally be presented in "top-down" 
+form (with the main body at the beginning, followed by supporting 
+routines), since every supporting function or procedure must be 
+declared before the point in the code where it is invoked.
+
+Additionally, although S-BASIC allows local variables and the 
+formal parameters to procedures and functions to have the same 
+names as a global variables, the compiler will complain if the 
+global variable is declared first.  So, for example, the 
+following will not compile:
+
+		var x, y = integer
+
+		procedure showresult (x=integer)
+			var y = integer
+			input "Enter value"; y
+			print x * y
+		end
+
+However, if the declaration of the global variables is moved to 
+follow, rather than precede, the procedure declaration, there 
+will be no problem, and the formal parameter x and the local 
+variable y will be treated as distinct from the global variables 
+x and y.  Of course, if a procedure or function must operate on 
+a global variable that is not passed as an argument, the variable 
+must be declared before the procedure or function -- which is why 
+the manual distinguishes between variables "global to the whole 
+program" and those "global to the main program only."  
+
+The most common type of data structure that must be "global to 
+the whole program" is arrays, since S-BASIC does not support 
+passing arrays as parameters to functions and procedures.  The 
+other situation in which a variable would conveniently be 
+declared "global to the whole program" is when the function or 
+procedure must modify the value of the variable.  In S-BASIC all 
+arguments to functions and procedures are passed by value, not by 
+reference, with the result that a procedure or function cannot 
+modify an external variable that is passed as an argument.  
+(Actually, there is a method of doing so, but it requires the 
+programmer to jump through hoops by passing the address of the 
+variable -- obtained using the LOCATION statement -- rather than 
+the variable itself.)  Where a routine needs to modify the value 
+of a single passed variable, the subroutine can be written as a 
+function that returns the modified value, which can then be 
+assigned to the external variable.  So, for example, a routine to 
+convert a character to upper case could be written as follows:
+
+         function uppercase(ch = char) = char
+         begin
+              if ch >= 'a' and ch <= 'z' then
+                   ch = ch - 32
+         end = ch
+
+It might then be invoked as follows:
+
+         var letter = char
+         input "Your choice (A-Z)"; letter
+         letter = uppercase(letter)
+
+But if the routine needs to modify several values this technique 
+won't work.
+
+Let's go ahead and tackle Dijkstra's example, which is to 
+instruct a computer to print a table of the first thousand prime 
+numbers, with 2 being considered as the first prime number.  
+Dijkstra explains that he chose the example because on the one 
+hand it is sufficiently difficult to serve as a model for some of 
+the problems encountered in programming, while at the same time 
+the mathematical background is sufficiently simple and familiar 
+as to not usurp the student's attention.
+
+The simplest form of the program is
+		
+	"print first thousand prime numbers"
+	end
+
+If "print first thousand prime numbers" were already part of S- 
+BASIC's instruction repertoire, the job would be finished.  But 
+it's not, so we must compose the program from more primitive 
+actions that achieve the desired effect.  The first step is to 
+separate the generation of the prime numbers and their printing.  
+This give us:
+
+	var "table p"
+	"fill table p with first thousand prime numbers"
+	"print table p"
+	end
+
+Again, if "fill table" and "print table" were included in S- 
+BASIC's instruction repertoire (and "table p" among the 
+implicitly available resources), then the problem would be 
+solved. Since this is not the case, the next refinement is to 
+express how the effect of these two actions can be accomplished 
+by further (sub)computations.  Apart from that, we have to 
+decide how the information to be contained in the still rather 
+undefined object "table p" is to be represented.
+
+Tackling the latter issue first (since it will necessarily affect 
+how we implement "fill table" and "print table") two alternatives 
+immediately present themselves.  On the one hand, we can arrange 
+the information in the form of a linear boolean array (with 
+consecutive elements associated with consecutive natural numbers) 
+indicating whether the natural number in question is a prime 
+number or not.  Number theory gives us an estimate of the number 
+of the 1,000th prime number and thereby a boundary of the length 
+of the array that will suffice.  Alternatively, we can choose an 
+integer array in which the successive prime numbers will be 
+listed.  This second approach makes it easy to answer the 
+question "what is the value of the k-th prime number, for k less 
+than or equal to 1000?"  With this decision made, we can rewrite 
+the previous outline as follows:
+
+	dim integer p(1000)
+	"fill table p with first thousand prime numbers"
+	"print table p"
+	end
+
+Even though "fill table" and "print table" are not part of S- 
+BASIC's instruction repertoire, a structured language allows us 
+to pretend that they are by declaring procedures or functions to 
+accomplish those tasks.  Of course, we'll have to flesh them out 
+at some point, but in terms of writing the program we can simply 
+take it on faith that the details will be hammered out in due 
+course.  Our next refinement, therefore, might be the following:
+
+	dim integer p(1000)
+
+	procedure fill.table
+	"for k from 1 through 1000 make p(k) equal to kth prime number"
+        end
+
+	procedure print.table
+        "print p(k) for k from 1 through 1000"
+        end
+
+	fill.table
+	print.table
+	end
+	
+Rather than repeat all the gory details of how Dijkstra arrived 
+at the final form of the program -- which involved a number of 
+false steps along the way -- it seems best simply to show the 
+final form of the procedure fill.table.  Here it is:
+
+    rem - for k from 1 through 1000 make p(k) equal kth prime number
+    procedure fill.table
+        var k, j, square, ord = integer
+        p(1) = 2
+        k = 1
+        j = 1
+        ord = 1
+        square = 4
+        while k < 1000 do
+            begin
+                var jprime = integer
+                repeat
+                    begin
+                        var n = integer
+                        j = j + 2
+                        while square <= j do
+                            begin
+                                mult(ord) = square
+                                ord = ord + 1
+                                square = p(ord) * p(ord)
+                            end
+                        n = 2
+                        jprime = true
+                        while n < ord and jprime = true do
+                            begin
+                                var r = integer
+                                while mult(n) < j do
+                                    mult(n) = mult(n) + p(n)
+                                r = j - mult(n)
+                                jprime = (r <> 0)
+                                n = n + 1
+                            end
+                    end
+                until jprime
+                k = k + 1
+                p(k) = j
+            end
+    end
+
+A few comments may help to understand what is going on.  To 
+increase the speed of computation, Dijkstra makes use of the 
+knowledge that, apart from 2, all further prime numbers are odd, 
+so that only odd numbers need to be checked. He also makes use of 
+the knowledge that when testing whether a number is prime, we 
+need only try prime factors.  What is more, the prime factors to 
+be tried can already be found in the filled portion of the array 
+p.  Finally, for any given number j, we can stop once the test 
+divisor exceeds the square root of j. (The value of this limit is 
+assigned to the variable "ord").  In what he describes as "an 
+unexpected turn," he assumes the absence of built-in division and 
+uses a supplemental integer array called "mult" to efficiently 
+determine whether p(n) divides j without a remainder.  (S-BASIC 
+does of course have built-in division, but somewhat surprisingly 
+has no operator or function to compute the remainder -- an 
+omission it shares with ALGOL 60.  So Dijkstra's approach is 
+well-suited for S-BASIC, even though it is not that difficult, as 
+we will see in a moment, to write our own functon to compute a 
+remainder.)
+
+Although this is a discussion of program structure rather than 
+the peculiarities of S-BASIC syntax, some brief observations are 
+nevetheless appropriate.  Notice that in the declaration of the 
+two arrays p and mult, the names are not separated by commas. 
+This is not a typographical error, but simply an example of the 
+syntactic inconsistencies that show up from time to time in 
+S-BASIC.  In particular, the syntax of arrays differs in a number 
+of ways (for no apparent good reason) from that of simple 
+variables.  For example, arrays that are to be positioned at 
+run-time are declared BASE and positioned using LOCATE..AT, while 
+variables are declared BASED and are positioned using BASE..AT.
+
+Note also the declaration of jprime (which was declared BOOLEAN 
+in the ALGOL 60 version of the program) as an integer, together 
+with the use of $CONSTANT to supply a value for "true". Although 
+S-BASIC has no explicit boolean data type, it fully supports 
+boolean operations and allows strings, characters, and integers 
+to be compared as though they were boolean variables.  For 
+integers, the value 0 is treated as "false", while -1 (FFFFH), 
+the bit-wise negation of zero, is treated as "true".  For 
+characters and strings, 'Y', 'y', 'T', and 't' are treated as 
+true, while 'N', 'n', 'F', and 'f' are treated as false.
+                        
+Finally, a couple of stylistic points.  First, you will observe 
+that I have chosen to use lower case throughout and have not 
+typed reserved words in upper case.  My personal view is that 
+lower case is both cleaner and easier to read.  In particular, 
+the common practice in some programming languages of using upper 
+case for reserved words serves no useful purpose that I can 
+discern.  However, you are certainly free to type reserved words 
+(or for that matter, the entire program) in upper case if you 
+wish: the compiler doesn't care.  Second, although S-BASIC is 
+line-oriented in the sense that statements are separated by 
+end-of-line rather than by, for example, semi-colons (as in ALGOL 
+60), the statements BEGIN and END need not necessarily occupy 
+their own lines. Thus, you are free, if you wish, to write the 
+inner loop of fill.table as follows instead of the way previously 
+shown:
+
+         while n < ord and jprime = true do begin
+              var r = integer
+              while mult(n) < j do
+                  mult(n) = mult(n) + p(n)
+              r = j - mult(n)
+              jprime = (r <> 0)
+              n = n + 1
+         end
+
+But back to our example program.  Dijkstra does not show the 
+coding of print.table, leaving that as an exercise for the 
+reader.  I have chosen to implement a four-across display, with a 
+pause every 20 lines.  The procedure print.table makes use of two 
+user-defined routines, one being a function (the syntax of which 
+is borrowed from the programming language PL/I) to compute 
+the remainder, and the other being a procedure to pause the 
+display and wait for the user to press any key to continue.  Since 
+S-BASIC is a block-structured language, and since the two 
+supporting subroutines are not needed outside print.table, I 
+could have declared them inside print.table.  Some would argue 
+that such an approach would be cleaner. For my own part, however, I
+find the nesting of procedures or functions within other procedures
+or functions to be confusing and difficult to read.
+
+Declaring the supporting routines outside print.table also avoids 
+potential problems with what the S-BASIC manual describes as the 
+"scope of recursion" (more accurately, the scope of variables 
+during recursion).  Like most modern programming languages, 
+S-BASIC supports recursion, that is, the ability of a procedure 
+or function to call itself.  In order for that to work, each new 
+invocation of the procedure or function must create a new set of 
+local variables.  The problem is that S-BASIC will create new 
+variables not only when a procedure or function calls itself, but 
+also in a number of other non-obvious situations, such as when 
+one nested procedure or function calls another.  Trying to keep 
+track of S-BASIC's arcane rules on recursion is sufficiently 
+difficult that the safer course is simply to avoid nested 
+procedures or functions altogether unless there is a very good 
+reason to use them.
+
+In any event, here is the final form of the program, including 
+print.table and its supporting routines:
+
+    comment
+        primes.bas
+        generate and display first 1000 prime numbers
+    end
+
+    $constant true = FFFFH
+
+    dim integer p(1000) mult(30)
+
+    rem - compute p mod q
+    function mod(p, q = integer) = integer
+    end = p - q * (p / q)
+
+    rem - wait for user to press any key
+    procedure pause
+        var ch = char
+        echo off
+        input3 "(more)"; ch
+        echo on
+        rem - allow program exit on Ctrl-C or ESC
+        if ch=3 or ch=27 then stop
+    end
+
+    rem - for k from 1 through 1000 make p(k) equal kth prime number
+    procedure fill.table
+        var k, j, square, ord = integer
+        p(1) = 2
+        k = 1
+        j = 1
+        ord = 1
+        square = 4
+        while k < 1000 do
+            begin
+                var jprime = integer
+                repeat
+                    begin
+                        var n = integer
+                        j = j + 2
+                        while square <= j do
+                            begin
+                                mult(ord) = square
+                                ord = ord + 1
+                                square = p(ord) * p(ord)
+                            end
+                        n = 2
+                        jprime = true
+                        while n < ord and jprime = true do
+                            begin
+                                var r = integer
+                                while mult(n) < j do
+                                    mult(n) = mult(n) + p(n)
+                                r = j - mult(n)
+                                jprime = (r <> 0)
+                                n = n + 1
+                            end
+                    end
+                until jprime
+                k = k + 1
+                p(k) = j
+            end
+    end
+
+    rem - print p(k) for k from 1 through 1000
+    procedure print.table
+        var i, col = integer
+        i = 1
+        col = 1
+        while i <= 1000 do
+            begin
+                rem - display four columns across
+                print p(i),
+                if col >= 4 then
+                    begin
+                        print
+                        col = 1
+                    end
+                else col = col + 1
+                rem - pause every 80 numbers (= 20 lines)
+                if mod(i,80) = 0 then
+                    begin
+                        pause
+                        print string$(75,'-')
+                    end
+                i = i + 1
+            end
+    end
+
+    rem - main program begins here
+
+    fill.table
+    print.table
+
+    end
+
+And that's it.  Of course, once the program is up and running, 
+there are any number of things you could do to make it more 
+polished, but such enhancements are easy to add if the initial 
+structure has been properly thought out.  For example, in a real 
+program, you would probably want an informative sign-on.  This is 
+easy to provide by simply declaring another procedure for that 
+purpose, something like this:
+
+    procedure signon
+        print "PRIMES vers. 1.0"
+        print
+        print "Generating first 1000 prime numbers"
+        print "(please be patient) ..."
+    end
+
+Then all you need to do is add a single line to the main program:
+
+    signon
+    fill.table
+    print.table
+    end
+
+The next improvement might be some form of "heart beat" to track 
+the progress of the program, since finding 1000 primes does take 
+some time on a 4 mHz Z-80 system, and an impatient user might 
+erroneously assume (after 30 seconds or so of inactivity) that 
+the program was "hung" in an endless loop.  But adding that 
+refinement is left, as they say, as an exercise for the reader!
+
+
+
+                          SBASIC Notes
+
+                       Calling on the BDOS
+
+
+     SBASIC has a CALL function that invokes a machine language
+routine located somewhere in the machine's memory space.  The CALL
+function takes one of two forms depending on whether there is a
+need to pass values in the CPU registers.
+
+	CALL (addr)
+	CALL (addr, var1, var2, var3, var4)
+
+"addr" is either an integer constant or integer variable that
+specifies the address of the machine language routine, while var1
+through var4 are integer variables that represent 16-bit values
+passed to and from the HL, DE, BC, and AF register pairs,
+respectively.  It is important to note that var1 through var4
+must be variables, not constants, since the CALL function expects
+to be able to assign the updated values of the registers to the
+arguments.  SBASIC passes control to the machine language routine
+with a CALL opcode, and the routine must terminate with a return
+(RET) opcode.  The SBASIC manual has a good (and for once
+reasonably clear) example of how a machine language routine can
+be written in assembly language and incorporated in the .COM file
+produced by the SBASIC compiler.
+
+     Many SBASIC programmers will never have the need or
+inclination to write their own assembly language routines.  There
+are, however, existing machine language routines provided by the
+CP/M operating system that are potentially very useful and that
+can easily be accessed with the CALL statement.  I'm speaking of
+the services provided by the CP/M module known as the Basic Disk
+Operating System, or BDOS.  The BDOS provides a means for
+application programs to perform common input-output and file-
+maintenance operations without having to know anything about the
+underlying machine hardware.  To be sure, most of the services
+provided by the BDOS are duplicated by SBASIC's built-in
+statements, functions, and procedures.  There are a few services,
+however, that are not.  For example, there are no SBASIC
+facilities to determine or change the currently-logged drive or
+user area.  It is simple, however, to write a function or
+procedure to accomplish those tasks by calling on the BDOS.
+
+     The actual address of the BDOS varies from machine to
+machine.  However, CP/M provides a simple means for an
+application program to find the BDOS.  At memory location 0005H
+CP/M plants a 3-byte jump (JMP) instruction to the beginning of
+the BDOS.  The BDOS provides 39 services under CP/M 2.2, numbered
+0 through 40 (numbers 38 and 39 are undefined).  CP/M 3.0, also
+called CP/M Plus, provides additional services.  A list of these,
+and the parameters they take, are in the CP/M manuals.  The BDOS
+assumes that the desired service number is in the C register and
+that the E register or DE register pair contains contains the
+8-bit or 16-bit parameter (if any) required by the service. 8-bit
+return values are placed in the A register while 16-bit return
+values are placed in the HL register pair.  (The get file size
+service returns its value at a spcified location in a data
+structure called the File Control Block, or FCB, rather than in a
+register).
+
+     So, as an example, let's consider an SBASIC function to
+determine the currently-logged disk.  We need to declare four
+integer variables to pass values to and from the CALLed routine:
+
+	var a_psw, bc, de, hl = integer
+
+The BDOS function to get the currently logged disk is number 25.
+This particular function takes no other parameters.  So we assign
+25 to the variable bc (we don't care what values are in the other
+registers) and then CALL the BDOS via the jump vector at 0005H:
+
+	bc = 25		rem get currently logged disk
+	call (5H, hl,de,bc,a_psw)
+
+Upon return, the most significant byte (MSB) of a_psw holds the
+number (0 to 15) of the currently-logged disk.  To isolate the
+value of the A register, you can simply divide a_psw by 256.
+Since disk drives under CP/M are normally referred to by letter
+rather than by number, you would then normally add the ASCII
+value of "A" (=65) to the drive number to get the drive letter.
+Putting all this together, the final code would look something
+like this:
+
+	rem --  Returns the current logged drive ('A' to 'P')
+	function GetDrive = char
+           var a_psw, bc, de, hl = integer
+           bc = 25
+           call (5H, hl, de, bc, a_psw)
+        end = (a_psw / 256) + 65
+
+(Note that SBASIC allows you to treat character variables as
+though they were small integers.  In this respect, SBASIC is
+somewhat like the C programming language.  This means you can
+usually avoid having to use the ASC and CHR functions to convert
+between integer and character representations of CHAR and BYTE
+variables.)
+
+     Once the GetDrive function is declared, displaying the
+current logged drive is a breeze:
+
+	print "The currently-logged drive is ", GetDrive
+
+     A function such as GetDrive, once debugged, should
+definitely be placed in a library source file so that it can be
+used in other programs without the necessity of retyping the code
+(and possibly introducing mistakes in the process).  SBASIC has a
+powerful $INCLUDE statement that allows portions of a file to be
+selectively extracted from a library file and incorporated in an
+SBASIC program.  Individual modules in a library file can be
+surrounded with the $MODULE and $ENDMODULE keywords and given any
+convenient identifying name.  Fortunately, module names do not
+conflict with other user-defined names such as variables,
+functions and procedures.  So, for example, you might create a
+library file called LIBRARY.BAS or ROUTINES.BAS containing the
+following modules (plus any others, of course, you might write):
+
+================================================================
+Figure 1
+================================================================
+
+$module getdrive
+rem  -- Returns the current logged drive ('A' to 'P')
+function getdrive = char
+   var hl, de, bc, a_psw = integer
+   hl = 0
+   de = 0
+   bc = 19H
+   a_psw = 0
+   call (5H,hl,de,bc,a_psw)
+   a_psw = (a_psw / 256) + 65
+end = a_psw
+$end.module
+
+$module setdrive
+rem --  Set the logged drive ('A' to 'P')
+procedure setdrive (drive = char)
+   var hl, de, bc, a_psw = integer
+   rem -- make sure drive letter is upper case!
+   if drive >= 'a' then drive = drive - 32
+   hl = 0
+   de = drive - 65
+   bc = 0EH
+   a_psw = 0
+   call (5H,hl,de,bc,a_psw)
+end
+$end.module
+
+$module getuser
+rem -- Return current user area
+function getuser = integer
+   var hl, de, bc, a_psw = integer
+   hl = 0
+   de = 0FFH
+   bc = 20H
+   a_psw = 0
+   call (5H,hl,de,bc,a_psw)
+end = a_psw / 256
+$end.module
+
+$module setuser
+rem  -- Set the CP/M user area (0 to 15)
+procedure setuser (user = integer)
+   var hl, bc, a_psw = integer
+   hl = 0
+   bc = 20H
+   de = user
+   a_psw = 0
+   call (5H,hl,de,bc,a_psw)
+end
+$end.module
+
+
+================================================================
+
+     Then, the next time you wrote a program and needed to query
+or change the user number, you would just place the following
+lines at the beginning of the source code:
+
+	$include routines getuser
+	$include routines setuser
+
+Once you have done that, you can call on getuser and setuser at
+any point in the program where you need them.
+
+    You might wonder, if you can call BDOS routines from SBASIC,
+whether you can also call the routines that are part of the BIOS,
+CP/M's Basic Input/Output System.  The answer is yes, although
+normally there are good reasons for not making direct calls on the
+BIOS.  The BIOS contains the routines that interact directly with
+the machine's hardware and is the interface between the BDOS and
+the hardware.  Sometimes the BDOS can get confused if you by-pass
+it in favor of direct BIOS calls.  On the other hand, the BIOS
+offers some functionality that is not available through the BDOS.
+Most notably, the BDOS only deals with files, not with tracks and
+sectors.  There are no BDOS functions, for example, to write to
+the disk directory or to the reserved tracks on the disk.  So if
+you want to read and write raw disk sectors, it's the BIOS or
+nothing.
+
+    Unlike the BDOS, which has only a single entry point, the
+BIOS has separate entry points for each function.  Under CP/M
+2.2, there are 17 such entry points, which are located 3 bytes
+apart at the beginning of the BIOS.  The address of one of them,
+the warm boot entry, is stored at address 0001H in low memory.
+(It's preceded by a machine language JMP instruction at address
+0000H.) The address of the BIOS warm boot entry can easily be
+obtained by declaring a base-located integer variable and
+positioning it at 0001H.
+
+         based warmboot_entry = integer
+         base warmboot_entry at 1H
+
+The address of the other BIOS functions can then be obtained by
+adding the appropriate offset.  For example, the BIOS function to
+set the the track number on the currently-selected disk is 9
+entries (= 27 bytes) above the warm boot entry. A complete
+procedure, then, to set the track number for a subsequent disk
+read or write operation could be written rather simply as follows:
+
+         procedure settrack(n = integer)
+             based warmboot = integer
+             var a_psw, bc, de, hl = integer
+             base warmboot at 1
+             bc = n
+             call (warmboot+1BH,hl,de,bc,a_psw)
+         end
+
+An example of direct BIOS calls can be found in XAMN.BAS, a disk
+editor which is provided as one of the example programs on the
+SBASIC disk.
+
+                          SBASIC NOTES
+                               #2
+
+     One of SBASIC's more notable shortcomings is its lack of an
+end-of-file function.  Programming languages differ in how they
+deal with the end of a file.  Some treat it as an expected or
+normal occurance and provide some means of testing for it.
+Pascal is such a language.  Others treat it as an exception or
+error, something to be recovered from.  PL/I is an instance of
+the latter approach.  So, unfortunately, is SBASIC.
+
+     Where a program creates its own data files, the lack of an
+end-of-file function is no particular problem.  It's easy to 
+arrange for the size of the file to be stored as part of
+the first record.  That way the program, by keeping track of the 
+number of records read so far, can avoid attempting to read 
+beyond the end of file.  Alternatively, the program can write a 
+special value to the last record that serves as a sentinal.  But 
+there are a very large number of utility programs that deal with 
+data -- typically text -- created by other programs.  Many of 
+these utilities fall under the general classification of 
+"filters" -- programs that read a file and manipulate the 
+contents in some useful way.  The book Software Tools, by Brian 
+W. Kernighan and P. J. Plauger, describes a number of these 
+programs.
+
+     The problem of detecting end-of-file is further complicated 
+under CP/M because the operating system does not store file size
+information as an exact number of bytes, but only in terms of
+128-byte records.  For text files, there is a convention that the
+end of data is marked with a control-Z (ASCII code 26 decimal or
+1A hex).  However, text files created under other operating
+systems (Unix, for example) don't necessarily follow this
+convention, and it sometimes isn't followed even under CP/M if 
+the very last character in a text file falls on a 128-byte 
+boundary.
+
+     Let's take a simple example of a program to read a file
+created by the popular word processing program WordStar and
+write a file that consists of straight ASCII text.  WordStar sets
+the high bit on the final character of each word as well as on
+carriage returns that do not mark the end of a paragraph.
+(WordStar does other things to the file as well, but to keep the
+example simple, we'll ignore them for the moment).  Because we
+can't count on a control-Z marking the end of file, the following
+code will not always work:
+
+
+	var ch = character
+	input3 #2; ch
+	while (ch <> 1AH) do	rem Stop on control-Z
+	    begin
+		input3 #2; ch
+		if ch > 7FH then ch = ch - 80H
+		print #3; ch;
+	    end
+
+
+(This code assumes file channel 2 and 3 have been declared and
+opened for input and output, respectively.  Why subtraction
+rather than a more conventional AND operation is used to strip
+the high bit is reserved for a separate discussion).
+
+     This leaves two approaches.  The first is to accept that we
+are going to have to trap an end-of-file error and respond to it
+appropriately.  The result will be code that is unavoidably ugly,
+since SBASIC has only an ON ERROR GOTO and not an ON ERROR GOSUB
+statement.  Additionally, it lacks a RESUME statement.  Although
+the ugliness of GOTO statements is mitigated somewhat by the fact
+that SBASIC allows aphabetic characters in line "numbers" (which
+are treated simply as labels) the first character must still be a
+digit.
+
+     So, for example, our WordStar-to-ASCII filter might be
+written this way:
+
+
+	var ch = character
+	based errcode = integer
+	base errcode at 103H	rem SBASIC's error code location
+	on error goto 8_trap
+	input3 #2; ch
+	while ch <> 1AH do
+	    begin
+		input3 #2; ch
+		if ch > 7FH then ch = ch - 80H
+		print #3; ch;
+	    end
+        goto 9_done             rem Jump around error trap
+
+	rem Error code 15 signifies read or write past EOF
+	8_trap if errcode <> 15 then print "Runtime error  =";errcode
+
+        rem Make sure output file is properly terminated
+        9_done print #3; chr(1AH);
+
+
+     An alternate approach to the end-of-file problem is to
+determine, before processing the file, how big it is.  Armed with
+this information, we can simply keep track of the number of bytes
+processed and thereby avoid reading past the end of file.  SBASIC
+has a function, SIZE, which is supposed to provide the size of a
+disk file.  However, it returns that information as the number of
+disk "blocks" (allocation groups) occupied by the file, not bytes
+or 128-byte records.  Sadly, the size of a block is not a
+constant but varies from one disk format to another.  More
+distressing, not only is the value returned by the SIZE function
+not very helpful, experiments show that it is sometimes not even
+correct.
+
+     Fortunately, it is relatively easy to write our own
+function that will correctly return the number of 128-byte
+records in a file:
+
+     comment
+         Return size of named file as number of 128-byte records
+         Assumes file is on currently logged-in drive
+     end
+     function fsize(filename = string:20) = integer
+         var hl, de, bc, a_psw = integer
+         based fname = string:20
+         based sz = integer
+         dim byte workfcb(36)
+         location array de = workfcb
+         base fname at de
+         base sz at de + 33
+         fname = fcb$(filename)
+         workfcb(0) = 0
+         bc = 23H               rem BDOS get file size function
+         call (5,hl,de,bc,a_psw)
+     end = sz
+
+
+(There are a number of advanced SBASIC features at work in this
+routine, but the details will be passed over in the interest of
+keeping the present discussion focussed).
+
+     With fsize in hand, our previous code can be rewritten as
+follows:
+
+	var ch = character
+        var bytecount, records, filesize = integer
+        bytecount = 1
+        records = 0
+        filesize = fsize(filename)
+        input3 #2; ch
+	while (ch <> 1AH) and (records < filesize) do
+	    begin
+		input3 #2; ch
+                if bytecount = 128 then
+                   begin
+                       records = records + 1
+                       bytecount = 1
+                   end
+                else bytecount = bytecount + 1
+		if ch > 7FH then ch = ch - 80H
+		print #3; ch;
+	    end
+        print #3; chr(1AH);
+
+
+Admittedly, neither this nor the preceeding error-trap approach
+is as stright-forward or elegant as the corresponding code in
+Pascal or C, but both work reasonably well and expand the range
+of useful programs that can be written in SBASIC.
+
+
+comment
+	LIBRARY.BAS     revised  3/17/92
+	Useful routines for inclusion in SBASIC programs.
+	Syntax is: $include library_file module_name
+	Example:   $include library upcase
+end
+
+$module uppercase
+rem  Converts character to upper case
+function uppercase(ch = char) = char
+   if ch >= 'a' and ch <= 'z' then
+       ch = ch - 32
+end = ch
+$end.module
+
+$module allcaps
+rem  Converts string to all upper case characters
+function allcaps(source = string : 80) = string
+   var p = integer
+   for p = 1 to len(source) do
+       mid(source,p,1) = uppercase(mid(source,p,1))
+   next p
+end = source
+$end.module
+
+$module cls
+rem  Clears Kaypro screen
+procedure cls
+    print #0; chr(26);
+end cls
+$end.module
+
+$module ClrEol
+rem   clear Kaypro screen to end of line
+procedure ClrEol
+    print #0; chr(24); 
+end ClrEol
+$end.module
+
+$module cursor
+comment
+   Position Kaypro cursor at row, column
+   Home position = 1,1
+end
+procedure cursor(row, column = integer)
+   print #0; chr(27);'='; chr(row+31); chr(column+31);
+end cursor
+$end.module
+
+$module beep
+rem  makes "beep" sound
+procedure beep
+   print #0; chr(7);
+end beep
+$end.module
+
+$module mod
+rem  computes p mod q (since SBASIC lacks a mod operator)
+function mod(p, q = integer) = integer
+end = p - q * (p/q)
+$end.module
+
+$module log.10
+comment
+    computes the base 10 logarithm of its argument;
+    provides a working version of the phantom "log10" 
+    function mentioned in the SBASIC reference manual 
+end
+function log.10 (n = real) = real
+end = log(n) / 2.30258
+$end.module
+
+$module radians
+comment
+   converts degrees to radians. Necessary because SBASIC's
+   trig functions take arguments in radians, not degrees.
+end
+function radians(degrees = real) = real
+end = degrees * .0174533
+$end.module
+
+$module degrees
+rem  converts radians to degrees
+function degrees(radians = real) = real
+end = radians * 57.2958
+$end.module
+
+$module fac
+rem  Computes factorial (n!) of a number 
+function fac(n = real) = real
+    if n=0 then n=1 else n=fac(n-1)*n
+end =n
+$end.module
+
+$module bin$
+rem  Returns binary representation of byte as string
+function bin$(bchar = byte) = string
+var i, bint, bmask, shiftmask  = integer
+var bstr = string : 8
+    bint = bchar	rem promote to integer
+    bmask = 128
+    shiftmask = 127
+    bstr = "00000000"
+    for i = 1 to 8
+        mid(bstr,i,1) = chr((bint and bmask)/bmask + 48);
+	bint = (bint and shiftmask) * 2
+    next i
+end = bstr
+$end.module
+
+$module ipower
+comment
+	Raise x to the n power, where n is an integer.
+	Unlike SBASIC's exponentiation (^) operator,
+	this function returns a valid double-precision
+	result, but unlike the exponentiation operator,
+	is limited to integer powers.
+end
+function ipower(x = real.double; n = integer) = real.double
+var n1 = integer
+var y  = real.double
+    y = 1.0
+    while (n > 0) do
+	begin
+	    n1 = n/2
+	    if (2 * n1) < n then y = y * x
+	    n = n1
+	    x = x * x
+	end
+end = y
+$end.module
+
+$module setuser
+rem  -- Set the CP/M user area (0 to 15)
+procedure setuser (user = integer)
+   var hl, bc, a_psw = integer
+   hl = 0
+   bc = 20H
+   a_psw = 0
+   call (5H,hl,user,bc,a_psw)
+end
+$end.module
+
+$module setdrive
+rem --  Set the logged drive ('A' to 'P')
+procedure setdrive (drive = char)
+   var hl, de, bc, a_psw = integer
+   rem -- make sure drive letter is upper case!
+   if drive >= 'a' then drive = drive - 32
+   hl = 0
+   de = drive - 65
+   bc = 0EH
+   a_psw = 0
+   call (5H,hl,de,bc,a_psw)
+end
+$end.module
+
+$module getdrive
+rem  -- Returns the current logged drive ('A' to 'P')
+function getdrive = char
+   var hl, de, bc, a_psw = integer
+   hl = 0
+   de = 0
+   bc = 19H
+   a_psw = 0
+   call (5H,hl,de,bc,a_psw)
+   a_psw = (a_psw / 256) + 65
+end = a_psw
+$end.module
+
+$module getuser
+rem -- Return current user area
+function getuser = integer
+   var hl, de, bc, a_psw = integer
+   hl = 0
+   de = 0FFH
+   bc = 20H
+   a_psw = 0
+   call (5H,hl,de,bc,a_psw)
+end = a_psw / 256
+$end.module
+
+$module fsize
+comment
+    Return size of named file as number of 128-byte records
+    Assumes filename is uppercase
+end
+function fsize(filename = string:20) = integer
+    var hl, de, bc, a_psw, p = integer
+    based fname = string:20
+    based sz = integer
+    dim byte workfcb(36)
+    location array de = workfcb
+    base fname at de
+    base sz at de + 33
+    fname = fcb$(filename)
+    rem  See if drive was specified and set FCB accordingly
+    p = instr(1,filename,":")
+    if p = 0 then
+    	workfcb(0) = 0
+    else
+        workfcb(0) = asc(mid(filename,p-1,1)) - 64
+    bc = 23H			rem  BDOS filesize function
+    call (5,hl,de,bc,a_psw)     rem  result stored in sz
+end = sz
+$end.module
+
+
+
+
+comment
+	mem.bas  --  display CP/M memory map
+	written for SBASIC compiler
+	Addresses for BDOS and CCP are calculated from BIOS base 
+	and will reflect actual rather than apparent locations.  
+	TPA calculation will therefore correctly reflect reduction 
+	in available memory that occurs when a resident system
+	extension (RSX) is installed.  
+end
+
+var msize, tpa = real
+var rsx_installed = string : 5
+
+print "Start of BIOS   : "; hex$(peek(2) * 100H)
+print "Start of BDOS   : "; hex$((peek(2) - 0EH) * 100H + peek(6))
+print "Start of CCP    : "; hex$((peek(2) - 16H) * 100H)
+print
+
+msize = 256 * peek(2) 		rem  BIOS base
+msize = msize - 18944		rem  BIOS address in 20K system
+msize = (msize / 1024) + 20	rem  adjust and convert to K
+
+rem  Calculate available TPA in K based on apparent BDOS address
+tpa = 256 * (peek(7) - 1) / 1024
+
+print "CP/M size       :"; msize; "K"
+print "Available TPA   :"; tpa; "K"
+
+rem  check whether actual and apparent BDOS entries differ
+if peek(2) - 0EH = peek(7) then 
+    rsx_installed = "No" 
+else 
+    rsx_installed = "Yes"
+
+print "RSX installed   : "; rsx_installed
+
+end
+
+
+
+
+
+
+
+
+	$lines
+
+	REM XAMN Disk track and sector editor.
+	REM No warranty is made, expressed, or implied.
+	REM ----------------------------------------------------
+	REM Additional modifications 6/5/85 by S. Mitchell
+	REM to permit lower case input in response to menu
+	REM prompt, to advise user on exit procedure, and
+	REM and to correct misspellings in menu.
+	rem
+	rem Further modifications 4/25/86 by Stephen Mitchell
+	rem to permit lower case file name input, to ask for drive
+	rem letter rather than drive number, and to change exit
+	rem command to allow exit on either a '0' or the ESCape key
+        rem rather than control-C.
+	rem
+	rem Further modifications 10/15/87 to force put_sector
+	rem to write to disk, which it would not always do on
+	rem Kaypro because of deblocking algorithm.
+	REM ----------------------------------------------------
+
+	var	hl,de,bc,a_psw	; cpu registers
+		dph		; location of disk parameter header
+		block_size	; cp/m logical block size
+		max_tracks	; number of tracks/disk
+		seldsk		; bios select disk
+		settrk		; bios set track routine
+		setsec		; bios set sector routine
+		setdma		; bios set dma address
+		b_read		; bios read sector
+		b_write		; bios write sector
+		sectran		; bios sector skew
+		disk_number	; disk number to examine
+		= integer
+
+	var	crt		; logical device
+		list		; logical device
+		CR		; ASCII CR
+		BS		; ASCII BS
+		ascii_mask	; ASCII mask
+		bit_0_mask	; mask used to look at bit 0
+		true, false	; true/false logical flags
+		= integer
+
+	var	menu_selection	; prompt return
+		disk_letter	; disk drive to examine
+		= char
+
+	var	r1, r2, r3, r4	; Real number for computations
+		= real
+
+	based	spt		; sectors/track
+		dsm		; max data block number
+		drm		; number of dir blocks
+		off		; number of reserved tracks
+		wboot		; entry to bios
+		dpb		; location of disk parameter block
+		skew_table	; location of bios skew table (used by sectran)
+		alv		; pointer to allocation table
+		= integer
+
+	based	bsh		; block shift factor
+		blm		; block mask
+		exm		; extent mask
+		alloc_byte	; used in searching allocation table
+		= byte
+
+
+	crt = 0				rem S-BASIC device # for con:
+	list = 1			rem S-BASIC device # for lst:
+	CR = 0DH
+	BS = 8
+	ascii_mask = 007FH
+	bit_0_mask = 1
+	true = -1
+	false = not true
+
+	base wboot at 1			rem location of bios wboot entry
+	seldsk = wboot + 0018H		rem set up bios entry address
+	settrk = wboot + 001BH
+	setsec = wboot + 001EH
+	setdma = wboot + 0021H
+	b_read = wboot + 0024H
+	b_write= wboot + 0027H
+	sectran= wboot + 002DH
+
+	rem dma buffer for read/write sector operations
+	dim byte sector(128)
+	var loc_sector = integer
+	location array loc_sector = sector
+	dim base char file_chars(11) fcb_name(11)  byte_dm(15)
+	dim base integer word_dm(7)
+
+	based bios_return = byte	rem high order byte of a_psw
+	location var hl = a_psw
+	base bios_return at hl+1
+
+	function upcase(ch = char) = char
+   		if ch >= 'a' and ch <= 'z' \
+   		then ch = chr(asc(ch) - 32)
+	end = ch
+
+	function DiskNum(letter = char) = integer
+		var num = integer
+		letter = upcase(letter)
+		num = asc(letter) - 65
+	end = num
+
+	function allcaps(source = string : 80) = string
+	rem  Converts string to all upper case characters
+   		var p = integer
+   		for p = 1 to len(source) do
+   		mid(source,p,1) = upcase(mid(source,p,1))
+   		next p
+	end = source
+
+0seldsk	input "Which disk drive (A, B, C ... )";disk_letter
+	disk_number = DiskNum(disk_letter)
+	bc = disk_number
+	call ( seldsk, dph, de, bc, a_psw )
+	if dph=0 then 0seldsk
+	base skew_table at dph
+	base dpb at dph+10
+	base alv at dph+14
+	bc = loc_sector+1
+	call ( setdma, hl, de, bc, a_psw )
+
+	base spt at dpb
+	base bsh at dpb+2
+	base blm at dpb+3
+	base exm at dpb+4
+	base dsm at dpb+5
+	base drm at dpb+7
+	base off at dpb+13
+
+	block_size = 1024*(2^(bsh-3))
+	r1 = ((dsm+1)*(block_size/128))/spt
+	max_tracks = r1 + off
+
+	function physical_sec ( sectr = integer ) = integer
+		if skew_table=0 then sectr=sectr-1
+	end = sectr
+
+	function skew ( sectr = integer ) = integer
+		if skew_table<>0 then begin
+			bc = sectr - 1
+			de = skew_table
+			call (sectran, hl, de, bc, a_psw)
+			end
+		    else hl = sectr - 1
+	end = hl
+
+	procedure get_sector( track, sec = integer )
+		var x = integer
+		for x=1 to 128
+		  sector[x] = 0
+		next x
+		bc = track
+		call ( settrk, hl, de, bc, a_psw )
+		bc = sec
+		call ( setsec, hl, de, bc, a_psw )
+		call ( b_read, hl, de, bc, a_psw )
+		sector[0] = bios_return
+	end of get_sector
+
+	procedure put_sector( track, sec = integer )
+		var i = integer
+		bc = track
+		call ( settrk, hl, de, bc, a_psw )
+		bc = sec
+		call ( setsec, hl, de, bc, a_psw )
+		bc = 1		rem force write
+		call ( b_write, hl, de, bc, a_psw )
+		sector[0] = bios_return
+	end of put_sector
+
+	function ascii_character ( x = integer ) = char
+	  x = x and ascii_mask
+	  if x<32 then x = 46
+	end = x
+
+	procedure display_sector  ( device = integer )
+		var x, j = integer
+		for x=1 to 128 step 16
+			print hex$(x-1);"  ";
+			for j=0 to 15
+			  if j=8 then print ' ';
+			  print #device; right$(hex$(sector[x+j]),2);' ';
+			next hex byte
+			for j=0 to 15
+			  if j=8 then print ' ';
+			  print #device; ascii_character(sector[x+j]);
+			next ascii byte
+			print #device
+		next line of sector display
+	end of display sector
+
+0menu	print
+	print
+	print	"Drive number ...............";disk_number, "Current disk ";'A'+disk_number;':'
+	print	"Sectors/track ..............";spt, '['; hex$(spt) ;']'
+	print	"Tracks/Disk ................";max_tracks, '['; hex$(max_tracks) ;']',\
+"XAMN Disk editor"
+	print	"Number of reserved tracks ..";off, '['; hex$(off) ;']',\
+"Version 1.1c"
+	print	"# of logical blocks ........";dsm+1, '['; hex$(dsm+1) ;']'
+	print	"# of directory entries .....";drm+1, '['; hex$(drm) ;']'
+	print	"Block size .................";block_size, '['; hex$(block_size) ;']'
+	print	"128 byte sectors/block .....";block_size/128, '['; hex$(block_size/128) ;']'
+	print	"Disk size in K .............";(dsm+1)*(2^(bsh-3)), '['; hex$( (dsm+1)*(2^(bsh-3)) ) ;']'
+
+	text 0,%
+							Help
+		Examine a sector (physical)........ 1	 A
+		Examine a sector (logical skew).... 2	 B
+		Move Sectors ...................... 3	 C
+		Produce a map of a file ........... 4	 D
+		Produce a map of disk ............. 5	 E
+		Find bad sectors .................. 6	 F
+		Compute Block from Trk & Sec ...... 7	 G
+		Compute Trk & Sec from Block ...... 8	 H
+		Select disk ....................... 9	 I
+		Exit this program ................. 0 or ESC
+
+%
+	input2 "Please enter selection ==>"; menu_selection
+	menu_selection = upcase(menu_selection)
+
+	var track, sectr =integer
+	var letter = char
+
+	function group ( trk, sec = integer ) = integer
+		var sectrs, grp = real
+		sectrs = ((trk-off)*spt)+sec-1
+		grp = sectrs/(block_size/128)
+	end = grp
+
+	procedure trk_sec ( grp = integer ) = integer
+		var sectrs, sec, trk = real
+		sectrs = grp*(block_size/128)
+		trk = sectrs/spt
+		track = trk + off
+		sec = sectrs-((track-off)*spt)
+		sectr = sec + 1
+	end
+
+	procedure bump ( amount = integer )
+		sectr = sectr + amount
+		if sectr>spt then begin
+			track = track +1
+			if track>=max_tracks then track=max_tracks-1
+			sectr = 1
+			end
+		if sectr<1 then begin
+			track = track -1
+			if track<0 then track=0
+			sectr = spt
+			end
+	end of bump
+
+	procedure dump_physical ( device = integer )
+	    get_sector track, physical_sec(sectr)
+	    print #device; "Track=";track; "  Physical sector=";sectr, \
+		" Logical sector=";skew(sectr);
+	    if sector[0]=1 then print #device; " {BAD}" else print #device
+	    display_sector device
+	    print
+	end of dump_physical
+
+	procedure dump_logical ( device = integer )
+	    get_sector track, skew(sectr)
+	    print #device; "Track=";track; "   Logical sector=";sectr, \
+		" Physical sector=";skew(sectr);
+	    if sector[0]=1 then print #device; " {BAD}" else print #device
+	    display_sector device
+	    print
+	end of dump_logical
+
+	function hex_byte ( c = char ) = char
+		c = c-'0'
+		if c>9 then c=c-7
+	end = c
+
+	procedure modify ( t, s = integer )
+	var c=char
+	var x=integer
+	repeat begin
+		x=1
+		repeat begin
+			print hex$(x-1) ;' '; right$(hex$(sector[x]),2) ;' ';\
+				ascii_character(sector[x]);' ';
+			input3 c
+			if c<>'.' and c<>CR and c<>BS then begin
+				sector[x]=hex_byte(c)
+				input3 c
+				if c<>'.' and c<>CR and c<>BS then 
+					sector[x]=(sector[x]*16)+hex_byte(c)
+				end
+			if c='.' then x=128
+			if c=BS then begin
+				x = x-2
+				if x<0 then x=0
+				end
+			if c=CR and x=128 then x=127
+			print
+			x=x+1
+		end until x>128
+		print
+		print t,s
+		display_sector crt
+		repeat begin
+			print
+			input "(W)rite to disk, (C)hange more bytes, (A)bort ";c
+			c = upcase(c)
+			if c='W' then begin
+				print "Writing sector to disk..."
+				put_sector t, s
+				if sector[0]=1 then begin
+					input2 "Write fault. <ret> to continue";c
+					print
+					display_sector crt
+					c=' '
+					end
+				    else
+					c='A'
+				end of write
+		end until c='A' or c='C'
+	end until c='A'
+	end of procedure modify
+
+	$page
+	case menu_selection of
+'1':	begin
+	    input "Track, sectr"; track, sectr
+	    print
+	    dump_physical crt
+	    repeat begin
+		input "(F)oward, (B)ackward, (R)ange, (C)hange, (E)xit ";letter
+		letter = upcase(letter)
+		case letter of
+		    'F': begin
+			     bump 1
+			     dump_physical crt
+			     end
+		    'B': begin
+			     bump -1
+			     dump_physical crt
+			     end
+		    'R': begin
+				var s, c, device =integer
+				input "Number of sectors to display";c
+				device = crt
+				for s=1 to c
+				    dump_physical device
+				    bump 1
+				next Sector
+			end of 'R'
+		    'C': modify track, physical_sec(sectr)
+		    end of case
+		end until letter='E'
+	    end of option #1
+'2':	begin
+	    input "Track, sectr"; track, sectr
+	    print
+	    dump_logical crt
+	    repeat begin
+		input "(F)oward, (B)ackward, (R)ange, (C)hange, (E)xit ";letter
+		letter = upcase(letter)
+		case letter of
+		    'F': begin
+			     bump 1
+			     dump_logical crt
+			     end
+		    'B': begin
+			     bump -1
+			     dump_logical crt
+			     end
+		    'R': begin
+				var s, c, device =integer
+				input "Number of sectors to display";c
+				device = crt
+				for s=1 to c
+				    dump_logical device
+				    bump 1
+				next Sector
+			end of 'R'
+		    'C': modify track, skew(sectr)
+		    end of case
+		end until letter='E'
+	    end of option #2
+'3':	begin
+		var t = char
+		repeat begin
+		t = ' '
+		while t<>'L' and t<>'P' and t<>'E' do
+			input "Move (L)logical sectors, (P)hysical sectors, (E)xit ";t
+		t = upcase(t)
+		if t<>'E' then begin
+			var ok = char
+			var trk1, trk2, sec1, sec2, cnt, x = integer
+			ok = ' '
+			while ok<>'Y' and ok<>'A' do begin
+				input "Source Track, Sector ";trk1, sec1
+				input "Dest. Track, Sector  ";trk2, sec2
+				input "Number of sectors to move";cnt
+				print
+				print "Source Track, Sector = ";trk1, sec1
+				print "Dest. Track, Sector  = ";trk2, sec2
+				print "Number of sectors to move ";cnt
+				print
+				input "Is the above correct (Y/N/(A)bort) ";ok
+				ok = upcase(ok)
+				end
+			if ok<>'A' then begin
+				for x=1 to cnt
+					print "Reading track";trk1;" Sector";sec1;
+					if t='L' then print " Physical #";skew(sec1);
+					if t='P' then get_sector trk1, physical_sec(sec1)
+					    else get_sector trk1, skew(sec1)
+					if sector[0]<>0 then print " Fault" else print
+
+					print "Writing track";trk2;" Sector";sec2;
+					if t='L' then print " Physical #";skew(sec2);
+					if t='P' then put_sector trk2, physical_sec(sec2)
+					    else put_sector trk2, skew(sec2)
+					if sector[0]<>0 then print " Fault" else print
+
+					track = trk1
+					sectr = sec1
+					bump 1
+					trk1 = track
+					sec1 = sectr
+					track = trk2
+					sectr = sec2
+					bump 1
+					trk2 = track
+					sec2 = sectr
+				next sector
+				end
+			end
+		end until t='E'
+	end of option #3
+'4':	begin
+		var count	; number of sectors to search
+				= integer
+		var file_name	; file name to search for
+				= string:12
+		location var count=file_name
+		locate file_chars at count
+		track = off		rem starting track
+		sectr = 1		rem starting sector
+		input "File name (<Ret> only to skip) ";file_name
+		file_name = allcaps(file_name)
+		if len(file_name)>0 then begin
+
+			function match = integer
+				var result, x = integer
+				result = true
+				if fcb_name[0]=0E5H then result=false else
+				for x=1 to 11
+					if file_chars[x]<>(fcb_name[x]) and file_chars[x]<>'?' \
+						then result = false
+				next x
+			end = result
+
+			procedure dump_fcb( device = integer )
+				var x = integer
+				print #device; "Track";track; " Sector";sectr; ' ';
+				for x=1 to 11
+					print #device; fcb_name[x];
+				next x
+				print #device; ' ';
+				if dsm>255 then
+					for x=0 to 7
+					    print #device; hex$(word_dm[x]); ' ';
+					next x
+				    else
+					for x=0 to 15
+					    print #device; right$( hex$(byte_dm[x]),2 ); ' ';
+					next x
+				print #device
+			end
+
+			file_name = fcb$( file_name )
+			print "Search for file:";file_name
+			for count = 1 to (drm+1)/4
+				get_sector track, skew(sectr)
+				print "Searching Track:";track; " Sector:";skew(sectr);"      ";chr(0DH);
+				locate fcb_name at loc_sector+1
+				locate byte_dm at loc_sector+17
+				locate word_dm at loc_sector+17
+				if match then dump_fcb crt
+				locate fcb_name at loc_sector+33
+				locate byte_dm at loc_sector+49
+				locate word_dm at loc_sector+49
+				if match then dump_fcb crt
+				locate fcb_name at loc_sector+65
+				locate byte_dm at loc_sector+81
+				locate word_dm at loc_sector+81
+				if match then dump_fcb crt
+				locate fcb_name at loc_sector+97
+				locate byte_dm at loc_sector+113
+				locate word_dm at loc_sector+113
+				if match then dump_fcb crt
+				bump 1
+			next directory sector
+			var x=char
+			print
+			input2 "Press <Ret> to continue";x
+			end
+	end of option #4
+'5':	begin
+		function bin( x = integer ) = string
+			var bits = string:8
+			var y = integer
+			bits = ""
+			for y=1 to 8
+				if x and bit_0_mask then bits="1"+bits else
+					bits="0"+bits
+				x=x/2
+			next y
+		end = bits
+
+		bc = 14
+		de = disk_number
+		call(5,hl,de,bc,a_psw)	rem bdos seldsk function
+		var x, y = integer
+		print
+		for x = 0 to (dsm/8) step 8
+			print hex$(x*8);": ";
+			for y = 0 to 7
+			    if x+y<=(dsm/8) then begin
+				base alloc_byte at alv+x+y
+				print bin(alloc_byte);' ';
+				end
+			next y
+			print
+		next x
+		print "Last block is";dsm+1,'[';hex$(dsm+1);']'
+		input2 "Press return to cont.";x
+	end of option #5
+'6':	begin
+		var x = real
+		var t1, t2 = integer
+		input "Starting track, last track ";t1,t2
+		track = t1
+		sectr = 1
+		for x = 1 to (t2-t1+1)*spt
+			print "Track:";track; " Sector:";sectr; "  ";
+			get_sector track, physical_sec(sectr)
+			if sector[0]<>0 then print "{BAD}" else print chr(0DH);
+			bump 1
+		next x
+		print
+		input2 "Read complete, press <Ret> to cont.";x
+	end of option #6
+'7':	begin
+		input "Track, Sector ";track,sectr
+		print "Group #";group(track,sectr), hex$(group(track,sectr))
+		input "Press <Ret> to cont. ";track
+	end of #7
+'8':	begin
+		var x = integer
+		input "Group number (add H if hex)";x
+		trk_sec x
+		print "Track:";track,"Sector:";sectr
+		input "Press <Ret> to cont.";x
+	end of #8
+
+	end of function number menu selection
+
+	if menu_selection = '9' then 0seldsk
+
+	case menu_selection of
+'A':	begin
+	    text 0,%
+        	To examine a physical sector use this command.  Sectors are 
+        numbered from 1 to the end of the track. Tracks are numbered from 0 
+        to the end of the disk. The physical sector number displayed is the 
+        sector number from 1 to end of track,  the logical sector number is 
+        the number your BIOS uses to access this physical sector.
+        	When  you type this command you will be asked for the track 
+        and sector you wish to examine.  After you respond the sector  will 
+        be displayed. You will then be asked if you want to move forward or 
+        backward from your current position on the disk.  You may,  at this 
+        time,  specify  a range of sectors to be displayed from the current 
+        position on the disk.  You may also edit the sector making  changes 
+        to it in an buffer internal to XAMN. And last but not least you can 
+        exit  to the main menu.  Each option is selected by one key  press. 
+        The letters are F, B, R, C, and E.
+        	When  changing  a sector the sector address in hex will  be 
+        displayed  along  with the hex contents of the byte and  the  ASCII 
+        character it represents (Period if none). To enter a new value type 
+        it in,  to move forward push return,  backward push back space, and 
+        to exit push period. Upon exit you may re-edit, write the sector to 
+        the disk, or abort leaving the sector on the disk un-changed.
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'A'
+'B':	begin
+	    text 0,%
+        	Use  this  command  to examine and  edit  logical  sectors. 
+        Logical  sectors  are  the sectors that the  BDOS  refers  to,  the 
+        physical sector number may be different. It is the physical sectors 
+        that the BIOS access.
+        	For more info see 'A' above.
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'B'
+'C':	begin
+	    text 0,%
+        	This command is used to move sectors around on the disk. It 
+        can be used to move physical sectors or logical sectors around. The 
+        main purpose for moving sectors around is to allow re-formatting of 
+        a track on the disk.  First, move the data on the track you wish to 
+        re-format to an unused  area of the disk. This area can be found by 
+        generating a map of the disk using another of XAMN's commands  (Map 
+        disk,  see also help 'E').  Second, exit XAMN and using your system 
+        format utility format ONLY the track with the bad sector.  Re-enter 
+        XAMN. Third, move the data back onto the track.
+        	This command will start by asking you if this is a physical 
+        move or a logical move (use logical if you want to move CP/M groups 
+        around).  You can exit at this point.  Next,  you will be asked for 
+        the  starting  track and sector number,  the destination track  and 
+        sector and the number of sectors to move.
+        	BEFORE  each sector is read or written you will be told  of 
+        it,  if  an error occurs you can see where it  happens.  AFTER  the 
+        operation  the  program will move on to the next sector if  all  is 
+        well or print "Fault" to show a read or write error.
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'C'
+'D':	begin
+	    text 0,%
+        	This command generates a map of a file showing all the CP/M 
+        groups  assigned  to that file.  It also reports on  the  directory 
+        sectors  that contain that file's FCB.  As each directory sector is 
+        searched a report of that operation is made sector by sector.
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'D'
+'E':	begin
+	    text 0,%
+        	This command generated a disk map showing allocated groups. 
+        A 0 is an empty group,  un-used by any file.  A 1 is a group in use 
+        by a file. WARNING: this command makes a BDOS disk select call.
+        	At the end of the map a few groups that do not exist may be 
+        displayed  as  empty.  This is because the disk map is made  up  of 
+        bytes where each bit in the byte is a group,  the last byte in  the 
+        map may not be fully used up.  At the end of the map the last group 
+        number is given, use this number.
+        	This command can be used to find unused disk space. 
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'E'
+'F':	begin
+	    text 0,%
+        	This command is used to find a bad sector.  It will ask for 
+        a  starting track and an ending track.  As it reads each track  and 
+        sector  it  will  report  its progress.  Any bad  sectors  will  be 
+        reported.
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'F'
+'G':	begin
+	    text 0,%
+        	Use  this  command  to  compute a  group  number  from  the 
+        LOGICAL  track and sector.  Remember that  logical groups start  in 
+        the directory, NOT in the reserved, or 'OFF' tracks.
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'G'
+'H':	begin
+	    text 0,%
+        	Use  this command to compute the track and  LOGICAL  sector 
+        number for a given group.
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'H'
+'I':	begin
+	    text 0,%
+        	Use  this command to select another disk. XAMN commands are 
+        in reference to the current disk number (see the display above  the 
+        menu).
+	%
+	input2 "Press <Ret> to cont.";track
+	end of 'I'
+	end of help case statement
+
+	if menu_selection = '0' or menu_selection = 1BH then stop
+
+	goto 0menu
+
+

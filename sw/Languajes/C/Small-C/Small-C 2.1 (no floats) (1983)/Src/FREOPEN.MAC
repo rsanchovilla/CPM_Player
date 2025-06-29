@@ -1,0 +1,46 @@
+CC1:
+freopen::
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL fclose
+POP B
+MOV A,H
+ORA L
+JZ CC3
+LXI H,0
+RET
+CC3:
+LXI H,6
+CALL CCDSGI##
+PUSH H
+LXI H,6
+CALL CCDSGI##
+PUSH H
+LXI H,6
+CALL CCDSGI##
+PUSH H
+CALL Uopen
+POP B
+POP B
+POP B
+XCHG;;
+LXI H,-2
+CALL CCEQ##
+MOV A,H
+ORA L
+JZ CC4
+LXI H,0
+RET
+CC4:
+POP B
+POP H
+PUSH H
+PUSH B
+RET
+EXT Uopen
+EXT fclose
+END
+

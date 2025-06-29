@@ -1,0 +1,101 @@
+(* TIMEDATE.SIC  V 2.1,   aktuelle Systemzeit und das Systemdatum  *)
+
+
+type timestring = string[8];
+     weekdays   = (sunday, monday, tuesday, wednesday, 
+                   thursday, friday, saturday);
+
+
+
+function GetTime: timestring;
+
+  const
+    h1:      integer = 0;
+    d1:      integer = 0;
+    oldtime: timestring = '00:00:00';
+
+  var
+    hl, de:  integer;
+
+
+  begin
+    inline ($0E/$2C/             { LD   C, 2CH   }
+            $CD/$05/$00/         { CALL MSXDOS   }
+            $22/hl/              { LD   (hl), HL }
+            $ED/$53/de);         { LD   (de), DE }
+
+    if (hl <> h1)
+    then begin
+      oldtime[1] := chr(48+(hi(hl) div 10));
+      oldtime[2] := chr(48+(hi(hl) mod 10));
+      oldtime[4] := chr(48+(lo(hl) div 10));
+      oldtime[5] := chr(48+(lo(hl) mod 10));
+      h1 := hl;
+      end;
+
+    if (de <> d1)
+    then begin
+      oldtime[7] := chr(48+(hi(de) div 10));
+      oldtime[8] := chr(48+(hi(de) mod 10));
+      d1 := de;
+      end;
+    GetTime := oldtime;
+  end;
+
+
+
+
+
+function GetDate: timestring;
+
+  const
+    h1:      integer = 0;
+    d1:      integer = 0;
+    olddate: timestring = '00/00/00';
+
+  var
+    a:       byte;
+    hl, de:  integer;
+
+
+  begin
+    inline ($0E/$2A/             { LD   C, 2AH   }
+            $CD/$05/$00/         { CALL MSXDOS   }
+            $22/hl/              { LD   (hl), HL }
+            $ED/$53/de);         { LD   (de), DE }
+
+    if (hl <> h1)
+    then begin
+      olddate[7] := chr(48+((hl div 10)) mod 10);
+      olddate[8] := chr(48+(hl mod 10));
+      h1 := hl;
+      end;
+
+    if (de <> d1)
+    then begin
+      olddate[1] := chr(48+(lo(de) div 10));
+      olddate[2] := chr(48+(lo(de) mod 10));
+      olddate[4] := chr(48+(hi(de) div 10));
+      olddate[5] := chr(48+(hi(de) mod 10));
+      d1 := de;
+      end;
+
+    inline ($3A/$C1/$FC/         { LD   A, (EXPTBL) }
+            $21/$2B/$00/         { LD   HL,002B     }
+            $CD/$0C/$00/         { CALL RDSLT       }
+            $32/a);              { LD   (a), A      }
+
+    case a and $70 of
+      $00: GetDate := copy(olddate,7,2)+copy(olddate,3,4)+copy(olddate,1,2);
+      $10: GetDate := copy(olddate,4,3)+copy(olddate,1,3)+copy(olddate,7,2);
+      else GetDate := olddate;
+      end {case};
+  end;
+
+
+function weekday: weekdays;
+
+  begin
+    weekday := weekdays(BDOS($2A));
+  end;
+

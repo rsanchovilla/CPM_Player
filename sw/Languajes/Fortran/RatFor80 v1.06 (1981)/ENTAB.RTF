@@ -1,0 +1,73 @@
+# entab - replace blanks by tabs and blanks
+
+   include "ratdefn.rtf"
+
+   character getc
+   character c
+   integer tabpos
+   integer col, i, newcol, tabs(MAXLINE)
+ 
+   call initio
+
+   call settab(tabs)
+   col = 1
+   repeat {
+      newcol = col
+      while (getc(c) == BLANK) {   # collect blanks
+	 newcol = newcol + 1
+	 if (tabpos(newcol, tabs) == YES) {
+	    call putc(TAB)
+	    col = newcol
+	    }
+	 }
+      for ( ; col < newcol; col = col + 1)
+	 call putc(BLANK)      # output leftover blanks
+      if (c == EOF)
+	 {call putc(EOF); stop}
+      call putc(c)
+      if (c == NEWLINE)
+	 col = 1
+      else
+	 col = col + 1
+      }
+
+   call putc(EOF)
+
+   stop
+   end
+ 
+# tabpos - return YES if col is a tab stop
+   integer function tabpos(col, tabs)
+   integer col, i, tabs(MAXLINE)
+ 
+   if (col > MAXLINE)
+      tabpos = YES
+   else
+      tabpos = tabs(col)
+   return
+   end
+ 
+# settab - set initial tab stops
+   subroutine settab(tabs)
+   integer mod
+   integer i, tabs(MAXLINE)
+ 
+   for (i = 1; i <= MAXLINE; i = i + 1)
+      if (mod(i, 8) == 1)
+	 tabs(i) = YES
+      else
+	 tabs(i) = NO
+   return
+   end
+
+
+
+
+
+
+
+
+
+
+
+

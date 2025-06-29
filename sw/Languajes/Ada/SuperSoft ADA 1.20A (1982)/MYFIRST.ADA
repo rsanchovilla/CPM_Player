@@ -1,0 +1,18 @@
+procedure myfirst is
+  
+  function distance(a,b,c : integer) return integer is
+   begin
+
+    return a*a+b*b+c*c;
+
+  end distance;
+
+
+begin
+
+   put("the distance is ");
+   put(distance(3,4,5));
+   newline;
+
+end myfirst;
+

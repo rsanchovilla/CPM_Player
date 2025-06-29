@@ -1,0 +1,43 @@
+CC1:
+toupper::
+POP B
+POP D
+PUSH D
+PUSH B
+LXI H,122
+CALL CCLE##
+MOV A,H
+ORA L
+JZ CC4
+POP B
+POP D
+PUSH D
+PUSH B
+LXI H,97
+CALL CCGE##
+MOV A,H
+ORA L
+JZ CC4
+LXI H,1
+JMP CC5
+CC4:
+LXI H,0
+CC5:
+MOV A,H
+ORA L
+JZ CC3
+POP B
+POP D
+PUSH D
+PUSH B
+LXI H,32
+CALL CCSUB##
+RET
+CC3:
+POP B
+POP H
+PUSH H
+PUSH B
+RET
+END
+

@@ -1,0 +1,1267 @@
+..Version zum Ausdrucken mit PC1715 / SD1152 ohne Druckertreiber
+..16. 01. 1990/ 30.1.90
+..Beschreibung entspricht dem TURBO-PASCAL-Handbuch
+.pl68
+.po10
+.op
+
+
+
+
+
+
+
+              B e d i e n u n g s a n l e i t u n g
+
+           õ î ä   Ó ğ ò á ã è â å ó ã è ò å é â õ î g
+
+                         f { r   d a s 
+
+               P r o g r a m m i e r s y s t e m 
+
+                       P A S C A L   8 8 0
+
+               unter Steuerung des Betriebssystems
+                            MicroDOS
+.paŠ
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+veb mikroelektronik m{hlhausen
+
+Deò Vertrieâ dieseò Druckschrifô erfolgô ausschlie\licè durcè deî 
+Herausgeber. Nachfragen bei der Druckerei sind zwecklos.
+
+Ohnå  Genehmigunç  deó Herausgeberó isô eó nicht  gestattet¬  daó 
+Bucè  odeò Teilå darauó nachzudruckeî odeò  auæ  fotomechanischeí 
+Wege zu vervielf}ltigen. 
+
+Hinweise¬  diå  zuò  Verbesserunç  dieseò  Dokumentatioî  f{hren¬ 
+werden gern entgegengenommen. 
+
+Redaktionsschlu\: M}rz 1990
+.paŠ.po10
+.pn3
+.op
+.hePASCAL                         #               Inhaltsverzeichnis
+I n h a l t s v e r z e i c h n i s        
+                                         
+                                                            Seite
+
+1.            Einf{hrung.....................................   7  
+
+2.            Bedienung Systemkern ..........................   9
+2.1.          Start und Men{ ................................   9
+2.2.          Laufwerkzuweisung .............................  11
+2.3.          Arbeitsdateizuweisung .........................  11
+2.4.          Hauptdateizuweisung ...........................  12
+2.5.          Editieren .....................................  12
+2.6.          Compilieren ...................................  16
+2.7.          Compiler - Optionen ...........................  17
+2.8.          Testen (Ausf{hren) ............................  20
+2.9.          Sichern .......................................  20
+2.10.         Kommandoausf{hrung ............................  21
+2.11.         Directory - Anzeige ...........................  21
+2.12.         Beenden .......................................  22
+2.13.         Hauptspeicherregime ...........................  22
+2.13.1.       Compilierung im Speicher ......................  22
+2.13.2.       Compilierung auf Diskette .....................  23
+2.13.3.       Ausf{hrung im Speicher ........................  24
+2.13.4.       Ausf{hrung eines Programmes als transientes
+              Kommando ......................................  25      
+
+3.            Systemservice (Dienstprogramme) ...............  26
+3.1.          Start und Men{ ................................  26
+3.2.          Kopieren ......................................  28
+3.3.          Quelltextliste ................................  29
+3.4.          Rename ........................................  33
+3.5.          Crossreferenzliste ............................  33
+3.6.          Type ..........................................  34
+3.7.          Moduldiagramm .................................  35
+3.8.          Erase .........................................  36
+3.9.          Datenschutz ...................................  36
+3.10.         Anzeige .......................................  37
+3.11.         Status ........................................  38
+3.12.         Zur{ck ........................................  38  
+
+4.            Sprachbeschreibung ............................  39
+4.1.          Beschreibungsform (Metasprache) ...............  39
+4.2.          Grundelemente .................................  39
+4.2.1.        Morpheme und Regelungen .......................  39
+4.2.1.1.      Wortsymbole ...................................  39
+4.2.1.2.      Standardbezeichner ............................  39
+4.2.1.3.      Spezialsymbole ................................  40
+4.2.1.4.      Begrenzer .....................................  40
+4.2.1.5.      Zeilenl}nge ...................................  40
+4.2.2.        Nutzerdefinierte Sprachelemente ...............  40
+4.2.2.1.      Bezeichner ....................................  40
+4.2.2.2.      Zahlen ........................................  41
+4.2.2.3.      Zeichenketten .................................  42
+4.2.2.4.      CTRL (Steuer)- Zeichen ........................  42
+4.2.2.5.      Kommentare ....................................  43
+4.2.2.6.      Compiler - Direktiven .........................  43
+4.3.          Deklarationen und Definitionen ................  46Š4.3.1.        Programmrahmen ................................  46
+4.3.2.        Markendeklaration .............................  47
+4.3.3.        Konstantendefinition ..........................  48
+4.3.4.        Datentypen und Typdefinitionen ................  48
+4.3.4.1.      Typdefinition .................................  49
+4.3.4.2.      Einfacher Typ .................................  49
+4.3.4.2.1.    Ordinaler Typ .................................  49
+4.3.4.2.1.1.  Ordinaler Standardtyp .........................  49
+4.3.4.2.1.2.  Aufz}hlungstyp ................................  51
+4.3.4.2.1.3.  Teilbereichstyp ...............................  51
+4.3.4.2.2.    Realtyp .......................................  51
+4.3.4.3.      Strukturierter Typ ............................  52
+4.3.4.3.1.    Feld - Typ ....................................  52
+4.3.4.3.2.    Record - Typ ..................................  53
+4.3.4.3.3.    Datei - Typ ...................................  54
+4.3.4.3.4.    Mengen - Typ ..................................  54
+4.3.4.3.5.    Dynamischer Zeichenkettentyp ..................  55
+4.3.4.3.6.    Standardfelder ................................  55
+4.3.4.4.      Zeigertyp .....................................  56
+4.3.4.5.      Typumwandlungen und Bereichspr{fungen .........  56
+4.3.4.5.1.    Retyping ......................................  56
+4.3.4.5.2.    Pseudofunktionen zur Konvertierung ............  57
+4.3.5.        Variablendeklaration und Variablenzugriff .....  58
+4.3.5.1.      Deklaration von Variablen .....................  58
+4.3.5.2.      Variablenzugriff ..............................  59
+4.3.6.        Typisierte Konstante ..........................  61
+4.3.6.1.      Einfache typisierte Konstante .................  61
+4.3.6.2.      Strukturierte typisierte Konstante ............  62
+4.3.6.2.1.    Typisierte Feldkonstante ......................  62
+4.3.6.2.2.    Mehrdimensionale typisierte Feldkonstante .....  63
+4.3.6.2.3.    Typisierte Recordkonstante ....................  63
+4.3.6.2.4.    Typisierte Mengenkonstante ....................  64
+4.3.7.        Prozedur- und Funktionsdeklaration ............  64
+4.4.          Operatoren und Ausdr{cke ......................  65
+4.4.1.        Operatoren ....................................  65
+4.4.1.1.      Minusvorzeichen ...............................  65
+4.4.1.2.      Operator NOT ..................................  65
+4.4.1.3.      Multiplikationsoperatoren .....................  66
+4.4.1.4.      Additionsoperatoren ...........................  67
+4.4.1.5.      Vergleichsoperatoren ..........................  68
+4.4.1.6.      Mengenoperatoren ..............................  68
+4.4.1.7.      Priorit}t .....................................  69
+4.4.2.        Ausdr{cke .....................................  69
+4.4.3.        Funktionsaufruf ...............................  70
+4.5.          Anweisungen ...................................  71
+4.5.1.        ]bersicht .....................................  71
+4.5.2.        Einfache Anweisungen ..........................  71
+4.5.2.1.      Ergibtanweisung ...............................  71
+4.5.2.2.      Prozeduranweisung .............................  72
+4.5.2.3.      Sprunganweisung ...............................  72
+4.5.2.4.      Leeranweisung .................................  73
+4.5.3.        Strukturierte Anweisung .......................  73
+4.5.3.1.      Verbundanweisung ..............................  73
+4.5.3.2.      Bedingte Anweisungen ..........................  74
+4.5.3.2.1.    IF - Anweisung ................................  74
+4.5.3.2.2.    CASE - Anweisung ..............................  75
+4.5.3.3.      Zyklusanweisungen .............................  76Š4.5.3.3.1.    WHILE - Anweisung .............................  76
+4.5.3.3.2.    REPEAT - Anweisung ............................  76
+4.5.3.3.3.    FOR - Anweisung ...............................  77
+4.5.3.4.      WITH - Anweisung ..............................  78
+4.6.          Nutzerdefinierte Prozeduren und Funktionen ....  80
+4.6.1.        Deklarationen von Prozeduren und Funktionen ...  80
+4.6.1.1.      Prozedurdeklaration ...........................  80
+4.6.1.2.      Funktionsdeklaration ..........................  80
+4.6.2.        Datenaustausch zwischen Programmeinheiten .....  81
+4.6.2.1.      Blockkonzept ..................................  81
+4.6.2.2.      Parameter .....................................  82
+4.6.2.2.1.    Variablenparameter ............................  83
+4.6.2.2.2.    Wertparameter .................................  83
+4.6.2.2.3.    Ungetypte Variablenparameter ..................  83
+4.6.3.        FORWARD - Deklaration .........................  84
+4.6.4.        EXTERNAL - Deklaration ........................  84
+4.6.5.        OVERLAY - Strukturen ..........................  85
+4.7.          Standardprozeduren und -funktionen 
+              (ohne Dateiarbeit und Zeiger) .................  87
+4.7.1.        STRING - Funktionen und -Prozeduren ...........  87
+4.7.2.        Arithmetische Funktionen ......................  90
+4.7.3.        Skalarfunktionen ..............................  93
+4.7.4.        Konvertierungsfunktionen (ohne Pseudofunktion)   94
+4.7.5.        Bildschirmorientierte Prozeduren ..............  94
+4.7.6.        Sonstige Funktionen und Prozeduren ............  95
+4.8.          Mengenkonstruktionen und -zuweisungen ......... 101
+4.8.1.        Mengenkonstruktionen .......................... 101
+4.8.2.        Mengenzuweisungen ............................. 101
+4.9.          Zeiger und Listen ............................. 102
+4.9.1.        Dynamische Variablen .......................... 102
+4.9.2.        Erzeugung und Vernichtung dynamischer Variablen 102
+4.9.3.        Mark und Release .............................. 103
+4.9.4.        GETMEM und FREEMEM ............................ 103
+4.9.5.        Programmierung dynamischer Listen am Beispiel . 104
+4.10.         Ein- und Ausgabe von Dateien .................. 106
+4.10.1.       Begriffe ...................................... 106
+4.10.2.       Dateiprozeduren ............................... 107
+4.10.3.       Dateifunktionen ............................... 110
+4.10.4.       Nutzung von Bin}rdateien ...................... 111
+4.10.5.       Textdateien und Textdateioperationen .......... 111
+4.10.6.       Logische Ger}te ............................... 112
+4.10.7.       Standarddateien ............................... 113
+4.10.8.       Ein- und Ausgabe von Textdateien {ber Standard-
+              ger}te ........................................ 115
+4.10.8.1.     READ .......................................... 115
+4.10.8.2.     READLN ........................................ 117
+4.10.8.3.     WRITE ......................................... 117
+4.10.8.4.     WRITELN ....................................... 118
+4.10.9.       Nichtgetypte Dateien .......................... 119
+4.10.10.      Ein- und Ausgabepr{fung (IORESULT) ............ 120
+4.11.         Sonstige Sprachelemente und Besonderheiten .... 121
+4.11.1.       HEAP- und STACK-Manipulationen ................ 121
+4.11.2.       Optimierung der ARRAY-Indizes ................. 122
+4.11.3.       BDOS/BIOS-Rufe ................................ 122
+4.11.4.       INLINE-Maschinencode .......................... 123
+4.11.5.       Nutzergeschriebene I/O-Driver ................. 125
+4.11.6.       INTERRUPT-Behandlung .......................... 126Š5.            Hilfprogramme ................................. 127
+5.1.          Retten einer editierten Arbeitsdatei nach
+              Systemabsturz ................................. 127
+5.2.          Installation von Systemkern und Systemservice . 128
+
+
+Anhang A:     Zeichensatz ................................... 131
+
+Anhang B:     Compilerdirektiven ............................ 132
+
+Anhang C:     INLINE-Maschinencode (8-Bit-Prozessor) ........ 133
+
+Anhang D:     Fehlermeldungen Compiler ...................... 141
+
+Anhang E:     Fehlermeldungen Laufzeitsystem/Systemservice .. 145
+
+Anhang F:     Interne Datenformate .......................... 147
+
+Anhang G:     BDOS/BIOS-Rufe MicroDOS ....................... 155
+
+Anhang H:     Syntax in Backus-Naur-Notation ................ 157
+
+Anhang I:     Vordefinierte Prozeduren und Funktionen ....... 166
+
+Anhang @:     Grafik-Tool-Boxen f{r den KC85/3 bzw. KC85/4 mit 
+              D004-Erweiterung und f{r das 
+              KC compact-Floppy-System ...................... 171
+
+
+Sachwortregister ............................................ 179
+.paŠ.hePASCAL                         #                       Einf{hrung
+1 .   E i n f { h r u n g 
+
+PASCAÌ  880/Ó  isô eiî leistungsf}higeó Programmiersysteí f{ò  8- 
+Bit-Rechner® Eó isô lauff}hiç unteò MicroDOÓ deó KC8µ miô Aufsatú 
+D00´  sowiå deó KÃ compact-Floppy-Systemó unä unteò SCPØ 171µ beé 
+eineí verf{gbareî Speicherbereicè (TPA© aâ 4¸ KByte.
+Das System f{r 8-Bit-Rechner besteht aus folgenden Teilen:
+
+1® Systemkerî miô Editor¬ Compiler¬ Laufzeitbibliothek¬ Interfacå 
+   (PASCAL.COM)¬  Fehlertextdateé (PASCAL.TXT© unä eineò Restart
+   routinå  (PASCAL.RES© zuí Wiederladeî deó Systemkernó nacè deò 
+   Ausf{hrunç voî Kommandodateien¬  voò alleí beé deò Arbeiô  miô 
+   nuò eineí Diskettenlaufwerk.
+2® Systemservicå miô  Routineî zuí L>scheî¬ Umbenennen¬ Kopieren¬ 
+   Statuó }ndern¬ Chiffriereî voî Dateien¬ Anzeigå deò Disketten
+   belegung¬  Durchmusterî  voî  Dateieî odeò deó Hauptspeichers¬ 
+   Quelltext-¬  Crossreferenz- unä Moduldiagrammlistå (PLUS.COM)® 
+   F{ò  Quelltextausgabå  miô Crossreferenzlistå  existierô  einå 
+   speziellå  Komponentå  CROSZREF.880¬  diå  voí   Systemservicå 
+   aktivierô  wird®  Deò  Systemservicå isô  voí  Systemkerî  auó 
+   autonoí erreichbar.
+3® Hilfsprogrammå  zuí   Retteî  voî  editierteí   Quelltexô  beé 
+   Systemabsturú  (PASRETT.COM© unä zuí Installiereî voî  System
+   kerî unä Systemservicå (PASINST.COM).
+
+Allå  Komponenteî (Systemkern¬  Systemservicå unä Hilfsprogramme© 
+unterliegeî  deí  [nderungsdiensô unä trageî  deshalâ  gesondertå 
+Versionsnummern.
+Diå  voî  Compileò unä Bibliotheë verwaltetå Sprachå  PASCAÌ  isô 
+kompatibel zu TURBO-PASCAL./1/
+Nichô  vorhandeî  sinä  CRTINIT¬   CRTEXIT¬   DELLINE¬   INSLINE¬ 
+HIGHVIDEO¬ NORMVIDEÏ unä LOWVIDEO.
+
+Zus}tzlichå    Funktioneî   sinä   SPECSCÒ   unä   NORMSCÒ    zuò 
+Bildschirmsteuerung.
+Diå  Sprachelementå LABEL/GOTÏ k>nneî f{ò Lehrzweckå miô  PASINSÔ 
+herausgenommen und wieder installiert werden.
+
+Deò  Systemservicå erm>glichô hochwertigå Listingó miô  Einr{ckeî 
+entsprechenä   deò  Schachtelungstiefe¬   Crossreferenzlistå  f{ò
+selbstdefiniertå   Bezeichneò (wahlweiså aucè unteò Ber{cksichti
+gunç  deó  kyrillischeî  Alphabets)¬  paarweiseó  Numeriereî  voî 
+BEGIN/ENÄ sowiå einå Schachtelungs{bersichô  alleò Unterprogrammå 
+iî  Diagrammform®  Daó erleichterô unä beschleunigô diå  Entwick
+lungsarbeiô erheblich® F{ò Lehrzweckå iî Kabinetteî kanî Kopiereî 
+unä Druckeî aî Codewortå gebundeî werden.
+
+Systemkerî    unä   Systemservicå   unterst{tzeî   diå   modularå 
+Programmierunç durcè Include-Dateieî auæ PASCAL-Quelltext-Ebene.
+Dazõ  wirä iî deî Quelltexô deò Hauptdateé einå INCLUDE-Direktivå  
+(*JI  Dateiname<*) geschrieben. /2/
+
+Systemkerî  unä  Systemservicå unterbrecheî aî dieseò Stellå  unä 
+verarbeiten den Quelltext der Datei  Dateiname<.
+.paŠDiå  Include-Technië  erm>glichô sï diå Entwicklunç  gro\eò  Pro
+grammå unä einå rationellå Arbeiô miô Anwenderbibliotheken.
+Diå  auæ  deò Diskettå mitgeliefertå Anwenderbibliotheë  iî  Forí 
+eineò  Grafik-Tool-Boø  gestatteî  deí  PASCAL-Programmiereò  deî 
+Zugrifæ auæ diå GRAFIK-Routineî deò verschiedeneî Grundger}te.
+
+BOX3.INC  f{r den KC85/3 mit D004-Erweiterung
+BOX4.INC  f{r den KC85/4 mit D004-Erweiterung
+BOXC.INC  f{r das KC compact-Floppy-System
+
+Diå  Beschreibunç deò zugeh>rigeî Funktioneî unä  Prozedureî  isô 
+deí Anhanç @ zõ entnehmen.
+
+Iî dieseò Dokumentatioî wirä eiî erforderlicheó Abschlie\eî eineò 
+Eingabå  miô ^ET~ gekennzeichnet®  Beií KC8µ miô D004-Erweiterunç 
+entsprichô  daó  deí Bet}tigeî deò  ^ENTER~-¬  beií  KÃ  compact-
+Floppy-System deò ^RETURN~-Taste.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/1¯ TURBO-PASCAÌ  isô eiî  eingetrageneó Warenzeicheî  deò  Firmá 
+    Borland International Inc., USA
+
+/2¯ Diå Schreibweiså  Dateiname< unä weiterå Notationeî iî Ziffeò 
+    2 und 3 sind ein Vorgriff auf die Metasprache  in Ziffer 4.1.Š.hePASCAL                         #             Bedienung Systemkern
+2. B e d i e n u n g   S y s t e m k e r n 
+
+2.1. Start und Men{
+
+Der Start erfolgt durch die Eingabe des Kommandos PASCAL.
+
+Danach erscheint das Titelbild:
+
+-----------------------------------------------------
+!                                                   ! 
+! PASCAL 880/S (c) 01/08/86 VEB ROBOTRON BWS        !
+! Systemkern Version 3.32D/SCPX 1715                !
+! KC85+D004/KC compact                              !
+!                                                   !
+!                                                   !
+!                                                   !
+! Fehlertext laden   (@/N)?                         !
+!                                                   !
+!                                                   !
+!                                                   !
+-----------------------------------------------------
+
+Die Ger}tebezeichnung ist installationsabh}ngig.
+Diå  Fragå  isô  miô  @ odeò Î zõ beantworten®  Beé  @  wirä  diå 
+Komponentå  PASCAL.TXÔ  iî  diå  TPÁ  geladen®  Siå  enth}lô  deî 
+Fehlertext des Compilers.
+Durcè daó Ladeî wirä deò Editorpuffeò uí 146² Byteó  verkleinert® 
+Daf{ò  wirä abeò beé auftretendeî Fehlerî au\eò deò  Fehlernummeò 
+auch der Fehlertext ausgegeben.
+
+Beispiel f{r eine Fehlermeldung durch den Compiler:
+
+Fehler 5. Weiter mit ^ESC~                   bei N.
+Fehler 5: ')' fehlt. Weiter mit ^ESC~        bei @.
+
+Beé  Programmeî  miô umfangreicheí Quelltexô unä beé  eineò  TPA-
+Gr>\å  voî 4¸ KBytå kanî miô deò Antworô Î Platú gesparô unä  eiî 
+]berlauæ  verhinderô werden®  Iî dieseí Falì mu\ beé deò  Fehler
+analyså auæ diå Fehlertabellå ií Anhanç Ä zur{ckgegriffeî werden.
+.paŠ.hePASCAL                         #            Bedienung Systemkern 
+Nacè  Beantwortunç deò Fragå miô Î erscheinô daó Grundmen{  (hieò 
+f{r 48 KByte-TPA, Fehlertext nicht geladen):
+
+--------------------------------------------------
+!                                                !
+! L-aufwerk:A                                    !
+!                                                !
+! A-rbeitsdatei                                  !
+! H-auptdatei                                    !
+!                                                !
+! E-ditor   C-ompiler-O-ptionen T-est            !
+!                                                !
+! S-ichern  B-eenden  K-ommando  D-ir            !
+!                                                !
+! Text:     0 BYTES (7BF5-7BF5)                  !
+! Frei: 18698 BYTES (7BF6-C500)                  !
+!                                                !
+! <                                              !
+!                                                !
+--------------------------------------------------
+
+Isô  deò Fehlertexô geladen¬  wirä deò  Anfanç deó  Editorpufferó 
+nichô miô J7BF5¬ sonderî miô J826´ angezeigt.
+Diå oberå Grenzå JC500 isô betriebssystemabh}ngig®  Beé 5² KByte-
+TPA ist sie JCC06.
+Aló letzteó Zeicheî erscheinô daó Promptzeicheî <®  Durcè Eingabå 
+eineó  Kommandobuchstabenó  (ií Men{ aló ersteò  Buchstabå  abge
+setzt©  wirä diå entsprechendå Komponentå deó Systemkernó  aufge
+rufen®  Nacè  Ausf{hrunç dieseò Komponentå erscheinô  wiedeò  das
+Promptzeichen¬ unä einå anderå Funktioî kanî aufgerufeî werden.
+Wirä  nacè  deí  Promptzeicheî einå Tastå  gedr{ckt¬  diå  keineí 
+Kommandobuchstabeî entspricht¬  wirä deò Bildschirí gel>scht¬ unä 
+daó  Grundmen{ erscheint®  Dieseó Wiederaufrufeî  deó  Grundmen{ó 
+solltå maî grunds}tzlicè durchf{hren¬ wenî diå aktuelleî Wertå ií 
+Men{ angezeigt werden sollen.
+
+Es gibt folgende Kommandobuchstaben:
+
+L      Laufwerkzuweisung.
+       Dieseó   Kommandï  bewirkô  zugleicè  daó  R{cksetzeî  deó 
+       Diskettensystems.
+A      Arbeitsdatei laden.
+       Die Datei steht danach zum Editieren bereit.
+H      Hauptdatei spezifieren.
+       Dieseó  Kommandï  solltå  gegebeî  werden¬   wenî  daó  zõ 
+       compilierende Programm Include-Dateien enth}lt.
+E      Editieren.
+       Eingabe oder Ver}nderung der Arbeitsdatei.
+C      Compilation.
+       Compilierô  wirä  diå Hauptdatei¬  wenî  diå  Arbeitsdateé 
+       nicht angegeben ist.
+O      Optionen.
+       Setzen von Compiler-Optionen {ber ein Nebenmen{.
+T      Testlauf.
+       Ausf{hren eines compilierten Programmes.
+S      Sichern.
+       Schreiben der Arbeitsdatei auf Diskette.ŠK      Kommandoausf{hrung.
+       Ausf{hreî  eineó  transienteî Kommandoó unä  Anschlu\  zuí 
+       Systemservice mit PLUS.
+D      Directory.
+       Anzeigå  deò  Directorù ií aktuelleî  Laufwerë  sowiå  deó 
+       freien Speicherplatzes auf der Diskette.
+B      Beenden.
+       R{ckkehr zum Laufzeitsystem MicroDOS.
+
+Diå Kommandoó werdeî soforô nacè Eingabå ausgef{hrt®  Eó isô alsï 
+kein ^ET~ zu dr{cken.
+
+
+2.2. Laufwerkzuweisung
+
+Nacè     Eingabå   voî   Ì   erscheinô   diå   Aufforderunç   zuò 
+Laufwerkzuweisung :
+
+   Neues Laufwerk: B^ET~
+
+Miô  Â ^ET~ wirä aló aktuelleó Laufwerë Â  zugewiesen®  Wirä  nuò  
+^ET~ gedr{ckt, bleibt die alte Zuweisung erhalten.
+Beé  jedeò Ausf{hrunç deó Kommandoó Ì wirä stetó aucè daó Disket
+tensysteí zur{ckgesetzt® Daó R{cksetzeî deó Diskettensystemó ¨ C© 
+nacè   Diskettenwechseì  kanî alsï durcè Aufruæ deó  Kommandoó  Ì 
+ohnå Angabå eineó neueî Laufwerkeó (nuò  ^ET~© erfolgen.
+Diå  Neuzuweisunç  eineó  Laufwerkeó wirä ií  Men{  nichô  soforô 
+angezeigt®  Dazõ isô nacè Erscheineî deó Promptzeichenó < nochmaì  
+^ET~ notwendig.
+
+
+2.3. Arbeitsdateizuweisung
+
+Nacè  Eingabå  voî Á erscheinô diå Aufforderunç zuò  Eingabå  deó 
+Namenó  f{ò diå Arbeitsdatei®  Eó gelteî diå bekannteî Regelî deó 
+MicroDOS.
+Die Eingabe wird mit
+
+        Arbeitsdateiname:
+
+angefordert und mit
+
+        Laden  Name<
+
+quittiert.  Name< schlie\t eine eventuelle Laufwerksangabe ein.
+
+Damiô  wirä diå Dateé  Name< voî deí jeweiligeî Laufwerë  iî  deî 
+Arbeitsbereicè   geladeî   unä   kanî  danacè  miô   Å   odeò   Ã 
+weiterbearbeiteô  werden®  Einå  Namenserweiterunç  .PAÓ  erfolgô 
+standardm}\ig. Existiert die Datei nicht, erscheint die 
+
+Ausschrift:
+
+  Datei neu
+.paŠIî  dieseí Fallå kanî danacè miô Å diå Dateé neõ angelegô werden® 
+Falló  ií Arbeitsbereicè einå nocè nichô  gerettete¬  bearbeitetå 
+Datei steht, wird dies angezeigt durch:
+
+  Arbeitsdatei  Name< noch sichern (@/N)?
+
+Beé  Antworô  @  wirä diå altå Arbeitsdateé  auæ  deí  jeweiligeî 
+Laufwerk abgelegt und die neue Arbeitsdatei zugewiesen.
+Beé  Antworô  Î  wirä diå ií  Arbeitsbereicè  (deí  Editorpuffer© 
+stehende alte Arbeitsdatei durch die neue {berschrieben.
+
+
+2.4. Hauptdateizuweisung
+
+Nacè  Eingabå  voî È erscheinô diå Aufforderunç zuò  Eingabå  deó 
+Namens f{r die Hauptdatei nach den bekannten Regeln f{r MicroDOS.
+Die Namenserweiterung .PAS ist Standard.
+Diå  Benutzunç eineò Hauptdateé wirä notwendig¬  wenî eiî PASCAL-
+Programm Include- Direktiven (vgl. Ziffer 4.2.2.6.) enth}lt.
+Deò  Compileò beginnô danî diå ]bersetzunç miô deí  Hauptprogramí 
+unä l}dt¬  wenî eò auæ einå Include-Direktivå trifft¬  diå  durcè 
+diå  Include-Direktiveî benanntå Dateé iî deî  Editorpuffer®  Diå 
+Include-Dateieî  werdeî  Arbeitsdateieî unä aî dieseò Stellå  voí 
+Compileò {bersetzt® Treteî beé deò  Compilatioî  Fehleò auf¬ kanî 
+diå fehlerhaftå Dateé wiå {blicè korrigierô werden®  Daó  Ablegeî 
+deò   ge}nderteî  Dateé  erfolgô  automatisch¬   unä  beé   eineí 
+erneuten Compilerlauf wird auch die Hauptdatei wieder geladen.
+
+
+2.5. Editieren
+
+Nacè  Eingabå  voî Å erscheinô deò Texô deò Arbeitsdateé auæ  deí 
+Bildschirm¬  unä  deò Editoò wirä gestartet®  Deò Texô kanî  danî 
+bearbeitet werden.
+Existierô nocè keiî Arbeitsdateiname¬ sï erfolgô diå Aufforderunç 
+zuò  Eingabå eineó Namens®  Danacè wirä diå Dateé  geladeî  oder¬ 
+wenî  siå  nichô  gefundeî  wurde¬  diå  Ausschrifô  "Dateé  neu¢ 
+ausgegeben und der Editor gestartet. Es erscheint das Bild:
+
+---------------------------------------------------
+!                                                 !
+! Zei  Zahl<   Spa  Zahl<   Einfuegen Tab   Name< !
+!                                                 !
+!                                                 !
+!                                                 !
+!                                                 !
+!                                                 !
+---------------------------------------------------
+
+Diå  erstå Zeilå bleibô aló Statuszeilå stetó auæ deí  Bildschirí 
+stehen. Es bedeuten:
+
+Zei    Zahl<    Zahl< ist die Zeilenposition des Cursors.
+Spa    Zahl<    Zahl< ist die Spaltenposition des Cursors.
+Einfuegeî       Anzeigå Einf{gen¬  ií Wechseì (CTRÌ V© miô  Erset
+                zen.
+ŠTaâ            Zeigô  automatischeó  Einr{ckeî aî  unä  kanî  miô 
+               (CTRL QI) aus- und eingeschaltet werden.
+ Name<         Dateinamå   deó  geradå  editierteî  Textes¬  ein
+               schlie\licè Laufwerksangabe.
+
+Iî  diå  deò Statuszeilå folgendeî Zeileî kanî  deò  Programmtexô 
+geschriebeî werden®  @edå Zeilå isô durcè ^ET~ abzuschlie\en®  Iî 
+deî  untenstehendeî  Kommandoó kanî  daó  zweitå  Control-Zeicheî 
+durcè  deî  entsprechendeî  normaleî Buchstabeî  ersetzô  werden¬ 
+d.h.¬ statô  Ñ Ì kanî maî aucè  QÌ dr{cken.
+F{ò daó Editiereî k>nneî folgendå Kommandoó verwendeô werden¬ diå 
+weitgehenä  miô  deneî  voî  Textverarbeitungssystemeî   {berein
+stimmen:
+
+Cursorbewegungen
+
+Zeicheî linkó          Ó     Wirkô nuò bió Zeilenanfang.
+Zeicheî rechtó         Ä     Wirkô nuò bió Spaltå 125.
+Worô linkó             Á     Zuí Wortanfang.
+                             Wortå werdeî begrenzô durch:
+                              space<  <,.()^~ '*+-/J
+                             Wirkô {beò Zeilengrenzen.
+Worô rechtó            Æ     Analoç oben.
+Zeilå hocè             Å     Rollmoduó beé Erreicheî obereò  
+                             Zeile.
+Zeilå tieæ             Ø     Rollmoduó beé vorletzteò Zeile.
+Rolleî hocè            Ú     Rolleî uí einå Zeilå zur{ck.
+Rolleî tieæ            ×     Rolleî uí einå Zeilå vorw}rts.
+Bl}tterî hocè          Ò     Rolleî uí eiî Bilä zur{ck.
+Bl}tterî tieæ          Ã     Rolleî uí eiî Bilä vorw}rts.
+Zeilenanfanç           Ñ Ó   Nacè ersteò Spalte.
+Zeilenendå             Ñ Ä   Nacè Spaltå  hinteò deí letzteî 
+                             Zeichen.
+Bildanfanç             Ñ Å   Nacè obersteò Bildzeile.
+Bildendå               Ñ Ø   Nacè untersteò Bildzeile.
+Fileanfanç             Ñ Ò   Nacè ersteò Textzeilå deó Files.
+Fileendå               Ñ Ã   Nacè letzteò Textzeilå deó Files.
+Blockbeginî            Ñ Â   Zuí Blockbeginn.
+Blockendå              Ñ Ë   Zuí Blockende.
+Letztå Positioî        Ñ Ğ   R{ckkehò zuò letzteî Cursorposition¬ 
+                             nacè SUCH/ERSETZ-Kommando
+                             o.a.
+
+Einf{ge- unä L>schkommandos
+
+Einf{ge-Moduó ein/auó   Ö    Einf{geî odeò ]berschreiben.
+L>scheî Zeicheî linkó  DEÌ   Wirkô {beò Zeilengrenzen® 
+L>scheî Zeicheî         Ç    Wirkô {beò Zeilengrenzen.
+L>scheî Worô rechtó     Ô    Wirkô {beò Zeilengrenzen.
+Zeilå einf{geî          Î    Wenî  deò   Cursoò  sicè   nichô  aí
+                             Zeilenanfanç befindet¬ wirä diå 
+                             Zeilå aî dieseò Stellå getrennt.
+Zeilå l>scheî           Ù    Zeilå  l>schen¬  iî  deò deò  Cursoò
+                             steht.
+Zeilenresô l>scheî      Ñ Ù  L>schô Zeilå aâ  Cursoò bió Zeilen-
+                             ende.
+.paŠBlockkommandos
+
+Blockbeginî             Ë Â  Diå  gesetztå  Markå  isô   nichô 
+                             sichtbar.
+Blockendå               Ë Ë  Diå  gesetztå  Markå  isô  nichô 
+                             sichtbar.
+Markeî l>scheî          Ë È  Blockmarkeî werdeî gel>scht¬ 
+                             unabh}ngig von der Cursorstellung.
+Worô markiereî          Ë Ô  Markiereî deó Worteó aî deò  Cursor-
+                             position oder links von ihr.
+Block kopieren          K C  Kopieren an die Cursorposition.
+                             Marken wandern mit.
+Block verschieben       K V  Verschieben an die Cursorposition.
+                             Marken wandern mit.
+Block l>schen           K Y  Achtung! Ein gel>schter Block ist 
+                             nicht zur{ckholbar.
+Block lesen             K R  Block aus einer angeforderten Datei
+                             lesen.
+Block schreiben         K W  Block in eine angeforderte Datei
+                             schreiben® Markeî unä Blocë verblei-
+                             ben an alter Stelle.
+
+Beé   nichtvorhandeneí  Blocë  habeî  diå  Blockkommandoó   keinå 
+Wirkung. Es erfolgt keine Fehlermeldung.
+
+Spezielle Kommandos
+
+Editieren Ende          K D  R{ckkehr zum PASCAL-Grundmen{.
+                             Eó isô zõ beachten¬ da\ diå Arbeits-
+                             datei noch nicht gesichert ist.
+Tab                     I    Die Tab-Positionen werden durch die 
+                             Wortanf}nge der vorhergehenden Zeile
+                             bestimmt.
+                             Achtung! Im Einf{gemodus werden Tab-
+                             Zeichen eingef{gt!
+
+Automatische Tabellierung
+
+ein/auó                  Ñ É Funktionierô nuò ií Einf{ge-Modus® 
+                             Beé 'ein§ wirä 'Tab§ iî deò Status
+                             zeilå angezeigt» deò Cursoò springô 
+                             beé ^EÔ~ nichô iî diå 1® Spaltå deò 
+                             neueî Zeile¬ sonderî unteò daó erstå 
+                             Worô deò letzteî Zeile.
+R{cksetzeî Zeilå        Ñ Ì  Werdeî Ver}nderungeî iî eineò Zeilå 
+                             durchgef{hrt, k>nnen diese durch  QL
+                             wieder r{ckg}ngig gemacht werden,
+                             solange dabei der Cursor die Zeile
+                             nicht verlassen hat.
+.paŠSuchen                  Q F  Die Suchkette kann aus maximal 30 
+                             Zeichen bestehen. Sie kann CTRL-
+                             Zeichen enthalten und wird durch 
+                             ^ET~ beendet® Daó Zeilenendå kanî 
+                             durch  M @ erzeugt werden. In der 
+                             Suchkette kann  A als Wildcard (Mas-
+                             kenzeichen) verwendet werden.
+
+                             Option:
+                             B   R{ckw}rts suchen
+                             G   Globales suchen (Anfang bis 
+                                 Ende)
+                             n   Suchen des n-ten Auftretens
+                             U   Ignorieren Gro\-/Kleinbuchstaben
+                             W   Nur ganze Worte suchen
+
+                             Optioneî sinä ohnå Zwischenrauí zõ 
+                             schreiben und mit ^ET~ zu beenden.
+Suchen und Ersetzen     Q A  Suchkette und Zus}tze werden wie 
+                             beim Suchen angegeben. Die Zeichen-
+                             kette zum Ersetzen kann bis zu 30 
+                             Zeichen lang sein. Sie kann CTRL-
+                             Zeichen enthalten ( A ohne Bedeu-
+                             tung). Abschlu\ durch ^ET~.
+
+                             Option:
+                             B   R{ckw}rts suchen
+                             G   Globales Suchen (von Anfang bis
+                                 Ende)
+                             n   n-maliges Ersetzen 
+                             N   Ersetzen ohne Fragen:
+                                 (Ersetzen (@/N)?)
+                             U   Ignorieren Gro\-/Kleinbuchstaben
+                             W   Nur ganze Worte suchen
+
+                             Optionen sind ohne Zwischenraum zu
+                             schreiben und mit ^ET~ zu beenden.
+Suchen wiederholen      L    Wiederholen des letzten  Q F oder 
+                              Q A Kmmandos.
+Eingabe CTRL-Zeichen    P    Im Programmtext k>nnen CTRL-Zeichen 
+                             durch Voranstellen von  P eingegeben
+                             werden.
+                             Beispiel:  G durch  P G.
+                             Auch das zweite CTRL mu\ gedr{ckt 
+                             werden.
+Abort-Kommando          U    @edes Editor-Kommando kann durch  U
+                             sofort abgebrochen werden.
+.paŠ2.6. Compilieren
+
+Nach Eingabe von C erfolgt die Compilation der
+
+     - Hauptdatei, wenn sie existiert,
+     - Arbeitsdatei, im anderen Fall.
+
+Existierô  nocè keinå Arbeitsdatei¬  erfolgô diå Aufforderunç zuò 
+Eingabe des Arbeitsdateinamens.
+Wirä   diå  Arbeitsdateé  nichô  auæ  deò  angegebeneî   Diskettå 
+gefunden¬  erscheinô  diå  Mitteilunç "Dateé neu"¬  unä  eó  wirä 
+versucht¬  diå  leerå Dateé zõ {bersetzen®  Daó Ergebnió isô  diå 
+Meldunç "Fehleò 91º Vorzeitigeó Ende deò  Quell-Datei® Weiteò miô  
+^ESC~"® Nacè deí Dr{ckeî deò Tastå ^ESCş wirä deò Editoò aufgeru
+fen¬  unä  diå neuå Dateé kanî erstellô werden®  Solì dieó  nichô 
+geschehen¬  kanî  deò Editorlauæ durcè  KÄ beendeô werden®  Damiô 
+wirä daó Grundmenû erreicht® Diå leerå Dateé wirä nichô gerettet.
+
+Diå  Compilatioî  unä diå Forí deó Objektcodeó sinä abh}ngiç  voî 
+verschiedeneî  Compiler-Optionen®  Eó sinä Standardwertå  festge
+legt¬ diå einå zeitg{nstigå ]bersetzung¬ minimaleî Objektcodå unä 
+schnellå  Abarbeitunç  deó {bersetzteî  Programmeó  ergeben®  F{ò 
+bestimmtå F}llå k>nneî dieså Standardwertå ver}nderô werdeî (vgl® 
+Ziffeò 2.7.).
+Beé  Auftreteî  eineó Fehleró ií Quelltexô wirä  diå  Compilatioî 
+abgebrochen in der Form:
+
+------------------------------------------------
+!                                              !
+! <                                            !
+!                                              !
+! Compilation                                  !
+!   10 Zeilen                                  !
+!                                              !
+! Fehler 5: ')' fehlt.  Weiter mit  ESC<       !
+!                                              !
+------------------------------------------------
+
+wobeé   deò  Fehlertexô  nuò  danî  ausgeschriebeî   wird¬   wenî 
+PASCAL.TXÔ geladeî wurdå (Eingabå @ beé "Fehlertexô ladeî (@/N)?¢ 
+nacè  deí Starteî deó Systemkerns)®  Nacè Dr{ckeî deò Tastå ^ESC~ 
+wirä  deò  Editoò  gestarteô unä deò  Cursoò  hinteò  deí  Fehleò 
+positioniert®   Eó   kanî  soforô  editierô  unä  danacè   erneuô 
+compilierô  werden®  Beé fehlerfreieò ]bersetzunç erscheinô  z.B® 
+folgendes Bild:
+.paŠ-----------------------------------------
+!                                       !
+! Compilation                           !
+!   12 Zeilen                           !
+!                                       !
+! Code :    81 Bytes (7C65-7CB6)        !
+! Frei : 17987 Bytes (7CB7-C2FA)        !
+! Daten:    11 Bytes (C2FB-C306)        !
+!                                       !
+! <                                     !
+!                                       !
+-----------------------------------------
+
+Eó werdeî diå Anzahì deò {bersetzteî Quelltextzeilen¬  diå Anzahì 
+deò Byteó unä diå Adresseî f{ò deî Programmcode¬ deî Datenbereicè 
+und den noch verbleibenden freien Speicherbereich angegeben.
+@å  nacè festgelegteò Optioî (Kommandï O© wirä diå erzeugtå Dateé 
+gespeichert
+
+      - im TPA         (Hauptspeicher)     (T)    (Standard)
+      - als COM-Datei  (Programm)          (P)
+      - als CHN-Datei  (Modul)             (M)
+
+(vgl. Ziffer 2.13.)
+
+
+2.7. Compiler-Optionen
+
+Miô  dieseí  Kommandï wirä diå Forí deò  Ausgabedateé  festgelegô 
+odeò  kanî  nacè  eineí  beé  deò  Abarbeitunç  eineò   COM-Dateé 
+aufgetretenen Fehler dessen Stelle gefunden werden.
+
+Nach der Eingabe des Kommandos O erscheint:
+
+-----------------------------------------------------------------
+!                                                               !
+!   Code f{r-<T-est                                             !
+!             P-rogramm                                         !
+!             M-odul                                            !
+!                                                               !
+!                                                               !
+!   F-ehlersuche      Z-ur{ck                                   !
+!                                                               !
+!   <                                                           !
+!                                                               !
+-----------------------------------------------------------------
+
+Die Stelle des Pfeiles zeigt das aktuelle Ziel des Compilates.
+Eó  kanî durcè Eingabå voî T¬  Ğ odeò Í ver}nderô werden®  Miô  Æ 
+wirä deò Suchproze\ zuò Auffindunç eineó Fehleró ií Quellprogramí 
+gestartet¬  unä  miô  Ú kanî zuí Grundmen{ zur{ckgekehrô  werden® 
+Start- unä Endadresså k>nneî beé deî Optioneî Ğ odeò Í miô Ó  unä 
+E ge}ndert werden.
+.paŠDie M>glichkeiten im einzelnen:
+
+Ô   (Standard)º Deò Codå wirä ií Hauptspeicheò (TPA© erzeugt¬ unä 
+       das Programm kann durch T (Test) gestartet werden.
+
+P:     Unteò  deí  Nameî deò Arbeits- bzw®  Hauptdateé  wirä  eiî 
+       lauff}higeó Programí (COM-Datei© erzeugt¬ daó deî Codå unä 
+       diå  PASCAL-Bibliotheë  enth}lt®  Gestarteô wirä diå  COM-
+       Dateé voî MicroDOÓ auó aló transienteó Kommandï odeò durcè 
+       daó Kommandï Ô (nuò unmittelbaò nacè deò Compilation).
+       Dieså  Programmå k>nneî gr>\eò aló beé deò Optioî Ô  sein¬ 
+       dá  ihrå Anfangsadresså ií TPÁ niedrigeò liegô unä beé deò        
+       Compilierunç  keiî TPÁ f{ò diå Speicherunç deó  Programmeó        
+       ben>tigô wird®  Nichtgeladeneò Fehlertexô vergr>\erô  aucè        
+       hieò  deî  Arbeitsbereicè deó Compilers®  F{ò deî Codå  iî         
+       deò    COM-Dateé   werdeî   Start- unä   Endadresså    deó 
+       Programmbereicheó ausgegeben.
+       Sie k>nnen mit S und E ge}ndert werden.
+
+Mº     Unteò  deí  Nameî deò  Arbeits- bzw®  Hauptdateé wirä  eiî 
+       aufrufbareò  Moduì  (CHN-Datei© erzeugt®  Eò  enth}lô  deî 
+       Programmcode¬  abeò  nichô  diå  PASCAL-Bibliothek®  Dieså 
+       Programmå k>nneî nuò voî eineí andereî Pascalprogramm¬ daó 
+       miô  deò  COM-Optioî unä gleicheò  Startadresså  {bersetzô 
+       wurde¬  durcè diå Chain-Prozeduò aufgerufeî werden®  Damiô 
+       bestehô diå M>glichkeit¬  aucè sehò gro\å  Pascalprogramm-
+       paketå    zõ   erzeugen®    Start- unä   Endadresså    deó 
+       Programmbereicheó  werdeî  f{ò  deî  Codå   deò  CHN-Dateé 
+       ausgegeben. Sie k>nnen mit S bzw. E ge}ndert werden.
+
+Fº     Wirä  eiî Programí nichô miô  deò T-Optioî ausgef{hrô  unä 
+       eiî Laufzeitfehleò tritô auf¬  kanî diå Stellå deó Fehleró 
+       nichô  automatiscè  ií Quelltexô gefundeî  werden¬  dá  zõ 
+       dieseí  Zeitpunkô  deò Quelltexô ií allgemeineî nichô  zuò 
+       Verf{gunç  steht®  Deò Abbrucè deó Programmeó erfolgô  miô 
+       der Fehlermeldung
+
+                 Laufzeit-Fehler  nn<. PC= Adresse<
+                 Programmabbruch
+       oder
+                 E/A-Fehler  nn<. PC= Adresse<
+                 Programmabbruch
+
+       Dabeé  isô   nn< diå Fehlernummer¬  unä  diå  hexadezimalå 
+       Adresse gibt die Fehlerstelle im Code an.
+.paŠAllgemeinå Laufzeitfehleò 
+(ausf{hrlichå Darstellunç ií Anhanç E.1)
+
+CODE ! Bedeutung
+-----!-----------------------------------------------------------
+01   ! Gleitkomma{berlauf
+02   ! Division durch Null
+03   ! Fehler im Argument von SQRT ( Null)
+04   ! Fehler im Argument von LN   ( =Null)
+10   ! Falsche STRING-L}nge (auch in Ergibtanweisungen)
+11   ! Fehlerhafter STRING-Index (au\erhalb 1 - 255)
+90   ! Index au\erhalb des zul}ssigen Bereiches
+91   ! Ordinaler Typ au\erhalb des Wertebereiches
+     ! (auch bei Teilbereichstypen)
+92   ! Wert au\erhalb des INTEGER-Bereiches
+F0   ! OVERLAY-Datei nicht im erwarteten Laufwerk
+FF   ! Halden/Kellerspeicher-Kollision
+
+
+Ein-/Ausgabe-Laufzeitfehleò  
+(ausf{hrlichå  Darstellunç ií Anhanç E)
+
+CODE  ! Bedeutung
+------!----------------------------------------------------------
+01    ! Datei existiert nicht
+02    ! Datei f{r Leseoperationen nicht vorbereitet
+03    ! Datei f{r Schreiboperationen nicht vorbereitet
+04    ! Datei nicht ge>ffnet
+10    ! Fehler im numerischen Format
+20    ! Operation auf logischem Ger}t nicht erlaubt
+21    ! Im Direktmodus (Zielauswahl T) nicht erlaubt
+22    ! ASSIGN f. vordefinierte Dateivariablen nicht erlaubt
+90    ! Recordl}nge nicht vertr}glich
+91    ! Position au\erhalb der Datei
+99    ! Vorzeitiges Dateiende
+F0    ! Disketten-Schreibfehler 
+F1    ! Directory voll
+F2    ! Datei zu gro\
+FF    ! Datei nicht unter Kontrolle
+
+Uí  dieså Fehlerpositioî ií Quellprogramí zõ finden¬  isô  dieseó 
+miô  Á  odeò È zõ spezifieren®  Danî mu\ (nacè O© daó  F-Kommandï 
+gegebeî werden® Eó wirä die Eingabe der Fehleradresse gefordert:
+
+     Stand PC: 3B56 ^ET~
+
+Diå Eingabå deò Fehleradresså (hieò 3B56© f{hrô zuí Suchproze\ ií 
+Quellprogramm®   Wurdå  diå  Fehlerstellå  gefunden¬   wirä  dieó 
+mitgeteilô unä zuí Dr{ckeî deò Tastå ^ESC~  aufgefordert®  Danacè 
+erscheinô  daó  Quellprogramm¬  unä deò Cursoò stehô  hinteò  deí 
+Sprachelement¬   daó   deî  Fehleò  verursachte®   Wirä  beé  deò 
+Compilatioî  einå ]berlagerungsstruktuò erzeugô  (Overlay)¬  kanî 
+eiî Fehleò nichô eindeutiç lokalisierô werden®  Diå Adresså  wirä 
+iî deí Programmteiì gesucht¬  daó iî deí ]berlagerungsbereicè aló 
+ersteó compilierô wurde.
+.paŠSº  Diå  Startadresså gibô diå Adresså deó ersteî Byteó  voí Codå 
+    an®  Daó isô normalerweiså diå Adresså unmittelbaò hinteò deò 
+    Laufzeit-Bibliothek®  Dieså  Adresså  kanî nacè  obeî  erh>hô 
+    werden¬  uí  Platú  z.B®  f{ò  absolutå  Variablen¬  diå  voî 
+    geketteteî Programmeî (CHN-Datei© verwendeô werden¬ zõ schaf
+    fen®  Nacè Eingabå deó Kommandoó Ó erscheinô diå Aufforderunç 
+    zuò Eingabå deò Startadresse® Siå wirä hexadezimaì eingegebeî 
+    unä  miô ^ET~ abgeschlossen®  Wirä nuò  ^ET~  eingegeben¬  sï 
+    bleibô diå altå Adresså erhalten® 
+    Diå  CHAIN-Dateé unä diå rufendå COM-Dateé sinä miô  gleicheò 
+    Startadresse zu {bersetzen.
+
+Eº  Diå   Endadresså  gibô  diå h>chstå  verf{gbarå  Adresså  deó 
+    Programmeó an® Deò Werô iî Klammerî isô diå TPA-Grenzå (BDOS-
+    Anfang)®  Diå Eingabå deò Endadresså erfolgô hexadezimal® Siå 
+    wirä miô ^ET~ abgeschlossen®  Wirä nuò ^ET~ eingegeben¬  danî 
+    bleibt die alte Adresse erhalten. 
+    Deò  freiå Speicheò voî z.B®  4¸ KBytå (BDOS=C106© kanî  nocè     
+    kleineò werden¬  wenî Betriebssystemerweiterungeî wiå Tasten
+    umcodierungeî   unä zus}tzlichå Ein-/Ausgabetreibeò  unterge
+    ladeî werden® Deshalâ wirä empfohlen¬ diå Endadresså stetó sï 
+    niedriç wiå m>glicè einzustelleî (z.B®  A000)¬ damiô daó Pro
+    gramí m>glichsô unteò alleî SCP-Betriebssystemeî  einschlie\
+    licè  seineî  Erweiterungeî  lauff}hiç ist® Zõ  beachteî  isô 
+    nat{rlich¬  da\   sicè  diå Haldå  f{ò  dynamischå  Variableî 
+    verringert®  Danî  helfeî  HEAP- unä  STACK-   Manipulationeî 
+    (vgl® 4.11.1.).
+    Daó  Laufzeitsysteí  deó  compilierteî  Programmó  pr{fô  beé 
+    Programmstarô  diå Endadresså gegeî diå aktuellå  TPA-Grenze® 
+    Beé  Unvertr}glichkeiô erscheinô diå Fehlermeldunç  "Speicheò 
+    zu klein, Programmabbruch".
+
+
+2.8. Testen (Ausf{hren)
+
+Nacè  Eingabå  voî Ô wirä daó {bersetztå Programí  aktivierô  unä 
+gestartet. @e nach Option bei der ]bersetzung befindet es sich 
+
+- im TPA (Hauptspeicher)       (T)
+- als COM-Datei auf Diskette   (P).
+
+Wurdå   keiî   {bersetzteó  Programí   gefunden¬   sï   {bersetzô 
+automatiscè  deò  Compileò  diå  Arbeitsdateé  unä  starteô  nacè 
+erfolgreicheò  ]bersetzunç soforô aucè daó Programm®  Wurdå  nocè 
+keinå   Arbeitsdateé   angegeben¬   sï  wirä  zuò   Eingabå   deó 
+Arbeitsdateinamenó aufgefordert®  Existierô aucè diå Arbeitsdateé 
+selbsô  nocè  nichô  auæ  deí Datentr}ger¬  sï  wirä  deò  Editoò 
+gestartet.
+
+
+2.9. Sichern
+
+Nacè  Eingabå voî Ó wirä diå Arbeitsdateé {beò daó  entsprechendå 
+Laufwerk auf Diskette geschrieben.
+Falló  bereitó  auæ  deò  Diskettå  eiî  Programí  miô   gleicheí 
+Dateinameî  existiert¬  wirä dieså iî einå BAK-Dateé  umgewandelô 
+und die neue Version unter dem urspr{nglichen Namen eingetragen.ŠVoò  Optionen¬ diå deî Editorpuffeò zerst>reî (Kommandï A¬ K¬ B©, 
+wirä  f{ò ge}ndertå Pufferinhaltå daó Sicherî deò  Quelltextdateé 
+{berwacht und gegebenenfalls angeboten.
+
+
+2.10. Kommandoausf{hrung
+
+Nacè Eingabå voî Ë kanî eiî beliebigeó MicroDOS-Programí odeò miô 
+"PLUS¢ deò Systemservicå gerufeî werdeî (vgl®  Ziffeò  3)®  Endeô 
+daó MicroDOS-Programí miô normaleí Ausganç zõ MicroDOS¬  sï kehrô 
+diå Steuerunç unmittelbaò zuí Systemkerî zur{ck¬  d.h.¬ eó werdeî 
+PASCAL.COÍ  unä diå ben>tigtå Dateé geladen¬  einschlie\licè  deò 
+zuletzô bearbeiteteî Arbeitsdateé unä deó Hauptdateinamens®  Danî 
+erscheinô  daó  Prompô  <®  Eiî  nachfolgendeó  ^ET~  bringô  daó 
+Grundmen{  zur{ck¬  eó kanî abeò aucè miô jedeí andereî  Kommandï 
+wiå T¬  E¬  Ã usw® fortgesetzô werden® Falló zwischenzeitlicè diå 
+Diskettå  miô  deí  Systemkerî  auó  deí  betreffendeî  aktuelleî 
+Laufwerë  entfernô  wurde¬  wirä  deò  Nutzeò  aufgefordert¬  diå 
+Systemdiskettå wiedeò einzulegeî unä miô ^ET~ fortzusetzen:
+
+----------------------------------------------------------------
+!                                                              !
+! PASCAL.COM nicht gefunden. Bitte in Laufwerk  x<: und  ET<   !
+!                                                              !
+!                                                              !
+----------------------------------------------------------------
+
+Danacè  erfolgô  daó  Ladeî  unä  Starteî  deó  Systemkernó   wiå 
+beschrieben®  Auó  dieseò Verfahrensweiså folgt¬  da\ daó  Systeí 
+bereits mit einem Laufwerk arbeitsf}hig ist.
+
+
+2.11. Directory-Anzeige
+
+Nacè  Eingabå eineó Ä erfolgô diå Aufforderunç zuò Eingabå  eineò 
+Maske, die die auszugebenden Programmnamen steuert.
+Diå  Maskå  wirä  iî  deò MicroDOS-{blicheî Weiså  miô  ª  unä  ¿ 
+gebildeô  unä miô ^ET~ abgeschlossen®  Wirä nuò ^ET~  eingegeben¬ 
+danî  wirä  diå gesamtå Directorù deó angegebeneî Laufwerkeó  auæ 
+deí Bildschirí ausgegeben:
+
+-----------------------------------------------------------------
+!                                                               !
+! <D                                                            !
+! Maske: A:*.PAS                                                !
+! HANDEL   PAS : PROBE    PAS : PRO1   PAS : PRO2   PAS         !
+! PRO4     PAS : DRUCK    PAS                                   !
+!                                                               !
+! Byte verf{gbar in A: 25K                                      !
+! <                                                             !
+!                                                               !
+-----------------------------------------------------------------
+
+Zuí Abschlu\ wirä deò auæ deò Diskettå nocè freiå Speicherbereicè 
+ausgegebeî (hieò 25K)® Dabeé k>nneî geringf{gigå Abweichungeî voî 
+deò  tats}chlicheî  Gr>\å auftreten®
+.paŠ2.12. Beenden 
+
+Daó  Kommandï  Â  dienô deí Verlasseî deó  PASCAL-Kernó  unä  deò 
+R{ckkehò  zõ MicroDOS®  Eó erscheinô daó MicroDOS-Prompô miô  deí 
+aktuelleî  Laufwerk®  Falló nocè einå editiertå  Arbeitsdateé  ií 
+Editorpuffeò existiert¬  diå nichô gesicherô wurde¬ wirä gefragt¬ 
+oâ daó gescheheî soll.
+
+
+2.13. Hauptspeicherregime
+
+Diå   folgendeî   Abbildungeî  zeigeî  deî   Speicherinhalô   beé 
+verschiedeneî Arbeitsmodi®  Einigå Grenzeî ver}nderî sicè w}hrenä 
+deò  Laufzeiô  (durcè  diå  Gr>\å  deó  Quelltextes¬   dynamischå 
+Variablå  usw.)®  Diå  Gr>\å deò Segmentå iî deî Abbildungeî  haô 
+keinen Bezug zur Gr>\e der Speicherbereiche.
+
+
+2.13.1. Compilierung im Speicher
+--------------------------------
+
+W}hrenä deò Compilierunç eineó Programmeó ií Speicheò (Optioî  T© 
+ist dieser wie folgt aufgeteilt:
+
+--------------------------------------- ---  0000
+! Systemparameterbereich MicroDOS     !
+!                                     !
+!-------------------------------------! ---  0100
+! Laufzeitbibliothek                  !
+!                                     !
+!-------------------------------------! ---  20E2 (Standard)
+! Editor, Compiler, Interface         !
+!                                     !
+!-------------------------------------! ---  7BF6
+! Fehlermitteilungen (optional)       !
+!                                     !
+!-------------------------------------! ---  (8264)
+! Quelltext                           !          !
+!                                     !          !
+!-------------------------------------! ---
+! Objektcode (Arbeitsbereich Editor   !          !
+!             aufw}rts)               !          !
+!-------------------------------------! ---
+! Symboltabelle (abw}rts)             !          !
+!                                     !          !
+!-------------------------------------! ---!
+! CPU-Stack (abw}rts)                 !          !
+!                                     !          !
+!-------------------------------------! ---! BDOS - 1
+! MicroDOS                            !
+!                                     !
+!-------------------------------------! ---  FFFF
+
+Wurdeî  diå Fehlermitteilungeî beií Aufruæ deó Systemkernó  nichô 
+geladen¬  kanî  deò  Quelltexô  bereitó  beé  deò  Adresså  J7BF¶ 
+beginnen.
+.paŠBeií   Aufruæ  deó  Compileró  wirä  deò  Objektcodå  hinteò  deí 
+aktuellen Quelltext aufw}rts aufgebaut.
+Deò  CPU-Stacë arbeiteô voí logischeî Speicherendå  abw}rts¬  unä 
+diå  Symboltabellå deó Compileró wirä abw}rtó voî eineò  Adresse¬ 
+diå 1Ë (J40° Bytes© unterhalâ deó logischeî Speicherendeó  liegt¬ 
+aufgebaut.
+
+
+2.13.2. Compilierung auf Diskette
+---------------------------------
+
+W}hrenä deò Compilatioî zõ  eineò .COM- odeò .CHN-Dateé (Optioî Ğ 
+odeò  M©  isô  diå Aufteilunç deó Speicheró anderó  aló  beé  deò 
+Compilatioî  ií Speicher®  Deò erzeugtå Objektcodå stehô nichô ií 
+Speicher¬  sonderî wirä {beò eineî relatiö kleineî Puffeò  soforô 
+auf der Diskette abgelegt.
+Au\erdeí  enth}lô deò Codå niedrigerå Adressen®  Iî dieseí  Moduó 
+k>nnen viel gr>\ere Programme {bersetzt werden.
+
+
+--------------------------------------- ---  0000
+! Systemparameterbereich MicroDOS     !
+!                                     !
+!-------------------------------------! ---  0100
+! Laufzeitbibliothek                  !
+!                                     !
+!-------------------------------------! ---  20E2 (Standard)
+! Editor, Compiler, Interface         !
+!                                     !
+!-------------------------------------! ---  7BF6
+! Fehlermitteilungen (optional)       !
+!                                     !
+!-------------------------------------! ---! (8264)
+! Quelltext (Arbeitsbereich Editor    !    !
+!            aufw}rts)                !    
+!-------------------------------------! ---
+! Symboltabelle (abw}rts)             !    
+!                                     !    !
+!-------------------------------------! ---!
+! CPU-Stack (abw}rts)                 !    
+!                                     !    !
+!-------------------------------------! ---! BDOS - 1
+! MicroDOS                            !
+!                                     !
+!-------------------------------------! ---  FFFF
+.paŠ2.13.3. Ausf{hrung im Speicher
+------------------------------
+
+Wenî  eiî  Programí  ií Direktmoduó (Optioî T©  ausgef{hrô  wird¬ 
+sieht die Speicheraufteilung wie folgt aus:
+
+-------------------------------------- ---  0000
+! Systemparameterbereich MicroDOS    !
+!                                    !
+!------------------------------------! ---  0100
+! Laufzeitbibliothek                 !
+!                                    !
+!------------------------------------! ---  20E2 (Standard)
+! Editor, Compiler, Interface        !
+!                                    !
+!------------------------------------! ---! (7BF6)
+! Fehlermitteilungen (optional)      !    !
+!                                    !    
+!------------------------------------! ---!   
+! Quelltext (aufw}rts)               !    !
+!                                    !
+!------------------------------------! ---!
+! Objektcode (aufw}rts)              !    !
+!                                    !
+!------------------------------------! ---!
+! HEAP (aufw}rts)                    !    !
+! Standardanfangswert vom HEAPPTR    !
+!------------------------------------! ---
+! Rekursionsstack (abw}rts)          !    
+! Standardanfangswert vom RECURPTR   !    !
+!------------------------------------! ---!
+! CPU-Stack (abw}rts)                !    
+! Standardanfangswert vom STACKPTR   !    !
+!------------------------------------! ---!
+! Programmvariable (abw}rts)         !    
+!                                    !    !
+!------------------------------------! ---! BDOS - 1
+! MicroDOS                           !
+!                                    !
+!------------------------------------! ---  FFFF
+
+Wenî eiî Programí {bersetzô wurde¬  isô daó Endå deó  Objektcodeó 
+bekannt®  Standardm}\iç  wirä  auæ dieseî Werô pluó ±  deò  Heap-
+Pointeò  (HEAPPTR©  gestellô  unä deò Heağ aufw}rtó  iî  Richtunç 
+Rekursionsstacë aufgebaut®  Diå maximalå Speichergr>\å isô  BDOS-
+Anfanç  minuó  ±  (wirä ií Options-Men{  angezeigt)®  Voî  dieseò 
+Adresså  werdeî  diå Programmvariablen¬  alsï  nichô  Konstanten¬ 
+abw}rtó   gespeicherô   iî   Richtunç  deó   Endeó   voí   freieî 
+Speicherplatz¬  auæ  deí  deò  Werô  CPU-Stackpointeò  (STACKPTR© 
+gestellô  wird®  Voî  hieò  auó  wirä  deò  CPU-Stackpointeò   iî 
+Richtunç  Rekursionsstacë aufgebaut¬  wobeé RECURPTÒ  J40°  Byteó 
+niedrigeò aló STACKPTÒ liegt® Deò Rekursionsstacë wirä voî dieseò 
+Stelle in Richtung HEAPPTR (also abw}rts) aufgebaut.
+.paŠ2.13.4 Ausf{hrung eines Programmes als transientes Kommando
+-----------------------------------------------------------
+ 
+Wenn  einå  Programmdateé ausgef{hrô wirä (entwedeò {beò  Ë  odeò 
+direkt von MicroDOS), sieht die Speicheraufteilung wie folgt aus:
+
+-------------------------------------- ---  0000
+! Sytemparameterbereich MicroDOS     !
+!                                    !
+!------------------------------------! ---  0100
+! Laufzeitbibliothek                 !
+!                                    !
+!------------------------------------! ---  20E2 (Standard)
+! Objektcode                         !    !
+! Standardanfangswert vom            !    !
+! Programmstart (aufw}rts)           !
+!------------------------------------! ---!  
+! Heap (aufw}rts)                    !    !
+! Standardanfangswert vom HEAPPTR    !
+!------------------------------------! ---
+! Rekursionsstack (abw}rts)          !    
+! Standardanfangswert vom RECURPTR   !    !
+!------------------------------------! ---!
+! CPU Stack (abw}rts)                !    
+! Standardanfangswert vom STACKPTR   !    !
+!------------------------------------! ---!
+! Programmvariablen (abw}rts von     !    
+!                    Endadresse)     !    !
+!------------------------------------! ---!
+! Maximale Speichergr>\e             !  Lader
+!                                    !
+!------------------------------------! ---
+! MicroDOS                           !
+!                                    !
+!------------------------------------! ---  FFFF
+
+Diå   Standard-Startadresså   deó  Programmeó  (ií   Options-Men{ 
+angegeben©  beginnô  unmittelbaò hinteò  deò  Laufzeitbibliothek® 
+Dieseò  Werô kanî miô deí Startadressen-Kommandï  ií  Option-Men{ 
+ver}nderô werden¬  uí beispielsweiså Platú f{ò absolutå Variableî 
+zõ  schaffeî und/odeò externå Prozedureî zwischeî Bibliotheë  unä 
+Codå einzuf{gen® Diå maximalå Speichergr>\å isô BDOÓ minuó 1» deò 
+Standardwerô  wirä durcè diå L}ngå voî BDOÓ ií Speicheò bestimmt® 
+Wenî  Programmå  f{ò anderå Rechneò {bersetzô  werden¬  mu\  dieó 
+beachteô  werden¬  uí  Kollisioneî miô deí BDOÓ auæ  deî  andereî 
+Rechneò  zõ vermeiden®  Diå maximalå Speichergr>\å kanî  miô  deí 
+Endadressen-Kommandï ií Option-Men{ ver}nderô werden®  Maî solltå 
+beachten¬  da\  diå  Standard-Endadresså etwá 70° bió 100°  Byteó 
+niedrigeò  liegô  aló diå maximalå Speichergr>\e¬  uí  Platú  f{ò 
+Ladeò  zõ  lassen¬  deò  ben>tigô wird¬  wenî  daó  Programí  voí 
+Systemkern mittels K-Kommando gestartet werden soll.
+

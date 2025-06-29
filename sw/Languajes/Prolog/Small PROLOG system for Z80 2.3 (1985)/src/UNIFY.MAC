@@ -1,0 +1,412 @@
+
+; ===========================================================
+; UNIFY.Z80
+;	unify routine for E-Prolog
+;	June 10, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+FROZEN	EQU	-3
+
+DEBUG	EQU	FALSE
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+;SUBVAL
+;value(v)
+;  SUBST * v;
+;  {
+;  SUBST * u;
+;
+VALUE::
+	PUSH	HL		; v
+;  while (substp(v) && ((u = v->forw.val) != (SUBST *)UNDEF))
+VA2:	CALL	SUBSTP##	; substp(v) ?
+	JR	Z,VA1
+	CALL	@FORW##		; u = v->forw
+	LD	DE,UNDEF
+	CALL	CPHL##		; u == UNDEF ?
+	JR	Z,VA1
+;    {
+;    v = u;
+	POP	DE		; discard
+	PUSH	HL		; v
+;    }
+	JR	VA2
+VA1:
+;  return v;
+	POP	HL		; v
+	RET
+;  }
+
+;LSUBST
+;vf(var,lsub)
+;/* find variable */
+;  VARIABLE var;
+;  LSUBST lsub;
+	DSEG
+VAR:	DW	0
+LSUB:	DW	0
+	CSEG
+;  {
+VF::
+	LD	(VAR),HL
+	LD	(LSUB),DE
+;  for ( ; var != (*lsub).vname ; lsub++)
+	EX	DE,HL
+VF1:
+	CALL	@VNAME##
+	LD	DE,(VAR)
+	CALL	CPHL##
+	JR	Z,VF2
+;#ifdef DEBUG
+IF DEBUG
+;    if (! varp((*lsub).vname))
+	CALL	VARP##
+	JR	NZ,VF3
+;      fatal("\r\nFaulty subststitution list.")
+	LD	HL,VF3MSG
+	JP	FATAL##
+	DSEG
+VF3MSG:	DB	CR,LF,'Faulty substitution list.',0
+	CSEG
+VF3:
+;#endif
+ENDIF
+;    ;
+	LD	HL,(LSUB)
+	LD	DE,6
+	ADD	HL,DE
+	LD	(LSUB),HL
+	JR	VF1
+VF2:
+;  return lsub;
+	LD	HL,(LSUB)
+	RET
+;  }
+
+; UNIFY
+;
+; recursive
+; input:
+;	HL "low" expression
+;	DE lsubst for HL
+;	HL' "high" expression
+;	DE' lsubst for HL'
+; output
+;	Z flag set = failure
+;BOOLEAN
+;unify(lowe,lows,hie,his)	/* recursive */
+;  EXPR lowe;
+;  LSUBST lows;
+;  EXPR hie;
+;  LSUBST his;
+;  {
+;  EXPR lowex;
+;  EXPR hiex;
+;  SUBVAL vfl;
+;  SUBVAL vfh;
+;  LSUBST temp;
+	DSEG
+LOWEX:	DW	0
+HIEX:	DW	0
+LOWS:	DW	0
+HIS:	DW	0
+VFL:	DW	0
+VFH:	DW	0
+	CSEG
+;
+;  lowex.list = lowe;
+;  hiex.list = hie;	/* synonyms */
+UNIFY::
+	LD	(LOWEX),HL
+	LD	(LOWS),DE
+	EXX
+	LD	(HIEX),HL
+	LD	(HIS),DE
+IF DEBUG
+	PUSH	HL
+	LD	HL,UNMSG1
+	CALL	MSG##
+	LD	HL,(LOWEX)
+	LD	DE,(LOWS)
+	CALL	EPRINT##
+	LD	HL,UNMSG2
+	CALL	MSG##
+	LD	HL,(HIEX)
+	LD	DE,(HIS)
+	CALL	EPRINT##
+	DSEG
+UNMSG1:	DB	CR,LF,' ++Unify ',0
+UNMSG2:	DB	' with ',0
+	CSEG
+	POP	HL
+ENDIF
+;
+;  if (varp(hie))
+	CALL	VARP##
+	JR	Z,UN1
+;    {
+;    vfh.val = value(vf(hiex.symbol,his));
+	LD	DE,(HIS)
+	CALL	VF
+	CALL	VALUE
+	LD	(VFH),HL
+;    if (! substp(vfh.val))
+	CALL	SUBSTP
+	JR	NZ,UN1
+;      return unify(lowe,lows,
+;                   vfh.assgn->sexp.list,vfh.assgn->slist);
+	LD	HL,(VFH)
+	CALL	@SLIST##
+	PUSH	HL
+	LD	HL,(VFH)
+	CALL	@EXPR
+	POP	DE
+	EXX
+	JR	UNIFY		; tail recursion
+;    }
+;
+UN1:
+;  if (varp(lowe))
+	LD	HL,(LOWEX)
+	CALL	VARP##
+	JP	Z,UN2
+;    {
+;    vfl.val = value(vf(lowex.symbol,lows));
+	LD	DE,(LOWS)
+	CALL	VF
+	CALL	VALUE
+	LD	(VFL),HL
+;    if (substp(vfl.val))
+	CALL	SUBSTP##
+	JP	Z,UN3
+;      {
+;      if (varp(hie))
+	LD	HL,(HIEX)
+	CALL	VARP##
+	JR	Z,UN4
+;        {
+;        /* both are really variables */
+;        if (vfh == vfl)
+;          return TRUE;
+	LD	HL,(VFH)
+	LD	DE,(VFL)
+	CALL	CPHL##
+	JR	Z,RETT
+;        if (vfl.val > vfh.val)
+	JR	NC,UN7
+;          {
+;          temp = vfh.val;
+	LD	HL,(VFH)
+	PUSH	HL
+;          vfh.val = vfl.val;
+	LD	HL,(VFL)
+	LD	(VFH),HL
+;          vfl.val = temp;
+	POP	HL
+	LD	(VFL),HL
+;          }
+UN7:
+;        if (vfh.val->back.val != (SUBST *)UNDEF)
+	LD	HL,(VFH)
+	CALL	@BACK##
+	LD	DE,UNDEF
+	CALL	CPHL##
+	JR	Z,UN8
+;          {
+;          x = vfh->forw = makesexpr(vfh->vname,vfh,UNDEF)
+	LD	HL,(VFH)
+	PUSH	HL
+	CALL	@VNAME##
+	POP	DE
+	LD	BC,UNDEF
+	CALL	MKSEXPR##
+	EX	DE,HL
+	PUSH	DE
+	LD	HL,(VFH)
+	CALL	@LFORW##
+;          vfh = x->forw = makesexpr(vfh->vname,UNDEF,UNDEF)
+	LD	HL,(VFH)
+	CALL	@VNAME##
+	LD	DE,UNDEF
+	LD	C,E
+	LD	B,D
+	CALL	MKSEXPR##
+	LD	(VFH),HL
+	EX	DE,HL
+	POP	HL
+	CALL	@LFORW##
+;          }
+UN8:
+;        vfh.val->back.val = vfl.val;
+	LD	HL,(VFH)
+	LD	DE,(VFL)
+	CALL	@LBACK##
+;        vfl.val->forw.val = vfh.val;
+	LD	HL,(VFL)
+	LD	DE,(VFH)
+	CALL	@LFORW##
+;        return TRUE;
+RETT:	LD	A,1
+	OR	A
+	RET
+;        }
+;UN6	EQU	UN2
+UN4:
+;      else
+;        {
+;        vfl.val->forw.assgn = makesexpr(hie,vfl.val,his);
+	LD	HL,(HIEX)
+	LD	DE,(VFL)
+	LD	BC,(HIS)
+	CALL	MKSEXPR##
+	EX	DE,HL
+	LD	HL,(VFL)
+	CALL	@LFORW##
+;        return TRUE;
+	JR	RETT
+;        }
+;      }
+;UN5	EQU	UN2
+UN3:
+;    else
+;      return unify(vfl.assgn->sexp.list,vfl.assgn->slist,
+;                   hie,his);
+	LD	HL,(HIEX)
+	LD	DE,(HIS)
+	EXX
+	LD	HL,(VFL)
+	CALL	@SLIST##
+	PUSH	HL
+	LD	HL,(VFL)
+	CALL	@EXPR##
+	POP	DE
+	JP	UNIFY		; tail recursion
+;    }
+;
+UN2:
+UN5	EQU	UN2
+UN6	EQU	UN2
+;  if (nelistp(lowex.list))
+	LD	HL,(LOWEX)
+	CALL	NELP##
+	JR	Z,UN9
+;    {
+;    if (varp(hie))
+	LD	HL,(HIEX)
+	CALL	VARP##
+	JR	Z,UN10
+;      {
+;      vfh.val->forw.assgn = makesexpr(lowe,vfh.val,lows);
+	LD	HL,(LOWEX)
+	LD	DE,(VFH)
+	LD	BC,(LOWS)
+	CALL	MKSEXPR##
+	EX	DE,HL
+	LD	HL,(VFH)
+	CALL	@LFORW##
+;      return TRUE;
+	JP	RETT
+;      }
+UN10:
+;    else if (nelistp(hie))
+	LD	HL,(HIEX)
+	CALL	NELP##
+	JR	Z,UN11
+;      {
+;      return (unify(lowex.list->left.list,lows,
+;                     hiex.list->left.list,his) &&
+;              unify(lowex.list->right.list,lows,
+;                     hiex.list->right.list,his));
+	LD	HL,(HIEX)
+	PUSH	HL
+	CALL	@LEFT##
+	LD	DE,(HIS)
+	PUSH	DE
+	EXX
+	LD	HL,(LOWEX)
+	PUSH	HL
+	CALL	@LEFT##
+	LD	DE,(LOWS)
+	PUSH	DE
+	CALL	UNIFY		; recursion
+	JR	Z,UN12
+	POP	DE
+	POP	HL
+	PUSH	DE
+	CALL	@RIGHT##
+	POP	DE
+	EXX
+	POP	DE
+	POP	HL
+	PUSH	DE
+	CALL	@RIGHT##
+	POP	DE
+	EXX
+	JP	UNIFY		; tail recursion
+;      }
+UN12:
+	POP	HL
+	POP	HL
+	POP	HL
+	POP	HL
+UN11:
+;    else /* hie is symbol or number or empty */
+;      {
+;      return FALSE;
+RETF:
+	XOR	A
+	RET
+;      }
+;    }
+UN9:
+;  else /* lowex is symbol or number or empty */
+;    {
+;    if (varp(hie))
+	LD	HL,(HIEX)
+	CALL	VARP##
+	JR	Z,UN13
+;      {
+;      vfh.val->forw.assgn = makesexpr(lowe,vfh.val,lows);
+	LD	HL,(LOWEX)
+	LD	DE,(VFH)
+	LD	BC,(LOWS)
+	CALL	MKSEXPR##
+	EX	DE,HL
+	LD	HL,(VFH)
+	CALL	@LFORW##
+;      return TRUE;
+	JP	RETT
+;      }
+UN13:
+;    else if (nelistp(hie))
+;      return FALSE;
+	CALL	NELP
+	JR	NZ,RETF
+;    else /* hie is symbol or number or empty */
+;      {
+;      return (hiex.list == lowex.list);
+	LD	DE,(LOWEX)
+	CALL	CPHL##
+	JP	Z,RETT
+	JR	RETF
+;      }
+;    }
+;  }
+
+	END
+
+

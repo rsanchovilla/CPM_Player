@@ -1,0 +1,679 @@
+
+READ PSTR$(var)         Stores pointer of string data stmt
+
+RIGHT$(str$,len)        Returns len char's from right of str$
+SPACE$(expr)            Returns expr spaces
+SPC(expr) same 
+ 
+STR$(expr)    expr to string
+VAL(str$)     Value of str$
+
+TIME$         hh:mm:ss
+UCASE$(str$)  Returns uppercase str$
+UNS$(expr)    Returns unsigned integer
+STRING$(expr, char)  Returns expr CHAR'S
+ 
+APPEND line#, filename  Append a non-line#'ed subroutine to the
+                        prgm in memory at line#. Increment of 1
+
+AUTO start line#, incr  Automatically adds line#'s for you.
+
+DEL line# or lne#-lne#  Delete prgm line(s) in memory. 
+ 
+DIR drivespec     Displays a directory of files for dspec
+
+EDIT line#        Engage line editor for line#.(OR just E)     
+                  <comma> will engage current line# for editing.
+
+FIND(#) or"str    Finds text. #=line#s. "=str's. ;=next
+ 
+
+(L)LIST (*,+)    LIST prgm lines to screen. LLIST to printer.
+                 +=no line#'s, *=enhanc.(some) See WIDTH & PAGE
+
+LOAD(*) filename LOADs prgm. Erases old prgm. LOAD*=condenses
+
+MEM      00000 Text     Bytes used w/text
+         00000 Memory   Bytes remaining for text
+         00000 Object   Bytes for obj.(only immed. after RUN!)
+         00000 Variable Bytes used for variables.
+
+NEW      Erases program in mem.
+ 
+MERGE (*) filename   MERGE program into program in memory.
+                     Overwrites text w/same line#. *=condense
+
+QUIT                 Exit ZBasic. Go back to DOS
+
+RENUM new, old, incr Renumbers program in memory.
+RUN           Compile, execute
+RUN filename  Comp from disk, exec
+RUN*          Comp, save object to disk
+RUN* filename Comp from disk, save obj disk
+RUN+          Comp, exec CHAIN
+RUN+filename  Comp from disk, Save CHAIN obj to disk
+
+More ...       
+ 
+SAVE filename      Save program tokenized
+SAVE*filename      Save program in ASCII
+SAVE+filename      Save program in ASCII, no line numbers
+ 
+                                                                
+EDIT line# or label
+or E line# or label
+or E <ENTER> to edit last line
+or <comma> to edit last line
+
+The ZBasic Editor uses the same keys with
+all versions of ZBasic! Learn one, learn 'em all!
+
+--- EDIT KEYS ---
+To move the cursor:
+
+LEFT:  n <BKSPACE> or <DEL> or <---    
+RIGHT  n <SPACE> or --->     
+
+L      Lists complete line being edited. Puts cursor on 1st char
+A      Undo (abort) changes, start edit over. 
+ 
+n  C <key(s)>  Change n char's under cursr to  key(s)
+n  D           Delete n char's under cursor. n is optional    
+   H           Hack off line at cursor, enter Insert mode.
+   I           Insert mode. <ESC> to exit insert mode.
+ 
+n K <key>    Delete char's to nth occurence of <key>. default=1
+n S <key>    Put cursor to nth occurence of <key>. default=1
+
+<ESC>        Exits I, K, S, C, H and X edit modes.
+<ENTER>      Accept edit session.
+<BREAK>      Abort session. (or <CTRL C>)
+ 
+
+Complex strings:
+
+Do not use complex strings in IF statements 
+BAD:  IF RIGHT$(A$)="S" ...
+GOOD: B$=RIGHT$(A$): IF B$="S"...
+
+ONE COMPLEX STRING PER STATEMENT
+BAD:  A$=RIGHT$(LEFT$(C$,5),1)
+GOOD: A$=LEFT$(C$,5):A$=RIGHT$(A$,1)
+ 
+--IMPORTANT ZBasic Str$ INFO!--
+
+ZBasic strings default to 255 char lengths. 256 bytes are used
+for every string encountered unless YOU define the lengths!!!   
+
+Use: DEFLEN OR DIM TO DEFINE STRING LENGTH
+
+See INDEX$ for special string array. 
+ 
+ASC(str$)     Returns ASCII code of str$
+BIN$(expr)    Returns 16 bit binary#
+CHR$(expr)    Returns ASCII string. CHR$(65)= "A"
+DATE$         Returns system date: mm/dd/yy
+HEX$(expr)    Returns 4 digit Hexidecimal of expr.
+
+More ...
+ 
+-- SPECIAL INDEX$--
+
+This is a special array for storing string information. Unlike
+other ZBasic strings, each element of this array uses only the
+amount of memory needed.
+
+ZBasic provides some VERY POWERFUL commands for INDEX$
+
+More ...
+ 
+INDEX$(n)=str$   Assigns value     
+str$=INDEX$(n)   Assigns str$ value
+INDEX$D(n)       Deletes element n
+INDEX$I(n)=str$  Inserts str$ at element n
+
+x=INDEX$(str$,n) Find str$ in INDEX$ (n=opt strt)
+                 x=elmnt# or -1 if not fnd
+More ...
+ 
+INKEY$    Returns the last key pressed...on the fly
+
+Examples:
+
+DO: I$=INKEY$ : UNTIL LEN(I$)---> Waits for a key to be pressed
+
+IF INKEY$="S" THEN STOP  -------> Stops program if you press "S"
+<Also see TRONB>
+ 
+INSTR(pos, str$1, str$2)   Find str$2 in str$1 from position pos
+                           returns pos# if found. Zero if not.
+
+LEN(str$)                  Returns number of char's in str$   
+                           including spaces.
+ 
+LEFT$(str$,len)       Returns len char's from left side of str$
+
+X$=MID$(str$,pos,len) X$=portion of str$ from pos w/len length  
+
+MID$(str$,pos,len)=X$ str$=len char's of X$ at str$ position pos
+
+OCT$(expr)            OCTAL equiv. of expr
+ 
+MKB$(expr)  Stores BCD number into condensed string format
+MKI$(expr)  Stores integer number into cond. string format
+
+CVB(str$)   Converts str$ made with MKB$ into a BCD number
+CVI(str$)   Converts str$ made with MKI$ into an integer number
+ 
+---------- For more HELP with Strings type: HELP 8 -------
+ 
+---GRAPHICS---
+
+ALL ZBasic GRAPHIC commands use Device Independent Coordinates
+of 1024 across by 768 down, regardless of mode or computer!
+
+It is important to read the chapter "GRAPHICS" in the ZBasic
+manual if you do not understand this system.
+ 
+BOX x,y TO x1,y1    Draw a BOX outline with corners x,y & x1,y1
+BOXFILL x,yTOx1,y1  Draw a solid BOX w/corners x,y-x1,y1  
+
+Brads               Positions on circumf. of CIRCLE from 0-255
+                    0 is at 3 o'clock. Goes counter-clockwise
+ 
+CIRCLE x,y,r         Draw outline of circle at x,y w/radius of r
+CIRCLEFILL x,y,r     SOLID circle
+CIRCLE x,y,r TO s,n  Draw PIE.  s=brad start pos. n=num of brads
+CIRCLE x,y,rPLOTs,n  Draw ARC.  "" ""...
+
+RATIO width,height   Aspect of circle
+ 
+COLOR = n     COLOR to be used with BOX, CIRCLE, FILL & PLOT
+              0=black  -1=white
+
+FILL(x,y)     Fills area with color
+
+PRINT@(x,y)   Print at text position
+PRINT%(x,y)   Print at graphic position
+INPUT@(x,y)   ""
+INPUT%(x,y)   ""
+ 
+POINT(x,y)  Returns color of pixel at x,y
+            (Not all systems)
+
+LOCATEx,y[,c] Cursor  x,y  c=0 Cursor OFF, c=-1  ON   
+
+CLS      Clear screen. Cursor to 0,0
+CLSLINE  Clear to end of line, cursor stays
+CLSPAGE  Clear to end of page. ""
+ 
+PLOT x,y          Plot one point
+PLOT x,y TO x,y   Plot a line
+PLOT TO x,y       Plot line from last point to x,y 
+
+PLOT x,y TO x1,y1 TO x2, y2 TO...  Lots of lines
+
+PLOT quality determined by MODE.
+
+SOUND frequency, duration   Make sound
+ 
+Graphic positions:
+
+0,0-----0,512-----0,1023
+-                    -
+0,384--384,512--384,1023
+-                    -
+767,1023--------767,1023
+
+Positions stay the same
+regardless of mode or system.
+ 
+
+----- PIXELS versus POSITION -----
+
+REMEMBER: ZBasic graphics are device independent! This
+means coordinates refer to POSITIONS ON THE SCREEN...
+NOT PIXELS.
+
+Positions are the same REGARDLESS OF MODE or SYSTEM
+being used.
+ 
+MODEs    
+
+MODE=n   Sets screen mode for text and graphics
+
+CPM80 (Z80) Graphics are limited to characters ONLY!
+            In MODEs 0,2,4,6 COLOR=CHR$(expr)
+            In MODEs 1,3,5,7 COLOR 0,-1
+MODE=7  BEST MODE 80x25 character text
+
+More ...
+ 
+ 
+Device Independent Graphics----
+1024 x 768   regardless of computer
+COLOR=0      Black
+COLOR=-1     White
+COLOR=n      See apdx for more info
+SOUND frequency, duration
+0,0      Upper left
+0,1023   Upper right
+767,0    Lower left
+1023,767 Lower right
+ 
+---DISK FILES---
+
+ZBasic file commands are the same for
+all computers.  Learn on this system and
+you will know all the others!
+
+For in depth information about disk
+files see "FILES" in the ZBasic manual.
+
+<SPACE> for more..
+ 
+ERROR=expr     Reset ERROR=0 for disk trapping
+ERROR          Returns disk error code. See ERRMSG$
+CLOSE#fnum,... Closes file by number.
+CLOSE#         CLOSES all files
+END or STOP    CLOSES all files
+
+More ...
+ 
+INPUT#fnum, var,var  Reads ASCII data from disk into variables
+LINEINPUT#fnum, var$ Reads ASCII data from disk into string only
+
+KILL "filename"      Erases file from disk
+
+LOC(fnum)  Returns location in record
+LOF(fnum)  Last record (?)
+ 
+ON ERROR GOSUB line#  User traps disk errors. If a disk error
+                      occurs (ERROR <> 0), line# is called.
+
+ON ERROR GOSUB 65535  User error trapping on. See ERROR
+
+ON ERROR RETURN       Returns Disk Error trapping to ZBasic.
+
+More ...
+ 
+OPEN"ftype", filenumber, filename$ (,optional RECORD length)
+
+ftypes:
+  "R"=Read/Write file   Open if exists, else create
+  "O"=Output only       Write over existing, or create
+  "I"=Input only        Read if exists, else disk error
+
+More ...
+ 
+PRINT# filenumber, var, data,.
+Prints ASCII to disk
+
+
+READ# fnum, var, var$;len, ... (variables only)
+Reads condensed numbers from disk. String variables
+MUST be followed by ;length. FASTER than INPUT#
+
+REC(fnum)  Present record of filenumber
+
+More ...
+ 
+RECORD # filenumber,  record number (, optional location in rec)
+Positions the disk pointer to any position in a file. To point
+at the 14th position in record 9 of file 3--> RECORD #3, 9, 14
+
+RENAME oldfile TO newfile  Renames old to new
+
+More ...
+ 
+ROUTE # expr  ROUTE all PRINT statements in program to DEVICE 
+DEVICE
+-1,-2   Serial ports 1 or 2 (Use OPEN"C" to set port)
+0       Screen (default)
+1-99    Disk files (OPEN"O". Remember to CLOSE file.)
+128     Printer (Turns PRINT into LPRINT).
+ 
+Executing a CHAIN file:  OPEN"I",fnum,filename$
+                         RUN fnum
+
+WRITE# fnum, var, var$;len,...
+Write numeric variables to disk in condensed format.
+String variables MUST be followed by ;length
+Faster than PRINT#
+
+More ...
+ 
+
+ERRMSG$ (error number)  Returns the disk error message
+
+See "STRING VARIABLES" in ZBasic manual for more information....
+ 
+
+------Machine SPECIFIC Information ----
+
+WARNING: USE OF MACHINE SPECIFIC COMMANDS
+         PRESUPPOSES A KNOWLEDGE OF ASSEMBLY
+         LANGUAGE PROGRAMMING AND A KNOWLEDGE
+         OF THIS COMPUTER.
+
+         PORTING MAY NOT BE POSSIBLE!!
+
+More ...
+ 
+CALL nnnnn   Call subroutine at address
+CALL LINE n  Call MACHLG subroutine at LINE line# or label
+
+DEFUSR digit=address  Sets USR call address
+
+INP(port)    Read data from port. (Z-80 or 8088 only)
+
+
+More ...
+ 
+LINE line# or label  Returns the address of line# or label
+
+OUT port, data       Sends data to port. (Z-80 or 8088 only)
+
+PEEK(address)        8 bit (0-255)
+PEEKWORD(addr)      16 bit (0-65535)
+PEEKLONG(addr)      32 bit machines only
+ 
+POKE address, byte expr     8 bit
+POKEWORD addr, expr        16 bit
+POKELONG addr, expr        32 bit machines only
+
+MACHLG byte, word, var     Create a line with machine lang data
+                           to CALL LINE or DEF USR
+
+More ...
+ 
+USR digit (expr)  User statement and function 0-9
+
+8086 notes: Replace address with address, segment for PEEK,POKE
+
+32 bit users:  See PEEKLONG,POKELONG, DEFDBLINT, var&.
+
+WARNING: Machine specific code may cause unpredictable results!
+
+--END--
+ 
+ 
+ 
+ 
+ 
+
+ 
+--SCREEN, PRINTER, DEVICE I/O-----
+
+This section deals with ways of presenting data on
+the screen, printer or other devices.
+
+Output will vary depending on the printer, screen
+hardware and other hardware.                   
+ 
+CLS (ASCII)   Clear screen. (w/opt ASCII char)
+CLSLINE       Clear to end of line
+CLSPAGE       Clear to end of screen
+
+DEF TAB       Define comma tab stops. (default=16)
+
+DELAY expr    Delay system expr/1000ths sec    
+
+DATE$         mm/dd/yy
+ 
+INPUT (screenpos)(maxlen,) (!) (;) ("str";) var, var,...
+
+screenpos  INPUT@(x,y) text position, INPUT%(x,y) graphic pos.
+
+maxlen,    Maximum# char's to input
+
+;          Suppress cr
+
+"str"      string message
+
+var, var,  vars to inpt
+ 
+LINEINPUT     Same as INPUT except only one string variable may
+              be input.  Accepts quotes, commas, etc. terminate
+              with <ENTER>.
+
+INKEY$       Reads keys on th fly. See STRINGS
+
+LPRINT       Sends output to the printer.
+ 
+PAGE function  Sends page feed to printer
+X=PAGE         Returns present line on page of printer
+POS(n)         Returns cursor position of: 0=scrn, 1=prt, 2=disk
+
+PAGE 1,2,3    1=Printed lines. 2=Actual lines. 3=Top margin
+(for printer only)
+ 
+PRINT@(x,y)    Text position
+PRINT%(x,y)    Graphic position
+
+;              supress c/r
+,              vertical tab (see DEF TAB)
+
+TAB(expr)      Insert tab 0-255
+
+SPC(expr)      Spaces=expr
+
+You may print variables or data separated by ; or ,
+ 
+MODE= n    Sets screen attributes. See Graphics.
+
+MOUSE(0)   Initialize mouse
+MOUSE(1)   Return X coordinate
+MOUSE(2)   Return Y ""
+MOUSE(3)   Button status
+
+NOTE: MOUSE is used for JOYSTICKS and other devices too.
+
+SOUND frequency, duration
+ 
+PRINT USING "###,###.##";1223.125 = 1,223.13
+PRINT USING "$##,###.##";999.3212 =  $999.32
+PRINT USING "*##,###.##";32.598   =****32.60
+PRINT USING "+##,###.##";32.598   =   +32.60
+PRINT USING "+##,###.##";-45.199  =   -45.20
+ 
+PRINT USING"##/##/##";33185  03/31/85
+PRINT USING"##:##:##";12349   1:23:49
+PRINT USING".#######";1.2E-5 .000012
+PRINT USING"%###.##";123.355 %123.36
+PRINT USING"@###,###";34.349 @     34
+A$="##":PRINT USING A$;89.9  90
+
+More ...
+ 
+WIDTH  expr        Set screen width. Formats text nicely!
+WIDTH LPRINT expr  Set printer width. Excellent formatting.
+
+ROUTE See route in Disk Files
+
+TIME$  hh:mm:ss (IF system has clock)
+
+SOUND freq, duration
+
+
+---END SCREEN, PRINTER, DEVICE I/O----
+ 
+---- STATEMENTS -----
+
+The following is a list of
+ZBasic statements in alpha-
+betical order.
+
+CLEAR      Sets all variables to 0 or null
+CLEAR num  Allocates INDEX$ memory
+CLEAR END  Clears only following variables
+CLEAR INDEX$ Clears INDEX$
+ 
+DATA item, item  Store data in table. See RESTORE and READ 
+DEFINTvr,var-var Define letter range as integer
+DEFSNG "" ""     Define letter range as single prec.
+DEFDBL "" ""     Define letter range as Double prec.
+DEFSTR "" ""     Define string
+ 
+DEF FN name(,var's)  Defines function by name
+DEF LEN= expr        Following strings will have this length
+DELAY = expr         Delay in expr/1000ths of second
+DIM (len) var(n,n)   Dimension arrays --or-- Define a strings length
+
+More ...
+ 
+DO: UNTIL cond  DO LOOP
+ELSE            IF false do ELSE
+END             CLOSE files, end
+END IF          Ends a LONG IF construct
+END FN          Ends a LONG FN construct
+FN name(expr's) Executes function by name
+FOR var=xTOx    FOR LOOP:
+
+More ...
+ 
+GOSUB line or label  Calls routine. See RETURN
+GOTO  line or label  Jumps to that part of program
+IF cond THEN..ELSE   Check for conditions
+INDEX$               See INDEX$ in STRINGS
+LET var=expr         Optional assignment
+
+More ...
+ 
+LONG FN name(var) Multi-line DEF FN. See END FN
+LONG IF cond....  Multi-line IF. See END IF and XELSE
+MID$(v$,pos,len)= Insert string portion into s$
+NEXT (var,var)    End of FOR LOOP construct
+ON expr GOSUB1,2, GOSUBs to routine# expr.
+
+More ...
+ 
+ON expr GOTO 1,2,.. GOTO line or label specified by expr
+PSTR$(v%)="const"   Set PSTR$(v%) to point at string constant
+RANDOM expr         Random num seed
+READ var            Reads DATA into variables
+READ PSTR$(v%)      Sets pointer to DATA$
+ 
+REM           Put remarks in prog. ' for short
+RESTORE       Sets DATA pointer to first item
+RESTORE expr  Set pointer to item# expr
+RETURN        Returns to statement after GOSUB
+RETURN line   POPS last GOSUB
+SOUND freq, duration
+STEP expr 
+ 
+STOP     CLOSES files, prints line#, stops
+SWAP var,var  Swaps values of same var type. (NOT INDEX$)
+
+TRON   Line# trace on
+TRONB  Scan <BREAK><CTRLC> each line
+TRONS  Set single step. <CTRLZ><KEY>
+TRONX  Scan <BREAK><CTRLC> that line only
+ 
+TROFF    Turn off TRON, TRONB, TRONX and TRONS
+UNTIL    End of DO:UNTIL loop
+WEND     End of WHILE loop
+WHILE    WHILE/WEND LOOP
+XELSE    LONG IF else.
+
+-----END OF STATEMENTS------
+Type HELP for main menu...
+ 
+---- MATH ----
+Number ranges:
+INTEGER   -32768 TO 32767 (0-65535 unsigned)
+BCD(REAL) 9.999E+63 TO 9.999E+63
+HEX       &H0000 TO &HFFFF
+OCTAL     &O000000 TO &O000000
+BINARY    16 bit
+
+Overflow errors:
+INTEGER  = NONE
+BCD(REAL)= 9.99999E+63
+ 
+Math Accuracy:
+6 to 54 digits BCD:  Set under <C>onfigure.
+Single precision
+Double precision
+and Scientific accuracy  may be set by the user.
+Operators in Order of Precedence:
+- Negation
+NOT
+^,[
+*,\,/, MOD
++,-
+<,>,<=,>=,<>,=,<<,>>
+Expressions:  ZBasic assumes all expressions to be integer
+              unless #,!, a decimal point or scientific
+              function is encountered in that expression.
+
+More ...
+ 
+Parentheses force precedence
+
+Numeric Functions:
+ABS(expr) Returns Absolute Value (positive)
+ASC(str$) Returns ASCII code of 1st char of str$
+ATN(expr) Returns ARCTAN of expr in Radians
+COS(expr) Returns COSINE of expr in Radians
+
+More ...
+ 
+CVB(str$)   Returns BCD value of str$ 
+CVI(str$)   Returns integer value of 1st 2 chars or str$
+EXP(expr)   Returns e^expr in BCD
+FIX(expr)   Truncates digits to left of decimal point
+FRAC(expr)  FRAC(1233.9993) = .9993
+
+
+More ...
+ 
+INDEXF(s$,n)  Finds s$ in INDEX$ starting at element n
+INT(expr)     Truncates decimal value
+LOG(expr)     Returns natural LOG of expr. LOG10= LOG(n)/LOG(10)
+MAYBE         FAST 50/50 RND. Returns 0 or -1
+MEM           Memory left in INDEX$
+ 
+PAGE       Line pointer for printer
+POS(0,1,2) Position of cursor for Screen, Printer or Disk
+RND(expr)  Returns a random number between 1 and expr
+SGN(expr)  Returns sign of expr. Neg=-1, Zero=0, Positive=1
+ 
+SIN(expr)    Returns the SINE of expr in Radians
+SQR(expr)    Returns the Square Root of expr.
+TAN(expr)    Returns the TANGENT of expr in Radians
+VAL(str$)    Returns the numeric value of a sting
+
+More ...
+ 
+VARPTR(variable)   Returns the address of a variable
+
+VARPTR(INTEGER) Points to 1st byte
+VARPTR(Sng/Dbl) Points to sign/exponent byte
+VARPTR(String)  Points to Length byte, followed by char's
+VARPTR(Array)   Points to element
+
+See "Variable Storage"
+ 
+------ See "MATH" in the ZBasic manual------
+ 
+--------- SPECIAL CPM80 2.2 & 3.0 NOTES ---------
+SPECIAL CPM80 Notes:
+Filespecs [d:]filename[.ext]
+d: is drive to use A:,B:,C:.....
+filename May be upper or lower case starting with a letter
+.ext File extension like .BAS,.COM or .DAT
+<Space for more>.
+------- CPM LIMITATIONS --------
+CPM80 uses only Character mode Graphics
+All configuration questions must be answered for
+PRINT@(x,y),GRAPHICS,CLS LINE,CLS PAGE,CLS to operate!!
+POINT & FILL will not operate on the CPM80 version.
+<Space for more>.
+-- ZBasic 3.0 CPM80 --
+The Keys must be configured for the ZBasic editor
+to scroll and position keys to function.
+Overlays are allowed in the CPM versions to allow
+Faster and smaller programs See Appendix.
+.COM file names must be Typed in UPPER case!!!
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    2

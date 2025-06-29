@@ -1,0 +1,82 @@
+h61755
+s 00070/00000/00000
+d D 1.1 83/03/21 17:28:39 mrk 1 0
+c date and time created 83/03/21 17:28:39 by mrk
+e
+u
+mrk
+U
+t
+T
+I 1
+subroutine setbit (x, y, qvis)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: Encode an x y point into the raster buffer             #
+#                                                                      #
+#     Input Parameters:                                                #
+#            x, y - raster point to be turned on                       #
+#                                                                      #
+#     Output Parameters:                                               #
+#            qvis - flag indicating if the point was visible           #
+#                                                                      #
+#     Routines Called:                                                 #
+#            divid - divid 2 16 bit unsigned integers                  #
+#            mult  - multiply two 16 bit unsigned integers             #
+########################################################################
+integer x, y
+logical qvis
+
+integer xpos, ypos, iout, ival, j, k, i, index, yrow
+integer divid , mult
+
+integer dispnt, pagcnt, primfg, objlst(DISPLAYxLISTxLENGTH)
+integer ytop,ybot
+SHORTINT rasbuf(RASTERxLENGTH)
+
+include(`ddcom')
+
+common /printr/ dispnt, pagcnt, primfg, objlst
+common /raster/ ytop, ybot, rasbuf
+
+   qvis = .false.   # start out saying point not in strip
+
+   if (y < ybot | y > ytop) return  # Point is not in current printer scan
+
+   if (x < 0 | x > XxLIMITSxPRINTER)  return   # Can not put out this X point
+
+   qvis = .true.   # Now the point is visible
+
+   xpos = x + 1                  # Bias into (1-max) range
+
+   # Since more than one scan line is displayed, determine correct line
+   ypos = ytop - y          # Bias into current rows (0 - (n-1))
+   yrow = divid (ypos, PRINTxSIZE, i)  # Mod for the row, save bit too in i
+
+   index = mult( yrow, RASTERxBUFFER) + xpos  # Byte to access
+
+   j = 1      # Determine bit to set
+   i = 6 - i  # Flip the i around
+   for (; i>0; i=i-1) {
+      j = mult (2, j)
+      }
+
+   # Need to see if the bit is already set before adding it in
+   k = mult(j, 2)
+   ival = divid (rasbuf(index), k, iout) # And off bottem bits into iout
+
+   if  (iout < j)  {  # The bit is not set, need to set it
+      rasbuf(index) = rasbuf(index)+j  # Set the correct bit for the MX-80
+      }
+
+   return
+end
+E 1

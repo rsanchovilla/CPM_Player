@@ -1,0 +1,157 @@
++ 1 SC
+                  **  Spelling Checker Help TOPIC Menu  **
+ 
+ 
+ * Commands *
+..............
+:            :
+:   PROOF    :  checks the working area for words NOT in the Dictionary.
+:            :
+:            :
+:  CORRECT   :  corrects the working area based on the "Correction List".
+:            :
+:            :
+:   SPELL    :  list words from a Dictionary on the screen or places
+:            :                                    them on Correction Lines.
+:            :
+:   AMEND    :  updates a Dictionary from a list of corrections in work area.
+:            :
+:............:
++ 1 PROOF
+   1/1 WHAT NEXT?  PROOF
+                   -----
+       The PROOF Command checks the working area for any words which
+    are NOT in the T/Maker Dictionary or other specified dictionaries.
+ 
+  NO distinction is made between UPPER & LOWER case when searching for words
+  --------------------------------------------------------------------------
+  * PROOF prepares a "Correction List" of words NOT found in the dictionary.
+ 
+          The list is made up of  "Correction Lines".
+          Each line in this list looks like:     =!   word     word
+ 
+          The first occurence of the "word" may be thought of as the
+   CURRENT SPELLING of the word in the file.
+ 
+          The second occurence of the "word" may be thought of as the
+   optional spelling to be corrected and later substituted.
+  --------------------------------------------------------------------------
+   **  PROOF also marks unindentified words in the text by preceding them
+           with a "Spell-Marker", that is, the sybmol:       ?=
++
+                              Example of  PROOF
+ 
+ 
+        Working Area                               Result of  PROOF
+ 
+ 
+Itt is now tme for all good                    =!  Itt          Itt
+men and women to come to the                   =!  prty         prty
+aid of their prty.                             =!  tme          tme
+ 
+ 
+                                               ?=Itt is now  ?=tme for all good
+                                               men and women to come to the
+                                               aid of their  ?=prty.
++ 1 CORRECT
+1/1 WHAT NEXT?  CORRECT
+                -------
+       CORRECT will "correct" the working area based on the "correction
+                   list"  produced by the Command PROOF.
+ 
+ 
+                     You have 4 OPTIONS at this point:
+ -----------------------------------------------------------------------------
+Option # 1:  Use the SPELL Command to show a listing of possible correct
+                 spellings  (SEE MORE ON SPELL COMMAND BELOW).
+ 
+ ---------------
+Option # 2:  The word is an obvious misspelling and you correct the
+                       SECOND OCCURENCE of the word (on Correction Line).
+ 
+             CORRECT will then substitute all occurences of the FIRST
+                OCCURENCE with that of the SECOND.
+ 
+             CORRECT will also remove all   ?=   (Spell-Markers) from the file.
++
+ ---------------
+Option # 3:  The word is correct, however, it is NOT in the Dictionary
+                and should be INCLUDED.  (See case of "quadraphonic" below).
+ 
+           To ADD a word to a Dictionary, you must first change the
+              Correction Line Symbol  (=!)  to an "Amend+Marker"  symbol  (+=).
+              Subsequent use of the AMEND Command will add the word to
+              the Dictionary and remove the Correction Line from the file.
+ ---------------
+Option # 4:  The word is correct and is NOT in the Dictionary and should NOT
+                be included in the source. (See case of "Isuzu" below).
+ 
+             You leave the Correction Line unchanged.  The CORRECT Command
+                will delete the Correction Line and corresponding occurences
+                of Spell-Markers  (?=)  in the text.
+ ---------------
+Option # 5:  The correctness of the word is impossible to determine without
+                looking at the word in context.
+ 
+             Use the SEARCH Command to find this condition.
++
+                               CORRECT Example
+             PROOF                   |              Editing
+=! compny        compny              |    =! compny         company
+=! Ferrari       Ferrari             |    =! Ferrari        Ferrari
+=! quadraphonic  quadraphonic        |    +! quadraphonic   quadraphonic
+=! rd            rd                  |    =! rd
+                                     |
+Our ?=compny is considering          |    Our ?=compny is considering
+the purchase of a ?=Ferrari with     |    the purchase of a ?=Ferrari with
+a ?=quadraphonic stereo in the       |    a ?=quadraphonic stereo in the
+3?=rd quarter.                       |    3?=rd quarter.
+ ____________________________________|________________________________________
+                                CORRECT
+                    +! quadraphonic     quadraphonic
+                    =! rd
+ 
+                    Our company is considering the
+                    purchase of a Ferrari with
+                    a quadraphonic stereo in the
+                    3?=rd quarter.
++ 1 SPELL
+1/1 WHAT NEXT?  SPELL
+                -----
+SPELL lists words from a Dictionary on the screen or places them on
+ ------------------------------------------------------------ Correction Lines.
+You MUST give T/Maker an AMBIGUOUS WORD REFERENCE.            ----------------
+ 
+   An   Ambiguous Word Reference   is made up:
+ 
+           ?     A Question Mark is used to represent one unknown letter.
+           *     An Asterisk is used to represent zero or more unknown letters.
+Examples:
+ _____________________________________________________________________________
+#1           b?m*ing         This  Ambiguous Word Reference  would list all
+                             words that start with    b    , have any second
+                             letter, has    m     for a third letter, and
+                             ends with an    ing    .
+ _____________________________________________________________________________
+#2        Working  Area       ³         Result of  SPELL IT
+      =!mi*pell               ³   =!mi*pell    misspell
+      =!compatable  compat*   ³   =!compatable compat* compatibility compatible
++ 1 AMEND
+   1/1 WHAT NEXT?  AMEND
+                   -----
+ 
+   AMEND creates or updates a Dictionary from a list of corrections in
+                                                                work area.
+  --------------------------------------------------------------------------
+ 
+       Correction Lines that begin with    +!     (Amend+Marker) are
+            ADDED to the Dictionary.
+ 
+       Correction Lines that begin with    -!     (Amend-Marker) are
+            DELETED from the Dictionary.
+ 
+  --------------------------------------------------------------------------
+ 
+      Lines of the above form will be REMOVED from the working area AFTER
+                      the Dictionary has been AMENDed.
+

@@ -1,0 +1,109 @@
+(****************************************************************
+      DOCUMENTATION FOR FILES TURBWIN3.INC AND OSBTWIN2.INC
+                 (c) Copyright 1986 Claude Ostyn
+
+A.  DESCRIPTION
+
+These are "include" files for Turbo Pascal 3.xx 
+running under CP/M 80.
+
+The files contain routines to emulate the Window procedure 
+described in the Turbo Pascal manual in the "IBM PC Goodies" 
+section.   Window allows you to define a window anywhere on your 
+screen.  All writing will then take place within the window only, 
+and when the window becomes full the text within it will scroll 
+without affecting the rest of the screen.  Other screen command 
+such as GotoXY, ClrScr and ClrEol will work within the window 
+only, so that for instance GotoXY(1,1) will place the cursor at 
+the top left corner of the window.
+
+B.  FEATURES 
+
+Functions WhereX and WhereY return the current position of the 
+cursor (position where the next character will appear).
+
+The following procedures have been added:
+
+Procedure InitVideo 
+-- must be called to initialize the window emulator.  Attempts to 
+call any of the other functions without having called InitVideo 
+earlier may cause impredictable results.
+
+Procedure DeInitVideo
+-- restores the Turbo video interface as if nothing had happened.  
+You must call this procedure if you are compiling your program in 
+memory and you want to run it more than once without recompiling.  
+If you don't call DeInitVideo at the end of your program, Turbo 
+will detect an anomaly and exit to CP/M the second time you try 
+to run the program.
+
+Procedure FullScreen
+-- Resets the current window to encompass the full video screen.
+
+Procedure DrawBox(Top left corner, Bottom right corner) 
+-- Draws a box, using graphic characters if they are available.
+
+Procedure MakeWindow(Top left corner, Bottom right corner)
+-- Draws a box and sets up a window to fit inside the box. 
+
+Procedure SetVideo(Video effect)
+-- Allows you to set more than one video attribute.  Works 
+whether or not InitVideo has been called.  See limitations below.
+
+When a new window is declared, the old window parameters are 
+forgotten.
+
+C.  LIMITATIONS
+
+GotoXY does not check the validity of the parameters you pass to 
+it.  If you try to send the cursor outside the window (X > width 
+or Y > height), it may land anywhere on your screen (the standard 
+Turbo GotoXY procedure has the same limitation).
+
+If your computer uses memory-mapped video (like the Osborne 1),
+you will be able to do very fast scrolling and window blanking.
+If you don't use memory-mapped video, scrolling and blanking will 
+become proportionnally much slower as the windows become larger, 
+and you will loose 2K for the scroll memory array.
+
+However, if you make your text scroll, the video attribute (dim, 
+underline, etc.,) will not necessarily follow the text or may end 
+up in different parts of the window.  In short, if you're using 
+special effects, don't scroll.
+
+On many terminals, the whole screen scrolls up when you put any 
+character in the lower right corner of the screen.  This is a 
+feature, not a bug, but it will efectively prevent you from 
+including that corner with DrawBox or MakeWindow.
+
+My windows behave a little differently.  You can put a character
+in the lower right corner without forcing a scroll.  Scrolling
+will not happen until you try to write a character PAST that
+position.
+
+D.  USING WITH YOUR PROGRAM
+
+To use, edit a copy of the file TURBWIN3.INC as required for your
+system (see the comments in the file TURBWIN3.INC).  If you do
+not edit the file, it will be assumed to be for a terminal
+compatible with the ADM-3A, Osborne 1, etc., or Hazeltine 1500,
+but NOT memory-mapped.
+
+On the other hand, you might use the file OSBTWIND.INC which is
+compatible ONLY with the Osborne 1.
+
+Put the edited copy of the .INC file on your default disk drive.
+At the beginning of your Turbo Pascal program, add the line:
+
+     (*$I FILENAME.INC *)
+
+(of course, you must replace "FILENAME.INC" with whatever name
+you used for your edited file)
+
+TW3DEMO.PAS and OSTWDEMO.PAS are two short files which you can use
+to test your edited version.  TW3DEMO.PAS uses the include file
+TURBWIN3.INC and is for most CP/M machines, while OSTWDEMO.PAS
+uses OSBTWIND.INC and will run correctly only on the Osborne 1.
+
+ ****************************************************************)
+TWIND.INC and

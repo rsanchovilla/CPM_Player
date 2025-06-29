@@ -1,0 +1,253 @@
+
+                          SAMPLE TUTORIAL FILE
+
+Information in this area will teach you how to use Perfect Calc (tm).
+You can see the next page of this information by typing 
+
+                C-X C-V
+
+(hold down the control key and type an 'x' followed by a 'v').  You may
+review the previous page by typing
+
+                C-X C-Z  
+
+Type ? to show the on-line help
+
+Please go to the next page now.
+
+Now let's start getting acquainted with Perfect Calc.  First, let's
+discuss the types of keystrokes you'll be using.  There are basically
+three types of commands to Perfect Calc:  (Perfect Writer users will
+recognize them immediately!)
+
+    CONTROL commands are represented here by the notation "C-?"
+        where the '?' is a key to be typed while holding down
+        the control key on the keyboard.
+
+Go to the next tutorial page now with C-X C-V as before. (We will
+stop telling you to go to the next page -- just C-X C-V as required.)
+
+    ESCAPE commands are represented by the notation "ESC ?" and
+        require that you press the ESCAPE key, then press 
+        the next key indicated.  Two keystrokes are thus required.
+
+    C-X commands are like the ESCAPE commands, except that C-X is
+        pressed before the next command letter.  You have been using
+        C-X commands to page through this tutorial information.
+
+Now, look at the spreadsheet in the upper window.  It is a typical
+family budget.  Let's investigate this budget in more detail by learning
+Perfect Calc's cursor motion commands:
+
+    C-F    cursor Forward (to the right) by one
+    C-B    cursor Backward (to the left) by one
+    C-N    cursor to Next line (down) by one
+    C-P    cursor to Previous line (up) by one
+
+Try these commands out now.  Remember to hold down the control key!
+
+Using the Forward C-F command, now move the cursor to the righthand edge
+of the screen.  Now type it again.  See -- the screen follows the cursor's
+motion.  This virtual spreadsheet is really 52 columns wide by 255 lines
+long.  You're just looking through a small window into it now.  Each
+position is specified by a column letter (lowercase 'a-z' followed by
+uppercase 'A-Z').  You can GOTO any specific position by typing the '>'
+key followed by the position you want to move the cursor directly to.
+For example, GOTO position "a1" now (type ">a1" and end it with the
+<return> key.  Your cursor should now be at the home position again.
+
+The real power of Perfect Calc comes from its ability to automatically
+compute the results of any changes you make to the spreadsheet.  For
+example, in this hypothetical budget, suppose the person received a raise
+from $1,750/month to $2,000/month.  Move the cursor to position "b2"
+using the cursor motion commands (use '?' for help if necessary) and
+then type 2000.  End your entry with a <return>.  See?  Perfect Calc
+propogates the results of that rise in income throughout the rest of
+the elements on this spreadsheet.  Try changing some of the other numeric
+values on the sheet to see what effect it has.
+
+You have just entered a NUMBER to Perfect Calc.  Another important type
+data is the FORMULA, which computes a numeric value based on the
+contents of other entries.  Move the cursor around in the lines toward
+the bottom of the sheet.  Notice that when an entry contains a FORMULA,
+the text of that formula is shown at the lower lefthand screen corner.
+Notice that "Taxes" are computed using the rule of thumb "20% of gross
+gross income," while "Regular (savings)" are computed as 10% of after-tax 
+income.  Can you understand what the formulas you see mean?
+
+FORMULAS like these are entered by first typing the '=' key and then 
+the formula followed by a <return>.  Let's try this out by allowing
+savings to increase to 17.5% of after-tax income (instead of spending
+that raise!).  Position the cursor at "b9" and type "=(b2-b4)*0.175"
+and end it with C-W (not a <return> as before).  Now, this formula
+is in an internal buffer and can be replicated across a REGION, once
+we define one.  For now, though, make sure you've typed the formula
+correctly and there are no errors showing anywhere.
+
+Now, let's save some typing by replicating this formula across the sheet.
+First, we want to set a MARK to establish one end of a REGION.
+Type C-F to get to "c7" and type "ESC <space-bar>" to set a MARK there.
+Then type C-E to move directly to the END of this line.  You have now
+defined a REGION consisting of the entries from "c7" to "g7".  Now type
+ESC y" to do the replication.  Answer the "Relative?" question with
+a 'n' for NO.  You should now have a new line of savings on your sheet,
+and all the other entries have been recomputed to reflect this change.
+
+OnLine Help. 
+   C- = means Ctrl Key
+   ESC = escape key      
+   * = may be repeated via C-U     
+   + = involves buffer    
+   # = involves region
+
+MOVING THE CURSOR
+
+C-F*    cursor Forward                  ESC <   cursor to top line
+C-B*    cursor Backward                 ESC >   cursor to bottom line
+C-N*    cursor to Next line             C-A     cursor to beginning of line
+C-P*    cursor to Previous line         C-E     cursor to end of line
+>       GOTO a specific position, entered as column letter, line number
+C-S     Search to next unlocked formula or number
+
+MOVING THE SCREEN
+
+C-V*    View next page downward        ESC v*  view next page to the right
+C-Z*    view next page upward          ESC z*  view next page to the left
+C-X C-V* page down, other window       C-X v*  page right, other window
+C-X C-Z* page up, other window         C-X z*  page left, other window
+ESC C-L redraw window, centering cursor's line
+
+ENTERING DATA AND FORMULAS
+
+=       Begin Formula entry.  Formulas contain variables, numbers, and
+        functions.  To reference another buffer, use "buffername[variable]"
+-.0-9   Begin Number entry
+"       or any printing char   Begin Label entry
+C-X C-L Lock current formula (@ = locked) C-X l   Lock all formulas in region
+C-X C-U Unlock current formula            C-X u   Unlock all formulas in region
+C-X C-K Erase ENTIRE Memory (all buffers)
+
+FORMULA OPERATORS
+
++-*/        Add, subtract, multiply, divide
+^           To the power of
+<, <=       Less than (or equal to)    \
+=, <>       Equals (does not equal)     > return 1 for TRUE, 0 for FALSE
+>, >=       Greater than (or equal to) /
+
+FORMULA BUILT-IN FUNCTIONS
+
+not(x), and(x,y), or(x,y)   Logical     count(range) # entries over a range
+sin(x), cos(x), atan(x)     Trig        min(range)  Minimum over a range
+abs(x)      Absolute value of x         max(range)  Maximum over a range
+exp(x)      e^x                         sum(range)  Sum over a range
+ln(x), log(x)  Natural, base 10 log     avg(range)  Average over a range
+sqrt(x)     Square root of x            npv(d,range)  Net present value
+if(b,x,y)   x if b is nonzero else y    lookup(x,range) Lookup x over range
+
+REGIONS & THE SAVE BUFFER
+
+ESC spac        set MARK at current position
+C-X C-X         eXchange mark and cursor
+
+A REGION will then be continuously-defined as the area between the mark and
+the current cursor position.  The SAVE BUFFER is a region of elements
+which have been saved via a command marked with +.
+
+DELETING & INSERTING
+
+C-D+    Delete current element          ESC d+#     Delete region
+C-C*+   Close (delete) line(s)          ESC c*+     Close (delete) column(s)
+C-O*    Open (insert) line(s)           ESC o*      Open (insert) column(s)
+
+REPLICATING, COPYING, MOVING
+
+C-W+    Copy element into save buffer   ESC w+#    Copy region into save buffer
+C-Y+    Yank save buffer at cursor      ESC y+#    Yank save buffer into region
+YANKING copies the buffer elements onto the spreadsheet, prompting for RELATIVE
+or ABSOLUTE variable references as necessary.
+
+ABSOLUTE VS. RELATIVE VARIABLES
+
+When yanking from the save buffer, you are asked whether each variable in a
+formula is relative to its position.  Answers to the "...Relative?" question:
+
+    y       Yes, the relative variable should be adjusted for position
+    !       Repeat prev answer for EVERY variable in save buffer (default=y)
+bksp,DEL    Start the questions over from first formula variable
+   C-G      Cancel yank in progress; exit back to top command level
+  other     No, the non-relative variable should be copied with no change
+
+RECALCULATION MODES
+
+!           Perform an immediate recalculation
+C-X m       Change recalculation mode:
+
+        Line        recalculate by Lines (default)
+        Column      recalculate by Columns
+        Manual      recalculate only when requested by ! command
+        Auto        recalculate when any numeric element changes (default)
+        Region#     all subsequent recalculations only affect current region
+
+ELEMENT DISPLAY FORMATS
+
+C-X d      change Display parameters:
+
+        Global, Line, or Column: determines where following parameter applies
+        0-13    Fixed decimal places, default = 2
+        s       Scientific notation
+        $       Dollar notation, such as 12,345 or (3,899,032.89)
+        *       Graph, counting with *s instead of digits
+        f       Formulas display their text instead of their values
+
+SCREEN FORMATS
+
+C-X t       fix Titles in place along top and left edges of screen
+C-X w       Global or individual Column Width(s) -- 0 to 77
+C-X j       Global, Line, or Column justification: Left, Right, or Center
+C-X 2       display 2 windows, using cursor position to start second window
+C-X 1       back to 1 window
+C-X o       switch cursor to Other window
+
+EDITING FORMULAS AND LABELS
+
+C-X e       Edit (formula or label): 
+
+    <CR> = finished                  C-G = abort
+    C-A = cursor to start of line    C-E = cursor to End of line
+    C-B = cursor Backward            C-F = cursor Forward
+    C-D = Delete char at cursor      <DEL>   = delete char Backward
+    <other> = insert typed char
+
+MULTIPLE BUFFERS
+
+C-X a       Associate with a (subsidiary) file.  <CR> = remove association
+C-X b       Switch to another buffer.  <CR> = use just-previous buffer
+C-X C-B     Type buffer status at bottom of screen
+C-X C-F     Find file; read into a new buffer created from filename.
+C-X k       Delete a non-current buffer.
+
+READING AND WRITING FILES
+
+C-X C-P     Print to a text file or device.  Prompt for filename.
+C-X p#      Print only region to a text file as above.
+C-X C-R     Read from a data file.  Prompt for filename.
+C-X C-S     Save to a data file specified by current buffer.
+C-X C-W     Write to a data file.  Prompt for filename.
+
+
+SPECIAL KEYS; EXITING TO CP/M
+
+C-X C-C     Exit to CP/M
+<CR>        Terminate element entry in place; otherwise do nothing.
+<DEL>       Erase last keystroke.
+C-G         Cancel current command and return to top level of processing.
+C-U         Universal repeat.  May be followed by an integer (default = 4)
+            and repeats the next command that many times.
+
+
+
+
+
+
+

@@ -1,0 +1,209 @@
+GET "LIBHDR"
+
+MANIFEST
+ $( right=0
+    left=1
+    percent=2
+ $)
+
+MANIFEST
+ $( ch=11
+    sym=12
+    mode=13
+    dynp=14
+    glob=15
+    inp=16
+    out=17
+    debin=18
+    debout=19
+    vecsize=19
+ $)
+
+MANIFEST
+ $( exp=0
+    rightexp=1
+    deref=2
+    nextch=3
+    nextsym=4
+    readcon=5
+ $)
+
+MANIFEST
+ $( hexlen=bytesperword*2
+    declen=bytesperword*3
+ $)
+
+MANIFEST
+ $( tper=#X0B
+    ttimes=#X0A
+    tdiv=#X1A
+    trem=#X2A
+    tand=#X05
+    tor=#X04
+    tplus=#X09
+    tminus=#X19
+    tpling=#X12
+    tnot=#X06
+    tat=#X0C
+    tcomma=#X10
+ $)
+
+LET debug(vector,function,arg1,arg2,arg3,arg4)=VALOF
+ $( IF vector=0 THEN RESULTIS aptovec(debug,vecsize)
+    SWITCHON function INTO
+     $( CASE vecsize:
+        vector!inp := input() vector!out := output()
+        vector!debin := findinput("CON:")
+        vector!debout := findoutput("CON:")
+        vector!glob := @start-1 vector!dynp := !!!level()
+        selectinput(vector!debin) selectoutput(vector!debout)
+         $(  $( wrch(':')
+                arg2 := debug(vector,nextch)
+             $) REPEATWHILE arg2='*n'
+            debug(vector,nextch)
+            SWITCHON arg2 INTO
+             $( CASE 'Q': selectinput(vector!inp) selectoutput(vector!out)
+                RETURN
+                CASE 'N': writen(debug(vector,rightexp,1))
+                wrch('*n') ENDCASE
+                CASE 'H': writehex(debug(vector,rightexp,1),hexlen)
+                wrch('*n') ENDCASE
+                CASE 'O': writeoct(debug(vector,rightexp,1),bytesperword*3)
+                wrch('*n') ENDCASE
+                CASE 'D': arg2 := debug(vector,rightexp,1)
+                 IF vector!sym=tcomma THEN debug(vector,nextsym)
+                 arg3 := debug(vector,rightexp,1)
+                FOR x=0 TO arg3 BY 16/bytesperword DO
+                 $( writehex(arg2+x,hexlen) wrch(' ') wrch(' ')
+                    FOR y=0 TO 7 DO 
+                     $( writehex(arg2!(x+y),hexlen)
+                        wrch(' ')
+                     $)
+                    FOR y=0 TO 15 DO 
+                     $( arg4 := ((arg2+x)%y)&#X7F
+                        wrch(arg4<#X20|arg4=#X7F->'.',arg4)
+                     $)
+                    wrch('*n')
+                 $)    
+                ENDCASE
+                CASE 'S': arg2 := debug(vector,exp,1) arg3 := vector!mode
+                IF vector!sym=tcomma THEN debug(vector,nextsym)
+                arg4 := debug(vector,rightexp,1)
+                TEST arg3=percent THEN 0%arg2 := arg4 ELSE !arg2 := arg4
+             $)
+            UNTIL vector!ch='*n' DO debug(vector,nextch)
+         $) REPEAT
+        CASE nextsym: WHILE vector!ch=' ' DO debug(vector,nextch)
+        vector!sym := VALOF SWITCHON vector!ch INTO
+         $( CASE '+': debug(vector,nextch) RESULTIS tplus
+            CASE '-': debug(vector,nextch) RESULTIS tminus
+            CASE '**': debug(vector,nextch) RESULTIS ttimes
+            CASE '/': debug(vector,nextch) RESULTIS tdiv
+            CASE '!': debug(vector,nextch) RESULTIS tpling
+            CASE '%': debug(vector,nextch) RESULTIS tper
+            CASE '&': debug(vector,nextch) RESULTIS tand
+            CASE '|': debug(vector,nextch) RESULTIS tor
+            CASE 'R': debug(vector,nextch) RESULTIS trem
+            CASE '@': debug(vector,nextch) RESULTIS tat
+            CASE '~': debug(vector,nextch) RESULTIS tnot
+            CASE ',': debug(vector,nextch) RESULTIS tcomma
+            DEFAULT: RESULTIS 0
+         $)  
+        RESULTIS vector!sym
+        CASE nextch:
+        arg1 := rdch()
+        vector!ch := 'a'<=arg1<='z'->arg1-'a'+'A',arg1
+        RESULTIS vector!ch
+        CASE rightexp:
+        arg1 := debug(vector,exp,arg1)
+        CASE deref:
+        arg1 := vector!mode=right->arg1,vector!mode=left->!arg1,0%arg1
+        vector!mode := right
+        RESULTIS arg1
+        CASE exp:
+        arg3 := VALOF SWITCHON debug(vector,nextsym) INTO
+         $( CASE tat: arg2 := debug(vector,exp,tat)
+            vector!mode := right RESULTIS arg2
+            CASE tnot: RESULTIS ~debug(vector,rightexp,tnot)
+            CASE tplus: RESULTIS debug(vector,rightexp,#XFA)
+            CASE tminus: RESULTIS -debug(vector,rightexp,#XFA)
+            CASE tpling: arg2 := debug(vector,rightexp,#XFC)
+            vector!mode := left RESULTIS arg2
+            DEFAULT: arg3 := VALOF
+             $( vector!mode := left
+                IF vector!ch='D' THEN
+                 $( debug(vector,nextch)
+                    RESULTIS vector+dynp
+                 $)
+                IF vector!ch='G' THEN
+                 $( debug(vector,nextch)
+                    RESULTIS vector+glob
+                 $)
+                IF vector!ch='V' THEN
+                 $( IF '0'<=debug(vector,nextch)<='9' THEN
+                     $( arg2 := vector+vector!ch-'0'+1
+                        debug(vector,nextch)
+                        RESULTIS arg2
+                     $)
+                    RESULTIS vector
+                 $)
+                vector!mode := right
+                IF vector!ch='(' THEN
+                 $( debug(vector,nextch)
+                    arg2 := debug(vector,exp,1)
+                    debug(vector,nextch)
+                   RESULTIS arg2
+                 $)
+                IF vector!ch='#' THEN
+                 $( debug(vector,nextch)
+                    IF vector!ch='B' THEN
+                     $( debug(vector,nextch)
+                        RESULTIS debug(vector,readcon,2)
+                     $)
+                    IF vector!ch='X' THEN
+                     $( debug(vector,nextch)
+                        RESULTIS debug(vector,readcon,16)
+                     $)
+                    IF vector!ch='O' THEN debug(vector,nextch)
+                    RESULTIS debug(vector,readcon,8)
+                 $)
+                RESULTIS debug(vector,readcon,10)
+             $)
+            debug(vector,nextsym)
+            RESULTIS arg3
+         $)
+
+//  At this point vector!mode is the type of the answer so far 
+//  arg3 is the answer so far
+
+        WHILE (arg1&#X0F)<=(vector!sym&#X0F) DO
+         $( arg4 := vector!sym
+            arg3 := debug(vector,deref,arg3)
+            arg2 := debug(vector,rightexp,vector!sym+1)
+            vector!mode := right
+            arg3 := VALOF SWITCHON arg4 INTO
+             $( CASE tpling: vector!mode := left
+                CASE tplus: RESULTIS arg3+arg2
+                CASE tper: vector!mode := percent
+                RESULTIS arg3*bytesperword+arg2
+                CASE tminus: RESULTIS arg3-arg2
+                CASE ttimes: RESULTIS arg3*arg2
+                CASE tdiv: RESULTIS arg3/arg2
+                CASE trem: RESULTIS arg3 REM arg2
+                CASE tand: RESULTIS arg3&arg2
+                CASE tor: RESULTIS arg3|arg2
+             $) 
+         $)
+        RESULTIS arg3
+        CASE readcon: arg2 := 0
+         $( arg3 := vector!ch
+            TEST 'A'<=arg3<='F' THEN arg3 +:= 10-'A'
+            ELSE TEST '0'<=arg3<='9' THEN arg3 -:= '0'
+            ELSE RESULTIS arg2
+            IF arg3>=arg1 THEN RESULTIS arg2
+            arg2 := arg1*arg2+arg3
+            debug(vector,nextch)
+         $) REPEAT
+     $)
+ $)
+

@@ -1,0 +1,685 @@
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen
+                                	.SALL	
+                                
+                                	EXTRN	DCOMPR
+                                	EXTRN	CHRGTR,SYNCHR
+                                ;
+                                ;The 5.0 Disk code is essentially an extra level of buffering
+                                ;for random disk I/O files. Sequential I/O is not
+                                ;affected by the 5.0 code. Great care has been taken to
+                                ;insure compatibility with existing code to support diverse
+                                ;operating systems. The 5.0 disk code has its
+                                ;own data structure for handling the variable length
+                                ;records in random files. This data structure sits right after
+                                ;the regular data block for the file and consumes an amount of 
+                                ;memory equal to  MAXREC (The maximum allowed record size) plus
+                                ;9 bytes.
+                                ;
+                                ;Here is the content of the data block:
+                                ;
+                                ;FD.SIZ size 2			;Variable length record size default 128
+                                ;FD.PHY size 2			;Current physical record #
+                                ;FD.LOG size 2			;Current logical record number
+                                ;FD.CHG size 1			;Future flag for accross block PRINTs etc.
+                                ;FD.OPS size 2			;Output print position for PRINT, INPUT, WRITE
+                                ;FD.DAT size FD.ZSIZ		;Actual FIELD data buffer
+                                ;				;Size is FD.SIZ bytes long
+                                ;
+                                ;DATE				FIX
+                                ;----				---
+                                ;8/6/179				Make PUT, GET increment LOC correctly
+                                ;8/14/1979			PUUut in BASIC COCOcompiler switch (main source)
+                                ;%
+                                	EXTRN	DATOFS,DERBFM,DERBRN,FCERR,MAXTRK,FIVDPT,LOCOFS
+                                	EXTRN	FD.SIZ,FD.PHY,FD.LOG,FD.CHG,FD.OPS,FD.DAT
+                                	EXTRN	DERFOV,NMLOFS
+                                	EXTRN	FILSCN,PROFLG,CURLIN,SINCON,ATNCON,GTMPRT
+                                	EXTRN	TEMP,TXTTAB,VARTAB,SNERR,MAXREC
+                                	PAGE
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+Common file for BASIC interpreter
+
+                                
+                                	SUBTTL	VARECS - Variable record scan for OPEN
+                                	PUBLIC	VARECS,TEMPB,FILOFV,FILIFV,CMPFBC
+                                
+                                ;	Enter VARECS with file mode in [A]
+                                
+  0000'   FE 03                 VARECS:	CPI	MD.RND			;Random?
+  0002'   C0                    	RNZ				;No, give error later if he gave record length
+  0003'   2B                    	DCX	H			;Back up pointer
+  0004'   CD 0000*              	CALL	CHRGTR			;Test for eol
+  0007'   D5                    	PUSH	D			;Save [D,E]
+  0008'   11 0080               	LXI	D,0+DATPSC		;Assume record length=DATPSC
+  000B'   CA 0013'              	JZ	NOTSEP			;No other params for OPEN
+  000E'   C5                    	PUSH	B			;Save file data block pointer
+                                	EXTRN	INTIDX
+  000F'   CD 0000*              	CALL	INTIDX			;Get record length
+  0012'   C1                    	POP	B			;Get back file data block
+  0013'   E5                    NOTSEP:	PUSH	H			;Save text pointer
+  0014'   2A 0000*              	LHLD	MAXREC			;Is size ok?
+  0017'   CD 0000*              	CALL	DCOMPR
+  001A'   DA 0000*              	JC	FCERR			;No, give error
+  001D'   21 0000*              	LXI	H,0+FD.SIZ		;Stuff into data block
+  0020'   09                    	DAD	B
+  0021'   73                    	MOV	M,E
+  0022'   23                    	INX	H
+  0023'   72                    	MOV	M,D
+  0024'   AF                    	XRA	A			;Clear other bytes in data block
+  0025'   1E 07                 	MVI	E,7			;# of bytes to clear
+  0027'   23                    ZOFIVB:	INX	H			;Increment pointer
+  0028'   77                    	MOV	M,A			;Clear byte
+  0029'   1D                    	DCR	E			;Count down
+  002A'   C2 0027'              	JNZ	ZOFIVB			;Go back for more
+  002D'   E1                    	POP	H			;Text pointer 
+  002E'   D1                    	POP	D			;Restore [D,E]
+  002F'   C9                    	RET	
+                                	PAGE
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+VARECS - Variable record scan for OPEN
+
+                                
+                                	SUBTTL	PUT AND GET STATEMENTS
+                                
+                                	PUBLIC	GET,PUT
+  0030'   F6                    PUT:	DB	366O			;"ORI"to set non-zero flag
+  0031'   AF                    GET:	XRA	A			;Set zero
+  0032'   32 02A1'              	STA	PGTFLG			;Save flag
+  0035'   CD 0000*              	CALL	FILSCN			;Get pointer at file data block
+  0038'   FE 03                 	CPI	MD.RND			;Must be a random file
+  003A'   C2 0000*              	JNZ	DERBFM			;If not, "Bad file mode"
+  003D'   C5                    	PUSH	B			;Save pointer at file data block
+  003E'   E5                    	PUSH	H			;Save text pointer
+  003F'   21 0000*              	LXI	H,0+FD.LOG		;Fetch current logical posit
+  0042'   09                    	DAD	B
+  0043'   5E                    	MOV	E,M
+  0044'   23                    	INX	H
+  0045'   56                    	MOV	D,M
+  0046'   13                    	INX	D			;Compensate for "DCX D" when call INTIDX
+  0047'   E3                    	XTHL				;Save data block pointer and get text pointer
+  0048'   7E                    	MOV	A,M
+  0049'   FE 2C                 	CPI	44			;Is there a record number
+  004B'   CC 0000*              	CZ	INTIDX			;Read it if there, 1-indexed
+  004E'   2B                    	DCX	H			;Make sure statement ends
+  004F'   CD 0000*              	CALL	CHRGTR
+  0052'   C2 0000*              	JNZ	SNERR
+  0055'   E3                    	XTHL				;Save text pointer, get data block pointer
+  0056'   7B                    	MOV	A,E			;Get record #
+  0057'   B2                    	ORA	D			;Make sure its not zero
+  0058'   CA 0000*              	JZ	DERBRN			;If so, "Bad record number"
+  005B'   2B                    	DCX	H
+  005C'   73                    	MOV	M,E
+  005D'   23                    	INX	H
+  005E'   72                    	MOV	M,D
+  005F'   1B                    	DCX	D
+  0060'   E1                    	POP	H			;Get back text pointer 
+  0061'   C1                    	POP	B
+  0062'   E5                    	PUSH	H			;Save back text pointer 
+  0063'   C5                    	PUSH	B			;Pointer to file data block
+  0064'   21 0000*              	LXI	H,0+FD.OPS		;Zero output file posit
+  0067'   09                    	DAD	B
+  0068'   AF                    	XRA	A
+  0069'   77                    	MOV	M,A
+  006A'   23                    	INX	H
+  006B'   77                    	MOV	M,A
+  006C'   21 0000*              	LXI	H,0+FD.SIZ		;Get logical record size in [D,E]
+  006F'   09                    	DAD	B
+  0070'   7E                    	MOV	A,M
+  0071'   23                    	INX	H
+  0072'   66                    	MOV	H,M
+  0073'   6F                    	MOV	L,A
+  0074'   EB                    	XCHG				;Record size to [D,E], posit in [H,L]
+  0075'   D5                    	PUSH	D			;Save record size (count of bytes)
+                                ; Record size in [D,E]
+                                ; Logical position in [H,L]
+                                ; This code computes physical record # in [H,L]
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+PUT AND GET STATEMENTS
+
+                                ; offset into buffer in [D,E]
+  0076'   E5                    	PUSH	H			;Save logical posit
+  0077'   21 0080               	LXI	H,0+DATPSC		;Get sector size
+  007A'   CD 0000*              	CALL	DCOMPR			;Compare the two
+  007D'   E1                    	POP	H			;Restore logical posit
+  007E'   C2 0087'              	JNZ	NTLSAP			;If record size=sector size, done
+  0081'   11 0000               	LXI	D,0			;Set offset to zero
+  0084'   C3 00C5'              	JMP	DONCLC			;Done with calculations
+  0087'   42                    NTLSAP:	MOV	B,D			;Copy record size to [B,C]
+  0088'   4B                    	MOV	C,E
+  0089'   3E 10                 	MVI	A,20O			;16 by 16 multiply
+  008B'   EB                    	XCHG				;Put multiplier in [D,E]
+  008C'   21 0000               	LXI	H,0			;Set both parts of product to zero
+  008F'   E5                    	PUSH	H			;2nd part is on stack
+  0090'   29                    FRMUL1:	DAD	H
+  0091'   E3                    	XTHL	
+  0092'   D2 009A'              	JNC	FNOCRY
+  0095'   29                    	DAD	H
+  0096'   23                    	INX	H
+  0097'   C3 009B'              	JMP	FNOCY0
+  009A'   29                    FNOCRY:	DAD	H
+  009B'   E3                    FNOCY0:	XTHL	
+  009C'   EB                    	XCHG	
+  009D'   29                    	DAD	H			;Rotate [D,E] left one
+  009E'   EB                    	XCHG	
+  009F'   D2 00A9'              	JNC	FNOCY2			;Add in [B,C] if Ho=1
+  00A2'   09                    	DAD	B
+  00A3'   E3                    	XTHL	
+  00A4'   D2 00A8'              	JNC	FNOINH
+  00A7'   23                    	INX	H
+  00A8'   E3                    FNOINH:	XTHL	
+  00A9'   3D                    FNOCY2:	DCR	A			;are we done multiplying
+  00AA'   C2 0090'              	JNZ	FRMUL1			;No, go back for next bit of product
+                                ; Now divide by the number of bytes in a sector
+                                	IFF	DATPSC-256
+                                	MOV	E,L			;Remainder is just low byte
+                                	MVI	D,0			;Of which HO is 0
+                                	MOV	L,H			;Annd record # is shifted down
+                                	POP	B			;Get most sig. Byte of record #
+                                	MOV	H,C			;set record # to it
+                                	MOV	A,B			;Make sure rest=0
+                                	ORA	A
+                                	JNZ	FCERR
+                                	ENDIF				;UH-OH
+                                	IF	DATPSC-128
+                                	IF	DATPSC-256
+                                	POP	D			;Get high word of dividend in [D,E]
+                                	LXI	B,0			;Set dividend to zero.
+                                KEPSUB:	PUSH	B			;Save dividend
+                                	LXI	B,0-DATPSC		;Get divisor (# of bytes sector)
+                                	DAD	B			;Subtract it
+                                	JC	GUARCY			;Carry from low bytes implies cary from high
+                                	XCHG				;Subtract -1 from high byte
+                                	LXI	B,0-1
+                                	DAD	B
+                                	XCHG				;Put result back where it belongs
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+PUT AND GET STATEMENTS
+
+                                GUARCY:	POP	B			;Restore dividend
+                                	JNC	DONDIV			;Finished
+                                	INX	B			;Add one to it
+                                	MOV	A,B			;See if overflowed
+                                	ORA	C
+                                	JNZ	KEPSUB			;Keep at it till done
+                                	JMP	FCERR			;Yes give error
+                                DONDIV:	PUSH	B			;Save dividend
+                                	LXI	B,0+DATPSC		;Correct for one too many subtraction
+                                	DAD	B			;By adding divisor back in
+                                	POP	D			;Dividend ends up in [D,E], Remainder in [H,L]
+                                	XCHG	
+                                	ENDIF
+                                	ENDIF				;Put values in right regs for rest of code
+                                	IFF	DATPSC-128
+  00AD'   7D                    	MOV	A,L			;Get low byte of result
+  00AE'   E6 7F                 	ANI	127			;Get rid of high bit
+  00B0'   5F                    	MOV	E,A			;this is it
+  00B1'   16 00                 	MVI	D,0			;Set high byte of remainder to zero
+  00B3'   C1                    	POP	B			;Get high word of product
+  00B4'   7D                    	MOV	A,L			;Get MSB of low word
+  00B5'   6C                    	MOV	L,H
+  00B6'   61                    	MOV	H,C
+  00B7'   29                    	DAD	H			;Make space for it
+  00B8'   DA 0000*              	JC	FCERR			;UH-OH record # to big!
+  00BB'   17                    	RAL				;Is it set?
+  00BC'   D2 00C0'              	JNC	DONINH			;Not set
+  00BF'   23                    	INX	H			;Copy it into low bit
+  00C0'   78                    DONINH:	MOV	A,B			;Get high byte of record #
+  00C1'   B7                    	ORA	A			; Is it non-zero
+  00C2'   C2 0000*              	JNZ	FCERR
+                                	ENDIF				;Bad
+  00C5'                         DONCLC:
+                                ; At this point, record #is in [H,L]
+                                ; offset into record in [D,E]
+                                ; Stack:
+                                ; COUNT of bytes to read or write
+                                ; data block
+                                ; Text pointer
+                                ; Return Address
+  00C5'   22 029B'              	SHLD	RECORD			;Save record size
+  00C8'   E1                    	POP	H			;Get count
+  00C9'   C1                    	POP	B			;Pointer to file data block
+  00CA'   E5                    	PUSH	H			;Save back count
+  00CB'   21 0000*              	LXI	H,0+FD.DAT		;Point to Field buffer
+  00CE'   09                    	DAD	B			;Add start of data block
+  00CF'   22 029D'              	SHLD	LBUFF			;Save pointer to FIELD buffer
+  00D2'   21 0000*              NXTOPD:	LXI	H,0+DATOFS		;Point to physical buffer
+  00D5'   09                    	DAD	B			;Add file block offset
+  00D6'   19                    	DAD	D
+  00D7'   22 029F'              	SHLD	PBUFF			;Save
+  00DA'   E1                    	POP	H			;Get count
+  00DB'   E5                    	PUSH	H			;Save count
+  00DC'   21 0080               	LXI	H,0+DATPSC		;[H,L]=DATPSC-offset
+  00DF'   7D                    	MOV	A,L
+  00E0'   93                    	SUB	E
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+PUT AND GET STATEMENTS
+
+  00E1'   6F                    	MOV	L,A
+  00E2'   7C                    	MOV	A,H
+  00E3'   9A                    	SBB	D
+  00E4'   67                    	MOV	H,A
+  00E5'   D1                    	POP	D			;Get back count (destroy offset)
+  00E6'   D5                    	PUSH	D			;Save COUNT
+  00E7'   CD 0000*              	CALL	DCOMPR			;Which is smaller, count or DATPSC-offset?
+  00EA'   DA 00EF'              	JC	DATMOF			;The latter
+  00ED'   62                    	MOV	H,D			;Copy count into bytes
+  00EE'   6B                    	MOV	L,E
+  00EF'   3A 02A1'              DATMOF:	LDA	PGTFLG			;PUT or GET
+  00F2'   B7                    	ORA	A			;Set cc's
+  00F3'   CA 0133'              	JZ	FIVDRD			;Was Read
+  00F6'   11 0080               	LXI	D,0+DATPSC		;If bytes .LT. DATPSC then read(sector)
+  00F9'   CD 0000*              	CALL	DCOMPR
+  00FC'   D2 0104'              	JNC	NOFVRD			;(Idea-if writing full buffer, no need to read)
+  00FF'   E5                    	PUSH	H			;Save bytes
+  0100'   CD 0150'              	CALL	GETSUB			;Read record.
+  0103'   E1                    	POP	H			;Bytes
+  0104'   C5                    NOFVRD:	PUSH	B
+  0105'   44                    	MOV	B,H
+  0106'   4D                    	MOV	C,L
+  0107'   2A 029F'              	LHLD	PBUFF
+  010A'   EB                    	XCHG	
+  010B'   2A 029D'              	LHLD	LBUFF			;Get ready to move bytes between buffers
+  010E'   CD 0187'              	CALL	FDMOV			;Move bytes to physical buffer
+  0111'   22 029D'              	SHLD	LBUFF			;Store updated pointer
+  0114'   50                    	MOV	D,B			;COUNT TO [D,E]
+  0115'   59                    	MOV	E,C
+  0116'   C1                    	POP	B			;Restore FDB pointer
+  0117'   CD 014F'              	CALL	PUTSUB			;Do write
+  011A'   E1                    NXFVBF:	POP	H			;Count
+  011B'   7D                    	MOV	A,L			;Make count correct
+  011C'   93                    	SUB	E
+  011D'   6F                    	MOV	L,A
+  011E'   7C                    	MOV	A,H
+  011F'   9A                    	SBB	D
+  0120'   67                    	MOV	H,A
+  0121'   B5                    	ORA	L			;Is count zero?
+  0122'   11 0000               	LXI	D,0			;Set offset=0
+  0125'   E5                    	PUSH	H			;Save COUNT
+  0126'   2A 029B'              	LHLD	RECORD
+  0129'   23                    	INX	H			;Increment it
+  012A'   22 029B'              	SHLD	RECORD			;Save back
+  012D'   C2 00D2'              	JNZ	NXTOPD			;Keep working on it
+  0130'   E1                    	POP	H			;Get rid of COUNT
+  0131'   E1                    	POP	H			;Restore text pointer
+  0132'   C9                    	RET				;Done
+                                
+                                ; Read code
+                                ; [H,L]=bytes
+                                ; [D,E]=count
+  0133'   E5                    FIVDRD:	PUSH	H			;Save bytes
+  0134'   CD 0150'              	CALL	GETSUB			;Do read
+  0137'   E1                    	POP	H			;Get back bytes
+  0138'   C5                    	PUSH	B
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+PUT AND GET STATEMENTS
+
+  0139'   44                    	MOV	B,H
+  013A'   4D                    	MOV	C,L
+  013B'   2A 029D'              	LHLD	LBUFF			;Point to logical buffer
+  013E'   EB                    	XCHG	
+  013F'   2A 029F'              	LHLD	PBUFF
+  0142'   CD 0187'              	CALL	FDMOV
+  0145'   EB                    	XCHG				;Get pointer to FIELD buffer in [H,L]
+  0146'   22 029D'              	SHLD	LBUFF			;Save back updated logical buffer
+  0149'   50                    	MOV	D,B			;COUNT TO [D,E]
+  014A'   59                    	MOV	E,C
+  014B'   C1                    	POP	B
+  014C'   C3 011A'              	JMP	NXFVBF
+  014F'   F6                    PUTSUB:	DB	366Q
+  0150'   AF                    GETSUB:	XRA	A
+  0151'   32 0000*              	STA	MAXTRK			;GET/PUT Fflag
+  0154'   C5                    	PUSH	B
+  0155'   D5                    	PUSH	D
+  0156'   E5                    	PUSH	H
+  0157'   2A 029B'              	LHLD	RECORD
+  015A'   EB                    	XCHG	
+  015B'   21 0000*              	LXI	H,0+FD.PHY		;Point to physical record #
+  015E'   09                    	DAD	B			;Add offset to file buffer
+  015F'   E5                    	PUSH	H			;Save this pointer
+  0160'   7E                    	MOV	A,M			;Get current phys. rec #
+  0161'   23                    	INX	H
+  0162'   66                    	MOV	H,M
+  0163'   6F                    	MOV	L,A
+  0164'   13                    	INX	D
+  0165'   CD 0000*              	CALL	DCOMPR			;Do we already have record in buffer
+  0168'   E1                    	POP	H			;Restore pointer
+  0169'   73                    	MOV	M,E
+  016A'   23                    	INX	H
+  016B'   72                    	MOV	M,D			;Store new record number
+  016C'   C2 0176'              	JNZ	NTREDS			;Curent and previos record numbers are different
+  016F'   3A 0000*              	LDA	MAXTRK			;Trying to do read?
+  0172'   B7                    	ORA	A
+  0173'   CA 0183'              	JZ	SUBRET			;If trying to read and record already
+                                					;in buffer, do nothing
+  0176'   21 0183'              NTREDS:	LXI	H,SUBRET		;Where to return to
+  0179'   E5                    	PUSH	H
+  017A'   C5                    	PUSH	B			;File data block
+  017B'   E5                    	PUSH	H			;Dummy text pointer
+  017C'   21 0001*              	LXI	H,0+LOCOFS+1		;where [H,L] is expected to be
+  017F'   09                    	DAD	B
+  0180'   C3 0000*              	JMP	FIVDPT			;Call old PUT/GET
+  0183'   E1                    SUBRET:	POP	H
+  0184'   D1                    	POP	D
+  0185'   C1                    	POP	B
+  0186'   C9                    	RET				;Restore all regs and return to caller
+                                
+                                ; Move bytes from [H,L] to [D,E] [B,C] times
+  0187'   C5                    FDMOV:	PUSH	B			;Save count
+  0188'   7E                    FDMOV1:	MOV	A,M			;Get byte
+  0189'   12                    	STAX	D			;Store it
+  018A'   23                    	INX	H
+  018B'   13                    	INX	D
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+PUT AND GET STATEMENTS
+
+  018C'   0B                    	DCX	B			;Decrement count
+  018D'   78                    	MOV	A,B			;Gone to zero?
+  018E'   B1                    	ORA	C
+  018F'   C2 0188'              	JNZ	FDMOV1			;Go back for more
+  0192'   C1                    	POP	B			;Return with count in [D,E]
+  0193'   C9                    	RET	
+                                
+  0194'   F1                    FILOFV:	POP	PSW			;Get character off stack
+  0195'   D5                    	PUSH	D			;Save [D,E]
+  0196'   C5                    	PUSH	B			;Save [B,C]
+  0197'   F5                    	PUSH	PSW			;Save back char
+  0198'   44                    	MOV	B,H			;[B,C]=file data block
+  0199'   4D                    	MOV	C,L
+  019A'   CD 01F0'              	CALL	CMPFPS			;Any room in buffer
+  019D'   CA 0000*              	JZ	DERFOV			;No
+  01A0'   CD 01E5'              	CALL	SETFPI			;save new position
+  01A3'   21 FFFF*              	LXI	H,0+FD.DAT-1		;Index into data buffer
+  01A6'   09                    	DAD	B			;Add start of file control block
+  01A7'   19                    	DAD	D			;Add offset into buffer
+  01A8'   F1                    	POP	PSW			;Get back char
+  01A9'   77                    	MOV	M,A			;Store in buffer
+  01AA'   F5                    	PUSH	PSW			;Save char
+  01AB'   21 0000*              	LXI	H,0+NMLOFS		;Set up [H,L] to point at print posit
+  01AE'   09                    	DAD	B
+  01AF'   56                    	MOV	D,M			;Get present position
+  01B0'   36 00                 	MVI	M,0			;Assume set it to zero
+  01B2'   FE 0D                 	CPI	13			;Is it <Cr>?
+  01B4'   CA 01BD'              	JZ	FISCR			;Yes
+  01B7'   C6 E0                 	ADI	224			;Set carry for spaces & higher
+  01B9'   7A                    	MOV	A,D			;Add one to current posit
+  01BA'   CE 00                 	ACI	0
+  01BC'   77                    	MOV	M,A
+  01BD'   F1                    FISCR:	POP	PSW			;Restore all regs
+  01BE'   C1                    	POP	B
+  01BF'   D1                    	POP	D
+  01C0'   E1                    	POP	H
+  01C1'   C9                    	RET	
+                                
+  01C2'   D5                    FILIFV:	PUSH	D			;Save [D,E]
+  01C3'   CD 01EE'              	CALL	CMPFBC			;Compare to present posit
+  01C6'   CA 0000*              	JZ	DERFOV			;Return with null 
+  01C9'   CD 01E5'              	CALL	SETFPI			;Set new position
+  01CC'   21 FFFF*              	LXI	H,0+FD.DAT-1		;Point to data
+  01CF'   09                    	DAD	B
+  01D0'   19                    	DAD	D
+  01D1'   7E                    	MOV	A,M			;Get the byte
+  01D2'   B7                    	ORA	A			;Clear carry (no EOF)
+  01D3'   D1                    	POP	D			;Restore [D,E]
+  01D4'   E1                    	POP	H			;Restore [H,L]
+  01D5'   C1                    	POP	B			;Restore [B,C]
+  01D6'   C9                    	RET	
+                                
+  01D7'   21 0000*              GETFSZ:	LXI	H,0+FD.SIZ		;Point to record size
+  01DA'   C3 01E0'              	JMP	GETFP1			;Continue
+  01DD'   21 0000*              GETFPS:	LXI	H,0+FD.OPS		;Point to output position
+  01E0'   09                    GETFP1:	DAD	B			;Add offset into buffer
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+PUT AND GET STATEMENTS
+
+  01E1'   5E                    	MOV	E,M			;Get value
+  01E2'   23                    	INX	H
+  01E3'   56                    	MOV	D,M
+  01E4'   C9                    	RET	
+                                
+  01E5'   13                    SETFPI:	INX	D			;Increment current posit
+  01E6'   21 0000*              SETFPS:	LXI	H,0+FD.OPS		;Point to output position
+  01E9'   09                    	DAD	B			;Add file control block address
+  01EA'   73                    	MOV	M,E
+  01EB'   23                    	INX	H
+  01EC'   72                    	MOV	M,D
+  01ED'   C9                    	RET	
+  01EE'   44                    CMPFBC:	MOV	B,H			;Copy file data block into [B,C]
+  01EF'   4D                    	MOV	C,L
+  01F0'   CD 01DD'              CMPFPS:	CALL	GETFPS			;Get present posit
+  01F3'   D5                    	PUSH	D			;Save it
+  01F4'   CD 01D7'              	CALL	GETFSZ			;Get file size
+  01F7'   EB                    	XCHG				;into [H,L]
+  01F8'   D1                    	POP	D			;Get back posit
+  01F9'   CD 0000*              	CALL	DCOMPR			;See if were at end
+  01FC'   C9                    	RET	
+                                
+                                	PAGE
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+PUT AND GET STATEMENTS
+
+                                
+                                	SUBTTL	Protected files
+                                
+                                	PUBLIC	PROLOD
+                                	EXTRN	BINPSV
+                                	PUBLIC	PROSAV
+  01FD'   CD 0000*              PROSAV:	CALL	CHRGTR			;Get char after "S"
+  0200'   22 0000*              	SHLD	TEMP			;Save text pointer
+                                	EXTRN	SCCPTR
+  0203'   CD 0000*              	CALL	SCCPTR			;Get rid of GOTO pointers
+  0206'   CD 0214'              	CALL	PENCOD			;encode binary
+  0209'   3E FE                 	MVI	A,254			;Put out 254 at start of file
+  020B'   CD 0000*              	CALL	BINPSV			;Do SAVE
+  020E'   CD 024E'              	CALL	PDECOD			;Re-decode binary
+  0211'   C3 0000*              	JMP	GTMPRT			;Back to NEWSTT
+                                
+  000B                          N1	SET	11			;Number of bytes to use from ATNCON
+  000D                          N2	SET	13			;Number of bytes to use from SINCON
+                                	PUBLIC	PENCOD
+  0214'   01 0D0B               PENCOD:	LXI	B,0+N1+N2*256		;Initialize both counters
+  0217'   2A 0000*              	LHLD	TXTTAB			;Starting point
+  021A'   EB                    	XCHG				;Into [D,E]
+  021B'   2A 0000*              ENCDBL:	LHLD	VARTAB			;At end?
+  021E'   CD 0000*              	CALL	DCOMPR			;Test
+  0221'   C8                    	RZ				;Yes
+  0222'   21 0000*              	LXI	H,ATNCON		;Point to first scramble table
+  0225'   7D                    	MOV	A,L			;Use [C] to index into it
+  0226'   81                    	ADD	C
+  0227'   6F                    	MOV	L,A
+  0228'   7C                    	MOV	A,H
+  0229'   CE 00                 	ACI	0
+  022B'   67                    	MOV	H,A
+  022C'   1A                    	LDAX	D			;Get byte from program
+  022D'   90                    	SUB	B			;Subtract counter for no reason
+  022E'   AE                    	XRA	M			;XOR entry
+  022F'   F5                    	PUSH	PSW			;Save result
+  0230'   21 0000*              	LXI	H,SINCON		;calculate offset into SINCON using [B]
+  0233'   7D                    	MOV	A,L
+  0234'   80                    	ADD	B
+  0235'   6F                    	MOV	L,A
+  0236'   7C                    	MOV	A,H
+  0237'   CE 00                 	ACI	0
+  0239'   67                    	MOV	H,A
+  023A'   F1                    	POP	PSW			;Get back current byte
+  023B'   AE                    	XRA	M			;XOR on this one too
+  023C'   81                    	ADD	C			;Add counter for randomness
+  023D'   12                    	STAX	D			;Store back in program
+  023E'   13                    	INX	D			;Incrment pointer
+  023F'   0D                    	DCR	C			;decrment first table index
+  0240'   C2 0245'              	JNZ	CNTZER			;Still non-Zero
+  0243'   0E 0B                 	MVI	C,N1			;Re-initialize counter 1
+  0245'   05                    CNTZER:	DCR	B			;dedecrement counter-2
+  0246'   C2 021B'              	JNZ	ENCDBL			;Still non-zero, go for more
+  0249'   06 0D                 	MVI	B,N2			;Re-initialize counter 2
+  024B'   C3 021B'              	JMP	ENCDBL			;Keep going until done
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+Protected files
+
+  024E'                         PROLOD:
+  024E'   01 0D0B               PDECOD:	LXI	B,0+N1+N2*256		;Initialize both counters
+  0251'   2A 0000*              	LHLD	TXTTAB			;Starting point
+  0254'   EB                    	XCHG				;Into [D,E]
+  0255'   2A 0000*              DECDBL:	LHLD	VARTAB			;At end?
+  0258'   CD 0000*              	CALL	DCOMPR			;Test
+  025B'   C8                    	RZ				;Yes
+  025C'   21 0000*              	LXI	H,SINCON		;calculate offset into SINCON using [B]
+  025F'   7D                    	MOV	A,L
+  0260'   80                    	ADD	B
+  0261'   6F                    	MOV	L,A
+  0262'   7C                    	MOV	A,H
+  0263'   CE 00                 	ACI	0
+  0265'   67                    	MOV	H,A
+  0266'   1A                    	LDAX	D			;Get byte from program
+  0267'   91                    	SUB	C			;Subtract counter for randomness
+  0268'   AE                    	XRA	M			;XOR on this one too
+  0269'   F5                    	PUSH	PSW			;Save result
+  026A'   21 0000*              	LXI	H,ATNCON		;Point to first scramble table
+  026D'   7D                    	MOV	A,L			;Use [C] to index into it
+  026E'   81                    	ADD	C
+  026F'   6F                    	MOV	L,A
+  0270'   7C                    	MOV	A,H
+  0271'   CE 00                 	ACI	0
+  0273'   67                    	MOV	H,A
+  0274'   F1                    	POP	PSW			;Get back current byte
+  0275'   AE                    	XRA	M			;XOR entry
+  0276'   80                    	ADD	B			;Add counter for no reason
+  0277'   12                    	STAX	D			;Store back in program
+  0278'   13                    	INX	D			;Increment pointer
+  0279'   0D                    	DCR	C			;decrment first table index
+  027A'   C2 027F'              	JNZ	CNTZR2			;Still non-Zero
+  027D'   0E 0B                 	MVI	C,N1			;Re-initialize counter 1
+  027F'   05                    CNTZR2:	DCR	B
+  0280'   C2 0255'              	JNZ	DECDBL			;Decrement counter-2, Still non-zero, go for more
+  0283'   06 0D                 	MVI	B,N2			;Re-initialize counter 2
+  0285'   C3 0255'              	JMP	DECDBL			;Keep going until done
+                                
+                                	PUBLIC	PROCHK,PRODIR
+  0288'   E5                    PRODIR:	PUSH	H			;Save [H,L]
+  0289'   2A 0000*              	LHLD	CURLIN			;Get current line #
+  028C'   7C                    	MOV	A,H			;Direct?
+  028D'   A5                    	ANA	L
+  028E'   E1                    	POP	H			;Restore [H,L]
+  028F'   3C                    	INR	A			;If A=0, direct
+  0290'   C0                    	RNZ	
+  0291'   F5                    PROCHK:	PUSH	PSW			;Save flags
+  0292'   3A 0000*              	LDA	PROFLG			;Is this a protected file?
+  0295'   B7                    	ORA	A			;Set CC's
+  0296'   C2 0000*              	JNZ	FCERR			;Yes, give error
+  0299'   F1                    	POP	PSW			;Restore flags
+  029A'   C9                    	RET	
+                                
+  029B'                         TEMPB:					;Used by FIELD
+  029B'                         RECORD:	DS	2			;Record #
+  029D'                         LBUFF:	DS	2			;Logical buffer address
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+Protected files
+
+  029F'                         PBUFF:	DS	2			;Physical buffer address
+  02A1'                         PGTFLG:	DS	1			;PUT/GET flag (Non zero=PUT)
+                                
+                                	END	
+FIVDSK 5.0 Features - Variable length records, Protected files /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	S
+Protected files
+
+Macros:
+
+Symbols:
+026B*	ATNCON          020C*	BINPSV          00FF 	BUFLEN          
+01FE*	CHRGTR          000E 	CLMWID          01EEI'	CMPFBC          
+01F0'	CMPFPS          0245'	CNTZER          027F'	CNTZR2          
+000F 	CONTO           0005 	CPMENT          0000 	CPMWRM          
+028A*	CURLIN          00EF'	DATMOF          00D3*	DATOFS          
+0080 	DATPSC          0000 	DBLTRN          0259*	DCOMPR          
+0255'	DECDBL          003B*	DERBFM          0059*	DERBRN          
+01C7*	DERFOV          00C5'	DONCLC          00C0'	DONINH          
+021B'	ENCDBL          0297*	FCERR           0000*	FD.CHG          
+01CD*	FD.DAT          0040*	FD.LOG          01E7*	FD.OPS          
+015C*	FD.PHY          01D8*	FD.SIZ          0187'	FDMOV           
+0188'	FDMOV1          01C2I'	FILIFV          0194I'	FILOFV          
+0036*	FILSCN          01BD'	FISCR           0181*	FIVDPT          
+0133'	FIVDRD          009A'	FNOCRY          009B'	FNOCY0          
+00A9'	FNOCY2          00A8'	FNOINH          0090'	FRMUL1          
+0031I'	GET             01E0'	GETFP1          01DD'	GETFPS          
+01D7'	GETFSZ          0150'	GETSUB          0212*	GTMPRT          
+004C*	INTIDX          029D'	LBUFF           0050 	LINLN           
+017D*	LOCOFS          0084 	LPTLEN          0015*	MAXREC          
+0170*	MAXTRK          0003 	MD.RND          0001 	MD.SQI          
+0002 	MD.SQO          000B 	N1              000D 	N2              
+0028 	NAMLEN          01AC*	NMLOFS          0104'	NOFVRD          
+0013'	NOTSEP          0087'	NTLSAP          0176'	NTREDS          
+001D 	NUMLEV          000A 	NUMTMP          011A'	NXFVBF          
+00D2'	NXTOPD          029F'	PBUFF           024E'	PDECOD          
+0214I'	PENCOD          02A1'	PGTFLG          0291I'	PROCHK          
+0288I'	PRODIR          0293*	PROFLG          024EI'	PROLOD          
+01FDI'	PROSAV          0030I'	PUT             014F'	PUTSUB          
+029B'	RECORD          0204*	SCCPTR          01E5'	SETFPI          
+01E6'	SETFPS          025D*	SINCON          0053*	SNERR           
+0003 	STRSIZ          0183'	SUBRET          0000*	SYNCHR          
+0201*	TEMP            029BI'	TEMPB           0000 	TRUROM          
+0252*	TXTTAB          0000I'	VARECS          0256*	VARTAB          
+0027'	ZOFIVB          
+
+
+
+No Fatal error(s)
+
+
+293*	PROFLG          024EI'	PROLOD  

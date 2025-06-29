@@ -1,0 +1,73 @@
+//  some extra library functions for bcpl
+
+
+GET "LIBHDR"
+
+LET min(x,y) = VALOF
+  $( TEST x<=y  THEN RESULTIS x
+                ELSE RESULTIS y
+  $)
+
+LET max(x,y) = VALOF
+  $( TEST x>=y  THEN RESULTIS x
+                ELSE RESULTIS y
+  $)
+
+LET keypressed() = VALOF 
+  $( LET c = 0
+     c := bdos(11,0)
+     TEST c=0 THEN RESULTIS FALSE 
+     ELSE RESULTIS TRUE
+  $)
+
+LET getkey(mode) = VALOF
+  $( LET c = 0
+     WHILE (c = 0) & (mode~=0) DO
+         c := key()
+     RESULTIS c
+  $)
+
+LET gotoXY(x,y) BE
+  $(
+    wrch(27)
+    wrch('=')
+    wrch(y+#X20)
+    wrch(x+#X20)
+  $)
+
+LET clrScr() BE  wrch(31)
+
+LET clrEol() BE  wrch(3)
+
+LET z80(addr) = VALOF
+$(
+   TEST (addr <= maxint) THEN
+      RESULTIS addr+addr
+   ELSE $(  writef("*n  %x4 : address out of range.*n",addr)
+            finish
+        $)
+$)
+
+LET BCPL(addr) = VALOF
+$(
+   TEST (addr & 1) = 0 THEN
+       RESULTIS addr/bytesperword
+   ELSE $(  writef("*n  %x4 : address is not even. *n",addr)
+            finish
+        $)
+$)
+
+LET getstr(S,T, I) = VALOF  //  I passed as pointer - to update
+$(
+   LET P,Q = !I, 0
+   WHILE P <= S%0 & S%P = '*S'        
+      DO P +:= 1
+   WHILE P <= S%0 & S%P \= '*S'  & S%P \= 0   // n.b. for zero packed strings.
+      DO $(  Q +:= 1
+             T%Q := S%P
+             P +:= 1
+         $)
+   T%0 := Q
+   !I  := P
+   RESULTIS Q
+$)

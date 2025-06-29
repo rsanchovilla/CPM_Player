@@ -1,0 +1,456 @@
+File: MULISP3.LES  (C)            02/27/84            The Soft Warehouse
+
+CLRSCRN
+This is muLISP lesson #3.  Estimated completion time is 50 minutes.
+
+The first two lessons taught the fundamentals of muLISP programming using pure
+muLISP.  Everything you learned about pure muLISP is of course true of full
+muLISP; however, there is much that was left unsaid.  With this lesson we
+shall commence describing the full capabilities of muLISP.
+
+In Lesson #3 we will examine each of the three primitive muLISP data objects
+in detail.  This lesson is primarily informative in nature and does not
+provide a lot in the way of interesting problems for you to solve.  However,
+it does provide an essential foundation for the later lessons.
+
+
+CONTINUE
+There are three types of primitive data objects in muLISP:  NAMES, NUMBERS,
+and NODES.
+
+muLISP provides numerous functions for recognizing, comparing, combining, and
+operating on these primitive data objects.  This allows you to construct
+complex data structures that can accurately model in the computer virtually
+any real world problem.  Therefore, we begin our discussion of muLISP with a
+description of the three basic data objects.
+
+As you may recall, pure muLISP has only two types of data objects: ATOMS and
+LISTS.  In full muLISP, atoms are further subdivided into NAMES and NUMBERS.
+In full muLISP, lists are only a subset of the more general structures called
+binary trees made up of NODES.
+
+
+CONTINUE
+The first type of data object we shall discuss is the NAME.  Associated with
+each muLISP name are 4 attributes:
+
+1.  Print-name String:  A unique string of ASCII characters used by the system
+    to identify the name on input and to display the name on output.  A name's
+    print-name string cannot be changed.
+
+2.  Current Value:  A name's value can be any muLISP data object, including
+    itself.  The default value of a name is the name itself.
+
+3.  Property List:  The property list contains the name's property values
+    indexed on property keys.  See the muLISP lesson on property values for
+    more information about using properties.  The default property list of a
+    name is the null list.
+
+4.  Function Definition:  A name's function definition is applied to the
+    arguments given when the name is called as a function.  The default
+    function definition invokes the "Undefined Function" error.
+
+
+CONTINUE
+The recognizer function NAME returns T if its single argument is a name;
+otherwise it returns NIL.  For example:
+
+$ (NAME 'XYZ)
+
+$ (NAME 41)
+
+$ (NAME '(DOG CAT COW))
+
+During this break, see whether the null list, (), is a name or not.  To return
+to the lesson, type the word "RETURN" and press the <RETURN> key.
+
+BREAK
+CLRSCRN
+As discussed in an earlier lesson, the comparator function EQ is used to
+determine if two names are the same.  For example:
+
+$ (EQ 'APPLE (CAR '(APPLE ORANGE LEMON)))
+
+Note that upper and lower-case letters make for distinct names.  For example:
+
+$ (EQ 'Apple 'APPLE)
+
+
+CONTINUE
+Since blank spaces, parentheses, and some other special characters have
+special significance to the muLISP, a quoted string must be used to create a
+name with such characters in its print-name string.  Simply enclose the string
+containing such characters within double quotes to create such a name.  For
+example:
+
+$ "This is a (single) name!"
+
+Normally the double quotes around names containing special characters are NOT
+displayed when the name is output.  (Note: Double quote marks are
+automatically displayed around such names if the value of the control variable
+PRIN1 is NIL.)
+
+The empty string, entered as "", is also a name.  For example:
+
+$ (NAME "")
+
+CONTINUE
+The double quote mark itself can be included in a print-name string by
+entering a pair of quote marks for each desired quote mark in the string.  For
+example:
+
+$ "She said ""I am learning muLISP"""
+
+When entering names using double quote marks, it is essential to balance the
+quote marks.  After entering a quote mark, muLISP will continue to think you
+are entering a single name until a matching quote mark is read.
+
+During this break, see what happens when you enter a name with an unmatched
+double quote mark and press the <RETURN> key.  To return to the lesson, you
+will need to balance the quote marks so you will get the dollar sign prompt.
+
+BREAK
+CLRSCRN
+A name can be assigned a value.  The value can be any muLISP data object
+including itself.  The default value of most muLISP names is the name itself.
+
+SET is the primitive function used to set the value of a name (SET's first
+argument) to a value (SET's second argument).  Of secondary importance is the
+fact that SET returns its second argument as its value.  For example:
+
+$ (SET 'FRUITS '(APPLES ORANGES LEMONS PEARS))
+
+$ FRUITS
+
+During this break, SET the name VOWELS to a list of the 5 vowels in the
+alphabet.
+
+BREAK
+CLRSCRN
+Generally the first argument to SET will be a quoted name.  Rather than having
+to explicitly quote the name, the function SETQ (SET Quote) can be used
+instead.  SETQ automatically quotes its first argument but NOT its second.
+For example, rather than using SET to assign a list to 'VOWELS, you could use
+SETQ as follows:
+
+$ (SETQ VOWELS '(A E I O U))
+
+During this break, use SETQ to add the letter Y to VOWELS by CONSing it onto
+the current value of VOWELS.
+
+BREAK
+The following adds Y to the list of vowels:
+
+$ (SETQ VOWELS (CONS 'Y VOWELS))
+
+
+CONTINUE
+The second type of muLISP data object we shall discuss is the NUMBER.  Numbers
+are entered as a contiguous series of digits.  Negative numbers are preceded
+by a minus sign.  Since the value of a number is the number itself, there is
+no need to quote numbers:
+
+$ 41
+
+$ -75
+
+Note that muLISP-83 does not support floating point numbers.  Thus numbers
+cannot be input using decimal points.
+
+CONTINUE
+The primitive recognizer function NUMBERP returns T if its argument is a
+number; otherwise it returns NIL.  For example:
+
+$ (NUMBERP 100)
+
+$ (NUMBERP 'FIVE)
+
+$ (SETQ PRIMES '(2 3 5 7 11))
+
+$ (NUMBERP (CAR PRIMES))
+
+During this break, use NUMBERP and NAME to see if a sequence of digits
+enclosed in double quotes is a number or a name.
+
+BREAK
+The following two tests determine whether "137" is a name or a number:
+
+$ (NUMBERP "137")
+
+$ (NAME "137")
+
+
+CONTINUE
+Names and numbers are collectively called ATOMs to suggest their
+indivisibility by ordinary means.  The primitive recognizer function ATOM
+returns T if its argument is an atom (i.e. either a name or a number);
+otherwise is returns NIL.  For example:
+
+$ (ATOM 'APPLE)
+
+$ (ATOM 123)
+
+$ (ATOM '(DOG CAT COW))
+
+$ (ATOM '())
+
+
+CONTINUE
+Sometimes you may wish to refer to a name itself rather than its value.  In
+muLISP, the apostrophe character is used as a quote mark to suppress the
+evaluation of a name.  For example:
+
+$ (SETQ FOO 1492)
+
+$ FOO
+
+$ 'FOO
+
+Note that the apostrophe is different from the "back accent" or "accent grave"
+character, `, which also occurs on some terminals.
+
+During this break, use SETQ and the quote mark to set the value of FOO back to
+itself (i.e. make it be an auto-quoted name).
+
+BREAK
+The following restores the value of FOO to be itself:
+
+$ (SETQ FOO 'FOO)
+
+$ FOO
+
+
+CONTINUE
+The third primitive muLISP data object is the NODE.  A node is a nonatomic
+data object that points to two other data objects.
+
+Data can be stored in the computer's memory.  The location where a data item
+is stored is called its ADDRESS.  An address is analogous to a street address
+on a mailbox.  The data stored there is analogous to mail in the mailbox.  As
+with mailboxes, the contents of computer memory can change over time.
+
+Suppose we wish to represent the node consisting of the name BILBO and his age
+31.  We could store the name BILBO beginning at location 7, his age 31 at
+location 2, and beginning at location 4 we could store a node consisting of
+the pair of addresses 7 and 2:
+
+ Address:     1     2     3     4     5     6     7
+           +-----+-----+-----+-----+-----+-----+-----+---
+Contents:  |     |  31 |     |  7  |  2  |     |BILBO|
+           +-----+-----+-----+-----+-----+-----+-----+---
+
+CONTINUE
+muLISP manages the specific placement of data within memory automatically, so
+all we care about is the specific primitive names and numbers together with
+the way they are connected.  muLISP keeps track of addresses such as 7 and 2
+in our example, but for us they are a distraction.
+
+The following "box-car" representation of a node suppresses such irrelevant
+detail:
+
+                    +-----+-----+
+                    |  .  |  .  |
+                    +-/---+---\-+
+                    /           \
+                  /               \
+               BILBO               31
+
+
+CONTINUE
+If you have seen one box-car, you have seen them all.  So, to reduce clutter,
+I henceforth represent nodes by a dot at the vertices in my diagrams.  For
+example:
+
+                               .
+                              / \
+                            /     \
+                         BILBO     31
+
+Since each node has exactly two "branches", such diagrams are called binary
+trees.
+
+
+CONTINUE
+Although a linked collection of nodes is best envisioned by humans as a binary
+tree structure, a linearized representation of nodes is more suitable for a
+computer programming language.
+
+One of the linear representations recognized by muLISP is the so-called DOT
+notation.  In this notation, a node is represented by a left parenthesis, a
+data item, a period, a data item, and a right parenthesis.  For example, the
+node
+
+                               .
+                              / \
+                            /     \
+                         BILBO     31
+
+is represented in DOT notation as:
+
+                         (BILBO . 31)
+
+CONTINUE
+The left element of a node is called the CAR of the node.  The right element
+is called the CDR of the node.  The elements of a node can be any data object
+including another node.  For example, BILBO's last name can be included in our
+binary tree as:
+
+                             .
+                            / \
+                          /     \
+                        .        31
+                       / \
+                     /     \
+                  BILBO  BAGGINS
+
+The equivalent dot notation representation of this tree is:
+
+              ((BILBO . BAGGINS) . 31)
+
+
+CONTINUE
+Let's add the fact that BILBO is a hobbit to our binary tree:
+
+                             .
+                            / \
+                          /     \
+                        .      HOBBIT
+                       / \
+                     /     \
+                   .        31
+                  / \
+                /     \
+             BILBO  BAGGINS
+
+Before continuing think how this three node binary tree would be represented
+using dot notation.
+
+CONTINUE
+The tree is represented in dot notation as:
+
+         (((BILBO . BAGGINS) . 31) . HOBBIT)
+
+An alternative binary tree structure for this information is the one
+corresponding to:
+
+         ((BILBO . BAGGINS) . (31 . HOBBIT))
+
+Sketch the corresponding binary tree diagram on a piece of paper, then hold it
+close to my face so I can check it out.
+
+                        _____
+                       /     \
+                      >| O.O |<
+                       | \=/ |
+                        \___/
+
+CONTINUE
+Oh well, my eyes must be getting bad.  It should have looked something like
+this:
+                       .
+                      / \
+                    /     \
+                  /         \
+                .             .
+               / \           / \
+             /     \       /     \
+          BILBO BAGGINS  31     HOBBIT
+
+
+From this discussion it should be clear that linked nodes can be used to
+represent virtually any tree structured data.
+
+
+CONTINUE
+It is often most natural to represent a collection of nodes as a LIST of data
+objects rather than as a deeply nested binary tree.  For example, the elements
+of a set are usually displayed as a list.
+
+muLISP represents a list as a linked collection of nodes whose CAR cells point
+to the members of the lists and whose CDR cells point to the next node.  The
+linked list is terminated by a CDR cell that points to NIL.  For example:
+                  .
+                 / \
+               /     \
+           object1     .
+                      / \
+                    /     \
+                object2     .
+                              .
+                                .
+                               / \
+                             /     \
+                         objectN   NIL
+
+CONTINUE
+When this binary tree is rotated 45 degrees counterclockwise, it is easier to
+see why it can be used to represent a list of data objects:
+
+     .--------.--- . . . ---.----- NIL
+     |        |             |
+     |        |             |
+  object1  object2       objectN
+
+The linear structure of lists suggests an external printed representation that
+is much more readable than the equivalent dot notation representation.  Thus
+muLISP will automatically display the above object using LIST notation:
+
+         (object1 object2 ... objectN)
+
+rather than using dot notation:
+
+    (object1 . (object2 . ... (objectN . NIL) ...))
+
+CONTINUE
+The muLISP object display functions use list notation where possible and dot
+notation where necessary.  Thus, a structure of the form
+                 .
+                / \
+              /     \
+         object1      .
+                     / \
+                   /     \
+              object2      .
+                             .
+                               .
+                              / \
+                            /     \
+                       objectN    atom
+
+where <atom> is not the name NIL, is displayed in a mixed notation as:
+
+    (item1 item2  - - -  itemN . atom)
+
+
+CONTINUE
+The muLISP input reader function accepts list notation, dot notation, and
+mixed notation.  Moreover, any of the elements of a list can themselves be
+either lists or more general expressions.  The following examples show how
+muLISP displays a few expressions:
+
+$ '(DOG . (CAT . (COW . PIG)))
+
+$ '((AGE . 34) . (HOBBIES . (SWIMMING . THINKING)))
+
+
+CONTINUE
+During this lesson we have described the three primitive muLISP data objects:
+Names, Numbers, and Nodes.  The following are the main points to remember:
+
+1.  Names:  Each name has an associated print-name string, a value, a property
+    list, and a function definition.  Names containing special characters can
+    be entered using quoted strings.  SETQ is the function most commonly used
+    to assign a value to a name.
+
+2.  Numbers:  A number is a data object with the properties of an integer,
+    either positive or negative.  NUMBERP is used to recognize numbers.
+
+3.  Nodes:  Node are used to form binary tree structures that can be
+    represented using dot notation, list notation, or mixed notation.
+
+This concludes muLISP lesson #3.
+
+
+CONTINUE
+$ (RDS)
+

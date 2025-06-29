@@ -1,0 +1,2482 @@
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                	title	'XYBASIC	REV 2.14.00	05/27/81'
+                                
+                                ;VERSION 05/18/81
+                                ;XYBASIC Interpreter Source Module
+                                ;Copyright (C) 1978, 1979, 1980, 1981 by Mark Williams Company, Chicago
+                                ;version EQUates
+                                
+TRUE  FFFF                          true	equ	-1
+FALSE  0000                          false	equ	0
+                                	page	0		;lines per page on PRN listing
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+                                
+                                
+                                ;version selection switches
+VERSN  5398                          versn	equ	21400		;current version number
+CPMTRUE  FFFF                          cpm	equ	true		;iff CP/M version
+NONSTFALSE  0000                          nonst	equ	false 		;iff nonstandard (Custom I/O) version
+ISIS2FALSE  0000                          isis2	equ	false		;iff ISIS-II version
+                                
+                                ;conditional assembly switches
+STRNGTRUE  FFFF                          strng	equ	true		;iff string version
+FLOATTRUE  FFFF                          float	equ	true		;iff floating point version
+ROMNONST  0000                          rom	equ	nonst		;iff ROM version (NONST only)
+ROMSQFALSE  0000                          romsq	equ	false		;iff ROMSQ version
+COMPLFALSE  0000                          compl	equ	false		;iff COMPILER version (NONST ROM only)
+RTPAKFALSE  0000                          rtpak	equ	false		;iff RUNTIME version (ROMSQ COMPL only)
+EDITCTRUE  FFFF                          editc	equ	true		;iff editing commands AUTO, DELETE, EDIT, RENUM
+SDISKTRUE  FFFF                          sdisk	equ	true		;iff sequential disk version (CP/M STRNG only)
+F9511FALSE  0000                          f9511	equ	false 		;iff 9511 floating point chip version
+FPBCDTRUE  FFFF                          fpbcd	equ	true		;iff BCD floating point, 10 digit mantissa
+REALTFALSE  0000                          realt	equ	false		;iff SBC 80/20 real time clock
+FOR0TRUE  FFFF                          for0	equ	true		;iff e.g. FOR I = 1 TO 0 never entered
+ASM80FALSE  0000                          asm80	equ	false		;iff assembling under ASM80
+KEY80TRUE  FFFF                          key80	equ	true 		;iff more than 80H keywords
+DEBUGFALSE  0000                          debug	equ	false		;iff debugging
+                                				;CPM and DEBUG: ^B gets SID, ^X echoes to disk
+                                				;ISIS2 and DEBUG: ^B gets monitor
+                                				;NONST:  DEBUG has no effect
+                                				;PACKI and DEBUG: 8251 initialization skipped
+                                
+                                ;customized versions
+AMDFALSE  0000                          amd	equ	false		;iff AMD
+BENDXFALSE  0000                          bendx	equ	false		;iff Bendix (STRNG NONST only)
+CAMACFALSE  0000                          camac	equ	false 		;iff KineticSystems (STRNG, NONST or CP/M only)
+C3908FALSE  0000                          c3908	equ	false 		;iff CAMAC version for 3908, false iff 3909
+C3885FALSE  0000                          c3885	equ	false 		;iff CP/M SDISK CAMAC version for 3885
+EPSTNFALSE  0000                          epstn	equ	false		;iff Epstein (NONST only)
+GENMCFALSE  0000                          genmc	equ	false		;iff General Microwave (NONST only)
+PACKIFALSE  0000                          packi	equ	false		;iff Packard Instruments
+WILDFALSE  0000                          wild	equ	false		;iff Wild Heerbrugg
+                                
+                                ;location
+ASM80                                	if	asm80
+                                	name	xybasic		;ISIS-II module name for ASM80
+                                	cseg			;start of relocatable code segment
+                                	else
+ROMORG  0100                          romorg	equ	00100H		;first ROM location
+ROM                                	if	rom
+                                ramorg	equ	04000H		;first RAM location
+                                	endif
+                                	endif
+ROMORG                                	org	romorg
+                                
+                                ;global EQUates
+MAXNL  0008                          maxnl	equ	8		;max var name length(>=7 for string conversion)
+INTTN  0008                          inttn	equ	8		;max # of interrupt table entries (< 32)
+INTTLINTTN'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  0041                          inttl	equ	inttn * 8 + 1	;int table length = n 8-byte entries + eof
+RANDA  64B5                          randa	equ	64B5H		;pseudorandom number generator multiplier
+RANDC  3A73                          randc	equ	3A73H		;pseudorandom number generator constant
+STAKL  0080                          stakl	equ	80H		;stack length
+STAKM  0019                          stakm	equ	25		;max stack use without recursion by GTEXP
+VBYTSSETU 0100'   03                    vbyts	set	3		;bytes per ESTACK value entry if integer only
+DBYTSSETU 0101'   0A                    dbyts	set	10		;bytes needed for string space and file areas
+NLMAX  0050                          nlmax	equ	80		;input buffer length
+STRNG                                	if	strng
+STMAX  0004                          stmax	equ	4		;number of string temporaries
+VBYTSSETU 0102'   04                    vbyts	set	4		;bytes per value entry if string
+DBYTSSETDBYTSU 0103'   00                    dbyts	set	dbyts+100H	;100H bytes for string space
+                                	endif
+FLOAT                                	if	float
+FPBCD                                	if	fpbcd		;BCD floating point
+VBYTSSETU 0104'   07                    vbyts	set	7		;bytes per value entry
+FBYTS  0006                          fbyts	equ	6		;bytes per FOR-entry value
+                                	else			;binary floating point
+                                vbyts	set	5		;bytes per value entry if floating
+                                fbyts	equ	4		;bytes per FOR-entry value
+                                sindx	equ	19		;# significant binary places
+                                	endif
+                                	else			;not floating point version
+                                fbyts	equ	2		;bytes per FOR-entry value if integer
+                                	endif
+                                
+                                ;ASCII character equivalents
+CNTLB  0002                          cntlb	equ	02H
+CNTLD  0004                          cntld	equ	04H
+CNTLE  0005                          cntle	equ	05H
+CNTLF  0006                          cntlf	equ	06H
+CNTLG  0007                          cntlg	equ	07H
+CNTLH  0008                          cntlh	equ	08H
+LF  000A                          lf	equ	0AH
+CNTLK  000B                          cntlk	equ	0BH
+CNTLL  000C                          cntll	equ	0CH
+CR  000D                          cr	equ	0DH
+CNTLN  000E                          cntln	equ	0EH
+CNTLO  000F                          cntlo	equ	0FH
+CNTLQ  0011                          cntlq	equ	11H
+CNTLR  0012                          cntlr	equ	12H
+CNTLS  0013                          cntls	equ	13H
+CNTLT  0014                          cntlt	equ	14H
+CNTLX  0018                          cntlx	equ	18H
+CNTLY  0019                          cntly	equ	19H
+CNTLZ  001A                          cntlz	equ	1AH
+SEMIC  003B                          semic	equ	3BH
+EPSTN                                	if	not epstn
+CNTLC  0003                          cntlc	equ	03H
+CNTLP  0010                          cntlp	equ	10H
+CNTLU  0015                          cntlu	equ	15H
+RBOUT  007F                          rbout	equ	7FH
+                                	else			;Epstein version control chars
+                                cntlc	equ	0AH
+                                cntlp	equ	04H
+                                cntlu	equ	0BH
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+                                rbout	equ	1AH
+                                escap	equ	1BH
+                                	endif
+                                
+                                ;information passed to compiler
+COMPLRTPAK                                	if	compl and not rtpak
+                                	db	remt		;REM token value
+                                	dw	romend+1-romorg	;ROM use
+                                	dw	ramend+1-ramorg	;RAM use
+                                	endif
+                                
+STARTJMPINITU 0105'   FE'                   start:	jmp	init		;start initialization dialog
+JMPGTPARU 0106'   B8'                   	jmp	gtpar		;to get parameters for CALL
+                                
+                                ;nonstandard system EQUates
+NONSTCAMAC                                	if	nonst and not camac
+                                timem	equ	8C13H		;time counts
+                                timen	equ	0FE12H
+                                timeh	equ	73H
+                                	if	not wild
+                                	if	genmc
+                                headl	equ	17		;header length
+                                	else
+                                headl	equ	13
+                                	endif
+                                stbyt	equ	3AH		;start byte
+                                tybyt	equ	0		;type byte -- for future use
+                                ;jump vector for i/o routines
+                                	jmp	conin
+                                	jmp	cnout
+                                	jmp	rdrin
+                                	jmp	pout
+                                	jmp	lout
+                                	jmp	cstat
+                                ;jmp table for user-defined device drivers
+                                jmpta:	rept	24
+                                	jmp	0
+                                	endm
+                                	if	compl
+                                boot:	jmp	0		;absolute address, else compilation relocates
+                                	else
+                                boot:	jmp	dmodc		;^B same as ^C in nonstandard versions
+                                	endif
+                                	endif			;end of NOT WILD conditional
+                                	endif			;end of NONST conditional
+                                
+                                ;CP/M EQUates
+CPM                                	if	cpm
+CPMBA  0000                          cpmba	equ	0H		;CP/M base address
+IOBYTCPMBA  0003                          iobyt	equ	cpmba+3H	;io byte address
+BDOSCPMBA  0005                          bdos	equ	cpmba+5H	;DOS entry point
+FCBADCPMBA  005C                          fcbad	equ	cpmba+5CH	;default file control block address
+FCBFNFCBAD  005D                          fcbfn	equ	fcbad + 1	;file name address
+FCBFTFCBAD  0065                          fcbft	equ	fcbad + 9	;file type address
+FCBCRFCBAD  007C                          fcbcr	equ	fcbad + 32	;current record number
+DMAADCPMBA  0080                          dmaad	equ	cpmba+80H	;default DMA address
+DKOPF'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+  000F                          dkopf	equ	15		;disk open function
+DKCLF  0010                          dkclf	equ	16		;close
+DKDLF  0013                          dkdlf	equ	19		;delete
+DKRDF  0014                          dkrdf	equ	20		;read
+DKWTF  0015                          dkwtf	equ	21		;write
+DKMKF  0016                          dkmkf	equ	22		;make
+DKDMF  001A                          dkdmf	equ	26		;set DMA address function
+TIMEM  8C13                          timem	equ	8C13H		;TIME counts
+TIMEN  FE12                          timen	equ	0FE12H
+TIMEH  0073                          timeh	equ	73H
+AMD                                	if	amd		;serial SAVE/LOAD for AMD version
+                                headl	equ	13
+                                stbyt	equ	3AH		;start byte
+                                tybyt	equ	0		;type byte -- for future use
+                                	endif
+SDISK                                	if	sdisk
+FILEN  00A6                          filen	equ	166		;number of bytes per sequential access file
+DBYTSSETDBYTSFILENU 0107'   4C                    dbyts	set	dbyts+2*filen	;number of bytes needed
+                                	endif
+DEBUG                                	if	debug
+                                boot	equ	cpmba+38H	;^B gets SID instead of CP/M
+                                	else
+BOOTCPMBA  0000                          boot	equ	cpmba		;^B gets CP/M if not debugging
+                                	endif
+                                	endif			;end of CPM conditional
+                                
+                                ;ISIS-II EQUates
+ISIS2                                	if	isis2
+                                isis	equ	40H		;ISIS-II entry point
+                                dkopf	equ	0		;disk open function
+                                dkclf	equ	1		;close
+                                dkrdf	equ	3		;read
+                                dkwrf	equ	4		;write
+                                exitf	equ	9		;exit to ISIS-II
+                                erri2	equ	12		;error
+                                timem	equ	947BH		;time counts
+                                timen	equ	0FE36H
+                                timeh	equ	6BH
+                                ;MDS monitor EQUates
+                                conin	equ	0F803H		;console in
+                                cnout	equ	0F809H		;console out
+                                lout	equ	0F80FH		;list out
+                                cstat	equ	0F812H		;console status
+                                mechk	equ	0F81BH		;top of free RAM function
+                                iobyt	equ	3		;iobyte location
+                                	endif			;end of ISIS2 conditional
+                                
+                                ;CAMAC RTPAK i/o JMP vector
+CAMACNONSTTRUE                                	if	camac and nonst and true 
+                                conin:	jmp	0
+                                cnout:	jmp	0
+                                rdrin:	jmp	0
+                                pout:	jmp	0
+                                lout:	jmp	0
+                                cstat:	jmp	0
+                                boot:	jmp	0
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+                                	endif
+                                
+                                ;Wild version EQUates
+WILD                                	if	wild
+                                	if	rtpak
+                                	jmp	wtoke		;tokenization module entry point
+                                weom:	dw	6000H		;default end of RAM
+                                boot	equ	0H		;boot after program completion in rtpak
+                                	endif
+                                wmon	equ	38H		;Wild monitor entry point
+                                wdbl	equ	80H		;length of central data buffer -- 254 max
+                                wdbuf	equ	80H		;base address of central data buffer
+                                wexec	equ	40H		;base address of 18-byte EXEC buffer
+                                	endif
+                                
+                                ;ROMSQ version default value bytes
+ROMSQWILD                                	if	romsq and not wild
+                                dfltw:	db	0		;default width
+                                dfltm:	dw	1		;default end of memory
+                                dflta:	dw	0		;default program address
+                                	endif
+                                
+                                ;CAMAC version boot and conditional interrupt enable on reentry
+CAMACNONSTTRUE                                	if	camac and nonst and (not true )
+                                boot:	jmp	nsddi		;DI and return to DOS
+                                	if	not rtpak
+                                	call	cndei		;conditional EI, then DMODE
+                                	endif
+                                	endif
+                                
+                                ;Packard Instruments version XYBASIC reentry and interrupt entry point
+PACKI                                	if	packi
+                                	jmp	dmod2		;to DMODE
+                                	jmp	paisr		;interrupt service routine entry point
+                                	endif
+                                
+                                ;real-time clock version clock tick routine entry point
+REALT                                	if	realt
+                                	jmp	dmod2		;to DMODE
+                                	jmp	clock		;clock routine entry
+                                	endif
+                                
+                                ;IFTYP is a macro to simplify coding of conditional type branches.
+IFTYP                                iftyp	macro	faddr,saddr
+                                	if	float
+                                	jnz	faddr		;;branch to floating routine
+                                	endif
+                                	if	strng
+                                	jc	saddr		;;branch to string routine
+                                	endif			;;else fall through to integer routine
+                                	endm
+                                
+                                ;PUSH3 (and PUSH4) is a macro to save BC, DE, HL (and PSW) on routine entry.
+                                ;The corresponding exit is JMP POP3 (POP4), defined in INOUT.
+PUSH3                                push3	macro
+                                	push	b
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+                                	push	d
+                                	push	h
+                                	endm
+PUSH4                                push4	macro
+                                	push3
+                                	push	psw
+                                	endm
+                                
+                                ;DZ is a macro to fill blocks of RAM with 0 (used like DS).
+DZ                                dz	macro	n
+                                	rept	n
+                                	db	0
+                                	endm
+                                	endm
+                                
+                                ;RIM and SIM are 8085 opcodes to read and set interrupt mask.
+RIM                                rim	macro
+                                	db	20H
+                                	endm
+SIM                                sim	macro
+                                	db	30H
+                                	endm
+                                
+                                ;ERROR is a macro to define error calls.
+                                ;TYP may be F, N or C for fatal, nonfatal, or continue scanning.
+                                ;M1 and M2 are the error message, M2 being the last byte.
+ERROR                                error	macro	typ, m1, m2
+                                	call	erro&TYP		;;call ERROF, ERRON or ERROC
+                                	db	'&M1', '&M2' or 80H	;;error message
+                                	endm
+                                
+                                
+                                ;end of VERSION
+                                	page
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+
+
+                                
+                                ;AUX 11/19/80
+                                ;XYBASIC Interpreter Source Module
+                                ;Copyright (C) 1978, 1979, 1980 by Mark Williams Company, Chicago
+                                ;statement auxilliary routines
+                                
+                                ;general purpose routines used in statement execution
+                                
+                                ;LINBC gets current line # in BC.
+                                ;Call:	(LNNUM)	current line # address, 0 if direct
+                                ;Retn:	A	clobbered
+                                ;	BC	if (LNNUM) = 0 then 0 else ((LNNUM))
+                                ;	DE	preserved
+                                ;	HL	if (LNNUM) = 0 then 0 else (LNNUM) + 1
+                                ;	Zero	set iff (LNNUM) = 0
+LINBCLHLDLNNUMU 0108'   68'                   linbc:	lhld	lnnum
+LINB1MOVU 0109'   00 00                 linb1:	mov	a,h
+ORAU 010B'   00                    	ora	l
+JZLINB2U 010C'   13'                   	jz	linb2		;line # is 0, i.e. direct
+MOVU 010D'   00 00                 	mov	c,m
+INXU 010F'   00                    	inx	h
+MOVU 0110'   00 00                 	mov	b,m		;line # to BC
+  0112'   C9                    	ret
+LINB2MOVU 0113'   00 00                 linb2:	mov	b,a
+MOVU 0115'   00 00                 	mov	c,a		;0 to BC
+  0117'   C9                    	ret
+                                
+                                ;IDTST issues a fatal ID error if current statement is direct, i.e. (LNNUM)=0.
+                                ;IITST performs EOS test, then issues fatal II error if current is indirect.
+COMPL                                	if	compl
+                                idtst	equ	linbc		;just return current line in BC
+                                	else
+IDTSTLINBC  0118'   CD 0108'              idtst:	call	linbc		;zero set iff direct
+RNZU 011B'   00                    	rnz
+IDERRERROR  011C'                         iderr:	error	f, I, D		;fatal ID error
+ERROF  011C'   CD 1A2D'        +     	call	erro&f
+  011F'   49 C4           +     	db	'I', 'D' or 80H
+IITSTEOS  0121'   CD 0137'              iitst:	call	eos
+LINBC  0124'   CD 0108'              	call	linbc		;zero set iff direct
+RZU 0127'   00                    	rz			;ok if direct
+ERROR                                	error	f, I, I		;issue fatal II error
+ERROF  0128'   CD 1A2D'        +     	call	erro&f
+  012B'   49 C9           +     	db	'I', 'I' or 80H
+                                	endif			;end of NOT COMPL conditional
+                                
+                                ;RTEST returns Zero set iff location HL is RAM.
+RTESTMOVU 012D'   00 00                 rtest:	mov	a,m		;fetch byte
+CMAU 012F'   00                    	cma
+MOVU 0130'   00 00                 	mov	m,a		;store complement
+CMPU 0132'   00                    	cmp	m		;compare to stored value
+CMAU 0133'   00                    	cma
+MOVU 0134'   00 00                 	mov	m,a		;restore value
+  0136'   C9                    	ret
+                                
+ROMSQCOMPL                                	if	romsq and not compl
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+
+
+                                ;ISSRC returns if SOURC address working space, issues fatal RO error otherwise.
+                                issrc:	lxi	d,srcad
+                                	lhld	sourc
+                                	call	cmdhu		;compare SOURC to SRCAD
+                                	rz			;addressing working space, OK
+                                roerr:	error	f, R, O		;fatal RO error
+                                
+                                ;ISROM checks if current program is running in ROM, issues nonfatal RO error
+                                ;and scans to next command if so.
+                                isrom:	lhld	sourc
+                                	call	rtest		;test if ROM
+                                	rz			;RAM, OK
+                                	error	c, R, O		;nonfatal RO error and scan on
+                                
+                                	endif			;end of ROMSQ AND NOT COMPL conditional
+                                
+                                ;EOS checks for garbage on end of statement, and is called by routines which
+                                ;alter normal control flow (GOTO, GOSUB, RETURN, etc.).
+                                ;Falls through to syntax error if next nonspace char is not :, ' or <cr>.
+                                ;Retn:	A	next nonspace char
+                                ;	BC,DE	preserved
+                                ;	HL	address of next nonspace char (i.e. of :, ' or <cr>)
+EOSDTST0  0137'   CD 0145'              eos:	call	dtst0
+RNCU 013A'   00                    	rnc			;ok if next is delimiter
+SNERRERROR  013B'                         snerr:	error	c, S, N		;issue SN error and scan to next
+ERROC  013B'   CD 1A31'        +     	call	erro&c
+  013E'   53 CE           +     	db	'S', 'N' or 80H
+EXERRERROR  0140'                         exerr:	error	f, E, X		;fatal EX error
+ERROF  0140'   CD 1A2D'        +     	call	erro&f
+  0143'   45 D8           +     	db	'E', 'X' or 80H
+                                
+COMPL                                	if	compl
+                                uferr:	error	c, U, F		;issue UF error and scan to next
+                                	endif
+                                
+                                ;DTEST tests whether A contains a delimiter.
+                                ;Retn:	Carry	reset iff (A) = :, ' or <cr>
+                                ;	Registers	preserved
+DTST0GTCHO  0145'   CD 1A96'              dtst0:	call	gtcho
+DTESTQ 0148'   ED A1                 dtest:	cpi	':'
+RZU 014A'   00                    	rz
+DTST1Q 014B'   ED A1                 dtst1:	cpi	cr
+RZU 014D'   00                    	rz
+RTPAKCOMPL                                	if	rtpak or not compl	;comments already purged if compiled
+Q 014E'   ED A1                 	cpi	''''
+RZU 0150'   00                    	rz
+                                	endif
+STCU 0151'   00                    	stc
+  0152'   C9                    	ret
+                                
+                                ;GTLHS gets a destination variable reference.  It calls GTVAR with
+                                ;INLHS true (to indicate tracing may be desired) and stores the
+                                ;destination returned in LHSAD for ASSGN to perform assignment.
+GTLHSCOMPL  0153'                         gtlhs:	if	not compl
+MVIU 0153'   00 FF                 	mvi	a,255
+STAINLHSU 0155'   6E'                   	sta	inlhs		;set INLHS to true
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+
+
+                                	endif
+GTVAR  0156'   CD 1C65'              	call	gtvar		;perform variable reference
+JCSNERRU 0159'   3B'                   	jc	snerr		;no variable name
+STALHSTYU 015A'   83'                   	sta	lhsty		;save type
+SHLDLHSADU 015B'   84'                   	shld	lhsad		;save destination
+COMPL                                	if	not compl
+MOVU 015C'   00 00                 	mov	b,a		;save type
+XRAU 015E'   00                    	xra	a
+STAINLHSU 015F'   6E'                   	sta	inlhs		;reset INLHS to false
+MOVU 0160'   00 00                 	mov	a,b		;restore type
+                                	endif
+  0162'   C9                    	ret
+                                
+                                ;ASIGN is CALLed by FOR, NEXT, LET, READ, INPUT to change a variable's value.
+                                ;The value addressed by HL is assigned to the destination LHSAD.
+                                ;Trace information is printed if (VTRAC) is negative.
+ASIGVESVAL  0163'   CD 0820'              asigv:	call	esval		;value to ESTACK
+LHLDESTKPU 0166'   88'                   	lhld	estkp
+INXU 0167'   00                    	inx	h		;point to value
+ASIGNLDALHSTYU 0168'   83'                   asign:	lda	lhsty		;desired type to A
+CNVRT  0169'   CD 09E7'              	call	cnvrt		;convert value to desired type
+STRNG                                	if	strng
+Q 016C'   ED A1                 	cpi	strst
+CZSCOPVU 016E'   E5'                   	cz	scopv		;copy to string space if type string
+                                	endif
+BYTSD  016F'   CD 01A0'              	call	bytsd		;# bytes in value to DE
+INXU 0172'   00                    	inx	h		;point to value
+MOVU 0173'   00 00                 	mov	b,h
+MOVU 0175'   00 00                 	mov	c,l		;value source to BC
+LHLDLHSADU 0177'   84'                   	lhld	lhsad		;destination to HL
+COMPL                                	if	compl
+                                	jmp	moved		;value to destination and return if COMPL
+                                	else
+  0178'   F5                    	push	psw		;save type
+A 0179'   C5                    	push	b		;and save value location
+MOVED  017A'   CD 3503'              	call	moved		;value to destination
+A 017D'   E1                    	pop	h		;value location to HL
+A 017E'   C1                    	pop	b		;value type to B
+                                				;and fall through to TRVAL
+                                ;TRVAL prints variable value if tracing is desired.
+                                ;Call:	VTRAC	bit 7 set iff tracing desired
+                                ;	B	value type
+                                ;	HL	value location
+TRVALLDAVTRACU 017F'   6F'                   trval:	lda	vtrac
+ORAU 0180'   00                    	ora	a
+RPU 0181'   00                    	rp			;done if not tracing
+TRVA1MVIU 0182'   00 3D                 trva1:	mvi	a,'='		;BTEST entry point
+WRITC  0184'   CD 18E1'              	call	writc		;write the =
+DCXU 0187'   00                    	dcx	h		;point to type
+MOVU 0188'   00 00                 	mov	a,b		;fetch type
+STRNG                                	if	strng
+Q 018A'   ED A1                 	cpi	strst
+JNZPRVALU 018C'   1C'                   	jnz	prval		;print nonstring value
+XCHGU 018D'   00                    	xchg
+LXISTEMPU 018E'   00 B8'                	lxi	h,stemp
+INRU 0190'   00                    	inr	m		;increment STEMP count before fetching string
+XCHG'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+
+
+U 0191'   00                    	xchg
+                                	endif
+JMPPRVALU 0192'   1C'                   	jmp	prval		;print the value and return
+                                	endif			;end of NOT COMPL conditional
+                                
+                                ;ASIGI performs traced integer assignment for NEXT and SCALL value return.
+ASIGIMOVU 0193'   00 00                 asigi:	mov	m,b
+DCXU 0195'   00                    	dcx	h
+MOVU 0196'   00 00                 	mov	m,c		;value to destination
+COMPL                                	if	not compl
+A 0198'   C5                    	push	b
+MVIINTSTU 0199'   00 01                 	mvi	b,intst
+TRVAL  019B'   CD 017F'              	call	trval		;print trace info if desired
+A 019E'   C1                    	pop	b
+                                	endif
+  019F'   C9                    	ret
+                                
+                                ;BYTSD returns with the number of bytes in an value in DE.
+BYTSDLXIVBYTSU 01A0'   00 FF                 bytsd:	lxi	d,vbyts-1
+FLOAT                                	if	float
+Q 01A2'   ED A1                 	cpi	sngst
+RZU 01A4'   00                    	rz			;return 4 if floating
+FPBCD                                	if	fpbcd
+MVIU 01A5'   00 03                 	mvi	e,3
+                                	else
+                                	dcx	d
+                                	endif
+                                	endif
+STRNG                                	if	strng
+Q 01A7'   ED A1                 	cpi	strst
+RZU 01A9'   00                    	rz			;return 3 if string
+                                	endif
+FLOATSTRNG                                	if	float or strng
+DCXU 01AA'   00                    	dcx	d
+                                	endif
+  01AB'   C9                    	ret			;return 2 if integer
+                                
+                                ;FETCH fetches a value addressed by HL and returns its type in the status bits.
+                                ;Call:	HL	pointer to type
+                                ;Retn:	A	type token
+                                ;	BC	value if integer, Carry reset and Zero set
+                                ;	C,DE	length, location if string, Carry set and Zero set
+                                ;	FACC	value if floating, Carry reset and Zero reset
+                                ;FETBC does a FETCH of arg in BC.
+FETBCMOVU 01AC'   00 00                 fetbc:	mov	h,b
+MOVU 01AE'   00 00                 	mov	l,c
+FETCHMOVU 01B0'   00 00                 fetch:	mov	a,m		;fetch the type token
+FETC1FLOAT  01B2'                         fetc1:	if	float
+Q 01B2'   ED A1                 	cpi	sngst
+JZFETCFU 01B4'   D0'                   	jz	fetcf		;fetch floating
+                                	endif
+STRNG                                	if	strng
+Q 01B5'   ED A1                 	cpi	strst
+JZFETCSU 01B7'   C3'                   	jz	fetcs		;fetch string
+                                	endif
+FETCIQ 01B8'   ED A1                 fetci:	cpi	intst
+JNZEXERR'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+
+
+U 01BA'   40'                   	jnz	exerr
+FLOAT                                	if	float
+SHLDARGADU 01BB'   CD'                   	shld	argad		;save location for retry of ambiguous op
+                                	endif
+MOBCMINXU 01BC'   00                    mobcm:	inx	h		;Zero is set, Carry reset
+MOVU 01BD'   00 00                 	mov	c,m
+INXU 01BF'   00                    	inx	h
+MOVU 01C0'   00 00                 	mov	b,m		;fetch integer to BC
+  01C2'   C9                    	ret
+STRNG                                	if	strng
+FETCSINXU 01C3'   00                    fetcs:	inx	h
+MOVU 01C4'   00 00                 	mov	c,m		;length to C
+MODEM  01C6'   CD 01E9'              	call	modem		;location to DE
+LXISTEMPU 01C9'   00 B8'                	lxi	h,stemp
+DCRU 01CB'   00                    	dcr	m		;decrement # string temps in use
+JMEXERRU 01CC'   40'                   	jm	exerr		;EX error if negative
+XRAU 01CD'   00                    	xra	a		;Zero is set
+STCU 01CE'   00                    	stc			;and Carry set also
+  01CF'   C9                    	ret
+                                	endif
+FLOAT                                	if	float
+F9511                                	if	f9511		;9511 version fetches to 9511 stack
+                                fetcf:	push	h
+                                	push	b
+                                	inx	h		;point to first value byte
+                                	call	lod95		;load value to 9511 stack
+                                	pop	b		;restore BC
+                                	pop	h		;restore HL
+                                	mvi	a,sngst		;floating point token to A
+                                	ora	a		;clear Carry and Zero
+                                	ret			;and return
+                                	else			;NOT F9511
+FETCFPUSH3  01D0'                         fetcf:	push3			;save registers
+A 01D0'   C5              +     	push	b
+A 01D1'   D5              +     	push	d
+A 01D2'   E5              +     	push	h
+INXU 01D3'   00                    	inx	h		;point to value
+FLOADU 01D4'   CD 0000               	call	fload		;load value to FACC
+MVISNGSTU 01D7'   00 02                 	mvi	a,sngst		;return type in A
+ORAU 01D9'   00                    	ora	a		;Carry reset, Zero reset
+JMPPOP3U 01DA'   12'                   	jmp	pop3		;restore registers and return
+                                	endif
+                                	endif
+                                
+                                ;MVDEM returns (M):(M-1) in DE, (HL)-2 in HL
+                                ;BC, PSW preserved
+MVDEMMOVU 01DB'   00 00                 mvdem:	mov	d,m
+DCXU 01DD'   00                    	dcx	h
+MOVU 01DE'   00 00                 	mov	e,m
+DCXU 01E0'   00                    	dcx	h
+  01E1'   C9                    	ret
+                                
+                                ;MVMDE moves (DE) to (M-1):(M-2), returns (HL)-2 in HL
+MVMDEDCXU 01E2'   00                    mvmde:	dcx	h
+MOVU 01E3'   00 00                 	mov	m,d
+DCXU 01E5'   00                    	dcx	h
+MOV'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+
+
+U 01E6'   00 00                 	mov	m,e
+  01E8'   C9                    	ret
+                                
+                                ;MODEM moveds (M+2):(M+1) to DE, returns (HL)+2 in HL.
+MODEMINXU 01E9'   00                    modem:	inx	h
+MOVU 01EA'   00 00                 	mov	e,m
+INXU 01EC'   00                    	inx	h
+MOVU 01ED'   00 00                 	mov	d,m
+  01EF'   C9                    	ret
+                                
+                                ;ISBYT checks whether (B) = 0.  If so, it returns.
+                                ;If not, a nonfatal BY error is issued and B is set to 0.
+                                ;A clobbered, B forced to 0, other registers preserved.
+ISBYTMOVU 01F0'   00 00                 isbyt:	mov	a,b
+ORAU 01F2'   00                    	ora	a		;clear carry, set zero iff (B) = 0
+RZU 01F3'   00                    	rz
+MVIU 01F4'   00 00                 	mvi	b,0		;force (B) to 0
+ERROR                                	error	n, B, Y		;nonfatal BYte error
+ERRON  01F6'   CD 1A35'        +     	call	erro&n
+  01F9'   42 D9           +     	db	'B', 'Y' or 80H
+  01FB'   C9                    	ret			;and return
+                                
+                                ;CPLDE replaces (DE) with its two's complement.
+                                ;CPLD1 replaces (DE) with its one's complement.
+                                ;Retn:	A	clobbered
+                                ;	BC,HL	preserved
+                                ;	DE	two's complemented
+                                ;	Carry	set iff (DE) = 8000H, i.e. overflow
+CPLDEDCXU 01FC'   00                    cplde:	dcx	d
+CPLD1MOVU 01FD'   00 00                 cpld1:	mov	a,e		;entry point to one's complement DE --
+CMAU 01FF'   00                    	cma			;   NB carry set if called with 7FFFH
+MOVU 0200'   00 00                 	mov	e,a
+MOVU 0202'   00 00                 	mov	a,d
+CMAU 0204'   00                    	cma
+MOVU 0205'   00 00                 	mov	d,a
+XRIU 0207'   80                    	xri	80H
+ORAU 0208'   00                    	ora	e		;zero set iff (DE) = 8000H
+RNZU 0209'   00                    	rnz
+CMCU 020A'   00                    	cmc			;set carry if overflow
+  020B'   C9                    	ret
+                                
+                                ;ADAHL adds (A) + (HL), leaves result in HL and sets carry on overflow.
+ADAHLO 020C'   C6 00                 adahl:	add	l
+MOVU 020E'   00 00                 	mov	l,a
+RNCU 0210'   00                    	rnc			;done if no carry
+INRU 0211'   00                    	inr	h		;else inc high order
+RZU 0212'   00                    	rz			;return with carry set iff overflow
+CMCU 0213'   00                    	cmc
+  0214'   C9                    	ret
+                                
+                                ;SBAHL subtracts (HL) - (A), leaves result in HL and sets carry on underflow.
+SBAHL  0215'   95                    sbahl:	sub	l		;(A) - (L) to A, carry set iff L > A
+CMAU 0216'   00                    	cma			;L - A - 1
+MOVU 0217'   00 00                 	mov	l,a
+INXU 0219'   00                    	inx	h		;L - A
+RCU 021A'   00                    	rc
+DCR'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+
+
+U 021B'   00                    	dcr	h
+  021C'   C9                    	ret
+                                
+                                ;CMBDU compares (BC) to (DE) as 16 bit unsigned integers.
+                                ;Retn:	A	clobbered
+                                ;	BC,DE,HL	unchanged
+                                ;	Zero	set iff (BC) = (DE)
+                                ;	Carry	set iff (BC) < (DE)
+CMBDUMOVU 021D'   00 00                 cmbdu:	mov	a,b
+CMPU 021F'   00                    	cmp	d		;carry set iff (B) < (D)
+RNZU 0220'   00                    	rnz			;finished unless (B) = (D)
+MOVU 0221'   00 00                 	mov	a,c		;(B) = (D), so compare (C) to (E)
+CMPU 0223'   00                    	cmp	e
+  0224'   C9                    	ret
+                                
+                                ;CMDHU same as CMBDU except DE::HL
+CMDHUMOVU 0225'   00 00                 cmdhu:	mov	a,d
+CMPU 0227'   00                    	cmp	h
+RNZU 0228'   00                    	rnz
+MOVU 0229'   00 00                 	mov	a,e
+CMPU 022B'   00                    	cmp	l
+  022C'   C9                    	ret
+                                
+                                ;CMBDS compares (BC) to (DE) as 16 bit signed (two's complement) integers.
+                                ;Retn:	same as CMBDU above.
+CMBDSMOVU 022D'   00 00                 cmbds:	mov	a,b
+XRAU 022F'   00                    	xra	d		;sign set iff signs agree
+CMBDU  0230'   C3 021D'              	jp	cmbdu		;unsigned compare works when signs agree
+MOVU 0233'   00 00                 	mov	a,b		;signs disagree, sign of B gives result
+RALU 0235'   00                    	ral			;NB zero is reset from xra above
+  0236'   C9                    	ret
+                                
+                                ;FLIP is called by READ and INPUT to exchange text pointers in TEXTP and TXTP2.
+                                ;Clobbers DE, preserves PSW, leaves TEXTP in HL.
+FLIPLHLDTXTP2U 0237'   7F'                   flip:	lhld	txtp2
+XCHGU 0238'   00                    	xchg			;TXTP2 to DE
+LHLDTEXTPU 0239'   F3'                   	lhld	textp
+SHLDTXTP2U 023A'   7F'                   	shld	txtp2		;TEXTP to TXTP2
+XCHGU 023B'   00                    	xchg
+SHLDTEXTPU 023C'   F3'                   	shld	textp		;TXTP2 to TEXTP
+  023D'   C9                    	ret
+                                
+                                ;DMODX is a common exit for various versions of LOAD and EXEC.
+                                ;First the control and expr stacks are reset.  Then execution continues
+                                ;if the command was direct, and XYBASIC returns to DMODE if indirect
+                                ;(since the source program has been changed by the EXEC or LOAD).
+                                ;Call:	HL	eof address of new program
+COMPL                                	if	not compl
+DMODXNEW1  023E'   CD 26F2'              dmodx:	call	new1		;reset stacks
+LINBC  0241'   CD 0108'              	call	linbc		;Zero set iff direct
+RZU 0244'   00                    	rz			;continue normally if direct
+JMPDMOD2U 0245'   3A'                   	jmp	dmod2		;otherwise to DMODE
+                                	endif
+                                
+                                ;BDTST is called from FOR and NEXT to test FOR-loop termination.
+                                ;Call:	BC or FACC	new FOR-variable value (integer or floating)
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+
+
+                                ;	DE	increment pointer
+                                ;	HL	bound pointer
+                                ;	LHSTY	FOR-variable type
+                                ;Retn:	Carry	Set iff exit condition satisfied, i.e. value>bound and inr>=0
+                                ;			or value<bound and inr<0
+BDTSTINXU 0246'   00                    bdtst:	inx	d		;point to second incr byte
+FLOAT                                	if	float
+LDALHSTYU 0247'   83'                   	lda	lhsty
+Q 0248'   ED A1                 	cpi	sngst
+JNZBDTS1U 024A'   58'                   	jnz	bdts1		;integer type
+A 024B'   D5                    	push	d
+F9511                                	if	f9511
+                                	call	lod95		;load bound to 9511 stack
+                                	call	cmpf0		;perform floating compare, no arg switch
+                                	else
+CMPFL  024C'   CD 164E'              	call	cmpfl		;do floating compare
+                                	endif
+A 024F'   D1                    	pop	d
+RZU 0250'   00                    	rz			;value=bound, return Carry reset
+F9511FPBCD                                	if	f9511 or fpbcd
+DCXU 0251'   00                    	dcx	d		;first byte has sign of 9511, BCD
+                                	endif
+LDAXU 0252'   00                    	ldax	d
+Q 0253'   CB 00                 	rlc			;incr sign to Carry
+RMU 0255'   00                    	rm			;value<bound, return incr sign as result
+CMCU 0256'   00                    	cmc			;value>bound, return complemented incr sign
+  0257'   C9                    	ret
+                                	endif
+BDTS1LDAXU 0258'   00                    bdts1:	ldax	d
+MOVU 0259'   00 00                 	mov	e,m
+INXU 025B'   00                    	inx	h
+MOVU 025C'   00 00                 	mov	d,m		;integer bound to DE
+Q 025E'   CB 00                 	rlc
+CNCBCDEU 0260'   E5'                   	cnc	bcde		;exchange value and bound if incr>=0
+JMPCMBDSU 0261'   2D'                   	jmp	cmbds		;and CMBDS returns desired Carry status
+                                
+                                ;FNDST is called from FOR and READ to scan through a program for
+                                ;the matching NEXT or next DATA statement.
+                                ;Call:	(textp)	text address at which scanning is to begin
+                                ;	B	token to be matched (NEXT or DATA)
+                                ;		(1) Found				(2) Notfound
+                                ;Retn:	A	token					0
+                                ;	B	preserved				preserved
+                                ;	C,DE	clobbered				clobbered
+                                ;	HL	address of next unparsed text char	eof address
+                                ;	Carry	reset					set
+                                ;	(textp)	ditto					eof address - 1
+FNDS0DTST0  0262'   CD 0145'              fnds0:	call	dtst0		;check if at delimiter
+CMCU 0265'   00                    	cmc
+RNCU 0266'   00                    	rnc			;return carry reset if not
+                                				;else empty DATA, fall through to retry
+FNDSTMVIU 0267'   00 01                 fndst:	mvi	c,1		;initialize FOR count
+LXIU 0269'   00 04                 	lxi	d,4		;to skip bytes after <cr>
+FNDS1GTCHA  026B'   CD 1A8D'              fnds1:	call	gtcha		;get next char
+CMPU 026E'   00                    	cmp	b
+JZFNDS3U 026F'   89'                   	jz	fnds3		;found one
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+
+
+Q 0270'   ED A1                 	cpi	':'
+JZFNDS1U 0272'   6B'                   	jz	fnds1		;multiple statements -- look at next
+RTPAKCOMPL                                	if	rtpak or not compl	;comments purged if compiled
+Q 0273'   ED A1                 	cpi	''''
+CZREMU 0275'   E6'                   	cz	rem		;on-line comment -- scan to <cr>
+                                	endif
+Q 0276'   ED A1                 	cpi	cr
+JZFNDS2U 0278'   82'                   	jz	fnds2		;cr
+Q 0279'   ED A1                 	cpi	fort
+CZINRCU 027B'   80'                   	cz	inrc		;increment FOR-count if FOR
+GTDEL  027C'   CD 1AD2'              	call	gtdel		;scan to delimiter
+JMPFNDS1U 027F'   6B'                   	jmp	fnds1		;keep trying
+INRCINRU 0280'   00                    inrc:	inr	c
+  0281'   C9                    	ret
+FNDS2MOVU 0282'   00 00                 fnds2:	mov	a,m		;fetch next line length byte
+ORAU 0284'   00                    	ora	a		;check for end of file
+JZBKUPCU 0285'   BB'                   	jz	bkupc		;return carry set if failed
+DADU 0286'   00                    	dad	d		;point to next text byte
+SHLDTEXTPU 0287'   F3'                   	shld	textp		;store new pointer
+JMPFNDS1U 0288'   6B'                   	jmp	fnds1		;and keep looking
+FNDS3Q 0289'   ED A1                 fnds3:	cpi	datat
+JZFNDS0U 028B'   62'                   	jz	fnds0		;done if DATA
+FNDS4GTNAM  028C'   CD 1C02'              fnds4:	call	gtnam		;look for var name after NEXT
+DCRU 028F'   00                    	dcr	c		;decrement count
+JNCFNDS5U 0290'   94'                   	jnc	fnds5
+CMCU 0291'   00                    	cmc			;clear carry in case found
+RZU 0292'   00                    	rz			;done if NEXT and FOR count is 0
+JMPFNDS1U 0293'   6B'                   	jmp	fnds1		;and keep looking
+FNDS5RZU 0294'   00                    fnds5:	rz			;return if counted to 0
+GTCOM  0295'   CD 1AA6'              	call	gtcom		;look for comma after <var name>
+JCFNDS1U 0298'   6B'                   	jc	fnds1		;none
+JMPFNDS4U 0299'   8C'                   	jmp	fnds4		;else look for more
+                                
+                                ;FNDLN finds the line # address of the line which DE points into.
+                                ;Used by READ for DATA syntax errors.
+                                ;Call:	DE	pointer into text
+                                ;Retn:	BC,DE	preserved
+                                ;	HL	line # address of desired text line
+FNDLNROMSQ  029A'                         fndln:	if	not romsq
+LXISRCADU 029A'   00 FC'                	lxi	h,srcad
+                                	else
+                                	lhld	sourc
+                                	endif
+FNLN1SHLDTEMPU 029C'   7D'                   fnln1:	shld	temp		;save length byte address
+MOVU 029D'   00 00                 	mov	a,m		;fetch length
+ADAHL  029F'   CD 020C'              	call	adahl		;address next line
+CMDHU  02A2'   CD 0225'              	call	cmdhu		;compare to desired pointer
+JNCFNLN1U 02A5'   9C'                   	jnc	fnln1		;keep looking
+LHLDTEMPU 02A6'   7D'                   	lhld	temp		;restore length byte addr
+INXU 02A7'   00                    	inx	h		;point to line #
+  02A8'   C9                    	ret
+                                
+REALT                                	if	realt
+                                ;CLOCK is the interrupt service routine to tick the real-time clock.
+                                ;The interrupt branches to 10H, POKEd during initialization to come here.
+                                ;The four bytes at TIMEX contain 20ths-20, seconds-60, minutes-60 and hours-24.
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+
+
+                                clock:	push	psw
+                                	push	h
+                                	lxi	h,timex		;address 20ths counter
+                                	inr	m		;tick it
+                                	jnz	clocx		;done
+                                	mvi	m,255 and -20	;reset to -20
+                                	inx	h		;address seconds counter
+                                	inr	m		;tick it
+                                	jnz	clocx		;done
+                                	mvi	m,255 and -60	;reset to -60
+                                	inx	h		;address minutes counter
+                                	inr	m		;tick...
+                                	jnz	clocx		;done
+                                	mvi	m,255 and -60	;reset
+                                	inx	h		;address hours counter
+                                	inr	m		;tick...
+                                	jnz	clocx		;done
+                                	mvi	m,255 and -24	;welcome to tomorrow
+                                clocx:	pop	h
+                                	mvi	a,20H
+                                	out	0D8H		;reinitialize the clock
+                                	pop	psw
+                                	ei			;reenable interrupts
+                                	ret
+                                	endif
+                                
+EDITCCOMPL                                	if	editc and (not compl)
+                                ;LNREF changes all occurrences of <line #>s in source text for RENUM.
+LNREFLXISRCADU 02A9'   00 FC'                lnref:	lxi	h,srcad		;begin at the beginning
+                                ;process next line of source text
+LNRE1MOVU 02AB'   00 00                 lnre1:	mov	a,m		;fetch length byte
+ORAU 02AD'   00                    	ora	a
+RZU 02AE'   00                    	rz			;eof, done
+A 02AF'   E5                    	push	h
+INXU 02B0'   00                    	inx	h
+INXU 02B1'   00                    	inx	h
+INXU 02B2'   00                    	inx	h
+INXU 02B3'   00                    	inx	h		;address first text byte
+                                ;process next byte of source text
+LNRE2MOVU 02B4'   00 00                 lnre2:	mov	a,m		;fetch a text byte
+INXU 02B6'   00                    	inx	h
+Q 02B7'   ED A1                 	cpi	cr		;check if end of line
+JZLNRE5U 02B9'   89'                   	jz	lnre5		;yes
+Q 02BA'   ED A1                 	cpi	''''
+JZLNRE4U 02BC'   83'                   	jz	lnre4		;on-line comment, scan to <cr>
+Q 02BD'   ED A1                 	cpi	remt
+JZLNRE4U 02BF'   83'                   	jz	lnre4		;REM, scan to <cr>
+KEY80                                	if	key80
+Q 02C0'   ED A1                 	cpi	20H
+JCLNRE3U 02C2'   C6'                   	jc	lnre3		;reserved word token, check it
+                                	endif
+Q 02C3'   ED A1                 	cpi	80H
+JCLNRE2U 02C5'   B4'                   	jc	lnre2		;not a token, try next
+                                ;found a <token>, check if <line #> can and does follow
+LNRE3KLTST  02C6'   CD 0390'              lnre3:	call	kltst		;test if token can have <line #> following
+JCLNRE2U 02C9'   B4'                   	jc	lnre2		;no, try next
+STATXTP2'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+
+
+U 02CA'   7F'                   	sta	txtp2		;save token in TXTP2 in case ON list or LIST
+SHLDTEXTPU 02CB'   F3'                   	shld	textp		;set TEXTP to scan possible <line #>
+LNR3JGTCHO  02CC'   CD 1A96'              lnr3j:	call	gtcho		;skip spaces, if any
+A 02CF'   E5                    	push	h		;save HL pointing to first nonspace
+GTLNO  02D0'   CD 1B51'              	call	gtlno		;look for <line #>
+XTHLU 02D3'   00                    	xthl			;restore HL
+A 02D4'   C1                    	pop	b		;first nondigit location to BC
+JCLNRE2U 02D5'   B4'                   	jc	lnre2		;not a <line #>, try next byte
+                                ;found a <line #>
+A 02D6'   E5                    	push	h		;save first for insertion of new line #
+XCHGU 02D7'   00                    	xchg
+CPLDE  02D8'   CD 01FC'              	call	cplde		;- first
+XCHGU 02DB'   00                    	xchg
+DADU 02DC'   00                    	dad	b		;last + 1 - first = <line #> length to HL
+A 02DD'   E5                    	push	h		;save length
+FINDL  02DE'   CD 350E'              	call	findl		;look for <line #>
+JCLNR3CU 02E1'   16'                   	jc	lnr3c		;not found, flag the line
+A 02E2'   E5                    	push	h		;save location
+LHLDRNOLDU 02E3'   CB'                   	lhld	rnold
+XCHGU 02E4'   00                    	xchg
+FINDL  02E5'   CD 350E'              	call	findl		;find location of first renumbered line
+A 02E8'   D1                    	pop	d		;location of desired line to DE
+CMDHU  02E9'   CD 0225'              	call	cmdhu
+JCLNR3DU 02EC'   20'                   	jc	lnr3d		;before renumbered lines, unchanged
+A 02ED'   E5                    	push	h		;save first loc
+LHLDRNINCU 02EE'   C9'                   	lhld	rninc
+MOVU 02EF'   00 00                 	mov	b,h
+MOVU 02F1'   00 00                 	mov	c,l		;increment to BC
+LHLDRNNEWU 02F3'   C7'                   	lhld	rnnew		;first destination line # to HL
+JZLNR3BU 02F4'   01'                   	jz	lnr3b		;matched, take first line #
+                                ;compute new <line #> corresponding to old <line #>
+LNR3AXTHLU 02F5'   00                    lnr3a:	xthl			;first line loc to HL
+MOVU 02F6'   00 00                 	mov	a,m
+ADAHL  02F8'   CD 020C'              	call	adahl		;address next line
+CMDHU  02FB'   CD 0225'              	call	cmdhu		;compare to desired line #
+XTHLU 02FE'   00                    	xthl
+DADU 02FF'   00                    	dad	b		;compute new line #
+JNZLNR3AU 0300'   F5'                   	jnz	lnr3a		;no match, try next
+                                ;convert new <line #> to string and compare to length of old
+LNR3BA 0301'   D1                    lnr3b:	pop	d		;discard saved location
+MOVU 0302'   00 00                 	mov	b,h
+MOVU 0304'   00 00                 	mov	c,l		;new line # to BC
+XRAU 0306'   00                    	xra	a
+CVTIS  0307'   CD 19A7'              	call	cvtis		;and converted to string, no leading char
+BCDE  030A'   CD 16E5'              	call	bcde		;location to BC, length to E
+A 030D'   E1                    	pop	h		;length of old line # to L
+  030E'   95                    	sub	l		;new length - old length
+A 030F'   E1                    	pop	h		;old line # loc to HL
+JMLNR3EU 0310'   23'                   	jm	lnr3e		;old line # longer
+JNZLNR3FU 0311'   4A'                   	jnz	lnr3f		;old line # shorter
+MOVD0  0312'   CD 3501'              	call	movd0		;move new line # to replace old
+JMPLNR3HU 0315'   73'                   	jmp	lnr3h		;and keep scanning
+                                ;old <line #> not found, flag bit 7 of line break byte
+LNR3CA 0316'   E1                    lnr3c:	pop	h		;discard saved length
+A 0317'   E1                    	pop	h		;and discard saved first loc
+A 0318'   E1                    	pop	h		;length byte addr to HL
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-18
+
+
+A 0319'   E5                    	push	h		;and resaved
+INXU 031A'   00                    	inx	h
+INXU 031B'   00                    	inx	h
+INXU 031C'   00                    	inx	h		;address break byte
+MVIU 031D'   00 80                 	mvi	m,80H		;set bit 7 to indicate line # not found
+JMPLNR3HU 031F'   73'                   	jmp	lnr3h		;and keep scanning
+                                ;old <line #> precedes renumbered lines, leave unchanged
+LNR3DA 0320'   E1                    lnr3d:	pop	h		;discard saved length
+A 0321'   E1                    	pop	h		;and discard saved first loc
+JMPLNR3HU 0322'   73'                   	jmp	lnr3h		;and keep scanning
+                                ;old <line #> longer than new <line #>
+LNR3E  0323'   F5                    lnr3e:	push	psw		;save offset
+MOVD0  0324'   CD 3501'              	call	movd0		;copy new line # to old place
+SHLDTEXTPU 0327'   F3'                   	shld	textp		;and set new TEXTP
+XCHGU 0328'   00                    	xchg			;new destination to DE
+  0329'   F1                    	pop	psw		;restore offset
+A 032A'   E1                    	pop	h		;line length pointer to HL
+  032B'   F5                    	push	psw
+ADDOFFSETO 032C'   C6 00                 	add	m		;add offset
+MOVU 032E'   00 00                 	mov	m,a		;and store new line length
+  0330'   F1                    	pop	psw
+A 0331'   E5                    	push	h		;resave line length pointer
+CMAU 0332'   00                    	cma
+INRU 0333'   00                    	inr	a		;complement offset
+XCHGU 0334'   00                    	xchg			;restore destination to HL
+A 0335'   E5                    	push	h		;save destination
+ADAHL  0336'   CD 020C'              	call	adahl		;+offset = source
+A 0339'   E5                    	push	h
+XCHGU 033A'   00                    	xchg
+CPLDE  033B'   CD 01FC'              	call	cplde		;-source
+LHLDEOFADU 033E'   F7'                   	lhld	eofad
+INXU 033F'   00                    	inx	h
+DADU 0340'   00                    	dad	d		;count bytes to move
+XCHGU 0341'   00                    	xchg			;to DE
+A 0342'   C1                    	pop	b
+A 0343'   E1                    	pop	h
+MOVED  0344'   CD 3503'              	call	moved		;block move the remaining text
+DCXU 0347'   00                    	dcx	h
+SHLDEOFADU 0348'   F7'                   	shld	eofad		;store new eof
+JMPLNR3HU 0349'   73'                   	jmp	lnr3h		;and keep scanning
+                                ;old <line #> shorter than new
+LNR3F  034A'   F5                    lnr3f:	push	psw
+A 034B'   C5                    	push	b
+A 034C'   D5                    	push	d
+A 034D'   E5                    	push	h		;save all
+XCHGU 034E'   00                    	xchg			;first old line # byte addr to DE
+LHLDEOFADU 034F'   F7'                   	lhld	eofad
+MOVU 0350'   00 00                 	mov	b,h
+MOVU 0352'   00 00                 	mov	c,l		;end of file to BC
+ADAHL  0354'   CD 020C'              	call	adahl		;offset + eof = new eof
+SHLDEOFADU 0357'   F7'                   	shld	eofad		;store new eof
+LNR3GLDAXU 0358'   00                    lnr3g:	ldax	b		;fetch a text byte
+MOVU 0359'   00 00                 	mov	m,a		;and store in new location
+DCXU 035B'   00                    	dcx	b
+DCXU 035C'   00                    	dcx	h
+MOVU 035D'   00 00                 	mov	a,e
+CMP'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-19
+
+
+U 035F'   00                    	cmp	c
+JNZLNR3GU 0360'   58'                   	jnz	lnr3g
+MOVU 0361'   00 00                 	mov	a,d
+CMPU 0363'   00                    	cmp	b
+JNZLNR3GU 0364'   58'                   	jnz	lnr3g		;copy more text bytes
+A 0365'   E1                    	pop	h
+A 0366'   D1                    	pop	d
+A 0367'   C1                    	pop	b		;restore new line # info
+MOVD0  0368'   CD 3501'              	call	movd0		;and copy line # into text
+SHLDTEXTPU 036B'   F3'                   	shld	textp
+  036C'   F1                    	pop	psw		;offset
+A 036D'   E1                    	pop	h		;line length addr
+OLDLENGTHOFFSETO 036E'   C6 00                 	add	m		;old length + offset
+MOVU 0370'   00 00                 	mov	m,a		;gives new length
+A 0372'   E5                    	push	h
+LNR3HLDATXTP2U 0373'   7F'                   lnr3h:	lda	txtp2		;recover token preceding <line #>
+LHLDTEXTPU 0374'   F3'                   	lhld	textp
+Q 0375'   ED A1                 	cpi	gotot
+JZLNR3IU 0377'   7E'                   	jz	lnr3i		;GOTO
+Q 0378'   ED A1                 	cpi	gsubt
+JZLNR3IU 037A'   7E'                   	jz	lnr3i		;GOSUB
+Q 037B'   ED A1                 	cpi	listt
+JNZLNRE2U 037D'   B4'                   	jnz	lnre2		;not GOTO, GOSUB nor LIST, keep scanning
+LNR3IGTCOM  037E'   CD 1AA6'              lnr3i:	call	gtcom		;look for comma
+JCLNRE2U 0381'   B4'                   	jc	lnre2		;none, keep scanning
+JMPLNR3JU 0382'   CC'                   	jmp	lnr3j		;look for next element in <line #> list
+                                ;scan to next <cr>
+LNRE4MOVU 0383'   00 00                 lnre4:	mov	a,m
+INXU 0385'   00                    	inx	h
+Q 0386'   ED A1                 	cpi	cr
+JNZLNRE4U 0388'   83'                   	jnz	lnre4
+                                ;end of source text line, try the next
+LNRE5A 0389'   E1                    lnre5:	pop	h		;length byte addr to HL
+MOVU 038A'   00 00                 	mov	a,m
+ADAHL  038C'   CD 020C'              	call	adahl		;address next line
+JMPLNRE1U 038F'   AB'                   	jmp	lnre1		;and try next line
+                                
+                                ;KLTST tests if token in A may have <line #> following.
+                                ;Call:	A	Token
+                                ;Retn:	C	Clobbered
+                                ;	A,B,DE,HL	Preserved
+                                ;	Carry	Set iff not found
+KLTSTA 0390'   E5                    kltst:	push	h
+MVIKLNCTU 0391'   00 0A                 	mvi	c,klnct		;table count to C
+LXIKLNTAU 0393'   00 03'                	lxi	h,klnta		;table addr to HL
+KLTS1CMPU 0395'   00                    klts1:	cmp	m		;compare token to table entry
+JZKLTS2U 0396'   9B'                   	jz	klts2		;matched
+INXU 0397'   00                    	inx	h
+DCRU 0398'   00                    	dcr	c
+JNZKLTS1U 0399'   95'                   	jnz	klts1		;try next
+STCU 039A'   00                    	stc			;not found
+KLTS2A 039B'   E1                    klts2:	pop	h		;restore HL
+  039C'   C9                    	ret			;and return
+                                	endif			;end of EDITC conditional
+                                
+COMPL                                	if	not compl
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-20
+
+
+                                ;BKNAM constructs a 3-byte symbol table 'name' at BUFAD for a line break.
+                                ;Byte 1 is H6-H0, byte 2 is L6-L0, both with bit 7 reset.
+                                ;Byte 3 has 1,H7,L7 in bits 7-5 and bits 4-0 reset.
+                                ;Call:	HL	desired break entry 'name' (i.e. line # addr)
+BKNAMXCHGU 039D'   00                    bknam:	xchg			;desired line # addr to DE
+LXIBUFADU 039E'   00 8C'                	lxi	h,bufad
+MOVU 03A0'   00 00                 	mov	a,d
+ANIU 03A2'   7F                    	ani	7FH
+MOVU 03A3'   00 00                 	mov	m,a		;byte 1 = D6-D0 to BUFAD
+INXU 03A5'   00                    	inx	h
+MOVU 03A6'   00 00                 	mov	a,e
+ANIU 03A8'   7F                    	ani	7FH
+MOVU 03A9'   00 00                 	mov	m,a		;byte 2 = E6-E0 to BUFAD+1
+INXU 03AB'   00                    	inx	h
+MOVU 03AC'   00 00                 	mov	a,d
+RALU 03AE'   00                    	ral			;D7 to Carry
+MOVU 03AF'   00 00                 	mov	a,e
+RARU 03B1'   00                    	rar			;D7, E7 to A7, A6
+STCU 03B2'   00                    	stc
+RARU 03B3'   00                    	rar			;1, D7, E7 to A7-5
+ANIU 03B4'   E0                    	ani	0E0H		;mask off A4-0
+MOVU 03B5'   00 00                 	mov	m,a		;byte 3 to BUFAD+2
+  03B7'   C9                    	ret
+                                	endif			;end of NOT COMPL conditional
+                                
+                                ;GTPAR gets a parameter from CALL command line.
+                                ;Parameters must be <var ref> or *<array var name>.
+                                ;Retn:	A	0 if no more params, 1 if integer, 2 if string, 3 if floating
+                                ;	B	bytes per entry
+                                ;	C	# dims
+                                ;	DE	address of first dimension
+                                ;	HL	address of first data item
+GTPARGTCND  03B8'   CD 1AAD'              gtpar:	call	gtcnd		;look for comma not followed by delimiter
+MVIU 03BB'   00 00                 	mvi	a,0
+RCU 03BD'   00                    	rc			;no more parameters, return 0
+MVIMULTTU 03BE'   00 00                 	mvi	d,multt
+GTD  03C0'   CD 1AB6'              	call	gtd		;look for *
+JNCGTPA1U 03C3'   D0'                   	jnc	gtpa1		;array passed
+GTVAR  03C4'   CD 1C65'              	call	gtvar		;else var ref
+LXIU 03C7'   00 00                 	lxi	b,0		;# dims = 0 to C
+A 03C9'   C5                    	push	b		;push 0 for DE
+JNCGTPA2U 03CA'   DD'                   	jnc	gtpa2		;and continue below
+MCERRERROR  03CB'                         mcerr:	error	f, M, C		;fatal MC error
+ERROF  03CB'   CD 1A2D'        +     	call	erro&f
+  03CE'   4D C3           +     	db	'M', 'C' or 80H
+GTPA1FDVAR  03D0'   CD 1C49'              gtpa1:	call	fdvar		;look for var name
+JCMCERRU 03D3'   CB'                   	jc	mcerr
+LDAXU 03D4'   00                    	ldax	d		;fetch type
+MOVU 03D5'   00 00                 	mov	c,m		;# dims to C
+MVIU 03D7'   00 00                 	mvi	b,0		;to allow dad
+INXU 03D9'   00                    	inx	h		;point to first dim byte
+A 03DA'   E5                    	push	h		;and save
+DADU 03DB'   00                    	dad	b
+DADU 03DC'   00                    	dad	b		;point to first data byte
+GTPA2BYTSD  03DD'   CD 01A0'              gtpa2:	call	bytsd		;bytes per entry to DE
+MOVU 03E0'   00 00                 	mov	b,e		;and then to B
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-21
+
+
+A 03E2'   D1                    	pop	d		;dim addr to DE
+MOVU 03E3'   00 00                 	mov	a,b
+DCRU 03E5'   00                    	dcr	a		;A gets 1 for int, 2 string, 3 floating
+  03E6'   C9                    	ret
+                                
+                                ;DISAB disables all interrupts
+WILD                                	if	not wild
+DISABXRAU 03E7'   00                    disab:	xra	a
+STAINTTCU 03E8'   72'                   	sta	inttc		;reset interrupt table count
+STAINTADU 03E9'   73'                   	sta	intad		;clear interrupt table
+  03EA'   C9                    	ret
+                                
+                                ;<byte expr> , <byte expr> [, <byte expr>] [,$]
+                                ;IINFO gets interrupt information for ENABLE and WAIT.
+                                ;Four bytes corresponding to the first four bytes of an interrupt table
+                                ;entry are returned in BCDE (type, port, mask, value).
+IINFOGTBEX  03EB'   CD 0A9B'              iinfo:	call	gtbex
+MOVU 03EE'   00 00                 	mov	b,c		;port # to  B
+MVIU 03F0'   00 C0                 	mvi	c,0C0H		;type to C
+A 03F2'   C5                    	push	b		;and saved
+GTCBE  03F3'   CD 0A97'              	call	gtcbe
+MOVU 03F6'   00 00                 	mov	d,c		;value to D
+MVIU 03F8'   00 00                 	mvi	e,0		;mask 0 for now
+GTCOM  03FA'   CD 1AA6'              	call	gtcom
+JCIINF3U 03FD'   22'                   	jc	iinf3		;default mask 0, null $
+GTCHO  03FE'   CD 1A96'              	call	gtcho
+Q 0401'   ED A1                 	cpi	'$'
+JZIINF1U 0403'   0D'                   	jz	iinf1		;default mask 0, $
+GTBEX  0404'   CD 0A9B'              	call	gtbex
+MOVU 0407'   00 00                 	mov	e,c		;mask to E
+GTCOM  0409'   CD 1AA6'              	call	gtcom
+JCIINF2U 040C'   1D'                   	jc	iinf2		;null $
+IINF1GTCHA  040D'   CD 1A8D'              iinf1:	call	gtcha
+Q 0410'   ED A1                 	cpi	'$'
+JNZSNERRU 0412'   3B'                   	jnz	snerr
+MOVU 0413'   00 00                 	mov	a,d
+CMAU 0415'   00                    	cma
+ORAU 0416'   00                    	ora	e
+MOVU 0417'   00 00                 	mov	d,a		;value = NOT value OR mask (if $)
+A 0419'   C1                    	pop	b
+MVIU 041A'   00 E0                 	mvi	c,0E0H		;set type $ bit
+  041C'   C9                    	ret
+IINF2MOVU 041D'   00 00                 iinf2:	mov	a,d
+ORAU 041F'   00                    	ora	e
+MOVU 0420'   00 00                 	mov	d,a		;value = value OR mask (if null $)
+IINF3A 0422'   C1                    iinf3:	pop	b
+  0423'   C9                    	ret
+                                	endif			;end of NOT WILD conditional
+                                
+                                
+                                ;end of AUX
+                                	page
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-22
+
+
+                                
+                                ;CPM 5/21/81
+                                ;XYBASIC Interpreter Source Module
+                                ;Copyright (C) 1978, 1979, 1980, 1981 by Mark Williams Company, Chicago
+                                ;CP/M version SAVE and LOAD, including GTFIL
+                                
+CPM                                	if	cpm		;CP/M versions
+                                
+RTPAK                                	if	rtpak		;UF error in Runtime Module version
+                                save	equ	uferr
+                                load	equ	uferr
+                                	else
+                                
+                                ;SAVE <filename> [,A]
+SAVEPRNTM  0424'   CD 1A28'              save:	call	prntm		;print SAVING message
+  0427'   53 41 56 49           	db	'SAVING', ' ' or 80H
+  042B'   4E 47 A0              
+GTFIL  042E'   CD 058D'              	call	gtfil		;read filename, initialize file control block
+MOVU 0431'   00 00                 	mov	a,b
+ORAU 0433'   00                    	ora	a
+JNZSNERRU 0434'   3B'                   	jnz	snerr		;SN error if ,R specified
+MOVU 0435'   00 00                 	mov	a,c
+AMD                                	if	amd
+                                	cpi	2
+                                	jz	saves		;save via PUN device in AMD version
+                                	endif
+ORAU 0437'   00                    	ora	a
+  0438'   F5                    	push	psw		;save ,A status
+CDKMK  0439'   CD 0475'              	call	cdkmk		;delete old one, make new one
+  043C'   F1                    	pop	psw		;restore ,A info
+JZSAVEAU 043D'   85'                   	jz	savea		;ASCII save
+AMD                                	if	amd
+                                	jm	savea		;HEX save in AMD version
+                                	endif
+RTDMA  043E'   CD 046D'              	call	rtdma		;reset DMA address just in case
+ROMSQ                                	if	romsq
+                                	call	last		;last to BC
+                                	push	b		;save last
+                                	lhld	sourc		;first source address to HL
+                                	if	amd
+                                	dcx	h
+                                	endif
+                                	else
+LHLDEOFADU 0441'   F7'                   	lhld	eofad		;eof address to HL
+A 0442'   E5                    	push	h		;save last
+LXISRCADU 0443'   00 FC'                	lxi	h,srcad		;next source address to HL
+                                	endif
+                                ;EOF address is stacked, next address to save is in HL
+SAVE1MOVU 0445'   00 00                 save1:	mov	b,h
+MOVU 0447'   00 00                 	mov	c,l		;next address to BC
+LXIU 0449'   00 80                 	lxi	d,80H
+DADU 044B'   00                    	dad	d		;current + 80H = next to HL
+A 044C'   E5                    	push	h		;save next
+LXIDMAADU 044D'   00 80                 	lxi	h,dmaad		;destination = default DMA address
+MOVED  044F'   CD 3503'              	call	moved		;move current block to default DMA address
+CDKWT'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-23
+
+
+  0452'   CD 047D'              	call	cdkwt		;write the block
+A 0455'   E1                    	pop	h		;next to HL
+A 0456'   D1                    	pop	d		;EOF address to DE
+A 0457'   D5                    	push	d		;and saved again
+CMDHU  0458'   CD 0225'              	call	cmdhu		;compare
+JNCSAVE1U 045B'   45'                   	jnc	save1		;eof >= current -- keep going
+A 045C'   D1                    	pop	d		;unstack saved EOF address
+CDKCLMVIDKCLFU 045D'   00 10                 cdkcl:	mvi	c,dkclf
+CDKC1BDOSF  045F'   CD 0472'              cdkc1:	call	bdosf		;close it
+Q 0462'   ED A1                 	cpi	255
+RNZU 0464'   00                    	rnz			;done if closed successfully
+DKERRRTDMA  0465'   CD 046D'              dkerr:	call	rtdma		;reset DMA address after errors
+ERROR                                	error	f, D, K		;fatal DK error
+ERROF  0468'   CD 1A2D'        +     	call	erro&f
+  046B'   44 CB           +     	db	'D', 'K' or 80H
+RTDMALXIDMAADU 046D'   00 80                 rtdma:	lxi	d,dmaad		;default DMA address to DE
+STDMAMVIDKDMFU 046F'   00 1A                 stdma:	mvi	c,dkdmf		;set DMA address to (DE)
+C3885DEBUG                                	if	c3885 and not debug
+                                	jmp	bdos1		;disable interrupts if 3885
+                                	else
+JMPBDOSU 0471'   05                    	jmp	bdos
+                                	endif
+BDOSFLXIFCBADU 0472'   00 5C                 bdosf:	lxi	d,fcbad		;fcb address to DE
+C3885DEBUG                                	if	c3885 and not debug
+                                bdos1:	lda	imode		;fetch current interrupt mode status
+                                	ora	a
+                                	jnz	bdos		;disabled, just do the BDOS call
+                                	di			;enabled, disable around BDOS call
+                                	call	bdos
+                                	ei
+                                	ret
+                                	else
+JMPBDOSU 0474'   05                    	jmp	bdos		;just do it
+                                	endif
+CDKMKMVIDKDLFU 0475'   00 13                 cdkmk:	mvi	c,dkdlf
+BDOSF  0477'   CD 0472'              	call	bdosf		;delete old one
+MVIDKMKFU 047A'   00 16                 	mvi	c,dkmkf
+JMPCDKC1U 047C'   5F'                   	jmp	cdkc1		;make new one
+CDKWTMVIDKWTFU 047D'   00 15                 cdkwt:	mvi	c,dkwtf
+BDOSF  047F'   CD 0472'              	call	bdosf
+ORAU 0482'   00                    	ora	a
+RZU 0483'   00                    	rz
+JMPDKERRU 0484'   65'                   	jmp	dkerr
+SAVEAAMD  0485'                         savea:	if	amd
+                                	mov	b,a		;save HEX or ASCII status
+                                	endif
+SPRST  0485'   CD 053E'              	call	sprst		;reset disk buffer pointer
+LDAOMODEU 0488'   71'                   	lda	omode
+  0489'   F5                    	push	psw		;save output mode
+MVIU 048A'   00 80                 	mvi	a,80H
+STAOMODEU 048C'   71'                   	sta	omode		;80H to OMODE
+AMD                                	if	amd
+                                	mov	a,b
+                                	ora	a
+                                	jm	saveh		;HEX save
+                                	endif
+ROMSQ'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-24
+
+
+                                	if	romsq
+                                	lhld	sourc
+                                	else
+LXISRCADU 048D'   00 FC'                	lxi	h,srcad
+                                	endif
+LXIU 048F'   00 FF                 	lxi	b,-1
+LIST1  0491'   CD 26C9'              	call	list1		;list the program to disk
+SAVA1MVICNTLZU 0494'   00 1A                 sava1:	mvi	c,cntlz
+DKOUT  0496'   CD 0532'              	call	dkout		;end of file
+CDKWT  0499'   CD 047D'              	call	cdkwt		;write the last record
+  049C'   F1                    	pop	psw
+STAOMODEU 049D'   71'                   	sta	omode		;restore omode
+JMPCDKCLU 049E'   5D'                   	jmp	cdkcl		;close file and return
+                                
+AMD                                	if	amd		;HEX or serial SAVE in AMD version
+                                
+                                saveh:	lhld	sourc
+                                	dcx	h		;first - 1 to HL
+                                	push	h		;and saved
+                                	xchg
+                                	call	cplde		;complemented
+                                	xchg
+                                	shld	temp		;-first+1 saved in TEMP
+                                	call	last		;last to HL
+                                	xthl			;first -1 to HL
+                                	pop	d		;last to DE
+                                ;convert the file to hex and write it
+                                savh1:	push	h		;save current
+                                	lxi	b,10H		;max record length to BC
+                                	dad	b		;current + max to HL
+                                	call	cmdhu		;compare eof to current + max
+                                	pop	h		;restore current
+                                	mov	a,c		;max to A
+                                	jnc	savh2		;eof >= current + max, write max
+                                	mov	a,e
+                                	sub	l
+                                	inr	a		;eof+1 - current = remaining to be written
+                                	jz	savh4		;current = eof+1, just write eof record
+                                savh2:	push	d		;save eof address
+                                	mov	e,a		;length to  E
+                                	mvi	d,0		;checksum to D
+                                	mvi	c,':'
+                                	call	dwrit		;write record mark
+                                	mov	a,e
+                                	call	wbyte		;write length
+                                	call	waddr		;write address and record type
+                                savh3:	mov	a,m		;fetch data byte
+                                	inx	h
+                                	call	wbyte		;write data
+                                	dcr	e
+                                	jnz	savh3		;write more data
+                                	call	wcsum		;write the checksum
+                                	pop	d		;restore eof address
+                                	jmp	savh1		;and do more
+                                ;write eof record
+                                savh4:	mvi	c,':'
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-25
+
+
+                                	call	dwrit		;write :
+                                	xra	a
+                                	mov	d,a		;checksum to D
+                                	call	wbyte		;write record length = 0
+                                	lhld	sourc
+                                	dcx	h		;first - 1 to HL
+                                	call	waddr		;write starting address 0 and record type
+                                	call	wcsum		;write the checksum
+                                	jmp	sava1		;write eof, close and return
+                                
+                                ;save to serial device (PUNch)
+                                saves:	lxi	b,fcbad+1	;filename source
+                                	lxi	h,headr+2	;filename destination
+                                	mvi	e,8		;filename length
+                                	call	movd0		;copy filename to headr
+                                	lhld	sourc
+                                	dcx	h		;first to HL
+                                	push	h
+                                	push	h		;and saved
+                                	call	last		;last to HL
+                                	pop	d		;first to DE
+                                	call	cplde		;-first to DE
+                                	inx	d		;-first + 1
+                                	dad	d		;last - first + 1 = length
+                                	push	h		;and saved
+                                	lxi	h,headr
+                                	mvi	e,headl		;header length to E
+                                savs1:	mov	c,m		;header char to C
+                                	call	pout		;and out to punch device
+                                	inx	h
+                                	dcr	e
+                                	jnz	savs1		;keep sending header chars
+                                	pop	d		;file length to DE
+                                	pop	h
+                                savs2:	inx	d
+                                	push	d		;save length+1
+                                	mov	a,d
+                                	ora	a		;zero set iff length < 255
+                                	jz	savs3
+                                	mvi	e,0
+                                savs3:	dcr	e		;length of block to E
+                                	mvi	c,stbyt
+                                	call	pout		;send start  byte
+                                	mvi	c,tybyt
+                                	call	pout		;send type byte
+                                	mov	c,e
+                                	call	pout		;send length byte
+                                	mov	a,e
+                                	ora	a		;check if length = 0
+                                	jz	savs5		;yes, done
+                                	call	ctest		;check for console break char
+                                	mvi	d,0		;checksum in D
+                                savs4:	mov	c,m
+                                	call	pout		;send source char
+                                	mov	a,m
+                                	add	d
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-26
+
+
+                                	mov	d,a		;update checksum
+                                	inx	h
+                                	dcr	e
+                                	jnz	savs4		;send more source chars
+                                	mov	c,d
+                                	call	pout		;send checksum
+                                savs5:	pop	d		;recover length + 1  to DE
+                                	mov	a,d
+                                	ora	a
+                                	rz			;done if length < 255
+                                	dcr	d		;else new length = length+1-256 = length-255
+                                	jmp	savs2		;and save more blocks
+                                
+                                	endif			;end of AMD conditional
+                                
+                                ;LOAD <filename> [,A] [,R]
+LOADROMSQ  049F'                         load:	if	romsq
+                                	call	issrc		;must be addressing working space
+                                	endif
+PRNTM  049F'   CD 1A28'              	call	prntm		;print LOADING message
+  04A2'   4C 4F 41 44           	db	'LOADING', ' ' or 80H
+  04A6'   49 4E 47 A0           
+AMD                                	if	amd
+                                	call	gtcom		;look for comma
+                                	jnc	lods0		;LOAD without filename in AMD version
+                                	endif
+GTFIL  04AA'   CD 058D'              	call	gtfil		;read file name, initialize FCB
+AMD                                	if	amd
+                                	mov	a,c
+                                	cpi	2
+                                	jz	loads		;load from RDR device in AMD version
+                                	endif
+A 04AD'   C5                    	push	b		;save ,A and ,R info
+MVIDKOPFU 04AE'   00 0F                 	mvi	c,dkopf
+BDOSF  04B0'   CD 0472'              	call	bdosf		;try to open it
+Q 04B3'   ED A1                 	cpi	255
+JNZLOAD0U 04B5'   C0'                   	jnz	load0		;successful open
+A 04B6'   C1                    	pop	b
+MVIU 04B7'   00 00                 	mvi	c,0		;reset C to indicate ,A
+A 04B9'   C5                    	push	b		;and save
+GTFL4  04BA'   CD 05B9'              	call	gtfl4		;reset file type to .BAS
+CDKOP  04BD'   CD 04F6'              	call	cdkop		;and try to open .BAS file
+LOAD0NEW  04C0'   CD 26E8'              load0:	call	new		;clobber old program
+A 04C3'   C1                    	pop	b
+MOVU 04C4'   00 00                 	mov	a,c
+ORAU 04C6'   00                    	ora	a
+JZLOADAU 04C7'   E3'                   	jz	loada		;ASCII load
+AMD                                	if	amd
+                                	jm	loadh		;HEX load
+                                	endif
+LOD0BA 04C8'   C5                    lod0b:	push	b		;save ,R status -- initialization entry point
+LHLDSYMTAU 04C9'   8A'                   	lhld	symta
+LXIU 04CA'   00 81                 	lxi	d,-7FH
+DADU 04CC'   00                    	dad	d		;first bad dma address to HL
+AMD                                	if	amd
+                                	lxi	d,srcad-1
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-27
+
+
+                                	else
+LXISRCADU 04CD'   00 FC'                	lxi	d,srcad
+                                	endif
+LOAD1CMDHU  04CF'   CD 0225'              load1:	call	cmdhu		;compare to see how much space still available
+JNCLOADXU 04D2'   0E'                   	jnc	loadx		;program too large -- OM error
+A 04D3'   E5                    	push	h		;save bad address
+A 04D4'   D5                    	push	d		;save destination
+STDMA  04D5'   CD 046F'              	call	stdma		;set DMA address
+CDKRD  04D8'   CD 0503'              	call	cdkrd		;read a record
+A 04DB'   E1                    	pop	h
+A 04DC'   D1                    	pop	d		;restore destination to HL, bad addr to DE
+JZLOAD2U 04DD'   12'                   	jz	load2		;eof
+LXIU 04DE'   00 80                 	lxi	b,80H
+DADU 04E0'   00                    	dad	b		;find next destination
+XCHGU 04E1'   00                    	xchg			;destination to DE, bad addr to HL
+JMPLOAD1U 04E2'   CF'                   	jmp	load1
+LOADALDAOMODEU 04E3'   71'                   loada:	lda	omode
+MOVU 04E4'   00 00                 	mov	c,a
+A 04E6'   C5                    	push	b		;save OMODE and ,R status
+DLOA1  04E7'   CD 055A'              	call	dloa1		;read a record, set buffer pointer
+MVIU 04EA'   00 7F                 	mvi	a,7FH
+STAOMODEU 04EC'   71'                   	sta	omode		;set OMODE for ASCII load
+LODA1GTLIN  04ED'   CD 325A'              loda1:	call	gtlin		;get a line
+TKIZE  04F0'   CD 33E0'              	call	tkize		;tokenize it
+JCLODA1U 04F3'   ED'                   	jc	loda1		;ignore if no line #
+CNZADDLNU 04F4'   9D'                   	cnz	addln		;add to source
+JMPLODA1U 04F5'   ED'                   	jmp	loda1		;and keep loading
+                                
+AMD                                	if	amd		;HEX or serial LOAD in AMD version
+                                
+                                loadh:	lda	omode
+                                	mov	c,a
+                                	push	b
+                                	call	dloa1
+                                	mvi	a,7FH
+                                	sta	omode
+                                lodh1:	call	readc		;read a char from hex file
+                                	sui	':'
+                                	jnz	lodh1		;not record mark, retry
+                                	mov	d,a		;0 for checksum to D
+                                	call	rbyte		;read a file byte
+                                	jz	lodh3		;eof record
+                                	mov	e,a		;else record length to E
+                                	call	rbyte		;read destination msb
+                                	push	psw		;and save
+                                	call	rbyte		;read destination lsb
+                                	pop	h		;destination msb to H
+                                	mov	l,a		;destination now in HL
+                                	lxi	b,srcad-1	;base address to BC
+                                	dad	b		;add to base address for actual destination
+                                	call	rbyte		;skip type byte
+                                lodh2:	call	rbyte		;read a data byte
+                                	mov	m,a		;and store
+                                	inx	h		;address next
+                                	dcr	e
+                                	jnz	lodh2		;load another data byte
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-28
+
+
+                                	call	rbyte		;read checksum
+                                	jnz	loadx		;checksum error
+                                	dcx	h		;point to last loaded byte
+                                	call	new1		;and reset EOFAD in case end of program
+                                	jmp	lodh1		;load next record
+                                lodh3:	call	readc		;keep reading chars
+                                	jmp	lodh3		;until EOF in readc exits from LOAD
+                                
+                                ;serial LOAD via RDR device
+                                loads:	mov	a,b
+                                	push	psw		;save ,R status
+                                	lxi	b,fcbad+1
+                                	lxi	h,headr+2
+                                	mvi	e,8
+                                	call	movd0		;move filename to header block
+                                	jmp	lods1		;and continue as below
+                                lods0:	mvi	d,'S'
+                                	call	gtdsn		;skip S after comma
+                                	call	gtcom		;look for comma before ,R
+                                	mvi	a,0
+                                	jc	lodsa		;not ,R
+                                	mvi	d,'R'
+                                	call	gtdsn		;skip R after comma
+                                	mvi	a,1
+                                lodsa:	push	psw		;save ,R status	
+                                	lxi	h,headr+2	;first filename char address to HL
+                                	lxi	b,8		;0 to B, # filename chars to C
+                                	call	fillm		;fill filename with 0s
+                                lods1:	lxi	h,headr
+                                	mvi	c,headl
+                                	call	ctest		;check for console break char
+                                lods2:	call	rdrin		;read a char
+                                	cmp	m		;compare to header char
+                                	jz	lods3		;matched, try next
+                                	mov	a,m		;else fetch header char
+                                	ora	a		;check if null, i.e. LOAD ,S typed
+                                	jnz	lods1		;not null, try again from the top
+                                lods3:	inx	h
+                                	dcr	c
+                                	jnz	lods2		;see if next matches too
+                                	call	new		;got the file header, prepare to load
+                                	lxi	h,srcad-1	;load address to HL
+                                lods4:	call	rdrin		;read start byte
+                                	cpi	stbyt		;check if start byte
+                                	jnz	cserr		;issue CS error if not
+                                	call	ctest		;check for console break char
+                                	call	rdrin		;read type byte
+                                	cpi	tybyt		;check if type byte
+                                	jnz	cserr		;issue CS error if not
+                                	call	rdrin		;read length byte
+                                	ora	a
+                                	jz	lods6		;block length 0, done
+                                	mov	e,a		;block length to E
+                                	inr	a
+                                	push	psw		;save length+1
+                                	mvi	d,0		;checksum to D
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-29
+
+
+                                lods5:	call	rdrin		;read a char
+                                	mov	m,a		;store it
+                                	inx	h
+                                	add	d
+                                	mov	d,a		;update checksum
+                                	dcr	e
+                                	jnz	lods5		;more chars in block
+                                	call	rdrin		;read the checksum
+                                	cmp	d
+                                	jnz	cserr		;checksum error
+                                	pop	psw		;recover block length+1
+                                	jz	lods4		;length was 255, so load more blocks
+                                	dcx	h		;point to new eof adress
+                                lods6:	pop	psw		;recover ,R status
+                                	ora	a
+                                	jz	dmodx		;reset stacks and continue iff direct and no ,R
+                                	call	new1		;else reset stacks
+                                	jmp	loadr		;and run the program
+                                cserr:	call	new		;erase the garbage
+                                	error	f, C, S		;fatal CS error
+                                
+                                	endif			;end of AMD conditional
+                                
+CDKOPMVIDKOPFU 04F6'   00 0F                 cdkop:	mvi	c,dkopf
+SDISK                                	if	sdisk
+BDOSF  04F8'   CD 0472'              	call	bdosf
+Q 04FB'   ED A1                 	cpi	255
+RNZU 04FD'   00                    	rnz			;successful open
+ERROR                                	error	f, F, N		;fatal FN error
+ERROF  04FE'   CD 1A2D'        +     	call	erro&f
+  0501'   46 CE           +     	db	'F', 'N' or 80H
+                                	else
+                                	jmp	cdkc1		;open file
+                                	endif
+CDKRDMVIDKRDFU 0503'   00 14                 cdkrd:	mvi	c,dkrdf
+BDOSF  0505'   CD 0472'              	call	bdosf		;read a record
+Q 0508'   ED A1                 	cpi	2
+JZDKERRU 050A'   65'                   	jz	dkerr		;read error
+Q 050B'   ED A1                 	cpi	1
+  050D'   C9                    	ret			;Zero set iff eof
+LOADXNEW  050E'   CD 26E8'              loadx:	call	new		;clobber bad fragment
+JMPOMERRU 0511'   08'                   	jmp	omerr		;and issue fatal OM error
+LOAD2RTDMA  0512'   CD 046D'              load2:	call	rtdma		;reset DMA address to default
+LXIU 0515'   00 FF                 	lxi	d,-1
+FINDL  0517'   CD 350E'              	call	findl		;find bottom of source text
+MOVU 051A'   00 00                 	mov	a,m
+ADAHL  051C'   CD 020C'              	call	adahl
+  051F'   F1                    	pop	psw		;recover ,R status
+ORAU 0520'   00                    	ora	a
+JZDMODXU 0521'   3E'                   	jz	dmodx		;no ,R specified, so reset stacks as usual
+NEW1  0522'   CD 26F2'              	call	new1		;set new eof, cstack, estack
+                                				;and fall through to LOADR to run
+LOADRLOADZ  0525'   CD 0529'              loadr:	call	loadz		;reset LNNUM and TEXTP
+JMPRUNU 0528'   C4'                   	jmp	run		;and RUN the program
+LOADZLNNU0  0529'   CD 34FB'              loadz:	call	lnnu0		;reset LNNUM to 0
+LXINLNADU 052C'   00 F0'                	lxi	h,nlnad
+SHLDTEXTP'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-30
+
+
+U 052E'   F3'                   	shld	textp		;reset TEXTP to input buffer
+MVICRU 052F'   00 0D                 	mvi	m,cr		;and <cr> to input buffer
+  0531'   C9                    	ret
+                                
+DEBUG                                	if	debug
+                                dsav0:	lda	amode
+                                	cma
+                                	sta	amode		;toggle saving mode if ^D
+                                	ora	a
+                                	jz	dsav3
+                                	mvi	c,7
+                                	lxi	d,libad
+                                	lxi	h,fcbad+9
+                                dsav1:	ldax	d
+                                	mov	m,a		;set filetyp to LIB
+                                	inx	d
+                                	inx	h
+                                	dcr	c
+                                	jnz	dsav1		;store another char
+                                	sta	fcbcr		;set current record to 0
+                                	call	cdkmk		;delete old one, make new one
+                                	call	sprst		;reset buffer pointer
+                                dsav2:	mvi	a,cntlx
+                                	jmp	pop3		;and return
+                                dsav3:	mvi	c,cntlz
+                                	call	dkout		;write a control-z as eof
+                                	call	cdkwt		;write the last record
+                                	call	cdkcl		;and close the file
+                                	jmp	dsav2
+                                libad	db	'LIB', 0, 0, 0, 0
+                                	endif			;end of ^d conditional
+                                
+                                ;write char to disk file for ASCII SAVE and PRINT @foo
+DKOUTLHLDSPTRU 0532'   53'                   dkout:	lhld	sptr		;write one char to buffer
+MOVU 0533'   00 00                 	mov	m,c
+INXU 0535'   00                    	inx	h
+SHLDSPTRU 0536'   53'                   	shld	sptr		;update pointer
+MOVU 0537'   00 00                 	mov	a,h
+ORAU 0539'   00                    	ora	a
+RZU 053A'   00                    	rz			;buffer not full -- done
+CDKWT  053B'   CD 047D'              	call	cdkwt		;write a record
+SPRSTLXIU 053E'   00 80                 sprst:	lxi	h,80H
+SHLDSPTRU 0540'   53'                   	shld	sptr		;reset SPTR to base of buffer
+  0541'   C9                    	ret
+                                
+                                ;read char from disk for ASCII LOAD and [L]INPUT @foo
+DLOADLHLDSPTRU 0542'   53'                   dload:	lhld	sptr		;buffer pointer to HL
+MOVU 0543'   00 00                 	mov	a,h
+ORAU 0545'   00                    	ora	a
+CNZDLOA1U 0546'   5A'                   	cnz	dloa1		;read another record
+MOVU 0547'   00 00                 	mov	a,m		;fetch next char
+ANIU 0549'   7F                    	ani	7FH		;remove parity bit
+INXU 054A'   00                    	inx	h
+SHLDSPTRU 054B'   53'                   	shld	sptr		;move up pointer
+Q 054C'   ED A1                 	cpi	cntlz
+JNZPOP3U 054E'   12'                   	jnz	pop3		;return unless eof
+LXISTACK'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-31
+
+
+U 054F'   00 5E'                	lxi	sp,stack-4	;OMODE and NEXTS return pushed
+A 0551'   C1                    	pop	b		;recover ,R status and OMODE
+MOVU 0552'   00 00                 	mov	a,c
+STAOMODEU 0554'   71'                   	sta	omode		;recover OMODE
+MOVU 0555'   00 00                 	mov	a,b
+ORAU 0557'   00                    	ora	a
+JZDMOD2U 0558'   3A'                   	jz	dmod2		;return to direct mode if no ,R
+JMPLOADRU 0559'   25'                   	jmp	loadr		;else RUN the program
+DLOA1CDKRD  055A'   CD 0503'              dloa1:	call	cdkrd		;read a record
+SPRST  055D'   CD 053E'              	call	sprst		;reset pointer
+RNZU 0560'   00                    	rnz			;return unless eof
+MVICNTLZU 0561'   00 1A                 	mvi	m,cntlz
+  0563'   C9                    	ret
+                                
+                                ;GTFIL gets <filename> [,A] [,R] and initializes a file control block to
+                                ;<filename>.XYB or <filename>.BAS.  The name may consist of a letter followed
+                                ;by adjacent printable chars, and is padded by spaces to 8 chars.
+                                ;The message addressed by HL is printed (SAVING or LOADING), and
+                                ;the filename is echoed.
+                                ;Retn:	B	0 if no ,R specified, 1 if ,R
+                                ;	C	0 if .BAS (,A), 1 if .XYB (no ,A)
+                                ;In AMD version, filetype is .HEX and C is 0FFH if ,H specified.
+                                ;In AMD version, C is 2 if ,S specified.
+BLKFN  0564'   00 20 20 20           blkfn:	db	0, '           ', 0, 0, 0, 0, 80H	;blank filename
+  0568'   20 20 20 20           
+  056C'   20 20 20 20           
+  0570'   00 00 00 00           
+  0574'   80                    
+AMBFN  0575'   3F 3F 3F 3F           ambfn:	db	'???????????', 0, 0, 0, 0, 80H		;ambiguous filename
+  0579'   3F 3F 3F 3F           
+  057D'   3F 3F 3F 00           
+  0581'   00 00 00 80           
+XYBFT  0585'   58 59 42 80           xybft:	db	'XYB', 80H
+BASFT  0589'   42 41 53 80           basft:	db	'BAS', 80H
+AMD                                	if	amd
+                                hexft:	db	'HEX', 80H
+                                	endif
+GTFILGTFNM  058D'   CD 05C6'              gtfil:	call	gtfnm		;get unambiguous filename
+LXIFCBADU 0590'   00 5D                 	lxi	d,fcbad+1
+MVIU 0592'   00 08                 	mvi	c,8
+PRSTR  0594'   CD 199E'              	call	prstr		;echo it
+WCRLF  0597'   CD 191B'              	call	wcrlf		;and write crlf
+GTCOM  059A'   CD 1AA6'              	call	gtcom		;look for comma
+LXIU 059D'   00 01                 	lxi	b,1		;0 to B, 1 to C
+JCGTFL2U 059F'   B3'                   	jc	gtfl2		;no comma, filetype is .XYB
+MVIU 05A0'   00 41                 	mvi	d,'A'
+GTD  05A2'   CD 1AB6'              	call	gtd		;look for A
+AMD                                	if	amd
+                                	jnc	gtfl0		;ASCII specified
+                                	mvi	d,'H'
+                                	call	gtd		;look for H
+                                	mvi	c,0FFH		;0FFH to C for HEX
+                                	jnc	gtf0a		;HEX specified
+                                	mvi	d,'S'
+                                	call	gtd		;look for S
+                                	mvi	c,2		;2 to C for serial
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-32
+
+
+                                	jnc	gtf0a		;serial specified
+                                	mvi	c,1		;1 to C for XYB
+                                	jmp	gtfl1		;not A or H, must be R
+                                	else			;not AMD
+JCGTFL1U 05A5'   AC'                   	jc	gtfl1		;no A, must be R after comma
+                                	endif
+GTFL0MOVU 05A6'   00 00                 gtfl0:	mov	c,b		;0 to C to indicate .BAS filetype
+GTF0AGTCOM  05A8'   CD 1AA6'              gtf0a:	call	gtcom		;look for ,R
+JCGTFL2U 05AB'   B3'                   	jc	gtfl2		;none
+GTFL1MVIU 05AC'   00 52                 gtfl1:	mvi	d,'R'
+GTDSN  05AE'   CD 1AC5'              	call	gtdsn		;skip ,R
+MVIU 05B1'   00 01                 	mvi	b,1		;1 to B to indicate ,R
+GTFL2LXIXYBFTU 05B3'   00 85'                gtfl2:	lxi	d,xybft
+MOVU 05B5'   00 00                 	mov	a,c
+ORAU 05B7'   00                    	ora	a
+AMD                                	if	amd
+                                	jz	gtfl4
+                                	jp	gtfl5
+                                	lxi	d,hexft
+                                	jmp	gtfl5
+                                	else
+JNZGTFL5U 05B8'   BB'                   	jnz	gtfl5
+                                	endif
+GTFL4LXIBASFTU 05B9'   00 89'                gtfl4:	lxi	d,basft		;filetype .BAS -- LOAD entry point
+GTFL5A 05BB'   C5                    gtfl5:	push	b		;save status
+LXIFCBFTU 05BC'   00 65                 	lxi	h,fcbft
+CPYST  05BE'   CD 1D49'              	call	cpyst		;copy filetype to FCB
+DCXU 05C1'   00                    	dcx	h
+MVIU 05C2'   00 00                 	mvi	m,0		;reset last char
+A 05C4'   C1                    	pop	b		;restore status
+  05C5'   C9                    	ret			;and return
+                                
+                                ;GTFNM gets an unambiguous filename.
+GTFNMGTAFN  05C6'   CD 05D5'              gtfnm:	call	gtafn		;get ambiguous filename
+LXIFCBADU 05C9'   00 5D                 	lxi	h,fcbad+1	;first char location to HL
+MVIU 05CB'   00 0B                 	mvi	c,11		;char count to C
+MVIU 05CD'   00 3F                 	mvi	a,'?'		;? to A
+GTFN0CMPU 05CF'   00                    gtfn0:	cmp	m		;check if filename char is ?
+JZSNERRU 05D0'   3B'                   	jz	snerr		;yes, SN error
+INXU 05D1'   00                    	inx	h
+DCRU 05D2'   00                    	dcr	c
+JNZGTFN0U 05D3'   CF'                   	jnz	gtfn0		;try next char
+  05D4'   C9                    	ret
+                                
+                                ;GTAFN gets an ambiguous filename and initializes the default FCB.
+                                ;Leading spaces are removed and lower case is converted to UPPER.
+GTAFNLXIBLKFNU 05D5'   00 64'                gtafn:	lxi	d,blkfn
+LXIFCBADU 05D7'   00 5C                 	lxi	h,fcbad
+A 05D9'   E5                    	push	h
+CPYST  05DA'   CD 1D49'              	call	cpyst		;copy blank filename to fcb
+XRAU 05DD'   00                    	xra	a
+STAFCBCRU 05DE'   7C                    	sta	fcbcr		;reset current record field to 0
+STRNG                                	if	strng
+EVALS  05DF'   CD 0A7E'              	call	evals		;look for filename
+FETCH  05E2'   CD 01B0'              	call	fetch
+JNCSNERRU 05E5'   3B'                   	jnc	snerr		;nonstring filename
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-33
+
+
+                                	else			;parse string ad hoc if nonstring version
+                                	mvi	d,'"'
+                                	call	gtdsn
+                                	mov	d,h
+                                	mov	e,l		;first char address to DE
+                                	mvi	c,0		;char count to C
+                                gta0a:	mov	a,m		;fetch possible filename char
+                                	inx	h		;point to next
+                                	cpi	'"'
+                                	jz	gta0b		;done if at close quote
+                                	cpi	cr
+                                	jz	snerr		;SN error if cr before close quote
+                                	inr	c		;bump count
+                                	jmp	gta0a		;and try next
+                                gta0b:	shld	textp		;update TEXTP
+                                	endif
+A 05E6'   E1                    	pop	h		;restore fcb address to HL
+MOVU 05E7'   00 00                 	mov	a,c
+ORAU 05E9'   00                    	ora	a
+JZGTAF5U 05EA'   19'                   	jz	gtaf5		;null file name, take @:*.*
+GTAF0LDAXU 05EB'   00                    gtaf0:	ldax	d
+Q 05EC'   ED A1                 	cpi	' '
+JNZGTAF1U 05EE'   F3'                   	jnz	gtaf1		;no more leading spaces
+INXU 05EF'   00                    	inx	d
+DCRU 05F0'   00                    	dcr	c		;remove a leading space
+JZGTAF5U 05F1'   19'                   	jz	gtaf5		;no chars after spaces, take @:*.*
+JMPGTAF0U 05F2'   EB'                   	jmp	gtaf0		;and try next
+GTAF1DCRU 05F3'   00                    gtaf1:	dcr	c
+JZGTAF2U 05F4'   08'                   	jz	gtaf2		;one-char filename, skip : check
+INXU 05F5'   00                    	inx	d
+LDAXU 05F6'   00                    	ldax	d		;fetch second character
+DCXU 05F7'   00                    	dcx	d
+Q 05F8'   ED A1                 	cpi	':'
+JNZGTAF2U 05FA'   08'                   	jnz	gtaf2		;no disk specified
+LDAXU 05FB'   00                    	ldax	d		;fetch disk name
+SUIU 05FC'   40                    	sui	'@'		;subtract ASCII bias
+JCSNERRU 05FD'   3B'                   	jc	snerr
+ANIU 05FE'   1F                    	ani	1FH		;convert lower to upper
+Q 05FF'   ED A1                 	cpi	5
+JNCSNERRU 0601'   3B'                   	jnc	snerr
+MOVU 0602'   00 00                 	mov	m,a		;store disk number in fcb
+INXU 0604'   00                    	inx	d
+INXU 0605'   00                    	inx	d		;point to char after :
+DCRU 0606'   00                    	dcr	c
+DCRU 0607'   00                    	dcr	c		;and update char count
+GTAF2INRU 0608'   00                    gtaf2:	inr	c		;correct char count in C
+JZGTAF5U 0609'   19'                   	jz	gtaf5		;no more chars, take *.*
+INXU 060A'   00                    	inx	h		;point to first filename char destination
+MVIU 060B'   00 08                 	mvi	b,8		;max # filename chars to B
+GTAF3FCHAR  060D'   CD 061E'              gtaf3:	call	fchar		;process filename char
+DCRU 0610'   00                    	dcr	b
+JMGTAF4U 0611'   15'                   	jm	gtaf4		;skip it
+MOVU 0612'   00 00                 	mov	m,a
+INXU 0614'   00                    	inx	h		;store it
+GTAF4INXU 0615'   00                    gtaf4:	inx	d
+DCRU 0616'   00                    	dcr	c
+RZ'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-34
+
+
+U 0617'   00                    	rz			;done
+JMPGTAF3U 0618'   0D'                   	jmp	gtaf3		;else process next
+GTAF5LXIAMBFNU 0619'   00 75'                gtaf5:	lxi	d,ambfn
+LXIFCBADU 061B'   00 5D                 	lxi	h,fcbad+1
+JMPCPYSTU 061D'   49'                   	jmp	cpyst		;copy *.* to fcb
+                                
+FCHARLDAXU 061E'   00                    fchar:	ldax	d		;fetch the char
+ANIU 061F'   7F                    	ani	7FH		;remove parity
+Q 0620'   ED A1                 	cpi	'"'+1
+JCSNERRU 0622'   3B'                   	jc	snerr		;space, quote, exclam, controls not allowed
+Q 0623'   ED A1                 	cpi	'*'
+JZFCHA1U 0625'   2E'                   	jz	fcha1		;expand * to ???...
+Q 0626'   ED A1                 	cpi	'.'
+JZFCHA2U 0628'   34'                   	jz	fcha2		;filetype follows
+Q 0629'   ED A1                 	cpi	60H
+RCU 062B'   00                    	rc			;printable char
+SUIU 062C'   20                    	sui	20H		;convert lower to upper
+  062D'   C9                    	ret
+FCHA1DCRU 062E'   00                    fcha1:	dcr	b
+JMFCHA3U 062F'   36'                   	jm	fcha3
+MVIU 0630'   00 3F                 	mvi	m,'?'		;store a ?
+INXU 0632'   00                    	inx	h
+JMPFCHA1U 0633'   2E'                   	jmp	fcha1
+FCHA2MVIU 0634'   00 03                 fcha2:	mvi	b,3		;filetype char count
+FCHA3A 0636'   E1                    fcha3:	pop	h		;pop FCHAR return
+LXIFCBFTU 0637'   00 65                 	lxi	h,fcbft		;filetype address to HL
+JMPGTAF4U 0639'   15'                   	jmp	gtaf4
+                                
+AMD                                	if	amd		;routines for HEX LOADing and SAVEing
+                                
+                                ;INTEL HEX format is a series of records, with all info in ASCII:
+                                ;frame 0	record mark ':' [3AH]
+                                ;frames 1-2	record length n, hex number 0-FFH [0 for eof;  here max=10H]
+                                ;frames 3-6	load address
+                                ;frames 7-8	record type [here 0]
+                                ;frames 9 - 8+2*n	data
+                                ;frames 9+2*n - 10+2*n	checksum  [negated sum mod 256 of preceding items]
+                                
+                                ;WASCI converts A3-A0 to ASCII and falls through to DWRIT to write
+                                wasci:	ani	0FH		;00H, ..., 09H, 0AH, ..., 0FH
+                                	adi	90H		;90H, ..., 99H, 9AH, ..., 9FH
+                                	daa			;90H, ..., 99H, 00H+C,...,05H+C
+                                	aci	40H		;D0H, ..., D9H, 41H, ..., 46H
+                                	daa			;30H, ..., 39H, 41H, ..., 46H
+                                	mov	c,a		;pass value to write through C
+                                				;and fall through to DWRIT
+                                dwrit:	push4
+                                	call	dkout		;write the char
+                                	jmp	pop4
+                                
+                                ;WBYTE writes byte from A as two ASCII bytes, updating checksum in D
+                                wbyte:	push	psw
+                                	rrc
+                                	rrc
+                                	rrc
+                                	rrc
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-35
+
+
+                                	call	wasci		;convert left nibble to ascii and write
+                                	pop	psw
+                                	push	psw
+                                	call	wasci		;convert right nibble to ascii and write
+                                	pop	psw
+                                	add	d
+                                	mov	d,a		;update checksum
+                                	ret
+                                
+                                ;WADDR writes address from HL (subtracting loading bias), and record type.
+                                waddr:	push	h
+                                	push	d
+                                	xchg			;address to DE
+                                	lhld	temp		;-first to HL
+                                	dad	d		;load address to HL
+                                	pop	d
+                                	mov	a,h
+                                	call	wbyte		;write high byte
+                                	mov	a,l
+                                	call	wbyte		;write low byte
+                                	xra	a
+                                	call	wbyte		;write record type = 0
+                                	pop	h
+                                	ret			;and return
+                                
+                                ;WCSUM writes the checksum from D, followed by CR and LF.
+                                wcsum:	xra	a
+                                	sub	d
+                                	call	wbyte		;write checksum
+                                	mvi	c,cr
+                                	call	dwrit
+                                	mvi	c,lf
+                                	jmp	dwrit		;write cr and lf and return
+                                
+                                ;RBYTE reads two ASCII bytes and builds binary char, updating checksum in D.
+                                ;Retn:	A	char read
+                                ;	C	clobbered
+                                ;	D	updated checksum
+                                ;	BEHL	preserved
+                                ;	Zero	set iff new checksum = 0
+                                rbyte:	call	readc		;read a byte
+                                	call	ishex		;convert ASCII to binary
+                                	jc	loadx		;not an ASCII hex digit, abort
+                                	rlc
+                                	rlc
+                                	rlc
+                                	rlc
+                                	mov	c,a		;high nibble to C
+                                	call	readc		;read another
+                                	call	ishex
+                                	jc	loadx		;not ASCII hex digit
+                                	ora	c		;form complete byte from nibbles
+                                	mov	c,a		;and save
+                                	add	d		;update checksum
+                                	mov	d,a		;and checksum to D
+                                	mov	a,c		;restore result to A
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-36
+
+
+                                	ret
+                                	endif			;end of AMD conditional
+                                	endif			;end of NOT RTPAK conditional
+                                	endif			;end of CPM conditional
+                                
+                                
+                                ;end of CPM
+                                	page
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-37
+
+
+                                
+                                ;DRIVER 10/22/80
+                                ;XYBASIC Interpreter Source Module
+                                ;Copyright (C) 1978, 1979, 1980 by Mark Williams Company, Chicago
+                                ;interpreter driver
+                                
+                                
+                                ;The interpreter driver has several entry points.
+                                ;DMOD2, after errors, resets SP and falls through to...
+                                ;DMODE, after execution, prints OK prompt, then...
+                                ;DMOD3 is the driver itself.  Gets a line of user text, tokenizes it and
+                                ;either executes it (no line #) or adds it to source text, then gets another.
+                                
+COMPL                                	if	compl		;return to DMODE boots in COMPL version
+                                dmod2	equ	boot
+                                dmodc	equ	boot
+                                dmode	equ	boot
+                                	else
+DMOD2LXISTACKU 063A'   00 62'                dmod2:	lxi	sp,stack	;reset SP
+DMODEPRTM0  063C'   CD 1A23'              dmode:	call	prtm0		;print OK message
+EPSTN                                	if	epstn
+                                	db	cr, lf, 13H, 'OK', 12H, cr, lf or 80H
+                                	else
+CRLFCR  063F'   0D 0A 4F 4B           	db	cr, lf, 'OK', cr, lf or 80H
+LF  0643'   0D 8A                 
+                                	endif
+XRAU 0645'   00                    	xra	a
+STAGCHARU 0646'   B7'                   	sta	gchar		;clear GET character
+STATRACLU 0647'   F2'                   	sta	tracl		;clear tracing status
+STRNG                                	if	strng
+STASTEMPU 0648'   B8'                   	sta	stemp		;clear # string temps in use
+                                	endif
+DMOD3LNNU0  0649'   CD 34FB'              dmod3:	call	lnnu0		;reset LNNUM to 0 in case ^C typed
+GTLIN  064C'   CD 325A'              	call	gtlin		;get a line from user
+TKIZE  064F'   CD 33E0'              	call	tkize		;tokenize it
+JCXSTA1U 0652'   8A'                   	jc	xsta1		;execute it if no line #
+CNZADDLNU 0653'   9D'                   	cnz	addln		;else add to source text unless <cr>
+JMPDMOD3U 0654'   49'                   	jmp	dmod3		;and get another line
+                                	endif			;end of COMPL conditional
+                                
+                                ;NEXTC scans to next command, resets SP and falls through to NEXTS.
+NEXTCLHLDCSTKPU 0655'   86'                   nextc:	lhld	cstkp
+SHLDESTKPU 0656'   88'                   	shld	estkp		;reset ESTACK in case error within expr
+GTDEL  0657'   CD 1AD2'              	call	gtdel		;scan to delimiter
+LXISTACKU 065A'   00 62'                	lxi	sp,stack	;reset SP and fall through to NEXTS
+                                
+                                ;NEXTS is branched to with TEXTP pointing to a delimiter (: ' <cr>), else it
+                                ;issues a SN error.  Performs break char and interrupt tests.
+                                ;Returns to DMOD1 if at eof.  Moves TEXTP to first char
+                                ;of next statement, updates LNNUM and performs break test.  Then falls through
+                                ;to XSTAT for statement execution.
+NEXTSCAMACNONSTRTPAK  065C'                         nexts:	if	camac and nonst and (not rtpak)
+                                	in	1
+                                	ani	2
+                                	cnz	ctst0		;read char if present
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-38
+
+
+                                	else
+CSTAT  065C'   CD 354F'              	call	cstat		;test console for break char
+Q 065F'   CB 08                 	rrc
+CCCTST0U 0661'   5E'                   	cc	ctst0		;read char if present
+                                	endif
+WILD                                	if	not wild
+LDAINTADU 0662'   73'                   	lda	intad
+Q 0663'   CB 00                 	rlc			;test whether interrupt table empty
+CCITESTU 0665'   34'                   	cc	itest		;no, check if interrupt occurs
+                                	endif
+LHLDTEXTPU 0666'   F3'                   	lhld	textp
+SHLDSAVTPU 0667'   81'                   	shld	savtp		;save textp
+MOVU 0668'   00 00                 	mov	a,m		;inline CALL GTCH1 to get next char
+INXU 066A'   00                    	inx	h
+Q 066B'   ED A1                 	cpi	' '
+JZU 066D'   69'                   	jz	$-4
+SHLDTEXTPU 066E'   F3'                   	shld	textp
+Q 066F'   ED A1                 	cpi	':'
+JZXSTATU 0671'   86'                   	jz	xstat		;another statement on same line
+RTPAKCOMPL                                	if	rtpak or not compl	;comments are removed if compiled
+Q 0672'   ED A1                 	cpi	''''
+CZREMU 0674'   E6'                   	cz	rem		;on-line comment
+                                	endif
+Q 0675'   ED A1                 	cpi	cr
+JNZSNERRU 0677'   3B'                   	jnz	snerr		;syntax error -- garbage after statement
+MOVU 0678'   00 00                 	mov	a,m		;fetch length byte of next line
+ORAU 067A'   00                    	ora	a
+JZDMODEU 067B'   3C'                   	jz	dmode		;end of source text
+INXU 067C'   00                    	inx	h
+SHLDLNNUMU 067D'   68'                   	shld	lnnum		;save line number address
+INXU 067E'   00                    	inx	h
+INXU 067F'   00                    	inx	h
+MOVU 0680'   00 00                 	mov	a,m		;fetch break byte
+INXU 0682'   00                    	inx	h		;point to first text byte
+SHLDTEXTPU 0683'   F3'                   	shld	textp		;set text pointer
+COMPL                                	if	not compl
+RARU 0684'   00                    	rar			;NB carry was reset above!
+CCBTESTU 0685'   AF'                   	cc	btest		;test for break if bit 0 was set
+                                
+                                ;XSTAT is branched to with TEXTP pointing to first char of a statement.
+                                ;Performs trace mode test, then falls through to XSTA1 for
+                                ;actual statement execution.
+                                ;XSTA1 is entry point from direct mode, to avoid trace checks.
+                                ;XSTA2 is entry point for THENpart of an IF statement.
+XSTATLDATRACEU 0686'   6D'                   xstat:	lda	trace
+STATRACLU 0687'   F2'                   	sta	tracl		;set tracing status of current statement
+ORAU 0688'   00                    	ora	a
+CNZTPRNTU 0689'   19'                   	cnz	tprnt		;print trace line # if traceon
+                                	endif			;skip trace tests in COMPL version
+XSTA1LXINEXTSU 068A'   00 5C'                xsta1:	lxi	b,nexts
+COMPL                                	if	compl
+                                xstat	equ	xsta1
+                                	endif
+A 068C'   C5                    	push	b		;stack normal return address to allow RET
+XSTA2LHLDTEXTPU 068D'   F3'                   xsta2:	lhld	textp		;inline CALL GTCHA follows to get next token
+MOVU 068E'   00 00                 	mov	a,m
+INX'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-39
+
+
+U 0690'   00                    	inx	h
+Q 0691'   ED A1                 	cpi	' '
+JZU 0693'   8F'                   	jz	$-4
+SHLDTEXTPU 0694'   F3'                   	shld	textp
+ORAU 0695'   00                    	ora	a
+LET0  0696'   C3 26A2'              	jp	let0		;not token, must be LET or null statement
+WILD                                	if	wild
+                                	cpi	wbuft
+                                	jz	wletb		;BUFFER legal lhs in WILD version
+                                	endif
+SUICMDTKU 0699'   00                    	sui	cmdtk		;subtract min token value
+JCSNERRU 069A'   3B'                   	jc	snerr		;too small, not a command token
+Q 069B'   ED A1                 	cpi	ncmds		;compare to number of commands
+JNCSNERRU 069D'   3B'                   	jnc	snerr		;too big
+LXICMDTAU 069E'   00 8F'                	lxi	h,cmdta		;command branch table address to HL
+BYTESPERENTRYO 06A0'   C6 00                 	add	a		; * 2 bytes per entry
+MOVU 06A2'   00 00                 	mov	c,a
+MVIU 06A4'   00 00                 	mvi	b,0
+DADU 06A6'   00                    	dad	b		;add offset to base address
+MOVU 06A7'   00 00                 	mov	a,m		;low order address to A, temporarily
+INXU 06A9'   00                    	inx	h
+MOVU 06AA'   00 00                 	mov	h,m		;high order addr to H
+MOVU 06AC'   00 00                 	mov	l,a		;low order addr to L
+PCHLU 06AE'   00                    	pchl			;branch to address
+                                
+                                ;BTEST checks for line breakpoints.
+                                ;Called before XSTAT, so TRACL is not yet reinitialized.
+                                ;Call:	A	line break byte, RARed once.
+COMPL                                	if	not compl
+BTESTORAU 06AF'   00                    btest:	ora	a		;test further if more bits set
+LXIXSTA1U 06B0'   00 8A'                	lxi	h,xsta1		;replace XSTAT return addr with XSTA1 to
+XTHLU 06B2'   00                    	xthl			;	avoid resetting TRACL on return
+JZTPRNTU 06B3'   19'                   	jz	tprnt		;print break line and return if only bit 0 set
+Q 06B4'   CB 08                 	rrc			;bit 1 of break byte to carry
+JNCBTST2U 06B6'   09'                   	jnc	btst2		;no count or variables, check for DMODE break
+  06B7'   F5                    	push	psw		;save break byte, rotated twice
+                                ;Now the symbol table entry containing line break info must be found.
+LHLDLNNUMU 06B8'   68'                   	lhld	lnnum
+BKNAM  06B9'   CD 039D'              	call	bknam		;break entry 'name' to BUFAD
+MVIBRKSTU 06BC'   00 05                 	mvi	a,brkst
+STLK0  06BE'   CD 2128'              	call	stlk0		;look up break entry
+JCEXERRU 06C1'   40'                   	jc	exerr		;not found -- EX error
+                                ;Next the count (# times before next break) is fetched.
+MOVU 06C2'   00 00                 	mov	e,m
+INXU 06C4'   00                    	inx	h
+MOVU 06C5'   00 00                 	mov	d,m		;count to DE
+DCXU 06C7'   00                    	dcx	d		;decrement count
+MOVU 06C8'   00 00                 	mov	a,d
+ORAU 06CA'   00                    	ora	e
+JNZBTST3U 06CB'   0E'                   	jnz	btst3		;nonzero -- return
+                                ;Counted to zero, so reset count to original value and print break info.
+MOVU 06CC'   00 00                 	mov	b,h
+MOVU 06CE'   00 00                 	mov	c,l
+DCXU 06D0'   00                    	dcx	b		;BC points to count
+INXU 06D1'   00                    	inx	h		;HL points to reset
+MOVU 06D2'   00 00                 	mov	a,m
+STAX'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-40
+
+
+U 06D4'   00                    	stax	b
+INXU 06D5'   00                    	inx	b
+INXU 06D6'   00                    	inx	h
+MOVU 06D7'   00 00                 	mov	a,m
+STAXU 06D9'   00                    	stax	b		;copy reset to count
+TPRNT  06DA'   CD 0719'              	call	tprnt		;print break [<line #>]
+  06DD'   F1                    	pop	psw		;restore break byte
+Q 06DE'   CB 08                 	rrc			;bit 2 of break byte to Carry
+JNCBTST1U 06E0'   07'                   	jnc	btst1		;skip var printing
+                                ;The break specified a <var list>, so variable values must be printed.
+  06E1'   F5                    	push	psw		;save break byte, RRCed 3 times
+INXU 06E2'   00                    	inx	h		;point to var list addr
+MOVU 06E3'   00 00                 	mov	a,m
+INXU 06E5'   00                    	inx	h
+MOVU 06E6'   00 00                 	mov	h,m
+MOVU 06E8'   00 00                 	mov	l,a		;varlist address to HL
+SHLDTXTP2U 06EA'   7F'                   	shld	txtp2
+FLIP  06EB'   CD 0237'              	call	flip		;scan var list
+LXITRACEU 06EE'   00 6D'                	lxi	h,trace
+MOVU 06F0'   00 00                 	mov	a,m
+  06F2'   F5                    	push	psw		;save TRACE
+MVIU 06F3'   00 FF                 	mvi	m,255		;and set TRACE to true
+BTST0GTLHS  06F5'   CD 0153'              btst0:	call	gtlhs		;get var ref
+MOVU 06F8'   00 00                 	mov	b,a		;save type
+TRVA1  06FA'   CD 0182'              	call	trva1		;print = value
+GTCOM  06FD'   CD 1AA6'              	call	gtcom		;look for another
+JNCBTST0U 0700'   F5'                   	jnc	btst0		;print more vars
+  0701'   F1                    	pop	psw
+STATRACEU 0702'   6D'                   	sta	trace		;restore trace
+FLIP  0703'   CD 0237'              	call	flip		;restore textp
+  0706'   F1                    	pop	psw
+                                ;BTEST returns or breaks to DMODE, depending on whether BREAK specified $.
+BTST1Q 0707'   CB 00                 btst1:	rlc
+BTST2ANIU 0709'   02                    btst2:	ani	2		;test bit 3 (after two rotates)
+RZU 070A'   00                    	rz			;no $ -- continue
+MVICSLBKU 070B'   00 A5                 	mvi	a,cslbk		;line break entry token to A
+JMPSTOP1U 070D'   1D'                   	jmp	stop1		;$
+BTST3MOVU 070E'   00 00                 btst3:	mov	m,d
+DCXU 0710'   00                    	dcx	h
+MOVU 0711'   00 00                 	mov	m,e		;new value to count
+  0713'   F1                    	pop	psw		;restore break byte
+A 0714'   E1                    	pop	h		;POP the RETurn to XSTA1
+JMPXSTATU 0715'   86'                   	jmp	xstat		;and return to XSTAT for TRACL initialization
+                                
+                                ;BPRNT prints <tab>[<line #>] if not TRACL, and is called by NEXT and TRSET.
+                                ;TPRNT prints <tab>[<line #>] and sets TRACL to TRUE.
+                                ;Both preserve BC,DE,HL and clobber A.
+BPRNTLDATRACLU 0716'   F2'                   bprnt:	lda	tracl
+ORAU 0717'   00                    	ora	a
+RNZU 0718'   00                    	rnz			;suppress break printout if traced
+TPRNTPUSH3  0719'                         tprnt:	push3
+A 0719'   C5              +     	push	b
+A 071A'   D5              +     	push	d
+A 071B'   E5              +     	push	h
+WCRLF  071C'   CD 191B'              	call	wcrlf		;write crlf
+MVIU 071F'   00 5B                 	mvi	a,'['
+WRITC'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-41
+
+
+  0721'   CD 18E1'              	call	writc		;write [
+LHLDLNNUMU 0724'   68'                   	lhld	lnnum		;line number address to HL
+PRNTL  0725'   CD 19ED'              	call	prntl		;print the line
+MVIU 0728'   00 5D                 	mvi	a,']'		;write ]
+WRITC  072A'   CD 18E1'              	call	writc
+WILD                                	if	wild
+                                	call	wrtsp		;write a space (no tab routine)
+                                	else
+PRCO1  072D'   CD 283A'              	call	prco1		;tab to next tab stop
+                                	endif
+MVIU 0730'   00 FF                 	mvi	a,255
+STATRACLU 0732'   F2'                   	sta	tracl		;set TRACL to indicate line traced already
+JMPPOP3U 0733'   12'                   	jmp	pop3
+                                
+                                	endif			;end of NOT COMPL conditional
+                                
+                                ;ITEST determines whether interrupt occurs and then returns or interrupts.
+                                ;If no interrupt:
+                                ;Retn:	A,BC,DE	clobbered
+                                ;	HL	address of interrupt table eof
+                                ;If interrupt occurs, ITEST's return address is POPed, a normal statement
+                                ;return address is PUSHed, and a GOSUB to the appropriate line # is executed.
+WILD                                	if	not wild
+ITESTLXIINTADU 0734'   00 73'                itest:	lxi	h,intad		;first byte address to HL
+ITST1Q 0736'   CB 00                 itst1:	rlc			;test enable/suspend bit
+JNCITST3U 0738'   51'                   	jnc	itst3		;suspended -- look for more
+MOVU 0739'   00 00                 	mov	c,a		;save $ bit in sign bit of C
+MOVU 073B'   00 00                 	mov	d,h
+MOVU 073D'   00 00                 	mov	e,l		;save first byte address in DE
+INXU 073F'   00                    	inx	h		;point to port # byte
+MOVU 0740'   00 00                 	mov	a,m
+RDP1  0742'   CD 15A3'              	call	rdp1		;read the port
+INXU 0745'   00                    	inx	h		;point to mask byte
+ORAU 0746'   00                    	ora	m
+INXU 0747'   00                    	inx	h		;point to value byte
+XRAU 0748'   00                    	xra	m		;compare & clear carry
+JZITST2U 0749'   4B'                   	jz	itst2
+STCU 074A'   00                    	stc			;carry set iff compare not zero
+ITST2RARU 074B'   00                    itst2:	rar			;carry to sign bit of A
+XRAU 074C'   00                    	xra	c		;sign bit set iff no interrupt
+ITST4  074D'   C3 075A'              	jp	itst4		;interrupt occurs
+XCHGU 0750'   00                    	xchg			;restore first byte address to HL
+ITST3LXIU 0751'   00 08                 itst3:	lxi	d,8
+DADU 0753'   00                    	dad	d		;address next entry
+MOVU 0754'   00 00                 	mov	a,m		;first byte of table entry to A
+Q 0756'   CB 00                 	rlc			;test on/off bit
+RNCU 0758'   00                    	rnc			;no more table entries -- return
+JMPITST1U 0759'   36'                   	jmp	itst1		;and check it
+ITST4LINBC  075A'   CD 0108'              itst4:	call	linbc		;zero set iff direct mode
+RZU 075D'   00                    	rz			;no interrupts from direct mode
+XCHGU 075E'   00                    	xchg			;restore first byte address to HL
+XTHLU 075F'   00                    	xthl			;pop ITEST return, push first byte address
+MVICSINTU 0760'   00 87                 	mvi	a,csint
+CPUSH  0762'   CD 215F'              	call	cpush		;token, textp, lnnum to control stack
+A 0765'   D1                    	pop	d
+MVMDE  0766'   CD 01E2'              	call	mvmde
+XCHG'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-42
+
+
+U 0769'   00                    	xchg			;  and to HL
+MOVU 076A'   00 00                 	mov	a,m		;fetch first byte
+ANIU 076C'   BF                    	ani	0BFH		;suspend interrupt entry
+MOVU 076D'   00 00                 	mov	m,a
+LXIU 076F'   00 07                 	lxi	d,7
+DADU 0771'   00                    	dad	d		;address byte 8 of entry
+MVDEM  0772'   CD 01DB'              	call	mvdem
+A 0775'   E5                    	push	h		;save entry ptr
+FINDL  0776'   CD 350E'              	call	findl		;look for ENABLE line # address
+JCENERRU 0779'   AE'                   	jc	enerr		;none, EN error
+INXU 077A'   00                    	inx	h		;point to line # byte
+XTHLU 077B'   00                    	xthl			;push ENABLE line # address, recover ptr
+MVDEM  077C'   CD 01DB'              	call	mvdem		;desired interrupt routine line # to DE
+LXINEXTSU 077F'   00 5C'                	lxi	h,nexts
+XTHLU 0781'   00                    	xthl			;pop ENABLE line # address, push return addr
+SHLDLNNUMU 0782'   68'                   	shld	lnnum		;set lnnum in case line not found
+JMPGOTO2U 0783'   1B'                   	jmp	goto2		;find line #, continue from there
+                                	endif			;end of NOT WILD conditional
+                                
+                                
+                                ;end of DRIVER
+                                	page
+'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-43
+
+
+                                
+                                ;EVAL 06/10/80
+                                ;XYBASIC Interpreter Source Module
+                                ;Copyright (C) 1978, 1979, 1980 by Mark Williams Company, Chicago
+                                ;expression evaluator
+                                
+                                ;EVAL evaluates an expression.
+                                ;Space above the control stack is used as a working stack, called the
+                                ;E(xpression)STACK.  Each expression component already scanned is stored on
+                                ;the ESTACK as a byte identifier specifying its type (e.g. delimiter, paren,
+                                ;unary op) and precedence.  Fns and ops have an addtional byte containing
+                                ;the fn id.  Values are stored as a type byte followed by value bytes.  String
+                                ;values saved in the ESTACK are addressed by string temporaries, for access
+                                ;during garbage collection.
+                                ;Many types of errors may occur during EVAL.
+                                ;SN error occurs if an expression is illformed.
+                                ;OM error occurs if ESTACK overflows the available space.
+                                ;TM error occurs if arguments are of wrong type.
+                                ;FC, OV, BY and similar errors can occur during fn/op execution.
+                                ;EX errors should never occur, and indicate something is wrong.
+                                ;Retn:	Carry	Set iff no <expr> found, i.e. first char parsed is bad
+                                ;	A	type token of result, preserved if Carry
+                                ;	BC, DE	preserved
+                                ;	HL	pointer to type (followed by value bytes), preserved if Carry
+                                
+EVALPUSH4  0784'                         eval:	push4			;save all in case failure
+PUSH3A 0784'   C5              +     	push	b
+A 0785'   D5              +     	push	d
+A 0786'   E5              +     	push	h
+  0787'   F5              +     	push	psw
+MVIISDELU 0788'   00 11                 	mvi	c,isdel+1	;delimiter type/prec to C
+                                
+                                ;EVAL0 saves the token in C on the ESTACK.  If it is a fn or op,
+                                ;the id in B is also ESTACKed.
+EVAL0MOVU 078A'   00 00                 eval0:	mov	a,c		;fetch type/prec
+Q 078C'   ED A1                 	cpi	isop1
+JCEVA0AU 078E'   98'                   	jc	eva0a		;not a fn/op, just ESTACK type/prec
+MOVU 078F'   00 00                 	mov	c,b		;else id to C
+MOVU 0791'   00 00                 	mov	b,a		;save type/prec in B
+ESPSH  0793'   CD 0A66'              	call	espsh		;ESTACK the id
+MOVU 0796'   00 00                 	mov	c,b		;restore type/prec to C
+EVA0AESPSH  0798'   CD 0A66'              eva0a:	call	espsh		;ESTACK the type/prec
+                                
+                                ;EVAL1 is the 'expecting value' state
+                                ;The next item parsed must be a literal, variable reference or 0-ary fn
+                                ;(evaluated and ESTACKed, then expecting op), or else a fn name, ( or
+                                ;unary op (ESTACKed, then expecting value).  Any other acts as delimiter.
+EVAL1LHLDTEXTPU 079B'   F3'                   eval1:	lhld	textp
+EVA1AMOVU 079C'   00 00                 eva1a:	mov	a,m		;fetch next text char
+INXU 079E'   00                    	inx	h
+Q 079F'   ED A1                 	cpi	' '
+JZEVA1AU 07A1'   9C'                   	jz	eva1a		;try next if space
+Q 07A2'   ED A1                 	cpi	40H
+JCEVLIPU 07A4'   42'                   	jc	evlip		;0-3FH, must be literal or (
+ORAU 07A5'   00                    	ora	a
+EVVAR'XYBASIC	REV 2.14.00	05/27/81'	MACRO-80 3.44	09-Dec-81	PAGE	1-44
+
+
+  07A6'   C3 084E'              	jp	evvar		;40-7FH, must be var ref
+GTTYP  07A9'   CD 0A4A'              	call	gttyp		;type to A, id info to BC
+JCEVALXU 07AC'   16'                   	jc	evalx		;not a fn or op
+SHLDTEXTPU 07AD'   F3'                   	shld	textp		;read the fn or op
+Q 07AE'   ED A1                 	cpi	isop1
+JCEVFN0U 07B0'   A1'                   	jc	evfn0		; 0-ary or user-defined function
+JZEVAL0U 07B1'   8A'                   	jz	eval0		;ESTACK unary op
+Q 07B2'   ED A1                 	cpi	isop2
+JZEVOPUU 07B4'   6E'                   	jz	evopu		;binary op must be unary + or -
+EVA1BMVIU 07B5'   00 28                 eva1b:	mvi	d,'('		;otherwise must be a function id
+GTDSN  07B7'   CD 1AC5'              	call	gtdsn		;so skip ( after fn
+JMPEVAL0U 07BA'   8A'                   	jmp	eval0		;ESTACK type/prec and id and expect value
+                                
+                                ;EVAL2 pushes a value (type token and value bytes) to ESTACK.
+EVAL2ESVAL  07BB'   CD 0820'              eval2:	call	esval		;value to ESTACK
+                                
+                                ;EVAL3 is the 'expecting op' state.
+                                ;The next item parsed should be a comma [fn(expr,expr)] or
+                                ;binary op [expr op expr] or ) [fn(expr) or fn(expr,expr) or (expr)].
+                                ;Any other is treated as a delimiter.
+EVAL3LHLDESTKPU 07BE'   88'                   eval3:	lhld	estkp
+MOVU 07BF'   00 00                 	mov	a,m
+ANITMASKU 07C1'   F0                    	ani	tmask
+MOVU 07C2'   00 00                 	mov	d,a		;previous type to D
+MOVU 07C4'   00 00                 	mov	a,m
+ANIPMASKU 07C6'   0F                    	ani	pmask
+INRU 07C7'   00                    	inr	a
+MOVU 07C8'   00 00                 	mov	e,a		;previous precedence + 1 to E
+LXIVBYTSU 07CA'   00 00                 	lxi	b,vbyts
+DADU 07CC'   00                    	dad	b		;address new ESTACK top
+SHLDESTKPU 07CD'   88'                   	shld	estkp		;and update the pointer
+GTCHO  07CE'   CD 1A96'              	call	gtcho		;look at next item
+GTTYP  07D1'   CD 0A4A'              	call	gttyp		;find its type
+CCEVARPU 07D4'   85'                   	cc	evarp		;not an op, must be ) or comma or delimiter
+Q 07D5'   ED A1                 	cpi	isop2		;check if binary op
+JNZEVAL4U 07D7'   E1'                   	jnz	eval4		;no, must be delimiter -- reduce
+                                ;Compare precedences of current and previous op and reduce when appropriate.
+MOVU 07D8'   00 00                 	mov	a,c		;fetch current type/prec
+ANIPMASKU 07DA'   0F                    	ani	pmask
+CMPU 07DB'   00                    	cmp	e		;compare current to previous+1
+JCEVAL4U 07DC'   E1'                   	jc	eval4		;reduce
+GTCHA

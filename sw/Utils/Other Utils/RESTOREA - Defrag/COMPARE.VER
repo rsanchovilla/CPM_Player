@@ -1,0 +1,114 @@
+Below is some data comparing the various versions of the RESTORE utility.
+Items compared include program size, number of active directories able to be
+handled, amount of disk I/O done, and selected execution times.
+
+The hardware used for all these comparisons was a 9.216 MHz SB180 with a
+Seagate ST225 hard disk partitioned into 4 logical drives of 5184K each.  The
+controller was a Xebec 1410A controlled through the SCSI port on the SB180's
+COMM180-M-S expansion card.  The allocation group size on this disk (the BLS
+value in the DPB) is 4096 bytes.
+
+Section 1:  Program sizes.
+
+The following sizes are the actual sizes of the assembled program, in bytes,
+as reported by the linker, as well as the space required to store the program
+on disks with BLS values of 1K, 2K, and 4K.
+
+Program			Size			 Disk Block Size
+Name			(bytes)	    1K blocks	    2K blocks	    4K blocks
+
+RESTOREI.COM		4421		5K		6K		8K
+RESTOREZ.COM		4225		5K		6K		8K
+FRESTORI.COM		3319		4K		4K		4K
+FRESTORZ.COM		3154		4K		4K		4K
+
+Section 2:  Directory-size Capabilities.
+
+The following shows the maximum number of active directory entries that each
+version of the program can handle.  Remember that the maximum number of
+directory entries that may be on the disk (the DRM value) is of no
+significance.  Only active directory entries are seen by the program.
+Included is an estimate of the amount of disk space that the indicated number
+of directory entries can control.  This assumes that the 'average' directory
+entry in the directory of a hard disk with 4K allocation groups has 2.8 blocks
+allocated to it.  I have found this to be an average value for the 16-19
+Megabytes of data that is usually on my hard disk.  All values assume a 48K
+TPA and 4K blocks.  You can add 32 directory entries and 352K of disk space to
+the numbers shown for each kilobyte of TPA over 48K that you have in your
+system.
+
+Program		Max # of Active		Approximate Kbytes of disk
+Name		Directory Entries	storage controlled
+
+RESTOREI.COM		1268			13948
+RESTOREZ.COM		1274			14014
+FRESTORI.COM		1174			12914
+FRESTORZ.COM		1179			12969
+
+So, each version has more than enough space to handle the directory of any
+'standard' CP/M disk (maximum logical disk size of 8192K), as well as most
+disks on 'expanded' CP/M-type systems (32 Meg per disk).  The only people who
+might have problems are those with large non-standard disks with a DRM of 2048
+and 90% of the files on the disk only have one block allocated, OR those with
+a block size larger than 4K.  For 8K blocks, reduce the numbers above by 256
+entries and 2816K each.
+
+Section 3:  Disk Read/Write Data.
+
+The major advantage of RESTORE over FRESTORE is the significant reduction in
+the amount of disk reading & writing required.  The following data shows, for
+each of the four partitions of my disk, the statistics printed by the
+indicated version of the utility after it finishes analyzing the disk, with
+one modification:  since both versions do read-after-write CRC verification of
+each group written to the disk, the number of reads shown below is twice the
+number of reads reported by F/RESTORE.
+
+For each item, the values shown are for RESTORE/FRESTORE, i.e. the value
+printed by RESTORE, a '/', and the value printed by FRESTORE.
+
+						Logical Drive
+				       A	 B	   C	     D
+# of Active Directory Entries	      423	394	  391	    278
+# of Blocks Allocated		     1007       973	  937	   1177
+# of Directory Entries requiring    20/       23/   	23/   	  60/
+	relocation (RESTORE only)
+# of Groups requiring relocation
+	(FRESTORE only)		      /1003	/922	  /925	    /1148
+# of Directory Rewrites		    20/417    23/383    23/385	  60/269
+# of Group Reads (including the	   248/3348  228/3720  270/3696	 794/4540
+	read after each write)
+# of Group Writes		   124/1674  114/1860  135/1848	 397/2270
+
+Some totals for the entire disk:
+					RESTORE		FRESTORE
+# of Directory Rewrites			  126		 1454
+# of Group Reads			 1540		15304
+# of Group Writes			  770		 7652
+
+In summary, FRESTORE does about 10 times as much disk I/O as RESTORE.
+
+Section 4:  Execution times.
+
+The times required to restore disks A & C above were as follows:
+
+RESTORE  - Disk A		12 min 13.9 sec
+FRESTORE - Disk C				 1 hr 15 min 2.2 sec
+
+So, RESTORE recovered a disk with comparable fragmentation in about one sixth
+of the time FRESTORE would have taken.  Note, however, that it only moved one
+fifteenth the amount of data.  This is because RESTORE spends about half its
+time (on my system) in compute-bound procedures (rebuilding the free-space
+table after every fourth directory rewrite).  So, on a slower CPU, RESTORE
+might take one fourth the time that FRESTORE would rather than a sixth.  Also,
+the 8080 version of RESTORE is significantly slower compared to the Z80
+version (about 6% slower) than the 8080 version of FRESTORE is when compared
+to the Z80 version of that program (less than 1% slower).
+
+But, the advantage of RESTORE is not only in reduced execution time, but, as
+stated above, in reduced disk thrashing.  For those with drives that have a
+tendency to overheat under heavy use (see the .DOC file for comments), the new
+version of RESTORE should cause a markedly lower disk error rate (ideally,
+zero) than these users had after using the original, fully-relocating version.
+
+Steve Dirickson		7 June 87
+

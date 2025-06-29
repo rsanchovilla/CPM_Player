@@ -1,0 +1,69 @@
+* CSAVE!
+Causes TARBELL BASIC to write itself and optionally,  system monitor
+onto cassette tape.  This is handy for making patches.
+Example:	CSAVE!
+
+* DELETE <line descriptor> [<line descriptor>]
+Eliminates the line(s) indicated from the stored program.  If only
+the first <line descriptor> is present, only that one line is deleted.
+If both <line descriptor>'s are present, both those lines, and
+all lines in between are deleted.  If there is no such line
+descriptor, an error message is issued.
+Examples:	DELETE START+4	    DELETE LOOP LOOP+5
+
+* ENTER [<line descriptor>]  or  :[<line descriptor>]
+Causes TARBELL BASIC to go to program entry mode.  Any input after
+this statement is interpreted as program statements.  A carriage
+return delimits each line.  The "ENTER" statement is provided to
+allow statements without names to be entered.  If <line descriptor>
+is ommitted, entry begins after the last statement currently in
+memory.  If <line descriptor> is present, entry begins immediately before
+the line indicated.  Entry mode is terminated by two carriage returns 
+in a row.  Multiple statements per line are allowed if separated by a colon.
+The colon shown in the command format above, however, is a shorthand
+form of ENTER, the same way that "?" is a shorthand form of PRINT.
+The first line in a program should always have a label.
+If any of the following commands are invoked from entry mode, they
+will be performed, then command mode will be reentered:
+  LIST,DELETE,EDIT,RUN.
+Examples:	ENTER	    ENTER ADDC+3     ENTER LOOP     : START+1
+
+LIST [<line descriptor>] [<line descriptor>]
+Lists the program starting from the statement corresponding with
+the first <line descriptor>, until the end is reached, if there is no
+second <line descriptor>, or until a control/C is entered.
+If neither <line descriptor> is present, the whole program is listed.
+Examples:	LIST     LIST START+10     LIST LOOP END1
+
+NEW
+Deletes the program in memory, clears all variables, releases all
+string and array space.  Example:   NEW
+
+RUN [<line descriptor>]
+If the line descriptor is included, starts execution of the BASIC
+program at the line specified.  If the line descriptor is ommitted,
+execution begins at the first line in memory.  In either case, a
+CLEAR is automatically executed first.
+Examples:   RUN		RUN COMD	RUN SUBROUTINE+1
+
+* SYMBOL
+Types a table of variable names, line descriptors, their types and
+their locations.  Example:	SYMBOL
+
+
+
+
+
+
+
+			    4
+
+
+
+
+
+
+
+
+
+

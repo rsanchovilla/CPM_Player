@@ -1,0 +1,81 @@
+\SETUP
+\IGNORE^,COPY100
+\CLS,NOTE Please tell me which lesson you want.
+\SHOW NL
+\NOTE 1	is for the lesson on numeric variables;
+\NOTE 2	is for the lesson on dollar comparisons;
+\SHOW NL
+\GET OPT="              Number, please?"
+\IF #OPT<3,IF #OPT>0,SKIP2
+\SHOW NL,NL,:OPT," is not an acceptable number.  Ending SAMPLE6.",NL,"You must start over from the beginning"
+\QUIT
+\TEXT
+\
+\IF OPT<>"1",SKIP TO ^
+\IF %PASS=1,SET	SECTION="1"
+\IF SECTION<>"1",SKIP7
+\CLS
+\IF #COUNT=0,SHOW "                 PART ONE, SECTION ONE",NL,"This is to show you how the machine converts a string value",NL,"to a numeric value.",NL,NL
+\SET VAR="",GET	VAR="Type in a value."
+\SHOW "    The numeric value of ",:VAR," is ",#VAR,NL
+\WAIT	   Press RETURN	to continue
+\SET #COUNT=#COUNT+1,IF	#COUNT=6,SET SECTION="2",SET #COUNT=0
+\END
+\
+\IF SECTION<>"2",SKIP9
+\CLS
+\IF #COUNT=0,SHOW "                 PART ONE, SECTION TWO",NL,"This is to show you how two numeric variables can be added or subtracted.",NL
+\SET VAR="",GET	VAR="Type in first value"
+\SET VAR1="",GET VAR1="Type in second value"
+\SHOW NL,"   ",:VAR," plus ",:VAR1," equals ",#VAR+#VAR1
+\SHOW "   ",:VAR," minus ",:VAR1," equals ",#VAR-#VAR1
+\WAIT	   Press RETURN	to continue
+\SET #COUNT=#COUNT+1,IF	#COUNT=3,SET SECTION="3",SET #COUNT=0
+\END
+\
+\CLS
+\IF #COUNT=0,SHOW "                 PART ONE, SECTION THREE",NL,"This is to show you can give commands using numeric variables",NL,"instead of numeric constants.",NL,NL
+\SET VAR="",GET	VAR="Type in left margin"
+\SET VAR1="",GET VAR1="Type in right margin"
+\LM#VAR,RM#VAR1,DS
+\SHOW NL,NL,"Left margin is now ",#VAR," and right margin is ",#VAR1,NL,NL
+\IF #COUNT<>3,WAIT	Press RETURN to	continue
+\SET #COUNT=#COUNT+1,IF	#COUNT=3,QUIT
+\END
+\
+^\IF OPT<>"2",SKIP TO ^
+\IF %PASS=1,SET	SECTION="1"
+\IF SECTION<>"1",SKIP9
+\CLS
+\IF #COUNT=0,SHOW "                PART TWO, SECTION ONE",NL,"This shows you the difference between colon, number and dollar variables.",nl,nl
+\SET VAR="",GET	VAR="Type in a number"
+\SHOW NL,NL,"The colon value of ",:var," is ",:var
+\SHOW NL,"The number value of ",:var," is ",#var
+\SHOW NL,"The dollar value of ",:var," is ",$var,NL,NL
+\WAIT	   Press RETURN	to continue
+\SET #COUNT=#COUNT+1,IF	#COUNT=5,SET SECTION="2",SET COUNT="0"
+\END
+\
+\CLS
+\IF #COUNT=0,SHOW "                PART TWO, SECTION TWO",NL,"This shows you the difference between colon, number and dollar comparisons.",NL,NL
+\SET VAR="",GET	VAR="Type in a number"
+\IF VAR="1234",SHOW "The colon comparison of ",:VAR," is equal to 1234"
+\IF VAR>"1234",SHOW "The colon comparison of ",:VAR," is greater than 1234"
+\IF VAR<"1234",SHOW "The colon comparison of ",:VAR," is less than 1234"
+\SHOW NL
+\IF #VAR=1234,SHOW "The number comparison of ",:VAR," equals 1234"
+\IF #VAR>1234,SHOW "The number comparison of ",:VAR," is greater than 1234"
+\IF #VAR<1234,SHOW "The number comparison of ",:VAR," is less than 1234"
+\IF #VAR=0,SHOW	"The number comparison of ",:VAR," equals 0"
+\SHOW NL
+\IF $VAR=1234,SHOW "The dollar comparison of ",:VAR," equals 1234"
+\IF $VAR>1234,SHOW "The dollar comparison of ",:VAR," is greater than 1234"
+\IF $VAR<1234,SHOW "The dollar comparison of ",:VAR," is less than 1234"
+\IF $VAR<0,SHOW	"The dollar comparison of ",:VAR," is less than 0"
+\IF $VAR>100000,SHOW "The dollar comparison of ",:VAR," is greater than 100000"
+\IF #COUNT<>5,WAIT	Press RETURN to	continue
+\SET #COUNT=#COUNT+1,IF	#COUNT=5,QUIT
+\END
+of ",:VAR," is greater than 100000"
+\IF #COUNT<>5,WAIT	Press RETURN to	continue
+\SET #COUNT=#COUNT+1,IF

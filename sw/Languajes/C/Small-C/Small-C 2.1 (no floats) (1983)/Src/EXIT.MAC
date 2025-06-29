@@ -1,0 +1,55 @@
+CC1:
+exit::
+PUSH B
+LXI H,4
+CALL CCDSGC##
+MOV A,H
+ORA L
+JZ CC3
+LXI H,4
+CALL CCDSGC##
+PUSH H
+CALL Uconout
+POP B
+CC3:
+LXI H,0
+DAD SP
+XCHG;;
+LXI H,0
+CALL CCPINT##
+CC6:
+POP D
+PUSH D
+LXI H,10
+CALL CCLT##
+MOV A,H
+ORA L
+JZ CC5
+JMP CC7
+CC4:
+LXI H,0
+CALL CCINCI##
+DCX H
+PUSH H
+CALL fclose
+POP B
+JMP CC6
+CC7:
+JMP CC4
+CC5:
+LXI H,0
+PUSH H
+LXI H,0
+PUSH H
+CALL Ubdos
+POP B
+POP B
+POP B
+RET
+abort  equ    exit
+       entry  abort
+EXT Ubdos
+EXT Uconout
+EXT fclose
+END
+

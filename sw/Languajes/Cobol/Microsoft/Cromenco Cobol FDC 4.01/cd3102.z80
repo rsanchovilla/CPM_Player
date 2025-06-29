@@ -1,0 +1,125 @@
+	TITLE	CD3102 - CRT DRIVER FOR CROMEMCO 3102 TERMINALS
+;**********************************************************************
+;***                                                                ***
+;***	COPYRIGHT (C) 1980, CROMEMCO                                ***
+;***                                                                ***
+;**********************************************************************
+	ENTRY	$CRWID,$CRLEN,$CURON,$CUROF,$CURBK
+	ENTRY	$SETCR,$ERASE,$ALARM
+	ENTRY	$CLIST,$TLIST,$FLIST
+	ENTRY	$EOL,$HILIT,$LOLIT
+	EXT	$OUTCH
+;****************************************************
+; KEYBOARD CODE DEFINITIONS
+;****************************************************
+;
+$CLIST:	;EDITING KEY DEFINITIONS
+	DEFB	15H	     ;LINE DELETE (CTL-U)
+	DEFB	7FH	     ;CHAR DELETE (DEL)
+	DEFB	06H	     ;FORWARD SPACE (CTL-F)
+	DEFB	08H	     ;BACK SPACE (CTL-H)
+	DEFB	2BH	     ;PLUS SIGN
+	DEFB	2DH	     ;MINUS SIGN
+	DEFB	0	     ;END OF LIST
+$TLIST:	;TERMINATOR KEY DEFINITIONS
+	DEFB	02H	     ;BACKTAB (CTL-B)
+	DEFB	1BH	     ;ESCAPE (ESC)
+	DEFB	0DH	     ;CARRIAGE RETURN
+	DEFB	09H	     ;TAB (CTL-I)
+	DEFB	0AH	     ;LINE FEED
+	DEFB	0	     ;END OF LIST
+$FLIST:	;FUNCTION KEY DEFINITIONS
+	DEFB	01H	     ;CTL-A
+	DEFB	03H	     ;CTL-C
+	DEFB	18H	     ;CTL-X
+	DEFB	0	     ;END OF LIST
+;****************************************************
+; TERMINAL SCREEN DIMENSIONS
+;****************************************************
+;
+$CRLEN:	DEFB	24D	     ;24 LINES
+$CRWID:	DEFB	80D	     ;80 COLUMNS
+;****************************************************
+; TERMINAL OUTPUT CODES
+;****************************************************
+;
+ESCAPE:	EQU	1BH
+BSPACE:	EQU	08H
+BELL:	EQU	07H
+;****************************************************
+;	O U T P U T   F U N C T I O N S
+;****************************************************
+; SET CURSOR POSITION
+;	[H] = ROW NUMBER
+;	[L] = COLUMN NUMBER
+;****************************************************
+;
+$SETCR:	
+	LD	A,ESCAPE
+	CALL	$OUTCH	     ;SEND ESCAPE
+	LD	A,'F'
+	CALL	$OUTCH	     ;SEND 'F'
+	LD	A,H
+	ADD	31D	     ;ADJUST ROW NUMBER
+	CALL	$OUTCH	     ;SEND ROW
+	LD	A,L
+	ADD	31D	     ;ADJUST COLUMN NUMBER
+	JP	$OUTCH	     ;SEND COLUMN AND RETURN
+;****************************************************
+; BACKSPACE CURSOR
+;****************************************************
+;
+$CURBK:	LD	A,BSPACE
+	JP	$OUTCH	     ;SEND BACKSPACE AND RETURN
+;****************************************************
+; CURSOR ON/OFF - NOT AVAILABLE ON 3101 TERMINAL
+;****************************************************
+;
+$CURON:
+$CUROF:	RET		     ;NOT AVAILABLE ON 3101 TERMINAL
+;****************************************************
+; ERASE TO END OF SCREEN
+;	[HL] = SEQUENTIAL CURSOR POSITION
+;****************************************************
+;
+$ERASE:	LD	A,ESCAPE
+	CALL	$OUTCH	     ;SEND ESCAPE
+	LD	A,'J'
+	CALL	$OUTCH	     ;SEND 'J'
+	LD	D,10
+	XOR	A	     ;NULL CHARACTER
+ERNULL:	CALL	$OUTCH	     ;SEND NULL
+	DEC	D	     ;COUNT 10 OF THEM
+	JP	NZ,ERNULL
+	RET	
+;****************************************************
+; SOUND AUDIBLE TONE
+;****************************************************
+;
+$ALARM:	LD	A,BELL
+	JP	$OUTCH	     ;SEND BELL CODE AND RETURN
+;****************************************************
+; ERASE TO END OF LINE
+;	[H] = CURRENT ROW NUMBER
+;	[L] = CURRENT COLUMN NUMBER
+;****************************************************
+;
+$EOL:	LD	A,ESCAPE
+	CALL	$OUTCH	     ;SEND ESCAPE
+	LD	A,'K'
+	JP	$OUTCH	     ;SEND EOL CODE AND RETURN
+;****************************************************
+; SET/RESET BLINK MODE
+;****************************************************
+;
+$HILIT:	
+	LD	A,'l'	     ;START BLINK CODE
+	JP	LITE
+$LOLIT:	
+	LD	A,'m'	     ;STOP BLINK CODE
+LITE:	PUSH	AF
+	LD	A,ESCAPE
+	CALL	$OUTCH	     ;SEND ESCAPE
+	POP	AF	     ;START/STOP CODE
+	JP	$OUTCH	     ;SEND AND RETURN
+	END	

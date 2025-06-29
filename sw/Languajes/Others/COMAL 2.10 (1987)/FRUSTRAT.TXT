@@ -1,0 +1,142 @@
+FRUSTRATION FACTORS
+by Joel E Rea
+
+Learning to program can be a highly frustrating  experience when 
+using  any  of  the  popular  languages,  such as  BASIC, Forth, 
+Pascal,  C,  Modula-2,  LISP,  etc.  These  are frustrating  for 
+different reasons:
+
+1.  Interpreted, non-structured languages like BASIC are easy to 
+learn, but cause frustration later on when the  programmer wants 
+to actually create a  program of  his own  which does  something 
+useful! It's no fun trying to decipher and debug one's code when 
+it consists of lines like:
+
+        10 gosub5000:onmgoto100,200,500
+
+2.   Compiled,  structured languages  like Pascal,  C, Modula-2, 
+etc.  eliminate that particular frustration factor. You can  see 
+how much easier it would be to decipher and debug  if the  above 
+line read (in Pascal):
+
+command := mainMenu;
+CASE command OF
+     1:  loadSprite;
+     2:  editSprite;
+     3:  saveSprite
+END;  (* CASE command *)
+
+The problem  is, learning  the language  itself, and  entering a 
+program  are  frustrating.  You  cannot experiment  in a  simple 
+"immediate mode" like you can in BASIC! You  must write  a whole 
+program, declaring variables, etc.   just to  experiment with  a 
+new  statement  or  function!  BASIC eliminates  this particular 
+frustration factor.
+
+3.  Languages  like Logo  are both  interactive and  structured.  
+However,  the  concepts  they  teach are  not easily  applied to 
+other, more standard algorithmic languages!  Logo has lists  but 
+no  arrays,  for example.  Trying to  convert a  list-processing 
+program to a language that supports only arrays is frustrating!
+
+4.   Languages  like  Forth   are  also   both  structured   and 
+interactive, but the syntax is not intuitive (a  flaw shared  by 
+APL). One has to either know  the language  well, or  look quite 
+closely to tell that the following will print 27:
+
+        : cube dup dup * * ;
+        3 cube . cr
+
+Ten years ago, Danish educator Borge Christensen recognized  the 
+frustration factors inherent in  the popular  computer languages 
+used for teaching programming.  He knew  that a  non-frustrating 
+language  was  needed.  Thus  was born  COMAL, which  stands for 
+COMmon Algorithmic Language.
+
+COMAL eliminates FF#1 (Frustration  Factor #1),  found in  BASIC 
+and  related  languages,  because  it  is  a  fully   structured 
+language. Program logic is easy to follow, and programs are easy 
+to debug. Indeed, the syntax of COMAL is  almost identical  with 
+the pseudo-syntax many programmers  use to  plan their  programs 
+out in before they write them in a programming language!
+
+COMAL eliminates FF#2, found in compiled languages like  Pascal, 
+because it is a fully interactive language like BASIC. Actually, 
+it  is  even  MORE  interactive  than  Commodore and  most other 
+versions of BASIC, because it gives the user  immediate feedback 
+on syntax errors as soon as they enter a line  of code,  even if 
+it is  a line  of a  program. Not  only that,  it usually  tells 
+exactly why the line was wrong! For example, if you type:
+
+        10 print "The sine of 9 is"; sin)9)
+ 
+COMAL immediately says something like:
+
+        "(" expected, not ")"
+
+and returns the cursor to the line, right  over the  ")" between 
+"sin" and "9"! You don't have to wait to RUN the program to find 
+your typos!
+
+COMAL  also  eliminates  FF#3,  found  in  languages like  Logo, 
+because  it  is  a  true imperative,  algorithmic language  like 
+BASIC, FORTRAN, COBOL, Pascal,  and the  vast majority  of other 
+languages actually used in jobs!
+
+Finally, COMAL eliminates FF#4, found in languages like Forth, C 
+and APL,  because its  syntax is  easy to  understand, even  for 
+someone who has never seen a COMAL program before! For example:
+
+FUNC celsius(fahr)
+  RETURN (fahr-32)*(5/9)
+ENDFUNC celsius
+//
+FUNC fahrenheit(cels)
+  RETURN cels*(9/5)+32
+ENDFUNC fahrenheit
+//
+DIM choice$ OF 1
+PRINT "Temperature Converter"
+PRINT
+REPEAT
+  PRINT "Convert to Fahrenheit";
+  PRINT "or Celsius, or Quit";
+  INPUT "(f/c/q): " : choice$
+  IF choice$ IN "CcFf" THEN
+    INPUT "Temperature? ": temp
+  ENDIF
+  CASE choice$ OF
+  WHEN "C","c"
+    PRINT temp;"F =";
+    PRINT celsius(temp);"C"
+  WHEN "F","f"
+    PRINT temp;"C =";
+    PRINT fahrenheit(temp);"F"
+  WHEN "Q","q"
+    PRINT "Okay, bye!"
+  OTHERWISE
+    PRINT "C'mon, either type";
+    PRINT "'Fahrenheit', 'Celsius'";
+    PRINT "or 'Quit'!"
+  ENDCASE
+UNTIL choice$ IN "Qq"
+
+As you can see from the above program, COMAL's syntax  is clean, 
+not obscure. By the way, the capitalization of keywords and  the 
+indentation of  program structures  is handled  automatically by 
+the COMAL LISTer routine. Line numbers are used in COMAL only as 
+references for editing. While GOTO exists, it is used with named 
+labels only, as in:
+
+        IF choice$ IN "Hh" THEN GOTO help
+
+where the "help" routine would begin with the label help.  (This 
+is almost never done in real  COMAL programs.)   In BASIC,  this 
+might read as follows:
+
+        ifleft$(c$,1)="H"then45
+        ifleft$(c$,1)="h"then45
+
+
+EOF
+

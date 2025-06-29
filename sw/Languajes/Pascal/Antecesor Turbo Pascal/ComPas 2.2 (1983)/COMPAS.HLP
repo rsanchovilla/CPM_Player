@@ -1,0 +1,244 @@
+%*COMPAS ON-LINE HJ[LP: Editorkommandoer.
+
+Den |verste oversigt g{lder i MOVE mode, den nederste i EDIT mode.
+
+&A  Skift til EDIT mode.          &C  Flyt en position mod venstre.
+SPACE     Flyt en position mod h|jre.   &H  Flyt en position mod venstre.
+&I  Flyt en position mod h|jre.   &B  Flyt mod h|jre i spring af 8.
+&D  Flyt til start af ny linie.   &E  Flyt til start af linie.
+&F  Skift auto-tabulator.         &J  Flyt en linie op.
+&K  Flyt en linie ned.            &L  Flyt en side op.
+&M  Flyt en side ned.             &N  Flyt til start af tekst.
+&O  Flyt til slutning af tekst.   &P  Find tekststreng.
+&Q  Forts{t s|gning.              &R  Udskift s|gestreng.
+&S  Udskift og forts{t s|gning.   &T  S{t tekstm{rke.
+&U  Slet blok.                    &W  Inds{t edit-buffer.
+&V  Udskriv blok p} printer.      &X  Returner til kommandoniveau.
+
+&A  Skift til MOVE mode.          &C  Slet tegn til venstre.
+&H  Slet tegn til venstre.        &I  Geninds{t slettet tegn.
+&B  Tabuler i spring af 8 tegn.   &D  Start ny linie.
+&E  Slet til start af linie.      &F  Skift auto-tabulator.
+% COMPAS ON-LINE HJ[LP: Kommandolinier.
+
+N}r COMPAS er klar til at modtage og udf|re en kommandolinie, udskrives en dob-
+belt vinkel ('>>'). De nedenfor viste kommandoer er tilg{ngelige:
+
+LOAD      L{s kildetekst fra disk.      SAVE      Gem kildetekst p} disk.
+EDIT      Start editor.                 COMPILE   Overs{t kildetekst.
+RUN       Start k|rsel af program.      PROGRAM   Overs{t til programfil.
+OBJECT    Overs{t til objektfil.        FIND      Find k|rselsfejl i tekst.
+WHERE     Find fejl i include-fil.      DIR       Udskriv directory af disk.
+NEW       Aktiver nyindsat diskette.    MEMORY    Udskriv lagerparametre.
+ZAP       Slet hele kildeteksten.       HELP      Udskriv hj{lpetekster.
+QUIT      Returner til CP/M.
+
+Bem{rk, at alle kommandoer kan forkortes til det f|rste bogstav.
+
+Yderligere hj{lpetekst om en af de ovenst}ende kommandoer f}s ved at taste
+'HELP' eller 'H' efterfulgt af kommandoen (eller det f|rste tegn i den). En
+oversigt over editorkommandoer f}s ved at taste 'HELP *', eller ved at trykke
+@G i editoren.
+%ECOMPAS ON-LINE HJ[LP: EDIT kommandoen.
+
+EDIT kommandoen starter editoren. Denne arbejder i to forskellige modes: MOVE
+mode og EDIT mode. MOVE mode bruges, n}r mark|ren flyttes rundt i teksten, og
+EDIT mode n}r der inds{ttes eller slettes tegn. Ved start v{lger editoren auto-
+matisk MOVE mode. @A n|glen bruges til at skifte mellem MOVE og EDIT.
+
+Hvergang EDIT mode bruges til at slette tegn, bliver disse tegn gemt i en edit-
+buffer. Ved at trykke @W (i MOVE mode) kan edit-bufferens indhold kopieres
+ind i teksten p} ethvert sted. N}r st|rre blokke af tekst skal slettes, flyttes
+eller kopieres, bruges @T til at markere slutningen af blokken. Ved der-
+efter at flytte til begyndelsen af blokken og trykke @U, slettes alle tegn
+mellem mark|ren og m{rket. F|r de slettes gemmer editoren dog en kopi i edit-
+bufferen, og denne kan senere geninds{ttes som beskrevet ovenfor.
+
+N}r auto-tabulatoren er aktiveret, laver editoren automatisk en indrykning hver
+gang en ny linie startes. Indrykningen svarer altid til linien ovenover.
+
+Yderligere beskrivelse af editorens virkem}de findes i kapitel 3 i COMPAS Bru-
+germanualen.
+
+En oversigt over editorens kommandoer f}s ved at taste 'HELP *' eller ved at
+trykke @G i editoren.
+%LCOMPAS ON-LINE HJ[LP: LOAD kommandoen.
+
+LOAD kommandoen bruges til at indl{se en kildetekst fra en diskfil. Kommando-
+liniens format er:
+
+        LOAD <filnavn>
+
+Systemet v{lger automatisk '.PAS' hvis filtypen udelades. N}r en kildetekst
+indl{ses, bliver den lagt i forl{ngelse af den kildetekst, der allerede findes
+i arbejdslageret. Hvis filen ikke findes, udskriver COMPAS 'No such file', og
+hvis der ikke er plads til filen i arbejdslageret, udskriver COMPAS 'File too
+big'. Den kildetekst der eventuelt allerede findes i lageret, ber|res ikke af
+de ovenn{vnte fejl.
+%SCOMPAS ON-LINE HJ[LP: SAVE kommandoen.
+
+SAVE kommandoen bruges til at gemme kildeteksten i arbejdslageret i en diskfil.
+Kommandoliniens format er:
+
+        SAVE <filnavn>
+
+Systemet v{lger automatisk '.PAS' hvis filtypen udelades. Filer af samme navn,
+som det der angives, f}r deres type {ndret til '.BAK', f|r den nye fil opret-
+tes. Hvis diskettens directory er fuldt, udskriver COMPAS 'Directory is full',
+og hvis disketten er fuld, udskriver COMPAS 'Disk is full'. Hvis en af disse
+fejl rapporteres, s} inds{t en anden diskette, tast 'NEW', og brug derefter
+SAVE igen.
+%CCOMPAS ON-LINE HJ[LP: COMPILE kommandoen.
+
+N}r compileren startes fra en COMPILE kommando, bliver objektkoden gemt direkte
+ud i arbejdslageret, umiddelbart efter kildeteksten.
+
+Efter endt overs{ttelse (forudsat at der ikke blev fundet en fejl) informerer
+systemet om st|rrelsen af objektkoden og dataarealet, samt antallet af ledige
+bytes:
+
+        Code: rrrrr bytes (aaaa-bbbb)
+        Free: sssss bytes (cccc-dddd)
+        Data: ttttt bytes (eeee-ffff)
+
+Tallene i parentes er start- og slutadresserne (i hexnotation) p} det p}g{ld-
+ende omr}de.
+
+Bem{rk, at n}r editoren anvendes, bliver en eventuel objektkode slettet.
+%RCOMPAS ON-LINE HJ[LP: RUN kommandoen.
+
+RUN kommandoen bruges til at starte k|rsel af programmet. Hvis der ikke findes
+en objektkode, n}r kommandoen gives, bliver compileren startet for at overs{tte
+kildeteksten. Forudsat at der ikke blev fundet en fejl under overs{ttelsen, el-
+ler hvis objektkoden allerede er til stede, startes programmet. N}r det slut-
+ter, bliver kontrollen automatisk overgivet til COMPAS kommandoniveauet.
+
+Hvis der opst}r k|rselsfejl under udf|relsen af programmet, bliver det stoppet,
+og en fejlmeddelelse udskrives:
+
+        EXECUTION ERROR 04 AT PC=054E
+        Program terminated
+
+FIND kommandoen kan da bruges til at finde den s{tning, der var skyld i fejlen
+(se 'HELP FIND' hj{lpeteksten).
+%PCOMPAS ON-LINE HJ[LP: PROGRAM kommandoen.
+
+N}r compileren startes fra en PROGRAM kommando, bliver objektkoden lagret i en
+diskfil. Mulige kommandolinier er:
+
+        PROGRAM <filnavn>
+        PROGRAM <filnavn>,<start>
+        PROGRAM <filnavn>,<start>,<slut>
+        PROGRAM <filnavn>,,<slut>
+
+hvor <start> og <slut> er hex-adresser (op til fire hexcifre). Systemet v{lger
+automatisk '.COM' hvis filtypen udelades.
+
+<start> angiver objektkodens startadresse. Hvis <start> udelades, bliver slut-
+adressen p} run-time programdelen automatisk valgt. <slut> angiver adressen p}
+toppen af programmets arbejdslager. Hvis <slut> udelades, bliver den nuv{rende
+adresse p} toppen af arbejdslageret valgt (denne bestemmes af CP/M operativ-
+systemet). Bem{rk, at programmer, der er oversat til en given st|rrelse af
+arbejdslageret, ikke kan k|res p} systemer med mindre arbejdslager.
+
+F|rend kildeteksten overs{ttes, skrives COMPAS en kopi af run-time programdelen
+ud i diskfilen. Efter endt overs{ttelse, kan programmet startes fra CP/M blot
+ved at taste dets navn.
+%OCOMPAS ON-LINE HJ[LP: OBJECT kommandoen.
+
+OBJECT kommandoen svarer til PROGRAM kommandoen, med den undtagelse, at run-
+time programdelen ikke medtages i den diskfil, der genereres af compileren.
+Desuden er det ikke '.COM' der automatisk bliver valgt, men i stedet '.OBJ'.
+Objektfiler kan kun startes ved et kald til chain standardproceduren fra en
+anden COMPAS programfil. Yderligere beskrivelse heraf findes i kapitel 18 i
+COMPAS Programmeringsmanualen.
+%FCOMPAS ON-LINE HJ[LP: FIND kommandoen.
+
+FIND kommandoen bruges til at finde en s{tning i kildeteksten, der svarer til
+en given adresse i objektkoden. Mulige kommandolinier er:
+
+        FIND
+        FIND <offset>
+
+hvor <offset> er den relative adresse i objektkoden p} den s{tning, der |nskes
+fundet. Adressen skal angives i hexnotation (op til fire hexcifre). Hvis <off-
+set> udelades, v{lger systemet automatisk adressen p} den sidste k|rselsfejl.
+S}ledes kan man, blot ved at taste 'FIND' efter en k|rselsfejl, finde den s{t-
+ning i kildeteksten, der er skyld i fejlen.
+
+Hvis compileren finder den adresse der angives, stopper den og udskriver 'Tar-
+get address found. Press <SPACE>'. Ved et tryk p} <SPACE> startes editoren, og
+mark|ren flytter automatisk til det sted i kildeteksten der blev fundet. I mod-
+sat fald udskriver compileren 'Target address not found', hvorp} den returnerer
+til kommandoniveauet.
+%WCOMPAS ON-LINE HJ[LP: WHERE kommandoen.
+
+WHERE kommandoen starter editoren og flytter mark|ren til en given position i
+kildeteksten. Mulige kommandolinier er:
+
+        WHERE
+        WHERE <offset>
+
+hvor <offset> er et hextal der angiver den relative adresse p} det sted i kil-
+deteksten, der |nskes fundet. Hvis <offset> ikke angives, v{lger systemet den
+relative adresse p} den sidste compilerfejl i en include-fil. Den f|lgende me-
+tode kan anvendes til at finde en compilerfejl, der forekom i en include-fil:
+Gem f|rst den nuv{rende programtekst med SAVE kommandoen, slet herefter teksten
+med ZAP kommandoen, indl{s include-filen med LOAD kommandoen, og giv tilsidst
+en WHERE kommando uden argument - denne vil starte editoren og flytte mark|ren
+til det sted hvor fejlen forekom.
+
+N}r editoren forlades, gemmes mark|rens relative adresse som den adresse, WHERE
+kommandoen anvender, n}r intet andet angives. Hvis man s}ledes bruger WHERE og
+ikke EDIT til at starte editoren, bliver mark|ren placeret p} det sted man
+sidst forlod og ikke i starten af kildeteksten.
+%DCOMPAS ON-LINE HJ[LP: DIR kommandoen.
+
+DIR kommandoen bruges til at udskrive en diskettes directory (bibliotek). For-
+matet af kommandolinien er:
+
+        DIR <ffn>
+
+hvor <ffn> er et flertydigt filnavn af samme format som det, der anvendes af
+CP/M systemets DIR kommando, dvs. et filnavn hvori sp|rgsm}lstegn (?) og stjer-
+ner (*) m} indg}.
+
+Et sp|rgsm}lstegn indikerer, at denne position kan indeholde ethvert tegn, og
+en stjerne indikerer, at resten af tegnene i det p}g{ldende felt (navnet eller
+typen) kan v{re hvad som helst. Hvis b}de navnet og typen udelades, alts} hvis
+kun drive-identifieren og det efterf|lgende kolon angives, udskrives navnene p}
+alle filer p} den p}g{ldende diskette. Hvis <ffn> udelades fuldst{ndigt, ud-
+skrives navnene p} alle filer p} auto-disketten.
+%NCOMPAS ON-LINE HJ[LP: NEW kommandoen.
+
+NEW kommandoen bruges til at aktivere en nyindsat diskette og til at {ndre
+auto-disketten. Mulige kommandolinier er:
+
+        NEW
+        NEW <drive>:
+
+hvor <drive> er en drive-identifier (A-P). En NEW kommando skal udf|res hver
+gang der skiftes diskette i en af diskettestationerne (ellers risikerer man,
+at CP/M giver en R/O fejl n}r man pr|ver at skrive p} disketten). Hvis <drive>
+angives, bliver auto-disketten sat til denne diskstation.
+%MCOMPAS ON-LINE HJ[LP: MEMORY kommandoen:
+
+MEMORY kommandoen udskriver st|rrelsen af kildeteksten og det ubrugte arbejds-
+lager:
+
+        Text: rrrrr bytes (aaaa-bbbb)
+        Free: sssss bytes (cccc-dddd)
+
+hvor tallene i parentes er start- og slutadresserne (i hexnotation) for det p}-
+g{ldende omr}de.
+%ZCOMPAS ON-LINE HJ[LP: ZAP kommandoen.
+
+ZAP kommandoen sletter den nuv{rende kildetekst. Som en sikkerhedsforanstalt-
+ning sp|rger kommandoen 'Are you sure (Y/N)?'. Teksten slettes kun hvis der
+svares 'Y' eller 'y'.
+%QCOMPAS ON-LINE HJ[LP: QUIT kommandoen.
+
+QUIT kommandoen afslutter COMPAS og returnerer til CP/M. COMPAS kan senere
+varmstartes med kommandolinien 'COMPAS *'. Dette kr{ver dog, at der ikke i
+mellemtiden er k|rt programmer, der har overskrevet dele af arbejdslageret.
+

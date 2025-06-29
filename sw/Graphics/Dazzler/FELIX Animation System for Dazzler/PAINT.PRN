@@ -1,0 +1,42 @@
+                        * THIS IS MOSHELL'S FAMOUS "PAINTER" PROGRAM
+
+                        * BY NOW YOU HAVE HEARD ABOUT IT IN SONG AND STORY
+
+                        ; NOW IS YOUR CHANCE TO SEE IT IN REAL LIFE
+
+                        	;WE START AT 200H
+
+                        MAIN:	ORG	200H
+0200=>
+                        SR	EQU	SWREG
+000F=
+                        	RESCALE	%JS1X,%5
+0200=>1C 08 05 
+                        	RESCALE %JS1Y,%5
+0203=>1C 09 05 
+                        LOOP:	ONLIST	1,?SR
+0206=>06 A0 0100 6F 
+                        	FLY	?SR,?JS1X,?JS1Y
+020B=>08 6F 68 69 
+                        	RECOLOR	?SR,%WHITE+BRIGHT
+020F=>1D 6F 0F 
+                        	SHOW
+0212=>01 
+                        	RECOLOR	?SR,?BUTTONS
+0213=>1D 6F 6E 
+                        	COMP	?BUTTONS,%0
+0216=>11 6E 00 
+                        	JZ	LOOP
+0219=>E4 0602
+                        	BACKGRND ?SR	;IF A BUTTON WAS PUSHED,PAINT THE
+021C=>0F 6F 
+                        			;OBJECT INTO THE BACKGROUND.
+
+                        	JUMP	LOOP
+021E=>E0 0602
+                        
+       	JZ	LOOP
+0219=>E4 0602
+                        	BACKGRND ?SR	;IF A BUTTON WAS PUSHED,PAINT THE
+021C=>0F 6F 
+                        			;OBJECT INTO T

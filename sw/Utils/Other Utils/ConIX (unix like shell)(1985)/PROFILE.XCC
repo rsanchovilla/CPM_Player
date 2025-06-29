@@ -1,0 +1,98 @@
+#
+#	PROFILE V22.12a - Start-Up Command Profile for Shareware System
+#			  Reads default settings from PROFILE.SET file
+#			  as manipulated by MENU Pull-Down Menu System
+#
+#	Copyright (C) 1986, Computer Helper Industries Inc.
+#	All rights reserved worldwide.
+#
+
+: profile
+
+# dimension variables
+#dim filbuf(3840), chain_str(256), fpos(32), linctr(224), comstr
+#dim startstr="Welcome to ConIX System/One!"
+
+# Disable user interrupts
+onint -
+pipe
+
+ConIX Shareware Version #0986SC
+Copyright (C) 1986, Computer Helper Industries Inc.
+
+Thank you for trying our ConIX Software.  If you would like to
+register your copy and receive the latest complete version of our
+Operating System, please contact us at Post Office Box 680, 
+Parkchester Station, NY 10462.
+
+!
+# We said our mind, re-enable interrupts
+onint +
+
+# trap any errors
+trap fatal
+# check if the settings file exists
+if - find $%d:$%u/profile.set > :nul; then
+	# no, create it
+	echo "#STARTUP; echo \"{startstr}\"" > profile.set
+	# announce its creation
+	echo "Configuration file PROFILE.SET not found - initialized on $%D:$%U/."
+endif
+# read startup file
+type profile.set > @{filbuf}-{{filbuf}}
+# make sure we didn't overflow
+if test &$%M &{{filbuf}}; then
+	echo "$%D:$%U/PROFILE.SET too large or incorrect - aborting."
+	exit 1
+endif
+# init saved startup chain string
+echo \\ > @{chain_str}
+# init place counter
+zap {fpos} 00 01
+# init line counter
+echo 0\\ > @{linctr}
+# loop through entries
+while type <[k={fpos},p={fpos},n=1] @{filbuf}-{{filbuf}} > @; scmp "$@" "<>" ""
+do
+	# increment counter
+	sum $@{linctr} 1 > @{linctr}
+	# check if entry starts as a comment
+	if index # "$@" > :nul; then
+		# yes, save comment
+		parg 1 $@ > @{comstr}
+		# some internal mechanism for MENU
+		# strip the comment
+		index " " "$@" > :nul
+		substr &$$0 255 "$@" > @
+		# check if startup command
+		if scmp "$@{comstr}" = "#STARTUP;"; then
+			# yes, save it for later - we will chain
+			# to this sequence when done
+			echo "$@\\" > @{chain_str}
+			continue
+		endif
+	endif
+	# here, execute command in $@
+	[i=2] exec _n$@
+end
+# check if startup command was loaded
+if scmp "$@{chain_str}" "<>" ""; then
+	# yes, execute it now
+	[i=2] exec _n$@{chain_str}
+endif
+# done
+exit
+
+#
+#	fatal - execution errors trapped here
+#
+
+: fatal
+
+echo
+echo "PROFILE: Fatal execution error \\"
+# check if we processed PROFILE.SET yet
+test $@{linctr} 0 || echo "line $@{linctr} PROFILE.SET \\"
+echo "- aborting."
+exit 1
+

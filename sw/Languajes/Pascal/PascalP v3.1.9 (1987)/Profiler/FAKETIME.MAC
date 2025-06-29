@@ -1,0 +1,104 @@
+title	'FAKETIMEr for profiling (87/01/10)'
+;
+; Copyright (c) 1984, 1987 by C. B. Falconer.  All rights reserved
+;
+; Fake an interval timer for Profiling only.
+;
+; 1.1	87/01/10 Revised for interpreter 2.6.2, released with PascalP
+;	v 3.1.9.  The only difference is the location of "next"
+;
+; 1.0	84/11/02 This is an overlay to CPMLINK, in P-code system
+;	2.4.4., CP/M installation 3.1.  Other interpreter versions may
+;	require changes to this overlay.
+;
+; The major problem is to find the location that must be patched to
+; call the "where" location below.  This contains the repeated code
+; below (ldax b, inx b, mov e,a), and is preceded by
+;	(lhld ????,; mov c,l; mov b,h).
+; The main stream of "jmps" from 0100h leads to this code point, known
+; as "next".  Ignore any conditional jumps or calls in tracing.
+; Install (call 0139h) there, and load this overlay.
+;
+; This intercept wil slow RUNPCD down perceptibly (5-10%).
+;
+; Various unclean programming practices have been used (non-pure)
+; to fit this into the available patch space.
+;
+;
+; ****************** C A U T I O N *******************
+; * This is interpreter specific, and probably wrong *
+; ****************** C A U T I O N *******************
+next	equ	0b78h;		ver 2.6.2
+;next	equ	0c1bh;		ver 2.44.
+;
+;
+	org	0127h;		the calling vector
+	jmp	timers
+;
+; ***************** C A U T I O N ****************
+; *  Make sure this agrees with CPMLINK module   *
+; ***************** C A U T I O N ****************
+	org	0139h;		CPMLINK patch space
+;
+; counter, called on each p-code fetch
+; bc must not be altered
+where:	lxi	h,$-$;		Operand holds routine address.
+	mov	a,h
+	ora	l
+;	"	"
+; Replace the "next" code removed by the "call where"
+; results (a,b,c,e) must not be altered before returning.
+	ldax	b
+	inx	b
+	mov	e,a;
+;	"	"
+	rz;			not on
+	lxi	h,pcnt
+	inr	m
+	rnz
+	mvi	m,-30;		at 2Mhz clock about 5ms interval
+	inx	h
+	inr	m
+	rnz
+delta1:	mvi	m,$-$
+	inx	h
+	inr	m
+	rnz
+delta2:	mvi	m,$-$;		now we have timed out, execute
+	lhld	where+1
+	pchl;			go do it
+;
+; Receive the ".timers" call, intercept 4 (stop) and 6 (start)
+; The connector at 0127h must be patched to transfer here
+timers:	sui	4
+	mov	h,a
+	mov	l,a;		if input was 4 these are zeroes
+	jz	stop;		the profiling process
+	dcr	a
+	dcr	a;		if result zero then input was 6
+	stc
+	rnz;			not for us
+	mov	a,b;		Start the profiler running
+	sta	delta1+1
+	mov	a,c
+	sta	delta2+1
+	push	b
+	pop	h
+	shld	ctr;		init counter
+	xchg;			routine pointer
+stop:	shld	where+1;	non-zero means on
+	ora	a;		clear carry, executed
+	ret
+;
+pcnt:	ds	1;		counts p-code fetches
+ctr:	ds	2;		two cascaded 1 byte ctrs.
+;
+	if	$ gt (where+040h)
+	 +++	error, overlay too big ++
+	endif
+;
+	org	next
+	call	where
+;
+	end
+Æ!

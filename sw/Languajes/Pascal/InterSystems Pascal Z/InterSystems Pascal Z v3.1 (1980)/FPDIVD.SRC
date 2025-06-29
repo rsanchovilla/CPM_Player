@@ -1,0 +1,86 @@
+; floating point divide routine
+;
+	NAME FPDIVD
+	ENTRY FDIVD,FDIVD1
+	EXT FPERR,MPSUB,DONE2
+	INCLUDE FPINIT.SRC
+	INCLUDE FPMAC.SRC
+;
+fdivd:	setupf			;setup for 2 operands
+fdivd1:	zchk	2		;check for division by zero
+	jz	fperr
+	mov	a,op1+msb(x)	;get sign of op1
+	xra	op2+msb(x)	;x-or with sign of op2
+	mov	scr1(x),a	;save sign of result
+	mov	a,op1(x)	;get exponent of op1
+	inr	a		;compensate for algorithm
+	sub	op2(x)		;subtract exponent of op2
+	jv	fperr		;floating point error
+	mov	op1(x),a	;save exponent of result
+	res	sign,op1+msb(x)	;clear sign bits in op1...
+	res	sign,op2+msb(x)	;...and op2
+	lxi	h,-nbytes	;add extra variable to stack
+	dad	s		;for use in intermediate
+	sphl			;calculations
+	push	h		;save addr of lsb
+	xra	a		;zero temporary variable
+	mvi	b,nbytes	;zero correct number of bytes
+zerlp:	mov	m,a		;zero this byte
+	inx	h		;bump pointer
+	djnz	zerlp		;and continue
+	dcx	h		;correct pointer
+	push	h		;make y point to this
+	pop	y		;temporary variable
+	mvi	b,fracln*8-1	;process all bits in mantissa
+divlp:	
+	push	d		;save base reg
+	push	b		;save counter
+	lxi	h,op1		;get addresses of two operands
+	dad	d
+	xchg			;de <- hl = addr( op1 )
+	lxi	b,op2
+	dad	b		;hl = addr( op2 )
+	mvi	b,fracln	;process at most all bytes
+divd1:	dcx	h		;bump pointers
+	dcx	d
+	ldax	d		;get byte from op1
+	cmp	m		;compare with byte from op2
+	jrc	divd2		;too big don't subtract
+	jrnz	divd1a		;continue if zero
+	djnz	divd1		;stop when done
+	inr	b		;make the next loop do nothing
+divd1a:	dcx	h
+	dcx	d
+	djnz	divd1a
+	inx	h
+	inx	d
+divd1b:	call	mpsub		;subtract divisor from dividend
+	ora	a		;clear carry
+divd2:	pop	b		;restore counter
+	pop	d		;restore base reg
+	push	psw		;save carry
+	rotate	y,left		;shift result right one bit
+	pop	psw		;get carry
+	jrc	divd3		;don't set a bit
+	bset	0,lsb(y)	;set least significant bit
+divd3:	rotate	1,left		;shift dividend left 1 bit
+	djnz	divlp		;...and continue
+	lxi	h,op1+lsb	;calculate addr of op1
+	dad	d
+	pop	d		;get addr of temp variable
+	mvi	b,fracln	;and copy to op1
+coplp:	ldax	d		;get byte from temp
+	mov	m,a		;store in op1
+	inx	h		;bump pointers
+	inx	d
+	djnz	coplp
+; fix stack
+	lxi	h,nbytes	;size of temp variable
+	dad	s		;+ stack pointer
+	sphl			;is original value of sp
+	bit	sign,scr1(x)	;fix sign of result
+	jz	done2
+	bset	sign,op1+msb(x)
+	jmp	done2
+;
+

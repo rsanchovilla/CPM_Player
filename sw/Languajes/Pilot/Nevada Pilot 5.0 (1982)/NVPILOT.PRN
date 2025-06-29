@@ -1,0 +1,182 @@
+                           * NEVADA PILOT, Version 5.0. Copyright 1981, 1982 J. Starkweather
+                           *
+                           * This information may be used to configure PILOT for terminals
+                           * not offered as choices during initial setup.
+                           * Use DDT as follows: "DDT PILOT.COM"  Then return to CP/M
+                           * and type: "SAVE 61 PILOT.COM" to create a working PILOT.
+                           *       Users of MP/M must use a different SAVE procedure described
+                           *       in the MP/M manual (see V and W command).
+                           *       MP/M 1.1 must have CONSW set to non-zero.
+                           *
+     0000                  RELOC  EQU    0      STD 0, TRS-80 4200H
+     0100                  ENTRY  EQU    100H+RELOC  NORMAL ENTRY ADDRESS
+     0103                  RNTRY  EQU    103H+RELOC  REENTRY ADDRESS
+     000D                  CR     EQU    0DH
+     000A                  LF     EQU    0AH
+     0008                  BSP    EQU    08H
+     0001                  EOF    EQU    01H
+     0050                  MLINE  EQU    80     MAX INPUT LINE AT STARTUP
+     0050                  LLEN   EQU    80     MAX. LINE LENGTH
+     0018                  LMAX   EQU    24     MAX. NO. OF LINES
+                           *
+                           *
+0100                              ORG    ENTRY  NORMAL STARTUP
+0100 C3 24 0A                     JMP    START
+0103                              ORG    RNTRY  NORMAL RESTART
+0103 C3 B9 0A                     JMP    RSTRT
+                           *
+                           * I/O JUMP TABLE
+                           *
+0106 C3 20 32              CONTST JMP    CTST   CONSOLE STATUS (uses CP/M function 6)
+0109 C3 0A 32              CONIN  JMP    CIN    CONSOLE INPUT  (uses CP/M function 6)
+                           * For CP/M versions below 2, and for MP/M version 1.1,
+                           *   STATUS & INPUT use BIOS directly
+                           *   This will also occur if CONSW (below) is set non-zero.
+010C C3 CC 32              CONOUT JMP    COUT   CONSOLE OUTPUT from B (uses CP/M function 2)
+010F C3 E6 32              AOUT   JMP    LISTCH  LIST OUTPUT from B    (uses CP/M function 5)
+0112 C3 F3 32              PUNCH  JMP    PNCH   OUT TO PARALLEL PORT  (uses CP/M function 4)
+0115 C3 00 33              READER JMP    RDR    IN FROM PARALLEL PORT (uses CP/M function 3)
+                           * PUNCH & READER should reference a parallel port for
+                           * control of video cassette playback.  See "VIEW:"
+                           *
+                           *     SYSTEM DATA
+                           *
+0118 DB 38                 PRGBT  DW     PBUFB  Beginning address of PILOT program area
+011A 00 00                 PRGTP  DW     0      End addr of PILOT prm. area (reset by "SET:M= ")
+011C FF FF                 MEMTP  DW     0FFFFH  Upper limit of contiguous memory (set at STARTUP)
+                           * MEMTP may be preset lower to avoid a memory area below CP/M
+011E F3 02                 PATIM  DW     2F3H   Pause timing factor- default for 2MH CPU
+0120 FF                    AUTOLF DB     0FFH   If non-zero, avoids auto LF at end of line
+0121 00                    CONFG  DB     0      Terminal identity
+0122 00                    CONSW  DB     0      If non-zero, console input will use BIOS directly
+0123 00 00                 T1     DW     0      delay after line feed to crt
+0125 00 00                 T2     DW     0      delay after cursor escape seq to crt
+0127 00 00                 T3     DW     0      delay after screen clear to crt
+0129 00 00                 T4     DW     0      delay after crt delete line
+012B 00 00                 T5     DW     0      delay after crt insert line
+012D 00                    FULPG  DB     0      If non-zero, scrolling will be full page
+012E 00                    UCASE  DB     0      If non-zero, console output will be upper case
+012F 00                    OSBSW  DB     0      If non-zero, top line will blank on insert (Osborne)
+0130 FF                    LLLC   DB     -1     If non-zero, don't display last line last char
+                           *
+                           * CONFIGURING TABLE
+                           *
+0131 18                    LINES  DB     24     # OF LINES ON SCREEN (REPLACES LMAX)
+0132 50                    CHARS  DB     80     # OF CHARACTERS PER LINE (REPLACES LLEN)
+0133 00 00                 VMEM   DW     00000H  ADDRESS OF MEMORY MAPPED VIDEO (0000 IF UNUSED)
+                           *                       CONTROLS CA thru NSHFT = 0 IF USED
+                           *
+                           *
+                           * CONTROL SEQUENCES FOR OUTPUT TO TERMINAL
+                           * First byte is a count of characters to be sent to the
+                           * terminal, followed by the characters themselves.
+                           *
+                           *  THE FOLLOWING ARE REQUIRED FOR POSITIONING THE CURSOR
+                           *
+0135 00 00 00 00           CA     DB     0,0,0,0,0,0,0,0,0  cursor direct address, lead chars
+                           * (2,1BH,59H,0,0,0,0,0,0 is an example)
+013E 00 00 00 00           CURSEP DB     0,0,0,0,0  cursor position, line/col separator chars
+0143 00 00 00 00           CUREND DB     0,0,0,0,0  cursor position, end chars
+0148 00                    LINADD DB     0      add offset to line   (20H is often used)
+0149 00                    COLADD DB     0      add offset to column (20H is often used)
+014A 00                    CBL    DB     0      column before line flag, if zero, line is before col
+                           *
+                           *  THE FOLLOWING ARE OPTIONAL, USED IF COUNT IS NON-ZERO
+                           *  The first three will speed up editing
+                           *
+014B 00 00 00 00           CH     DB     0,0,0,0,0,0,0  clear screen, home cursor
+0152 00 00 00 00           IL     DB     0,0,0,0,0,0,0  insert line
+0159 00 00 00 00           DL     DB     0,0,0,0,0,0,0  delete line
+0160 00 00 00 00           RVON   DB     0,0,0,0,0,0,0  rev video on
+0167 00 00 00 00           RVOFF  DB     0,0,0,0,0,0,0  rev video off
+016E 00 00 00 00           TRES   DB     0,0,0,0,0,0,0  reset terminal
+0175 00 00 00 00           CON    DB     0,0,0,0,0,0,0  cursor on
+017C 00 00 00 00           COFF   DB     0,0,0,0,0,0,0  cursor off
+0183 00 00 00 00           SHFT   DB     0,0,0,0,0,0,0  shift keypad
+018A 00 00 00 00           NSHFT  DB     0,0,0,0,0,0,0  unshift keypad
+                           *
+                           *
+0191 00 00 00              SSUBR  DB     0,0,0  Jump to user startup subroutine
+0194 00 00 00              FSUBR  DB     0,0,0  Jump to user finish subroutine
+                           *  User subroutines may be put in USRPCH area (below)
+                           *
+0197 00 00 00              USRCA  DB     0,0,0  Jump to user CA routine.  If first byte is
+                           * non-zero, then your special cursor address routine at USRPCH
+                           * will be used.  Your routine will find cursor X & Y values
+                           * in VLX & VLY loc.  Create entire output string starting in CA
+                           * location, then call SDROT to send each character to terminal.
+                           *
+019A 00                    VLX    DB     0      cursor column address
+019B 00                    VLY    DB     0      cursor line address
+                           *
+     019C                  USRPCH EQU    $      USER PATCH AREA
+019C                              DS     100
+                           *
+                           ** KEYBOARD INPUT TO EDITOR
+                           * The default control characters may be changed either to
+                           * another control character or to a single character that will
+                           * be recognized following ESCape (1BH).  For example, if a
+                           * special key sends ESC, then "S", put 53H (S) in the table.
+                           *
+0200 17                    KCU    DB     'W'-40H  CURSOR UP ONE LINE
+0201 1A                    KCD    DB     'Z'-40H  CURSOR DOWN ONE LINE
+0202 01                    KCL    DB     'A'-40H  CURSOR LEFT ONE CHAR
+0203 13                    KCR    DB     'S'-40H  CURSOR RIGHT ONE CHAR
+0204 14                    KICY   DB     'T'-40H  INSERT CHAR MODE ON
+0205 14                    KICN   DB     'T'-40H  INSERT CHAR MODE OFF
+0206 07                    KDC    DB     'G'-40H  DELETE CHAR UNDER CURSOR
+0207 02                    KIL    DB     'B'-40H  INSERT LINE ABOVE CURSOR
+0208 10                    KDL    DB     'P'-40H  DELETE LINE
+0209 0E                    KCH    DB     'N'-40H  CURSOR TO UPPER LEFT (HOME)
+020A 05                    KSU    DB     'E'-40H  SCROLL UP ONE LINE
+020B 18                    KSD    DB     'X'-40H  SCROLL DOWN ONE LINE
+020C 12                    KPU    DB     'R'-40H  SCROLL UP 1/2 SCREEN
+020D 03                    KPD    DB     'C'-40H  SCROLL DOWN 1/2 SCREEN
+020E 11                    KCM    DB     'Q'-40H  CURSOR TO MID LINE, COL. 1
+020F 16                    KSS    DB     'V'-40H  INITIATE STRING SEARCH MODE
+0210 0C                    KSC    DB     'L'-40H  CONTINUE SEARCH FOR STRING
+0211 0F                    KRV    DB     'O'-40H  TOGGLE REVERSE VIDEO
+0212 06                    KEX    DB     'F'-40H  EXIT FROM EDITOR OR SEARCH MODE
+0213 00                           DB     0
+                           *
+                           * ERROR MESSAGES - May be up to 40 characters long.
+                           *
+0214 2A 55 4E 52           ILLPLT ASC    "*UNRECOGNIZED PILOT STATEMENT           "
+023C 0D                           DB     CR
+023D 20 2D 4E 4F           BLMSG  ASC    " -NOT FOUND                             "
+0265 0D                           DB     CR
+0266 2A 4E 4F 20           NRMSG  ASC    "*NO ROOM                                "
+028E 0D                           DB     CR
+028F 2A 49 4C 4C           EXPMSG ASC    "*ILLEGAL EXPRESSION                     "
+02B7 0D                           DB     CR
+     02B8                  UNFMSG EQU    $
+02B8 2A 56 41 4C           OVFMSG ASC    "*VALUE OUT OF RANGE (-32768 TO 32767)   "
+02E0 0D                           DB     CR
+02E1 2A 55 53 45           STMSG  ASC    "*USE DEPTH EXCEEDED                     "
+0309 0D                           DB     CR
+030A 2A 4E 55 4D           NMSG   ASC    "*NUMERIC RESPONSE REQUIRED              "
+0332 0D                           DB     CR
+0333 43 4C 4F 53           CLERR  ASC    "CLOSE ERROR                             "
+035B 0D                           DB     CR
+035C 43 52 45 41           CRERR  ASC    "CREATE ERROR                            "
+0384 0D                           DB     CR
+0385 49 4C 4C 45           DRERR  ASC    "ILLEGAL DRIVE                           "
+03AD 0D                           DB     CR
+03AE 49 4C 4C 45           FERR   ASC    "ILLEGAL FUNCTION NO.                    "
+03D6 0D                           DB     CR
+03D7 49 4C 4C 45           FILERR ASC    "ILLEGAL FILE N0.                        "
+03FF 0D                           DB     CR
+0400 49 4C 4C 45           NMERR  ASC    "ILLEGAL NAME                            "
+0428 0D                           DB     CR
+0429 46 49 4C 45           NTOPN  ASC    "FILE NOT OPEN                           "
+0451 0D                           DB     CR
+0452 46 49 4C 45           OPNERR ASC    "FILE NOT FOUND                          "
+047A 0D                           DB     CR
+047B 54 4F 4F 20           OPNMAX ASC    "TOO MANY FILES OPEN                     "
+04A3 0D                           DB     CR
+04A4 44 49 53 4B           WRERR  ASC    "DISK WRITE ERROR                        "
+04CC 0D                           DB     CR
+04CD 45 4E 44 20           EOFMSG ASC    "END OF FILE                             "
+04F5 0D                           DB     CR
+                           *
+

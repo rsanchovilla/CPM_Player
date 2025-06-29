@@ -1,0 +1,300 @@
+                      UNLZH.REL and CRLZH.REL Documentation
+               for Version 2.0 (with RUNTIME buffer allocation)
+                                   July  1991
+
+                                    Abstract
+                                   ----------
+
+   UNLZH.REL and CRLZH.REL contain assembly language routines for the decoding 
+   and generation of LZH-encoded files, respectively.  The routines need only 
+   be supplied with a pointer to a large scracth area and linkages to character 
+   input and character output routines to be used.  There are a few easily met 
+   functional requirements for the calling routine and I/O routine.
+
+   No Z80 opcodes are used, so these routines may be used on 8080/8085/V20/Z80 
+   based machines.
+
+   The coding contained within UNLZH.REL and CRLZH.REL are Copyright (c) 1989, 
+   1991 by Roger Warren and may not be used or reproduced on a for-profit 
+   basis.  Non-profit use is freely permitted.  The author will not be 
+   responsible for any damage, loss, etc.  caused by the use of these programs.
+
+                        Version History and Compatibility
+                        ---------------------------------
+
+   Version 1.1 was released in Sept. '89 and was the first public offering of 
+   LZH encoding for CP/M.
+
+   Version 2.0 (July '91) introduces several improvements/changes:
+       More efficient encoding
+       Greater speed
+       More compact object code
+
+   There are NO interface changes from the 1.x version.
+
+   Of greatest importance is the encoding improvement.  This change, while 
+   generating even smaller output files, means that files compressed with 
+   version 2.x programs cannot be decoded by old 1.x programs.
+
+   However, the version 2.x UNLZH module DYNAMICALLY ADJUSTS for 1.x encoded 
+   input files.  Thus, version 2.x of UNLZH can be used on all LZH-encoded 
+   files regardless of which algorithm version was used to encode the files.
+
+   By extensive rewriting for size and speed, a 20% improvement in performance 
+   was achieved.  Since the LZH algorithm is intrinsically slow, this will be 
+   of great interest to many.  The recoding project allowed the incorporation 
+   of version 2.x extensions to the original algorithm while not appreciably 
+   affecting the code module size.
+
+                                Care and Feeding
+                               ------------------
+
+   The infomation that follows documents both CRLZH.REL and UNLZH.REL.  One or 
+   both may be in the library this file is in, depending upon the nature of 
+   the program(s) it's bundled with...so ignore the superfluous information 
+   (if any).
+
+   UNLZH.REL performs LZH decoding.  It's progamming interface is similar to 
+   the UNCR.REL it was made to mimic.  The programmer must provide the program 
+   with 8k of buffer space.  If RUNTIME buffer allocation is selected (it IS 
+   selected in the version supplied with LT, FCRLZH, CRLZH, and UCRLZH), a 
+   pointer to the buffer must be supplied in the H/L register pair when the 
+   routine is invoked.  If RUNTIME buffer allocation is not selected, the user 
+   must supply a PUBLIC symbol, UTABLE, which is the base of the provided 
+   buffer area.
+
+   Once invoked, the routine allocates its own stack and 'stays in control' 
+   until the de-compression is completed (or an error is encountered).  The 
+   programmer must supply two routines GLZHUN and PLZHUN, via which UNLZH 
+   'GETS' bytes from the input stream and 'PUTS' bytes to the output stream, 
+   respectively.
+
+
+   UNLZH *DOES NOT* compute/process checksums, etc. on the  input file.  Any 
+   support of such features must be handled externally.
+
+   GLZHUN and PLZHUN should save all registers except the A register and 
+   flags. GLZHUN must return the next character from the input stream in the A 
+   register.  GLZHUN should return with the CARRY flag RESET for a valid 
+   character, or with the CARRY flag SET when the end of the input stream is 
+   encountered (the content of the A reg should be zero in that case).
+
+   Upon exit (return to the caller), UNLZH returns the following information:
+
+              Carry reset (or A reg = 0) - Success
+              Carry set,  A reg = 1      - Newer version required
+              Carry set,  A reg = 2      - File not LZH endocoded
+              Carry set,  A reg = 3      - Bad or corrupt file
+              Carry set,  A reg = 4      - Insufficient memory
+
+   UNLZH has 2 entry points, to be used as the programmer needs:
+
+     UNLZH is the 'normal' entry point which expects the file to be completely 
+     REWOUND.  At this entry point, the entire file is processed - the 
+     standard header is examined, but not reported or acted upon.  By 
+     examining the return code, the programmer can discern if the file was, 
+     indeed, an LZH-encoded file and act accordingly.
+
+     UNL is a secondary entry point which can be used when the programmer 
+     needs to process the standard header information (file name and stamp) 
+     and cannot (or doesn't want to) rewind the file.  When this entry point 
+     is invoked, the header (down to and including the stamps/comment 
+     terminating zero) must have been processed (so the next byte in the input 
+     stream will be the revision level).
+      
+   The revision level of UNLZH.REL performs is at the byte at UNLZH-1.  A hex 
+   value of 11 indicates version 1.1, etc.
+
+   CRLZH.REL performs LZH encoding.  It's progamming interface is similar to 
+   the CRUNCH.REL it was made to mimic.	The programmer must provide the 
+   program with 20k of buffer space.  If RUNTIME buffer allocation is selected 
+   (it IS selected in the version supplied with LT, FCRLZH, CRLZH, and 
+   UCRLZH),a pointer to the buffer must be supplied in the H/L register pair 
+   when the routine is invoked.  If RUNTIME buffer allocation is not selected, 
+   the user must supply a PUBLIC symbol, CTABLE, which is the base of the 
+   provided buffer area.
+
+   In addition, at invocation time the A register must contain a value for 
+   CRLZH to install in the 'CHECKSUM FLAG' portion of the file header (see 
+   below).  This byte, to be semi-compatible with C.B. Falconer's version of 
+   CRN for the 8080, is a subset of CRN's strategy byte:
+
+                      value (hex)   meaning
+                      ----------------------------------------------------
+                           00       Standard modulo 65536 checksum is used
+                           10       CRC16 is used
+                           20,30    Unassigned
+
+   SUPPORT FOR CHECK INFORMATION MUST BE EXTERNALLY PROVIDED IN THE 
+   USER-SUPPLIED I/O ROUTINES (see below).  THIS IS ALSO TRUE OF CRN...BUT WAS 
+   NOT EMPHASIZED!  CRLZH merely provides the support for posting the value in 
+   the output stream since it happens to 'follow' some of the information 
+   posted by CRLZH (see the header description, below).
+
+   CRLZH supports no other features of the CRN's strategy byte, all other bits 
+   are ignored.
+
+   Once invoked, the routine allocates its own stack and 'stays in control' 
+   until the de-compression is completed (or an error is encountered).  The 
+   programmer must supply two routines GLZHEN and PLZHEN, via which CRLZH 
+   'GETS' bytes from the input stream and 'PUTS' bytes to the output stream, 
+   respectively.
+
+   CRLZH *DOES NOT* compute/process checksums, etc. on the  input file.  Any 
+   support of such features must be handled externally.  Specifically, the 
+   GLZHEN routine must provide for the accumulation of check information and 
+   the caller must write that check information to the output stream when 
+   CRLZH returns to the caller.
+
+   GLZHEN and PLZHEN should save all registers except the A register and 
+   flags. GLZHEN must return the next character from the input stream in the A 
+   register.  GLZHEN should return with the CARRY flag RESET for a valid 
+   character, or with the CARRY flag SET when the end of the input stream is 
+   encountered (the content of the A reg should be zero in that case).  As a 
+   service to the user's output processor, every 256th call to PLZHEN is made 
+   with the Z flag set (for monitoring).  All other times the Z flag is reset.
+
+   Upon exit (return to the caller), CRLZH returns the following information:
+
+              Carry reset (or A reg = 0) - Success
+              Carry set,  A reg = 1      - File already LZH-Encoded,CRUNCHed or
+                                           SQueezed
+              Carry set,  A reg = 2      - File empty
+              Carry set,  A reg = 3      - Insufficient memory
+
+   CRLZH has a single entry point at the label CRLZH.  The user must have 
+   placed the standard header information in the output stream and must have 
+   the input stream REWOUND prior to invoking CRLZH.
+
+   The revision level of CRLZH.REL performs is at the byte at CRLZH-1.  A hex 
+   value of 11 indicates version 1.1, etc.
+
+   Since CRLZH and UNLZH allocate their own stacks, the user is reminded not 
+   to make too large a use of that stack in the user-supplied I/O routines.  
+   In addition, if the user-supplied I/O routines decide to abort the CRLZH or 
+   UNLZH operation (due to operator keystrokes, for example), the user must 
+   take steps to restore his own stack.  Upon a normal (or error) return from 
+   CRLZH or UNLZH the user's stack is properly restored.
+ 
+                           STANDARD HEADER information
+                          -----------------------------
+
+   LZH encoding follows Steve Greenberg's CRUNCH file format.  The header 
+   contains information identifying compression format, original file name, 
+   etc:
+     field  size     value    Purpose
+   -----------------------------------------------------------------------  
+       1   1 byte    076h     Signifies compressed form
+       2   1 byte    0FDh     Signifies LZH encoding (0ff is for squeezed and
+                              0feh is for CRUNCHED)
+       3   variable  User     Original file name in the form name.ext Trailing
+                   supplied   blanks on the name portion should be suppressed,
+                              but a full 3 characters following the '.' should
+                              be used for the extension (i.e. no blank
+                              suppression).
+       4   variable  User     OPTIONAL.  Used for file comment/stamp.  If used
+                              the convention is that the comment is placed in
+                              square brackets [Like this].  Other information
+                              may be placed here (e.g., date stamp).  The
+                              logical restriction is that a binary zero must
+                              not be part of the comment and/or other informa-
+                              tion.
+       5   1 byte     00h     Signifies end of STANDARD HEADER
+   
+   For use of CRLZH, the user must supply all of the information above.
+
+   For UNLZH, use of the UNLZH entry point causes UNLZH to expect to process 
+   the above information.  It will discard the file name and optional 
+   comment/stamp, but will examine the general form (first 2 fields for a 
+   match and general form of the rest of the header).  If the user chooses to 
+   use the UNL entry point, UNL will expect to process the first byte 
+   following the end of the standard header.
+
+   What follows is the following:
+
+     field  size     value    Purpose
+   -----------------------------------------------------------------------  
+       6   1 byte  variable   Identifies generating program revision level.
+                              (11H signifies program generated by version 1.1
+       7   1 byte  variable   Significant revision level.  Indicates major
+                              revision level of algorithm for decoding program
+                              compatability. (10h indicates significant
+                              revision 1.0)
+       8   1 byte  variable   Check type.  0=checksum, 1=CRC16, others
+                              currently undefined.
+       9   1 byte     05h     Currently a SPARE, set to 05H by convention.
+
+   Following this is the compressed file, itself.
+
+                 What LZH compression does and how it compares
+                -----------------------------------------------
+
+   FIRST - It's SLOW.  Much slower than CRUNCH.  About even with the old 
+   SQueeze.  It's the nature of the algorithm, but the current implementation 
+   contributes somewhat (more on that later).
+
+   The most impressive aspect of the algorithm is that it compresses further 
+   than CRUNCH.  The nature of material being compressed is important - prose 
+   and high level language code will compress further.  Since the algorithm 
+   depends, in part, on patterns within the file being compressed, I was 
+   somewhat surprised to discover that it does a better job (in general) on 
+   .COM files than CRUNCH.  Personally, I was surprised to discover that LZH 
+   compression of CRUNCHed files is possible (but I've disabled that ability 
+   in this release)!
+
+   Examples:
+    CRUNCH of SLR180.COM   106% ratio   (actually made a larger file)
+    CRLZH  of SLR180.COM    84% ratio
+    CRUNCH of TYPELZ22.Z80  45% ratio
+    CRLZH  of TYPELZ22.Z80  40% ratio
+    CRUNCH of 'C' source    45% ratio   (typical 'C' src selected at random)
+    CRLZH  of 'C' source    33% ratio   (same file as above)
+
+                                A small history
+                               -----------------
+
+   I am NOT the originator of the LZH encoding.  The program that started my 
+   whole involvement in the introduction of this method of compression to the 
+   8-bit world bears the following opening comments:
+      /*
+      * LZHUF.C English version 1.0
+      * Based on Japanese version 29-NOV-1988
+      * LZSS coded by Haruhiko OKUMURA
+      * Adaptive Huffman Coding coded by Haruyasu YOSHIZAKI
+      * Edited and translated to English by Kenji RIKITAKE
+      */
+
+   This 'C' program implemented the compression algorithm of the LHARC program 
+   which arrived on the US scene in the spring of '89.
+
+   Being of a curious nature, I figured I'd play with the algorithm just to 
+   understand it (the internal comments were, indeed, sparse - leaving MUCH to 
+   the reader's contemplation/reverse engineering) while 'better minds' than I 
+   tackled it in earnest.
+
+   Months passed.  I found that I was 'mastering' the algorithm (read that as 
+   demonstrating to myself that I understood it) by converting it piece-wise 
+   to assembly language.  After a while, I was left with a 'C' language main 
+   program, run time library, and I/O with the business end of the compression 
+   and decompression implemented entirely in assembly language.  Since the 
+   expected event of one of the 'heavies' in the PD and/or compression world 
+   releasing a CP/M version of the compression algorithm hadn't come to pass, 
+   I set about making a version myself.
+
+   The natural choice was to prepare an analog to the CRUNCH.REL and UNCR.REL 
+   of Mr. Steven Greenberg and Mr. C.B. Falconer and append to/substitute in 
+   the existing, widely known programs for handling SQueezed and/or CRUNCHed 
+   files.
+
+   I saw no reason to tamper with the format CRUNCH uses on the output file.  
+   Therefore, with the exception of taking the 'next' file type in sequence 
+   (SQueezed files begin with a 76h,FFh sequence; Crunched files with 76h,FEh; 
+   so LZH encoded files begin with 076h,FDh) and setting the revision levels 
+   in the header to appropriate values , there's no difference in the output 
+   file format.  So, you can probably coax your time/date stamping into 
+   operating on LZH encoded files.
+
+R. Warren
+Sysop, The Elephant's Graveyard (Z-Node#9)
+619-270-3148 (PCP area CASDI)
+

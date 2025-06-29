@@ -1,0 +1,347 @@
+	TITLE	ProFortran housekeeping library (2)
+;
+	NAME	('G2LIB')
+;
+;	Date	05 June 1983
+;
+;	Copyright (C) 1983   Prospero Software
+;
+;	This module contains the routines for STOP and PAUSE,
+;	reporting run-time errors, and channelling BDOS calls.
+;
+;
+	.Z80
+;
+	ENTRY	$STOP,$STOPS,$PAUSE,$PAUSS,$ENDLN
+	ENTRY	$BDOS,$HALOC,$PERR,$HERR
+	ENTRY	$HPLM,$STKLM,$FACT,$UCHN,$HERAD,$DPRST
+;
+	EXT	$FCLAC
+;
+;
+;
+BASE	EQU	0		; CP/M base address
+BOOT	EQU	BASE+0
+BDOS	EQU	BASE+5		; BDOS entry point
+;
+GAP	EQU	256		; between heap and stack
+;
+;
+	DSEG
+;
+$HPLM:	DS	2		; upper limit of heap
+;
+$STKLM:	DS	2		; for stack limit check
+;
+$UCHN:	DS	2		; chain of i/o units
+;
+$FACT:	DS	2		; provision for Pascal
+;
+$HERAD:	DS	2		; error address
+;
+$DPRST:	DS	2		; entry to print routine
+;
+;
+	CSEG
+;
+;
+;	$STOP,$PAUSE		STOP & PAUSE processing
+;
+;
+$STOP:
+	LD	C,0
+	JR	STOP
+;
+$STOPS:
+	LD	C,1
+STOP:
+	LD	DE,STMESS		; 'STOP '
+	JR	STPS
+;
+;
+$PAUSE:
+	LD	C,2
+	JR	PAUSE
+;
+$PAUSS:
+	LD	C,3
+PAUSE:
+	LD	DE,PAMESS		; 'PAUSE '
+;
+STPS:
+	PUSH	BC
+	LD	C,9
+	CALL	$BDOS			; output STOP or PAUSE
+;
+	POP	BC
+	RR	C
+	JR	NC,STPS4		; no additional string
+;
+	POP	HL
+	EX	(SP),HL			; address of string
+;
+	LD	B,5			; string length
+STPS2:
+	LD	E,(HL)
+	CALL	CHOUT			; output string
+	INC	HL
+	DJNZ	STPS2
+;
+STPS4:
+	LD	E,0DH			; c/r
+	CALL	CHOUT
+	LD	E,0AH			; l/f
+	CALL	CHOUT
+;
+	RR	C
+	JP	C,RESTRT		; for PAUSE
+;
+$ENDLN:
+STPS6:
+	LD	HL,($UCHN)
+	PUSH	HL
+	CALL	$FCLAC			; close all active files
+;
+	JP	BOOT
+;
+;
+STMESS:	DB	0DH,0AH,'STOP $'
+PAMESS:	DB	0DH,0AH,'PAUSE $'
+;
+;
+;	==================
+;
+;
+;	$BDOS  -  preserve IX and IY through BDOS calls
+;
+$BDOS:
+	PUSH	IX
+	PUSH	IY
+	CALL	BDOS
+	POP	IY
+	POP	IX
+	RET
+;
+;
+;	$HALOC		Take space from free store
+;
+;	Entry	BC	Size required
+;
+$HALOC:
+	LD	HL,($HPLM)
+	ADD	HL,BC		; new limit
+	LD	($HPLM),HL
+;
+	LD	BC,GAP		; set $STKLM to complement
+	ADD	HL,BC		; .. of new limit + gap
+	LD	A,H
+	CPL
+	LD	H,A
+	LD	A,L
+	CPL
+	LD	L,A
+	LD	($STKLM),HL
+;
+	ADD	HL,SP		; check current SP value
+	RET	C
+;
+	POP	DE		; discard $HALOC link
+	LD	A,'H'
+	LD	C,4		; fatal error, link in $HERAD
+	CALL	$HERR		; signal error H
+;
+;
+;	=================
+;
+;
+;	Run-time errors
+;
+;	Subroutine to output char in E to console.
+;
+CHOUT:
+	PUSH	BC		; preserve BC,HL
+	PUSH	HL
+	LD	C,2
+	CALL	$BDOS
+	POP	HL
+	POP	BC
+	RET
+;
+;
+;	Subroutine to convert byte in A to
+;	two hex digits and output to the
+;	console.  (Uses A, B, C, E.)
+;
+CAHEX:
+	LD	C,A
+	LD	B,2
+;
+	RRA
+	RRA
+	RRA
+	RRA
+;
+CAHXLP:
+	AND	0FH
+	ADD	A,30H		; digit 0
+	CP	3AH
+	JP	M,GT9
+	ADD	A,7		; make A-F
+;
+GT9:
+	LD	E,A
+	CALL	CHOUT
+	LD	A,C		; original
+	DJNZ	CAHXLP
+;
+	RET
+;
+;
+;	Errors within Pascal-coded library
+;
+$PERR:
+	POP	HL		; return address
+	POP	AF		; A := error no.
+	LD	C,2
+	PUSH	HL
+	CALL	$HERR
+	RET
+;
+;
+;	$HERR	Run-time error handling routine.
+;
+;	Entry	A	Error code letter
+;		C	Bit 0 = 1 if extra display
+;			Bit 1 = 1 if optional restart
+;			Bit 2 = 1 if error address in $HERAD
+;		B,DE	Count & address of extra display (if present)
+;		(SP+2)	Address to be included in message
+;			if bit 2 of C is zero
+;
+;
+$HERR:
+	PUSH	AF
+;
+	RR	C
+	JR	NC,EMOUT	; no extra display
+	EX	DE,HL
+;
+CHLOOP:
+	LD	E,(HL)		; char from message
+	INC	HL
+	CALL	CHOUT
+	DJNZ	CHLOOP
+;
+;	Output error code
+;
+EMOUT:
+	PUSH	BC
+	LD	C,9
+	LD	DE,ERRMES	; 'Error '
+	CALL	$BDOS
+;
+	POP	BC
+	POP	AF
+	PUSH	BC
+	LD	E,A		; code letter
+	CALL	CHOUT
+;
+	LD	C,9
+	LD	DE,ATADDR	; ' at address '
+	CALL	$BDOS
+;
+;
+;	Convert address to hex
+;
+	POP	BC
+	POP	DE
+	POP	HL		; address for display
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC
+;
+	LD	A,C
+	AND	2
+	JR	Z,CAD2
+	LD	HL,($HERAD)	; alternative error address
+;
+CAD2:
+	LD	A,H
+	CALL	CAHEX
+	LD	A,L
+	CALL	CAHEX
+;
+	LD	E,0DH		; c/r
+	CALL	CHOUT
+	LD	E,0AH		; l/f
+	CALL	CHOUT
+;
+	LD	HL,($DPRST)	; print line number stack
+	CALL	VIAHL		; .. if facility active
+;
+	POP	BC
+	RR	C
+	JP	NC,$HTERM	; terminate program
+;
+RESTRT:
+	LD	DE,RESMES
+;
+PUTMES:
+	LD	C,9H
+	CALL	$BDOS
+;
+GETYN:
+	LD	C,1
+	CALL	$BDOS		; read console
+	CP	'Y'
+	JR	Z,RESUME
+	CP	'y'
+	JR	Z,RESUME
+;
+	CP	'N'
+	JP	Z,$HTERM
+	CP	'n'
+	JP	Z,$HTERM
+;
+	LD	DE,BACKSP		; if not Y or N ..
+	CP	20H			; erase from screen
+	JR	NC,PUTMES
+	JR	GETYN
+;
+;
+RESUME:
+	LD	E,0DH		; c/r
+	CALL	CHOUT
+	LD	E,0AH		; l/f
+	CALL	CHOUT
+;
+	RET
+;
+;
+;	Terminate program
+;
+$HTERM:
+	LD	HL,($UCHN)
+	PUSH	HL
+	CALL	$FCLAC		; close all active files
+;
+	LD	HL,($FACT)
+	PUSH	HL
+	CALL	$FCLAC		; in case any Pascal files present
+;
+	JP	BOOT
+;
+;
+VIAHL:	JP	(HL)
+;
+;
+ERRMES:	DB	0DH,0AH,'Error $'
+ATADDR:	DB	' at address $'
+RESMES:	DB	'Continue ? (Y/N) $'
+BACKSP: DB	08,' ',08,'$'
+;
+;
+;
+	END
+
+

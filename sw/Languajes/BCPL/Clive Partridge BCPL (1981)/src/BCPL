@@ -1,0 +1,1937 @@
+//////////////////////////////////////////////////////////////////////////////
+//                                                                          //
+//        MICROBCPL system compiler Copyright (C) C.S.Partridge 1982        //
+//                                                                          //
+//////////////////////////////////////////////////////////////////////////////
+
+
+//  This is a one-pass BCPL compiler. Its main design feature is to use as
+//  little memory as possible, whilst still being reasonably fast. As it is
+//  just a one-pass compiler, the following restictions are made:
+//  1) Multiple assignments not allowed.
+//  2) No STATICs of any kind allowed.
+//  3) Truth value mode not supported.
+//  4) Jumping out of a VALOF by any means other than a RESULTIS is not allowed
+//     (including LOOP, BREAK, and ENDCASE).
+//  5) Strings are not padded with zero on the right.
+//  6) Automatic section bracket closing is not supported. All section brackets
+//     must have matching tags if they have them.
+//  The following extensions are allowed:
+//  1) Dynamic and vector declarations can be combined in the obvious way.
+//  2) The operator % is implemented.
+//  3) Extended assignments such as +:= are allowed (but note restriction 1).
+//  Currently the code is output into Mostek hex.
+
+
+GET "LIBHDR"
+
+
+//  These are the definitions of tags and ycodes for the MICROBCPL compiler.
+//  Note that the two are interlinked in the region of the operators, and it is
+//  not advised to alter the ordering unless it is certain that it is
+//  understood what is going on.
+
+
+//  TBYTESPERWORD may well need to be changed when using as a cross compiler.
+
+MANIFEST
+ $( tbytesperword=bytesperword
+ $)
+
+//  First the basic symbol definitions.
+
+MANIFEST
+ $( tarrow=1
+
+//  All the dyadic operators have equivalent tags and ycodes.
+
+    tpercent=tarrow+1
+    tshl=tpercent+1
+    tshr=tshl+1
+    tequals=tshr+1
+    tneq=tequals+1
+
+//  The next four must be together for purposes of extended relations.
+
+    tleq=tneq+1
+    tgeq=tleq+1
+    tgr=tgeq+1
+    tle=tgr+1
+
+//  The next nine must go together for purposes of assignment operators.
+
+    ttimes=tle+1
+    tdiv=ttimes+1
+    trem=tdiv+1
+    tand=trem+1
+    tor=tand+1
+    teqv=tor+1
+    tneqv=teqv+1
+
+//  The next six must go together as they are all monadic operators.
+
+    tplus=tneqv+1
+    tminus=tplus+1
+    tpling=tminus+1
+    tnot=tpling+1
+    tabs=tnot+1
+    tat=tabs+1
+
+//  From here on the restrictions are much less.
+
+    tcomma=tat+1
+    ttable=tcomma+1
+    tvalof=ttable+1
+    ttrue=tvalof+1
+    tfalse=ttrue+1
+    tquer=tfalse+1
+    tbra=tquer+1
+    tket=tbra+1
+    tassign=tket+1
+    tsemicol=tassign+1
+    tcolon=tsemicol+1
+    tvec=tcolon+1
+    tbe=tvec+1
+    tbreak=tbe+1
+    tloop=tbreak+1
+    tendcase=tloop+1
+    treturn=tendcase+1
+    tfinish=treturn+1
+    tgoto=tfinish+1
+    tresul=tgoto+1
+    tswitchon=tresul+1
+    tinto=tswitchon+1
+
+//  The next three must go together.
+
+    trepunt=tinto+1
+    trepwh=trepunt+1
+    trepeat=trepwh+1
+    tuntil=trepeat+1
+    twhile=tuntil+1
+    tfor=twhile+1
+    tto=tfor+1
+    tby=tto+1
+    tif=tby+1
+    tunless=tif+1
+    ttest=tunless+1
+    tcase=ttest+1
+    tdefault=tcase+1
+    tthen=tdefault+1
+    telse=tthen+1
+    tget=telse+1
+
+//  The next four must go together.
+
+    tmanif=tget+1
+    tglob=tmanif+1
+    tlet=tglob+1
+    topen=tlet+1
+    tclose=topen+1
+
+//  The last three are psuedo-symbols in as much they have no real lexical
+//  manifestation as such.
+
+    tconst=tclose+1
+    tstring=tconst+1
+    tend=tstring+1
+ $)
+
+
+//  These are the ycode definitions.
+
+MANIFEST
+ $( yfinish=1
+
+//  All the dyadic operators correspond with their symbol values.
+
+    ypercent=tpercent
+    ypling=tpling
+    ytimes=ttimes
+    ydiv=tdiv
+    yrem=trem
+    yplus=tplus
+    yminus=tminus
+    yequals=tequals
+    yneq=tneq
+    yleq=tleq
+    ygeq=tgeq
+    yshl=tshl
+    yshr=tshr
+    ygr=tgr
+    yle=tle
+    yand=tand
+    yor=tor
+    yeqv=teqv
+    yneqv=tneqv
+
+//  All the monadic operators are a fixed increment above their dyadic
+//  counterparts, or the counterparts they would have if they had them.
+
+    ymonplus=ypling+1
+    ymonmin=ymonplus+1
+    ymonpling=ymonmin+1
+    ynot=ymonpling+1
+    yabs=ynot+1
+    yat=yabs+1
+
+//  The extended relations are a fixed increment above their short
+//  counterparts.
+
+    ylongleq=yat+1
+    ylonggeq=ylongleq+1
+    ylonggr=ylonggeq+1
+    ylongle=ylonggr+1
+    yderef=ylongle+1
+    ypush=yderef+1
+
+//  The one byte pushes must be in sequential order.
+
+    ypush0=ypush+tbytesperword
+    ypush1=ypush0+1
+    ypush2=ypush1+1
+    ypush3=ypush2+1
+    ypush4=ypush3+1
+    yfalse=ypush4+1
+    ytrue=yfalse+1
+
+//  The ten ordinary assignment codes must be together and apart from YASSIGN,
+//  which must be first, are fixed increments from their dyadic operator
+//  counterparts.
+
+    yassign=ytrue+1
+    yasstimes=yassign+1
+    yassdiv=yasstimes+1
+    yassrem=yassdiv+1
+    yassand=yassrem+1
+    yassor=yassand+1
+    yasseqv=yassor+1
+    yassneqv=yasseqv+1
+    yassplus=yassneqv+1
+    yassminus=yassplus+1
+
+//  The push variable address codes must be together.
+
+    ypshdyn=yassminus+1
+    ypshglob=ypshdyn+tbytesperword
+
+//  The push-and-dereference codes must be a fixed increment above the ordinary
+//  variable push codes.
+
+    ydpshdyn=ypshglob+tbytesperword
+    ydpshglob=ydpshdyn+tbytesperword
+
+//  The function call codes must be together.
+
+    yfcall=ydpshglob+tbytesperword
+    yfcall0=yfcall+1
+    yfcall1=yfcall0+1
+    yfcall2=yfcall1+1
+    yfcall3=yfcall2+1
+
+//  The procedure call codes must be a fixed increment above their function
+//  call couterparts.
+
+    ypcall=yfcall3+1
+    ypcall0=ypcall+1
+    ypcall1=ypcall0+1
+    ypcall2=ypcall1+1
+    ypcall3=ypcall2+1
+
+//  All the one byte argument jump codes must be one greater than their full
+//  maxsized counterparts.
+
+    yjump=ypcall3+1
+    yrjump=yjump+1
+    yjfalse=yrjump+1
+    yrjfalse=yjfalse+1
+    yjtrue=yrjfalse+1
+    yrjtrue=yjtrue+1
+    yret=yrjtrue+1
+    ydeper=yret+1
+
+//  The percent assignment Y-codes must be together, starting with the YPERASS
+//  and the rest being a fixed increment above their dyadic operator
+//  counterparts.
+
+    yperass=ydeper+1
+    ypasstimes=yperass+1
+    ypassdiv=ypasstimes+1
+    ypassrem=ypassdiv+1
+    ypassand=ypassrem+1
+    ypassor=ypassand+1
+    ypasseqv=ypassor+1
+    ypassneqv=ypasseqv+1
+    ypassplus=ypassneqv+1
+    ypassminus=ypassplus+1
+    ytable=ypassminus+1
+    ystring=ytable+1
+    ydyndec=ystring+1
+    yswitchon=ydyndec+1
+    ygoto=yswitchon+1
+ $)
+
+
+MANIFEST
+ $( firstdyad=tarrow
+    lastdyad=tpling
+    firstmon=tplus
+    lastmon=tat
+    assbase=tle
+    longreladd=ylonggr-ygr
+    monadd=ymonplus-yplus
+    derefadd=ydpshdyn-ypshdyn
+    bytediff=bytesperword-tbytesperword
+    bytemone=bytesperword-1
+    hexoff='A'-10
+    capdiff='a'-'A'
+    procdiff=ypcall-yfcall
+    identmode=4
+    percentmode=3
+    procmode=2
+    leftmode=1
+    rightmode=0
+    maxsize=2
+    maxmone=maxsize-1
+    maxtag=tend
+
+//  HASHSIZE is the number of different hash values that tags can have, and
+//  thus sets the size of the open hash table. The input buffer size is a
+//  power of 2 for convenience.
+
+    hashsize=255
+    bufford=7
+    bufferlen=1<<bufford
+    buffmask=bufferlen-1
+    buffersize=bufferlen/bytesperword
+    fileidsize=16/bytesperword
+
+//  These are the fields in a TAG record.
+
+    idlink=1
+    prdec=2
+    value=3
+    type=4*bytesperword
+    tlength=type+1
+    blockdepth=tlength+1
+    chars=blockdepth+1
+
+//  These are some of the fields in the additional block used to save textually
+//  nested definitions of identifiers.
+
+    ptype=3*bytesperword
+    pblockdepth=ptype+1
+
+//  These are the declaration types. 0 means undefined.
+
+    maniftype=maxtag+1
+    dyntype=maxtag+2
+    globtype=maxtag+3
+ $)
+
+
+//  These are the GLOBAL variables that are used in the compiler.
+
+GLOBAL
+ $( ch:101
+    buffer:102
+    pos:103
+    scanres:104
+    sym:105
+    area:106
+    areap:107
+    idlist:108
+    dynnum:109
+    dynmax:110
+    pr:111
+    asstype:112
+    obadd:113
+    err:114
+    globdeflist:115
+    breaklist:116
+    looplist:117
+    statement:118
+    vallist:119
+    getlist:120
+    temp1:121
+    temp2:122
+    caselist:123
+    endcaselist:124
+    defaultlabel:125
+    notstartline:126
+    sumcheck:127
+    maxglob:128
+    hashtable:129
+    currblockdepth:130
+    currprocblock:131
+    fileid:132
+    errlab:133
+    errlev:134
+ $)
+
+
+//  These are the GLOBALS that are for the routines in the compiler.
+
+GLOBAL
+ $( new:135
+    cap:136
+    error:137
+    check:138
+    undefine:139
+    addtolist:140
+    checkredf:141
+    inglobval:142
+    puthex:143
+    resabs:144
+    resolve:145
+    inlist:146
+    nextch:147
+    layout:148
+    openin:149
+    chkcltag:150
+    findtag:151
+    readint:152
+    hexdig:153
+    strchar:154
+    scan:155
+    ensuretag:156
+    skdoreadcom:157
+    skipsemicol:158
+    compile:159
+    incdynnum:161
+    labadd:162
+    compwhole:163
+    compmax:164
+    compmin:165
+    compshcon:166
+    compjump:167
+    combjump:168
+    deidmode:169
+    deref:170
+    addlablist:171
+    chkllist:172
+    reslist:173
+    reconexp:174
+    readexp:175
+    readrightexp:176
+    scanreadrightexp:177
+    readnonrepcom:178
+    readcom:179
+    scanreadcom:180
+    readcompound:181
+    readdef:182
+    run:183
+    checkarea:184
+
+//  Globals for labels for purposes of error recovery.
+
+    errlabdef:185
+    errlabdec:186
+    errlabcom:187
+ $)
+
+
+//  CHECKAREA checks to see if the space being allocated by NEW is hitting the
+//  object code. If it is, then there is no point in attempting to proceed, and
+//  the compiler halts.
+
+LET checkarea() BE IF areap<=obadd/bytesperword+1 THEN
+ $( error("Run out of workspace area",FALSE)
+    FINISH
+ $)
+
+
+//  NEW allocates the requested number of words from AREA and delivers the
+//  address of the allocated space. The space it allocates grows down from the
+//  top of the AREA vector towards the object code. A check is made to ensure
+//  that the two don't meet. Ideally it would be replaced by a GETVEC if one
+//  was suitably implemented in the target system.
+
+LET new(number)=VALOF
+ $( areap -:= number
+    checkarea()
+    RESULTIS area+areap
+ $)
+
+
+//  CAP makes CH into a capital if it was a small letter. The character in the
+//  buffer is also updated so that FINDTAG doesn't have to keep on using CAP.
+//  This has the rather annoying effect of uppercasing tags so that when
+//  errors are printed, the code looks different.
+
+LET cap()=VALOF
+ $( IF 'a'<=ch<='z' THEN
+     $( ch -:= capdiff
+        buffer%pos -:= capdiff
+     $)
+    RESULTIS ch
+ $)
+
+
+//  ERROR prints out the error message and some sort of indication of where
+//  the error occurred. It sets the flag ERR to TRUE. If recover is TRUE an
+//  is made to recover the syntax analysis position to avoid multitudes of
+//  error messages.
+
+LET error(message,recover) BE
+ $( writes(message)
+    newline()
+    FOR x=pos+1 TO pos+bufferlen DO
+        UNLESS buffer%(x&buffmask)=0 THEN wrch(buffer%(x&buffmask))
+    newline()
+    err := TRUE
+    UNLESS recover THEN RETURN
+    notstartline := TRUE
+    UNTIL sym=tsemicol|sym=topen&errlab~=errlabdec|sym=tclose|sym=tend|
+        NOT notstartline DO scan()
+    longjump(errlev,errlab)
+ $)
+
+
+//  CHECK performs a check on SYM to ensure that it was as expected, and
+//  arranges an error report if it isn't. This is to cut down space taken by
+//  error messages.
+
+LET check(symb,errmess) BE IF sym~=symb THEN
+ $( writes(errmess)
+    error(" expected",TRUE)
+ $)
+
+
+//  UNDEFINE causes all the identifiers at the current level i.e. whose
+//  BLOCKDEPTH is equal to CURRBLOCKDEPTH to become undefined, unless they have
+//  a more textually nested definition, in which case that definition is
+//  reinstated. The space is not recovered. The TYPE of an identifier being 0
+//  is sufficient to mark it as undefined. CURRBLOCKDEPTH is then decremented.
+
+LET undefine() BE
+ $( WHILE idlist%blockdepth=currblockdepth DO TEST idlist!prdec=0 THEN
+     $( idlist%type := 0
+        idlist := idlist!idlink
+     $)
+    ELSE
+
+//  There is a nested definition to be reinstated.
+
+     $( LET x,y=idlist!prdec,idlist
+        idlist := y!idlink
+        y!idlink := x!1
+        y!prdec := !x
+        y%type := x%ptype
+        y!value := x!2
+        y%blockdepth := x%pblockdepth
+     $)
+    currblockdepth -:= 1
+ $)
+
+
+//  ADDTOLIST causes an identifier to be defined according to the information
+//  about it that is passed to it. FINDTAG does most of the work in setting it
+//  up. If a more textually nested definition has to be saved a special block
+//  is made whose address is put in the PRDEC field and the specifics of the
+//  identifier are saved in it before the new one is set up.
+
+LET addtolist(tag,val,ty) BE
+ $( IF tag%type~=0 THEN
+     $( LET x=inlist(tag+prdec,4,tag!idlink,tag!value)
+
+//  A nested definition is saved in the lump just got.
+
+        x%ptype := tag%type
+        x%pblockdepth := tag%blockdepth
+     $)
+    tag!idlink := idlist
+    idlist := tag
+    tag!value := val
+    tag%type := ty
+    tag%blockdepth := currblockdepth
+ $)
+
+
+//  CHECKREDF tests whether the identifier has been declared previously at the
+//  current level, and if it has, a error is reported.
+
+LET checkredf(t) BE IF t%type~=0&t%blockdepth=currblockdepth THEN
+    error("Identifier declared twice",FALSE)
+
+
+//  INGLOBVAL adds to the global definition list an internal definition of a
+//  GLOBAL for later appending to the end of the module.
+
+LET inglobval(tag) BE
+
+//  At the moment no STATICs are allowed and everything which are labels or
+//  routines must be declared as GLOBALS. As the writer does not see STATICs
+//  as worth implementing the obvious thing would be to make these quantities
+//  relocatable constant things. This routine would have to be updated here to
+//  reflect that, presumably to have a separate lump at the end of the module
+//  marking items to be relocated.
+
+ $( IF tag%type~=globtype THEN
+        error("Routines and labels must be GLOBAL",FALSE)
+    inlist(@globdeflist,3,tag!value,obadd)
+ $)
+
+
+//  RESABS performs all the backtracking of the object code that there is. The
+//  quantity it inserts is in micro (backward) format. If the object code was
+//  not held internally this would be the only routine that would have to be
+//  changed for the implementation of the resolving of forward references etc.
+
+LET resabs(x,y) BE FOR z=0 TO maxmone DO area%(x+z) := (@y)%(bytemone-z)
+
+
+//  RESOLVE performs a RESABS but the quantity is made relative to the address
+//  (e.g. for jumps which are all relative).
+
+LET resolve(x,y) BE resabs(x,y-x)
+
+
+//  NEXTCH is the internal character read routine used by the lexical analysis.
+//  It steps POS by one and sets up the new CH. This makes invisible the
+//  resolution of the end of a 'got' file. NOTSTARTLINE is set if the previous
+//  character was a new-line.
+
+LET nextch()=VALOF
+ $( ch := rdch()
+    TEST ch=endstreamch THEN
+     $( endread()
+
+//  End-of-file has been reached. Try to pop GET list.
+
+        IF getlist~=0 THEN
+         $( selectinput(getlist!1)
+            getlist := !getlist
+            nextch()
+         $)
+     $)
+    ELSE
+     $( IF buffer%pos='*n' THEN notstartline := FALSE
+        pos := (pos+1)&buffmask
+        buffer%pos := ch
+     $)
+    RESULTIS ch
+ $)
+
+
+//  LAYOUT gives whether the current CH is a layout character.
+
+LET layout()=ch=' '|ch='*n'|ch='*t'|ch='*p'
+
+
+//  OPENIN opens the specified file and checks it is OK.
+
+LET openin(file) BE
+ $( LET x=findinput(file)
+    IF x~=0 THEN
+     $( selectinput(x)
+        FOR y=0 TO buffmask DO buffer%y := 0
+        pos := 0
+        nextch()
+        RETURN
+     $)
+    writes(file)
+    error(" can't be opened",FALSE)
+ $)
+
+
+//  CHKCLTAG checks for a '$)' and the tag which may or may not exist after it
+//  to be the same as the one given. If it is not an error is reported.
+
+LET chkcltag(x) BE
+ $( check(tclose,"$)")
+    IF findtag()~=x THEN error("Mismatching section bracket tags",FALSE)
+ $)
+
+//  FINDTAG is the central routine to the internal handling of tags. It knows
+//  nothing of the nature of the tags or their significance. When a tag occurs,
+//  it attempts to find it in the tag data structure. If it finds it, it
+//  returns a pointer to it. If not a new lump of data structure is created and
+//  initialised to represent the tag. The search is done by calculating the
+//  hash value of the tag and then linearly searching the list that hangs from
+//  the pointer in the hash table. This search has a primitive rapid reject
+//  algorithm in as much as if the lengths don't match the characters are not
+//  even begun to be compared. New tags have the fields TYPE and PRDEC set
+//  to 0.
+
+LET findtag()=VALOF
+ $( LET x,tagpos,length=0,pos,0
+    WHILE 'A'<=cap()<='Z'|'0'<=ch<='9'|ch='.'|ch='_' DO
+     $( x +:= ch<<(length&3)
+        length +:= 1
+        nextch()
+     $)
+
+//  The hash value is now X and must be truncated on the left according to the
+//  size of the hashtable.
+
+    IF length>bufferlen THEN error("Tag too long",FALSE)
+    x := hashtable+x REM hashsize
+    WHILE !x~=0 DO
+     $( x := !x
+
+//  Reject immediately if lengths not the same.
+
+        IF x%tlength~=length THEN LOOP
+        IF VALOF
+         $( FOR y=0 TO length-1 DO
+                IF x%(chars+y)~=buffer%(tagpos+y&buffmask) THEN RESULTIS FALSE
+            RESULTIS TRUE
+         $)
+        THEN RESULTIS x
+     $)
+
+//  The list of tags with the same hash value has now been searched (if there
+//  was one) and the tag not found. A new tag is thus created, appended to the
+//  list, initialised and its address is returned.
+
+    !x := new((chars+length-1)/bytesperword+1)
+    x := !x
+    !x := 0
+    x%type := 0
+    x%tlength := length
+    x!prdec := 0
+    FOR y=0 TO length-1 DO x%(chars+y) := buffer%(tagpos+y&buffmask)
+    RESULTIS x
+ $)
+
+
+//  HEXDIG returns the appropriate value (0 to 15) of the hex interpretation of
+//  CH. If it does not represent a hex digit, the result is not in the range
+//  0 to 15.
+
+LET hexdig()='0'<=ch<='9'->ch-'0',cap()<'A'->255,ch-hexoff
+
+
+//  READINT reads a number in the given base and returns its value.
+
+LET readint(x)=VALOF
+ $( LET n,m=0,?
+     $( m := hexdig()
+        UNLESS -1<m<x THEN RESULTIS n
+        n := n*x+m
+        nextch()
+     $) REPEAT
+ $)
+
+
+//  STRCHAR interprets CH (and if necessary the following chars) to deliver the
+//  next character in a string or character constant. The escapes O,X,N,T,P and
+//  S are handled. All others are treated by ignoring the * and continuing.
+
+LET strchar()=VALOF
+ $( LET x=ch
+    nextch()
+    IF x~='**' THEN RESULTIS x
+    IF layout() THEN
+     $( scan()
+
+//  The sequence *<one or more layout characters>* is ignored in strings. The
+//  operation is retried by entering recursively.
+
+        check(ttimes,"**")
+        RESULTIS strchar()
+     $)
+    x := cap()
+    nextch()
+    SWITCHON x INTO
+     $( CASE 'O' : x := (ch-'0'<<6)+(nextch()-'0'<<3)+nextch()-'0'
+            nextch()
+        DEFAULT : RESULTIS x
+        CASE 'X' : x := (hexdig()<<4)+hexdig(nextch())
+            nextch()
+            RESULTIS x
+        CASE 'N' : RESULTIS '*n'
+        CASE 'T' : RESULTIS '*t'
+        CASE 'P' : RESULTIS '*p'
+        CASE 'S' : RESULTIS '*s'
+     $)
+
+//  Insert code translation TABLE after this bracket for purposes of creating a
+//  cross-compiler for use with a different character set based machine.
+
+ $)
+
+
+//  SCAN performs all lexical analysis on a character basis except for strings
+//  and feeds the main routines which operate on a symbol basis (via SYM
+//  instead of CH). The lexical analysis is done in step with the syntax
+//  analysis. SCAN removes all comments, opens new GET files, and interprets
+//  all occurrences of a constant value. The general algorithm is first to test
+//  for a tag, then a decimal number and if neither do a massive SWITCHON the
+//  character and hope for the best. The found symbol is loaded into SYM. A tag
+//  which is not a basic symbol is returned as 0 and SCANRES is loaded with the
+//  tag address. If it is a constant SCANRES is set to the value of the
+//  constant.
+
+LET scan()=VALOF
+ $( LET x=?
+    sym := VALOF
+
+//  The NOTSTARTLINE flag is set to TRUE, as if the symbol that is about to be
+//  read is at the beginning of a line then the removal of layout characters
+//  will go over a newline character, causing the flag to be set to FALSE again
+//  by NEXTCH.
+
+     $( notstartline := TRUE
+
+//  Leading layouts at the beginning of a symbol are ignored.
+
+        WHILE layout() DO nextch()
+
+//  TEST for a tag of some kind.
+
+        TEST 'A'<=cap()<='Z' THEN
+         $( x := findtag()
+
+//  TEST to see if it a basic symbol (the type field of the tag will be
+//  non-zero and <=maxtag), or if it is an identifier.
+
+            UNLESS 1<=x%type<=maxtag THEN
+
+//  It is an identifier so set SCANRES.
+
+             $( scanres := x
+                RESULTIS 0
+             $)
+
+//  It is a basic symbol so unless it is GET then that's it.
+
+            IF x%type=tget THEN
+             $( scan()
+                check(tstring,"String")
+                x := 0
+                UNTIL ch='*"' DO
+                 $( x +:= 1
+                    fileid%x := ch
+                    nextch()
+                 $)
+                fileid%0 := x
+                inlist(@getlist,2,input())
+                openin(fileid)
+                LOOP
+             $)
+            RESULTIS x%type
+         $)
+
+//  TEST for a decimal constant.
+
+        ELSE TEST '0'<=ch<='9' THEN
+         $( scanres := readint(10)
+            RESULTIS tconst
+         $)
+
+//  It must be something else so SWITCHON CH and pray.
+
+        ELSE SWITCHON ch INTO
+         $( CASE endstreamch : RESULTIS tend
+            CASE '**' : nextch()
+                RESULTIS ttimes
+            CASE '/' : SWITCHON nextch() INTO
+             $( CASE '/' : nextch() REPEATUNTIL ch='*n'
+                    LOOP
+                CASE '\' : nextch()
+                    RESULTIS tand
+                CASE '**' :
+
+//  Skip over comment of /* ..... */ form and try again.
+
+                     $( TEST ch~='**' THEN nextch() ELSE IF nextch()='/' THEN
+                            BREAK
+                     $) REPEAT
+                    nextch()
+                    LOOP
+                DEFAULT : RESULTIS tdiv
+             $)
+            CASE '\' : SWITCHON nextch() INTO
+             $( CASE '/' : nextch()
+                    RESULTIS tor
+                CASE '=' : nextch()
+                    RESULTIS tneq
+                DEFAULT: RESULTIS tnot
+             $)
+            CASE '~' : IF nextch()='=' THEN
+                 $( nextch()
+                    RESULTIS tneq
+                 $)
+                RESULTIS tnot
+            CASE '+' : nextch()
+                RESULTIS tplus
+            CASE '-' : IF nextch()='>' THEN
+                 $( nextch()
+                    RESULTIS tarrow
+                 $)
+                RESULTIS tminus
+            CASE ':' : IF nextch()~='=' THEN RESULTIS tcolon
+                nextch()
+                RESULTIS tassign
+            CASE '%' : nextch()
+                RESULTIS tpercent
+            CASE '<' : SWITCHON nextch() INTO
+             $( CASE '<' : nextch()
+                    RESULTIS tshl
+                CASE '=': nextch()
+                    RESULTIS tleq
+                DEFAULT : RESULTIS tle
+             $)
+            CASE '>' : SWITCHON nextch() INTO
+             $( CASE '>' : nextch()
+                    RESULTIS tshr
+                CASE '=' : nextch()
+                    RESULTIS tgeq
+                DEFAULT : RESULTIS tgr
+             $)
+            CASE '=' : nextch()
+                RESULTIS tequals
+            CASE '&' : nextch()
+                RESULTIS tand
+            CASE '|' : nextch()
+                RESULTIS tor
+            CASE '!' : nextch()
+                RESULTIS tpling
+            CASE '#' : scanres := VALOF SWITCHON cap(nextch()) INTO
+
+//  A non-decimal based number is processed by READINT. The result as with all
+//  constants is left in SCANRES.
+
+             $( CASE 'X' : nextch()
+                    RESULTIS readint(16)
+                CASE 'B' : nextch()
+                    RESULTIS readint(2)
+                CASE 'O' : nextch()
+                DEFAULT : RESULTIS readint(8)
+             $)
+            RESULTIS tconst
+            CASE '*'' : nextch()
+                scanres := strchar()
+                IF ch~='*'' THEN error("Missing *' at end of character",TRUE)
+                nextch()
+                RESULTIS tconst
+            CASE '@' : nextch()
+                RESULTIS tat
+            CASE '?' : nextch()
+                RESULTIS tquer
+            CASE ',' : nextch()
+                RESULTIS tcomma
+            CASE '(' : CASE '[' : nextch()
+                RESULTIS tbra
+            CASE ')' : CASE ']' : nextch()
+                RESULTIS tket
+            CASE ';' : nextch()
+                RESULTIS tsemicol
+            CASE '*"' : nextch()
+                RESULTIS tstring
+            CASE '$' : TEST nextch()='(' THEN
+                 $( nextch()
+                    RESULTIS topen
+                 $)
+                ELSE IF ch=')' THEN
+                 $( nextch()
+                    RESULTIS tclose
+                 $)
+            DEFAULT : nextch()
+                error("Illegal symbol",TRUE)
+         $)
+     $) REPEAT
+    RESULTIS sym
+ $)
+
+
+//  ENSURETAG ensures that the current symbol is an identifier.
+
+LET ensuretag() BE check(0,"Tag")
+
+
+//  SKIPSEMICOL ignores the current symbol if it is a semicolon.
+
+LET skipsemicol() BE IF sym=tsemicol THEN scan()
+
+
+//  COMPILE is the only routine which generates code. If the code is not to be
+//  held internally this is the only routine that need be changed (apart from
+//  RESABS). A check is made for running out of room. OBADD is updated to give
+//  the current object code address.
+
+LET compile(ycode) BE
+ $( checkarea()
+    area%obadd := ycode
+    obadd +:= 1
+ $)
+
+
+//  INCDYNNUM increments DYNNUM by one and if it exceeds DYNMAX then DYNMAX is
+//  set to it to reflect the maximum amount of space needed on the run-time
+//  stack frame to store the local variables and parameters etc. This does
+//  allocate store inefficiently but what the user doesn't know won't hurt him.
+
+LET incdynnum() BE
+ $( dynnum +:= 1
+    IF dynnum>dynmax THEN dynmax := dynnum
+ $)
+
+
+//  LABADD will compile no-ops until the object address is on a word boundary
+//  less X bytes.
+
+LET labadd(x) BE UNTIL (obadd+x) REM tbytesperword=0 DO compile(ymonplus)
+
+
+//  COMPWHOLE compiles the given word wholly (forwards!)
+
+LET compwhole(n) BE FOR x=bytediff TO bytemone DO compile((@n)%x)
+
+
+//  COMPMAX compiles the MAXSIZE least significant bytes of the given word
+//  backwards.
+
+LET compmax(n) BE FOR x=0 TO maxmone DO compile((@n)%(bytemone-x))
+
+
+//  COMPMIN compiles the YCODE incremented according to the size of the
+//  argument that goes with it. The argument is stripped of leading zeros to
+//  save space.
+
+LET compmin(number,ycode) BE
+ $( LET x,y=bytediff,@number
+    UNTIL y%x~=0|x=bytemone DO x +:= 1
+    compile(ycode+x-bytediff)
+    UNTIL x=bytesperword DO
+     $( compile(y%x)
+        x +:= 1
+     $)
+ $)
+
+
+//  COMPSHCON compiles code to push the given constant onto the stack taking
+//  into account the existence of special one-byte op-codes for 0 to 4.
+
+LET compshcon(x) BE TEST 0<=x<=4 THEN compile(x+ypush0) ELSE compmin(x,ypush)
+
+
+//  COMPJUMP compiles a forward jump to an unknown address and returns the
+//  address that must later be used by RESOLVE to fill it in.
+
+LET compjump(yjcode)=VALOF
+ $( compile(yjcode)
+    compmax()
+    RESULTIS obadd-maxsize
+ $)
+
+
+//  COMBJUMP compiles a backward jump saving space if possible with the special
+//  backward-jump-up-to-255-bytes ycodes.
+
+LET combjump(yjcode,address) BE TEST obadd-address<256 THEN
+ $( compile(yjcode+1)
+    compile(obadd-address)
+ $)
+ELSE
+ $( compile(yjcode)
+    compmax(address-obadd)
+ $)
+
+
+//  DEIDMODE coerces an IDENTMODE situation to a LEFTMODE one, and delivers
+//  the new mode. Other modes are left unchanged.
+
+LET deidmode(mode)=mode~=identmode->mode,VALOF
+ $( compmin(temp2,temp1)
+    RESULTIS leftmode
+ $)
+
+
+//  DEREF coerces all modes to RIGHTMODE. The modes are as follows: RIGHTMODE
+//  means that the expression that is currently being compiled is now a
+//  rightmode one in the BCPL sense i.e. you can't assign to it or @ it.
+//  LEFTMODE means that it is leftmode in the BCPL sense and can be assigned to
+//  or used by @ or if required can be coerced to RIGHTMODE by compiling a
+//  YDEREF so that on execution the address is dereferenced. PERCENTMODE means
+//  that at run-time the value will be a byte address, and can assigned to by
+//  the special percent assignment ycodes, or made into a rightmode value by
+//  compiling a YDEPER to depercent it. IDENTMODE means that a compilation of
+//  an applied occurrence of an identifier has been delayed until it is known
+//  whether the ycodes should push the address of it (which is done by
+//  DEIDMODE) or the cause it to be dereferenced as well. This is not strictly
+//  a necessary way of dealing with it but gives substantially more compact
+//  code as most identifiers are dereferenced. PROCMODE means that the
+//  compilation of a function or procedure call is saved until it is known
+//  which one it is so at run-time the result can be saved or thrown
+//  away as desired. In both PROCMODE and IDENTMODE the necessary information
+//  to complete compilation is held in TEMP1 and TEMP2.
+
+LET deref(mode) BE SWITCHON mode INTO
+ $( CASE procmode : compile(temp1)
+        IF temp1=yfcall THEN compile(temp2)
+        RETURN
+    CASE identmode : compmin(temp2,temp1+derefadd)
+        RETURN
+    CASE leftmode : compile(yderef)
+        RETURN
+    CASE percentmode : compile(ydeper)
+ $)
+
+
+//  INLIST inserts a new record in the given LIST of length N and sets its
+//  fields to the given values.
+
+LET inlist(list,n,val1,val2)=VALOF
+ $( LET x=new(n)
+    !x := !list
+    FOR y=1 TO n-1 DO x!y := (@n)!y
+    !list := x
+    RESULTIS x
+ $)
+
+
+//  ADDLABLIST compiles an unconditional forward jump and adds the address to
+//  be resolved to the specified list. The current statement number is also
+//  recorded in the list so that the scopes of things like nested repetitive
+//  statements and the LOOPs and BREAKs that occur in them can be correctly
+//  worked out.
+
+LET addlablist(list) BE inlist(list,3,statement,compjump(yjump))
+
+
+//  CHKLLIST gives whether the top item of a jump list is one that refers to a
+//  jump that occurs before or after a given statement.
+
+LET chkllist(list,statenum)=list=0|list!1<statenum
+
+
+//  RESLIST resolves all the jumps on a given jump list that refer to jumps
+//  that are after a given statement to jump to a given address. The resolved
+//  jumps are removed from the list.
+
+LET reslist(address,list,statenum) BE
+ $( UNTIL chkllist(!list,statenum) DO
+     $( resolve((!list)!2,address)
+        !list := !!list
+     $)
+ $)
+
+
+//  RECONEXP returns the value of the constant expression that is about to be
+//  read (i.e. the next symbol is the first part of the expression). The
+//  algorithm is conventional and operates from the priorities of operators in
+//  the string PR. The result delivered is the value of the constant expression
+//  up to an operator of priority less than PRIO or a terminating symbol.
+
+LET reconexp(prio)=VALOF
+ $( LET x,y,z=?,?,?
+    scan()
+    TEST firstmon<=sym<=lastmon THEN
+     $( y := sym
+        x := reconexp(pr%(sym+monadd))
+        x := y=tplus->x,y=tminus->-x,y=tabs->ABS x,y=tnot->NOT x,
+            error("Monadic operator not allowed in constant expression",TRUE)
+     $)
+    ELSE
+     $( SWITCHON sym INTO
+         $( CASE tbra : x := reconexp(0)
+                check(tket,")")
+                ENDCASE
+            CASE ttrue : CASE tfalse : CASE tquer : x := sym=ttrue
+                ENDCASE
+            CASE tconst : x := scanres
+                ENDCASE
+            CASE 0 : TEST scanres%type=0 THEN
+                    error("Undeclared identifier in constant expression",FALSE)
+                ELSE IF scanres%type~=maniftype THEN
+                error("Identifier used in constant expression *
+                    *not a MANIFEST",FALSE)
+                x := scanres!value
+                ENDCASE
+            DEFAULT : error("Bad primary in constant expression",TRUE)
+         $)
+        scan()
+     $)
+
+//  We have now got a primary so we can continue processing with dyadic
+//  operators until we encounter one that is of lower priority than PRIO, not
+//  forgetting rules about dyadic operators at the start of a line.
+
+    WHILE firstdyad<=sym<=lastdyad&prio<=pr%sym&notstartline DO
+     $( y := sym
+
+//  Now get the value of the right operand of the operator which is now SYM.
+
+        z := reconexp(pr%sym+1)
+        x := VALOF SWITCHON y INTO
+         $( CASE tplus : RESULTIS x+z
+            CASE tminus : RESULTIS x-z
+            CASE ttimes : RESULTIS x*z
+            CASE tdiv : RESULTIS x/z
+            CASE trem : RESULTIS x REM z
+            CASE tshl : RESULTIS x<<z
+            CASE tshr : RESULTIS x>>z
+            CASE teqv : RESULTIS x EQV z
+            CASE tneqv : RESULTIS x NEQV z
+            CASE tand : RESULTIS x&z
+            CASE tor : RESULTIS x|z
+            DEFAULT : error("Illegal operator in constant expression",TRUE)
+         $)
+     $)
+    RESULTIS x
+ $)
+
+
+//  READEXP compiles code for a an expression which is read up to a dyadic
+//  operator of priority less than or equal to PRIO, or a terminating character,
+//  and delivers the mode of the expression that it has compiled. The algorithm
+//  used is conventional and is driven by the table of operator priorities
+//  in PR.
+
+LET readexp(prio)=VALOF
+ $( LET x,y=?,rightmode
+
+//  The expression analyser reads in a primary first as all expressions start
+//  with a primary. TEST first of all for a monadic operator.
+
+    TEST firstmon<=sym<=lastmon THEN
+     $( x := sym+monadd
+
+//  MONADD is added to make the symbol a monadic one.
+
+        scan()
+        y := readexp(pr%x)
+
+//  Check the mode and coerce if necessary to the desired one. The @ operator
+//  requires LEFTMODE.
+
+        TEST x=yat THEN IF deidmode(y)~=leftmode THEN
+            error("@ not followed by leftmode expression",FALSE) ELSE deref(y)
+
+//  Setup the new mode.
+
+        y := x=ymonpling->leftmode,rightmode
+
+//  Compile the code for the operator.
+
+        compile(x)
+     $)
+    ELSE SWITCHON sym INTO
+     $( CASE ttrue : CASE tfalse : CASE tquer : compile(sym=ttrue->ytrue,yfalse)
+            scan()
+            ENDCASE
+        CASE tvalof : x := statement
+            scanreadcom()
+
+//  In case VALOF is fallen off the end at run time, compile YFALSE to make
+//  position of stack OK.
+
+            compile(yfalse)
+
+//  Check that there is not any unresolved LOOPs, BREAKs, or ENDCASEs, in the
+//  VALOF which are not allowed because they mess up the stack.
+
+            UNLESS chkllist(endcaselist,x)&chkllist(looplist,x)&
+                chkllist(breaklist,x) THEN
+                error("Can't LOOP, BREAK or ENDCASE out of VALOF",FALSE)
+
+//  Resolve all the RESULTIS that occur in the VALOF.
+
+            reslist(obadd,@vallist,x)
+            ENDCASE
+        CASE ttable : labadd(1+maxsize)
+            x := compjump(ytable)
+            compwhole(reconexp(0)) REPEATWHILE sym=tcomma
+            resolve(x,obadd)
+            ENDCASE
+        CASE tbra : scan()
+            y := readexp(0)
+            check(tket,")")
+            scan()
+            ENDCASE
+        CASE tstring : labadd(1)
+            x := obadd
+            compmax()
+            UNTIL ch='*"' DO compile(strchar())
+            IF obadd-x-2>maxstrlength THEN error("String too long",FALSE)
+            resabs(x,((obadd-x-2)<<8)+ystring)
+            nextch()
+            scan()
+            ENDCASE
+        CASE tconst : compshcon(scanres)
+            scan()
+            ENDCASE
+        CASE 0 : SWITCHON scanres%type INTO
+             $( DEFAULT : error("Undeclared identifier",FALSE)
+                    ENDCASE
+                CASE maniftype : compshcon(scanres!value)
+                    ENDCASE
+
+//  The blockdepth of a dynamic variable must not be less than CURRPROCBLOCK or
+//  it was declared outside the current procedure and is therefore in error.
+
+                CASE dyntype : IF scanres%blockdepth<currprocblock THEN
+                    error("Dynamic free variable used",FALSE)
+
+//  Set up TEMP1 and TEMP2 as for IDENTMODE.
+
+                CASE globtype : temp2 := scanres!value
+                    temp1 := scanres%type=globtype->ypshglob,ypshdyn
+                    y := identmode
+             $)
+            scan()
+            ENDCASE
+        DEFAULT : error("Bad primary",TRUE)
+     $)
+
+//  Now a primary has been read, if the next symbol is an open bracket then we
+//  have a procedure call. This is done repetitively. The mode of the primary
+//  is in Y.
+
+    WHILE sym=tbra DO
+
+//  The procedure that is to be called must be made RIGHTMODE.
+
+     $( deref(y)
+        y := 0
+        IF scan()~=tket THEN
+
+//  If the call has parameters, a YFALSE is compiled to leave space at run-time
+//  for the return address.
+
+         $( compile(yfalse)
+
+//  Compile the parameters into RIGHTMODE.
+
+             $( readrightexp()
+                y +:= 1
+                UNLESS sym=tcomma THEN BREAK
+                scan()
+             $) REPEAT
+            check(tket,")")
+         $)
+
+//  Set up TEMP1 and TEMP2 as for PROCMODE.
+
+        TEST y<4 THEN temp1 := yfcall0+y ELSE
+         $( temp1 := yfcall
+            temp2 := y
+         $)
+        y := procmode
+        scan()
+     $)
+
+//  Now we have compiled a primary or a function application. Look for dyadic
+//  operators until one is found with priority less than to PRIO not forgetting
+//  start of line rules. The mode is still in Y.
+
+    WHILE firstdyad<=sym<=lastdyad&prio<=pr%sym&notstartline DO
+     $( x := sym
+
+//  Special handling for things like +:= which cause immediate exit from
+//  READEXP.
+
+        IF scan()=tassign THEN
+
+//  ASSTYPE is set to reflect the nature of the assignment operator.
+
+         $( asstype := x-assbase
+            BREAK
+         $)
+
+//  All operands of dyadic operators must be RIGHTMODE.
+
+        deref(y)
+
+//  Special handling too for ->.
+
+        TEST x=tarrow THEN
+         $( x := compjump(yjfalse)
+            readrightexp()
+            check(tcomma,"Comma")
+            y := compjump(yjump)
+            resolve(x,obadd)
+            scanreadrightexp()
+            resolve(y,obadd)
+            y := rightmode
+         $)
+        ELSE
+
+//  Compile the right operand of the operator in RIGHTMODE.
+
+         $( deref(readexp(pr%x+1))
+
+//  If the next operator was relational and the same as the current one, then
+//  we have an extended relational.
+
+            IF tleq<=sym<=tle&x=sym THEN
+             $( scan()
+                deref(readexp(pr%x+1))
+
+//  X is updated to reflect it as an extended relational.
+
+                x +:= longreladd
+             $)
+
+//  Set up mode to give the new mode of the expression so far.
+
+            y := x=tpling->leftmode,x=tpercent->percentmode,rightmode
+
+//  Finally compile the ycode for the operator itself.
+
+            compile(x)
+         $)
+     $)
+
+//  The result delivered is the mode of the expression.
+
+    RESULTIS y
+ $)
+
+
+//  READRIGHTEXP compiles in RIGHTMODE a complete expression.
+
+LET readrightexp() BE deref(readexp(0))
+
+
+//  SCANREADRIGHTEXP is the same but SYM is first set to the first symbol of
+//  the expression that is expected.
+
+LET scanreadrightexp() BE
+ $( scan()
+    readrightexp()
+ $)
+
+
+//  READNONREPCOM reads in a command without examining any REPEATS that may
+//  follow it.
+
+LET readnonrepcom() BE
+ $( LET x,y,z,a=?,?,?,statement
+    SWITCHON sym INTO
+     $( CASE tbreak : addlablist(@breaklist)
+            ENDCASE
+        CASE tloop : addlablist(@looplist)
+            ENDCASE
+        CASE tendcase : addlablist(@endcaselist)
+            ENDCASE
+        CASE tdefault : IF defaultlabel~=0 THEN
+                error("Two default labels",FALSE)
+            defaultlabel := obadd
+            scan()
+            check(tcolon,"Colon")
+            scanreadcom()
+            RETURN
+
+//  The value associated with a CASE is put into the current CASE list which
+//  is kept sorted.
+
+        CASE tcase : x := reconexp(0)
+            y := @caselist
+            WHILE !y~=0&(!y)!1<x DO y := !y
+            IF x=(!y)!1 THEN error("Two cases with same value",FALSE)
+            inlist(y,3,x,obadd)
+            check(tcolon,"Colon")
+            scanreadcom()
+            RETURN
+        CASE tswitchon :
+             $( LET ocaselist,odefaultlabel=caselist,defaultlabel
+                caselist := 0
+                defaultlabel := 0
+                scanreadrightexp()
+                x := compjump(yswitchon)
+                check(tinto,"INTO")
+                scan()
+                check(topen,"$(")
+                z := findtag()
+                scan()
+                readcompound(z)
+                z := compjump(yjump)
+                y := 0
+
+//  The SWITCHON block consists of a sorted list of values and associated
+//  labels, which at run-time is binary-chopped. The size of list and the
+//  DEFAULT label is at the end, which is pointed to by the argument of the
+//  YSWITCHON.
+
+                UNTIL caselist=0 DO
+                 $( compwhole(caselist!1)
+                    compmax(caselist!2-obadd)
+                    caselist := !caselist
+                    y +:= 1
+                 $)
+                resolve(x,obadd)
+                compmax(y)
+                compmax(defaultlabel~=0->defaultlabel-obadd,maxsize)
+                reslist(obadd,@endcaselist,a)
+                resolve(z,obadd)
+                caselist := ocaselist
+                defaultlabel := odefaultlabel
+             $)
+            ENDCASE
+        CASE tresul : scanreadrightexp()
+            addlablist(@vallist)
+            RETURN
+        CASE treturn : compile(yret)
+            ENDCASE
+
+//  FOR statements are done precisely as specified in the standard.
+
+        CASE tfor : scan()
+            ensuretag()
+            incdynnum()
+            currblockdepth +:= 1
+            addtolist(scanres,dynnum,dyntype)
+            incdynnum()
+            compmin(dynnum-2,ypshdyn)
+            scan()
+            check(tequals,"=")
+            scanreadrightexp()
+            check(tto,"TO")
+            scanreadrightexp()
+            compile(ydyndec)
+            compile(2)
+            x := obadd
+            compmin(dynnum-1,ydpshdyn)
+            compmin(dynnum,ydpshdyn)
+            z := sym=tby->reconexp(0),1
+            compile(z>0->yleq,ygeq)
+            y := compjump(yjfalse)
+            skdoreadcom()
+            reslist(obadd,@looplist,a)
+            compmin(dynnum-1,ypshdyn)
+            compshcon(z)
+            compile(yassplus)
+            combjump(yjump,x)
+            resolve(y,obadd)
+            reslist(obadd,@breaklist,a)
+            undefine()
+            dynnum -:= 2
+            RETURN
+        CASE twhile : CASE tuntil : x := obadd
+            y := sym
+            scanreadrightexp()
+            z := compjump(y=tuntil->yjtrue,yjfalse)
+            skdoreadcom()
+            combjump(yjump,x)
+            resolve(z,obadd)
+            reslist(obadd,@breaklist,a)
+            reslist(x,@looplist,a)
+            RETURN
+        CASE topen : z := findtag()
+            scan()
+
+//  It is important to distinguish between blocks and compound statements for
+//  reasons of identifier handling.
+
+            TEST tmanif<=sym<=tlet THEN
+             $( currblockdepth +:= 1
+                y := dynnum
+                WHILE tmanif<=sym<=tlet DO readdef(TRUE)
+                readcompound(z)
+                undefine()
+                dynnum := y
+             $)
+            ELSE readcompound(z)
+            ENDCASE
+        CASE tif : CASE tunless : CASE ttest : y := sym
+            scanreadrightexp()
+            x := compjump(y=tunless->yjtrue,yjfalse)
+            skdoreadcom()
+            IF y=ttest THEN
+             $( y := compjump(yjump)
+                resolve(x,obadd)
+                check(telse,"ELSE")
+                scanreadcom()
+                resolve(y,obadd)
+                RETURN
+             $)
+            resolve(x,obadd)
+            RETURN
+        CASE tgoto : scanreadrightexp()
+            compile(ygoto)
+            RETURN
+        DEFAULT : asstype := 0
+            x := readexp(0)
+
+//  Check first to see if it is a label definition first (another use of
+//  IDENTMODE). If it is then SCANRES should still be a pointer to the relevant
+//  tag which still has to be GLOBAL.
+
+            IF x=identmode&sym=tcolon THEN
+             $( inglobval(scanres)
+                scanreadcom()
+                RETURN
+             $)
+
+//  As it is not a label it must be an assignment or a routine call. Try and
+//  make current expression into assignment mode (in the BCPL sense).
+
+            x := deidmode(x)
+            IF x=rightmode THEN error("Expression on left hand side of*
+                * assignment not in assignment mode",TRUE)
+            IF x~=procmode THEN
+             $( check(tassign,"Assignment operator")
+                scanreadrightexp()
+
+//  The type of assignment operator compiled depends on the mode of the LHS.
+
+                compile((x=percentmode->yperass,yassign)+asstype)
+                RETURN
+             $)
+
+//  It was a routine call so adjust the ycode.
+
+            compile(temp1+procdiff)
+            IF temp1=yfcall THEN compile(temp2)
+            RETURN
+        CASE tfinish : compile(yfinish)
+     $)
+    scan()
+ $)
+
+
+//  READCOM is very straightforward. The command is processed and if there are
+//  REPEATs after it they are processed accordingly too.
+
+LET readcom() BE
+ $( LET x,a,inadd=?,statement,obadd
+    readnonrepcom()
+
+//  If there are REPEATs, the address of the start of the command was recorded
+//  at the start of READCOM in INADD.
+
+    WHILE trepunt<=sym<=trepeat DO
+     $( reslist(obadd,@looplist,a)
+        x := sym
+        scan()
+        UNLESS x=trepeat THEN readrightexp()
+        combjump(x=trepeat->yjump,x=trepwh->yjtrue,yjfalse,inadd)
+        reslist(obadd,@breaklist,a)
+     $)
+
+//  The STATEMENT number is incremented by one. This number is crucial to the
+//  resolution of jump lists.
+
+    statement +:= 1
+ $)
+
+
+//  SKDOREADCOM reads a command after skipping a DO or THEN.
+
+LET skdoreadcom() BE
+ $( IF sym=tthen THEN scan()
+    readcom()
+ $)
+
+
+//  SCANREADCOM reads a command after initialising SYM to the first symbol of
+//  that command.
+
+LET scanreadcom() BE
+ $( scan()
+    readcom()
+ $)
+
+
+//  READCOMPOUND compiles the remainder of a compound command or block and
+//  checks that the tag with the closing '$)' is the same as X.
+
+LET readcompound(x) BE
+ $( LET y,z=errlab,errlev
+    errlab := errlabcom
+    errlev := level()
+    WHILE sym~=tclose&sym~=tend DO
+     $( readcom()
+        errlabcom:
+        skipsemicol()
+     $)
+    errlab := y
+    errlev := z
+    chkcltag(x)
+ $)
+
+
+//  READDEF reads in the next declaration. NOTMAIN signifys whether a jump
+//  should be placed round the code of a procedure declaration.
+
+LET readdef(notmain) BE
+ $( LET x,y,z,a,b,c=?,?,?,?,errlab,errlev
+    errlev := level()
+    errlab := errlabdef
+    TEST tmanif<=sym<=tglob THEN
+     $( z := sym
+        scan()
+        check(topen,"$(")
+        errlab := errlabdec
+        a := findtag()
+        scan()
+         $( ensuretag()
+            checkredf(scanres)
+            y := scanres
+            scan()
+            TEST z=tglob THEN check(tcolon,"Colon") ELSE check(tequals,"=")
+            x := reconexp(0)
+            addtolist(y,x,z=tmanif->maniftype,globtype)
+
+//  If the declaration is GLOBAL then if it exceeds the 'maximum global
+//  referenced in this module' number then that number is updated.
+
+            IF z=tglob&x>maxglob THEN maxglob := x
+            errlabdec:
+            skipsemicol()
+         $) REPEATUNTIL sym=tclose|sym=tend
+        errlab := errlabdef
+        chkcltag(a)
+        scan()
+     $)
+    ELSE
+     $( check(tlet,"LET")
+        scan()
+        ensuretag()
+        x := scanres
+
+//  Test for routine declaration or dynamic declaration.
+
+        TEST scan()=tbra THEN
+         $( LET b,oldprocblock=dynmax,currprocblock
+            currblockdepth +:= 1
+
+//  Set up CURRPROCBLOCK for checking for dynamic free variables.
+
+            currprocblock := currblockdepth
+
+//  Unless this is a procedure declared at the outermost level compile code to
+//  jump over it.
+
+            IF notmain THEN z := compjump(yjump)
+            inglobval(x)
+            x := idlist
+            y := dynnum
+            a := obadd
+            dynnum := 1
+            dynmax := 1
+            compmax()
+
+//  Read in formal parameter list and make the identifiers dynamic variables.
+
+            IF scan()~=tket THEN
+             $( ensuretag()
+                checkredf(scanres)
+                incdynnum()
+                addtolist(scanres,dynnum,dyntype)
+                UNLESS scan()=tcomma THEN BREAK
+                scan()
+             $) REPEAT
+            check(tket,")")
+
+//  Read in command or expression depending on whether formal parameter list is
+//  followed by = or BE.
+
+            TEST scan()=tequals THEN scanreadrightexp() ELSE TEST sym=tbe THEN
+                scanreadcom() ELSE error("= or BE expected",TRUE)
+            compile(yret)
+            IF notmain THEN resolve(z,obadd)
+            resabs(a,dynmax+1)
+
+//  Reset previous state of identifiers declared and accessible.
+
+            undefine()
+            currprocblock := oldprocblock
+            dynnum := y
+            dynmax := b
+         $)
+        ELSE
+
+//  It is a dynamic declaration.
+
+         $( compmin(dynnum,ypshdyn)
+            checkredf(x)
+            z := 1
+             $( incdynnum()
+                addtolist(x,dynnum,dyntype)
+                IF sym~=tcomma THEN BREAK
+                scan()
+                ensuretag()
+                x := scanres
+                checkredf(x)
+                scan()
+                z +:= 1
+             $) REPEAT
+            check(tequals,"=")
+            FOR x=1 TO z DO
+             $( TEST scan()=tvec THEN
+                 $( compmin(dynnum+1,ypshdyn)
+
+//  Allow enough space for vector in the stack frame.
+
+                    dynnum +:= reconexp(0)
+
+//  INCDYNNUM ensures that DYNMAX is updated.
+
+                    incdynnum()
+                 $)
+                ELSE readrightexp()
+                IF x~=z THEN check(tcomma,"Comma")
+             $)
+            compile(ydyndec)
+            compile(z)
+         $)
+     $)
+    errlabdef:
+    errlab := b
+    errlev := c
+    skipsemicol()
+ $)
+
+
+//  START merely calls RUN via APTOVEC. 1000 words are left for normal stack
+//  usage, and this should usually be sufficient.
+
+LET start() BE aptovec(run,stackend-stackbase-1000)
+
+
+//  RUN is the main routine which performs initialising, input of the basic
+//  words file, processing of the program, constructing the global list, at the
+//  end of the module, and if all has gone well, the output of the object code.
+
+LET run(aarea,areasize) BE
+ $( LET x=1
+    area := aarea
+    obadd := 0
+    err := FALSE
+    areap := areasize+1
+    buffer := new(buffersize)
+    hashtable := new(hashsize)
+    fileid := new(fileidsize)
+    pr := "*X00*X0B*X07*X07*X08*X08*X08*X08*X08*X08*X0A*X0A*X0A*
+        **X05*X04*X03*X03*X09*X09*X0C*X0A*X0A*X0C*X06*X0B*X0C"
+    idlist := 0
+    globdeflist := 0
+    statement := 0
+    getlist := 0
+    maxglob := 0
+    currblockdepth := 0
+
+//  The hash table is cleared by setting all the elements to 0.
+
+    FOR y=0 TO hashsize-1 DO hashtable!y := 0
+
+//  The basic words are read in to the hashtable. They will be at the top of
+//  the lists so that they will be the first to be looked at when trying to
+//  identify a tag.
+
+    openin("BWORDS")
+    UNTIL ch=endstreamch DO
+     $( findtag()%type := x
+
+//  Tags on the same line are synonyms, so a newline signifys that the symbol
+//  number should be incremented.
+
+        IF ch='*n' THEN x +:= 1
+        nextch()
+     $)
+
+//  Open the main source input file.
+
+    openin(parms)
+    scan()
+    compmax()
+
+//  Set up the jump lists to empty.
+
+    endcaselist := 0
+    looplist := 0
+    breaklist := 0
+    vallist := 0
+
+//  Read in the definitions that make up the module.
+
+    WHILE tmanif<=sym<=tlet DO readdef(FALSE)
+    IF sym~=tend THEN error("Declaration expected",FALSE)
+
+//  Ensure alignment on a word boundary.
+
+    labadd(0)
+
+//  Check the jump lists are all empty, i.e. there are no instances of LOOPs
+//  etc. not in repetitive statements and so on.
+
+    UNLESS endcaselist=0&vallist=0&looplist=0&breaklist=0 THEN
+        error("LOOP, BREAK, ENDCASE or RESULTIS incorrectly used",FALSE)
+
+//  Output list of internally defined GLOBALS.
+
+    x := 0
+    UNTIL globdeflist=0 DO
+     $( compmax(globdeflist!1)
+        compmax(globdeflist!2)
+        globdeflist := !globdeflist
+        x +:= 1
+     $)
+    compmax(x)
+
+//  Make first two bytes of module point to the end of the module.
+
+    resolve(0,obadd)
+    compmax(maxglob)
+    IF err THEN FINISH
+
+//  The rest of the program is very system dependant. At the moment it outputs
+//  the module in Mostek Hex format (compatible with Cambridge Hex), but it
+//  should be trivial to output it in any desired format. This stage is not of
+//  course needed if the object code is output as it goes along.
+
+    x := parms%0
+    parms%(x+1) := '.'
+    parms%(x+2) := 'O'
+    parms%(x+3) := 'B'
+    parms%(x+4) := 'J'
+    parms%0 +:= 4
+    selectoutput(findoutput(parms))
+
+//  This tells the linker that the name of the module is blank, and it is
+//  relocatable.
+
+    writes("$      0501FD*n")
+
+//  The maximum size of a type 0 record is for it to have 32 data bytes.
+
+    FOR y=0 TO obadd-1 BY 32 DO
+     $( x := obadd-y>32->32,obadd-y
+        wrch(':')
+        sumcheck := 0
+
+//  Output number of bytes in the record.
+
+        puthex(x)
+
+//  Output the relative address of them.
+
+        puthex(y>>8)
+        puthex(y&255)
+
+//  Record type is 0.
+
+        puthex(0)
+
+//  Output the data bytes.
+
+        FOR z=0 TO x-1 DO puthex(area%(y+z))
+
+//  Output the sumcheck, which is such that the sum of the bytes in the record
+//  is 0.
+
+        puthex(-sumcheck)
+        newline()
+     $)
+
+//  Output the end-of-module marker.
+
+    writes(":00000001FF*n")
+ $)
+
+
+//  PUTHEX outputs the given byte as two hex digits. This is used for the
+//  output of Mostek Hex. The sumcheck is updated.
+
+LET puthex(n) BE
+ $( LET x,y=(n>>4)&15,n&15
+    wrch(x<10->x+'0',x+hexoff)
+    wrch(y<10->y+'0',y+hexoff)
+    sumcheck +:= n
+ $)
+

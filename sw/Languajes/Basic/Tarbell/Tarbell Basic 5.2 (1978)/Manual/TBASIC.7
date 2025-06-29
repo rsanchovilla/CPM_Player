@@ -1,0 +1,73 @@
+* DROP <numeric expression>,<numeric expression>
+Drops the assignment of the logical device selected by the first
+expression to the physical device selected by the second expression.
+Examples:   DROP 1,1     DROP LOGICAL,PHYSICAL    DROP PRINTD,TTY
+
+END
+Puts BASIC back in command mode.  Normally the last statement in
+a program.  Not required.  Example:    END
+
+FOR <variable name> = <expr1> TO <expr2> [STEP <expr3>]
+Execution sets <variable name> = <expr1>.  The program then proceeds
+until a "NEXT" statement is encountered.  <expr3> (or 1 if STEP <expr3>
+is omitted) is then added to <variable name>.  If <expr3> < 0 and
+<variable name> >= <expr2>, or if <expr3> >0 and <variable name> <= <expr3>,
+then the program continues with the statement following the "FOR" statement.
+Otherwise, the program continues after the "NEXT" statement.
+Example:  FOR N=1 TO 5        Example:  FOR IND=START TO FINISH STEP INCR
+
+* GOPROC <line descriptor>[,<variable list>]
+Calls the statement <line descriptor>, passing the variables on the
+list.  Similar to GOSUB, except it allows the subroutine to have
+local variables, which are not affected by assignments outside
+the procedure.  Also allows passing variables to the subroutine.
+The subroutine need not contain a PROCEDURE statement.
+Example:    GOPROC SEARCH,STR1$,STR2$,POSITION
+
+
+GOSUB <line descriptor>
+A subroutine call is made to the line indicated.  That is,
+execution continues at <line descriptor> until a RETURN statement
+is encountered, at which time execution is continued at the
+statement following the GOSUB statement.
+Examples:  GOSUB CALC    GOSUB 10570    GOSUB GET+1
+
+GOTO <line descriptor>
+An unconditional branch is made to the line indicated.  That is,
+execution continues at <line descriptor> instead of the next
+statement.  Examples:  GOTO 100    GOTO LOOP+2    GOTO LAST-5
+
+* IF <logical expression> GOTO <line descriptor>
+If the value of <logical expression> = -1, then execution
+continues at the line indicated.  Otherwise, execution continues
+with the line following the IF statement.  The logical connectives
+allowed in <logical expression> are:  AND, OR, NOT, >, <, = .
+See Appendix B for explanation of logical expressions.
+Examples:  IF X<128 AND X>31 GOTO EXTRA    IF STR$<>"NO" GOTO 100
+
+* IF <logical expression> THEN <statement> [ELSE <statement>]
+If the value of <logical expression> = -1 (true), then the first
+<statement> is executed.  Otherwise, it is not.  If the ELSE option is
+used, the second statement is executed if the value of <logical
+expression> is false.  See Appendix B for def. of logical expression.
+Examples:  IF ANS$="YES" THEN GOSUB INSTR        IF 3*Y=4 THEN PRINT "OK"
+	   IF ARRAY(N)=0 THEN GOTO LOOP ELSE STOP
+
+INPUT <variable list>
+Assigns entries from the console device to the variables on the list.
+Prompts may be included by enclosing a string expression in quotes,
+separated from the variables by semicolons.  Prompts are printed in
+the order they appear on the list.  With no prompt, a "?" is printed.
+A carriage return must be used to terminate string input.
+Examples:  INPUT A,B$    INPUT "FILENAME";NAM$
+
+			    7
+
+
+
+
+
+
+
+
+

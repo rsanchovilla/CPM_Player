@@ -1,0 +1,616 @@
+;
+;	File viewer for Write-Hand-Man
+;
+;	Copyright (c) 1985 by Poor Person Software
+;
+	org	0
+base	equ	$
+fcb	equ	base+05ch
+fcbfn	equ	fcb+1
+fcbty	equ	fcb+9
+fcbex	equ	fcb+12
+ranrec	equ	fcb+33
+z0	equ	fcb+35
+buf	equ	base+080h
+incnt	equ	buf
+inbuf	equ	incnt+2
+functab equ	base+018h	; address of function key table
+;
+pstring equ	9
+fsearch equ	17
+nsearch equ	18
+usern	equ	32
+conin	equ	1
+conout	equ	2
+conio	equ	6
+open	equ	15
+close	equ	16
+ranread equ	33
+;
+bdos	equ	base+5
+home	equ	base+010h
+;
+;
+	org	0100h
+	mvi	e,255
+	mvi	c,usern 	; get user number
+	call	bdos
+	sta	user		; save current user number
+start:
+	lda	user		; reset current user number
+	mov	e,a
+	mvi	c,usern
+	call	bdos		; set to default user number
+;
+	call	clear		; clear the buffer
+	call	disbuf		; display the buffer
+	call	getfn		; get file name
+	jc	base		; quit nothing to do
+;
+	lxi	d,fcb
+	mvi	c,open	
+	call	bdos		; open the file
+	inr	a
+	jz	start		; no file so loop 
+	xra	a
+	sta	z0		; zero random record extension
+	lxi	h,0
+	shld	ranrec
+	call	disbuf		; blank the window    
+	call	disfile 	; display the file
+	mvi	c,close 	; close file
+	lxi	d,fcb
+	call	bdos
+	jmp	start		; ask for another file
+;
+clear:
+	lxi	h,bl
+	lxi	d,obuf
+	lxi	b,256
+	call	mvcon		; move 256 blanks to window
+	ret
+;
+disbuf:
+	call	home
+	lxi	h,obuf		; start here
+	mvi	b,32		; characters per line
+	mvi	c,8		; lines 	  
+disl:
+	mov	e,m		; get byte from buffer
+	call	putchar 	; display it
+	inx	h
+	dcr	b		; row
+	jnz	disl		; loop whole row
+	lxi	d,crlf		; end of line sequence
+	call	putstr
+	mvi	b,32		; reset number of characters per line
+	dcr	c
+	jnz	disl		; for 8 rows
+	mvi	b,32
+disl1:
+	mvi	e,'_'		; put out bottom of window 
+	call	putchar
+	dcr	b
+	jnz	disl1
+	lxi	d,crlf		; and end of line sequence
+	call	putstr
+	call	home		; home cursor
+	lxi	d,lf7
+	call	putstr		; position on last line of window
+	ret
+;
+putchar:			; put character to console
+	push	h
+	push	b
+	mvi	c,conout
+	call	bdos
+	pop	b
+	pop	h
+	ret
+disfile:			; display file
+	xra	a
+	sta	col		; column we are in
+	lxi	h,0ffffh	; -1
+	shld	ranrec
+	call	readn		; get first block
+	rc			; return if carry
+dislp:
+	call	gnb		; get byte from input buffer (128)
+	jc	dischk		; end of block see what next
+	cpi	01ah		; eof
+	jz	dischk		; just as if end of block
+	call	pnb		; put byte in buffer and on screen
+	jmp	dislp
+dischk:
+	call	inbyte		; get byte from console
+	cpi	27		; esc 
+	rz
+	cpi	3		; ctl c
+	rz			; return if ^c or esc
+	cpi	061h
+	jc	noand		; mask to upper case?
+	ani	05fh		; make upper
+noand:
+	cpi	'F'		; forward 1 block
+	jz	gofor
+	cpi	'B'		; back 1 block
+	jz	goback
+	cpi	'S'		; start
+	jz	gobeg
+	cpi	'T'		; toggle trunc?
+	jz	ttr		; yes
+	cpi	'+'		; plus n blocks
+	jz	gopls
+	cpi	'-'		; minus n blocks
+	jz	gomin
+	cpi	'E'		; end
+	jz	goend
+	cpi	'C'
+	jz	cut		; cut some characters
+	jmp	dischk
+;
+inbyte: 			; get byte from console
+	mvi	a,255
+	call	dconio
+	ora	a
+	jz	inbyte
+	ret
+;
+cut:
+	call	inbyte		; get line number
+	dcr	a
+	ani	0fh
+	rlc
+	rlc			; *4
+	rlc			; *8
+	rlc			; *16
+	rlc			; * 32
+	mov	c,a
+	mvi	b,0
+	lhld	functab 	; base of table in hl
+	xchg
+	lxi	h,obuf
+	dad	b		; hl to start of cut
+	lxi	b,95		; move this many
+	call	mvcl
+	xra	a
+	stax	d
+	jmp	dischk
+;
+gopls:
+	call	inbyte		; get number of blocks
+	ani	0fh		; mask all but 4 bits
+	mov	e,a
+	mvi	d,0
+	lhld	ranrec		; get current block number
+	dad	d		; add in
+	dcx	h		; minus for advance of readn
+	shld	ranrec
+	call	readn		; get next block
+	jc	hitend		; if passed end
+	jmp	dislp
+gomin:
+	call	inbyte		; get number of blocks
+	ani	0fh
+	mov	e,a
+	xra	a
+	sub	e		; make a negative number
+	mov	e,a
+	mvi	d,0ffh		; make 16 bit negative
+	lhld	ranrec
+	dad	d		; subtract
+	mov	a,h
+	ora	a
+	jm	gobeg		; check for less than zero
+	inx	h		; advance because goback will decrement
+	shld	ranrec
+	jmp	goback
+;
+ttr:				; change truncation indicator
+	lda	crlf
+	cpi	'|'		; off?
+	jz	truncon
+	mvi	a,'|'		; make off
+	sta	crlf
+	jmp	dischk
+truncon:
+	mvi	a,'T'		; make on
+	sta	crlf
+	jmp	dischk
+;
+gofor:				; forward one block
+	call	readn
+	jc	hitend
+	jmp	dislp
+goback: 			; backward
+	call	clear		; clear buffer	    
+	call	disbuf		; clear window
+	xra	a		; start at column 0
+	sta	col
+	call	readp		; get previous block
+	jnc	dislp		; display it
+gobeg:
+	call	clear		; clear
+	call	disbuf
+	xra	a
+	sta	col
+	lxi	h,0ffffh
+	shld	ranrec
+	call	readn		; get first block
+	rc
+	jmp	dislp
+;
+goend:				; read till end of file
+	call	readn
+	jnc	goend		; loop till passed end
+	jmp	goback
+hitend:
+	call	readp
+	jc	hitend		; backup till successful
+	call	readn		; one passed
+	jmp	goback		; display last block
+;
+getfn:			; returns with FCB filled in for search
+;
+	xra	a
+	sta	fcbex		; set default
+;
+	call	home
+	lxi	d,prmpt 
+	call	putstr		; print prompt
+	lxi	d,incnt
+	mvi	a,16
+	stax	d    
+	call	rdbuf		; read string
+	rc			; use default
+;
+	lxi	h,bl 
+	lxi	d,fcbfn
+	lxi	b,11
+	call	mvcon		; put in blanks
+;
+	lxi	h,inbuf 	; start here
+	lxi	d,fcbfn 	; to here
+	mvi	b,0		; count filename
+fnlp:
+	call	getbyt		; get a byte
+	rz			; done	   
+	cpi	':'		; 
+	jz	docolon 	; process
+	cpi	'.'
+	jz	doperiod	; process
+	mov	c,a
+	mov	a,b
+	cpi	8		; extra
+	jz	fnlp		; skip it
+	mov	a,c		; get character back
+	stax	d		; put into place
+	inx	d		; next
+	inr	b		; count
+	jmp	fnlp
+;
+docolon:
+	lda	fcbfn		; get first character
+	cpi	' '
+	jz	fnlp		; skip colon  no disk
+	cpi	041h
+	jc	nodisk
+	cpi	05bh
+	jnc	nodisk
+	sui	040h		; make A=1
+	ani	01fh		; mask
+	sta	fcb		; set disk number
+nodisk:
+	lxi	d,fcbfn 	; reset file name ptr
+	mvi	b,0		; reset counter
+	mvi	a,' '
+	stax	d		; zap byte
+;
+	lda	fcbfn+1
+	cpi	' '		; is this blank
+	jz	fnlp		; yes no user number specd
+	cpi	030h
+	jc	fnlp		; out of range
+	cpi	03ah		; 
+	jnc	tryhex		; out of range
+	sui	030h		; normalize
+setuser:
+	push	h
+	push	d
+	push	b
+	mov	e,a
+	mvi	c,usern 	; set selected user number
+	call	bdos
+	pop	b
+	pop	d
+	pop	h
+	mvi	a,' '
+	sta	fcbfn+1
+	jmp	fnlp		; continue
+tryhex:
+	ani	05fh
+	cpi	041h
+	jc	fnlp		; below A
+	cpi	047h
+	jnc	fnlp		; above f
+	ani	0fh
+	adi	09h
+	jmp	setuser
+doperiod:
+	lxi	d,fcbty
+	mvi	b,0		; count
+tylp:
+	call	getbyt		; do file type
+	rz		
+	stax	d
+	inx	d
+	inr	b
+	mov	a,b
+	cpi	3
+	rz		
+	jmp	tylp
+;
+getbyt: 			; get byte from console buffer
+	lda	incnt+1 	; get count left
+	ora	a
+	rz			; none left
+	dcr	a
+	sta	incnt+1
+	mov	a,m
+	inx	h
+	cpi	061h
+	jc	getret
+	cpi	07bh
+	jnc	getret
+	ani	05fh
+getret:
+	ora	a
+	ret
+;
+;
+mvcl:			; hl -> de  count bc
+	mov	a,m
+	stax	d
+	inx	h
+	inx	d
+	dcx	b
+	mov	a,b
+	ora	c
+	jnz	mvcl
+	ret
+;
+mvcon:			; to de, count bc, character in m
+	mov	a,m
+	stax	d
+	inx	d
+	dcx	b
+	mov	a,c
+	ora	b
+	jnz	mvcon
+	ret
+;
+rdbuf:
+				; d = buffer   max,len,xxxxx
+	ldax	d		; get max
+	mov	b,a		;   b has max 
+	inx	d		; d to len
+	xra	a
+	stax	d
+	mov	h,d
+	mov	l,e
+	inx	h		; h to place
+rdlp:
+	mvi	a,255
+	call	dconio
+	cpi	8		; is it a BS
+	jz	dobsp		; yes
+	cpi	13
+	rz			; done
+	cpi	27		; esc
+	jz	rdquit		; yes exit
+	cpi	32
+	jc	rdlp		; forget it
+	cpi	127
+	jz	dobsp 
+	push	psw
+	call	dconio		 ; echo the character
+	pop	psw
+	mov	m,a		; put into area
+	inx	h
+	ldax	d
+	inr	a
+	stax	d
+	dcr	b
+	jnz	rdlp		; go some more
+	xra	a
+	ret			; return with no carry
+dobsp:
+	ldax	d		; get current length
+	ora	a
+	jz	rdlp		; just skip it
+	mvi	a,8
+	call	dconio
+	mvi	a,32
+	call	dconio
+	mvi	a,8
+	call	dconio
+	ldax	d
+	dcr	a
+	stax	d
+	inr	b
+	dcx	h	       ; correct the counters
+	jmp	rdlp
+rdquit:
+	stc
+	ret			; return with carry
+dconio:
+	push	d
+	push	b
+	push	h
+	mov	e,a
+	mvi	c,6
+	call	bdos 
+	pop	h
+	pop	b
+	pop	d
+	ret
+;
+putstr: 		; de to string
+	push	b
+	push	h
+	mvi	c,pstring
+	call	bdos
+	pop	h
+	pop	b
+	ret
+pnb:			; put byte into buffer and display
+			; check for need to scroll buffer
+	cpi	10	; lf
+	jz	plf
+	cpi	13	; cr
+	jz	pcr
+	mov	b,a
+	lda	col
+	cpi	32
+	jnz	pnbntr	; not passed end
+;
+	lda	crlf
+	cpi	'T'	; trunc mode?
+	rz		; yes quit
+	push	b
+	call	scrolup
+	pop	b
+pnbntr:
+;
+	mov	a,b	; get character back
+	cpi	9
+	jz	ptab	; do a tab	  
+;
+	push	psw
+	lda	col		; get current column
+	mov	e,a
+	mvi	d,0
+	lxi	h,obuf+224
+	dad	d		; calculate correct buffer address
+	pop	psw
+	mov	m,a		; put into buffer
+	mov	e,a
+	call	putchar 	; put on screen
+	lda	col
+	inr	a
+	sta	col		; bump column
+	ret
+;
+pcr:
+	xra	a		; reset column
+	sta	col
+	mvi	e,13
+	call	putchar 	; output cr
+	ret
+plf:
+	call	scrolup 	; move screen up one line
+	xra	a
+	sta	col
+	ret			; that is all
+ptab:
+	lda	col
+	ani	07h		; move to multiple of 8
+	mov	b,a
+	mvi	a,8
+	sub	b
+	mov	b,a		; count
+ptabl:
+	mvi	e,' '
+	call	putchar 	; move cursor
+	lda	col
+	inr	a
+	sta	col
+	cpi	32
+	rz			; done if reach 32
+	dcr	b
+	jnz	ptabl
+	ret
+;
+scrolup:
+	lxi	h,obuf+32
+	lxi	d,obuf
+	lxi	b,224
+	call	mvcl		; move buffer
+	lxi	d,obuf+224
+	lxi	h,bl
+	lxi	b,32
+	call	mvcon		; blank last line
+	xra	a
+	sta	col
+	call	disbuf		; display buffer
+	ret
+;
+gnb:			; get byte from input block
+			; return Carry when buffer empty
+	push	d
+	push	h
+	lda	ibp	; see if any here
+	cpi	080h	; welll?
+	jnz	gnb1	; 
+	stc
+	pop	h
+	pop	d
+	ret		; return with carry
+gnb1:
+	mov	e,a
+	mvi	d,0
+	inr	a
+	sta	ibp
+	lxi	h,buf
+	dad	d
+	mov	a,m
+	ani	07fh	; clear carry and high bit
+	pop	h
+	pop	d
+	ret		; return with byte
+;
+readn:			; read next buffer
+			; return with carry if no more
+	push	h
+	lhld	ranrec
+	inx	h
+	jmp	readr
+readp:			; read previous buffer
+	push	h
+	lhld	ranrec
+	mov	a,h
+	ora	l
+	jnz	readp1
+	pop	h
+	stc
+	ret
+readp1:
+	dcx	h
+readr:				; read buffer
+	shld	ranrec
+	push	d
+	push	b
+	xra	a
+	sta	ibp
+	mvi	c,ranread
+	lxi	d,fcb
+	call	bdos
+	pop	b
+	pop	d 
+	pop	h
+	ora	a
+	rz
+	stc
+	ret
+;
+prmpt:	db	'Dn:FILENAME.TYP',13,10,10,'>','$'
+crlf:	db	'|',13,10,'$'
+lf7:	db	10,10,10,10,10,10,10,'$'
+bl:	db	' '
+ibp:	db	0
+col:	db	0
+obuf:	ds	256
+user:	db	0
+	end
+'
+crlf:	db	'|',13,10,'$'

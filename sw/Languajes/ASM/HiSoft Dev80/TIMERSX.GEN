@@ -1,0 +1,58 @@
+*r+
+
+*h An example RSX to get time
+
+	defs	6		;room for serial number
+	jp	start
+next	jp	0		; next RSX or BDOS
+prev	defw	0		; previous one
+remove	defb	-1		; remove after warm start
+nonbnk	defb	0
+	defb	"PRTIME  "
+	defb	0,0,0
+
+start	ld	a,c		;has a call RSX been done?
+	cp	#3c
+	jr	nz,next		;no, go to next
+	ld	a,(de)
+	cp	43		;is it this RSX?
+	jr	nz,next		;its not us
+
+;get date and time
+	ld	c,105
+	ld	de,date
+	call	next
+	ld	a,(date+2)
+	call	byteout
+
+	ld	a,":"
+	call	charout
+	ld	a,(date+3)
+
+; drop through to byteout
+
+byteout	push	af
+	rra
+	rra
+	rra
+	rra
+	call	digout
+	pop	af
+digout
+	and	%1111
+	add	a,"0"
+charout
+	ld	e,a
+	ld	c,2
+	jp	next
+
+date 	defs	4
+
+	rra
+	rra
+	rra
+	call	digout
+	pop	af
+digout
+	and	%1111
+	add	a,"0"

@@ -1,0 +1,40 @@
+; assemble LGGSX
+; This program is called by logo and issues GSX calls to draw 
+; the image on screen
+; it is assembled as PRL and embedded in LGLOADER
+; this program replaces the RSX attached to logo.com original program
+ERA LGGSX.PRL
+ERA LGGSX.REL
+ERA LGGSX.SYM
+ERA LGGSX.TXT
+M80 LGGSX,LGGSX.TXT=LGGSX.ASM /Z/M
+LINK LGGSX=LGGSX[op]
+ERA LGGSX.REL
+ERA LGGSX.SYM
+;
+; assemble LGLOAD
+; This program does the following actions
+; 1) relocates the embedded program LGGSX on top of TPA
+; 2) calls LGGSX to hook BDOS function 60 (Call to RSX)
+; 3) loads LOGO.COM at $0100 and runs it
+;
+ERA LGLOAD.REL
+ERA LGLOAD.TXT
+ERA LGLOAD.COM
+; assemble and generate listing file
+M80 LGLOAD,LGLOAD.TXT=LGLOAD.ASM /Z/M
+L80 LGLOAD,LGLOAD/N/E
+ERA LGLOAD.REL
+; concatenate LGGSX, as it is not .COM, add the [O] option 
+; to force a binary copy
+PIP LG.COM=LGLOAD.COM,LGGSX.PRL[O]
+ERA LGGSX.PRL
+ERA LGLOAD.COM
+;
+; GENGRAF LGLOAD
+; so it will load the GSX driver stated in ASSIGN.SYS
+; copy the result to main program folder
+; 
+GENGRAF LG.COM
+PIP B:LGLOAD.COM=LG.COM
+ERA LG.COM

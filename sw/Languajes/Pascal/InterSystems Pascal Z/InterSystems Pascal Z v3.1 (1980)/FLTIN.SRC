@@ -1,0 +1,103 @@
+; floating point input routine
+;
+	NAME FLTIN
+	ENTRY FLTIN
+	EXT INPUT,LOOK,CVTSFP,ERRTYP
+	INCLUDE FPINIT.SRC
+;
+fpp:	equ	0		;for status byte
+fps:	equ	1		;for status byte
+fppb:	equ	1		;for status byte, corresponds to bit 0
+fpsb:	equ	2		;for status byte, corresponds to bit 1
+fltin:
+	push	d		;save parm counter
+	push	h		;save file pointer
+	lxi	d,-2		;point to string we're going to create
+	xchg
+	dad	s		;..and save pointer in de
+	xchg
+	mvi	b,0		;b indicate sign of result
+fp1:	call	input		;get 1st char from input routine
+	cpi	' '
+	jrz	fp1		;skip leading spaces
+	cpi	'-'		;check for a leading sign
+	jrz	ngflt		;yes...negate floating point result
+	cpi	'+'
+	cz	input		;skip over + sign
+	inr	b		;inr, dcr -> 0
+ngflt:	dcr	b		;set b according to sign of number
+	push	b		;save sign indicator
+	cnz	input		;skip over a minus sign
+	inx	s		;only save one byte
+	mvi	b,0		;indicator for # parsing status
+	jr	ckdg1		;don't read another digit
+ckdg:	call	input
+ckdg1:	cpi	'0'		;check for a digit
+	jc	errtyp		;not a digit, error
+	cpi	10+'0'
+	jnc	errtyp		;not a digit, error
+	jr	fpch1		;don't do another input
+fpchrs:	call	input		;get the character we just looked at...
+fpch1:	push	psw		;..and save it on the stack
+	inx	s		;only save one character
+	call	look		;look at next character
+	cpi	'.'		;check for a decimal point
+	jrz	fpoint		;yes, do special processing
+	cpi	'e'		;check for a scale factor
+	jrz	fpscal		;yes, process it
+	cpi	'E'		;check for a scale factor
+	jrz	fpscal		;yes
+	cpi	'0'		;if not a digit, then we're done
+	jrc	fpdn		;yes...done!
+	cpi	10+'0'
+	jrc	fpchrs		;not done!
+fpdn:	mvi	a,' '		;end the string with a space
+	push	psw
+	xchg			;hl -> string on the stack
+	push	h		;save string pointer
+	call	cvtsfp		;convert the string to a floating point #
+	mov	b,h		;copy lsbytes to bc
+	mov	c,l
+	pop	h		;get string pointer
+	push	h		;and save it
+	inx	h		;bump to sign indicator
+	inr	m		;see if we should negate
+	jrnz	fppos		;no, number is +ive
+	bset	sign,e		;set sign bit
+fppos:	mov	h,0(x)		;get pointer to input variable
+	mov	l,-1(x)
+	mov	m,d		;save floating point number
+	dcx	h
+	mov	m,e
+	dcx	h
+	mov	m,b
+	dcx	h
+	mov	m,c		;all saved!!!!
+	pop	h		;get pointer to string
+	sphl			;..and use it to restore the stack
+	pop	h		;throw away two now useless bytes
+	pop	h		;get file pointer
+	pop	d		;get parm counter
+	mvi	b,0		;clear b
+	ret
+fpoint:	bit	fpp,b		;see if it's too late for a decimal point
+	jrnz	fpdn		;yes, we're done with this #
+	mvi	b,fppb		;set appropriate bit
+	jr	fpchrs		;and process more characters
+fpscal:	bit	fps,b		;see if it's too late for a scale factor
+	jrnz	fpdn		;yes, we're done with this #
+	mvi	b,fpsb+fppb
+	call	input		;save scale factor on string
+	push	psw
+	inx	s
+	call	look		;look for a leading sign on the exponent
+	cpi	'-'
+	jrz	scalsn		;yes, do a scale sign
+	cpi	'+'
+	jrnz	ckdg		;no, go get some digits
+scalsn:	call	input		;save scale sign
+	push	psw
+	inx	s
+	jr	ckdg		;make sure that the next one's a digit
+;
+

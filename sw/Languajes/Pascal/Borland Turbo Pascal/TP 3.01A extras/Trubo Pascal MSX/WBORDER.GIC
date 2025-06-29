@@ -1,0 +1,37 @@
+procedure WBorder;
+
+var i, j: integer;
+
+begin
+  if _wy1 > 1
+  then begin
+    if _wx1 > 1 then vpoke (NAMBAS+pred(pred(_wy1))*_LINLEN+pred(pred(_wx1)),$18);
+    fillVRAM (NAMBAS+pred(pred(_wy1))*_LINLEN+pred(_wx1),succ(_wx2-_wx1),$17);
+    if _wx2 < _LINLEN then vpoke (NAMBAS+pred(pred(_wy1))*_LINLEN+_wx2,$19);
+    end;
+  if _wx1 > 1
+  then begin
+    j := NAMBAS + pred(_wy1)*_LINLEN + pred(pred(_wx1));
+    for i := _wy1 to _wy2 do
+      begin
+      vpoke (j, $16);
+      j := j + _LINLEN;
+      end;
+    end;
+  if _wx2 < _LINLEN
+  then begin
+    j := NAMBAS + pred(_wy1)*_LINLEN + _wx2;
+    for i := _wy1 to _wy2 do
+      begin
+      vpoke (j, $16);
+      j := j + _LINLEN;
+      end;
+    end;
+  if _wy2 < CRTCNT
+  then begin
+    if _wx1 > 1 then vpoke (NAMBAS+_wy2*_LINLEN+pred(pred(_wx1)),$1A);
+    fillVRAM (NAMBAS+_wy2*_LINLEN+pred(_wx1),succ(_wx2-_wx1),$17);
+    if _wx2 < _LINLEN then vpoke (NAMBAS+_wy2*_LINLEN+_wx2,$1B);
+    end;
+end;
+

@@ -1,0 +1,45 @@
+\SETUP
+\LM10,RM60,IGNORE^
+\
+\GET DATE="Today's date?
+\
+\FILE T12,LESSON7D
+\DATA ,NAME,ADDR1,ADDR2,CITY,STATE,SALUT,CONTRIB,TIMES,,COMMENT
+\
+\TEXT
+\IF #CONTRIB=0,END
+\
+\CLS
+\SHOW"    RECORD ",%PASS,"  ",:NAME,"   CONTRIBUTION: $",$CONTRIB
+\
+\RIGHT,:DATE\
+\LEFT,LINE8
+\
+\:NAME\
+\:ADDR1\
+\IF ADDR2<>"",:ADDR2,NL
+\:CITY\, \:STATE\
+\LINE14
+\
+Dear \:SALUT\,
+
+     Thank you \IF #TIMES>2,="once "\\IF #TIMES>1,="again "\for your \IF $CONTRIB>="100",="generous "\contribution of $\$CONTRIB\ to the Committee to Re-elect President Lincoln.
+\IF $CONTRIB>="25",SKIP
+     We know that $\$CONTRIB\ may not seem like very much, but it is the small contributors like you, \:SALUT\, that make it possible to run a campaign.  President Lincoln has often said that he would rather get ten small contributions than one large one.
+\IF $CONTRIB<"25",SKIP TO ^
+\IF $CONTRIB>="100",SKIP
+     We know that it took a considerable commitment on you part to contribute as much as you did.  President Lincoln has often said that commitment should be matched with equal commitment.  We want you to know, \:SALUT\, that the committee is committed to seeing that your $\$CONTRIB\ is spent wisely.
+^\IF $CONTRIB<"100",SKIP
+     It's people like you, \:SALUT\, that make it possible to run the kind of campaign we need to insure success.  So we hope that you will consider this to be your campaign as well as ours.  We welcome any comments that you might have concerning positions that President Lincoln has taken during the campaign.\IF $CONTRIB<"1000",NL,SKIP\  And if you are in Washington, we hope you will call on us so that we can arrange a personal meeting with President Lincoln.
+     Again, we want to express our appreciation for your \IF #TIMES=2,="repeated "\\IF #TIMES>2,="continued "\generosity.  If we may be of service to you \IF $CONTRIB>99,="in any way"\\IF $CONTRIB>999,=" (and we do mean any!)"\, we hope you won't hesitate to write us.
+
+\IN30\
+Sincerely,
+
+
+Joseph H. Miller
+Finance Committee
+\IN0\
+JHM/mw
+\NP
+\, we 

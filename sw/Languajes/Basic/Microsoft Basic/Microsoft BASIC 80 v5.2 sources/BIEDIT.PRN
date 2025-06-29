@@ -1,0 +1,451 @@
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	BIEDIT	BASIC Interpreter EDIT routines/PGA etc.
+                                	SUBTTL	EDIT COMMAND
+                                ;
+                                ;
+                                ;[C] CONTAINS COUNT OF CHARACTERS IN LINE
+                                ;[B] CONTAINS CURRENT CHARACTER POSITION 0=FIRST IN LINE.
+                                ;[D] CONTAINS NUMBER OF TIMES TO REPEAT THIS SUBCOMMAND
+                                ;[H,L] POINT TO CURRENT CHARACTER
+                                ;
+                                ;*
+                                	PUBLIC	ERREDT,EDIT,EDITRT,POPART
+                                	EXTRN	BUF,BUFLIN,CRDO,DOT,EDENT,ERRFLG,FININL,FNDLIN,INCHRI,OUTCH1
+                                	EXTRN	LINPRT,LINSPC,LISPRT,MAKUPS,OUTDO,POPHRT,READY,USERR
+                                	EXTRN	BLTUC,ERRLIN
+  0000'   32 0000*              ERREDT:	STA	ERRFLG			;RESET THE FLAG TO CALL EDIT
+  0003'   2A 0000*              	LHLD	ERRLIN			;GET THE LINE NUMBER
+  0006'   B4                    	ORA	H			;SEE IF IT WAS DIRECT
+  0007'   A5                    	ANA	L
+  0008'   3C                    	INR	A			;SET ZERO FLAG ON DIRECT
+  0009'   EB                    	XCHG				;LINE NUMBER INTO [D,E]
+  000A'   C8                    	RZ				;GO BACK IF DIRECT
+  000B'   C3 0012'              	JMP	EREDIT
+  000E'   CD 0000*              EDIT:	CALL	LINSPC			;GET THE ARGUMENT LINE NUMBER
+  0011'   C0                    	RNZ				;ERROR IF NOT END OF LINE
+  0012'   E1                    EREDIT:	POP	H			;GET RID OF NEWSTT ADDRESS
+  0013'   EB                    EEDITS:	XCHG				;SAVE CURRENT LINE IN DOT
+  0014'   22 0000*              	SHLD	DOT			;FOR LATER EDIT OR LIST
+  0017'   EB                    	XCHG				;GET BACK LINE # IN [H,L]
+  0018'   CD 0000*              	CALL	FNDLIN			;FIND THE LINE IN QUESTION
+  001B'   D2 0000*              	JNC	USERR			;IF NOT FOUND, UNDEFINED STATEMENT ERROR.
+  001E'   60                    	MOV	H,B			;PONTER TO LINE IS IN [B,C]
+  001F'   69                    	MOV	L,C			;TRANSFER IT TO [H,L]
+  0020'   23                    	INX	H			;PASS OVER POINTER TO NEXT LINE
+  0021'   23                    	INX	H			;LIKE SO.
+  0022'   4E                    	MOV	C,M			;GET FIRST BYTE OF LINE #
+  0023'   23                    	INX	H			;MOVE TO 2ND BYTE
+  0024'   46                    	MOV	B,M			;PICK IT UP INTO B
+  0025'   23                    	INX	H			;ADVANCE TO POINT TO FIRST BYTE OF LINE
+  0026'   C5                    	PUSH	B			;SAVE LINE # ON STACK
+  0027'   CD 0000*              	CALL	BUFLIN			;UNPACK LINE INTO BUF
+                                	PUBLIC	INLED
+  002A'   E1                    LLED:	POP	H			;GET BACK LINE #
+  002B'   E5                    INLED:	PUSH	H			;SAVE IT BACK ON STACK
+  002C'   7C                    	MOV	A,H			;TEST FOR DOUBLE BYTE ZERO
+  002D'   A5                    	ANA	L
+  002E'   3C                    	INR	A
+  002F'   3E 21                 	MVI	A,'!'			;GET PROMPT FOR DIRECT EDIT
+  0031'   CC 0000*              	CZ	OUTDO			;SEND IT
+  0034'   C4 0000*              	CNZ	LINPRT			;PRINT LINE # IF NOT INLIN EDIT
+  0037'   3E 20                 	MVI	A,' '			;TYPE A SPACE
+  0039'   CD 0000*              	CALL	OUTDO			;...
+  003C'   21 0000*              	LXI	H,BUF			;GET START OF BUF IN [H,L]
+  003F'   E5                    	PUSH	H			;SAVE [H,L] WHILE WE CALC LINE LENGTH
+  0040'   0E FF                 	MVI	C,255			;ASSUME 0 CHAR LINE
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+EDIT COMMAND
+
+  0042'   0C                    LENLP:	INR	C			;BUMP COUNT OF CHARS
+  0043'   7E                    	MOV	A,M			;GET CHAR FROM LINE
+  0044'   23                    	INX	H			;BUMP POINTER
+  0045'   B7                    	ORA	A
+  0046'   C2 0042'              	JNZ	LENLP			;IF NOT ZERO (END OF LINE) KEEP COUNTING...
+  0049'   E1                    	POP	H			;GET BACK POINTER TO LINE
+  004A'   47                    	MOV	B,A			;SET CURRENT LINE POSIT TO ZERO
+  004B'   16 00                 DISPED:	MVI	D,0			;ASSUME REPITION COUNT IS ZERO
+  004D'                         DISPI:
+  004D'   CD 0000*              	CALL	INCHRI			;GET A CHAR FROM USER
+  0050'   B7                    	ORA	A			;IGNORE NULLS
+  0051'   CA 004D'              	JZ	DISPI
+  0054'   CD 0000*              	CALL	MAKUPS			;MAKE UPPER CASE COMMAND
+  0057'   D6 30                 	SUI	'0'			;GET RID OF OFFSET
+  0059'   DA 006C'              	JC	NOTDGI			;...
+  005C'   FE 0A                 	CPI	10
+  005E'   D2 006C'              	JNC	NOTDGI
+  0061'   5F                    	MOV	E,A			;SAVE CHAR
+  0062'   7A                    	MOV	A,D			;GET ACCUM REPITITION
+  0063'   07                    	RLC				;MULTIPLY BY 2
+  0064'   07                    	RLC				;BY 4
+  0065'   82                    	ADD	D			;AND ADD TO GET 5*D
+  0066'   07                    	RLC				;*2 TO GET 10*D
+  0067'   83                    	ADD	E			;ADD DIGIT
+  0068'   57                    	MOV	D,A			;SAVE BACK NEW ACCUM
+  0069'   C3 004D'              	JMP	DISPI			;GET NEXT CHAR
+                                
+  006C'   E5                    NOTDGI:	PUSH	H			;SAVE TEXT POINTER
+  006D'   21 004B'              	LXI	H,DISPED		;PUT RETURN ADDRESS TO DISPED
+  0070'   E3                    	XTHL				;ON THE STACK
+  0071'   15                    	DCR	D			;SEE IF D=0 (REP FACTOR)
+  0072'   14                    	INR	D			;SET CONDITION CODES
+  0073'   C2 0077'              	JNZ	NTZERD			;BRANCH AROUND
+  0076'   14                    	INR	D			;MAKE IT 1
+  0077'                         NTZERD:
+  0077'   FE D8                 	CPI	8-'0'			;Backspace?
+  0079'   CA 01E5'              	JZ	BAKED			;HANDLE IT
+  007C'   FE 4F                 	CPI	177O-'0'		;DEL?
+  007E'   CA 01F4'              	JZ	DELED			;BACKSPACE POINTER
+  0081'   FE DD                 	CPI	13-'0'			;CARRIAGE RETURN
+  0083'   CA 0202'              	JZ	CRED			;DONE EDITING
+  0086'   FE F0                 	CPI	' '-'0'			;SPACE
+  0088'   CA 00D3'              	JZ	SPED			;GO TO ROUTINE
+  008B'   FE 31                 	CPI	'A'+40O-'0'		;COMMAND IN LOWER CASE?
+  008D'   DA 0092'              	JC	NOTLW4			;NO, SO OK.
+  0090'   D6 20                 	SUI	40O			;CONVERT TO UPPER CASE
+  0092'   FE 21                 NOTLW4:	CPI	'Q'-'0'			;QUIT?
+  0094'   CA 0217'              	JZ	QED			;IF SO, QUIT & PRINT "OK" OR RETURN TO INLIN
+  0097'   FE 1C                 	CPI	'L'-'0'			;L?
+  0099'   CA 010D'              	JZ	LED			;BRANCH
+  009C'   FE 23                 	CPI	'S'-'0'			;S?
+  009E'   CA 00E6'              	JZ	SED			;SEARCH
+  00A1'   FE 19                 	CPI	'I'-'0'			;I?
+  00A3'   CA 0169'              	JZ	IED			;INSERT
+  00A6'   FE 14                 	CPI	'D'-'0'			;D?
+  00A8'   CA 0117'              	JZ	DED			;DELETE
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+EDIT COMMAND
+
+  00AB'   FE 13                 	CPI	'C'-'0'			;C?
+  00AD'   CA 0134'              	JZ	CED			;CHANGE
+  00B0'   FE 15                 	CPI	'E'-'0'			;END?
+  00B2'   CA 0205'              	JZ	EED			;(SAME AS <CR> BUT DOESNT PRINT REST)
+  00B5'   FE 28                 	CPI	'X'-'0'			;EXTEND?
+  00B7'   CA 0164'              	JZ	XED			;GO TO END OF LINE & INSERT
+  00BA'   FE 1B                 	CPI	'K'-'0'			;KILL??
+  00BC'   CA 00E0'              	JZ	KED			;(SAME AS "S" BUT DELETES CHARS)
+  00BF'   FE 18                 	CPI	'H'-'0'			;HACK??
+  00C1'   CA 0161'              	JZ	HED			;HACK OFF THE REST OF THE LINE & INSERT
+  00C4'   FE 11                 	CPI	'A'-'0'			;AGAIN??
+  00C6'   3E 07                 	MVI	A,7			;GET READY TO TYPE BEL.
+  00C8'   C2 0000*              	JNZ	OUTDO			;NO MATCH, SEND BEL AND RETURN TO DISPATCHER
+  00CB'   C1                    	POP	B			;DISPI RETURN ADDRESS
+  00CC'   D1                    	POP	D			;LINE NUMBER INTO [D,E]
+  00CD'   CD 0000*              	CALL	CRDO			;TYPE A CARRIAGE RETURN LINE-FEED
+  00D0'   C3 0013'              	JMP	EEDITS			;RESTART EDITING
+                                
+  00D3'   7E                    SPED:	MOV	A,M			;GET CHAR FROM CURENT POSIT
+  00D4'   B7                    	ORA	A			;ARE WE AT END OF LINE?
+  00D5'   C8                    	RZ				;IF SO, RETURN
+  00D6'   04                    	INR	B			;BUMP CURRENT POSITION
+  00D7'   CD 0000*              	CALL	OUTCH1			;TYPE CHARACTER
+  00DA'   23                    	INX	H			;MOVE POINTER TO NEXT CHAR
+  00DB'   15                    	DCR	D			;TEST IF DONE WITH REPITITIONS
+  00DC'   C2 00D3'              	JNZ	SPED			;REPEAT
+  00DF'   C9                    	RET				;RETURN TO DISPATCHER
+                                
+  00E0'   E5                    KED:	PUSH	H			;SAVE CURRENT CHAR POSIT
+  00E1'   21 012E'              	LXI	H,TYPSLH		;TYPE SLASH WHEN DONE
+  00E4'   E3                    	XTHL				;PUT IT ON STACK & GET POSIT BACK
+  00E5'   37                    	STC				;SET THE CARRY FLAG
+  00E6'   F5                    SED:	PUSH	PSW			;SAVE CONDITION CODES
+  00E7'   CD 0000*              	CALL	INCHRI			;GET SEARCH CHAR
+  00EA'   5F                    	MOV	E,A			;SAVE IT
+  00EB'   F1                    	POP	PSW
+  00EC'   F5                    	PUSH	PSW
+  00ED'   DC 012E'              	CC	TYPSLH			;TYPE BEGINNING SLASH FOR "K"
+  00F0'   7E                    SRCALP:	MOV	A,M
+  00F1'   B7                    	ORA	A
+  00F2'   CA 010B'              	JZ	POPART
+  00F5'   CD 0000*              	CALL	OUTCH1			;TYPE THE CHAR
+  00F8'   F1                    	POP	PSW			;GET KILL FLAG
+  00F9'   F5                    	PUSH	PSW			;SAVE BACK
+  00FA'   DC 01AC'              	CC	DELCHR			;DELETE THE CHAR IF K COMMAND.
+  00FD'   DA 0102'              	JC	NOTSRC			;AND DONT MOVE POINTER AS DELCHR ALREADY DID
+  0100'   23                    	INX	H
+  0101'   04                    	INR	B			;INCREMENT LINE POSIT
+  0102'   7E                    NOTSRC:	MOV	A,M			;ARE WE AT END
+  0103'   BB                    	CMP	E			;ARE CURRENT CHAR & SEARCH
+  0104'   C2 00F0'              	JNZ	SRCALP			;CHAR THE SAME? IF NOT, LOOK MORE
+  0107'   15                    	DCR	D			;LOOK FOR N MATCHES
+  0108'   C2 00F0'              	JNZ	SRCALP			;IF NOT 0, KEEP LOOKING
+                                
+  010B'   F1                    POPART:	POP	PSW			;GET RID OF KILL FLAG
+  010C'   C9                    	RET				;DONE SEARCHING
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+EDIT COMMAND
+
+  010D'   CD 0000*              LED:	CALL	LISPRT			;TYPE REST OF LINE
+  0110'   CD 0000*              	CALL	CRDO			;TYPE CARRIAGE RETURN
+  0113'   C1                    	POP	B			;GET RID OF RETURN TO DISPED
+  0114'   C3 002A'              	JMP	LLED			;GO TO MAIN CODE
+                                
+  0117'   7E                    DED:	MOV	A,M			;GET CHAR WHICH WE ARE TRYING TO DELETE
+  0118'   B7                    	ORA	A			;IS IT THE END OF LINE MARKER?
+  0119'   C8                    	RZ				;DONE IF SO
+  011A'   3E 5C                 	MVI	A,'\'			;TYPE BACKSLASH
+  011C'   CD 0000*              	CALL	OUTCH1			;LIKE SO
+  011F'   7E                    DELLP:	MOV	A,M			;GET CHAR FROM LINE
+  0120'   B7                    	ORA	A			;ARE WE AT END?
+  0121'   CA 012E'              	JZ	TYPSLH			;TYPE SLASH
+  0124'   CD 0000*              	CALL	OUTCH1			;TYPE CHAR WE'RE GOING TO DELETE
+  0127'   CD 01AC'              	CALL	DELCHR			;DELETE CURRENT CHAR
+  012A'   15                    	DCR	D			;DECREMENT DELETE COUNT
+  012B'   C2 011F'              	JNZ	DELLP			;KEEP DOING IT
+  012E'                         TYPSLH:
+  012E'   3E 5C                 	MVI	A,'\'			;TYPE ENDING SLASH
+  0130'   CD 0000*              	CALL	OUTDO			;LIKE SO
+  0133'   C9                    	RET	
+                                
+  0134'   7E                    CED:	MOV	A,M			;ARE WE AT END OF LINE?
+  0135'   B7                    	ORA	A			;SEE IF 0
+  0136'   C8                    	RZ				;RETURN
+  0137'   CD 0000*              CED2:	CALL	INCHRI			;GET CHAR TO REPLACE CHAR
+  013A'   FE 20                 	CPI	32			;IS IT CONTROL CHAR?
+  013C'   D2 0156'              	JNC	NOTCCC			;NO
+  013F'   FE 0A                 	CPI	10			;IS IT LF?
+  0141'   CA 0156'              	JZ	NOTCCC			;YES
+  0144'   FE 07                 	CPI	7			;OR BELL?
+  0146'   CA 0156'              	JZ	NOTCCC			;OK
+  0149'   FE 09                 	CPI	9			;OR TAB?
+  014B'   CA 0156'              	JZ	NOTCCC			;OK
+  014E'   3E 07                 	MVI	A,7			;GET BELL
+  0150'   CD 0000*              	CALL	OUTDO			;SEND IT
+  0153'   C3 0137'              	JMP	CED2			;RETRY
+  0156'   77                    NOTCCC:	MOV	M,A			;SAVE IN MEMORY
+  0157'   CD 0000*              	CALL	OUTCH1			;ECHO THE CHAR WERE USING TO REPLACE
+  015A'   23                    	INX	H			;BUMP POINTER
+  015B'   04                    	INR	B			;INCREMENT POSITION WITHIN LINE
+  015C'   15                    	DCR	D			;ARE WE DONE CHANGING?
+  015D'   C2 0134'              	JNZ	CED			;IF NOT, CHANGE SOME MORE.
+  0160'   C9                    	RET				;DONE
+  0161'   36 00                 HED:	MVI	M,0			;MAKE LINE END AT CURRENT POSITION
+  0163'   48                    	MOV	C,B			;SET UP LINE LENGTH CORRECTLY
+                                
+  0164'   16 FF                 XED:	MVI	D,255			;FIND END OF LINE
+  0166'   CD 00D3'              	CALL	SPED			;BY CALLING SPACER
+                                ;NOW FALL INTO INSERT CODE
+  0169'                         IED:
+  0169'   CD 0000*              	CALL	INCHRI			;GET CHAR TO INSERT
+                                
+  016C'   FE 7F                 	CPI	177O			;DELETE??
+  016E'   CA 019C'              	JZ	TYPARW			;YES, ACT LIKE "_"
+  0171'   FE 08                 	CPI	8			;Backspace?
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+EDIT COMMAND
+
+  0173'   CA 019E'              	JZ	TYPAR1			;Do delete
+  0176'   FE 0D                 	CPI	15O			;IS IT A CARRIAGE RETURN?
+  0178'   CA 0202'              	JZ	CRED			;DONT INSERT, AND SIMULATE <CR>
+  017B'   FE 1B                 	CPI	33O			;IS IT ESCAPE?
+  017D'   C8                    	RZ				;IF SO, DONE.
+  017E'   FE 08                 	CPI	8			;BACKSPACE?
+  0180'   CA 019E'              	JZ	TYPAR1			;TYPE BACKARROW AND DELETE
+  0183'   FE 0A                 	CPI	10			;LINE FEED?
+  0185'   CA 01BC'              	JZ	NTARRW			;ALLOW IT
+  0188'   FE 07                 	CPI	7			;BELL?
+  018A'   CA 01BC'              	JZ	NTARRW			;ALLOW IT
+  018D'   FE 09                 	CPI	9			;TAB?
+  018F'   CA 01BC'              	JZ	NTARRW			;ALLOW IT
+  0192'   FE 20                 	CPI	32			;IS IT ILLEGAL CHAR
+  0194'   DA 0169'              	JC	IED			;TOO SMALL
+  0197'   FE 5F                 	CPI	'_'			;DELETE PREVIOUS CHAR INSERTED?
+  0199'   C2 01BC'              	JNZ	NTARRW			;IF NOT, JUMP AROUND NEXT CODE
+  019C'                         TYPARW:
+  019C'   3E 5F                 	MVI	A,'_'			;TYPE IT
+  019E'   05                    TYPAR1:	DCR	B			;ARE WE AT START OF LINE?
+  019F'   04                    	INR	B			;LETS SEE
+  01A0'   CA 01C4'              	JZ	DINGI			;IF SO, TYPE DING.
+  01A3'   CD 0000*              	CALL	OUTCH1			;TYPE THE BACK ARROW
+  01A6'   2B                    	DCX	H			;BACK UP THE POINTER
+  01A7'   05                    	DCR	B			;MOVE BACK POSIT IN LINE
+  01A8'   11 0169'              	LXI	D,IED			;SET UP RETURN ADDRESS
+  01AB'   D5                    	PUSH	D			;SAVE IT  ON STACK & FALL THROUGH
+                                ; SUBROUTINE TO DELETE CHAR POINTED TO BY [H,L]. CORRECTS C.
+  01AC'   E5                    DELCHR:	PUSH	H			;SAVE CURRENT POSIT POINTER
+  01AD'   0D                    	DCR	C			;MAKE LENGTH OF LINE ONE LESS
+  01AE'   7E                    CMPRSS:	MOV	A,M			;GET CHAR TO DELETE
+  01AF'   B7                    	ORA	A			;ARE WE AT END OF LINE
+  01B0'   37                    	STC				;FLAG THAT DELCHR WAS CALLED (FOR K)
+  01B1'   CA 0000*              	JZ	POPHRT			;IF SO, DONE COMPRESSING
+  01B4'   23                    	INX	H			;POINT TO NEXT BYTE
+  01B5'   7E                    	MOV	A,M			;PICK IT UP
+  01B6'   2B                    	DCX	H			;NOW BACK AGAIN
+  01B7'   77                    	MOV	M,A			;DEPOSIT IT
+  01B8'   23                    	INX	H			;NOW TO NEXT BYTE
+  01B9'   C3 01AE'              	JMP	CMPRSS			;KEEP CRUNCHING
+  01BC'   F5                    NTARRW:	PUSH	PSW			;SAVE THE CHAR TO BE INSERTED
+  01BD'   79                    	MOV	A,C			;GET LENGTH OF LINE
+  01BE'   FE FF                 	CPI	BUFLEN			;SEE IF WE ARENT TRYING TO MAKE LINE TOO LONG
+  01C0'   DA 01CC'              	JC	OKINS			;IF LENGTH OK, GO INSERT
+  01C3'   F1                    	POP	PSW			;GET THE UNLAWFUL CHAR
+  01C4'                         DINGI:
+  01C4'   3E 07                 	MVI	A,7			;TYPE A BELL TO LET USER KNOW
+  01C6'   CD 0000*              	CALL	OUTDO			;IT ALL OVER
+  01C9'   C3 0169'              IEDG:	JMP	IED			;HE HAS TO TYPE <ESC> TO GET OUT
+  01CC'   90                    OKINS:	SUB	B			;CALC POINTER TO 0 AT END OF LINE
+  01CD'   0C                    	INR	C			;WE ARE GOING TO HAVE LINE LONGER BY 1
+  01CE'   04                    	INR	B			;POSITION MOVES UP ONE ALSO
+  01CF'   C5                    	PUSH	B			;SAVE [B,C]
+  01D0'   EB                    	XCHG				;SAVE [D,E] IN [H,L]
+  01D1'   6F                    	MOV	L,A			;SAVE # OF BYTES TO MOVE IN [L]
+  01D2'   26 00                 	MVI	H,0			;GET SET TO ADD [D,E] TO [H,L]
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+EDIT COMMAND
+
+  01D4'   19                    	DAD	D			;CALC HIGH POINTER
+  01D5'   44                    	MOV	B,H			;GET HIGH BYTE TO MOVE POINTER
+  01D6'   4D                    	MOV	C,L			;IN [B,C]
+  01D7'   23                    	INX	H			;ALWAYS MOVE AT LEAST ZERO AT END
+  01D8'   CD 0000*              	CALL	BLTUC			;MOVE LINE OUT 1 CHAR
+  01DB'   C1                    	POP	B			;RESTORE [B,C]
+  01DC'   F1                    	POP	PSW			;GET CHAR BACK
+  01DD'   77                    	MOV	M,A			;SAVE IT IN LINE
+  01DE'   CD 0000*              	CALL	OUTCH1			;TYPE THE CHAR
+  01E1'   23                    	INX	H			;POINT TO NEXT CHAR
+  01E2'   C3 01C9'              	JMP	IEDG			;AND GO GET MORE CHARS
+                                
+  01E5'   78                    BAKED:	MOV	A,B			;ARE WE MOVING BACK PAST THE
+  01E6'   B7                    	ORA	A			;FIRST CHARACTER
+  01E7'   C8                    	RZ				;DON'T ALLOW IT
+  01E8'   2B                    	DCX	H			;MOVE CHAR POINTER BACK
+  01E9'   3E 08                 	MVI	A,8
+  01EB'   CD 0000*              	CALL	OUTCH1			;ECHO IT
+  01EE'   05                    	DCR	B			;CHANGE CURRENT POSITION
+  01EF'   15                    	DCR	D			;ARE WE DONE MOVING BACK?
+  01F0'   C2 01F4'              	JNZ	DELED			;IF NOT, GO BACK MORE
+  01F3'   C9                    	RET				;RETURN
+                                
+  01F4'   78                    DELED:	MOV	A,B			;ARE WE MOVING BACK PAST THE
+  01F5'   B7                    	ORA	A			;FIRST CHARACTER
+  01F6'   C8                    	RZ				;DON'T ALLOW IT
+  01F7'   05                    	DCR	B			;CHANGE CURRENT POSITION
+  01F8'   2B                    	DCX	H			;MOVE CHAR POINTER BACK
+  01F9'   7E                    	MOV	A,M			;GET CURRENT CHAR
+  01FA'   CD 0000*              	CALL	OUTCH1			;ECHO IT
+  01FD'   15                    	DCR	D			;ARE WE DONE MOVING BACK?
+  01FE'   C2 01F4'              	JNZ	DELED			;IF NOT, GO BACK MORE
+  0201'   C9                    	RET				;RETURN
+                                
+  0202'   CD 0000*              CRED:	CALL	LISPRT			;TYPE REST OF LINE
+  0205'   CD 0000*              EED:	CALL	CRDO			;TYPE CARRIAGE RETURN
+  0208'   C1                    	POP	B			;GET RID OF DISPED ADDRESS
+  0209'   D1                    	POP	D			;GET LINE # OFF STACK
+  020A'   7A                    	MOV	A,D			;DOUBLE BYTE ZERO.
+  020B'   A3                    	ANA	E
+  020C'   3C                    	INR	A			;SET ZERO IF [D,E] = ALL ONES.
+  020D'                         EDITRT:					;USED BY AUTO CODE
+  020D'   21 FFFF*              	LXI	H,BUF-1			;START KRUNCHING AT BUF
+  0210'   C8                    	RZ				;RETURN TO INLIN IF CALLED FROM THERE
+  0211'   37                    	STC				;FLAG LINE # WAS SEEN TO FOOL INSERT CODE
+  0212'   F5                    	PUSH	PSW			;PSW IS ON STACK
+  0213'   23                    	INX	H			;NOW POINT AT BUF.
+  0214'   C3 0000*              	JMP	EDENT			;GO TO ENTRY POINT IN MAIN CODE
+                                
+  0217'   C1                    QED:	POP	B			;GET RID OF DISPED ADDRESS
+  0218'   D1                    	POP	D			;GET LINE # OFF STACK
+  0219'   7A                    	MOV	A,D			;DOUBLE BYTE ZERO.
+  021A'   A3                    	ANA	E
+  021B'   3C                    	INR	A			;SET ZERO IF [D,E] = ALL ONES.
+  021C'   CA 0000*              	JZ	FININL			;TYPE CR AND STORE ZERO IN BUF.
+  021F'   C3 0000*              	JMP	READY			;OTHERWISE CALLED FROM MAIN
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+EDIT COMMAND
+
+                                	END	
+BIEDIT	BASIC Interpreter EDIT routines/PGA etc.	MACRO-80 3.44	09-Dec-81	PAGE	S
+EDIT COMMAND
+
+Macros:
+
+Symbols:
+01E5'	BAKED           01D9*	BLTUC           020E*	BUF             
+00FF 	BUFLEN          0028*	BUFLIN          0134'	CED             
+0137'	CED2            000E 	CLMWID          01AE'	CMPRSS          
+000F 	CONTO           0005 	CPMENT          0000 	CPMWRM          
+0206*	CRDO            0202'	CRED            0080 	DATPSC          
+0000 	DBLTRN          0117'	DED             01AC'	DELCHR          
+01F4'	DELED           011F'	DELLP           01C4'	DINGI           
+004B'	DISPED          004D'	DISPI           0015*	DOT             
+0215*	EDENT           000EI'	EDIT            020DI'	EDITRT          
+0205'	EED             0013'	EEDITS          0012'	EREDIT          
+0000I'	ERREDT          0001*	ERRFLG          0004*	ERRLIN          
+021D*	FININL          0019*	FNDLIN          0161'	HED             
+0169'	IED             01C9'	IEDG            016A*	INCHRI          
+002BI'	INLED           00E0'	KED             010D'	LED             
+0042'	LENLP           0050 	LINLN           0035*	LINPRT          
+000F*	LINSPC          0203*	LISPRT          002A'	LLED            
+0084 	LPTLEN          0055*	MAKUPS          0003 	MD.RND          
+0001 	MD.SQI          0002 	MD.SQO          0028 	NAMLEN          
+0156'	NOTCCC          006C'	NOTDGI          0092'	NOTLW4          
+0102'	NOTSRC          01BC'	NTARRW          0077'	NTZERD          
+001D 	NUMLEV          000A 	NUMTMP          01CC'	OKINS           
+01FB*	OUTCH1          01C7*	OUTDO           010BI'	POPART          
+01B2*	POPHRT          0217'	QED             0220*	READY           
+00E6'	SED             00D3'	SPED            00F0'	SRCALP          
+0003 	STRSIZ          0000 	TRUROM          019E'	TYPAR1          
+019C'	TYPARW          012E'	TYPSLH          001C*	USERR           
+0164'	XED             
+
+
+
+No Fatal error(s)
+
+
+   01

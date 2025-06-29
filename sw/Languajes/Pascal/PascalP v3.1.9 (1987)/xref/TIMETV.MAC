@@ -1,0 +1,73 @@
+ title	'TIMEDAY overlay - TeleVideo 802, 803, TPCI (84/11/12)'
+;
+; Allow PCD/Pascal system V 2.4.4 to read date and time.
+; Assemble to .HEX file and overlay.  CPMLINK must be first
+; module of .COM file linked to use this.
+;
+; This version should work for any memory size configuration of TeleVideo
+;    802, 803, or TPCI.   By Dennis Knudsen.
+;
+;		org	0f992h; Standard location for 62K system 
+;				TS-802 V2.1 Rev. B
+;				TeleVideo time/date storage
+;	sec:	ds	1;	in BCD values
+;	min:	ds	1
+;	hour:	ds	1
+;	day:	ds	1
+;	month:	ds	1
+;	year:	ds	1
+;	cntury:	ds	1
+;
+; Clock pointer for TS-802, TS-803, and TPCI
+clockpt	equ	1bh
+;
+	org	0124h;		CPMLINK connector vector
+	jmp	dotime
+;	jmp	timers;		not implemented, leave original
+;
+	org	0139h;		CPMLINK patch space
+; return time/date values in binary (a). On entry, a = 1 for year,
+;    2 for month, 3 for day, 4 for hour, 5 for minute.
+dotime:	push	h
+	push	b
+;	lxi	h,cntury;	TeleVideo 802 format only here
+;
+;				Kludge to cntury location follows
+	lhld	clockpt;	TeleVideo date & time function pointer
+	lxi	b,13h+1;	add 13h to jmp to function 
+	dad	b;		+ 1 & get address
+	mov	b,a;		save a in b for awhile
+	mov	a,m;		get address 
+	inx	h
+	mov	h,m
+	mov	l,a
+	inx	h;		increment hl 4 times for next address
+	inx	h
+	inx	h
+	inx	h
+	mov	a,m;		get address
+	inx	h
+	mov	h,m
+	mov	l,a
+	inx	h;		increment hl 2 times
+	inx	h;		hl has ^cntury
+	mov	a,l;		point to item of interest
+	sub	b
+	mov	l,a;		assumes no carries
+	mov	a,m
+	ani	0f0h;		convert BCD to binary
+	rar
+	mov	b,a
+	rar
+	rar
+	add	b
+	mov	b,a
+	mov	a,m
+	ani	00fh
+	add	b
+	pop	b
+	pop	h
+	ret
+;
+	end
+¡Ï

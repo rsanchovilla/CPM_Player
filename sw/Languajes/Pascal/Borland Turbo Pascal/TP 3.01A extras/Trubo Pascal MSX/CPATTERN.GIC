@@ -1,0 +1,51 @@
+{ C P A T T E R N . G I C                 V 1.1            }
+{----------------------------------------------------------}
+
+{ Definieren eigener Zeichen (nur Textmodus)               }
+
+
+
+
+type
+  characterpattern = string[8];
+
+
+
+(* DefCharacter: Definieren eines Zeichenmusters *)
+
+procedure DefCharacter (c: char; pattern: characterpattern);
+
+  var
+    i: integer;
+    l: byte absolute pattern;
+
+  begin
+    if SCRMOD > 1 then exit;
+
+    while l < 8 do
+      pattern := pattern + #0;
+
+    WriteVRAM (CGPBAS + 8 * ord(c), pattern[1], 8);
+  end;
+
+
+
+
+(* GetCharacter: Abfragen eines Zeichenmusters *)
+
+function GetCharacter (c: char): characterpattern;
+
+  var
+    i: integer;
+    p: characterpattern;
+
+  begin
+    if SCRMOD > 1 then exit;
+
+    ReadVRAM (CGPBAS + 8 * ord(c), p[1], 8);
+    p[0] := #8;
+
+    GetCharacter := p;
+  end;
+
+

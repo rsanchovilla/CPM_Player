@@ -1,0 +1,8503 @@
+DRLRM6.WS4      (= "Dr. Logo Reference Manual", Section 6)
+----------
+
+(Retyped by Emmanuel ROCHE. Posted to comp.os.cpm.amethyst by
+Roche on 1 Apr 2005.)
+
+
+ +------------------------------------------------------+
+ | ---> WARNING: Not proof-readed! <---                 |
+ |                                                      |
+ | MISSING explanation: PAL, SETPAL (which don't work?) |
+ +------------------------------------------------------+
+
+ROCHE>  Since only the CP/M-86 version of "Dr. Logo for the  ACT
+Apricot  F1"  computer has been found, I have retyped  only  the
+documentation  of the primitives contained in this version,  not
+the  explanations  of all the primitives of the  original  copy-
+protected  Dr.  Logo, which can format floppy disks,  copy  full
+disks,  etc  (like computers with BASIC in ROM,  which  have  no
+separate Operating Systems).
+
+
+Section 6: References to primitives
+-----------------------------------
+
+This section defines the Dr. Logo primitives. The description of
+each primitive is presented in the following form:
+
+
+Action
+======
+
+Quickly tells what the primitive does.
+
+
+Syntax
+======
+
+Shows  the  correct  way  to  enter  an  expression  using   the
+primitive.  If  you can use an abbreviation  for  the  primitive
+name, the abbreviation appears on the second line.
+
+Do not enter a command that is identical to the syntax line! The
+syntax  line  usually contains symbols that Dr.  Logo  does  not
+recognize. By using these symbols, the syntax line can represent
+the  wide  variety of expressions that you can enter  using  the
+primitive.
+
+The  syntax  line uses two kinds of symbols to show you  how  to
+enter  an  expression. Typographical symbols tell you  how  many
+times  you can enter an input. Input symbols tell what  kind  of
+object  the  primitive can accept as  input.  The  typographical
+symbols are
+
+
+ellipsis: (...)
+---------------
+
+Means that the primitive can accept a variable number of inputs;
+that  is to say, you can use parentheses to make  the  primitive
+accept more or fewer inputs than are ordinarily required.
+
+If  the primitive name is preceded by a left parenthesis  ["("],
+the  primitive processes as many inputs as it finds  before  the
+closing  right  parenthesis  [")"]  without  complaint.  If   no
+expression follows the parenthesized expression on the line, you
+do not need to type the closing parenthesis.
+
+
+angle brackets: < >
+-------------------
+
+Enclose optional inputs. (Inputs shown in angle brackets are not
+required.)
+
+
+"or" bar: |
+-----------
+
+Separates  alternative  inputs.  Enter one  of  the  two  inputs
+separated  by  |. For example, name | name_list  means  you  can
+enter either a name or a list of names.
+
+
+The  following symbols represent the objects you can input to  a
+primitive:
+
+object
+------
+
+Means  the primitive can accept any object as input: a  word,  a
+name, a number, a list, or an expression that outputs a word,  a
+name,  a  number,  or a list. You can also  use  a  variable  to
+represent any object input to a procedure.
+
+
+name
+----
+
+Represents a special word that identifies either a procedure,  a
+variable,  or  a "package" of procedures and variables.  When  a
+primitive  can accept only a certain kind of name as input,  one
+of the following symbols appears:
+
+   - varname    a variable name
+   - procname   a procedure name
+   - pkgname    a package name
+   - d:         a drive name
+   - fname     a file name that can begin with an optional drive
+name to specify a drive other than the default
+   -  prop      a property name; the first member of a  property
+pair in a property list
+
+
+list
+----
+
+Means a list is required as input. A literal list is a series of
+Logo  words, numbers, or lists enclosed in square brackets  ("["
+and  "]"). You can construct a "not literal" list that  contains
+the value of a variable by using the list or sentence primitive.
+Some of the special kinds of lists are:
+
+  - instr_list  contains instructions to be executed
+  - coord_list contains a pair of numbers that define a location
+on the screen
+  - name_list   contains names of variables, procedures,  and/or
+packages
+
+
+numbers: n, _n
+--------------
+
+Represent input numbers. n represents any number. You can  enter
+an  expression that outputs a number anywhere n appears.  _n  is
+appended  to  a  descriptive  term  when  a  special  number  is
+required;  for  example,  degrees_n means the  input  number  is
+interpreted as a number of degrees.
+
+
+infix primitive inputs: a, b
+----------------------------
+
+Represent  inputs  to an infix primitive,  where  the  primitive
+identifier is a symbol embedded between the inputs. a and b  can
+represent both numbers and objects. In arithmetic expressions, a
+and  b  represent numbers, as in 1 + 2 and 12 /  6.  In  logical
+expressions,  a and b can represent any object, as in [a b c]  =
+[a b c], 3 > 1, or :son = "greg.
+
+
+pred_exp
+--------
+
+Represents  a  predicate expression, an  expression  that,  when
+evaluated, outputs either TRUE or FALSE.
+
+
+Explanation
+===========
+
+Describes  the  action  or result of an  expression  in  detail.
+Discusses  optional inputs, punctuation, and how  the  primitive
+works with other primitives, if appropriate.
+
+In these discussions, "you" means you, the Dr. Logo  programmer.
+"Your user" refers to a person who runs your Dr. Logo  procedure
+and  might type something at the keyboard to interact with  your
+procedure.
+
+
+Examples
+========
+
+Shows   expressions   and  procedures   that   demonstrate   the
+capabilities  of the primitive. This section sometimes  includes
+discussions of the example expressions and procedures.
+
+Most  of the examples show you exactly what to type to  get  the
+response  shown  in the text. However, some  examples,  such  as
+those for erasing, must assume there is already something in the
+workspace to erase. A brief description of assumptions about the
+workspace  precedes  these examples. You might not  be  able  to
+reproduce  these  examples exactly, but, by studying  them,  you
+will learn the capabilities of the primitives they demonstrate.
+
+The  examples assume that you are using a graphic screen,  which
+has  a line length of 40 characters. When you have typed  a  40-
+character line, Dr. Logo enters an exclamation point ("!") which
+indicates that your text continues on the next line. You do  not
+type the exclamation point yourself.
+
+
+ *         (see product)
+ +         (see sum)
+ .contents (see contents)
+ .deposit  (see deposit)
+ .examine  (see examine)
+ .in       (see in)
+ .out      (see out)
+ .replace  (see replace)
+ .reptail  (see reptail)
+ .setseg   (see setseg)
+ \  "Quoting character" = Ctrl-Q
+
+
+abs
+---
+
+Action:
+Outputs the absolute value of the input number.
+
+Syntax:
+abs n
+
+Explanation:
+abs outputs the absolute value of the input number. You can  use
+abs  to  show the distance from the turtle's  position  to  home
+excluding  any  + or - sign that indicates its location  in  the
+coordinate  scale. For example, if you move the turtle  back  50
+steps from home, its position if [0 -50]. However, its  distance
+from  home is the absolute value of -50 (sometimes shown  as  |-
+50|), or 50 turtle steps.
+
+Examples:
+?cs
+?bk 50
+?pos
+[0 -50]
+?abs last pos
+50
+
+See  Colorplate 1 (back 50 (abs Primitive)) at the beginning  of
+this section.
+
+
+allopen
+-------
+
+Action:
+Outputs a list of all data files currently open.
+
+Syntax:
+allopen
+
+Explanation:
+Outputs a list of all data files currently open.
+
+Examples:
+?allopen
+
+
+and
+---
+
+Action:
+Outputs TRUE if all input predicate expressions output TRUE.
+
+Syntax:
+and pred_exp pred_exp (...)
+
+Explanation:
+and outputs TRUE if all input predicate expressions output TRUE.
+Otherwise, and outputs FALSE.
+
+Without punctuation, and requires and accepts two input objects.
+and  can  accept more or fewer inputs when you enclose  the  and
+expression in parentheses ["(" and ")"]. If no other expressions
+follow  the and expression on the line, you do not need to  type
+the closing right parenthesis [")"].
+
+You  can use an and expression to test different conditions,  or
+build your own predicate procedure.
+
+Examples:
+?and "TRUE "TRUE
+TRUE
+?and "TRUE "FALSE
+FALSE
+?and "FALSE "FALSE
+FALSE
+?and (3<4) (7>3)
+TRUE
+?and (3=4) (7>3)
+FALSE
+?(and (3<4) (7>3) (9=9) (6<5))
+FALSE
+?to tub.right? :temperature
+>if and (:temperature > 88) (:temperatur!
+e < 102)
+>     [pr [Just Right!]]
+>     [pr [Not Right.]]
+>end
+tub.right? defined
+?tub.right? 90
+Just Right!
+?to decimalp :object
+>output and (numberp :object) (pointp :o!
+bject)
+>end
+decimalp defined
+?to pointp :object
+>if emptyp :object [output "FALSE]
+>if (first :object) = ". [output "TRUE]
+>output pointp butfirst :object
+>end
+pointp defined
+?decimalp 1995
+FALSE
+?decimalp 19.95
+TRUE
+?decimalp [nineteen.ninety-five]
+FALSE
+
+
+arctan
+------
+
+Action:
+Outputs the arc tangent of the input number.
+
+Syntax:
+arctan n
+
+Explanation:
+arctan  outputs in degrees the angle whose tangent is the  input
+number.
+
+Examples:
+?arctan 0
+0
+?arctan 1
+45
+?arctan 10
+84.2894068625003
+?arctan 100
+89.4270613023165
+?to plot.arctan
+>make "val -pi
+>make "inc pi / 37.5
+>make "x -150
+>setx 150
+>setx :x
+>plot :val
+>end
+plot.arctan defined
+?to plot :val
+>if :x > 150 [stop]
+>fd arctan :val
+>sety 0
+>setx :x + 4
+>make "x :x + 4
+>make "val :val + :inc
+>plot :val
+>end
+plot defined
+?plot.arctan
+
+See Colorplate 2. plot.arctan (arctan Primitive)
+
+
+ascii
+-----
+
+Action:
+Outputs  the  ASCII value of the first character  in  the  input
+word.
+
+Syntax:
+ascii word
+
+Explanation:
+ascii outputs an integer between 0 and 255 that is the  American
+Standard  representation  for the first character in  the  input
+word.  The input word must contain at least one  character.  The
+first character can be a letter, number, or special character.
+
+The  American Standard Code for Information Interchange  (ASCII)
+is  a  standard  code for  representing  numbers,  letters,  and
+symbols.  The IBM Personal Computer has many  unique  characters
+that are also represented by ASCII codes. The "Dr. Logo  Command
+Summary" contains a list of characters and their ASCII values.
+
+Examples:
+?ascii "g
+103
+?ascii "good
+103
+?ascii "2
+50
+?to encode :word
+>if emptyp :word [output "]
+>output word secret first :word encode !
+butfirst :word
+>end
+encode defined
+?to make secret :character
+>make "secretcode 5 + ascii :character
+>if :secretcode > ascii "z
+>   [make "secretcode :secretcode - 26]
+>output char :secretcode
+>end
+secret defined
+?to decode :word
+>if emptyp :word [output "]
+>output word crack first :word decode b!
+utfirst :word
+>end
+decode defined
+?to crack :character
+>make "crackedcode (ascii :character= -!
+5
+>if :crackedcode < ascii "a
+>   [make "crackedcode :crackedcode + 2!
+6]
+>output char :crackedcode
+>end
+crack defined
+?make "password encode "plastics
+?:password
+uqfxynhx
+?decode :password
+plastics
+
+
+back bk
+-------
+
+Action:
+Moves  the  turtle  the input number of steps  in  the  opposite
+direction of its heading.
+
+Syntax:
+back distance_n
+bk distance_n
+
+Explanation:
+back  moves  the  turtle the specified number of  steps  in  the
+opposite direction of its current heading. The turtle's  heading
+and  pen do not change. If the turtle's pen is down, the  turtle
+leaves  a  trace of its path. On the IBM  Personal  Computer,  a
+turtle step is equivalent to one dot (pixel).
+
+back  can help you write a procedure that leaves the  turtle  in
+the  same  position when the procedure ends as it was  when  the
+procedure started. Leaving the turtle in the same position makes
+it easy to call the procedure from another procedure.
+
+Examples:
+?cs
+?back 50
+
+See Colorplace 1.  back 50 (back Primitive)
+
+?cs
+?to flag
+>forward 50
+>repeat 3 [right 120 fd 25]
+>back 50
+>end
+flag defined
+?to wheel
+>repeat 12 [flag left 30]
+>end
+wheel defined
+?flag
+?wheel
+
+See Colorplate 3, flag (back Primitive), and Colorplate 4, wheel
+(back Primitive).
+
+
+bury
+----
+
+Action:
+Hides the specified package from subsequent workspace management
+commands.
+
+Syntax:
+bury pkgname | pkgname_list
+
+Explanation:
+bury  hides  the specified package or  packages  from  workspace
+management  commands.  bury works by setting the  bury  property
+(.BUR)  in  the package's property list to TRUE.  The  following
+primitives check property lists before taking action, and ignore
+any buried procedures or variables:
+
+        edall   erall   glist   pops    save
+        edns    erns    poall   pots
+        edps    erps    pons    pps
+
+All  of  these primitives optionally accept a  package  name  as
+input.  If no package name is specified, these commands  address
+the entire contents of the worspace, except for buried packages.
+All  other  procedures access buried  procedures  and  variables
+normally.  For  example,  a procedure  that  receives  a  buried
+variable  name as input accesses the buried  variable  normally.
+potl and popkg display the names of buried procedures.  proclist
+includes all defined procedure names, buried or unburied, in the
+list it outputs.
+
+Examples:
+These  examples  assume  you have the following  items  in  your
+workspace: two packages named figures and titles, two  variables
+named big and small, and four procedures named prauthor, prdate,
+square, and triangle.
+
+?popkg
+figures
+  "big (VAL)
+  "small (VAL)
+  to square
+  to triangle
+titles
+  to prauthor
+  to prdate
+?bury "titles
+?popkg
+figures
+  "big (VAL)
+  "small (VAL)
+  to square
+  to triangle
+titles is buried
+  to prauthor
+  to prdate
+?pots
+to square
+to triangle
+
+
+butfirst bf
+-----------
+
+Action:
+Outputs all but the first element in the input object.
+
+Syntax:
+butfirst object
+bf object
+
+Explanation:
+butforst outputs all but the first element of the input  object.
+If  the  input  object  is  a  list,  butfirst  outputs  a  list
+containing  every  element of the input list, except  the  first
+element. If the input object is a word, butfirst outputs a  word
+containing all but the first character of the input word. If the
+input object is an empty word or empty list, butfirst returns an
+error.
+
+Examples:
+?butfirst "abalone
+balone
+?butfirst [semi sweet chocolate]
+[sweet chocolate]
+?bf [[chocolate chip] [walnut date] [oa!
+tmeal raisin]]
+[[walnut date] [oatmeal raisin]]
+?bf "y
+?bf [brownie]
+[]
+?to vanish :object
+>if emptyp :object [stop]
+>print :object
+>vanish butfirst :object
+>end
+vanish defined
+?vanish "abracadabra
+abracadabra
+bracadabra
+racadabra
+acadabra
+cadabra
+adabra
+dabra
+abra
+bra
+ra
+a
+
+
+butlast bl
+----------
+
+Action:
+Outputs all but the last element in the input object.
+
+Syntax:
+butlast object
+bl object
+
+Explanation:
+butlast outputs all but the last element of the input object. If
+the  input object is a list, butlast outputs a  list  containing
+every element of the input list, except the last element. If the
+input  object is a word, butlast outputs a word  containing  all
+but the last character of the input word. If the input object is
+an empty word or empty list, butlast returns and error.
+
+Examples:
+?butlast "drawn
+draw
+?butlast [fudge walnut]
+[fudge]
+?bl "y
+?bl [snickerdoodle]
+[]
+?to gobble :object
+>if emptyp :object [stop]
+>print :object
+>gobble butlast :object
+>end
+gobble defined
+?gobble "turkey
+turkey
+turke
+turk
+tur
+tu
+t
+
+
+buttonp         (= BUTTON Predicate)
+-------
+
+Action:
+Outputs TRUE if the button on the specified paddle (joystick) is
+down.
+
+Syntax:
+buttonp paddle_n
+
+Explanation:
+buttonp  outputs TRUE if the button on the specified  paddle  or
+joystick  is  down. Dr. Logo can accept input from  two  paddle.
+Each  paddle can have two buttons. You use buttonp to  determine
+whether or not a button in pressed. If you do not have a  paddle
+or joystick, buttonp always output FALSE.
+
+buttonp  requires  an input number to identify one of  the  four
+paddle buttons. Numbers in the range 0 to 3 identify the  paddle
+buttons as follows:
+
+        0 identifies button 1, paddle 1
+        1 identifies button 2, paddle 1
+
+        2 identifies button 1, paddle 2
+        3 identifies button 2, paddle 2
+
+Examples:
+draw allows the user to guide the turtle with the joystick.  The
+two buttonp commands allow the user to stop drawing or erase the
+drawing  by  pressing  the paddle buttons. draw  is  more  fully
+described under paddle.
+
+?to draw
+>repeat 10000
+>  [make "xin paddle 0
+>  make "yin paddle 1
+>  make "xin int ((:xin * (300 / 190)) !
+- 150)
+>  make "yin int ((:yin * (-200 / 144))!
+ + 90)
+>  setheading towards list :xin :yin
+>  fd [amount * 0.1]
+>  if buttonp 0 [stop]
+>  if buttonp 1 [stop]
+>end
+draw defined
+?to amount
+>op int sqrt
+>  ((abs :xin) * (abs :xin) +
+>  ((abs :yin) * (abs :yin)))
+>end
+amount defined
+?draw
+
+
+bye
+---
+
+Action:
+Exits Dr. Logo and returns to the operating system.
+
+Syntax:
+bye
+
+Explanation:
+Exits  current session of Dr. Logo and returns to the  operating
+system.  You can enter bye to Dr. Logo's ? or ! prompt;  bye  is
+not valid when you are in the editor or while you are  executing
+a procedure. When you enter bye, any procedures or variables you
+have not saved on disk are lost.
+
+Examples:
+?bye
+
+
+catch
+-----
+
+Action:
+Traps  errors  and  special conditions  that  occur  during  the
+execution of the input instruction list.
+
+Syntax:
+catch name instr_list
+
+Explanation:
+catch  works  with  the throw primitive to  let  your  procedure
+handle  special  conditions.  For example, by  using  catch  and
+throw, your procedure can display a special message if your user
+types something incorrectly. catch and throw can also  intercept
+an error that would normally make Dr. Logo display a message  on
+the screen.
+
+catch  and throw each require a name as input. To pair  a  catch
+expression with a throw expression, you must give the catch  and
+throw expressions the same input name.
+
+When  a catch command is executed, Dr. Logo simply executes  the
+input  instruction  list. Execution proceeds  normally  until  a
+throw  expression, usually in a called procedure,  identifies  a
+special condition. Then, Dr. Logo returns to the procedure  that
+contains  the catch command identified by the thrown  name.  Dr.
+Logo then executes the line that follows the catch command.
+
+There  are  two special names you can input to catch:  TRUE  and
+error.  TRUE matches any throw name, so catch "TRUE catches  any
+throw.  Dr. Logo automatically executes a throw  "error  command
+when  an  error  occurs. Therefore, a  catch  "error  expression
+catches  any error that occurs. Without catch "error,  an  error
+makes  Dr.  Logo print a message on the screen,  terminate  your
+procedure's  execution, and return to toplevel (the  ?  prompt).
+The  description  of the error primitive tells how to  find  out
+what the error was.
+
+Examples:
+The  coil procedure asks the user to enter  increasingly  larger
+numbers  as the turtle draws a coil on the screen. If  the  user
+types  a  number that is not bigger than the last  one  entered,
+coil reminds the user what to type and continues working.
+
+?to coil
+>pr [Enter a small number.]
+>make "previous 0
+>fd grownumber
+>rt 30
+>trap
+>end
+coil defined
+?to grownumber
+>make "growth first readlist
+>if :growth < :previous [throw "notbigg!
+er]
+>make "previous :growth
+>output :growth
+>end
+grownumber defined
+?to trap
+>catch "notbigger [drawcoil]
+>(pr [Enter a number bigger than] :prev!
+ious)
+>trap
+>end
+trap defined
+?to drawcoil
+>pr [Enter a bigger number.]
+>fd grownumber
+>rt 30
+>drawcoil
+>end
+drawcoil defined
+
+The  throw  "notbigger instruction in the  grownumber  procedure
+always  returns  Dr.  Logo  to the trap  procedure.  If  a  stop
+instruction  had  been  used instead of throw,  Dr.  Logo  would
+return  to the procedure that called grownumber, which might  be
+either coil or drawcoil.
+
+The following procedures allow the user to type commands just as
+if  typing  to the Dr. Logo interpreter. However,  if  the  user
+enters a command incorrectly, the mymessage procedure traps  the
+normal Dr. Logo error message and prints a custom message.
+
+?to mymessage
+>catch "error [interpret]
+>(pr "Oops! first butfirst error [! ! !!
+])
+>pr [What do you want to do about that?!
+]
+>run readlist
+>mymessage
+>end
+mymessage defined
+?to interpret
+>pr [What next, boss?]
+>run readlist
+>interpret
+>end
+interpret defined
+
+
+changef         (= CHANGE Filename)
+-------
+
+Action:
+Changes the name of a file in the disk directory.
+
+Syntax:
+changef <d:>new_fname old_fname
+
+Explanation:
+changef  changes the name of a file in a disk  directory.  Enter
+the  name  you  want to give the file, followed  by  the  file's
+current  name. You can put a disk specifier in front of the  old
+name if the file is not on the default disk drive.
+
+Examples:
+The  following examples assume you have three Dr. Logo files  on
+the disk in your default drive: piglatin, fly, and shapes.
+
+?dir
+[PIGLATIN.LOG FLY.LOG SHAPES.LOG]
+?changef "pigl "piglatin
+?dir
+[PIGL.LOG FLY.LOG SHAPES.LOG]
+
+
+char
+----
+
+Action:
+Outputs the character whose ASCII value is the input number.
+
+Syntax:
+char n
+
+Explanation:
+char  outputs  the  character whose ASCII  value  is  the  input
+number. char requires an integer between 0 and 255 as input.
+
+The  American Standard Code for Information Interchange  (ASCII)
+is  a  standard  code for  representing  numbers,  letters,  and
+symbols.  The IBM Personal Computer has many  unique  characters
+that are also represented by ASCII codes. The "Dr. Logo  Command
+Summary" contains a list of characters and their ASCII codes.
+
+Examples:
+?char 103
+g
+?char 50
+2
+?repeat 20 [(type random 10 char 9)]
+3   0   6   1   3   5   1   8   0   1  !
+8   6   7   1   1   9   3   8   4   5  !
+?to encode :word
+>if emptyp :word [output "]
+>output word secret first :word encode !
+butfirst :word
+>end
+encode defined
+?to secret :character
+>make "secretcode (ascii :character) + !
+5
+>if :secretcode > (ascii "z)
+>   [make "secretcode :secretcode - 26]
+>output char :secretcode
+>end
+secret defined
+?to decode :word
+>if emptyp :word [output "]
+>output word crack first :word decode b!
+utfirst :word
+>end
+decode defined
+?to crack :character
+>make "crackedcode (ascii :character) -!
+5
+>if :crackedcode < (ascii "a)
+>   [make "crackedcode :crackedcode + 2!
+6]
+>output char :crackedcode
+>end
+crack defined
+?make "password encode "elephant
+?:password
+jqjumfsy
+?decode :password
+elephant
+
+
+clean
+-----
+
+Action:
+Erases the graphic screen without affecting the turtle.
+
+Syntax:
+clean
+
+Explanation:
+clean  erases  everything the turtle has drawn  on  the  graphic
+screen,  but  leaves  the  turtle in  its  current  heading  and
+location.
+
+Examples:
+?to trispi :side
+>if :side > 80 [stop]
+>fd :side rt 120
+>trispi (:side + 3)
+>end
+trispi defined
+?trispi 5
+?clean
+
+See  Colorplate 5, trispi (clean Primitive), and  Colorplate  6,
+clean (clean Primitive).
+
+
+clearscreen cs
+--------------
+
+Action:
+Erases  the  graphics  screen and puts the turtle  in  the  home
+position.
+
+
+Syntax:
+clearscreen
+cs
+
+Explanation:
+clearscreen  erases  everything  the turtle  has  drawn  on  the
+graphic  screen and returns the turtle "home" to location [0  0]
+heading 0 (North).
+
+Examples:
+?to trispi :side
+>if :side > 80 [stop]
+>fd :side rt 120
+>trispi (:side + 3)
+>end
+trispi defined
+?trispi 5
+?clearscreen
+
+See   Colorplate  7,  trispi  5  (clearscreen  Primitive),   and
+Colorplate 8, clearscreen (clearscreen Primitive).
+
+
+cleartext ct
+------------
+
+Action:
+Erases  all  text  in the window  that  currently  contains  the
+cursor,  then positions the cursor in the upper left  corner  of
+the window.
+
+Syntax:
+cleartext
+ct
+
+Explanation:
+cleartext  erases  all text displayed in  the  window  currently
+containing  the cursor, then positions the cursor at  the  upper
+left corner of the window. For example, if your entire screen is
+devoted to text, cleartext erases the entire screen, and  places
+the cursor in the upper left corner.
+
+If  you  are using the two debugging windows,  cleartext  erases
+only the text in the window that currently contains the  cursor.
+To  cleartext in the program output window, your procedure  must
+contain and execute a cleartext command.
+
+Examples:
+This  example  assumes  you have the  following  items  in  your
+worspace:  two packages named figures and titles, two  variables
+named big and small, and four procedures named prauthor, prdate,
+square, and triangle.
+
+?popkg
+figures
+  "big (VAL)
+  "small (VAL)
+  to square
+  to triangle
+titles
+  to prauthor
+  to prdate
+?cleartext
+
+
+close
+-----
+
+Action:
+Closes the named data file.
+
+Syntax:
+close fname
+
+Explanation:
+Closes the named data file.
+
+Examples:
+?close "Ketchum
+
+
+closeall
+--------
+
+Action:
+Closes all the data files currently open.
+
+Syntax:
+closeall
+
+Explanation:
+Closes all the data files currently open.
+
+Examples:
+?closeall
+
+
+co
+--
+
+Action:
+Ends  a pause that is caused by a pause expression or  a  Ctrl-Z
+keystroke.
+
+Syntax:
+co <object>
+
+Explanation:
+co  continues  the  execution of a procedure  interrupted  by  a
+pause. During a pause, you can interact with the interpreter  to
+debug  your procedure. Enter co when you have finished with  the
+interpreter and want to continue the execution of the procedure.
+
+There are three ways to cause a pause during the execution of  a
+procedure:
+
+     1) the execution of a pause expression within the procedure
+     2) a Ctrl-Z keystroke
+     3) any error, if the system variable ERRACT is TRUE.
+
+When  a pause interrupts the execution of a procedure, Dr.  Logo
+displays  a  "Pausing..."  message and shows  the  name  of  the
+interrupted procedure before the interpreter's ? prompt. If  you
+have  enabled  the  debug windows, the  pause  prompt  and  your
+interactions with the interpreter appear in the DEBUG window. No
+matter  which way you begin a pause, you must use co to  end  it
+and continue your procedure's execution.
+
+Give  co  an  input  only if you  have  interrupted  a  reachar,
+readlist, or readquote with a Ctrl-Z. When you give co an input,
+it  becomes the output of the pause expression. Unless you  have
+interrupted an rc, rl, or rq expression, Dr. Logo will not  know
+what to do your your input.
+
+Examples:
+?to boxspi :side
+>if and :side > 80 :side < 90 [pause]
+>fd :side rt 90
+>boxspi (:side + 5)
+>end
+boxspi defined
+?boxspi 5
+Ctrl-Z
+Pausing... in boxspi: fd
+boxspi ?:side
+60
+boxspi ?co
+Pausing... in boxspi: [if and :side > 8!
+0 :side <  90 !
+[pause]]
+boxspi ?:side
+85
+boxspi ?co
+
+See Colorplate 9.  boxspi/co (co Primitive)
+
+
+ .contents
+ ---------
+
+Action:
+Displays the contents of the Dr. Logo symbol space.
+
+Syntax:
+ .contents
+
+Explanation:
+Displays the contents of the Dr. Logo symbol space.
+
+Examples:
+?.contents
+[babla snip blablabla]
+
+
+copydef
+-------
+
+Action:
+Makes a copy of a procedure definition, and gives it a new name.
+
+Syntax:
+copydef new_procname old_procname
+
+Explanation:
+copydef  makes a copy of a procedure definition, and gives it  a
+new  name.  copydef creates a new procedure by making  an  exact
+copy  of an existing procedure definition, and giving it  a  new
+title line. The new procedure becomes a part of your  workspace,
+and can be referenced, edited, and saved on disk.
+
+You  cannot associate a second name with a Dr.  Logo  primitive,
+unless  you  have made the system variable REDEFP TRUE.  If  the
+old_procname  is  a primitive, the new_procname  takes  all  the
+characteristics  of  a primitive; it cannot be  printed  out  or
+edited.
+
+Examples:
+?to box :side
+>repeat 4 [fd :side rt 90]
+>end
+box defined
+?copydef "square "box
+?po "square
+to square :side
+repeat 4 [fd :side rt 90]
+end
+
+
+copyoff
+-------
+
+Action:
+Stops echoing text at the printer.
+
+Syntax:
+copyoff
+
+Explanation:
+copyoff stops the echoing of text at the printer. If you have  a
+printer, you can start printer echo with copyon.
+
+Examples:
+These examples assume you have three files named pigl, fly,  and
+shapes on the disk in the default drive.
+
+?copyon
+?dir             \
+[PIGL FLY SHAPES] > This is echoed at printer.
+?copyoff         /
+?dir
+[PIGL FLY SHAPES]
+
+
+copyon
+------
+
+Action:
+Starts echoing text at the printer.
+
+Syntax:
+copyon
+
+Explanation:
+copyon  starts  echoing text at the printer, if  you  have  one.
+After  copyon, everything Dr. Logo displays on your text  screen
+is  also printed at the printer. You can stop printer echo  with
+copyoff.
+
+Examples:
+The  following exampes assume you have three files  named  pigl,
+fly, and shapes on the disk in your default drive.
+
+?copyon
+?dir             \
+[PIGL FLY SHAPES] > This is echoed at printer.
+?copyoff         /
+?dir
+[PIGL FLY SHAPES]
+
+
+cos
+---
+
+Action:
+Outputs the cosine of the input number of degrees.
+
+Syntax:
+cos degrees_n
+
+Explanation:
+cos  outputs  the trigonometric cosine of the  input  number  of
+degrees. cos outputs a decimal number between 0 and 1.
+
+Examples:
+?cos 0
+1
+?to plot.cosine
+>setpc 2
+>make "val 0
+>make "x -150
+>make "inc (300 / 60)
+>setx 150 setx -150
+>pu setpos list :x 90 pd
+>setpc 1
+>plot :val
+>end
+plot.cosine defined
+?to plot :val
+>if :x > 150 [stop]
+>make "y (90 * (cos :val))  ; 90 makes p!
+lot visible
+>setheading towards list :x :y
+>setpos list :x :y
+>make "x :x + :inc
+>make "val :val + 6
+>plot :val
+>end
+plot defined
+?plot.cosine
+
+See Colorplate 10. plot.cosine (cos Primitive)
+
+
+count
+-----
+
+Action:
+Outputs the number of elements in the input object.
+
+Syntax:
+count object
+
+Explanation:
+count outputs the number of elements in the input object,  which
+can  be  a word, number, or list. To count the items in  a  list
+within a list, use an item expression as input to count.
+
+Examples:
+?count "chocolate
+9
+?count [chocolate]
+1
+?count [vanilla strawberry [mocha unswe!
+etened milk german]]
+3
+?count item 3 [vanilla strawberry [moch!
+a unsweetened milk german]]
+4
+
+
+cursor
+------
+
+Action:
+Outputs a list that contains the column and line numbers of  the
+cursor's position within the text window.
+
+Syntax:
+cursor
+
+Explanation:
+cursor  outputs a coordinate list that contains the  column  and
+line  numbers of the cursor's position within the  text  window.
+The first element of the list is the column number; the  second,
+the line number. The line number ranges from 0 to 24. The column
+number ranges from 0 to 79.
+
+cursor  is  window-relative;  that is to  say,  it  outputs  the
+cursor's position in the current window. When you are using  the
+two debugging windows, a cursor expression returns the  location
+of the cursor in the program output window.
+
+Examples:
+?ct
+?cursor
+[0 1]
+?(type  [The current cursor position is\!
+] show cursor
+The current cursor position is [32 23]
+?pr se [The current cursor position is:!
+] cursor
+The current cursor position is: 0 24
+
+
+defaultd        (= DEFAULT Drive name)
+--------
+
+Action:
+Outputs the name of the current default drive.
+
+Syntax:
+defaultd
+
+Explanation:
+defaultd outputs the name of the current default drive. Dr. Logo
+looks in the directory of the disk in the default drive when you
+do  not  specify a drive name in a disk command  such  as  save,
+load, erasefile, changef, or dir.
+
+Examples:
+?defaultd
+A:
+?to saved
+>make "disk.name defaultd
+>end
+saved defined
+?to restored
+>setd :disk.name
+>end
+restored defined
+?saved
+?setd b:
+?defaultd
+B:
+?restored
+?defaultd
+A:
+
+
+define
+------
+
+Action:
+Makes the input definition list the definition of the  specified
+procedure name.
+
+Syntax:
+define procname defin_list
+
+Explanation:
+define  allows you to write a procedure that can in turn  define
+other  procedures.  A  define  expression  defines  a  procedure
+without using an editor, to, or end.
+
+define  requires two inputs: a name and a definition list.  Note
+that  the name you input to define cannot be the name of  a  Dr.
+Logo primitive, unless REDEFP is TRUE.
+
+A  definition  list  is a special kind of list  with  a  special
+format.  The first element of the input list must be a  list  of
+names  for  inputs  to the procedure. Do not  put  colons  (":")
+before  names  in this list! If the procedure is to  require  no
+inputs,  the  first element in define's input list  must  be  an
+empty list. define uses the input name and the first element  of
+the definition list to compose the title line of the procedure.
+
+Each  remaining  element of define's input list must be  a  list
+containing one line of the procedure definition. Do not put  end
+in this list; end is not a part of a procedure's definition.
+
+The  text  primitive  also uses this format when  it  outputs  a
+definition list. In fact, you can use a text expression to input
+a definition list to define.
+
+Examples:
+?define "say.hello [[] [pr [Hello world!]]
+?po "say.hello
+to say.hello
+pr [Hello world!]
+end
+?to learn
+>make "definition [[]]
+>pr [Enter expressions you would like s!
+aved in a procedure.]
+>pr [Enter erase to delete your last in!
+struction.]
+>readlines
+>pr [Type y to define procedure, any ot!
+her key to abandon.]
+>test rc = "y
+>ift [type [Name for procedure?]
+>     make "title first readlist
+>     define :title :definition
+>end
+learn defined
+?to readlines
+>make "newline readlist
+>if :newline = [end] [stop]
+>if :newline = [erase] [delete]
+>   [run :newline
+>   make "definition lput :newline :def!
+inition]
+>readlines
+>end
+readlines defined
+?to delete
+>pr se "Deleting last :definition
+>make "definition butlast :definition
+>end
+delete defined
+?learn
+Enter expressions you would like saved !
+in a procedure.
+Enter erase to delete your last instruc!
+tion.
+cs
+erase
+Deleting cs
+setpc 1
+fd 40 rt 90
+setpc 2
+repeat 36 [fd 5 lt 10]
+lt 90 setpc 1 bk 40
+pr "balloon!
+balloon!
+end
+Type y to define procedure, any other k!
+ey to abandon. y
+Name for procedure?
+balloon
+?balloon
+balloon!
+
+See Colorplate 11. balloon (define procedure)
+
+
+definedp        (= DEFINED Predicate)
+--------
+
+Action:
+Outputs TRUE if the input name identifies a defined procedure.
+
+Syntax:
+definedp object
+
+Explanation:
+definedp  outputs TRUE if the input name identifies a  procedure
+currently  defined in the workspace. definedp returns  FALSE  if
+the input name identifies a primitive name, a variable name,  or
+anything but a defined procedure name.
+
+Examples:
+?to balloon
+>setpc 1
+>fd 40 rt 90
+>setpc 2
+>repeat 36 [fd 5 lt 10]
+>lt 90 setpc 1 bk 40
+>pr "balloon!
+>end
+balloon defined
+?definedp "balloon
+TRUE
+?definedp "definedp
+FALSE
+
+
+degrees
+-------
+
+Action:
+Outputs the number of degrees in the input number of radians.
+
+Syntax:
+degrees radian_n
+
+Explanation:
+degrees  outputs  the number of degrees in the input  number  of
+radians, where degrees = radians * (180 / pi).
+
+Examples:
+?degrees 1
+57.2957795130823
+?degrees 2
+114.591559026165
+?degrees 3
+171.887338539247
+?to degrees.cycle :vals
+>if emptyp :vals [stop]
+>(pr [There are] degrees (run first :va!
+ls) [degrees in] first :vals "radians.
+>make "vals bf :vals
+>degrees.cycle :vals
+>end
+degrees.cycle defined
+?make "vals [[pi] [(pi / 2)] [(pi /4)]!
+[(pi / 8)]]
+?degrees.cycle :vals
+There are 180 degrees in pi radians.
+There are 90 degrees in (pi / 2) radian!
+s.
+There are 45 degrees in (pi / 4) radian!
+s.
+There are 22.5 degrees in (pi / 8) radi!
+ans.
+
+
+ .deposit
+ --------
+
+Action:
+Puts a number into a memory location.
+
+Syntax:
+ .deposit n n
+
+Explanation:
+Puts the second input number into the memory location  specified
+by  the  first input number. This location is  relative  to  the
+absolute location established by .SETSEG. THIS PRIMITIVE  SHOULD
+BE USED WITH CAUTION!
+
+Examples:
+?.deposit 22
+
+dir
+---
+
+Action:
+Outputs  a  list of the Dr. Logo file names on  the  default  or
+specified disk.
+
+Syntax:
+dir <d:>
+
+Explanation:
+dir  outputs  a list of Dr. Logo file names on  the  default  or
+specified disk. If you do not specify a disk drive, dir looks in
+the directory of the default disk.
+
+dir  accepts an ambiguous file name as input. An ambiguous  file
+name  can  refer  to more than one file because  it  contains  a
+wildcard  character and gives Dr. Logo a pattern to  match.  Dr.
+Logo can then display the file names that match the pattern.
+
+The  wildcard character is a question mark ("?"). When the  last
+character  in  your  input file name is  a  question  mark,  dir
+displays  the  file names that begin with  the  characters  that
+precede the question mark.
+
+The list dir outputs contains the names of only those files that
+are  identified  by the LOG file type in the  disk's  directory.
+save  automatically  gives  the file type LOG to  the  files  it
+stores on disk.
+
+Examples:
+These examples assume you have three files named shapes,  plaid,
+and  piglatin on the disk in your default drive, and  two  files
+named coil and fly on the disk in drive B:.
+
+?dir
+[SHAPES.LOG PLAID.LOG PIGLATIN.LOG]
+?dir "b:
+[COIL.LOG FLY.LOG]
+?dir "p
+[PLAID.LOG PIGLATIN.LOG]
+
+
+dirpic
+------
+
+Action:
+Outputs  a list of the Dr. Logo picture files on the default  or
+specified disk.
+
+Syntax:
+dirpic <d:>
+
+Explanation:
+dirpic  outputs a list of Dr. Logo picture files on the  default
+or  specified disk. If you do not specify a disk  drive,  dirpic
+looks in the directory of the default disk.
+
+dirpic  accepts  an  ambiguous picture  filename  as  input.  An
+ambiguous  picture filename can refer to more than  one  picture
+file because it contains a wildcard character and gives Dr. Logo
+a  pattern  to  match. Dr. Logo can  then  display  the  picture
+filenames that match the pattern.
+
+The  wildcard character is a question mark ("?"). When the  last
+character  in  your input picture filename is a  question  mark,
+dirpic  displays  the  picture filenames  that  begin  with  the
+characters that precede the question mark.
+
+The list dirpic outputs contains the names of only those picture
+files  that  are identified by the PIC file type in  the  disk's
+directory. savepic automatically gives the picture filetype  PIC
+to the files it stores on disk.
+
+Examples:
+These examples assume you have three picture files named shapes,
+plaid.
+
+?dirpic
+[SHAPES.PIC PLAID.PIC PIGLATIN.PIC]
+
+
+dot
+---
+
+Action:
+Plots  a dot at the position specified by the  input  coordinate
+list.
+
+Syntax:
+dot coord_list
+
+Explanation:
+dot  plots a dot at the position specified by the input  graphic
+screen coordinate list. The turtle is not affected in any way.
+
+Examples:
+?dot [50 50]
+?to snow
+>make "x random 150 * (first shuffle [1!
+ -1])
+>make "y random 100 * (first shuffle [1!
+ -1])
+>dot list :x :y
+>snow
+>end
+snow defined
+?snow
+
+See Colorplate 12. snow (dot Primitive)
+
+
+dotc    (= DOT Color)
+----
+
+Action:
+Outputs the color number of a given dot.
+
+Syntax:
+dotc coord_list
+
+Explanation:
+Outputs  the  color  number  of  the  dot  at  the   coordinates
+specified, or -1 if the location is not on the graphic viewport.
+
+Examples:
+?dotc [50 10]
+2
+
+
+edall           (= EDit ALL)
+-----
+
+Action:
+Loads  all  the  variables and procedures in  the  workspace  or
+specified package(s) into the screen editor's buffer, and enters
+the screen editor.
+
+Syntax:
+edall <pkgname | pkgname_list>
+
+Explanation:
+With  or without an input, edall loads variables and  procedures
+into  the screen editor's buffer, and enters the screen  editor.
+edall  without an input loads all procedures and variables  from
+Dr.  Logo's workspace into the screen editor's buffer. If  there
+is nothing in the workspace, the screen editor displays an empty
+buffer into which you can type either procedures or variables.
+
+You  can  input  a package name or a list of  package  names  to
+specify  a  group  of procedures and variables  to  edit.  edall
+accepts only defined package names as input.
+
+Within  the screen editor, you can use line editing  and  screen
+editing  control  character commands to move  the  cursor,  make
+changes  to  text,  and  exit the  screen  editor.  The  control
+character   commands  are  described  in  Section  3,   "Editing
+Commands",  and summarized in Appendix B, "Dr. Logo control  and
+escape character commands".
+
+Examples:
+These examples assume you have two packages named draw.pack  and
+move.pack in your workspace.
+
+?edall
+
+edall  loads  all  the variables and procedures  in  Dr.  Logo's
+workspace into the screen editor's buffer.
+
+?edall "draw.pack
+edall  loads  all the variables and procedures  in  the  package
+draw.pack into the screen editor's buffer.
+
+?edall [draw.pack move.pack]
+
+edall  loads  all the variables and procedures in  the  packages
+draw.pack and move.pack into the screen editor's buffer.
+
+
+edf     (= EDit File)
+---
+
+Action:
+Loads a disk file into the text editor.
+
+Syntax:
+edf fname
+
+Explanation:
+Loads the specified disk file into the text editor's buffer,  or
+creates  a  new file and enters the text editor  with  an  empty
+buffer.
+
+Examples:
+?edf "startup
+
+
+edit ed
+-------
+
+Action:
+Loads  the  specified procedure(s) and/or variable(s)  into  the
+screen editor's buffer, and enters the screen editor.
+
+Syntax:
+edit <name | name_list>
+ed <name | name_list>
+
+Explanation:
+An  edit  command  enters  the  screen  editor.  edit  can  load
+procedures, variables, or both into the screen editor's  buffer.
+Input  a procedure or variable name, or a list of procedure  and
+variable names to specify what you want to edit.
+
+edit is "smart" and assumes certain things about your objectives
+for an editing session. First, it knows that you frequently  use
+the screen editor to correct errors in procedures. So, when  the
+execution  of  a procedure ends with an error  message  and  you
+immediately enter an edit command without specifying a procedure
+name, edit automatically loads the erroneous procedure into  the
+screen editor, and positions the cursor at the line in which the
+error occurred.
+
+If  no error has occurred, edit without an input procedure  name
+displays  an empty screen editor buffer. When you start to  edit
+an empty buffer, your display is completely blank. You can  type
+variable and procedure definitions into the empty buffer.
+
+edit's  second assumption is that, when you are defining  a  new
+procedure,  you need title and ending lines. When you  input  an
+undefined procedure name in an edit command, edit creates  title
+and ending lines in the screen editor's buffer.
+
+Within  the screen editor, you can use line editing  and  screen
+editing  control  character commands to move  the  cursor,  make
+changes  to  text,  and  exit the  screen  editor.  The  control
+character   commands  are  described  in  Section  3,   "Editing
+Commands",  and summarized in Appendix B, "Dr. Logo control  and
+escape character commands".
+
+Examples:
+The  following  examples assume that you have the  following  in
+your  workspace: a variable named password and  four  procedures
+named square, vanish, encode, and secret.
+
+I don't know how to repaet in square: !
+repaet 4 [fd 25 lt 90]
+?ed
+
+edit automatically loads square into the screen editor's  buffer
+and positions the cursor at the misspelling repaet.
+
+?edit "vanish
+
+edit moads the procedure vanish into the screen editor's  buffer
+and positions the cursor at the end of the title line.
+
+?ed [encode secret password
+
+ed  loads  the  encode and secret procedures  and  the  variable
+password  into  the  screen editor's buffer  and  positions  the
+cursor after encode's title line.
+
+?ed "newidea
+
+ed with an undefined procedure name automatically creates  title
+and end lines in the screen editor's buffer.
+
+
+edns    (= EDit NameS)
+----
+
+Action:
+Loads all the variables in the workspace or specified package(s)
+into the screen editor's buffer, and enters the screen editor.
+
+Syntax:
+edns <pkgname | pkgname_list>
+
+Explanation:
+With  or without an input, edns loads variables into the  screen
+editor's  buffer, and enters the screen editor. edns without  an
+input  loads  all variables from Dr. Logo's workspace  into  the
+screen  editor's buffer. If there is nothing in  the  workspace,
+the  screen editor displays an empty buffer into which  you  can
+type variable and procedure definitions.
+
+You  can  input  a package name or a list of  package  names  to
+specify a group of variables to edit. edns accepts only  defined
+package names as input.
+
+Within  the screen editor, you can use line editing  and  screen
+editing  control  character commands to move  the  cursor,  make
+changes  to  text,  and  exit the  screen  editor.  The  control
+character   commands  are  described  in  Section  3,   "Editing
+Commands",  and summarized in Appendix B, "Dr. Logo control  and
+escape character commands".
+
+Examples:
+The  following examples assume that you have two packages  named
+draw.pack and move.pack in your workspace.
+
+?edns
+
+edns  loads all the variables in Dr. Logo's workspace  into  the
+screen editor's buffer.
+
+?edns "draw.pack
+
+edns  loads all the variables in the package draw.pack into  the
+screen editor's buffer.
+
+?edns [draw.pack move.pack]
+
+edns  loads  all  the variables in the  packages  draw.pack  and
+move.pack into the screen editor's buffer.
+
+
+edps    (= EDit ProcedureS)
+----
+
+Action:
+Loads   all  the  procedures  in  the  workspace  or   specified
+package(s)  into  the  screen editor's buffer,  and  enters  the
+screen editor.
+
+Syntax:
+edps <pkgname | pkgname_list>
+
+Explanation:
+With or without an input, edps loads procedures into the  screen
+editor's  buffer, and enters the screen editor. edps without  an
+input  loads all procedures from Dr. Logo's workspace  into  the
+screen  editor's buffer. If there is nothing in  the  workspace,
+the  screen editor displays an empty buffer into which  you  can
+type either procedures or variables.
+
+You  can  input  a package name or a list of  package  names  to
+specify a group of procedures to edit. edps accepts only defined
+package names as input.
+
+Within  the screen editor, you can use line editing  and  screen
+editing  control  character commands to move  the  cursor,  make
+changes  to  text,  and  exit the  screen  editor.  The  control
+character   commands  are  described  in  Section  3,   "Editing
+Commands",  and summarized in Appendix B, "Dr. Logo control  and
+escape character commands".
+
+Examples:
+The  following examples assume that you have two packages  named
+draw.pack and move.pack in your workspace.
+
+?edps
+
+edps  loads all the procedures in Dr. Logo's workspace into  the
+screen editor's buffer.
+
+?edps "draw.pack
+
+edps loads all the procedures in the package draw.pack into  the
+screen editor's buffer.
+
+?edps [draw.pack move.pack]
+
+edps  loads  all the procedures in the  packages  draw.pack  and
+move.pack into the screen editor's buffer.
+
+
+eform   (= E FORMat)
+-----
+
+Action:
+Outputs a number in scientific notation.
+
+Syntax:
+eform n1 n2
+
+Explanation:
+Outputs n1 in scientific notation, using n2 digits. n2 must be a
+positive, real number from 1 through 15.
+
+Examples:
+?eform 1.2 1
+ 1.E+00
+
+
+emptyp  (= EMPTY Predicate)
+------
+
+Action:
+Outputs  TRUE if the input object is an empty word or  an  empty
+list.
+
+Syntax:
+emptyp object
+
+Explanation:
+An emptyp expression returns TRUE only if the input object is an
+empty word or empty list. Use emptyp as the predicate expression
+in an if command to determine if all elements of an object input
+to the procedure have been processed.
+
+Examples:
+?to nest.circles :sizes
+>if emptyp :sizes [stop]
+>repeat 36 [fd first :sizes lt 10]
+>nest.circles bf :sizes
+>end
+nest.circles defined
+?make "sizes [1 2 3 4 5 6 7 8]
+?nest.circles :sizes
+
+See Colorplate 13. nest.circles (emptyp Primitive)
+
+
+end
+---
+
+Action:
+Indicates the end of a procedure definition.
+
+Syntax:
+end
+
+Explanation:
+end  is  a  special word that signals the  end  of  a  procedure
+definition.  When you are using "to" to define a procedure,  you
+must put "end" by itself as the last line of the procedure.
+
+end signals to the procedure editor (the > prompt) that you have
+finished   defining  a  procedure,  and  returns  you   to   the
+interpreter's ? prompt. The screen editor automatically  inserts
+"end"  if you press Ctrl-C and exit without entering "end".  Dr.
+Logo also adds an end line to a procedure defined with a  define
+expression.
+
+end  is not part of a procedure's definition list, and is not  a
+primitive. You can use "end" as a procedure or variable name  if
+you are confident that the name will not cause undue confusion.
+
+Examples:
+?to pent
+>repeat 5 [fd 25 lt 72]
+>end
+pent defined
+
+end signals the procedure editor that you have finished defining
+a procedure, and returns you to the interpreter's ? prompt.
+
+?define "pent [[] [repeat 5 [fd 25 lt 72]
+?po "pent
+to pent
+repeat 5 [fd 25 lt 72]
+end
+
+The  define  expression automatically adds an end  line  to  the
+procedure definition.
+
+
+equalp  (= EQUAL Predicate)
+------
+
+Action:
+Outputs  TRUE if the input objects are equal numbers,  identical
+words, or identical lists.
+
+Syntax:
+equalp object object
+
+Explanation:
+equalp outputs TRUE only if the input objects are equal numbers,
+identical  words, or identical lists; otherwise, equalp  outputs
+FALSE.
+
+Examples:
+?equalp " []
+FALSE
+?equalp "leaf first [leaf stem flower]
+TRUE
+?equalp 72 (360 / 5)
+TRUE
+?equalp [1 2 3] [2 3 4]
+FALSE
+
+
+erall   (= ERase ALL)
+-----
+
+Action:
+Erases  all the procedures and variables from the  workspace  or
+specified package(s).
+
+Syntax:
+erall <pkgname | pkgname_list>
+
+Explanation:
+erall  erases the definitions of procedues and variables.  erall
+without  an input name erases the definitions of all  procedures
+and  variables  from  Dr.  Logo's  workspace,  except  for   any
+procedures  and variables in buried packages. erall  without  an
+input  name  also  erases  the package  names  of  any  unburied
+packages.
+
+You can give erall a package name or a list of package names  to
+specify a group of procedures and variables to be erased.  erall
+can  accept a buried package name as input; with  this  request,
+erall can erase a buried package.
+
+erall  works by removing property pairs from the property  lists
+associated  with  package,  variable, and  procedure  names.  It
+removes  the .PKG pair from a package's property list, the  .APV
+and  .PAK pairs from a variable's property lists, and  the  .DEF
+and .PAK pairs from a procedure's property list. erall does  not
+remove any other property pairs from a property list. So,  after
+you  input  a  buried package name to erall,  glist  .BUR  still
+outputs the name of the erased package. To completely remove the
+name  from  your workspace, you must use a  remprop  command  to
+eliminate all pairs from its property list.
+
+Examples:
+These examples assume you have two packages named draw.pack  and
+move.pack in your workspace.
+
+?erall
+
+This command erases the definitions of all unburied  procedures,
+variables, and packages from Dr. Logo's workspace.
+
+?erall "draw.pack
+
+This command erases the definitions of procedures and  variables
+in the draw.pack package, as well as the definition of draw.pack
+as a package name.
+
+?erall [draw.pack move.pack]
+
+This   command  erases  the  definitions  of   the   procedures,
+variables,  and  package  names associated  with  draw.pack  and
+move.pack.
+
+
+erase er
+--------
+
+Action:
+Erases the specified procedure(s) from the workspace.
+
+Syntax:
+erase procname | procname_list
+er procname | procname_list
+
+Explanation:
+erase  erases  the specified procedure or  procedures  from  Dr.
+Logo's  workspace. erase works by removing the .DEF pair from  a
+procedure's  property  list. If a procedure has  other  property
+pairs  in  its  list besides .DEF, you  must  remove  them  with
+remprop  to  completely  erase  the  procedure  name  from   the
+workspace.
+
+Examples:
+Each  of  these examples assume you have  two  procedures  named
+wheel and flag in a package named mandala in your workspace.
+
+?erase "wheel
+
+This  command erases the definition of the wheel procedure  from
+Dr. Logo's workspace.
+
+?erase [wheel flag]
+
+This command erases the definitions of the procedures wheel  and
+flag from Dr. Logo's workspace.
+
+?plist "wheel
+[.PAK mandala [[] [repeat 12[flag lt 30]!
+]]]
+?er "wheel
+?plist "wheel
+[.PAK mandala]
+
+er  removes  only the definition pair from  a  procedure  name's
+property list. Use remprop to delete .PAK.
+
+
+erasefile
+---------
+
+Action:
+Erases the specified Dr. Logo file.
+
+Syntax:
+erasefile fname
+
+Explanation:
+erasefile  erases  a file name from a disk  directory.  You  can
+enter  a drive name before the file name to erase a file not  on
+the  default drive. erasefile asks you to confirm that you  want
+to  erase the file, so that you can check that the correct  file
+will be erased.
+
+erasefile accepts an ambiguous file name as input. An  ambiguous
+file name can refer to more than one file because it contains  a
+wildcard  character and gives Dr. Logo a pattern to  match.  Dr.
+Logo can then erase any files whose names match the pattern.
+
+The  wildcard character is a question mark ("?"). When the  last
+character in your input file name is a question mark,  erasefile
+erases  any  files whose names begin with  the  characters  that
+precede the question mark.
+
+Examples:
+Each of these examples assume you have two files named  piglatin
+and plaid on the disk in drive B:.
+
+?erasefile "b:piglatin
+[PIGLATIN] will be erased from drive B
+Is this what you want? (y/n)
+
+If  you  press  y, erasefile erases the file. If  you  press  n,
+erasefile does nothing.
+
+?erasefile "b:p?
+[PIGLATIN PLAID] will be erased from dr!
+ive B
+Is this what you want? (y/n)
+
+If  you  press y, erasefile erases piglatin and plaid  from  the
+disk in drive B.
+
+
+erasepic
+--------
+
+Action:
+Erases the specified Dr. Logo image file.
+
+Syntax:
+erasepic fname
+
+Explanation:
+erasepic erases a Dr. Logo image filename from a disk directory.
+You can enter a drive name before the image filename to erase  a
+image  file  not  on the default drive.  erasepic  asks  you  to
+confirm  that you want to erase the image file, so that you  can
+check that the correct image file will be erased.
+
+erasepic  accepts  an  ambiguous image  filename  as  input.  An
+ambiguous  image filename can refer to more than one image  file
+because  it contains a wildcard character and gives Dr.  Logo  a
+pattern to match. Dr. Logo can then erase any image files  whose
+names match the pattern.
+
+The  wildcard character is a question mark ("?"). When the  last
+character  in  your  input image filename is  a  question  mark,
+erasepic  erases  any  image files whose names  begin  with  the
+characters that precede the question mark.
+
+Examples:
+Each  of  these examples assume you have two image  files  named
+piglatin and plaid on the disk in drive B:.
+
+?erasepic "b:piglatin
+[PIGLATIN] will be erased from drive B
+Is this what you want? (y/n)
+
+If  you  press  y, erasepic erases the file.  If  you  press  n,
+erasepic does nothing.
+
+?erasepic "b:p?
+[PIGLATIN PLAID] will be erased from dr!
+ive B
+Is this what you want? (y/n)
+
+If you press y, erasepic erases piglatin and plaid from the disk
+in drive B.
+
+
+ern     (= ERase one Name)
+---
+
+Action:
+Erases the specified variable(s) from the workspace.
+
+Syntax:
+ern varname | varname_list
+
+Explanation:
+ern  erases a specified variable name or names from  Dr.  Logo's
+workspace. ern works by removing the .APV pair from the  proerty
+list associated with the variable name. If a variable has  other
+property  pairs  in its list besides .APV you must  remove  them
+with  remprop  to completely erase the variable  name  from  the
+workspace.
+
+Examples:
+Each  of these examples assume you have two variables named  big
+and small in a package named size in your workspace.
+
+?ern "big
+
+This  command  erases  the variable name  big  from  Dr.  Logo's
+workspace.
+
+?ern [big small]
+
+This  command erases the variable names big and small  from  Dr.
+Logo's workspace.
+
+?plist "big
+[.PAK size .APV 80]
+?ern "big
+?plist "big
+[.PAK size]
+
+ern  removes only the .APV pair from a variable name's  property
+list. Use remprop to remove .PAK.
+
+
+erns    (= ERase several NameS)
+----
+
+Action:
+Erases  all  the  variables  from  the  workspace  or  specified
+package(s).
+
+Syntax:
+erns <pkgname | pkgname_list>
+
+Explanation:
+erns erases a group of variable names from Dr. Logo's workspace.
+erns  without an input name erases all variable names  from  Dr.
+Logo's  workspace,  except  for any  variable  names  in  buried
+packages. You can give erns a package name or a list of  package
+names  to specify a group of variables names to be erased.  erns
+can  accept a buried package name as input; with  this  request,
+erns can remove the value from a variable in a buried package.
+
+erns  works  by removing the .APV pair from  a  variable  name's
+property  list. It does not remove any other pair, such  as  the
+
+
+
+you use erns with a package name as input and list the  contents
+of  the  package with poprim, you will still see  your  variable
+names  listed under the package name, even though they  have  no
+values.
+
+Examples:
+These examples assume you have two packages named draw.pack  and
+move.pack in your workspace.
+
+?erns "draw.pack
+
+This  command  erases  all variable  names  from  the  draw.pack
+package.
+
+?erns [draw.pck move.pack]
+
+This  command erases all variable names from the  draw.pack  and
+move.pack packages.
+
+
+erps    (= ERase ProcedureS)
+----
+
+Action:
+Erases  all  the  procedures from  the  workspace  or  specified
+package(s).
+
+Syntax:
+erps <pkgname | pkgname_list>
+
+Explanation:
+erps  erases  a group of procedures from Dr.  Logo's  workspace.
+erps without an input name erases all procedures from Dr. Logo's
+workspace, except for any procedures in buried packages. You can
+give erps a package name or a list of package names to specify a
+group  of  procedures  to be erased. erps can  accept  a  buried
+package  name as input; with this request, erns can  remove  the
+definition from a procedure name in a buried package.
+
+erps  works  by removing the .DEF pair from a  procedure  name's
+property list. It does not remove any other property. Therefore,
+after  you  use erps with a package name as input and  list  the
+contents  of  the package with poprim, you will still  see  your
+procedure names listed as regular names under the package name.
+
+Examples:
+These examples assume you have two packages named draw.pack  and
+move.pack in your workspace.
+
+?erps
+
+This command erases all procedures, and leaves variables.
+
+?erps "draw.pack
+
+This command erases all procedures from the draw.pack package.
+
+?erps [draw.pck move.pack]
+
+This  command erases all procedure names from the draw.pack  and
+move.pack packages.
+
+
+error
+-----
+
+Action:
+Outputs a list whose elements describe the most recent error.
+
+Syntax:
+error
+
+Explanation:
+error can output a list that describes the most recent error. If
+the  most  recent error has already displayed a message  on  the
+screen,  or  if error has already output a list  describing  the
+most recent error, error outputs an empty list.
+
+A  nonempty error output list contains six elements to  describe
+an error:
+
+     1)  A  number  that identifies the error.  Dr.  Logo  error
+numbers are listed in Appendix A, "Dr. Logo Error Messages".
+
+     2)  A message that explains the error. This is the  message
+that is usually displayed on the screen.
+
+     3)  The name of the procedure that contains  the  erroneous
+expression.  If the error occurred at toplevel, this element  is
+an empty list.
+
+     4)   The   complete  line  that  contains   the   erroneous
+expression.
+
+     5) The procedure name part of the erroneous expression,  if
+any.
+
+     6)  The input object part of the erroneous  expression,  if
+any.
+
+Dr. Logo can take one of two actions when an error occurs. Which
+action  Dr.  Logo  takes depends on  a  system  variable  called
+ERRACT. The default state of ERRACT is FALSE. You can set ERRACT
+to TRUE with a make statement.
+
+While ERRACT is FALSE, Dr. Logo runs a throw "error command when
+an  error occurs. If no catch "error command has been  run,  Dr.
+Logo  terminates  execution of the procedure,  prints  an  error
+message,  and returns to toplevel. If the error occurred  within
+the  scope  of a catch "error command, Dr. Logo returns  to  the
+line  following  the catch "error without  displaying  an  error
+message  on  the screen. This allows you to handle an  error  in
+your  own  way. The description of the catch  command  gives  an
+example of how to display a custom error message.
+
+While  ERRACT  is TRUE, Dr. Logo causes a pause  when  an  error
+occurs.  During the pause, you can execute an error  command  to
+discover the cause of the error, then change variables with make
+or  procedures with ed before entering co to continue  execution
+of the procedure.
+
+Examples:
+?to safety.circle :size
+>catch "error [repeat 180 [fd :size rt !
+2]
+>show error
+>end
+safety.circle defined
+?safety.circle 2
+[]
+?safety.circle "two
+[41 [fd doesn't like two as input] safe!
+ty.circle [!
+catch "error [repeat 180 fd :size rt 2]!
+]] fd rt]
+
+See Colorplate 14. safety.circle (error Primitive)
+
+
+ .examine
+ --------
+
+Action:
+Displays the contents of a memory location.
+
+Syntax:
+ .examine n
+
+Explanation:
+Displays  the  contents (a byte value) of  the  memory  location
+specified by the input number. This location is relative to  the
+absolute location established by .SETSEG. THIS PRIMITIVE  SHOULD
+BE USED WITH CAUTION!
+
+Examples:
+?.examine 22
+0
+
+
+exp
+---
+
+Action:
+Outputs the natural exponent of the input number.
+
+Syntax:
+exp n
+
+Explanation:
+exp outputs the natural exponent of the input number.
+
+Examples:
+?exp 1
+2.71828182845905
+?log (exp 1)
+1
+
+
+fence
+-----
+
+Action:
+Establishes  a  boundary  that limits  the  turtle  to  onscreen
+plotting.
+
+Syntax:
+fence
+
+Explanation:
+fence  establishes  a boundary around the edge  of  the  graphic
+screen.  The fence limits the turtle to onscreen plotting.  When
+the turtle encounters the fence, Dr. Logo displays a "Turtle out
+of bounds" message. The number of turtle steps from home to  the
+fence are as follows:
+
+                 100
+            +-----------+
+            |           |
+        160 |           | 159
+            |           |
+            +-----------+
+                  99
+
+To remove the fence, enter window.
+
+Examples:
+?to fly
+>fence
+>buzz
+>end
+fly defined
+?to buzz
+>catch "error [zoom]
+>lt 180
+>buzz
+>end
+buzz defined
+?to zoom
+>rt random 180
+>fd random 50
+>zoom
+>end
+zoom defined
+?fly
+
+See Colorplate 15. fly (fence Primitive)
+
+
+fill
+----
+
+Action:
+Fills an area.
+
+Syntax:
+fill
+
+Explanation:
+Fills  an  area with the current pencolor by  changing  the  dot
+under the turtle (and all horizontally and vertically contiguous
+dots  of  the  same color) to the current  pencolor,  using  the
+current pen state.
+
+Examples:
+?fill
+
+
+first
+-----
+
+Action:
+Outpus the first element of the input object.
+
+Syntax:
+first object
+
+Explanation:
+first  outputs the first element of the input object. The  first
+of  a word or number is a single character. The first of a  list
+is either a word or a list. first of an empty word or empty list
+outputs an error.
+
+Examples:
+?first []
+first doesn't like [] as input
+?first "
+first doesn't like an empty word as inp!
+ut
+?first "rose
+r
+?first [weight 165]
+weight
+?to begin.vowelp :wrd
+>op memberp first :wrd [a e i o u]
+>end
+begin.vowelp defined
+?to pig :wrd
+>if begin.vowelp :wrd
+>    [op word :wrd "ay]
+>    [op pig word (bf :wrd) (first :wrd!
+)]
+>end
+pig defined
+?to piglatin :phrase
+>if emptyp :phrase [op []]
+>output se (pig first :phrase) (piglati!
+n bf :phrase)
+>end
+piglatin defined
+?piglatin [a ball of string]
+[aay allbay ofay ingstray]
+
+
+follow
+------
+
+Action:
+Reorganizes  workspace, so that the first input-named  procedure
+is followed by the second.
+
+Syntax:
+follow procname procname
+
+Explanation:
+follow reorganizes the workspace, so that the first  input-named
+procedure  is  followed  by the second? You can  use  follow  to
+specify  the order in which Dr. Logo displays  procedure  titles
+and definitions (poall, pops, pots, proclist), saves  procedures
+on  disk (save), and loads procedures into the  screen  editor's
+buffer  (edall,  edps).  follow does not  change  the  order  of
+procedures in a package definition.
+
+Examples:
+These  examples  assume you have three  procedures  named  zoom,
+buzz, and fly in a package named fly in your workspace.
+
+?pots
+zoom
+fly
+buzz
+?popkg
+fly
+  to zoom
+  to fly
+  to buzz
+?follow "buzz "zoom
+?pots "fly
+fly
+buzz
+zoom
+?popkg
+fly
+  to zoom
+  to fly
+  to buzz
+
+
+form    (= real FORMat)
+----
+
+Action:
+Outputs a number in real notation.
+
+Syntax:
+form n1 n2 <n3>
+
+Explanation:
+Outputs  a number, n1, with n2 digits before the decimal  point,
+and  n3  after  it. n1 must be a positive, real  number  from  1
+through  15.  If  n1 is not an integer, it  is  rounded  to  the
+nearest integer. If n3 is omitted, it is assumed to be zero  and
+the decimal point and any digits after it are not printed.
+
+Examples:
+?form 1.234 2
+ 1
+
+
+forward fd
+----------
+
+Action:
+Moves  the turtle the input number of steps in the direction  of
+its current heading.
+
+Syntax:
+forward distance_n
+fd distance_n
+
+Explanation:
+forward  moves  the  turtle the input number  of  steps  in  the
+direction  of its current heading. If the turtle's pen is  down,
+the  turtle  leaves  a trace of its path. On  the  IBM  Personal
+COmputer, a turtle step is equivalent to one dot (pixel).
+
+Examples:
+?forward 100
+?cs
+?to plaid
+>wrap
+>setpc 3 rt 40 forward 10965
+>setpc 2 rt 90 forward 5000
+>setpc 1 pu rt 90 fd 6 pd ht
+>repeat 625 [fd 3 lt 90 fd 1 rt 90 bk 3!
+lt 90 fd 1 rt 90]
+>end
+plaid defined
+?plaid
+
+See Colorplate 16. plaid (forward Primitive)
+
+
+fput    (= First PUT)
+----
+
+Action:
+Outputs a new object formed by making the first input object the
+first element in the second input object.
+
+Syntax:
+fput object object
+
+Explanation:
+fput  outputs  a  new object formed by making  the  first  input
+object the first element in the second input object.  Generally,
+the  new object is the same kind of object as the  second  input
+object:  a word, number, or list. However, when you fput a  word
+into a number, fput outputs a word.
+
+Examples:
+?fput "s "miles
+smiles
+?fput "banana [grape strawberry melon]
+[banana grape strawberry melon]
+?fput 20 20
+2020
+?fput [corn dog] [hamburger taco pizza]
+[[corn dog] hamburger taco pizza]
+?to exchange :from :to :in
+>if emptyp :in [op []]
+>if (first :in) = :from
+>   [output fput :to exchange :from :to !
+bf :in]
+>   [output se first :in exchange :from !
+:to bf :in]
+>end
+exchange defined
+?exchange "cat "dog [My cat has fleas.]
+[My dog has fleas.]
+
+
+fullscreen fs
+-------------
+
+Action:
+Selects full graphic screen.
+
+Syntax:
+fullscreen
+fs
+
+Explanation:
+fullscreen  removes  the  splitscreen or text  screen  from  the
+display,  and dedicates the monitor to graphics.  fullscreen  is
+equivalent  to a Ctrl-L keystroke. Generally, it is  easiest  to
+use  Ctrl-L when you are typing commands at your  keyboard,  and
+fullscreen (fs) from within a procedure.
+
+Examples:
+?repeat 12[repeat 4[fd 60 rt 90]rt 30]
+?splitscreen
+?fullscreen
+
+See Colorplate 17. fullscreen (fullscreen Primitive)
+
+
+glist   (= Get property LIST)
+-----
+
+Action:
+Outputs  a  list of all objects in the  workspace  or  specified
+package(s) that have the input property in their property lists.
+
+Syntax:
+glist prop <pkgname | pkgname_list>
+
+Explanation:
+With  or without an input, glist outputs a list of objects  that
+have  the  input property in their property  lists.  Without  an
+input,  glist  checks the property lists of all objects  in  the
+workspace.  If you specify a package name or a list of  packages
+in  the glist expression, glist checks only the objects  in  the
+specified package(s).
+
+Property lists and Dr. Logo's system properties are described in
+Section 5, "Property Lists, Workspace, and Disks". To understand
+the  examples below, remember that .DEF is the  system  property
+Dr. Logo gives to defined procedures.
+
+Examples:
+These examples assume that, in your workspace, you have packages
+named fly and piglatin.
+
+?glist ".DEF
+[countdown piglatin begin.vowelp fly bu!
+zz triangle.text zoom pig]
+?glist ".DEF "fly
+[fly buzz zoom]
+?glist ".DEF [fly piglatin]
+[piglatin begin.vowelp fly buzz zoom pi!
+g]
+
+
+go
+--
+
+Action:
+Executes  the  line within the current procedure  identified  by
+label and the input word.
+
+Syntax:
+go word
+
+Explanation:
+go executes the line within the current procedure identified  by
+label  and the input word. This means that, after go,  Dr.  Logo
+will  next execute the line following the label expression.  The
+go  and label expressions must have the same input word, and  be
+in the same procedure.
+
+go  and  label  let you change the sequence in  which  Dr.  Logo
+executes  the  lines  in a procedure. Therefore,  go  and  label
+cannot  be  on the same line. This means you cannot use  go  and
+label  within an instruction list input to repeat, run,  or  the
+ifs.
+
+Examples:
+?to triangle.text :string
+>label "loop
+>if emptyp :string [stop]
+>pr :string
+>make "string bf :string
+>go "loop
+>end
+triangle.text defined
+?triangle.text [Get along little dogie.]
+Get along little dogie.
+along little dogie.
+little dogie.
+dogie.
+?to countdown :n
+>label "loop
+>if :n < 0 [stop]
+>type :n
+>make "n (:n - 1)
+>go "loop
+>end
+countdown defined
+?countdown 9
+9876543210
+
+
+gprop   (= Get PROPerty)
+-----
+
+Action:
+Outputs the value of the input-named property of the input-named
+object.
+
+Syntax:
+gprop name prop
+
+Explanation:
+gprop  outputs  the  value of the input-named  property  of  the
+input-named  object. The input name identifies the  object  that
+has  the property. If the object does not have  the  input-named
+property, gprop outputs an empty list.
+
+Section  5,  "Property Lists, Workspace, and  Disks",  describes
+property  lists,  and defines the properties Dr. Logo  gives  to
+objects  in  the workspace. To understand  the  examples  below,
+remember  that a proerty list is made up of property pairs.  The
+first  element  of  the pair is the property;  the  second,  its
+value. Dr. Logo gives defined properties the .DEF property,  and
+defined variables the .APV property.
+
+Examples:
+This  example  assumes you have a procedure named  pig  in  your
+workspace.
+
+?gprop "pig ".DEF
+[[wrd] if begin.vowelp :wrd [op word :w!
+rd "ay]
+[op ! pig word (bf :wrd) (first :wrd)]]
+?make "height "72"
+?gprop "height ".APV
+72"
+?gprop "height ".DEF
+[]
+
+
+heading
+-------
+
+Action:
+Outputs a number that indicates the turtle's current heading.
+
+Syntax:
+heading
+
+Explanation:
+heading  outputs the turtle's current heading as a  real  number
+between 0 and 359 inclusive. The turtle's heading corresponds to
+traditional compass headings:
+
+      Degrees         Direction       Pointing
+      -------         ---------       --------
+          0             North           up
+         90             East            right
+        180             South           down
+        270             West            left
+
+Examples:
+?home show heading
+0
+?rt 1 show heading
+1
+?rt 1 show heading
+2
+?lt random 360 heading
+126
+?to compass :n
+>if memberp :n [0 90 180 270] [points]
+>if (:n > 360) [stop]
+>(type heading char 9)
+>rt 5 pu fd 25 pd fd 5 pu bk 30
+>compass :n + 5
+>end
+compass defined
+?to points
+>pu
+>fd 40
+>if :n = 0 [tt "N]
+>if :n = 90 [tt "E]
+>if :n = 180 [tt "S]
+>if :n = 270 [tt "W]
+>setpos [0 0]
+>end
+points defined
+?compass 0
+
+See Colorplate 18. compass (heading Primitive)
+
+
+help
+----
+
+Action:
+Displays the names and abbreviations of all Dr. Logo primitives.
+
+Syntax:
+help <primitive>
+
+Explanation:
+help  displays  the  names and abbreviations  of  all  Dr.  Logo
+primitives.
+
+help  displays only 25 names on the screen at a time.  It  waits
+for you to press any key before displaying the next 25 names.
+
+Examples:
+?help
+
+help displays the list of all Dr. Logo primitives. Press any key
+to view next screenful of names.
+
+
+hideturtle ht
+-------------
+
+Action:
+Makes the turtle invisible.
+
+Syntax:
+hideturtle
+ht
+
+Explanation:
+hideturtle  makes  the  turtle invisible.  When  invisible,  the
+turtle  draws  faster and does not distract  visually  from  the
+drawing. To make the turtle visible again, enter showturtle.
+
+Examples:
+?hideturtle
+?showturtle
+?to start :size
+>repeat 5 [fd :size lt 217 fd :size lt !
+71]
+>end
+star defined
+?star 30
+?ht
+
+See Colorplate 19. hideturtle (hideturtle Primitive)
+
+
+home
+----
+
+Action:
+Returns the turtle to position [0 0] (the center of the  graphic
+screen) heading 0 (North).
+
+Syntax:
+home
+
+Explanation:
+home positions the turtle at "home", position [0 0] (the  center
+of the screen), heading 0 (North). Home is the position in which
+the turtle first appears when you start Dr. Logo.
+
+home does not change the turtle's pen state. For example, if the
+turtle's  pen is down when home is executed, the turtle draws  a
+line from its current loation to the center of the screen.
+
+Examples:
+?fd 80 lt 120 fd 80
+?home
+
+See Colorplate 20. home (home Primitive)
+
+
+if
+--
+
+Action:
+Executes  one of two instructions lists, depending on the  value
+of the input predicate expression.
+
+Syntax:
+if pred_exp instr_list <instr_list>
+
+Explanation:
+If  transfers  execution  to  one  of  two  instruction   lists,
+depending  on  the TRUE or FALSE value of  the  input  predicate
+expression.  You  can use an if expression to  make  a  decision
+regarding the flow of control within your procedure.
+
+The  first input to if must be a predicate expression, one  that
+outputs  TRUE or FALSE. If the predicate outputs TRUE, Dr.  Logo
+executes  the first instruction list. If the  predicate  outputs
+FALSE, Dr. Logo executes either the second instruction list  (if
+any), or the next line in the procedure.
+
+if requires literal instruction lists as input; that is to  say,
+an  instruction  list  input to if must be  enclosed  in  square
+brackets  ("[" and "]"). Dr. Logo allows nested if  expressions.
+This  means  you can use an if statement within  an  instruction
+list you input to if.
+
+Examples:
+?setheading random 360
+?if heading < 180 [pr "East] [pr "West]
+West
+
+The coin procedures that follow demonstrate several ways to  use
+if.  coin1 shows if making a simple decision between  two  input
+instruction lists.
+
+?to coin1
+>if l = random 2 [pr "heads] [pr "tails]
+>end
+coin1 defined
+
+coin2 shows if providing input to another procedure.
+
+?to coin2
+>pr if l = random 2 ["heads] ["tails]
+>end
+coin2 defined
+
+coin3  shows how if executes the next line in a procedure if  no
+second instruction list is input.
+
+?to coin3
+>if l = random 2 [op "heads]
+>op "tails
+>end
+coin3 defined
+
+coin4  shows  how  the second instruction list  makes  the  line
+following the if expression independent of the results of the if
+test.
+
+?to coin4
+>if l = random 2
+>   [type "heads]
+>   [type "tails]
+>pr [\ side up]
+>end
+coin4 defined
+
+
+iffalse iff
+-----------
+
+Action:
+Executes the input instruction list if the most recent test  was
+FALSE.
+
+Syntax:
+iffalse instr_list
+iff instr_list
+
+Explanation:
+iffalse executes its input instruction list if the result of the
+most recent test expression was FALSE. If the result of test was
+TRUE, iffalse does nothing.
+
+You  can use test, iffalse, and iftrue as an alternate to if  to
+control  the  flow  of execution within  your  procedure.  These
+primitives  are  particularly useful when you need Dr.  Logo  to
+evaluate expressions after it evaluates a predicate  expression,
+but before it executes the chose instruction list.
+
+iffalse requires a literal instruction list as input; that is to
+say, any instruction list you input to iffalse must be  enclosed
+in  squae  brackets  ("[" and "]"). Dr. Logo  allows  nested  if
+expressions.  This means you can use test, iffalse,  and  iftrue
+within the instruction list you input to iffalse.
+
+Examples:
+The  coin5 procedure is similar to the coin procedures shown  as
+examples  under  if,  but shows how to use  test,  iffalse,  and
+iftrue.  coin5  evaluates  a expression  after  it  evaluates  a
+predicate   expression,  but  before  it  executes  the   chosen
+instruction list.
+
+?to coin5
+>test l = random 2
+>if l = random 1000000 [pr [Landed on e!
+dge!] stop]
+>ift [type "heads ]
+>iff [type "tails ]
+>pr [\ side up]
+>end
+coin5 defined
+
+
+iftrue ift
+----------
+
+Action:
+Executes the input instruction list if the most recent test  was
+TRUE.
+
+Syntax:
+iftrue instr_list
+ift instr_list
+
+Explanation:
+iftrue executes its input instruction list if the result of  the
+most recent test expression was TRUE. If the result of test  was
+FALSE, iftrue does nothing.
+
+You  can use test, iffalse, and iftrue as an alternate to if  to
+control  the  flow  of execution within  your  procedure.  These
+primitives  are  particularly useful when you need Dr.  Logo  to
+evaluate expressions after it evaluates a predicate  expression,
+but before it executes the chose instruction list.
+
+iftrue requires a literal instruction list as input; that is  to
+say,  any instruction list you input to iftrue must be  enclosed
+in  squae  brackets  ("[" and "]"). Dr. Logo  allows  nested  if
+expressions.  This means you can use test, iffalse,  and  iftrue
+within the instruction list you input to iffalse.
+
+Examples:
+The  coin5 procedure is similar to the coin procedures shown  as
+examples  under  if,  but shows how to use  test,  iffalse,  and
+iftrue.  coin5  evaluates  a expression  after  it  evaluates  a
+predicate   expression,  but  before  it  executes  the   chosen
+instruction list.
+
+?to coin5
+>test l = random 2
+>if l = random 1000000 [pr [Landed on e!
+dge!] stop]
+>ift [type "heads ]
+>iff [type "tails ]
+>pr [\ side up]
+>end
+coin5 defined
+
+
+ .in
+ ---
+
+Action:
+Displays the contents of a I/O port.
+
+Syntax:
+ .in port_n
+
+Explanation:
+Displays the contents (a byte value) of the specified I/O  port.
+Port numbers range from 0 to 65535.
+
+Examples:
+?.in 397
+50
+
+
+int
+---
+
+Action:
+Outputs the integer portion of the input number.
+
+Syntax:
+int n
+
+Explanation:
+int  outputs  the  integer  portion of  the  input  number.  int
+discards  any  decimal point and subsequent  numerals  from  the
+input number. To round a decimal number to the nearest  integer,
+use round.
+
+Examples:
+?int 3.333333
+3
+?int 3
+3
+?int 28753 / 12
+2396
+?int -75.482
+-75
+?to integerp :n
+>if numberp :n [op :n = int :n]
+>(pr :n [is not a number.]
+>end
+integerp defined
+?integerp 6.65
+FALSE
+?integerp 6
+TRUE
+?integerp "six
+six is not a number.
+
+
+item
+----
+
+Action:
+Outputs the specified element of the input object.
+
+Syntax:
+item n object
+
+Explanation:
+item  outputs an element of the input object. The  input  number
+specifies which element of the input object item outputs.
+
+Examples:
+?item 4 "dwarf
+r
+?item 2 [brownie snickerdoodle wafer]
+snickerdoodle
+?make "favorites [brownie snickerdoodle!
+[oatmeal raisin]]
+?count item 3 :favorites
+2
+?to make_sentence :n :v
+>pr (se item ((random (count :n)) + 1) !
+:n
+>       item ((random (count :v)) + 1) !
+:v
+>end
+make_sentence defined
+?make_sentence [elephants crocodiles ma!
+mbasnakes] [pirouette tapdance rollersk!
+ate]
+mambasnake pirouette
+
+
+keyp    (= KEY Predicate)
+----
+
+Action:
+Outputs TRUE is a character has been typed at the keyboard,  and
+is waiting to be read.
+
+Syntax:
+keyp
+
+Explanation:
+keyp outputs TRUE if a character has been typed at the keyboard,
+and is waiting to be read by readchar, readquote, or readlist.
+
+When  you  type a character at toplevel, Dr. Logo  displays  the
+character   on  the  screen.  However,  while  a  procedure   is
+executing, Dr. Logo stores any characters that are typed at  the
+keyboard  in a buffer, and displays them on the screen when  the
+procedure  ends. By using keyp in a procedure, you can  discover
+whether  or  not  your  user  has  typed  something  while  your
+procedure is executing.
+
+What  your  user  types  into the buffer  is  critical  if  your
+procedure  contains subsequent readquote, readchar, or  readlist
+expressions  that read the buffer and input its contents to  the
+rest  of your procedure. You can use keyp to determine  if  your
+user  has typed something, then check that the  buffer  contains
+the  kind  of input your procedure requires before  passing  the
+input to the procedure.
+
+Examples:
+?to sketch
+>fd 2
+>wait 10
+>if keyp [turn rc]
+>sketch
+>end
+sketch defined
+?to turn :way
+>if 6 = ascii :way [rt 10]  ; 6 for rig!
+ht arrow key
+>if 2 = ascii :way [lt 10]  ; 2 for lef!
+t arrow key
+>end
+turn defined
+?sketch
+?to delay
+>pr [Any keystroke delays next number b!
+y a second.]
+>printout
+>end
+delay defined
+?to printout
+>if keyp [wait 60 sink rc]
+>(type random 10 char 9)
+>printout
+>end
+printout defined
+?to sink :object
+>end
+sink defined
+Any keystroke delays next number by a s!
+econd.
+6   9   2   5   8   0   3   6   1   9  !
+1   0   6   1   3   5   1   8   0   1  !
+7   Ctrl-G
+?to countstars
+>make "number 1 + random 10
+>drawstars :number
+>pr [How many stars?]
+>label "back
+>if keyp
+>   [make buffer readquote
+>    (if not numberp first :buffer
+>        [ern "buffer go "back]
+>        [go on])]
+>   [go "back]
+>label "on
+>if :number = :buffer
+>   [pr "Right!]
+>   [pr [Wrong! There are] :number]
+>cs
+>countstars
+>end
+countstars defined
+?to drawstars :number
+>if :number = 0 [stop]
+>pu setpos list
+>   (random 100 * first shuffle [1 -1])
+>   (random 70 * first shuffle [1 -1])
+>pd star pu
+>drawstars :number - 1
+>end
+drawstars defined
+?to star
+>repeat 5 [fd 30 lt 127 fd 30 lt 70]
+>end
+star defined
+?countstars
+How many stars?
+4
+Right!
+How many stars?
+5
+Right!
+How many stars?
+6
+Wrong! There are 5
+How many stars? Ctrl-G
+Stopped! in countstars: go
+
+See Colorplate 21. countstars (keyp Primitive)
+
+
+label
+-----
+
+Action:
+Identifies the line to be executed after a go expression.
+
+Syntax:
+label word
+
+Explanation:
+label identifies the line to be executed after a go  expression.
+The label and go expressions must be in the same procedure,  and
+have the same input word.
+
+go  and  label  let you change the sequence in  which  Dr.  Logo
+executes  the  lines  in a procedure. Therefore,  go  and  label
+cannot both be on the same line. This means you cannot use  both
+go and label within an instruction list input to repeat, run, or
+the ifs.
+
+Examples:
+?to triangle.text :string
+>label "loop
+>if emptyp :string [stop]
+>pr :string
+>make "string bf :string
+>go "loop
+>end
+triangle.text defined
+?triangle.text [Wyoming will be your ne!
+w home.]
+Wyoming will be your new home.
+will be your new home.
+be your new home.
+your new home.
+new home.
+home.
+?to countdown :n
+>label "loop
+>if :n < 0 [stop]
+>type :n
+>make "n (:n - 1)
+>go "loop
+>end
+countdown defined
+?countdown 9
+9876543210
+
+
+last
+----
+
+Action:
+Outputs the last element of the input object.
+
+Syntax:
+last object
+
+Explanation:
+last outputs the last element of the input object. The last of a
+word  or  number is a single character. The last of  a  list  is
+either  a  word or a list. last of an empty word or  empty  list
+outputs an error.
+
+Examples:
+?last []
+last doesn't like [] as input
+?last "
+last doesn't like an empty word as input
+?lst "skyline
+e
+?last [weight 165]
+165
+?to mirror :word
+>(pr reverse :word "| :word
+>end
+mirror defined
+?to reverse :word
+>if emptyp :word [op "]
+>op (word last :word reverse bl :word)
+>end
+reverse defined
+?mirror "mirror
+rorrim | mirror
+
+
+left lt
+-------
+
+Action:
+Rotates the turtle the input number of degrees to the left.
+
+Syntax:
+left degrees_n
+lt degrees_n
+
+Explanation:
+left rotates the turtle the input number of degrees to the left.
+Usually,  you input a number of degreese between 0 and  359.  If
+the input number is greater than 359, the turtle appears to move
+the  input number minus 360 degrees to the left. If you input  a
+negative number to left, the turtle turns to the right.
+
+Examples:
+?repeat 36 [left 10]
+?repeat 36 [left -10]
+?to around :s
+>repeat 360 [fd :s lt 10 make "s :s + .!
+01]
+>end
+around defined
+?around 2
+
+See Colorplate 22. around (left Primitive)
+
+
+list
+----
+
+Action:
+Outputs a list made up of the input objects.
+
+Syntax:
+list object object (...)
+
+Explanation:
+list  outputs a list made up of the input objects. list is  like
+sentence,  but  does not remove the outermost brackets  from  an
+input object.
+
+Without  punctuation,  list  requires  and  accepts  two   input
+objects.  list can accept more or fewer inputs when you  enclose
+the  list expression in parentheses ["(" and ")"]. If  no  other
+expressions  follow the list expression on the line, you do  not
+need to type the closing right parenthesis [")"].
+
+There are two ways of creating lists in Dr. Logo:
+
+        1) using square brackets ("[" and "]")
+        2) using list or sentence.
+
+Each way results in a different kind of list. When you create  a
+list by enclosing elements in square brackets ("[" and "]"), you
+create  a  "literal" list. Dr. Logo treats the elements  of  the
+list literally; it does not evaluate expressions or look up  the
+values of variables named in a literal list.
+
+When  you  use list or sentence to create a list,  you  can  use
+variables and expressions to specify the elements Dr. Logo  will
+put in the list. You can use list and sentence to create a  list
+for  input to most procedures. However, if, iffalse, and  iftrue
+require literal lists as input.
+
+Examples:
+?show list "big "feet
+[big feet]
+?list "potatoes [mashed baked fried]
+[potatoes [mashed baked fried]]
+?(list
+[]
+?(list 21 22 23 24
+[21 22 23 24]
+?to square
+>repeat 4 [fd 60 rt 90]
+>end
+square defined
+?make "procname "square
+?run (list :procname
+
+See Colorplate 23. run (list :procname (list Primitive)
+
+?to zipzap
+>setpos list
+>   random 150 * first shuffle
+>   random 100 * first shuffle
+>zipzap
+>end
+zipzap defined
+?zipzap
+
+See Colorplate 24. zipzap (list Primitive)
+
+
+listp   (= LIST Predicate)
+-----
+
+Action:
+Outputs TRUE if the input object is a list.
+
+Syntax:
+listp object
+
+Explanation:
+listp  outputs  TRUE if the input object is a  list;  otherwise,
+listp outputs FALSE.
+
+Examples:
+?listp "force
+FALSE
+?listp [father brother sister]
+TRUE
+?listp "
+FALSE
+?listp []
+TRUE
+?to reflect :object
+>if listp :object
+>   [pr lreverse :object]
+>   [pr reverse :object]
+>end
+reflect defined
+?to lreverse :list
+>if emptyp :list [op "]
+>op (se last :list lreverse bl :list
+>end
+lreverse defined
+?to reverse :word
+>if emptyp :word [op "]
+>op (word last :word reverse bl :word
+>end
+reverse defined
+?reflect "skywalker
+reklawyks
+?reflect [wherever you go]
+go you wherever
+
+
+load
+----
+
+Action:
+Reads  the  input-named  Dr. Logo file from the  disk  into  the
+workspace.
+
+Syntax:
+load fname
+
+Explanation:
+load  reads the contents of the input-named Dr. Logo  file  from
+disk  into the workspace. You can precede the file name  with  a
+drive specifier if the file is not on the default drive.
+
+Dr.  Logo defines each procedure and variable as it is  read  in
+from the disk. If a procedure in the workspace has the same name
+as  a  procedure  read in from the disk, the  procedure  in  the
+workspace is overwritten.
+
+load can load only those files saved with a save command  (files
+with the file type LOG in the disk directory). You can load only
+one file at a time. When you interrupt load with Ctrl-G or Ctrl-
+Z,  load stops reading from the Dr. Logo file, and defines  only
+those procedures displayed on your screen.
+
+Examples:
+These examples assume you have a Dr. Logo file named piglatin on
+the disk in your default drive, and a file named fly on the disk
+in drive B:.
+
+?load "piglatin
+begin.vowelp defined
+pig defined
+piglatin defined
+?load "b:fly
+fly defined
+buzz defined
+zoom defined
+
+
+loadpic
+-------
+
+Action:
+Reads the input-named image file from the disk into the screen.
+
+Syntax:
+loadpic fname
+
+Explanation:
+loadpic  reads the contents of the input-named image  file  from
+disk into the screen. You can precede the file name with a drive
+specifier if the file is not on the default drive.
+
+loadpic  can load only those files saved with a savepic  command
+(files  with the file type PIC in the disk directory).  You  can
+load only one file at a time.
+
+Examples:
+?loadpic "ketchum
+
+
+local
+-----
+
+Action:
+Makes the input-named variable(s) accessible only to the current
+procedure and the procedures it calls.
+
+Syntax:
+local var_name (...)
+
+Explanation:
+local  makes the input-named variables "local" to the  procedure
+in  which  the local expression occurs. Local variables  can  be
+changed  by the procedure in which the local expression  occurs,
+or by any procedure it calls.
+
+Without punctuation, local requires and accepts one input  name.
+local  can  accept  more  inputs  when  you  enclose  the  local
+expression in parentheses ["(" and ")"]. If no other expressions
+follow the local expression on the line, you do not need to type
+the closing right parenthesis [")"].
+
+Most frequently, you will use variables of the same name  within
+calling  and called procedures, to pass information between  the
+two  procedures. However, you will also find applications  where
+you  do  not  want the called procedure to  modify  the  calling
+procedure's  value  of  the  variable.  If  calling  and  called
+procedures  are  using  variables of the  same  name,  which  is
+unavoidably  the  case when a procedure calls  itself,  a  local
+expression in the called procedure prevents the called procedure
+from altering the calling procedure's value of the variable.
+
+Examples:
+drawing.report  and  drawcircle  both use x and  y  as  variable
+names.  The local expression in drawcircle  prevents  drawcircle
+from  modifying drawing.report's values of x and y. Without  the
+local  expression  in  drawcircle,  drawing.report  would  print
+circle.finished at the point where the turtle began drawing  the
+circle.
+
+?to drawing.report
+>make "x (-150)
+>make "y 80
+>pu setpos list :x :y
+>tt "drawing.circle
+>drawcircle
+>setpos list :x :y
+>tt "circle.finished seth 0 fd 10
+>end
+drawing.report defined
+?to drawcircle
+>(local "x "y)
+>make "x 10
+>make "y 50
+>pu setpos list :x :y seth 90
+>pd repeat 36 [fd 10 rt 10] pu
+>end
+drawcircle defined
+?drawing.report
+
+See Colorplate 25. circle.finished (local Primitive)
+
+The  local statement in decimal.of.fraction forces Dr.  Logo  to
+create    a    new   variable   named    inverse    each    time
+decimal.of.fraction calls itself.
+
+?to decimal.of.fraction :n
+>local "inverse
+>make "inverse 1 / :n
+>if :n = 1 [stop]
+>decimal.of.fraction :n - 1
+>(pr ["1/] :n char 9 :inverse
+>end
+decimal.of.fraction defined
+?decimal.of.fraction 10
+1/ 2    0.5
+1/ 3    0.333333333333333
+1/ 4    0.25
+1/ 5    0.2
+1/ 6    0.166666666666667
+1/ 7    0.142857142857143
+1/ 8    0.125
+1/ 9    0.111111111111111
+1/ 10   0.1
+
+
+log
+---
+
+Action:
+Outputs the natural logarithm of the input number.
+
+Syntax:
+log n
+
+Explanation:
+log outputs the natural logarithm of the input number. A natural
+logarithm  is  the  logarithm  to the  base  <e>,  where  <e>  =
+2.71828182845905.
+
+Examples:
+?log 1
+0
+?log (exp 1)
+1
+?log (180 / pi)
+4.04822696504081
+
+
+log10
+-----
+
+Action:
+Outputs the base 10 logarithm of the input number.
+
+Syntax:
+log10 n
+
+Explanation:
+log10 outputs the base 10 logarithm of the input number.
+
+Examples:
+?log10 100
+2
+?log10 734
+2.86569605991607
+?log10 3950
+3.59659709562646
+
+
+lowercase lc
+------------
+
+Action:
+Outputs  the  input  word  with  all  alphabetic  characters  in
+lowercase.
+
+Syntax:
+lowercase word
+lc word
+
+Explanation:
+lowercase outputs the input word with all alphabetic  characters
+converted to lower case.
+
+Examples:
+?lowercase "SOUTH
+south
+?lowercase "MaryAnn
+maryann
+?to quiz
+>pr [Do you like chocolate chip cookies!
+?]
+>if "y = lc first rq
+>   [pr [I do too!]]
+>   [pr [Wow, I've never met anyone who !
+didn't!]
+>end
+quiz defined
+?quiz
+Do you like chocolate chip cookies?
+YES!!
+I do too!
+
+
+lpen    (= LightPEN)
+----
+
+Action:
+Outputs  a  coordinate list that indicates the position  of  the
+lightpen.
+
+Syntax:
+lpen
+
+Explanation:
+lpen  outputs the position where the lightpen first touched  the
+screen  since  the  last lpen expression.  lpen  represents  the
+lightpen's position in the same way cursor represents the cursor
+location on a 40 column text screen. Both lpen and cursor use  a
+coordinate  system that originates at the upper left  corner  of
+the display.
+
+          [0 0]                           [39 0]
+                +-----------------------+
+                |                       |
+                |                       |
+                |                       |
+                |                       |
+                |                       |
+                +-----------------------+
+         [0 24]                           [39 24]
+
+Examples:
+sketch  shows how to use lpenp to determine whether or  not  the
+lightpen  has  been used before trying to  read  the  lightpen's
+position with lpen. If there is no lightpen input waiting to  be
+read  when Dr. Logo executes a lpen expression, lpen outputs  [0
+0].
+
+convertx  and  converty  show a way  to  convert  from  lightpen
+coordinates into turtle graphics coordinates.
+
+?to sketch
+>fd 2
+>wait 10
+>if lpenp [turnto lpen]
+>sketch
+>end
+sketch defined
+?to turnto :position
+>convertx converty
+>(pr :position "= list :x :y)
+>setheading towards list :x :y
+>sketch
+>end
+turnto defined
+?to convertx
+>make "x (first :position) * 7.5 - 150
+>end
+convertx defined
+?to converty
+>make "y (last :position) * (-8) + 100
+>end
+converty defined
+?sketch
+
+
+lpenp   (= LightPEN Predicate)
+-----
+
+Action:
+Outputs TRUE if lightpen input is waiting to be read.
+
+Syntax:
+lpenp
+
+Explanation:
+lpenp outputs TRUE if lightpen input is waiting to be read.  Use
+lpenp  in  an  if  statement to determine  whether  or  not  the
+lightpen  has  been used before trying to  read  the  lightpen's
+position with lpen (see lpen).
+
+Examples:
+?to sketch
+>fd 2
+>wait 10
+>if lpenp [turnto lpen]
+>sketch
+>end
+sketch defined
+?to turnto :position
+>convertx converty
+>(pr :position "= list :x :y)
+>setheading towards list :x :y
+>sketch
+>end
+turnto defined
+?to convertx
+>make "x (first :position) * 7.5 - 150
+>end
+convertx defined
+?to converty
+>make "y (last :position) * (-8) + 100
+>end
+converty defined
+?sketch
+
+
+lput    (= Last PUT)
+----
+
+Action:
+Outputs a new object formed by making the first input object the
+last element in the second input object.
+
+Syntax:
+lput object object
+
+Explanation:
+lput  outputs  a  new object formed by making  the  first  input
+object  the last element in the second input object.  Generally,
+the  new object is the same kind of object as the  second  input
+object:  a word, number, or list. However, when you lput a  word
+into a number, lput outputs a word.
+
+Examples:
+?lput "s "plural
+plurals
+?lput "s [plural]
+[plural s]
+?lput "cherries [apples bananas]
+[apples bananas cherries]
+?lput [San Jose] [[San Diego] [San Fran!
+cisco]]
+[[San Diego] [San Franscico] [San Jose]]
+?make "extensions [[Hal 33] [John 85]]
+?to add.entry :item
+>make "extensions lput :item :extensions
+>end
+add.entry defined
+?add.entry [Steve 96]
+?:extensions
+[[Hal 33] [John 85] [Steve 96]]
+
+
+make
+----
+
+Action:
+Makes the input object the value of the input-named variable.
+
+Syntax:
+make varname object
+
+Explanation:
+make  makes  the  input object the "contents" or  value  of  the
+input-named  variable.  If  the input-named  variable  does  not
+exist,  make  creates it. If the  input-named  variable  already
+exists,  make  discards its current contents and  gives  it  the
+input object as a value.
+
+make  works just like name, except that the order of the  inputs
+are reversed. make works by adding the system property .APV with
+the  value  of the input object to  the  input-named  variable's
+property list.
+
+Examples:
+?make "flavor "chocolate
+?:flavor
+chocolate
+?make "chocolate "semi\-sweet
+?:chocolate
+semi-sweet
+?thing "flavor
+chocolate
+?thing :flavor
+semi-sweet
+?to say.hello
+>pr [Hello!  What's your name?]
+>make "answer readquote
+>(pr [Nice to meet you,] word :answer ".
+>end
+say.hello defined
+?say.hello
+Hello!  What's your name?
+Oscar
+Nice to meet you, Oscar.
+
+
+memberp         (= MEMBER Predicate)
+-------
+
+Action:
+Outputs  TRUE  if the first input object is an  element  of  the
+second input object.
+
+Syntax:
+memberp object object
+
+Explanation:
+memberp outputs TRUE if the first input object is an element  of
+the second input object; otherwise, memberp outputs FALSE.
+
+Examples:
+?memberp "y "only
+TRUE
+?memberp 7 734395
+TRUE
+?memberp "or "chore
+TRUE
+?memberp "chocolate [[vanilla][chocolat!
+e][strawberry]]
+FALSE
+?memberp [chocolate] [[vanilla][chocola!
+te][strawberry]]
+TRUE
+?to vowelp :object
+>if memberp :object [a e i o u]
+>   [op "TRUE]
+>   [op "FALSE]
+>end
+vowelp defined
+?vowelp "c
+FALSE
+?vowelp "i
+TRUE
+
+
+mouse
+-----
+
+Action:
+Outputs a list giving the state of the mouse.
+
+Syntax:
+mouse
+
+Explanation:
+Outputs a list giving the state of the mouse.
+
+Examples:
+?mouse
+[-160 100 FALSE FALSE FALSE]
+
+where:
+
+        the first item (-160) is the mouse x coordinate
+        the second item (100) is the mouse y coordinate
+        the third  item (FALSE) is the mouse left  button
+        the fourth item (FALSE) is the mouse right button
+        the  fifth   item (FALSE) is a predicate saying  if  the
+mouse is inside the graphic window
+
+(The above mouse list was gotten from text screen.)
+
+
+name
+----
+
+Action:
+Makes the input object the value of the input-named variable.
+
+Syntax:
+name object var_name
+
+Explanation:
+name  makes  the  input object the "contents" or  value  of  the
+input-named  variable.  If  the input-named  variable  does  not
+exist,  name  creates it. If the  input-named  variable  already
+exists,  name  discards its current contents and  gives  it  the
+input object as a value.
+
+name  works just like make, except that the order of the  inputs
+are reversed. name works by adding the system property .APV with
+the  value  of the input object to  the  input-named  variable's
+property list.
+
+Examples:
+?make "chocolate "flavor
+?:flavor
+chocolate
+?make "semi\-sweet "chocolate
+?:chocolate
+semi-sweet
+?thing "flavor
+chocolate
+?thing :flavor
+semi-sweet
+
+
+namep   (= NAME Predicate)
+-----
+
+Action:
+Outputs TRUE if the input word identifies a defined variable.
+
+Syntax:
+namep word
+
+Explanation:
+namep  outputs  TRUE  if the input  word  identifies  a  defined
+variable. Otherwise, namep outputs FALSE.
+
+Examples:
+?make "flavor "chocolate
+?:flavor
+chocolate
+?namep "flavor
+TRUE
+?namep "raspberry
+FALSE
+?to decrement :name
+>if not namep :name [pr [Not a variable!
+>if numberp thing :name [make :name (th!
+ing :name) - 1]
+>end
+decrement defined
+?make "age 14
+?decrement "age
+?:age
+13
+
+
+nodes
+-----
+
+Action:
+Outputs the number of free nodes in the workspace.
+
+Syntax:
+nodes
+
+Explanation:
+nodes outputs the number of free nodes in the workspace. A  node
+is equal to five bytes.
+
+Examples:
+?nodes
+2684
+?recycle
+?nodes
+3030
+
+
+noformat
+--------
+
+Action:
+Removes comments from the workspace.
+
+Syntax:
+noformat
+
+Explanation:
+noformat  removes  comments  from the workspace,  to  free  more
+nodes. noformat works by removing any .FMT property pairs from a
+procedure's poperty list.
+
+Examples:
+?to bg.cycle :val  ; Displays backgroun!
+d colors
+>if :val = 0 [pr [Cycle complete.] setb!
+g 1]
+>setbg :val
+>(pr [This is background color number] !
+bg)
+>wait 100  ; Delay to view color
+>bg.cycle :val - 1
+>end
+bg.cycle defined
+?noformat
+?po "bg.cycle :val
+bg.cycle :val
+if :val = 0 [pr [Cycle complete.] setbg!
+1]
+setbg :val
+(pr [This is background color number] b!
+g)
+wait 100
+bg.cycle :val - 1
+end
+
+
+not
+---
+
+Action:
+Outputs  TRUE  if the input predicate outputs  FALSE,  FALSE  if
+input predicate outputs TRUE.
+
+Syntax:
+not pred_exp
+
+Explanation:
+not  reverses the value of a predicate expression. If the  input
+predicate  outputs  TRUE,  not  outputs  FALSE.  If  the   input
+predicate outputs FALSE, not outputs TRUE.
+
+Examples:
+?not 2 > 1
+FALSE
+?not 2 < 1
+TRUE
+?to inverse :n
+>if not numberp :n [(pr :n [is not a num!
+ber.]) stop]
+>(pr "1\/ :n "= 1 / :n
+>end
+inverse defined
+?inverse 5
+1/ 5 = 0.2
+?inverse "five
+five is not a number.
+
+
+notrace
+-------
+
+Action:
+Turns off trace monitoring of all or specified procedure(s).
+
+Syntax:
+notrace <procname | procname_list>
+
+Explanation:
+notrace   turns  off  the  monitoring  of  procedure   execution
+initiated by a trace command.
+
+Examples:
+?to average :numbers
+>make "total 0
+>addup :numbers
+>pr :total / count :numbers
+>end
+average defined
+?to addup :list
+>if emptyp :list [stop]
+>make "total :total + first :list
+>addup bf :list
+>end
+addup defined
+?trace
+?average [1 2 3]
+[1] Evaluating average
+[1] numbers is [1 2 3]
+[2] Evaluating addup
+[2] list is [1 2 3]
+[3] Evaluating addup
+[3] list is [2 3]
+[4] Evaluating addup
+[4] list is [3]
+[5] Evaluating addup
+[5] list is []
+2
+?notrace
+?average [1 2 3]
+2
+
+
+nowatch
+-------
+
+Action:
+Turns off watch monitoring of all or specified procedure(s).
+
+Syntax:
+nowatch <procname | procname_list>
+
+Explanation:
+nowatch   turns  off  the  monitoring  of  procedure   execution
+initiated by a watch command.
+
+Examples:
+?to average :numbers
+>make "total 0
+>addup :numbers
+>pr :total / count :numbers
+>end
+average defined
+?to addup :list
+>if emptyp :list [stop]
+>make "total :total + first :list
+>addup bf :list
+>end
+addup defined
+?watch
+?average [1 2 3]
+[1] In average, make "total 0
+[1] In average, addup :numbers
+[2] In addup, if emptyp :list [stop]
+[2] In addup, make "total :total + firs!
+t :list
+[2] In addup, addup bf :list
+[3] In addup, if emptyp :list [stop]
+[3] In addup, make "total :total + firs!
+t :list
+[3] In addup, addup bf :list
+[4] In addup, if emptyp :list [stop]
+[4] In addup, make "total :total + firs!
+t :list
+[4] In addup, addup bf :list
+[5] In addup, if emptyp :list [stop]
+[5] In average, pr :total / count :numb!
+ers
+2
+?nowatch
+?average [1 2 3]
+2
+
+
+numberp         (= NUMBER Predicate)
+-------
+
+Action:
+Outputs TRUE if the input object is a number.
+
+Syntax:
+numberp object
+
+Explanation:
+numberp outputs TRUE if the input object is a number; otherwise,
+numberp outputs FALSE.
+
+Examples:
+?numberp 374.926
+TRUE
+?numberp "six
+FALSE
+?numberp first [2 4 6 8]
+TRUE
+?numberp butfirst [2 4 6 8]
+FALSE
+?to inverse :n
+>if not numberp :n [(pr :n [is not a num!
+ber.]) stop]
+>(pr "1\/ :n "= 1 / :n
+>end
+inverse defined
+?inverse 2
+1/ 2 = 0.5
+?inverse "two
+two is not a number.
+
+
+open
+----
+
+Action:
+Open a file or device.
+
+Syntax:
+open <fname | device>
+
+Explanation:
+Open the file or device to send or receive characters. open must
+be used before accessing data in a file.
+
+Examples:
+?open "letters
+
+
+or
+--
+
+Action:
+Outputs FALSE if all input predicates outputs FALSE.
+
+Syntax:
+or pred_exp pred_exp (...)
+
+Explanation:
+or  outputs FALSE if all input predicates output FALSE.  If  any
+input predicate outputs FALSE, or outputs TRUE.
+
+Without punctuation, or requires and accepts two input  objects.
+or  can  accept  more or fewer inputs when you  enclose  the  or
+expression in parentheses ["(" and ")"]. If no other expressions
+follow  the or expression on the line, you do not need  to  type
+the closing right parenthesis [")"].
+
+Examples:
+?or "TRUE "TRUE
+TRUE
+?or "TRUE "FALSE
+TRUE
+?or "FALSE "FALSE
+FALSE
+?(or "FALSE "FALSE "FALSE "TRUE
+TRUE
+?to weather
+>pr [What's the temperature today?]
+>make "answer readquote
+>if or (:answer < 50) (:answer > 80)
+>   [pr [Hmm, sounds uncomfortable!]]
+>   [pr [Sounds nice!]]
+>end
+weather defined
+?weather
+What's the temperature today?
+92
+Hmm, sounds uncomfortable!
+?weather
+What's the temperature today?
+78
+Sounds nice!
+
+
+ .out
+ ----
+
+Action:
+Sends number to I/O port.
+
+Syntax:
+ .out port_n n
+
+Explanation:
+Assigns  the  input number (a byte value) to the  specified  I/O
+port.  Port numbers range from 0 through 65535.  THIS  PRIMITIVE
+SHOULD BE USED WITH CAUTION!
+
+Examples:
+?.out 10 33
+
+
+output op
+---------
+
+Action:
+Makes the input object the output of the procedure.
+
+Syntax:
+output object
+op object
+
+Explanation:
+output  makes  the input object the output  of  your  procedure.
+Therefore,  output is valid only within a procedure. As soon  as
+your  procedure  outputs an object, control returns  to  calling
+procedure or toplevel.
+
+Examples:
+?to Aurora
+>op [Briar Rose]
+>end
+Aurora defined
+?pr se [Sleeping Beauty's name is] Auro!
+ra
+Sleeping Beauty's name is Briar Rose
+?to vowelp :object
+>output memberp :object [a e i o u]
+>end
+vowelp defined
+?vowelp "r
+FALSE
+?vowelp "e
+TRUE
+?to coin
+>output first shuffle [heads tails]
+>end
+coin defined
+?repeat 3 [show coin]
+heads
+heads
+tails
+?to addup :list
+>if emptyp :list [op 0]
+>op (addup bf :list) + (first :list)
+>end
+addup defined
+?addup [7 6 -2]
+11
+
+
+package
+-------
+
+Action:
+Puts the input-named objects into the input-named package.
+
+Syntax:
+package pkgname name | name list
+
+Explanation:
+package  puts the input-named procedures and variables into  the
+package  identified  by the input package name. If  the  package
+does  not  exist,  package creates it. If  the  package  already
+exists, package adds the input-named objects to the package. You
+can enter either a single procedure or variable name, or a  list
+of procedure and variable names as the second input to package.
+
+A  procedure or variable can be in only one package at  a  time,
+but it is easy to move an object from one package to another.  A
+procedure  or  variable resides in the package to which  it  was
+most recently assigned with a package command.
+
+package  works  by  adding  to or  changing  properties  in  the
+property  lists  of  the named objects. package  adds  the  .PKG
+property  to  the  package name's property list,  and  the  .PAK
+property to the property list of each input-named object.
+
+Examples:
+These examples assume you have the following in your  workspace:
+six procedures named draw, circle, square, triangle, addup,  and
+grow;  and  five variables named size, big, small,  medium,  and
+penstate.
+
+?pots
+to draw
+to circle :size
+to square :size
+to triangle :size
+to addup :list
+to grow :size
+?package "shapes [circle square triangl!
+e]
+?pons
+size is 100
+big is 80
+small is 20
+medium is 40
+penstate is [PENDOWN 1]
+?package "sizes [big medium small]
+?popkg
+sizes
+  "medium (VAL)
+  "small (VAL)
+  "big (VAL)
+shapes
+  to square :size
+  to triangle :size
+  to circle :size
+?package "sizes "grow
+?popkg
+sizes
+  to grow :size
+  "medium (VAL)
+  "small (VAL)
+  "big (VAL)
+shapes
+  to square :size
+  to triangle :size
+  to circle :size
+
+
+paddle
+------
+
+Action:
+Outputs  a  number  that represents a  paddle  (joystick)  input
+coordinate.
+
+Syntax:
+paddle n
+
+Explanation:
+You can use paddle to read the position of a paddle or joystick.
+Dr.  Logo supports up to two paddles or joysticks. If  your  IBM
+Personal  Computer does not have a paddle or joystick  when  Dr.
+Logo encounters a paddle command, paddle returns 0. The range of
+values that paddle outputs depends on your particular paddle  or
+joystick.
+
+The  number you input to paddle tells Dr. Logo which  coordinate
+you want paddle to output. The input number must be in the range
+0 to 3:
+
+        paddle 0 outputs the x coordinate of paddle1
+        paddle 1 outputs the y coordinate of paddle1
+
+        paddle 2 outputs the x coordinate of paddle2
+        paddle 3 outputs the y coordinate of paddle2
+
+where  paddle1 is the first paddle or joystick, and  paddle2  is
+the second paddle or joystick.
+
+Examples:
+draw allows the user to guide the turtle with the joystick. draw
+contains calculations that convert x and y coordinates  returned
+by  paddle into turte coordinates. paddle returns  a  190-number
+range for the x coordinate of this particular joystick, and 144-
+number  range for the y coordinate. amount smooths the  turtle's
+response to the joystick's commands.
+
+?to draw
+>repeat 10000
+>   [make "xin paddle 0
+>   make "yin paddle 1
+>   make "xin int ((:xin * (300 / 190)) !
+- 150)
+>   make "yin int ((:yin * (-200 / 144))!
++ 90)
+>   setheading towards list :xin :yin
+>   fd (amount * 0.1)
+>   if buttonp 0 [stop]
+>   if buttonp 1 [clean]
+>end
+draw defined
+?to amount
+>op int sqrt
+>   ((abs :xin) * (abs :xin) +
+>   ((abs :yin) * (abs :yin)))
+>end
+amount defined
+?draw
+
+
+pal     (= PALette of colors?)
+---
+
+Action:
+Not documented!
+
+Syntax:
+Not documented!
+
+Explanation:
+Not documented!
+
+Examples:
+Not documented!
+
+
+pause
+-----
+
+Action:
+Suspends  the  execution  of the  current  procedure,  to  allow
+interaction with the interpreter or editor.
+
+Syntax:
+pause
+
+Explanation:
+pause suspends the execution of the current procedure, and  lets
+you  interact  with the interpreter or  editor.  Therefore,  the
+pause  command is valid only within a procedure. When  Dr.  Logo
+encounters  a  pause  command,  it  suspends  execution  of  the
+procedure,  displays a "Pausing..." message, and allows  you  to
+interact with the interpreter. To end the pause, enter co.
+
+pause  is  one of the three ways you can cause a  pause  in  the
+execution of your procedure.
+
+A pause expression causes a "breakpoint" in your procedure.  For
+example,  you  can  insert  a  pause  command  just  before   an
+expression  that has been regularly causing an error.  When  you
+execute  the procedure, Dr. Logo will pause before  the  problem
+expression.  During  the pause, you can experiment  by  entering
+variations  of  the problem expression, and  examine  or  change
+local  variables  whose  values  will  be  discarded  when   the
+procedure  finishes  executing. Enter co to end  the  pause  and
+continue execution.
+
+Examples:
+?make "size 100
+?to nautilus :size
+>if (remainder :size 5) = 0 [pause]
+>repeat 36 [fd :sie rt 10]
+>rt 15
+>nautilus :size + 0.5
+>end
+nautilus defined
+?cs rt 180
+?nautilus 1
+Pausing... in nautilus: [if [remainder !
+:size 5) = 0 [pause]]
+nautilus ?:size
+5
+nautilus ?co
+Pausing... in nautilus: [if [remainder !
+:size 5) = 0 [pause]]
+nautilus ?:size
+5.5
+nautilus ?co
+Pausing... in nautilus: [if [remainder !
+:size 5) = 0 [pause]]
+nautilus ?:size
+10
+nautilus ?stop
+?:size
+100
+
+See Colorplate 26. nautilus (pause Primitive)
+
+
+pendown pd
+----------
+
+Action:
+Puts the turtle's pen down; the turtle resumes drawing.
+
+Syntax:
+pendown
+pd
+
+Explanation:
+pendown  makes the turtle put its pen down and begin drawing  in
+the current pen color. The pen is down when you start Dr.  Logo.
+Use pendown to resume normal drawing after a penup, penerase, or
+penreverse.
+
+Examples:
+?pen
+[PENUP 2]
+?pendown pen
+[PENDOWN 2]
+?to halo :size
+>repeat 36 [fd :size * 0.5 pu
+>           fd :size * 0.1 pd
+>           fd :size * 0.2 pu
+>           fd :size * 0.1 pd
+>           fd :size * 0.1 pu
+>           bk :size rt 10 pd]
+>ht
+>end
+halo defined
+?halo 100
+
+See Colorplate 29. halo 100 (pendown Primitive)
+
+
+penerase pe
+-----------
+
+Action:
+Puts the turtle's eraser down; turtle erases drawn lines.
+
+Syntax:
+penerase
+pe
+
+Explanation:
+penerase  makes the turtle put its eraser down. With the  eraser
+down, the turtle erases any drawn lines it passes over. To  lift
+the eraser, use penup or pendown.
+
+Examples:
+?pen
+[PENDOWN 2]
+?penerase pen
+[PENERASE 2]
+?to move.triangle
+>cs ht
+>repeat 36 [triangle pe triangle pd set!
+pc 2 rt 10]
+>end
+move.triangle defined
+?to triangle
+>repeat 3 [fd 40 rt 120]
+>end
+triangle defined
+?move.triangle
+
+See Colorplate 30. move.triangle (penerase Primitive)
+
+
+penreverse px
+-------------
+
+Action:
+Makes  turtle erase where lines are drawn, and draw where  there
+are no lines.
+
+Syntax:
+penreverse
+px
+
+Explanation:
+penreverse  makes the turtle draw where there are no lines,  and
+erase  where there are lines. To stop using the  reversing  pen,
+enter penup or pendown.
+
+Examples:
+?pen
+[PENDOWN 2]
+?penreverse pen
+[PENREVERSE 2]
+?to moving.triangle
+>cs ht px
+>repeat 26 [triangle triangle rt 10]
+>end
+moving.triangle defined
+?to triangle
+>repeat 3 [fd 40 rt 120]
+>end
+triangle defined
+?moving.triangle
+
+See Colorplate 30. moving.triangle (penreverse Primitive)
+
+
+penup pu
+--------
+
+Action:
+Picks the turtle's pen up; the turtle stops drawing.
+
+Syntax:
+penup
+pu
+
+Explanation:
+penup makes the turtle pick its pen up and stop leaving a  trace
+of its path. Use pendown to resume normal drawing after a  penup
+command.
+
+Examples:
+?pen
+[PENDOWN 2]
+?penup pen
+[PENUP 2]
+?to halo :size
+>repeat 36 [fd :size * 0.5 pu
+>           fd :size * 0.1 pd
+>           fd :size * 0.2 pu
+>           fd :size * 0.1 pd
+>           fd :size * 0.1 pu
+>           bk :size rt 10 pd]
+>ht
+>end
+halo defined
+?pd halo 100
+
+See Colorplate 29. halo 100 (penup Primitive)
+
+
+pi
+--
+
+Action:
+Outputs the value of pi.
+
+Syntax:
+pi
+
+Explanation:
+pi outputs the value of pi: 3.14159265358979.
+
+Examples:
+?(pr char 227 "= pi
+# = 3.14159265358979
+?to find.radius :n
+>repeat 180 [fd :n lt 1]
+>make "radius [180 * :n) / (2 * pi)
+>(pr [radius =] :radius
+>lt 90 fd radius
+>end
+find.radius defined
+?pu sety -90 pd rt 90
+?find.radius
+radius = 85.9436692696235
+
+See Colorplate 31. find.radius (pi Primitive)
+
+
+piece
+-----
+
+Action:
+Outputs  an object that contains the specified elements  of  the
+input object.
+
+Syntax:
+piece n n object
+
+Explanation:
+piece  outputs  an object made up of the elements of  the  input
+object.  The two input numbers specify which elements are to  be
+included  in  the output object. The range you specify is
+inclusive;  for example, when you specift piece 3 8,  the  third
+and eight elements are included in the output object.
+
+Examples:
+?piece 4 7 "Kensington
+sing
+?piece 2 4 [Nana John Michael Wendy Tin!
+kerbell]
+[John Michael Wendy]
+?to last.part :name
+>if memberp ". :name
+>   [make "rl where]
+>   [(pr :name [in wrong format.]) stop ]
+>make "r2 count :name
+>op piece (:r1 + 1) :r2 :name
+>end
+last.part defined
+?last.part "Peter.Pan
+Pan
+
+
+pkgall  (= PacKaGe ALL)
+------
+
+Action:
+Puts  all  procedures  and variables not in  packages  into  the
+specified package.
+
+Syntax:
+pkgall pkgname
+
+Explanation:
+pkgall  assigns  all  procedures and variables  not  already  in
+packages  to  the input-named package. If the package  does  not
+exist, pkgall creates it. If the package does exist, pkgall adds
+the unpackaged procedures and variables to the existing package.
+
+Examples:
+These  examples  assume  that you have  the  following  in  your
+workspace:  a  buried package named shapes that  contains  three
+procedures named circle, square, and triangle; a buried  package
+named sizes that contains three variables named big, medium, and
+small;  and three unpackaged objects: a variable named  penstate
+and two procedures named draw and grow.
+
+?popkg
+shapes is buried
+  to square :size
+  to circle :size
+  to triangle :size
+sizes is buried
+  "medium (VAL)
+  "small (VAL)
+  "big (VAL)
+?pots
+to grow :size
+to draw
+?pons
+penstate is [PENDOWN 2]
+?pkgall "other
+?popkg
+other
+  to grow :size
+  to draw
+  "penstate (VAL)
+shapes is buried
+  to square :size
+  to circle :size
+  to triangle :size
+sizes is buried
+  "medium (VAL)
+  "small (VAL)
+  "big (VAL)
+
+
+plist   (= Property LIST)
+-----
+
+Action:
+Outputs the property list of the input-named object.
+
+Syntax:
+plist name
+
+Explanation:
+plist  outputs  the  property list of  the  input-named  object.
+Section  5,  "Property Lists, Workspace, and  Disks",  describes
+property  lists,  and defines the properties Dr. Logo  gives  to
+objects  in  the workspace. To understand  the  examples  below,
+remember that a property list is made up of property pairs.  The
+first  element  of  the pair is the property;  the  second,  its
+value. Dr. Logo gives defined properties the .DEF property,  and
+defined variables the .APV property.
+
+Examples:
+These  examples  assume you have in your workspace  a  procedure
+named triangle and a variable named star.
+
+?plist "triangle
+[.DEF [[size] [repeat 3 [fd :size rt 12!
+0]]]]
+?plist "star
+[.APV evening]
+?to remove :name
+>if emptyp plist :name [stop]
+>make "prop first plist :name
+>run (se "remprop "quote :name "quote :!
+prop)
+>remove :name
+>end
+remove defined
+?make "bird "blue
+?remove "bird
+?:bird
+bird has no value
+
+
+po      (= Print Out)
+--
+
+Action:
+Displays the definition(s) of the specified procedure(s).
+
+Syntax:
+po procname | procname_list
+
+Explanation:
+po displays the definition of a procedure, or the definitions of
+a  list  of  procedures. When you do not  have  your  procedures
+grouped  in an appropriate package and cannot use pops, you  can
+input a list of procedure names to po to display the definitions
+of a group of procedures.
+
+Examples:
+?to triangle :size
+>repeat 3 [fd :size rt 120]
+>end
+triangle defined
+?to square :size
+>repeat 4[fd :size rt 90]
+>end
+square defined
+?po "square
+to square :size
+repeat 4 [fd :size rt 90]
+end
+?po [triangle square]
+to triangle :size
+repeat 3 [fd :size rt 120]
+end
+to square :size
+repeat 4 [fd :size rt 90]
+end
+
+
+poall   (= Print Out ALL)
+-----
+
+Action:
+Displays the definitions of all procedures and variables in  the
+workspace or input-named package(s).
+
+Syntax:
+poall <pkgname | pkgname_list>
+
+Explanation:
+Without  an  input,  poall  displays  the  definitions  of   all
+procedures and variables in the workspace. poall with a  package
+name  as  input displays the definitions of all  procedures  and
+variables  in the input-named package. You can input a  list  of
+package  names  to  poall to display  the  contents  of  several
+packages.
+
+Examples:
+These  examples  assume you have two packages named  shapes  and
+sizes in your workspace.
+
+?poall
+
+poall  displays the definitions of all procedures and  variables
+in the workspace.
+
+?poall "shapes
+
+poall  displays the definitions of all procedures and  variables
+in the package named shapes.
+
+?poall [shapes sizes]
+
+poall  displays the definitions of all procedures and  variables
+in the packages named shapes and sizes.
+
+
+pocall  (= Print Out CALLed procedure)
+------
+
+Action:
+Displays  the names of the procedures called by the  input-named
+procedure.
+
+Syntax:
+pocall procname
+
+Explanation:
+pocall displays the names of the procedures called by the input-
+named  procedure. The name of each called procedure is  indented
+on the line beneath the name of the procedure that calls it. The
+procedure names appear in the order in which they are called.
+
+Examples:
+?to wheel
+>repeat 12 [flag lt 30]
+>end
+wheel defined
+?to tri
+>repeat 3 [rt 120 fd 25]
+>end
+tri defined
+?to flag
+>fd 50 tri bk 50
+>end
+
+flag defined
+?pocall "wheel
+wheel
+  flag
+    tri
+?to addup :list
+>if emptyp :list [op 0]
+>op (addup bf :list) + (first :list)
+>end
+addup defined
+?pocall "addup
+addup :list
+  addup :list
+
+
+pons    (= Print Out NameS)
+----
+
+Action:
+Displays the names and values of all variables in the  workspace
+or specified package(s).
+
+Syntax:
+pons <pkgname | pkgname_list>
+
+Explanation:
+Without an input, pons displays the names and values of all  the
+variables  defined  in  the workspace. With a  package  name  as
+input,  pons displays the names and values of all the  variables
+contained  in  the specified package. You can input  a  list  of
+package names to pons to display variable names and values  from
+several packages.
+
+Examples:
+These examples assume you have the following in your  workspace:
+three variables named big, medium, and small in a package  named
+sizes;  two  variables named bird and snake in a  package  named
+animals; and a variable named penstate.
+
+?pons
+medium is 40
+small is 20
+big is 80
+bird is blue
+penstate is [PENDOWN 2]
+snake is green
+?pons "sizes
+medium is 40
+small is 20
+big is 80
+?pons [sizes animals]
+medium is 40
+small is 20
+big is 80
+bird is blue
+snake is green
+
+
+popkg   (= Print Out PacKaGe)
+-----
+
+Action:
+Displays the name and contents of each package in the workspace.
+
+Syntax:
+popkg
+
+Explanation:
+popkg  displays  the name and contents of each  package  in  ths
+workspace. The names of variables and procedures in the  package
+are  indented under the package name. Variable names are  quoted
+and  are followed by (VAL). Procedure names are preceded by  the
+word "to" and are followed by their inputs, if any. Object names
+that  have  properties are quoted and are  followed  by  (PROP).
+popkg  includes  the names and contents of buried  packages  and
+indicates that the package is buried.
+
+Examples:
+These examples assume you have four packages named wheel, sizes,
+average, and shapes in your workspace.
+
+?popkg
+wheel
+  to wheel
+  to flag
+  to tri
+sizes
+  "big (VAL)
+  "small (VAL)
+  "medium (VAL)
+average
+  to addup :list
+  to average :list
+shapes
+  to circle :size
+  to triangle :size
+  to square :size
+?bury "average
+?popkg
+wheel
+  to wheel
+  to flag
+  to tri
+sizes
+  "big (VAL)
+  "small (VAL)
+  "medium (VAL)
+average is buried
+  to addup :list
+  to average :list
+shapes
+  to circle :size
+  to triangle :size
+  to square :size
+
+
+pops    (= Print Out ProcedureS)
+----
+
+Action:
+Displays  the  names and definitions of all  procedures  in  the
+workspace or specified package(s).
+
+Syntax:
+pops <pkgname | pkgname_list>
+
+Explanation:
+Without an input, pops displays the names and definitions of all
+the procedures defined in the workspace. With a package name  as
+input,  pops  displays  the names and  definitions  of  all  the
+procedures  contained in the specified package. You can input  a
+list  of  package names to pops to display procedure  names  and
+definitions from several packages.
+
+Examples:
+These examples assume you have the following in your  workspace:
+three  procedures named wheel, flag, and tri in a package  named
+wheel; two procedures named average and addup in a package named
+average; and a procedure named square.
+
+?pops
+to wheel
+repeat 12 [flag lt 30]
+end
+to square :size
+repeat 4 [fd :size rt 90]
+end
+to tri
+repeat 3 [rt 120 fd 25]
+end
+to flag
+fd 50 tri bk 50
+end
+to addup :list
+if emptyp :list [op 0]
+op (addup bf :list) + (first :list)
+end
+to average :list
+op (addup :list) / (count :list)
+end
+?pops "wheel
+to wheel
+repeat 12 [flag lt 30]
+end
+to tri
+repeat 3 [rt 120 fd 25]
+end
+to flag
+fd 50 tri bk 50
+end
+?pops [wheel average]
+to wheel
+repeat 12 [flag lt 30]
+end
+to tri
+repeat 3 [rt 120 fd 25]
+end
+to flag
+fd 50 tri bk 50
+end
+to addup :list
+if emptyp :list [op 0]
+op (addup bf :list) + (first :list)
+end
+to average :list
+op (addup :list) / (count :list)
+end
+
+
+poref   (= Print Out REFerenced procedures)
+-----
+
+Action:
+Displays  the names of the procedures that call the  input-named
+procedure(s).
+
+Syntax:
+poref procname | procname_list
+
+Explanation:
+poref displays the names of any procedures that call the  input-
+named  procedure.  You  can  use  poref  to  check  that   other
+procedures  will  be affected when you  change  the  input-named
+procedure.
+
+Examples:
+?to wheel
+>repeat 12 [flag lt 30]
+>end
+wheel defined
+?to tri
+>repeat 3 [rt 120 fd 25]
+>end
+tri defined
+?to flag
+>fd 50 tri bk 50
+>end
+flag defined
+?poref "tri
+to flag
+?poref "flag
+to wheel
+?to addup :list
+>if emptyp :list [op 0]
+>op (addup bf :list) + (first :list)
+>end
+addup defined
+?to average :list
+>op (addup :list) / (count :list)
+>end
+average defined
+?poref "addup
+to average :list
+to addup :list
+
+
+pos
+---
+
+Action:
+Outputs  a  list that contains the coordinates of  the  turtle's
+current position.
+
+Syntax:
+pos
+
+Explanation:
+pos  outputs  a two-element list that  identifies  the  turtle's
+current  position. The format of the list is suitable for  input
+to  setpos.  When the turtle is plotting on  screen,  the  first
+element  of  the list is the x coordinate in the range  -150  to
++149, and the second element is the y coordinate in the range  -
+99 to +100. When the turtle is off the screen, either the x or y
+coordinate or both will be greater than the visible range.
+
+Examples:
+?cs pos
+[0 0]
+?to save.place
+>make "place pos
+>end
+save.place defined
+?to return
+>setpos :place
+>end
+return defined
+?setpos list (random 150) (random 100)
+?pos
+[90 22]
+?save.place
+?setpos list (random 150) (random 100)
+?pos
+[55 73]
+?return
+
+See  Colorplate 32, return (pos Primitive), and  Colorplate  33,
+find.center (pos Primitive).
+
+?to find.center :n
+>repeat 180 [fd :n lt 2]
+>make "radius (180 * :n) (2 * pi)
+>lt 90 fd :radius
+>show pos
+>end
+find.center defined
+?pu back 80 rt 90 bk 90 pd
+?find.center 2
+[-89.9891 -22.6934]
+
+
+potl    (= Print Out Top Level procedures)
+----
+
+Action:
+Displays the names of the procedures that are not called by  any
+other procedures in the workspace.
+
+Syntax:
+potl
+
+Explanation:
+potl displays the names of toplevel procedures, procedures  that
+are not called by any other procedures in the workspace, and are
+executed  only by direct command at the interpreter's ?  prompt.
+Use  potl  to  discover which procedures  do  not  affect  other
+procedures,  or  which procedure names are good  candidates  for
+subsequent pocall command.
+
+Examples:
+?to wheel
+>repeat 12 [flag lt 30]
+>end
+wheel defined
+?to tri
+>repeat 3 [rt 120 fd 25]
+>end
+tri defined
+?to flag
+>fd 50 tri bk 50
+>end
+flag defined
+?to addup :list
+>if emptyp :list [op 0]
+>op (addup bf :list) + (first :list)
+>end
+addup defined
+?to average :list
+>op (addup :list) / (count :list)
+>end
+average defined
+?potl
+to wheel
+to average :list
+
+
+pots    (= Print Out TitleS)
+----
+
+Action:
+Displays the names and inputs of all procedures in the workspace
+or specified package(s).
+
+Syntax:
+pots <pkgname | pkgname_list>
+
+Explanation:
+Without an input, pots displays the names and inputs of all  the
+unburied  procedures  in the workspace. With a package  name  as
+input, pots prints the names and inputs of all the procedures in
+the package, even if the package is buried. You can input a list
+of  package  names to pots to display the names  and  inputs  of
+procedure in several packages.
+
+Examples:
+This  example assumes you have the following in your  workspace:
+three  procedures named wheel, flag, and tri in a package  named
+wheel; two procedures named average and addup in a package named
+average;   and  three  procedures  named  square,  circle,   and
+triangle.
+
+?pots
+to wheel
+to tri
+to square :size
+to flag
+to addup :list
+to average :list
+to circle :size
+to triangle :size
+?pots "average
+to addup :list
+to average :list
+?pots [average wheel]
+to wheel
+to flag
+to tri
+to addup :list
+to average :list
+
+
+pprop   (= Put PROperty Pair)
+-----
+
+Action:
+Puts  the  input  property pair into  the  input-named  object's
+property list.
+
+Syntax:
+pprop name prop object
+
+Explanation:
+pprop  puts  a  property  pair  into  the  input-named  object's
+
+property  list.  pprop requires three inputs: the  name  of  the
+object  to  which the property is to be added, the name  of  the
+property,  and  the  object  that is to  be  the  value  of  the
+property. pprop makes the input property pair the first pair  in
+the input-named object's property list.
+
+You can use pprop to add standard Dr. Logo system properties  to
+a  property list. For example, if you use pprop to add the  .APV
+property to an object's property list, you create a variable the
+same as if you had used name or make.
+
+You  must  use  pprop to add your own special  properties  to  a
+property list. However, the erasing commands (erase, ern, erall,
+erps, and erns) remove only standard Dr. Logo system  properties
+from  property  lists. This means that, if you have  assigned  a
+nonstandard  property to an object's property list, that  object
+will  still  be in the workspace after an  erall  commmand.  Use
+remprop to remove your special properties from a property list.
+
+Examples:
+?pprop "dungeonmaster ".APV "Scott
+?:dungeonmaster
+Scott
+?to make.character :name
+>make "abilities [strength intelligence !
+wisdom dexterity constitution charisma]
+>make "other [class hitpoints armorclass!
+ alignment level experience goldpieces]
+>assign :abilities
+>assign :other
+>(pr [You have given] :name [the followi!
+ng characteristics:]
+>pr plist :name
+>end
+make.character defined
+?to assign :list
+>if emptyp :list [stop]
+>print word first :list "?
+>make "value readlist
+>pprop :name first :list :value
+>assign butfirst :list
+>end
+assign defined
+?make.character "Borg
+Strength?
+17
+Intelligence?
+8
+(...)
+You have given Borg the following chara!
+cteristics:  goldpieces [10] experience!
+[0] level [1] alignment [lawful] armorc!
+lass [3] hitpoints [6] class [fighter] !
+charisma [6] constitution [15] dexterit!
+y [7] wisdom [10] intelligence [8] stre!
+ngth [17]
+
+
+pps     (= Property PairS)
+---
+
+Action:
+Displays  the  nonsystem property pairs of all  objects  in  the
+workspace or specified packages.
+
+Syntax:
+pps <pkgname | pkgname_list>
+
+Explanation:
+Without an input, pps prints out the special property pairs  you
+have  assigned  with  a  pprop command  to  any  object  in  the
+workspace. If you have not assigned any special properties,  pps
+prints  nothing.  With a package name as input, pps  prints  the
+special  property pairs from the specified package, even if  the
+package is buried. You can input a list of package names to  pps
+to  display  the  names  and inputs  of  procedures  in  several
+packages.
+
+Examples:
+?pprop "Kathy "extension 82
+?pps
+Kathy's extension is 82
+
+
+prec
+----
+
+Action:
+Outputs the number of significant digits.
+
+Syntax:
+prec
+
+Explanation:
+Outputs the number of significant digits displayed in an  output
+number.
+
+Examples:
+?prec
+6
+
+
+primitivep      (= PRIMITIVE Predicate)
+----------
+
+Action:
+Outputs TRUE if the input object is a primitive name.
+
+Syntax:
+primitivep object
+
+Explanation:
+primitivep outputs TREU if the input object is a primitive name;
+otherwise, primitivep outputs FALSE.
+
+Examples:
+?primitivep "phone
+FALSE
+?primitivep "home
+TRUE
+
+
+print pr
+--------
+
+Action:
+Displays the input object(s) on the text screen.
+
+Syntax:
+print object (...)
+pr object (...)
+
+Explanation:
+print  displays  the input object on the screen, followed  by  a
+Carriage  Return. print removes the outer square  brackets  ("["
+and  "]") from an input list. Compare print with type and  show.
+You  can  input any number of objects by preceding them  with  a
+left  parenthesis  ["("]. When preceded by a  left  parenthesis,
+print displays all its inputs on the same line, and follows only
+the last input with a Carriage Return.
+
+Examples:
+?print [This is a message.]
+This is a message.
+?make "variable "silly
+?(pr [This is a] :variable "message.)
+This is a silly message.
+
+
+proclist        (= PROCedure LIST)
+--------
+
+Action:
+Outputs   a  list  that  contains  the  names  of  all   defined
+procedures.
+
+Syntax:
+proclist
+
+Explanation:
+proclist  outputs  a  list  that  contains  the  names  of   all
+procedures currently defined in the workspace.
+
+Examples:
+This  example assumes you have the following procedures in  your
+workspace: wheel, flag, tri, addup, and average.
+
+?pots
+to wheel
+to flag
+to tri
+to addup
+to average
+?proclist
+[wheel flag tri addup average]
+?package "current proclist
+?popkg
+current
+  to wheel
+  to flag
+  to tri
+  to addup :list
+  to average :list
+
+
+product *
+---------
+
+Action:
+Outputs the product of the input numbers.
+
+Syntax:
+product n n (...)
+
+Explanation:
+product  outputs  the product of the input numbers.  product  is
+equivalent to the * arithmetic operator.
+
+Without  punctuation,  product requires and  accepts  two  input
+objects.  product  can  accept more or  fewer  inputs  when  you
+enclose the product expression in parentheses ["(" and ")"].  If
+no other expressions follow the product expression on the  line,
+you do not need to type the closing right parenthesis [")"].
+
+Examples:
+?product 7 6
+42
+?(product 2 pi 5)
+31.4159265358979
+?(product 7)
+7
+?to cube :n
+>op (product :n :n :n)
+>end
+cube defined
+?cube 3
+27
+
+
+quotient
+--------
+
+Action:
+Outputs the quotient of the two input numbers.
+
+Syntax:
+quotient n n
+
+Explanation:
+quotient  outputs the number that results when the  first  input
+number  is divided by the second. quotient truncates  any  input
+decimal  number  to an integer. Unlike the /  operator,  if  the
+result ends in a decimal fraction, quotient truncates the result
+to an integer.
+
+Examples:
+?quotient 10 4
+2
+?10/4
+2.5
+?quotient -10 5
+-2
+?quotient 5 0
+Can't divide by zero
+?quotient 5 .9
+Can't divide by zero
+
+
+radians
+-------
+
+Action:
+Outputs the number of radians in the input number of degrees.
+
+Syntax:
+radians degrees_n
+
+Explanation:
+radians  outputs  the number of radians in the input  number  of
+degrees, where degrees = radians * (180 / pi).
+
+Examples:
+?radians 90
+1.5707963267949
+?radians 180
+3.14159265358979
+?pi
+3.14159265358979
+?radians 450
+7.85398163397449
+
+
+random
+------
+
+Action:
+Outputs  a  random  non-negative integer  less  than  the  input
+number.
+
+Syntax:
+random n
+
+Explanation:
+random outputs a random non-negative integer less than the input
+number. This means random might output any integer from zero  to
+one  less  than  the input number. For example,  random  2  will
+output either 0 or 1.
+
+Examples:
+?random 10
+4
+?repeat 20 [(type random 10 char 9)]
+3   0    2    3    1    4    6    4    !
+4   7    9    4    5    1    8    2    !
+?to drawspinner :n
+>if (:n > 330) [stop]
+>pu rt 15 fd 25
+>tt (word (int (:n / 36)))
+>bk 25 rt 21 fd 25 pd fd 5 pu bk 30
+>drawspinner :n + 36
+>end
+drawspinner defined
+?to spin
+>repeat 72 * random 6 [rt 5]
+>repeat random 45 [rt 5]
+>pr int (heading / 36)
+>end
+spin defined
+?drawspinner 0
+?spin
+1
+
+See Colorplate 34. spin (random Primitive)
+
+
+readchar rc
+-----------
+
+Action:
+Outputs the first character typed at the keyboard.
+
+Syntax:
+readchar
+rc
+
+Explanation:
+readchar  outputs  the first character typed  at  the  keyboard.
+readchar  can  output  any character  you  can  type,  including
+control  characters,  except  Ctrl-G and  Ctrl-Z.  Ctrl-G  stops
+execution  and returns to toplevel; Ctrl-Z enters a  pause  (see
+co).
+
+During  a  procedure's  execution, readchar does  not  move  the
+cursor  or  display  the input character on the  screen.  If  no
+character  is waiting to be read, reachar waits until  you  type
+something.  If  something  is  waiting  to  be  read,   readchar
+immediately outputs the first character in the keyboard  buffer.
+The  description  of keyp tells how to check if a  character  is
+waiting to be read.
+
+Examples:
+?readchar
+z
+?to quiz
+>pr [Do you know any Martians?]
+>if "y = lowercase readchar
+>   [pr [Takes one to know one!]]
+>   [pr [Me either!]]
+>end
+quiz defined
+?quiz
+Do you know any Martians? y
+Takes one to know one!
+?to poly.cycle :n
+>(pr [Press any key to draw a] :n [side!
+d figure.])
+>sink rc cs
+>repeat :n [fd 40 rt (360 / :n)]
+>if :n > 8 [stop]
+>poly.cycle :n + 1
+>end
+poly.cycle defined
+?to sink :object
+>end
+sink defined
+?poly.cycle 3
+Press any key to draw a 3 sided figure.
+Press any key to draw a 4 sided figure.
+Press any key to draw a 5 sided figure.
+Press any key to draw a 6 sided figure.
+Press any key to draw a 7 sided figure.
+Press any key to draw a 8 sided figure.
+Press any key to draw a 9 sided figure.
+
+See Colorplate 35. poly.cycle (readchar Primitive)
+
+
+readeofp        (= READ End-Of-File Predicate)
+--------
+
+Action:
+Outputs TRUE if end of data file reached.
+
+Syntax:
+readeofp
+
+Explanation:
+Outputs TRUE if the current data file is at the end;  otherwise,
+outputs  FALSE.  You must use open and setread  before  you  use
+readeofp.
+
+Examples:
+?open "telnos
+?setread "telnos
+?readeopf
+FALSE
+
+
+reader
+------
+
+Action:
+Outputs current open file name.
+
+Syntax:
+reader
+
+Explanation:
+Outputs the current file name that is open for reading.
+
+Examples:
+?reader
+[A:BOOKLIST.DAT]
+
+
+readlist rl
+-----------
+
+Action:
+Outputs a list that contains a line typed at the keyboard.
+
+Syntax:
+readlist
+rl
+
+Explanation:
+readlist  outputs  a  list that contains a  line  typed  at  the
+keyboard. readlist always displays the input line on the  screen
+before outputting the list.
+
+readlist  can  read  a line only after you  press  the  Carriage
+Return ("Enter") key. If no line is waiting to be read, readlist
+waits  for  something to be typed. If a line is  waiting  to  be
+read, readlist outputs the line immediately. The description  of
+keypp tells how to check if something is waiting to be read.
+
+Examples:
+?readlist
+yippee ti yi yo
+[yippee ti yi yo]
+?repeat 5 readlist
+fd 40 rt 72
+
+See Colorplate 36. repeat 5 readlist (readlist Primitive)
+
+?to interpret
+>pr [What next, boss?]
+>run readlist
+>interpret
+>end
+interpret defined
+?to mymessage
+>catch "error [interpret]
+>(pr "Oops, first butfirst error [! ! !!
+])
+>pr [What do you want to do about that?!
+]
+>run readlist
+>mymessage
+>end
+mymessage defined
+?mymessage
+What next, boss?
+fence
+What next, boss?
+fd 200
+Oops, Turtle out of bounds ! ! !
+What do you want to do about that?
+bk 100
+What next, boss?
+to quit
+Oops, I don't know to to ! ! !
+What do you want to do about that?
+stop
+
+See Colorplate 37. fence fd 200 (readlist Primitive)
+
+
+readquote rq
+------------
+
+Action:
+Outputs a word that contains a line typed at the keyboard.
+
+Syntax:
+readquote
+rq
+
+Explanation:
+readquote  outputs  a  word that contains a line  typed  at  the
+keyboard.  readquote  always  displays the  input  line  on  the
+screen. readquote can read a line only if the line is ended with
+a Carriage Return ("Enter") keystroke.
+
+If  the  line  contains words  separated  by  spaces,  readquote
+inserts  backslant characters ("\") in front of the  spaces,  so
+that  the spaces are treated as literal characters.  This  makes
+the  line one word. You can see the backslant characters if  you
+load an object created with readquote into the editor.
+
+When  no  line  is waiting to be  read,  readquote  waits  until
+something  is typed. If a line is waiting to be read,  readquote
+outputs the line immediately. You can use keyp to see if a  line
+is waiting to be read.
+
+Examples:
+?readquote
+I don't think we're in Kansas anymore
+I don't think we're in Kansas anymore
+?fkey 2 readquote
+fd 40 rt 160
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+
+
+recycle
+-------
+
+Action:
+Reorganizes the workspace to free as many nodes as possible.
+
+Syntax:
+recycle
+
+Explanation:
+recycle reorganizes and cleans up the workspace, freeing as many
+nodes as possible. After recycle, nodes can tell you how much of
+your  workspace is filled with procedures, variables, and  other
+defined objects.
+
+recycle  works  by  calling  the  garbage  collector.  Dr.  Logo
+automatically  calls  the garbage collector when it  is  needed.
+However, if the timing of one of your procedure is critical, you
+can  run recycle before executing the procedure, to ensure  that
+your  procedure will not be interrupted by an automatic  garbage
+collection.  Section 5, "Property Lists, Workspace, and  Disks",
+describes  the  garbage  collector and how  it  reorganizes  and
+cleans up your workspace.
+
+Examples:
+?nodes
+989
+?recycle
+?nodes
+2379
+?to spi :side :angle :inc
+>fd :side
+>rt :angle
+>spi :side + :inc :angle :inc
+>end
+spi defined
+?spi 10 100 2
+I'm out of space in spi: spi :side + :i!
+nc :angle :inc
+!recycle
+?nodes
+2380
+
+
+remainder
+---------
+
+Action:
+Outputs  the  integer remainder obtained when  the  first  input
+number is divided by the second.
+
+Syntax:
+remainder n n
+
+Explanation:
+remainder  outputs  the integer that is the  remainder  obtained
+when  the  first  input number is divided by  the  second  input
+number.
+
+Examples:
+?remainder 7 2
+1
+?to evenp :n
+>if 0 = remainder :n 2 [op "TRUE] [op "!
+FALSE]
+>end
+evenp defined
+?evenp 11
+FALSE
+?evenp 6
+TRUE
+
+
+remprop         (= REMove PROPerty)
+-------
+
+Action:
+Removes  the  specified property from the  input-named  object's
+property list.
+
+Syntax:
+remprop name prop
+
+Explanation:
+remprop  removes the specified property and its value  from  the
+input-named  object's  property  list. You mys  use  remprop  to
+remove any non-system properties you put in an object's property
+list with pprop. You must remove all properties from an object's
+property   list  to  completely  remove  the  object  from   the
+workspace.
+
+Examples:
+?pons
+horse1 is Tinderbox
+horse2 is Muffy
+?plist "horse1
+[color bay .APV Tinderbox]
+?ern "horse1
+?plist "horse1
+[color bay]
+?remprop "horse1 "color
+?plist "horse1
+[]
+?plist "horse2
+[color [liver chestnut] class [hunter j!
+umper] .APV Muffy]
+?to remove :name
+>if emptyp plist :name [stop]
+>make "prop first plist :name
+>run (se "remprop "quote :name "quote :!
+prop)
+>remove :name
+>end
+remove defined
+?remove "horse2
+?plist "horse2
+[]
+
+
+repeat
+------
+
+Action:
+Executes the input instruction list the input number of times.
+
+Syntax:
+repeat n instr_list
+
+Explanation:
+repeat  executes the input instruction list the input number  of
+times. The input number must be positive. If the input number is
+not an integer, repeat truncates it to an integer.
+
+If  you  want a procedure to execute continuously, such  as  the
+draw  procedure shown in the description of paddle, you can  use
+repeat   1/0  instead  of  a  recursive  call.  This   minimizes
+interruptions from the garbage collector. We recommend that  you
+use  a recursive call as you write your procedure, so  that  you
+can   take  advantage  of  Dr.  Logo's  line-by-line   debugging
+facilities.  Then,  when your procedure  is  working  correctly,
+remove  the  recursive  call and enclose  the  entire  procedure
+definition within a single line: repeat 1/0 with a lengthy input
+instruction list.
+
+Examples:
+?repeat 100 [pr [I will not chew gum in!
+class.]
+I will not chew gum in class.
+I will not chew gum in class.
+I will not chew gum in class.
+I will not chew gum in class.
+I will not chew gum in class.
+I will not chew gum in class.
+(...)
+?make :sides 3
+?repeat :sides [fd 40 rt 360 / :sides)]
+?to spi :side :angle :inc
+>fd :side
+>rt :angle
+>spi :side + :inc :angle :inc
+>end
+spi defined
+?spi 10 100 2
+I'm out of space in spi: spi :side + :i!
+nc :angle :inc
+!recycle
+?to repspi :side :angle :inc
+>repeat 200
+>   [fd :side
+>   rt :angle
+>   make "side :side + :inc]
+>end
+repspi defined
+?repspi 10 100 2
+
+See Colorplate 38. repspi (repeat Primitive)
+
+
+ .replace
+ --------
+
+Action:
+Replaces the specified item of the list with the object.
+
+Syntax:
+ .replace item_n varlist object
+
+Explanation:
+Replaces  the specified item of the list with the  object.  THIS
+PRIMITIVE SHOULD BE USED WITH CAUTION!
+
+Examples:
+?make "varlist [A B C D E F]
+?.replace 4 :varlist [1 2 3]
+?:varlist
+[A B C [1 2 3] E F]
+
+
+ .reptail
+ --------
+
+Action:
+Replaces all items following the specified item in the list with
+the object.
+
+Syntax:
+ .reptail item_n varlist object
+
+Explanation:
+Replaces all items following the specified item in the list with
+the object. THIS PRIMITIVE SHOULD BE USED WITH CAUTION!
+
+Examples:
+?make "varlist [A B C D E F]
+?.reptail 4 :varlist [1 2 3]
+?:varlist
+[A B C D [1 2 3]]
+
+
+rerandom
+--------
+
+Action:
+Makes  a subsequent random expression reproduce the same  random
+sequence.
+
+Syntax:
+rerandom
+
+Explanation:
+rerandom makes a subsequent random expression reproduce the same
+random sequence.
+
+Examples:
+?repeat 10 [(type random 10 char 9)] pr!
+[]
+2   3   7   5   3   2   0   4   2   6
+?repeat 10 [(type random 10 char 9)] pr!
+[]
+8   9   9   1   0   6   1   3   5   1
+?rerandom
+?repeat 10 [(type random 10 char 9)] pr!
+[]
+6   2   9   0   3   1   6   2   3   7
+?rerandom
+?repeat 10 [(type random 10 char 9)] pr!
+[]
+6   2   9   0   3   1   6   2   3   7
+
+
+right rt
+--------
+
+Action:
+Rotates the turtle the input number of degrees to the right.
+
+Syntax:
+right degrees_n
+rt degrees_n
+
+Explanation:
+right  rotates  the turtle the input number of  degrees  to  the
+right. Usually, you input a number of degrees between 0 and 359.
+If  the input number is greater than 359, the turtle appears  to
+move  the  input number minus 360 degrees to the right.  If  you
+input a negative number to right, the turtle turns to the left.
+
+Examples:
+?repeat 36 [right 10]
+?repeat 36 [right -10]
+?to around :s
+>repeat 360 [fd :s rt 10 make "s :s + .!
+01]
+>end
+around defined
+?around 2
+
+See Colorplate 39. around (right Primitive)
+
+
+round
+-----
+
+Action:
+Outputs the input number rounded off to the nearest integer.
+
+Syntax:
+round n
+
+Explanation:
+round  outputs  the  input number rounded  off  to  the  nearest
+integer. If the fractional portion of the input number is 0.5 or
+greater,  round  rounds up to the next integer.  To  truncate  a
+decimal number to an integer, use int.
+
+Examples:
+?round 3.333333
+3
+?int 28753/12
+2149
+?round -75.482
+-75
+?round 0.5
+1
+
+
+run
+---
+
+Action:
+Executes the input instruction list.
+
+Syntax:
+run instr_list
+
+Explanation:
+run  executes  the input instruction list. If the  input  object
+outputs an object, run outputs that object. You can use list  or
+sentence to assemble an instruction list for run to execute.
+
+Examples:
+?run [print [tricolor]]
+tricolor
+?run [equalp 0 9]
+FALSE
+?to use :what
+>if memberp lc :what [green red yellow]
+>   [make "colornumber where
+>   make "state "PENDOWN]
+>if "eraser = lc :what [make "state "PE!
+NERASE]
+>run (se "setpen "list "quote :state "q!
+uote :colornumber)
+>end
+use defined
+?use "green fd 60 rt 120
+?use "red fd 60 rt 120
+?use "yellow fd 60 rt 120
+
+See Colorplate 40. use "yellow fd 60 rt 120 (run Primitive)
+
+?to while :condition :instr_list
+>if "TRUE = run :condition
+>   [run :instr_list]
+>   [stop]
+>while :condition :instr_list
+>end
+while defined
+?make "side 5
+?while [:side < 50] [fd :side rt 60 mak!
+e "side :side + 2]
+
+
+save
+----
+
+Action:
+Writes the contents of the workspace or specified package(s)  to
+the input-named disk file.
+
+Syntax:
+save fname <pkgname | pkgname_list>
+
+Explanation:
+save   writes  the  contents  of  the  workspace  or   specified
+package(s)  to the input-named disk file. If there is already  a
+file  with  the specified name on the disk,  save  displays  the
+message  "File already exists." Choose another name for the  new
+file,  delete  the old file with erasefile, or  rename  it  with
+changef.  If  there is no file with the specified  name  on  the
+disk, save creates one with the file type LOG. File names in the
+disk's  directory cannot be longer than eight characters, so  if
+you  specify a file name with more than eight  characters,  save
+truncates the file name to eight characters.
+
+If  you do not specify a package name as input, save  saves  all
+procedures  and variables, except those in buried  packages.  If
+you specify a package or a list of packages, only the procedures
+and variables in the input-named package(s) are saved. save  can
+save  buried  procedures and variables if you specify  a  buried
+package name.
+
+Examples:
+Thes  examples assume you have three packages named fy,  shapes,
+and sizes in your workspace.
+
+?popkg
+fly is buried
+  to buzz
+  to fly
+  to zoom
+shapes
+  to circle :size
+  to triangle :size
+  to square :size
+sizes
+  "big (VAL)
+  "medium (VAL)
+  "small (VAL)
+?save "Sheila
+?save "fly "fly
+?save "shapes [shapes sizes]
+?dir
+[SHAPES.LOG FLY.LOG SHEILA.LOG]
+
+
+savepic
+-------
+
+Action:
+Writes the picture (on the screen) to the input-named disk file.
+
+Syntax:
+savepic fname fname
+
+Explanation:
+savepic  writes  the contents of the screen to  the  input-named
+disk file. If there is already a file with the specified name on
+the  disk, savepic displays the message "File  already  exists."
+Choose  another name for the new file, delete the old file  with
+erasefile,  or rename it with changef. If there is no file  with
+the  specified  name on the disk, savepic creates one  with  the
+file  type  PIC. File names in the disk's  directory  cannot  be
+longer than eight characters, so if you specify a file name with
+more  than  eight characters, save truncates the  file  name  to
+eight characters.
+
+Examples:
+?savepic "Sheila
+?dirpic
+[SHEILA.PIC]
+
+
+screenfacts sf
+--------------
+
+Action:
+Outputs a list that contains information about the screen.
+
+Syntax:
+screenfacts
+sf
+
+Explanation:
+Outputs  a  list that contains: Background color number  of  the
+viewport; Screen state; Split size; Window state; Scrunch ratio;
+Zoom  factor; X-coordinate and Y-coordinate of viewport  center;
+Current resolution setting.
+
+Examples:
+?screenfacts
+[2 SS 25 WRAP 2 2 100 100 2]
+
+
+sentence se
+-----------
+
+Action:
+Outputs a list made up of the input objects.
+
+Syntax:
+sentence object object (...)
+se object object (...)
+
+Explanation:
+sentence  outputs a list made up of the input objects.  sentence
+is  like list but removes the outermost brackets from the  input
+objects.
+
+Without  punctuation,  sentence requires and accepts  two  input
+objects.  sentence  can  accept more or fewer  inputs  when  you
+enclose the sentence expression in parentheses ["(" and ")"]. If
+no other expressions follow the sentence expression on the line,
+you do not need to type the closing right parenthesis [")"].
+
+There are two ways of creating lists in Dr. Logo:
+
+        1) using square bracket ("[" and "]")
+        2) using list or sentence
+
+Each way results in a different kind of list. When you create  a
+list  by  enclosing elements in square brackets,  you  create  a
+"literal"  list.  Dr.  Logo  treats the  elements  of  the  list
+literally;  it  does  not evaluate expressions or  look  up  the
+values of variables named in a literal list.
+
+When  you  use list or sentence to create a list,  you  can  use
+variables and expressions to specify the elements Dr. Logo  will
+put in the list. You can use list and sentence to create a  list
+for  input to most procedures. However, if, iffalse, and  iftrue
+require literal lists as input.
+
+Examples:
+?sentence "tortoise "hare
+[tortoise hare]
+?se "turtle []
+[turtle]
+?make "turtle (se rl rl rl)
+pecans
+caramel
+chocolate
+?:turtle
+[pecans caramel chocolate]
+?se "hare [rabbit bunny]
+[hare rabbit bunny]
+?se [Slow and steady] [wins the race]
+[Slow and steady wins the race.]
+?to use :what
+>if memberp lc :what [green red yellow]
+>   [make "colornumber where
+>   make "state "PENDOWN]
+>if "eraser = lc :what [make "state "PE!
+NERASE]
+>run (se "setpen "list "quote :state "q!
+uote :colornumber)
+>end
+use defined
+?use "green fd 60 rt 120
+?use "red fd 60 rt 120
+?use "yellow fd 60 rt 120
+
+See Colorplate 40. use "yellow fd 60 rt 120 (run Primitive)
+
+
+setbg           (= SET BackGround)
+-----
+
+Action:
+Sets  the graphic screen background to the color represented  by
+the input number.
+
+Syntax:
+setbg n
+
+Explanation:
+setbg   sets  the  graphic  screen  background  to   the   color
+represented by the input number. The input number must be in the
+range  from  0 to 63. The IBM Personal Computer  supports  eight
+background  colors  in two levels of  intensity,  although  your
+color monitor might or might not display different  intensities.
+The numbers setbg accepts represent colors as follows:
+
+Low intensity           High intensity
+-----------------       ------------------
+0 16 32 48  Black        8 24 40 56  Black
+1 17 33 49  Blue         9 25 41 57  Blue
+2 18 34 50  Green       10 26 42 58  Green
+3 19 35 51  Cyan        11 27 42 59  Cyan
+4 20 36 52  Red         12 28 43 60  Red
+5 21 37 53  Magenta     13 29 45 61  Magenta
+6 22 38 54  Yellow      14 30 46 62  Yellow
+7 23 40 55  White       15 31 47 63  White
+
+Each  of  the four numbers for a background  color  specifies  a
+different pen for the turtle to use (see pencolor).
+
+Examples:
+When   you   first  start  Dr.  Logo,  background   returns   1,
+representing  blue, the default background color.  The  bg.cycle
+procedure displays background colors.
+
+?bg
+1
+?to bg.cycle :val
+>if :val = 0 [pr [Cycle complete.] setb!
+g 1 stop]
+>setbg :val
+>(pr [This is background color number] !
+bg)
+>wait 100
+>bg.cycle :val - 1
+>end
+bg.cycle defined
+?bg.cycle 8
+This is background color 8
+This is background color 7
+This is background color 6
+This is background color 5
+This is background color 4
+This is background color 3
+This is background color 2
+This is background color 1
+Cycle complete.
+
+
+setcursor
+---------
+
+Action:
+Positions the cursor at the location specified by the input text
+screen coordinate list.
+
+Syntax:
+setcursor coord_list
+
+Explanation:
+setcursor positions the cursor at the location specified in  the
+input text screen coordinate list. A text screen coordinate list
+has  two elements: the first element is the column  number;  the
+second, the line number. The line number must be in the range  0
+to 24. The column number must be in the range 0 to 79.
+
+If  either  of  your input numbers  exceed  the  allowed  range,
+setcursor  uses the highest allowable value: 24 for line  number
+or 79 for column number. If you are using a splitscreen or other
+40  column text screen and specify a column number greater  than
+40,  setcursor  wraps  the cursor to the next  line,  in  effect
+adding 1 to your input line number and subtracting 40 from  your
+input column number.
+
+Examples:
+?setcursor [0 0]
+?to diagtype
+>type rc
+>setcursor list (3 + first cursor) (1 +!
+last cursor)
+>diagtype
+>end
+diagtype defined
+?ct
+?diagtype
+H
+ e
+  l
+   l
+    o
+     ,
+
+       w
+        o
+         r
+          l
+           d
+            !
+
+
+setd            (= SET Drive name)
+----
+
+Action:
+Makes the specified drive the default drive.
+
+Syntax:
+setd d:
+
+Explanation:
+setd  makes  the specified drive your default  drive.  Dr.  Logo
+looks in the directory of the disk in the default drive when you
+do  not  specify a drive name in a disk command  such  as  save,
+load, erasefile, changef, or dir.
+
+Examples:
+?setd "b:
+?defaultd
+B:
+?setd "a:
+?defaultd
+A:
+
+
+setheading seth
+---------------
+
+Action:
+Turns the turtle to the absolute heading specified by the  input
+number of degrees.
+
+Syntax:
+setheading degrees_n
+seth degrees_n
+
+Explanation:
+setheading turns the turtle to the absolute heading specified by
+the  input number of degrees. If the input number  is  positive,
+setheading turns the turtle clockwise (right) from North to  the
+input  number  of degrees, regardless of  the  turtle's  current
+heading.  If the input number is negative, setheading turns  the
+turtle counter-clockwise.
+
+Examples:
+?setheading 90
+?setheading 180
+?setheading -90
+?to drawcompass :n
+>if :n > 330 [seth 0 stop]
+>pu setheading :n fd 50
+>tt (word :n)
+>bk 50 rt 23 fd 45 pd fd 5 pu bk 50
+>drawcompass :n + 45
+>end
+drawcompass defined
+?drawcompass 0
+
+See Colorplate 41. drawcompass 0 (setheading Primitive)
+
+
+setpal
+------
+
+Action:
+Not documented!
+
+Syntax:
+Not documented!
+
+Explanation:
+Not documented!
+
+Examples:
+Not documented!
+
+
+setpan
+------
+
+Action:
+Establishes the center point of the viewport.
+
+Syntax:
+setpan coord_list
+
+Explanation:
+Establishes the center point of the viewport.
+
+Examples:
+?setpan [50 50]
+
+
+setpc           (= SET Pen Color)
+-----
+
+Action:
+Sets  the  turtle's  pen to the color  specified  by  the  input
+number.
+
+Syntax:
+setpc n
+
+Explanation:
+setpc sets the turtle's pen to the color specified by the  input
+number.  The  turtle's has four pens. Each pen has  four  unique
+colors  of  ink, one of which is the background color  that  the
+turtle  uses for erasing. Which pen and set of inks  the  turtle
+uses  depends  on the number you input to setbg to  specify  the
+background color.
+
+When the background color is in the range 0 to 15:
+
+        - pencolor 1 represents dark green ink
+        - epncolor 2 represents dark red ink
+        - pencolor 3 represents dark yellow ink
+
+When the background color is in the range 16 to 31:
+
+        - pencolor 1 represents bright green ink
+        - pencolor 2 represents bright red ink
+        - pencolor 3 represents bright yellow ink
+
+When the background color is in the range 32 to 47:
+
+        - pencolor 1 represents dark cyan ink
+        - pencolor 2 represents dark magenta ink
+        - pencolor 3 represents dark grey ink
+
+When the background color is in the range 48 to 63:
+
+        - pencolor 1 represents bright cyan ink
+        - pencolor 2 represents bright magenta ink
+        - pencolor 3 represents bright white ink
+
+For   all  background  color  numbers,  pencolor  0   represents
+background color (erasing) ink. The turtle itself is drawn  with
+pencolor 3.
+
+Examples:
+?setpc 2 fd 30
+?cs
+?to pencolor.cycle :penc :bkgr
+>if :penc > 3 [change.bg]
+>if :bkgr > 50 [stop]
+>setpc :penc
+>(pr [This is pencolor] pc)
+>repeat 36 [fd 4 rt 10] bk 20
+>pencolor.cycle (:penc + 1) :bkgr
+>end
+pencolor.cycle defined
+?to change.bg
+>make "bkgr 16 + :bkgr
+>if :bkgr > 50 [stop]
+>setbg :bkgr
+>(pr [Background color] bg)
+>make "penc 1
+>end
+change.bg defined
+?lt 90 fd 120 clean splitscreen
+?pencolor.cycle 1 1
+This is pencolor number 1
+This is pencolor number 2
+This is pencolor number 3
+Background color 17
+This is pencolor number 1
+This is pencolor number 2
+This is pencolor number 3
+Background color 33
+This is pencolor number 1
+This is pencolor number 2
+This is pencolor number 3
+Background color 49
+This is pencolor number 1
+This is pencolor number 2
+This is pencolor number 3
+
+See Colorplate 42. pencolor.cycle 1 1 (setpc Primitive)
+
+
+setpen
+------
+
+Action:
+Sets  the turtle's pen to the state and color specified  in  the
+input list.
+
+Syntax:
+setpen list
+
+Explanation:
+setpen sets the turtle's pen to the state and color specified in
+the input list. You can use setpen to change the pen's state and
+color with a single command; for example, setpen [PENDOWN 2]  is
+equivalent to pendown setpc 2.
+
+The  first  element of the input list must be  one  of  PENDOWN,
+PENERASE,  PENUP,  or PENREVERSE. The second element must  be  a
+number  that represents a pencolor (see setpc). This input  list
+has same form as the list output from pen.
+
+Examples:
+?pen
+[PENDOWN 1]
+?setpen [PENERASE 0]
+?pen
+[PENERASE 0]
+?setpen [PENDOWN 1]
+?to dandelion
+>setheading first shuffle list
+>   (random 45) (-1 * (random 45))
+>make "penstate pen
+>fd 20 + random 80
+>setpc 1 + random 3
+>repeat 36 [fd 10 bk 10 rt 10]
+>pu setpos :root
+>setpen :penstate
+>dandelion
+>end
+dandelion defined
+?make "root [0 -50]
+?setpos :root clean
+?dandelion
+
+See Colorplate 27. dandelion (setpen Primitive)
+
+
+setpos          (= SET turtle POSition)
+------
+
+Action:
+Moves  the  turtle  to  the  position  specified  in  the  input
+coordinate list.
+
+Syntax:
+setpos coord_list
+
+Explanation:
+setpos  moves the turtle to the position specified in the  input
+coordinate list. The input list has the same two-element form as
+the list output by pos. The first element is the X coordinate in
+the  range -150 to +149. The second element is the Y  coordinate
+in the range -99 to +100.
+
+If  the  graphic screen is fenced, values outside  these  ranges
+generate  a "Turtle out of bonds" message. When window  is  set,
+you can input coordinates outside the ranges to make the  turtle
+plot  off  screen. When wrap is set, setpos converts  any  input
+coordinates  that  are outside the visible range,  so  that  the
+turtle "wraps" and remain visible.
+
+Examples:
+?clearscreen
+?setpos [80 50]
+?setpos [0 30]
+?setpos [80 -50]
+?setpos [0 0]
+?to dandelion
+>setheading first shuffle list
+>   (random 45) (-1 * (random 45))
+>make "penstate pen
+>fd 20 + random 80
+>setpc 1 + random 3
+>repeat 36 [fd 10 bk 10 rt 10]
+>pu setpos :root
+>setpen :penstate
+>dandelion
+>end
+dandelion defined
+?make "root [0 -50]
+?setpos :root clean
+?dandelion
+
+See Colorplate 27. dandelion (setpen Primitive)
+
+
+setprec         (= SET PRECision of numbers)
+-------
+
+Action:
+Sets  the  number of significant digits displayed in  an  output
+number.
+
+Syntax:
+setprec n
+
+Explanation:
+Sets  the  number of siginficant digits displayed in  an  output
+number.
+
+Examples:
+?setprec 10
+
+
+setread         (= SET file to READ)
+-------
+
+Action:
+Sets the data file from which to receive input.
+
+Syntax:
+setread fname
+
+Explanation:
+Sets  the  data  file from which to receive  input.  After  this
+command,  you use readlist, readchar, and readquote to read  the
+data from the file or device.
+
+Examples:
+?open "telnos
+?setread "telnos
+?readlist
+[TERRY CLOTH]
+
+
+setres          (= SET the RESolution of the screen)
+------
+
+Action:
+Sets the resolution of the viewport.
+
+Syntax:
+setres n
+
+Explanation:
+Sets the resolution of the viewport. Available resolutions are 0
+(high), 1 (medium), and 2 (low -- only on the PCjr). Changes the
+default  and  maximum  values for many of  the  parameters  that
+affect the appearance of your text and graphic displays.
+
+Examples:
+?setres 1
+
+
+ .setseg
+ -------
+
+Action:
+Sets segment value.
+
+Syntax:
+ .setseg segment_n
+
+Explanation:
+Sets  segment  value  to  be used  by  subsequent  .deposit  and
+
+Examples:
+?.setseg 23
+
+
+setscrunch      (= SET SCRUNCH ratio)
+----------
+
+Action:
+Sets the viewport vertical aspect ratio.
+
+Syntax:
+setscrunch n
+
+Explanation:
+Sets the viewport vertical aspect ratio to the input number that
+can be from 1 through 5.
+
+Examples:
+?setscrunch 5
+
+
+setsplit
+--------
+
+Action:
+Sets the number of lines in the splitscreen's text window.
+
+Syntax:
+setsplit n
+
+Explanation:
+setsplit  sets  the number of lines in  the  splitscreen  screen
+window. The input number must be in the range 0 to 25.
+
+Examples:
+?repeat 12 [repeat 5 [fd 50 rt 72] rt 3!
+0]
+?setpc 1
+?splitscreen
+?setsplit 15
+?setsplit 1
+?setsplit 5
+
+See Colorplate 43. setsplit 15 (setsplit Primitive)
+
+
+setwrite        (= SET file to WRITE)
+--------
+
+Action:
+Sets the destination of outputs.
+
+Syntax:
+setwrite fname | device
+
+Explanation:
+Sets  the destination of outputs from print, type, and  show  to
+the data file or system device. The file or device must  already
+be open. setwrite sets the file position at the top of the file.
+
+Examples:
+?open "phones
+?setwrite "phones
+
+
+setx    (= SET X-coordinate)
+----
+
+Action:
+Moves  the turtle horizontally to the X coordinate specified  by
+the input number.
+
+Syntax:
+setx n
+
+Explanation:
+setx moves the turtle horizontally to the X coordinate specified
+by the input number. The Y coordinate is not changed.
+
+Examples:
+?to frame
+>pu setpos [-150 100] pd
+>setx 149
+>sety -99
+>setx -150
+>sety 100
+>end
+frame defined
+?frame
+
+See Colorplate 44. frame (setx Primitive)
+
+
+sety    (= SET Y-coordinate)
+----
+
+Action:
+Moves the turtle vertically to the Y coordinate specified by the
+input number.
+
+Syntax:
+sety n
+
+Explanation:
+sety  moves the turtle vertically to the Y coordinate  specified
+by the input number. The X coordinate is not changed.
+
+Examples:
+?to frame
+>pu setpos [-150 100] pd
+>setx 149
+>sety -99
+>setx -150
+>sety 100
+>end
+frame defined
+?frame
+
+See Colorplate 44. frame (setx Primitive)
+
+
+setzoom         (= SET ZOOM ratio)
+-------
+
+Action:
+Sets the screen to show more or less of the picture.
+
+Syntax:
+setzoom n
+
+Explanation:
+Causes  the viewport to show a greater or lesser portion of  the
+graphic  plane,  thereby  expanding  or  contracting  subsequent
+turtle  motion.  Doesn't clear the viewport nor  alter  anything
+previously drawn.
+
+Examples:
+?setzoom 2
+
+
+show
+----
+
+Action:
+Displays the input object on the text screen.
+
+Syntax:
+show object
+
+Explanation:
+show displays the input object on the text screen, followed by a
+Carriage Return. show does not remove the outer brackets from an
+input list. Compare show with print and type.
+
+You  can  input any number of objects by preceding show  with  a
+left  parenthesis  ["("]. When preceded by a  parenthesis,  show
+displays  all its inputs on the same line, and follows only  the
+last input with a Carriage Return.
+
+Dr. Logo's interpreter has an implicit show command. This  means
+that, when you enter an expression that outputs an object to the
+?  prompt,  Dr.  Logo  shows  the  output  object,  instead   of
+complaining that it does not know what to do with it.
+
+Examples:
+?show "K
+K
+?show [crab scallops clams]
+[crab scallops clams]
+?3 * 10
+30
+?to demo :list
+>make "success "FALSE
+>catch "error [doit]
+>if :success = "TRUE [stop]
+>make "error1 error
+>if 38 = first :error1 [doit] [pr firs!
+t bf :error1]
+>end
+demo defined
+?to doit
+>type "? pr :list
+>run :list
+>make "success "TRUE
+>end
+doit defined
+?to doit1
+>show run :list
+>make "success "TRUE
+>end
+?doit1 defined
+?to logo.demo
+>pr []
+>pr [Here's how Dr. Logo responds to so!
+me commands:]
+>pr []
+>demo [make "side 80]
+>demo [repeat 4 [fd :side rt 90]]
+>demo [fence]
+>demo [:side]
+>demo [repeat 2 [back :side]]
+>pr []
+>pr [That's all, folks!]
+>pr []
+>end
+logo.demo defined
+?logo.demo
+
+Here's how Dr. Logo responds to some commands:
+
+?make "side 80
+?repeat 4 [fd :side rt 90]
+?fence
+?:side
+80
+?repeat 2 [back :side]
+Turtle out of bonds
+
+That's all, folks!
+
+?
+
+
+showturtle st
+-------------
+
+Action:
+Makes the turtle visible if hidden.
+
+Syntax:
+showturtle
+st
+
+Explanation:
+showturtle makes the turtle visible. When invisible, the  turtle
+draws  faster, and does not distract visually from the  drawing.
+To make the turtle invisible, enter hideturtle (ht).
+
+Examples:
+?hideturtle
+?showturtle
+?to face
+>ht fd 90
+>make "chin pos
+>setpc 3 repeat 36 [fd 6 lt 10]
+>setpc 1 lt 90 pu fd 30 lt 90 fd 20 se!
+th 0 eye
+>seth 90 fd 30 seth 0 eye
+>setpc 2 seth 150 fd 10 seth 180 south
+>setpos :chin seth 0
+>fd 23 lt 5
+>end
+face defined
+?to eye
+>pd repeat 18 [fd 1 rt 10]
+>rt 100
+>repeat 8 [fd 1.5 lt 6] pu
+>end
+eye defined
+?to mouth
+>pd repeat 18 [fd 2 rt 10]
+>rt 100
+>repeat 8 [fd 3 lt 6] pu
+>end
+mouth defined
+?face
+?showturtle
+
+See Colorplate 45. showturtle (showturtle Primitive)
+
+
+shuffle
+-------
+
+Action:
+Outputs  a list that contains the elements of the input list  in
+random order.
+
+Syntax:
+shuffle list
+
+Explanation:
+shuffle  outputs a list that contains the elements of the  input
+list in random order.
+
+Examples:
+?shuffle [a b c d]
+[c b d a]
+?to pick.a.card
+>op word
+>   first shuffle [A K Q J 10 9 8 7 6 5 !
+4 3 2]
+>   char first shuffle [3 4 5 6]
+>end
+pick.a.card defined
+?repeat 4 [(type pick.a.card char 9)]
+7Heart 7Clubs KDiamond JSpade
+
+(Nota  Bene: On the IBM PC, the values 3, 4, 5, and  6  generate
+the  symbols of the playing cards. In this ASCII  version,  they
+are, of course, replaced by their names.)
+
+
+sin
+---
+
+Action:
+Outputs the sine of the input number of degrees.
+
+Syntax:
+sin degrees_n
+
+Explanation:
+sin  outputs  the  trigonometric sine of  the  input  number  of
+degrees. sin outputs a decimal number between 0 and 1.
+
+Examples:
+?sin 90
+1
+?pops
+?to plot.sine
+>make "val 0
+>make "x -150
+>make "inc (300 / 60)
+>setx 150 setx :x
+>plot :val
+>end
+plot.sine defined
+?to plot :val
+>if :x > 150 [stop]
+>make "y (90 * (sin :val))  ; 90 makes !
+plot visible
+>setheading towards list :x :y
+>setpos list :x :y
+>make "x :x + :inc
+>make "val :val + 6
+>plot :val
+>end
+plot defined
+?plot.sine
+
+See Colorplate 46. plot.sine (sin Primitive)
+
+
+sort
+----
+
+Action:
+Outputs a list of input words sorted into ascending order.
+
+Syntax:
+sort list
+
+Explanation:
+Outputs a list of input words sorted into ascending order.
+
+Examples:
+?sort [Z 2 T * A 4]
+[* 2 4 A T Z]
+
+
+splitscreen ss
+--------------
+
+Action:
+Displays a window of text on the graphic screen.
+
+Syntax:
+splitscreen
+ss
+
+Explanation:
+splitscreen  displays a window of text on the graphic screen.  A
+splitscreen  command  is equivalent to a Ctrl-S  keystroke.  Use
+setsplit  to  specify the number of lines of text  in  the  text
+window.
+
+Examples:
+?cs repeat 12 [repeat 4 [fd 60 rt 90] r!
+t 30
+?splitscreen
+?_
+?repeat 12 [repeat 4 [fd 60 rt 90] rt 3!
+0]
+?splitscreen
+
+See Colorplate 47. splitscreen (splitscreen Primitive)
+
+
+sqrt            (= SQuare RooT)
+----
+
+Action:
+Outputs the square root of the input number.
+
+Syntax:
+sqrt n
+
+Explanation:
+sqrt outputs the square root of the input number.
+
+Examples:
+?sqrt 2
+1.4142135623731
+?to measure :xypair1 :xypair2
+>make "x1 first :xypair1
+>make "x2 first :xypair2
+>make "xdif :x2 - :x1
+>make "y1 last :xypair1
+>make "y2 last :xypair2
+>make "ydif :y2 - :y1
+>make "xdif2 :xdif * :xdif
+>make "ydif2 :ydif * :ydif
+>op sqrt (:xdif2 + :ydif2)
+>end
+measure defined
+?make "p1 [-75 -49]
+?setpos :p1 clean
+?make "p2 [75 30]
+?setpos :p2
+?measure :p1 :p2
+169.53170794869
+?make "p3 [50 -90]
+?setpos :p3
+?measure :p2 :p3
+122.576506721313
+?setpos :p1
+?measure :p3 :p1
+131.552270980018
+
+See Colorplate 48. setpos :p3 (sqrt Primitive)
+
+
+stop
+----
+
+Action:
+Stops  the  execution of the current procedure, and  returns  to
+toplevel or the calling procedure.
+
+Syntax:
+stop
+
+Explanation:
+stop  stops the execution of the current procedure, and  returns
+to the caller. The caller is either the calling procedure or, if
+the procedure name was typed at the ? prompt, toplevel. stop has
+an  effect  only within a procedure. At toplevel,  stop  has  no
+effect; it simply returns to toplevel. Compare stop with  catch,
+throw, output, and end.
+
+Examples:
+?to vanish :object
+>if emptyp :object [stop]
+>pr :object
+>vanish bf :object
+>end
+vanish defined
+?vanish "emperor
+emperor
+mperor
+peror
+eror
+ror
+or
+r
+
+
+sum
+---
+
+Action:
+Outputs the sum of the input numbers.
+
+Syntax:
+sum n n (...)
+
+Explanation:
+sum  outputs the sum of the input numbers. sum is equivalent  to
+the + arithmetic operator. Without punctuation, sum requires and
+accepts  two input objects. sum can accept more or fewer  inputs
+when  you  enclose the sum expression in  parentheses  ["("  and
+")"].  If no other expressions follow the sum expression on  the
+line,  you  do not need to type the  closing  right  parenthesis
+[")"].
+
+Examples:
+?sum 5 9
+14
+?2.565 7.9
+10.465
+?(sum 6 4 -7 9 3 -2 8
+21
+
+
+tan
+---
+
+Action:
+Outputs the tangent of the input angle.
+
+Syntax:
+tan degrees_n
+
+Explanation:
+tan  outputs the tangent of the angle represented by  the  input
+number of degrees.
+
+Examples:
+?tan 0
+0
+?arctan 45
+1
+?to plot.tan
+>make "val -pi
+>make "inc pi / 37.5
+>make "x -150
+>setx 150
+>setx :x
+>plot :val
+>end
+plot.tan defined
+?to plot :val
+>if :x > 150 [stop]
+>fd 1000 * tan :val
+>sety 0
+>setx :x + 4
+>make "x :x + 4
+>make "val :val + :inc
+>plot :val
+>end
+plot defined
+?plot.tan
+
+See Colorplate 49. plot.tan (tan Primitive)
+
+
+test
+----
+
+Action:
+Remembers  whether  the  input predicate is TRUE  or  FALSE  for
+subsequent iffalse and iftrue expressions.
+
+Syntax:
+test pred_exp
+
+Explanation:
+test remembers whether the input predicate is TRUE or FALSE  for
+subsequent  iffalse  and iftrue expressions. You can  use  test,
+iffalse,  and  iftrue  instead  of if to  control  the  flow  of
+execution  within  your  procedure when you  need  Dr.  Logo  to
+evaluate expressions after it evaluates a predicate  expression,
+but before it executes the chose instruction list.
+
+Examples:
+The  coin5 procedure is similar to the coin procedures shown  as
+examples  under  if,  but shows how to use  test,  iffalse,  and
+iftrue.  coin5  evaluates  an expression after  it  evaluates  a
+predicate   expression,  but  before  it  executes  the   chosen
+instruction list.
+
+?to coin5
+>test 1 = random 2
+>if 1 = random 1000000 [pr [Landed on e!
+dge!] stop]
+>ift [type "heads]
+>iff [type "tails]
+>pr [\ side up]
+>end
+coin5 defined
+
+
+text
+----
+
+Action:
+Outputs the definition list of the specified procedure.
+
+Syntax:
+text procname
+
+Explanation:
+text outputs the definition list of the specified procedure. The
+format  of the definition list is suitable for input to  define.
+text  works by outputting the value of the system property  .DEF
+from the procedure's property list.
+
+Examples:
+?to star  ; Five pointed star
+>repeat 5 [fd 30 lt 217 fd 30 lt 70]
+>end
+star defined
+?star
+?package "figures "star
+?popkg
+figures
+  to star  ; Five pointed star
+?plist "star
+[.PAK figures PKG TRUE.DEF [[] [repeat !
+5 [fd 30 lt 217 fd 30 lt 70]]] .FMT [[0!
+?text "star
+[[] [repeat 5 [fd 30 lt 217 fd 30 lt 70!
+]]]
+
+
+textscreen ts
+-------------
+
+Action:
+Selects a full text screen.
+
+Syntax:
+textscreen
+ts
+
+Explanation:
+textscreen devotes the entire monitor to text. It can return  to
+a full text screen from a full graphic screen or splitscreen. If
+you have a single monitor system, textscreen is equivalent to  a
+Ctrl-T  keystroke.  If  you have a two-monitor  system  (both  a
+monochrome  and  color monitor), textscreen is the only  way  to
+display  the text screen on the color monitor;  Ctrl-T  displays
+the text screen on the monochrome monitor.
+
+Examples:
+?repeat 12 [repeat 4 [fd 60 rt 90] rt 3!
+0]
+?splitscreen
+?textscreen
+
+See Colorplate 50. splitscreen (textscreen Primitive)
+
+
+thing
+-----
+
+Action:
+Outputs the value of the input-named variable.
+
+Syntax:
+thing varname
+
+Explanation:
+thing  displays  the  contents  or  value  of  the   input-named
+variable. thing is equivalent to a colon (":") before a variable
+name;  for example, thing "Karen is equivalent to :Karen.  thing
+works  by outputting the value of the system property .APV  from
+the input-named variable's property list.
+
+Examples:
+?name "chocolate "flavor
+?thing "flavor
+chocolate
+?:flavor
+chocolate
+?make "chocolate "semi\-sweet
+?thing "chocolate
+semi-sweet
+?thing "flavor
+chocolate
+?thing :flavor
+semi-sweet
+
+
+throw
+-----
+
+Action:
+Executes  the  line identified by the input name in  a  previous
+catch expression.
+
+Syntax:
+throw name
+
+Explanation:
+throw  works  with  the catch primitive to  let  your  procedure
+handle  special  conditions. A throw expression  is  valid  only
+within  the scope of a catch command. The description  of  catch
+explains how to use catch and throw.
+
+catch  and throw each require a name as input. To pair  a  catch
+expression  with a throw expression you must give the catch  and
+throw  expressions the same input name. When a throw command  is
+executed,  Dr. Logo returns to the procedure that  contains  the
+catch  command  identified  by the throw  name.  Dr.  Logo  then
+executes  the  line that follows the catch  command.  throw  can
+accept  the  special word "toplevel to return to  the  ?  prompt
+(compare with stop).
+
+Examples:
+The  coil procedure asks the user to enter  increasingly  larger
+numbers  as the turtle draws a coil on the screen. If  the  user
+types  a  number that is not bigger than the last  one  entered,
+coil reminds the user what to type, and continues working.
+
+?to coil
+>pr [Enter a small number.]
+>make "previous 0
+>fd grownumber
+>rt 30
+>trap
+>end
+coil defined
+?to grownumber
+>make "growth first readlist
+>if :growth < :previous [throw "notbigg!
+er]
+>make "previous :growth
+>output :growth
+>end
+grownumber defined
+?to trap
+>catch "notbigger [drawcoil]
+>(pr [Enter a number bigger than] :prev!
+ious)
+>trap
+>end
+trap defined
+?to drawcoil
+>pr [Enter a bigger number.]
+>fd grownumber
+>rt 30
+>drawcoil
+>end
+drawcoil defined
+
+The  throw  "notbigger instruction in the  grownumber  procedure
+always  returns  Dr.  Logo  to the trap  procedure.  If  a  stop
+instruction  had  been  used instead of throw,  Dr.  Logo  would
+return  to the procedure that called grownumber, which might  be
+either coil or drawcoil.
+
+The following procedures allow the user to type commands just as
+he  normally would to the Dr. Logo interpreter. However, if  the
+user enters a command incorrectly, the mymessage procedure traps
+the normal Dr. Logo error message and prints a custom message.
+
+?to mymessage
+>catch "error [interpret]
+>pr "Oops! first butfirst error [! ! !]
+>pr [What do you want to do about that?]
+>run readlist
+>mymessage
+>end
+mymessage defined
+?to interpret
+>pr [What next, boss?]
+>run readlist
+>interpret
+>end
+interpret defined
+
+
+to
+--
+
+Action:
+Indicates the beginning of a procedure definition.
+
+Syntax:
+to procname <inputs>
+
+Explanation:
+to is a special word that indicates the beginning of a procedure
+definition.  At  toplevel,  to signals Dr.  Logo  that  you  are
+starting  to define a procedure, and puts you in  the  procedure
+editor (the > prompt).
+
+to  is not part of a procedure's definition list, and is  not  a
+primitive. You can use "to" as a procedure or variable name,  if
+you are confident that the name will not cause undue confusion.
+
+Examples:
+?to pent
+>repeat 5 [fd 25 lt 72]
+>end
+pent defined
+
+
+tones
+-----
+
+Action:
+Outputs  a tone of the frequency and duration specified  in  the
+input list.
+
+Syntax:
+tones note_list
+
+Explanation:
+tones outputs a note of the frequency and duration specified  in
+the  input note_list. The input list must contain  two  numbers.
+tones  interprets  the  first number as  the  frequency  of  the
+desired  note. For example, 440 is the frequency of  concert  A.
+tones interprets the second number as the number of milliseconds
+the tone is to last.
+
+Examples:
+?tones [440 250]
+?to scale :freq
+>repeat 14
+>   [
+>   type list " int 0.5 + :freq
+>   tones list 0.5 + :note 300
+>   make "note :note * :c
+>   ]
+>end
+scale defined
+?make "c (2 ^ (1 / 12))
+?scale 440
+ 440 466 494 523 554 587 622 659 698 74!
+0 784 831 880
+?to play :song :speed
+>make "note first :song
+>if memberp :note :notes [make interval!
+where]
+>(type " :note)
+>if :note = "R
+>   [tones list 40 :speed]
+>   [tones list 440 * (:c ^ :interval) !
+:speed]
+>play bf :song :speed
+>end
+play defined
+?make "notes [A A# B C C# D D# E F F# G!
+G# A' A#' B' C' C#' D' D#' E' F' F#' G'!
+G#']
+?make "hb [G A' G C' B' R G A' G D' C' !
+R' G G#' E' C' B' A' F' E' C' D' C']
+?play :hb 60
+?to play1 :song :speed
+>make "note first :song
+>if memberp :note :notes [make interval!
+where]
+>(type " :note)
+>if :note = "R
+>   [tones list 0 :speed]
+>   [tones list 440 * (:c ^ :interval) !
+:speed]
+>if emptyp first bf :song [stop]
+>make "note2 first bf :song
+>if memberp :note2 :notes [make interva!
+l where]
+>(type " :note2)
+>if :note2 = "R
+>   [tones list 0 :speed * 4]
+>   [tones list 440 * (:c ^ :interval) !
+:speed * 4]
+>play bf bf :song :speed
+>end
+play1 defined
+?make "turtlesong [D G A' A#' A' A#' R !
+R A' A#' R R R D' R C' A#' A' G A' G A'!
+R R G F G A' R R C' A#' A' G F G F G R !
+R F D# F G R R G G A' R G F# R D'
+?play :turtlesong 14
+ D G A' A#' A' A#' R R A' A#' R R R D' !
+R C' A#' A' G A' G A' R R G F G A' R R !
+C' A#' A' G F G F G R R F D# F G R R G !
+G A' R G F# R D'
+
+
+towards
+-------
+
+Action:
+Outputs  a heading that would make the turtle face the  position
+specified in the input coordinate list.
+
+Syntax:
+towards coord_list
+
+Explanation:
+towards  outputs a heading that would make the turtle  face  the
+position  specified  in the input coordinate list. To  make  the
+turtle  turn towards the position, use the output of towards  as
+the input to setheading.
+
+Examples:
+?cs
+?towards [75 50]
+56.3099324740202
+?towards [-75 -50]
+236.30993247402
+?to plot.sine
+>make "val 0
+>make "x -150
+>make "inc (300 / 60)
+>setx 150 setx :x
+>plot :val
+>end
+plot.sine defined
+?to plot :val
+>if :x > 150 [stop]
+>make "y (90 * (sin :val))  ; 90 makes !
+plot visible
+>setheading towards list :x :y
+>setpos list :x :y
+>make "x :x + :inc
+>make "val :val + 6
+>plot :val
+>end
+plot defined
+?plot.sine
+
+See Colorplate 51. plot.sine (towards Primitive)
+
+
+trace
+-----
+
+Action:
+Turns on trace monitoring of all or specified procedure(s).
+
+Syntax:
+trace <procname | procname_list>
+
+Explanation:
+trace turns on trace monitoring of procedure execution.  Tracing
+displays  the  name of each procedure as it is called,  and  the
+name  and  value  of each variable as it  is  defined.  It  also
+displays  the level number, the number of procedures  that  have
+been called since a procedure was initiated at toplevel.
+
+Tracing  lets you observe details of your procedure's  execution
+without  interrupting  with pauses. Use watch or Ctrl-Z  if  you
+want to pause during procedure execution.
+
+Examples:
+?to average :numbers
+>make "total 0
+>addup :numbers
+>pr :total / count :numbers
+>end
+average defined
+?to addup :list
+>if emptyp :list [stop]
+>make "total :total + first :list
+>addup bf :list
+>end
+addup defined
+?trace
+?average [1 2 3]
+[1] Evaluating average
+[1] numbers is [1 2 3]
+[2] Evaluating addup
+[2] list is [1 2 3]
+[3] Evaluating addup
+[3] list is [2 3]
+[4] Evaluating addup
+[4] list is [3]
+[5] Evaluating addup
+[5] list is []
+2
+?notrace
+?average [1 2 3]
+2
+
+
+turtlefacts tf
+--------------
+
+Action:
+Outputs a list of information about the turtle.
+
+Syntax:
+turtlefacts
+tf
+
+Explanation:
+Outputs a list that contains: Turtle's X-coordinate; Turtle's Y-
+coordinate;  Turtle's  heading; Pen state; Pen's  color  number;
+TRUE if the turtle is visible, FALSE if not.
+
+Examples:
+?turtlefacts
+[15 30 60 PE 3 FALSE]
+
+
+turtletext tt
+-------------
+
+Action:
+Displays  the input object at the turtle's current  location  on
+the graphic screen.
+
+Syntax:
+turtletext object
+tt object
+
+Explanation:
+turtletext displays the input object on the graphic screen.  The
+first character of the input object appears to the right of  the
+turtle's center line, plus zero to four turtle steps (pixels) to
+align with the closest character cell.
+
+Like print, turtletext removes the outer brackets from any input
+list,  and follows the last input item with a  Carriage  Return.
+Without  punctuation, turtletext requires and accepts one  input
+object.  turtletext can accept more inputs when you enclose  the
+turtletext expression is parentheses ["(" and ")"]. If no  other
+expressions follow the turtletext expression on the line, you do
+not need to type the closing right parenthesis [")"].
+
+The  text  can be one of four current pencolors. Use  textfg  to
+specify  a  text color. The text can also have any  one  of  the
+pencolors  as  a  background  color. Use  textbg  to  specify  a
+background color for text on the graphic screen.
+
+Examples:
+?cs
+?turtletext "home fd 10
+?tt rq fd 10
+I want to go
+
+See Colorplate 52. tt rq (turtletext Primitive)
+
+
+type
+----
+
+Action:
+Displays the input objects on the screen.
+
+Syntax:
+type object (...)
+
+Explanation:
+type  displays  the  input object on the screen,  but  does  not
+follow  the  last  input object with  a  Carriage  Return.  type
+removes  the outer square brackets ("[" and "]") from  an  input
+list. You can input any number of objects by preceding type with
+a  left parenthesis ["("]. When preceded by a parenthesis,  type
+displays  all  its inputs on the same line.  Compare  type  with
+print and show.
+
+Examples:
+?type [This is the turtle's position: ]!
+pos
+This is the turtle's position: [-19 -21]
+?to newprompt :prompt
+>(type :prompt " )
+>run readlist
+>newprompt :prompt
+>end
+newprompt defined
+?newprompt [\=\>]
+=> repeat 5 fd 40 lt 72
+=>
+
+
+unbury
+------
+
+Action:
+Restores  the  specified  package(s)  to  workspace   management
+commands.
+
+Syntax:
+unbury pkgname | pkgname_list
+
+Explanation:
+unbury  restores the specified package or packages to  workspace
+management commands. unbury works by removing the bury  property
+(.BUR) from the package's property list. The description of bury
+command  tells  how workspace management commands  treat  buried
+packages.
+
+Examples:
+These examples assume you have the following in your  workspace:
+a  package named figures that contains two variables  named  big
+and  small and two procedures named square and triangle,  and  a
+package named titles that contains two procedures named prauthor
+and prdate.
+
+?popkg
+figures
+  "big (VAL)
+  "small (VAL)
+  to square
+  to triangle
+titles
+  to prauthor
+  to prdate
+?bury "titles
+?popkg
+figures
+  "big (VAL)
+  "small (VAL)
+  to square
+  to triangle
+titles is buried
+  to prauthor
+  to prdate
+?pots
+to square
+to triangle
+
+
+uppercase uc
+------------
+
+Action:
+Outputs  the  input  word  with  all  alphabetic  characters  in
+uppercase.
+
+Syntax:
+uppercase word
+uc word
+
+Explanation:
+uppercase outputs the input word with all alphabetic  characters
+converted to uppercase.
+
+Examples:
+?uppercase "jones
+JONES
+?uppercase "BeckyAnn
+BECKYANN
+?to quiz
+>pr [Can you play the ocarina?]
+>if "N = uc first rq
+>   [pr [Me neither!]]
+>   [pr [Wow, I've never met anyone who !
+did!]
+>end
+quiz defined
+?quiz
+Can you play the ocarina?
+not really
+Me neither!
+
+
+wait
+----
+
+Action:
+Stops  execution for the amount of time specified by  the  input
+number.
+
+Syntax:
+wait n
+
+Explanation:
+wait  stops  execution for the amount of time specified  by  the
+input number. wait interprets the input number as the number  of
+1/60ths of a second it is to wait. For example, to stop for  one
+second, use wait 60.
+
+Examples:
+?wait 60
+?repeat 10 [type "tick wait 30 pr "tock!
+wait 30]
+ticktock
+ticktock
+ticktock
+ticktock
+ticktock
+ticktock
+ticktock
+ticktock
+ticktock
+ticktock
+?to bg.cycle :val
+>if :val = 0 [pr [Cycle complete.] setb!
+g 1 stop]
+>setbg :val
+>(pr [This is background color number] !
+bg)
+>wait 100
+>bg.cycle :val - 1
+>end
+bg.cycle defined
+?bg.cycle 8
+This is background color 8
+This is background color 7
+This is background color 6
+This is background color 5
+This is background color 4
+This is background color 3
+This is background color 2
+This is background color 1
+Cycle complete.
+
+
+watch
+-----
+
+Action:
+Turns on watch monitoring of all or specified procedure(s).
+
+Syntax:
+watch <procname | procname_list>
+
+Explanation:
+watch turns on expression-by-expression monitoring of  procedure
+execution. watch displays each expression before execution,  and
+pauses until you press the Enter key. During the pause, you  can
+examine  the  values  of local variables,  and  experiment  with
+variations  of the expression before the expression is  actually
+executed.  If you want the values of variables to  be  displayed
+automatically, enable trace as well as watch.
+
+watch  also displays a number in square brackets ("["  and  "]")
+before  the  expression. This level number tells  you  how  many
+procedures your procedure has called since it began execution.
+
+If you give watch a procedure name or a list of procedure  names
+as   input,  only  the  specified  procedures   are   monitored.
+Otherwise,  any procedure you initiate at toplevel or call  from
+within another procedure is monitored.
+
+Normally,  anything an expression displays on the  text  appears
+interspersed  with  the information that watch displays  on  the
+screen.
+
+To stop the watch step-by-step monitoring, enter nowatch.
+
+Examples:
+?to average :numbers
+>make "total 0
+>addup :numbers
+>pr :total / count :numbers
+>end
+average defined
+?to addup :list
+>if emptyp :list [stop]
+>make "total :total + first :list
+>addup bf :list
+>end
+addup defined
+?watch
+?average [1 2 3]
+[1] In average, make "total 0
+[1] In average, addup :numbers
+[2] In addup, if emptyp :list [stop]
+[2] In addup, make "total :total + firs!
+t :list
+[2] In addup, addup bf :list
+[3] In addup, if emptyp :list [stop]
+[3] In addup, make "total :total + firs!
+t :list
+[3] In addup, addup bf :list
+[4] In addup, if emptyp :list [stop]
+[4] In addup, make "total :total + firs!
+t :list
+[4] In addup, addup bf :list
+[5] In addup, if emptyp :list [stop]
+[1] In average, pr :total / count :numb!
+ers
+2
+?nowatch
+?average [1 2 3]
+2
+
+
+where
+-----
+
+Action:
+Outputs  the item number of the most recent  successful  memberp
+expression.
+
+Syntax:
+where
+
+Explanation:
+where  outputs  a  number that identifies  the  location  of  an
+element within a word or list if a memberp expression containing
+that  element and word or list outputs TRUE. where  outputs  the
+item number of the most recent successful memberp expression.
+
+Examples:
+?memberp "v" river
+TRUE
+?show where
+3
+?to use :what
+>if memberp lc :what [green red yellow]
+>   [make "colornumber where
+>   make "state "PENDOWN]
+>if "eraser = lc :what [make "state "PE!
+NERASE]
+>run (se "setpen "list "quote :state "q!
+uote :colornumber)
+>end
+use defined
+?use "green fd 80 rt 120
+?use "red fd 80 rt 120
+?use "yellow fd 80 rt 120
+
+See Colorplate 53. use "yellow fd 80 rt 120 (where Primitive)
+
+
+window
+------
+
+Action:
+Allows the turtle to plot outside the visible graphic screen.
+
+Syntax:
+window
+
+Explanation:
+window  allows  the turtle to plot outside the  visible  graphic
+screen. When you first start Dr. Logo, the turtle can go  beyond
+the  visible screen and return. You can enter wrap or  fence  to
+limit  the  turtle to on-screen plotting.  To  resume  offscreen
+plotting after a wrap or fence command, enter window.
+
+Examples:
+?fence
+?to squiral :side
+>repeat 4 [fd :side rt 90]
+>rt 20
+>squiral :side + 5
+>end
+squiral defined
+?squiral 20
+Turtle out of bonds in squiral: repeat!
+4 [fd :side rt 90]
+?window
+?squiral 20 Ctrl-G
+
+See Colorplate 54. squiral 20 (window Primitive)
+
+
+word
+----
+
+Action:
+Outputs a word made up of the input words.
+
+Syntax:
+word word word (...)
+
+Explanation:
+word  outputs  a  word  made up  of  the  input  words.  Without
+punctuation,  word requires and accepts two input objects.  word
+can  accept  more  or fewer inputs when  you  enclose  the  word
+expression in parentheses ["(" and ")"]. If no other expressions
+follow the word expression on the line, you do not need to  type
+the closing right parenthesis [")"].
+
+Examples:
+?word "Hocus "Pocus
+HocusPocus
+?word 23 "skiddoo
+23skiddoo
+?(word "ab "ra "ca "da "bra
+abracadabra
+?to make.string :list
+>if emptyp :list [op "]
+>op (word first :list char 32 make.stri!
+ng bf :list)
+>end
+make.string defined
+?fkey 2 make.string [fd 40 rt 160]
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+?fd 40 rt 160 Ctrl-G Enter
+
+
+wordp   (= WORD Predicate)
+-----
+
+Action:
+Outputs TRUE if the input object is a word or a number.
+
+Syntax:
+wordp object
+
+Explanation:
+wordp  outputs TRUE if the input object is a word or  a  number.
+Otherwise, wordp outputs FALSE.
+
+Examples:
+?wordp "Naima
+TRUE
+?wordp 50
+TRUE
+?wordp [word]
+FALSE
+?wordp bf [green red yellow]
+FALSE
+?to list.memberp :word :list
+>if emptyp :list [op "FALSE]
+>if wordp first :list
+>   [if :word = first :list
+>       [op "TRUE]
+>       [op list.memberp :word bf :list!
+]]
+>if list.memberp :word first :list [op !
+"TRUE]
+>op list.memberp :word bf :list
+>end
+list.memberp defined
+?make "address.book [[name [Mr. Preside!
+nt]] [street [1600 Pennsylvania Avenue]!
+][city/state [Washington D.C.]]]
+?list.memberp "Washington :address.book
+TRUE
+?list.memberp "Oregon :address.book
+FALSE
+
+
+wrap
+----
+
+Action:
+Makes  the turtle re-appear on the opposite side of  the  screen
+when it exceeds the boundary.
+
+Syntax:
+wrap
+
+Explanation:
+wrap  makes  the turtle re-appear on the opposite  side  of  the
+graphic screen when it moves beyond an edge. While wrap is  set,
+the turtle never leaves the visual field. To allow the turtle to
+plot offscreen, enter window.
+
+Examples:
+?wrap
+?fd 180
+?cs
+?to plaid
+>wrap
+>setpc 3 rt 40 forward 10965
+>setpc 2 rt 90 forward 5000
+>setpc 1 pu rt 90 fd 6 pd ht
+>repeat 625 [fd 3 lt 90 fd 1 rt 90 bk 3!
+lt 90 fd 1 rt 90]
+>end
+plaid defined
+?plaid
+
+See Colorplate 16. plaid (wrap Primitive)
+
+
+writer
+------
+
+Action:
+Outputs the current data file.
+
+Syntax:
+writer
+
+Explanation:
+Outputs the current data file that is open for writing.
+
+Examples:
+?writer
+[A:ADDRESS.DAT]
+
+
+xcor
+----
+
+Action:
+Outputs the X coordinate of the turtle's current position.
+
+Syntax:
+xcor
+
+Explanation:
+xcor outputs the X coordinate of the turtle's current  position.
+xcor is equivalent to a first pos expression.
+
+Examples:
+?cs xcor
+0
+?to jump
+>setpos list
+>   random 150 * first shuffle [1 -1]
+>   random 100 * first shuffle [1 -1]
+>end
+jump defined
+?jump xcor
+145
+?jump xcor
+-64
+
+See Colorplate 55. jump xcor (xcor Primitive)
+
+
+ycor
+----
+
+Action:
+Outputs the Y coordinate of the turtle's current position.
+
+Syntax:
+ycor
+
+Explanation:
+ycor outputs the Y coordinate of the turtle's current  position.
+ycor is equivalent to a last pos expression.
+
+Examples:
+?cs ycor
+0
+?to jump
+>setpos list
+>   random 150 * first shuffle [1 -1]
+>   random 100 * first shuffle [1 -1]
+>end
+jump defined
+?jump ycor
+36
+?jump ycor
+49
+
+See Colorplate 56. jump ycor (ycor Primitive)
+
+
+EOF
+
+
+

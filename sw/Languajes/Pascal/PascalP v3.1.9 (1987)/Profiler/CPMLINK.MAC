@@ -1,0 +1,578 @@
+	title	'CPMLINK Pascal run-time (85/10/11)'
+; *******************************************************
+; * Used in run-time Pascal package (among others)	*
+; * Provides generalized interface to CP/M and some	*
+; * of the services normally available in the "MOS"	*
+; * operating system and monitor.  The protected cpm	*
+; * calls provided generally do not destroy any un-	*
+; * necessary registers. Normally first module linked.	*
+; *******************************************************
+;
+; ***************************************
+; * Copyright (C) 1982, 1984, 1985	*
+; *					*
+; * by C.B. Falconer     (203) 281-1438	*
+; *    680 Hartford Tpk.		*
+; *    Hamden, Conn. 06517		*
+; *					*
+; * All rights reserved			*
+; ***************************************
+;
+; 11 Oct 1985 - cbf - @wtrnz was @wtranf.  For L80 compatibility.
+;		.sysget returns 16 bits for calls 41 up, to 
+;		allow for use of RSX system.
+; 30 Oct 1984 - cbf - Added .sysinfo vector to control all
+;		system dependant values in an easily field
+;		patchable manner. Profiler vectors for simple
+;		profiler under RUNPCDT
+; 28 Nov 1983 - cbf - re-organized for standardization
+;		of system interfaces, and to eliminate
+;		routines available in standard modules
+;		utility0, utility1, utility2, inoutind,
+;		readline, base10io, console, console2
+;
+true	equ	-1
+false	equ	not true
+psz	equ	64;	Patch space provided, total
+;
+; Ascii characters
+null	equ	0;
+etx	equ	03h;	cntrl-c
+bell	equ	07h;	cntrl-g
+tab	equ	09h
+lf	equ	0ah
+cr	equ	0dh
+dc1	equ	11h;	xon = cntrl-q
+dc3	equ	13h;	xof = cntrl-s
+subs	equ	1ah
+;
+; The following two characters prompt console input.  If prompt2 is
+; null it will not be shipped at all.
+prompt	equ	bell;	Alerts operator input ready
+prompt2	equ	null;	On Kaypro, normally dc1. Signal console read.
+;
+sensesw	equ	255;	Sense switch port, normally 255. will be read.
+dc3msk	equ	0;	mask iobyte to prevent dc3 tests
+;			this prevents the dc3 pause test on console
+;			output swallowing system type-ahead buffers.
+;			Used one place only, thus field patchable.
+;			0 = always enabled (Kaypro)
+;			1 = even values enabled (Yale systems)
+;			2 = 0 & 1 enabled
+;			3 = 0 only enabled
+;
+clk	equ	25;	Clock speed in units of 100kHz, 25=2.5Mhz.
+;
+; END Customization parameters
+;
+;	    	***********************
+	aseg;	* absolute values etc *
+;	    	***********************
+;
+; CP/M definitions are entry points, for external use
+; All that need be remembered is the mnemnonics.
+	entry	@reboot
+	entry	@cin,   @cout,  @rin,   @pout, @lout
+	entry	@cio,   @getio, @setio, @prstr
+	entry	@instr, @csta,  @verno, @rsdsk
+	entry	@sldsk, @fopen, @fclos, @srch1
+	entry	@srchn, @purge, @rdseq, @wrseq
+	entry	@newfi, @renfi, @lgvec, @curdk
+	entry	@stdma, @gallo, @wprot, @rovec
+	entry	@sfatr, @gdkad, @usrcd, @rdran
+	entry	@wtran, @fsize, @sranr, @rsdrv
+	entry	@wtrnz
+;
+; Bios entry points
+	entry	@bcold,   @bwarm
+	entry	@bcstat,  @bcin,    @bcout
+	entry	@blout,   @bpout,   @brin
+	entry	@bhome,   @bdsksel
+	entry	@bsettrk, @bsetsec, @bsetdma
+	entry	@bdskwrt, @blststa, @bsecxlt
+;
+; system call values
+@reboot	equ	0
+@cin	equ	1
+@cout	equ	2
+@rin	equ	3
+@pout	equ	4
+@lout	equ	5
+@cio	equ	6
+@getio	equ	7;	iobyte
+@setio	equ	8
+@prstr	equ	9;	print string, $ terminator
+@instr	equ	10;	input console buffered string
+@csta	equ	11;	console status, data ready/not ready
+@verno	equ	12;	CP/M version no
+@rsdsk	equ	13;	reboot but retain control
+@sldsk	equ	14
+@fopen	equ	15
+@fclos	equ	16
+@srch1	equ	17;	search for file
+@srchn	equ	18;	search for further file extents
+@purge	equ	19
+@rdseq	equ	20
+@wrseq	equ	21
+@newfi	equ	22
+@renfi	equ	23
+@lgvec	equ	24
+@curdk	equ	25
+@stdma	equ	26
+@gallo	equ	27;	disk allocations
+@wprot	equ	28
+@rovec	equ	29;	which drives are r/o
+@sfatr	equ	30
+@gdkad	equ	31;	get pointer to disk params
+@usrcd	equ	32;	get/set user #
+@rdran	equ	33
+@wtran	equ	34
+@fsize	equ	35
+@sranr	equ	36
+@rsdrv	equ	37;	lsb of (de) is drive a, etc
+@wtrnz	equ	40;	fill unallocated extents with zeroes
+;
+; CP/M bios entry values
+@bcold		equ	0
+@bwarm		equ	1
+@bcstat		equ	2
+@bcin		equ	3
+@bcout		equ	4
+@blout		equ	5
+@bpout		equ	6
+@brin		equ	7
+@bhome		equ	8
+@bdsksel	equ	9
+@bsettrk	equ	10
+@bsetsec	equ	11
+@bsetdma	equ	12
+@bdskrd		equ	13
+@bdskwrt	equ	14
+@blststa	equ	15
+@bsecxlt	equ	16
+;
+; CP/M base addresses
+reboot	equ	0
+iobyte	equ	reboot + 3
+syscal	equ	reboot + 5
+;
+cpmeof	equ	subs;	must not be a null
+;
+;	    	************************
+	cseg;	* CP/M interface code  *
+;	    	************************
+;
+; entry points
+	entry	.sysget,  .biosget
+	entry	.aerc,    .aerc2,  .link, .qbrk
+	entry	.cin,     .coutc,  .csta, .cpsta
+	entry	.rinx,    .rsta,   .rpsta
+	entry	.louta,   .lout,   .lsta, .lpsta
+	entry	.pout,    .psta,   .ppsta
+	entry	.dotimer, .timers;	for date/time services
+	entry	.sysinfo, .cntfch, .faket; System dependant data.
+;
+; unclean variables for console services
+	entry	.cwide, .ccolm
+;
+; **** begin the code ****
+;
+; machinations to make CP/M calls appear identical
+; to MOS system monitor calls
+;
+; MOS entry connectors substitutes
+.link:	jmp	around;	on system startup, to next module
+	jmp	exeunt;	systems always exit here (.link + 3)
+;
+; io connectors: (always known relative to .link)
+.cin:	jmp	conin
+.coutc:	jmp	conout
+.csta:			; for drivers that want logical status
+.cpsta:	jmp	consta
+.qbrk:	nop
+	nop
+	ret;			cpm can't check break interrupt
+.lout:	jmp	lstout
+.lsta:			; for drivers that want logical status
+.lpsta:	jmp	lststa;		for list status
+.pout:	jmp	punout;		for punch output
+.psta:			; for drivers that want logical status
+.ppsta:	jmp	ready;		for punch status
+.rinx:	jmp	rdrin;		for reader data
+.rsta:			; for drivers that want logical status
+.rpsta:	jmp	ready;		for reader status
+.dotimer:	xra a;		signal not available
+		stc
+		ret;		for time of day/date
+.timers:	nop
+		stc
+		ret;		see notes below on timers
+.sysinfo:
+	jmp	sysinfo;	return system specific data
+;
+; Vector for fetch loop interception, tracing versions
+; Normally not used.  RUNPCDT calls this on each fetch cycle
+; but only if the enabling senseswitch bit is on, or faked.
+.cntfch:
+	ret
+	nop
+	nop
+;
+; Vector for faked timer, normally unused.  This is used to
+; point the way to an interval timer routine (in RUNPCDT only)
+; which may be called on each pcd fetch.  Patch into above.
+; This location may become a real connector in future releases.
+.faket:	ret
+	nop
+	nop
+;
+; Spare vectors for future use
+	nop
+	stc
+	ret
+	nop
+	stc
+	ret;		space reserved for future connector
+;
+; Available patch space for customization
+patch:	db	psz;	first byte is total size incl. self
+	ds	psz-1,0;	",0" for Z80ASM, zeroes area
+;
+; console input buffers - here to initialize
+; This is unclean, and the only modified code area
+; Also follow vector for user patching
+cibuff:	db	0
+cibflg:	db	0
+; these must be in the following order
+.cwide:	db	80+128;	for backspace capability
+.ccolm:	db	0;	initially at left assumed
+;
+; WARNING - referanced by magic offsets - do not change
+; The console characteristics are not yet properly used.
+; This area presently follows the jump vector, for convenience
+; in generating overlays, but is not guaranteed to remain put.
+; The .sysinfo call will return a suitable pointer.
+sysinf:	db	sensesw; sense switch input port, for trace etc.
+	db	clk;	clock speed, 100 khz units. 25 = 2.5 Mhz.
+	db	prompt;	prompt character, console input
+;			This char. signals ready to read.
+;			Normally bell to alert operator.
+	db	prompt2; 2nd character of prompt, null for none
+;			Normally dc1 to start external equipment,
+;			but Kaypro messes screen on that.
+	db	dc3msk;	iobyte mask to use ^S pause.  Non-zero on
+;			this mask causes ^S pauses to be ignored.
+	db	80+128;	console has 80 char lines and can backspace
+	dw	patch;	Can fill in with patch space pointer. 0=none
+; More info can be added later if needed.
+;
+; The "dotimer" entry above returns the system datestamp in (a).
+; only (a) may be disturbed.  Return all zeros for no such
+; facility available.  (1) call may lock registers.
+;       (a) entry       returns (a) =
+;            1             year (since 1900)
+;            2             month (1..12) (0 for no facility)
+;            3             day (1..31)   (0 for no facility)
+;            4             hour (0..23)
+;            5             minute (0..59)
+;
+; ** WARNING ** the following is not yet completely
+;               implemented, and may be changed
+;
+; TIMERS via connector above. (a) specifies function
+;    a carry returned signifies feature not installed.
+; Timers (functions 2 & 3) return (dehl) = time in millisecs.
+;    with (d) hi-order byte, (l) low order.  For time of day
+;    this is milliseconds after midnight.  Poorer resolution
+;    than 1 millisec is harmless.
+; Interval timers (functions 5, 6) set the interval to the
+;    product of the intervals in registers (b) and (c).
+;    These values are expressed as negative numbers,
+;    e.g.   -1   (= 0ffh)  for 1
+;           -2   (= 0feh)  for 2
+;               . . .
+;         -255   (= 001h)  for 255
+;    AND  -256   (=ZERO)   for 256
+;    the resultant product is the interval in 5 millisec units.
+;    If one register is set to -200 the other expresses the
+;    interval in seconds.  If this resolution is not available
+;    the routine should modify (bc) to that actually used.
+;    This caters to hardware using byte registers.
+; Functions 5 & 6 expect a pointer to data or code in register
+;    (de).  For interrupt interval this points to a boolean (one
+;    byte) which is set to "true" at intervals.  For the arbitrary
+;    interrupt this points to a machine language service 
+;    routine which expects the A and flag registers to be free.
+;    The service system should handle any system particular
+;    protocols, including enabling interrupts on completion.
+;    For profiler data structure see "profiler.inc" file.
+;
+; functions to be available:
+;   0:  set date. (d) = day, (e) = month, (hl) = year
+;   1:  shut down time of day timer
+;   2:  set (and start) time of day timer. (d)=hour, (e)=min
+;   3:  get time of day timer. (dehl)=millisec after midnite
+;   4:  shut down interrupt interval timer
+;   5:  set interrupt interval timer and flag location
+;   6:  start arbitrary timed interrupt routine at (de)^. Used
+;       for profiler subsystem. May usurp interval timer.  The
+;       system encapsulation must protect all registers and
+;       handle any interupt entry/exit protocols.
+;   7:  get cputimer = timeofday except on timeshared systems
+;	when the base point is arbitrary (process start?).
+;
+; Sysinfo returns a pointer to an array of bytes
+; h,l
+sysinfo:
+	lxi	h,sysinf
+	ret
+;
+; lister output from (c)
+; a := c, f
+lstout:	mvi	a,@blout
+;	"	"
+; output (c) to cpm bios function (a)
+; a := c, f
+outcpm:	call	.biosget
+	mov	a,c
+	ret
+;
+; lister status. (a) := 0ffh if ready, else 0
+; lister physical status same
+; Usable on CP/M 2.0 up only
+; a,f
+lststa:	mvi	a,@blststa
+;	"	"
+; access (a)th bios function. return (a) only
+; except for bios calls 9 and 16 (setdsk, secxlt)
+; which return a 16 bit value in (hl), (a) := (l)
+; bios calls are numbered from zero
+; This allows for all information returned by the
+; bios system for CPM 2.2.
+; Exterior use can be of the form:
+;      mvi   h,0
+;      mvi   a,(desired_function)
+;      call  .biosget
+;      mov   l,a
+;   to uniformly return a 16 bit value in (hl)
+; Illegal calls return carry.  Other flags returned
+; are bios dependant.
+; a,f (h,l for some calls)
+.biosget:
+	push	b
+	push	d
+	push	h
+	cpi	@bsecxlt+1
+	cmc
+	jc	biosget9;	bad operand is null function
+	mov	l,a
+	add	a;		*2
+	add	l;		*3
+	lhld	reboot+1;	pointer to bios
+	push	psw
+	sui	3
+	add	l;		Some systems (wordstar for ex)
+	mov	l,a;		  modify the bios pointer and
+	mvi	a,0;		  leave it pointing off page
+	adc	h;		  boundaries, therefore this
+	mov	h,a;		  code allows for that
+	pop	psw;		now (hl) points to the bios function
+	cpi	3*@bdsksel
+	jz	biosget2;	returns (hl)
+	cpi	3*@bsecxlt
+	jnz	biosget6;	returns (a) only
+biosget2:
+	call	xpchl
+	inx	sp
+	inx	sp;		delete stored (hl)
+	mov	a,l;		so exterior calls can use uniformly
+	jmp	biosget9
+biosget6:
+	call	xpchl;		execute it
+	pop	h
+biosget9:
+	pop	d
+	pop	b
+	ret
+;
+; linkage
+xpchl:	pchl
+;
+; a home for zero divide, negative log, etc. traps
+; Should never get here under P-code system.
+.aerc:
+.aerc2:	lxi	d,trpmsg
+	mvi	c,@prstr
+	call	.sysget
+;	"	"
+; CP/M re-entry, usable on MP/M ?
+exeunt:	jmp	reboot
+;
+trpmsg:	db	'Real arith. error, ABORT',cr,lf,'$'
+;
+; get console status, including any chars in buffer
+; returns 0ffh if ready, else 0
+; with z/nz flags set accordingly
+; a,f
+consta:	lda	cibflg
+	ora	a
+	rnz	
+;	"	"
+; get actual hardware status
+; a,f
+cstact:	mvi	a,@bcstat
+	call	.biosget
+	ora	a
+	rz	
+;	"	"
+; provide "ready" status for reader, and punch files
+; both for logical and physical status
+; thus, on CP/M, the running program cannot check status
+; before calling the i/o routines, and may be held-up.
+ready:	mvi	a,0ffh;		i.e. all bits set - tough
+	ret
+;
+; read (a) from CP/M system
+; for calls 12 (verno), 24 (lgvec), 25 (curdk),
+; 27 (gallo), 29 (rovec), 31 (gdkad), 41 up returns (hl)
+; with a := l,  else (hl) is undisturbed.
+; Note that CP/m treats illegal calls as null ops
+; (a) on entry is syscall value
+; a,f (h,l for some calls)
+.sysget:
+	push	b
+	push	d
+	push	h
+	mov	c,a
+	cpi	@wtrnz
+	jnc	sysget3;	16 bits for all higher calls
+	cpi	@verno
+	jz	sysget3;	16 bits returned
+	cpi	@lgvec
+	jz	sysget3;	16 bits
+	ani	not 6
+	cpi	@curdk;		or  @gallo or @rovec or @gdkad
+	jnz	sysget6;	8 bits returned only
+sysget3:
+	call	syscal;		operations that return 16 bits
+	inx	sp;		purge stored hl
+	inx	sp
+	jmp	sysget9
+sysget6:
+	call	syscal
+	pop	h
+sysget9:
+	pop	d
+	pop	b
+	ret
+;
+; console input, checking buffer
+; The only input that may not arrive through
+; this (at least reliably) is cntrl-s during output.
+; a,f
+conin:	lda	cibflg
+	ora	a
+	jz	cinraw
+	xra	a
+	sta	cibflg;		clear flag
+	lda	cibuff
+	jmp	chkeof
+;
+; console input, unechoed, ignore buffer content
+; a,f
+cinraw:	mvi	a,@bcin
+	call	.biosget
+;	"	"
+; check for CP/M eof signal, carry if so. z flag never set
+; also remove any input parity bit
+; f
+chkeof:	ani	07fh
+	cpi	cpmeof;		must not be defined as zero
+	stc
+	cmc
+	rnz	
+	ora	a;		ensure z flag not set
+	stc
+	ret
+;
+; console output from (c)
+; a := c,f
+conout:	call	cstact
+	cnz	chkdc3;		check for possible pause
+;	"	"
+; raw console output from (c), no dc3 checking
+; a := c, f
+coutraw:
+	mvi	a,@bcout
+	jmp	outcpm
+;
+; check for pause.  A console char known ready
+; This operation, when console input has "type ahead"
+; via interrupt driven buffers, will swallow all input
+; characters during console output.  Therefore the
+; "control-s" output pause is inhibited when the
+; console physical device is 1 or 3 (corresponding to
+; interrupt driven, and unassigned, respectively in the
+; Yale system).  Note that if the Pascal program opens
+; device file KBB the device is normally 1, and thus
+; this inhibition takes effect.  This whole interaction
+; is hidden by the global system environment, and the
+; particular actual i/o driver organization.
+; a,f
+chkdc3:	lda	iobyte
+	push	h
+	lxi	h,sysinf+4;	Should we use any DC3
+	ana	m;		  to pause output?
+	pop	h;		If this value is 1 THEN
+	rnz;			  devices 1 and 3 inhibit
+	mvi	a,0ffh
+	sta	cibflg;		in case non dc3 comes
+	call	cinraw;		physical get
+	sta	cibuff	
+	cpi	dc3
+	rnz;			no pause
+	xra	a;		flush any old input
+	sta	cibflg	
+	call	cinraw;		do another get
+	cpi	etx;		i.e. cntrl-c
+	jz	.link+3;	exit on it
+	ret
+;
+; punch output from (c)
+; a := c,f
+punout:	mvi	a,@bpout
+	jmp	outcpm
+;
+; reader input
+; a,f
+rdrin:	mvi	a,@brin
+	call	.biosget
+	jmp	chkeof
+;
+; cr & lf to lister
+.lcrlf:	push	psw
+	mvi	a,cr
+	call	.louta
+	mvi	a,lf
+	call	.louta
+	pop	psw
+	ret
+;
+; lister output from (a)
+.louta:	push	b
+	mov	c,a
+	call	.lout
+	pop	b
+	ret
+;
+; (Re-)Initialize console info on startup.
+around:	lxi	h,0
+	shld	cibuff;		initialize console
+	lda	sysinf+5;	console width & backspace flag
+	mov	l,a
+	shld	.cwide;		and set column to zero
+;	"	"
+	ds	0;		fall into the following application
+;
+	end
+¨ö

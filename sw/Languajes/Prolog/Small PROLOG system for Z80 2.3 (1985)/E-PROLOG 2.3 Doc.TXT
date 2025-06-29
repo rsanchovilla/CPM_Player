@@ -1,0 +1,378 @@
+
+E-PROLOG
+--------			(ver. 2.3 -- August 1, 1985)
+
+This is a small Prolog system for CP/M-80 Z-80 computer.  The
+current code occupies less than 6K bytes of space, so that
+there is a lot of space left over for the database and for the
+VERY deep subroutine stack.  The executable version of E-Prolog
+is called EPRO.COM.  This version was prepared under CP/M
+2.2, but if you do not use APPEND, it should run under CP/M
+1.4.
+
+The source code is intended for Microsoft's Macro-80
+compiler.  The source files are:  EPRO.Z80, CLASS.Z80,
+SYMB.Z80, HEAP.Z80, DATBADD.Z80, UNIFY.Z80, CMD.Z80,
+PROVE.Z80, INPUT.Z80, OUTPUT.Z80, ERROR.Z80, ASSEM.Z80,
+INIT.Z80 .
+
+Some E-Prolog sample programs are included on the disk, also:
+	STD.PRO		some standard connectives
+	SAMPLE.PRO	a sample database - see below
+	SCIAM.PRO	a logic puzzle from Scientific American
+	VALGOL.PRO	a compiler written in Prolog
+			(from May, 1985, Dr. Dobb's Journal)
+---------------------------------------------------------------
+
+EXPLANATION
+-----------
+
+This DOC file DOES NOT teach Prolog.  See the appropriate books
+for that.
+    1.  W. F. Clocksin & C. S. Mellish, Programming in Prolog,
+	Springer-Verlag, 1981.
+    2.  K. L. Clark and F. G. McCabe, Micro-PROLOG:
+	Programming in Logic, Prentice-Hall, 1984.
+
+E-Prolog does not have the special features of the large
+systems described in these books, but neither does it have the
+large price tags of those systems.
+
+Here are the peculiarities of E-Prolog.  (Mostly things were
+done this way to save space.)  TOKENS are the smallest elements
+recognized by the language.  They are used to identify
+individuals (constants) and relations (predicate symbols), and
+some of them have special uses as well.  The most common tokens
+are strings consisting of letters (upper and lower case are
+different), digits, and the characters '-', '_' , and '?' .
+Most other printable characters usually represent tokens of
+a single character.  Exceptions to this can be enforced by
+enclosing a string in quotation marks (either " or ' ).
+Inside such a string, control characters are indicated as
+usual with the escape character '^'.  Text enclosed in square
+brackets [ and ] is a comment, and is ignored.  Space, Tab,
+Carriage return, Linefeed and comments separate one token from
+the next.  Examples:  Here there is one token on each line:
+	ken
+	Ken
+	/
+	"A long string with spaces."
+But this line has eight tokens:
+	How-to-tell.where one/token[really]ends.
+They are:
+	How-to-tell
+	.
+	where
+	one
+	/
+	token
+	ends
+	.
+
+VARIABLES are represented as strings beginning with the
+character '?'.  Examples:
+	?X
+	?who
+	?mother-in-law
+
+LISTS are represented by placing the items of the list between
+a pair of parentheses.  Examples:
+	(A B C D E)		a list with 5 items
+	()			the empty list
+	(A (B C D E))		a list with 2 items
+	(LOAD A:SAMPLE.PRO)	a list with 6 items
+	(LOAD A : SAMPLE . PRO)	the same list
+
+PAIRS are represented using the vertical '|'.  Example:
+	(A | B)
+
+Technically, lists are built from the empty list up as pairs.
+The list (A B C D) is (A | (B | (C| (D | ())))) .  Example: if
+	(?X | ?Y)
+matches
+	(first second third fourth)
+then ?X must be first and ?Y must be
+	(second third fourth)
+This idea is extended to work with longer lists, too:  If
+	(?a ?b ?c | ?d)
+matches
+	(alpha beta gamma)
+then ?a is alpha, ?b is beta, ?c is gamma, and ?d is ().
+
+NUMBERS are not really implemented in E-Prolog.  Numbers from
+0 to about 5500 can be used.  They can be compared using LESS,
+but no arithmetic has been implemented.
+
+ATOMS  are what Prolog asserions and rules are built from.
+They are lists:  the first item in the list is the "predicate
+symbol" or "relation name", the others are the arguments.
+Example:  (father jack ken) means that the relation "father"
+holds between the individuals "jack" and "ken".  In Clocksin &
+Mellish, this is written:  father(jack,ken).  It might have
+the interpretation (if we choose) that Jack is the
+father of Ken.  CLAUSES are lists of atoms.  This is how
+Prolog rules are stored in the database.  The first atom is
+the conclusion, and the others are the conditions.  Example:
+	((grandparent ?A ?C) (parent ?A ?B) (parent ?B ?C))
+This clause represents the Prolog rule:	A is the grandparent of
+C if A is the parent of B and B is the parent of C.  In
+Clocksin & Mellish it would be:
+	grandparent(A,C) :- parent(A,B) , parent(B,C).
+
+---------------------------------------------------------------
+
+BUILT-IN PREDICATES
+-------------------
+
+Certain predicates are built into E-Prolog.  These have to be
+special so that they can have "side effects", such as printing
+out information to the outside world.  Here are brief
+descriptions of these special predicates.
+
+LESS  This compares two strings (or two numbers).  Examples:
+	(LESS help hurt)	succeeds
+	(LESS help help)	fails
+
+LIST  This sends the entire database to the console (or other
+current output device).  Example:
+	(LIST)
+
+READ  This is used to input a token from the console (or the
+current input file).  Example:  (READ ?X)  will read one
+token and unify it with ?X.
+
+READLIST  This is used to input a list from the console
+(or the current input file).  Examples:  (READ ?X), where
+?X is a variable that does not have a current value,
+will read one item from the console, and assign it to ?X.  But
+(READ (?X A : C)) will read one item from the console, and
+attempt to unify it with the list (?X A : C).  Try it!
+
+READCHAR  This inputs one character, which is treated
+internally as a number between 0 and 255.  Example:
+	(READCHAR ?x)
+
+WRITE  This writes items to the console (or other output
+device).  Examples:
+	(WRITE ?X ?Y ?Z)
+	(WRITE "Now is the time.")
+	(WRITE "The father's name is " ?father ".^M^J")
+
+WRITECHAR  This outputs as one character a number between
+0 and 255.  This number presumably was obtained using a
+READCHAR.  Example:
+	(WRITECHAR ?x)
+
+OPEN  This opens a file for input.  After an OPEN atom is
+verified, input is taken from that file instead of from the
+console.  Any remaining input in the previous input file
+(or the input line from the console) is ignored.  When EOF is
+reached, input reverts to the console.  The input device may
+also be altered by a LOAD or OPEN command in the file.
+This command requires a file name.  The name may be CON for
+the console.  Examples:
+	(OPEN A:FILE.INP)
+	(OPEN CON)
+
+CREATE  This opens a previously nonexistent file for output.
+(If the file already exists, then it will be deleted, and a new
+file opened with the same name.)  After a CREATE atom is
+verified, output goes to the file instead of to the console.
+To end output to the file, use CLOSE, or CREATE another file.
+This command requires a file name, as in OPEN.  The file name
+may be CON for the console, or NULL for Never-Never Land.
+Examples:
+	(CREATE A:FILE.OUT)
+	(CREATE | ?file)	the variable should be matched
+				before this is attempted
+
+APPEND  This is used to open an existing file for output.
+It is like CREATE, except that output starts at the end of
+the existing information.  Requires a file name.  Examples:
+	(APPEND A:SAMPLE.PRO)
+	(APPEND FAM)			no filetype
+
+CLOSE  This closes the output file.  Further output will go to
+the console.  Output sent to a file that is never closed will
+probably be lost.  Example:
+	(CLOSE)
+
+SAVE  This writes the current database to a file.  Requires a
+file name.  The default file type is 'PRO'.  Example:
+(SAVE A) is roughly equivalent to the following commands, in
+order: (CREATE A.PRO) (LIST) (CLOSE).
+
+LOAD  This loads input from a given file.  Usually used to add
+to the database.  Use this only at command level, not from a
+program.  (Use OPEN to get commands from a file.)
+Requires a file name.  When EOF is reached, the input device
+reverts to the console.  Loading may also be prematurely
+terminated with another LOAD or OPEN command in the file.
+Requires a file name.  The file type 'PRO' is the default.
+
+/  This is the CUT.  It prohibits backtracking of the current
+predicate past the point it marks.  See example below.
+
+---------------------------------------------------------------
+
+SAMPLE SESSION
+--------------
+
+In the sample session below, the comments are written flush
+left, and the actual input and output is indented.  We will use
+the sample database SAMPLE.PRO.  If you have a working
+E-Prolog, follow along yourself.  Begin from CP/M.
+The tail of the command line is the first input to E-Prolog.
+(Remember that CP/M converts the command line to upper case.)
+
+   A> EPRO (LOAD SAMPLE)
+
+   E-Prolog    ver. 2.3    (August 1, 1985)
+   >
+This is the E-Prolog prompt.  It is only shown when the input
+device is the console.  To ask E-Prolog to attempt to prove
+a statement, just enter the atom.
+   > (father jack ken)
+   Yes.
+   >
+The statement was proved.  (The 'Yes' response is shown only
+when the input and output devices are both the console.)
+   > (mother jack ken)
+   >
+If the statement was not proved, no response is printed.
+Now let's try one with variables.
+   > (father jack ?who)
+   Yes.	   ?who = ken
+One solution was found.  E-Prolog asks whether to try for
+other solutions:
+   More?> y
+   Yes.	   ?who = karen
+   More?> y
+   >
+The commands are entered just like other atoms.
+   > (LIST)
+
+   ((father jack ken))
+   ((father jack karen))
+
+   ((grandparent ?grandparent ?grandchild)
+	   (parent ?grandparent ?parent)
+	   (parent ?parent ?grandchild))
+
+   ((mother el ken))
+   ((mother cele jack))
+
+   ((parent ?parent ?child)
+	   (mother ?parent ?child))
+   ((parent ?parent ?child)
+	   (father ?parent ?child))
+
+   Yes.
+   >
+Let's try something more difficult to solve:
+   > (grandparent ?001 ?002)
+   Yes.	   ?001 = cele
+	   ?002 = ken
+   More?> y
+   Yes.	   ?001 = cele
+	   ?002 = karen
+   More?> y
+   >
+Here is another variation.  Try this one on your expensive
+Prolog system!
+   > (?relation jack karen)
+   Yes.	   ?relation = father
+   More?> y
+   Yes.	   ?relation = parent
+   More?> y
+   >
+To add to the database, enter a clause in the form of a list
+of atoms.
+   > ((father carl jack))
+   > (LIST)
+
+   ((father jack ken))
+   ((father jack karen))
+   ((father carl jack))
+
+   ((grandparent ?grandparent ?grandchild)
+	   (parent ?grandparent ?parent)
+	   (parent ?parent ?grandchild))
+
+   ((mother el ken))
+   ((mother cele jack))
+
+   ((parent ?parent ?child)
+	   (mother ?parent ?child))
+   ((parent ?parent ?child)
+	   (father ?parent ?child))
+   Yes.
+   >
+Now let's add a rule to the database.  (The prompt '1>'
+indicates that there is one open parenthesis that has not been
+closed.)
+   > ((z ?x ?y)
+   1> (father jack ?x)
+   1> (father jack ?y)
+   1> )
+This one illustrates backtracking.
+   > (z | ?u)
+	   ?u = (ken ken)
+   More?> y
+   Yes.	   ?u = (ken karen)
+   More?> y
+   Yes.	   ?u = (karen ken)
+   More?> y
+   Yes.	   ?u = (karen karen)
+   More?> y
+   >
+Here is one with a cut to prohibit backtracking.
+   > ((zz ?x ?y) (father jack ?x) (/) (father jack ?y))
+   > (zz | ?v)
+   Yes.	   ?v = (ken ken)
+   More?> y
+   Yes.	   ?v = (ken karen)
+   More?> y
+   >
+Isn't the next one interesting:
+   > ?x
+   Yes.	   ?x = (father jack ken)
+   More?> y
+   Yes.	   ?x = (father jack karen)
+   More?> y
+   Yes.	   ?x = (grandparent cele ken)
+   More?> y
+   Yes.	   ?x = (grandparent cele karen)
+   More?> y
+   Yes.	   ?x = (grandparent carl ken)
+   More?> n
+   >
+If we didn't cut it off, it would go ahead and list all the
+facts that can be deduced from these rules!  Some standard
+connectives are in the file STD.PRO.  (Currently  EQ , AND ,
+OR , NOT, IF, IFF .)
+   > (LOAD STD)
+
+   > (EQ 3 6)
+   > (EQ 3 3)
+   Yes.
+   > (AND (parent ?x ?y)(parent ?y ?z))
+   Yes.	   ?x = cele
+	   ?y = jack
+	   ?z = ken
+   More?> y
+   Yes.	   ?x = cele
+	   ?y = jack
+	   ?z = karen
+   More?> n
+   > ^C
+This is the way to leave E-Prolog.  Don't forget to (CLOSE)
+first if you have been writing to the disk.
+
+---------------------------------------------------------------
+
+G. A. Edgar			CompuServe 70715,1324
+107 W. Dodridge St.
+Columbus, OH 43202
+
+

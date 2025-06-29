@@ -1,0 +1,196 @@
+COMALANG.TXT
+------------
+
+COMAL - THE PROGRAMMING LANGUAGE
+by David Stidolph
+
+A little over 10 years ago,  Borge Christensen,  a professor  in 
+Denmark, couldn't find a computer language that he  liked enough 
+to teach. BASIC was fine for the students --  it was interactive 
+and they could start learning quickly  because they  got to  see 
+their program execute as soon as they typed RUN.  Unfortunately, 
+the student programs looked like spaghetti, and  it took  longer 
+to figure out how they worked than it took to write them.
+
+Pascal, on the other hand, was a teachers  dream. Programs  were 
+readable and precise.  The  long variable  names and  procedures 
+and functions made checking the programs  easy when  compared to 
+BASIC.  The problem with Pascal, however, was that  the students 
+had to learn how to run  the compiler  before they  could run  a 
+single  line  of code.   The students  also found  it harder  to 
+experiment with Pascal than with BASIC. Every variable had to be 
+declared and a student would never know about  errors until  the 
+program was compiled.
+
+Rather than choosing one or the other, Borge decided to  develop 
+a language that would include the  best features  of both  BASIC 
+and Pascal.  This language was called COMAL (COMmon  Algorithmic 
+Language).  His idea was so successful  that it  has become  the 
+official  programing  language  of  schools  in   five  European 
+countries.  A  COMAL Standard  was developed  (called the  COMAL 
+Kernal),   and   meetings   are   held   annually   to  maintain 
+compatibility between the various implementations.
+
+Technically,  COMAL  is  a  three pass,  run-time compiler.   It 
+combines  the  features  of  a  compiler  and  an   interpreter, 
+providing an  easy-to-learn language  that is  also easy-to-use.  
+Explaining the three passes will help describe the language.
+
+
+Pass One - Entering Program Lines
+---------------------------------
+
+The  first  pass occurs  when a  program line  is entered.   The 
+line's syntax is immediately checked.  If there is  any problem, 
+an error message is  printed below  the line  and the  cursor is 
+placed on the problem. For example, look at the following:
+
+            100 hypotenuse=sqr(sidea^2+sideb^2(
+
+The open parentheses at the end of the  line should  be a  close 
+parentheses.  COMAL realizes this  and displays  the message  -- 
+")" expected, not "(" --  beneath the line as soon as  RETURN is 
+pressed.  The cursor is placed on  the open  parentheses at  the 
+end of the line.  To correct the error,  press the  ) key.   The 
+line on the screen is now correct.  Press the RETURN key and the 
+line is entered into the program.   Also, the  error message  is 
+removed and the text it erased is restored. The command:
+
+            LIST 100
+
+displays the following line: 
+ 
+            0100  hypotenuse:=SQR(sidea^2+sideb^2)
+
+Notice that COMAL distinguishes between := for assignment  and = 
+for  comparison,   but  doesn't   require  you   to  type   them 
+differently.  SQR is capitalized to show that it  is a  built in 
+keyword  of  COMAL.  Variables  and commands  can be  entered in 
+either upper or lower  case.  Consider  the following  line: 100 
+balance=12376.35 This line is valid in both COMAL and BASIC. 
+
+However, in BASIC, the  line is  stored in  its ASCII  form, and 
+only  the  first  two  characters  of  the  variable   name  are 
+significant (balance would be  the same  variable as  bad, bank, 
+bankrupt and  backpay). Then,  each time  the line  is executed, 
+BASIC  must  convert  the  number to  floating point  format and 
+search through memory for the variable ba.
+
+In COMAL, the  variable name  can be  up to  78 characters  long 
+(each character is significant).  To save programming space  and 
+increase execution speed, the name is  stored in  a table  and a 
+token  is  used  at  each occurrence  in the  program. When  the 
+program is executing, COMAL  knows precisely  where to  find the 
+variable.  In  addition, the  number is  stored in  its floating 
+point form, allowing faster execution.  
+
+
+Pass Two - Program Structure Check
+----------------------------------
+
+When you  type RUN  and press  RETURN, COMAL  checks the  entire 
+program  for  structural  errors  and  resolves  all  addressing 
+(noting  where  procedures  are  located,  where  to branch  for 
+IF..THEN..ELSE, FOR..NEXT loops, etc). This scan of the  program 
+is not noticeable (usually less than a second). For example,  if 
+a REPEAT loop was ended with  ENDWHILE instead  of UNTIL,  COMAL 
+would give the following error message (xxxx is the problem line 
+number):
+
+            at xxxx: "UNTIL" expected, not "ENDWHILE"
+
+BASIC cannot find a structural error until it executes the line. 
+In COMAL each line of the program is  checked as  it is  entered 
+and  the  whole  program  is  checked  before a  single line  is 
+executed.    This   program   scan   greatly  improves   program 
+reliability and allows COMAL  programs to  run much  faster than 
+BASIC.
+
+
+Pass Three - Running the Program
+--------------------------------
+
+The  last  pass  is  when  the  program  is  actually  executed.  
+Although the program has been checked thoroughly for  errors and 
+all necessary jump addresses have already  been calculated,  the 
+possibility  of  error  still  exists.  Look  at  the  following 
+program:
+
+            0010 PAGE // Clears screen and homes the cursor
+            0020 INPUT "How many apples?": total'apples
+            0030 INPUT "How many people?": total'people
+            0040 PRINT total'apples/total'people;
+            0050 PRINT "apples per person"
+
+This simple program seems correct, but what if the user typed in 
+a zero for total'people (a division  by zero  error) or  typed a 
+name instead of a number?  In most languages, the  program would 
+halt.  In fact, COMAL would halt in this case as well. There  is 
+a way, however, to trap errors. To "user  proof" program  lines, 
+place them  inside a  TRAP..HANDLER structure.   This may  sound 
+complicated,  but  actually  the  idea is  simple. Look  at this 
+re-worked example program (indentation is provided  by the  LIST 
+command, you do not have to type the spaces): 
+
+            0010 PAGE // Clears screen and homes the cursor
+            0012 LOOP
+            0015   TRAP
+            0020     INPUT "How many apples?": total'apples
+            0030     INPUT "How many people?": total'people
+            0040     PRINT total'apples/total'people;
+            0050     PRINT "apples per person"
+            0060     EXIT // No errors  encountered, leave  loop
+            0070   HANDLER
+            0080     PRINT "Numbers only, and at  least one."
+            0090     PRINT "Please try again..."
+            0100   ENDTRAP
+            0110 ENDLOOP
+
+Now, if an error occurs  during execution  of lines  between the 
+TRAP and the HANDLER (lines 20  through 60),  the program  would 
+jump into the HANDLER section (lines  80 -   90). If  both input 
+requests get proper replies, the EXIT command jumps  out of  the 
+LOOP (and out of the TRAP  as well).  Since lines  were inserted 
+between 10 and 20, the RENUM command can be used to make all the 
+line numbers nice and even. COMAL  only uses  line numbers  only 
+for editing programs and can even  list a  program without  line 
+numbers.
+
+
+Portability of COMAL and Beyond
+-------------------------------
+
+Thanks to the early development of a standard, a programmer  can 
+write a COMAL program that will  run virtually  unchanged on  PC 
+compatibles, Commodore 64, CP/M, and soon on the Apple II.  With 
+COMAL, one  language  can  be   taught  for   several  different 
+machines.  COMAL  provides a  universal language  to bridge  the 
+gap. Once you have mastered a given language, what do you do? No 
+one  language  is  perfect  for  all  tasks.  Each  has its  own 
+advantages and disadvantages.
+
+The  purpose  of COMAL  is to  teach programming  skills with  a 
+minimum of "harassment". When you learn COMAL, you  have learned 
+the standard programming techniques  of Pascal,  Modula II,  Ada 
+and other structured languages.  Many of  the concepts  that you 
+learn in BASIC, LOGO, Forth, are actually undesirable  and later 
+must be "unlearned".
+
+
+Other Features
+--------------
+
+COMAL  has  many  other  advantages  --   a full  screen editor, 
+strings and  string arrays  of any  length (up  to the  limit of 
+memory) with no garbage collection, fast string searches  (up to 
+80  times  faster  than  BASIC),  print  using, cursor  control, 
+procedures and functions with  parameter passing  and recursion, 
+local/global variables, user defined string functions,  and easy 
+file  access  and  control.  COMAL  also  allows  you   to  LIST 
+procedures or entire programs to disk and later merge them  into 
+other programs.  No more  re-typing the  same routine  each time 
+you need it in a program. 
+
+
+EOF
+

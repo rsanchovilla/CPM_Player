@@ -1,0 +1,390 @@
+
+; ===========================================================
+; SYMB.Z80
+;	symbol table routines for E-Prolog
+;	May 27, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+;SYMBOL *
+;gtoken()
+;  {
+;  /* read token */
+GTOKEN::
+;  static int i;
+;  static char * tokptr;
+;  static SYMBOL * sadr;
+;  static SYMBOL ** sadrr;
+	DSEG
+TOKPTR:	DW	0
+SADR:	DW	0
+SADRR:	DW	0
+	CSEG
+;
+;  tokptr = cdma;
+	LD	HL,CDMA
+	LD	(TOKPTR),HL
+;  while(separp(rdchar()))
+;    ;
+GT1:
+	CALL	RDCHAR##
+	CALL	SEPARP##
+	JR	NZ,GT1
+;  if (digitp())
+	CALL	DIGITP
+	JR	Z,GT2
+;    {
+;    for (i = 0 ; digitp() ; rdchar())
+	LD	HL,0
+GT4:	PUSH	HL
+	CALL	DIGITP
+	JR	Z,GT3
+;      i = i*10 + ((int)(character - '0'));
+	POP	HL
+	ADD	HL,HL
+	LD	D,H
+	LD	E,L
+	ADD	HL,HL
+	ADD	HL,HL
+	ADD	HL,DE
+	LD	A,(CHR##)
+	SUB	'0'
+	LD	E,A
+	LD	D,0
+	ADD	HL,DE
+	CALL	RDCHAR##
+	JR	GT4
+GT3:
+;    unrdchar();
+	CALL	UNRDCH##
+;    if (numbp(i))
+;      return i;
+	POP	HL
+	CALL	NUMBP##
+	RET	NZ
+;    return 0;
+	LD	HL,0
+	RET
+;    }
+GT2:
+;  if (character == '"')
+	LD	A,(CHR##)
+	CP	'"'
+	JR	NZ,GT5
+;    {
+;    rdchar();
+	CALL	RDCHAR##
+;    do
+GT9:
+;      {
+;      cntl();
+	CALL	CNTL
+;      *tokptr++ = character;
+	LD	HL,(TOKPTR)
+	LD	A,(CHR##)
+	LD	(HL),A
+	INC	HL
+	LD	(TOKPTR),HL
+;      rdchar();
+	CALL	RDCHAR##
+;      }
+;    while (character != '"') ;
+	LD	A,(CHR##)
+	CP	'"'
+	JR	NZ,GT9
+;    }
+	JR	GT8
+GT5:
+;  else if (character == '\'')
+	CP	"'"
+	JR	NZ,GT6
+;    {
+;    rdchar();
+	CALL	RDCHAR##
+;    do
+GT10:
+;      {
+;      cntl();
+	CALL	CNTL
+;      *tokptr++ = character;
+	LD	HL,(TOKPTR)
+	LD	A,(CHR##)
+	LD	(HL),A
+	INC	HL
+	LD	(TOKPTR),HL
+;      rdchar();
+	CALL	RDCHAR##
+;      }
+;    while (character != '\'') ;
+	LD	A,(CHR##)
+	CP	"'"
+	JR	NZ,GT10
+;    }
+	JR	GT8
+GT6:
+;  else if (goodchp())
+	CALL	GOODCP
+	JR	Z,GT7
+;    {
+;    do
+GT11:
+;      {
+;      *tokptr++ = character;
+	LD	HL,(TOKPTR)
+	LD	A,(CHR##)
+	LD	(HL),A
+	INC	HL
+	LD	(TOKPTR),HL
+;      rdchar();
+	CALL	RDCHAR##
+;      }
+;    while (goodchp()) ;
+	CALL	GOODCP
+	JR	NZ,GT11
+;    unrdchar();
+	CALL	UNRDCH##
+;    }
+	JR	GT8
+GT7:
+;  else
+;    *tokptr++ = character;
+	LD	HL,(TOKPTR)
+	LD	A,(CHR##)
+	LD	(HL),A
+	INC	HL
+	LD	(TOKPTR),HL
+GT8:
+;  *tokptr = '\0';
+	LD	HL,(TOKPTR)
+	LD	(HL),0
+;
+;  /* find it in symbol table */
+;  sadr = sbot;
+	LD	HL,(SBOT##)
+	LD	(SADR),HL
+;  do
+FS1:
+;    {
+;    if ((i = strcmp(sadr->string,cdma)) == 0)
+	LD	HL,(SADR)
+	CALL	@STR##
+	LD	DE,CDMA
+	CALL	STRCMP
+	JR	NZ,FS2
+;      return sadr;
+	LD	HL,(SADR)
+	RET
+FS2:
+;    if (i < 0)
+	JR	NC,FS3
+;      sadrr = &(sadr->rptr);
+	LD	HL,(SADR)
+	INC	HL
+	INC	HL
+	INC	HL
+	INC	HL
+	LD	(SADRR),HL
+	JR	FS4
+FS3:
+;    else
+;      sadrr = &(sadr->lptr);
+	LD	HL,(SADR)
+	INC	HL
+	INC	HL
+	LD	(SADRR),HL
+FS4:
+;    sadr = *sadrr;
+	LD	E,(HL)
+	INC	HL
+	LD	D,(HL)
+	LD	(SADR),DE
+;    }
+;  while (sadr != (SYMBOL *)empty) ;
+	LD	HL,EMPTY
+	CALL	CPHL##
+	JR	NZ,FS1
+;  *sadrr = mksymb();
+	CALL	MKSYMB
+	EX	DE,HL
+	LD	HL,(SADRR)
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;  return *sadrr;
+	EX	DE,HL
+	RET
+;  }
+
+
+; compare two strings
+;
+; input:
+;	HL, DE pointing to the strings
+; output:
+;	Z and C flags:
+;	Z ,NC = (HL) = (DE)
+;	NZ,C  = (HL) < (DE)
+;	NZ,NC = (HL) > (DE)
+STRCMP::
+	EX	DE,HL
+ST1:	LD	A,(DE)
+	CP	(HL)
+	RET	NZ
+	OR	A
+	RET	Z
+	INC	HL
+	INC	DE
+	JR	ST1
+
+;BOOLEAN
+;digitp()
+;  {
+;  return ('0' <= character && character <= '9');
+;  }
+DIGITP:
+	LD	A,(CHR##)
+	CP	'0'
+	JR	C,RETF
+	CP	'9'+1
+	JR	NC,RETF
+RETT:	OR	A
+	RET
+RETF:	XOR	A
+	RET
+
+;cntl()
+CNTL:
+;  {
+;  if (character == '^')
+	LD	A,(CHR##)
+	CP	'^'
+	RET	NZ
+;    {
+;    rdchar();
+	CALL	RDCHAR##
+;    if (character == '^')
+;      return;
+	LD	A,(CHR##)
+	CP	'^'
+	RET	Z
+;    if (character < '@')
+;      return;
+	CP	'@'
+	RET	C
+;    character &= 0x1F;
+	AND	1FH
+	LD	(CHR##),A
+;    }
+;  }
+
+;BOOLEAN
+;goodchp()
+GOODCP:
+;  {
+;  switch (character)
+	LD	A,(CHR##)
+;    {
+;    case '_':
+;    case '-':
+;    case '?':
+;      return TRUE;
+;    }
+	CP	'_'
+	JP	Z,RETT
+	CP	'-'
+	JP	Z,RETT
+	CP	'?'
+	JP	Z,RETT
+;  return (('0' <= character && character <= '9') ||
+;          ('A' <= character && character <= 'Z') ||
+;          ('a' <= character && character <= 'z') );
+	CP	'0'
+	JP	C,RETF
+	CP	'9'+1
+	JP	C,RETT
+	CP	'A'
+	JP	C,RETF
+	CP	'Z'+1
+	JP	C,RETT
+	CP	'a'
+	JP	C,RETF
+	CP	'z'+1
+	JP	C,RETT
+	JP	RETF
+;  }
+
+; Make an entry in the symbol table
+;
+;SYMBOL *
+;mksymb()
+;  {
+MKSYMB::
+;  static char * tokptr;
+;  static SYMBOL * sadr;
+;
+;  sadr = (SYMBOL *)sfree;
+	LD	HL,(SFREE##)
+	PUSH	HL
+;  sadr->addr = empty;
+	LD	DE,EMPTY
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;  sadr->lptr = empty;
+	INC	HL
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;  sadr->rptr = empty;
+	INC	HL
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;  for (sfree = sadr->string , tokptr = cdma ;
+;       (*sfree++ = *tokptr++) != '\0' ; )
+;    ;
+	INC	HL
+	EX	DE,HL
+	LD	HL,CDMA
+MK1:	LD	A,(HL)
+	LD	(DE),A
+	INC	HL
+	INC	DE
+	OR	A
+	JR	NZ,MK1
+	EX	DE,HL
+	LD	(SFREE##),HL
+;  if (sfree >= stop)
+	LD	DE,(STOP##)
+	DEC	DE
+	CALL	CPHL##
+	JR	C,MK2
+;    fatal("\r\nOut of string space.");
+	LD	HL,MK1MSG
+	JP	FATAL##
+	DSEG
+MK1MSG:	DB	CR,LF,"Out of string space.",0
+	CSEG
+MK2:
+;  return sadr;
+	POP	HL
+	RET
+;  }
+
+	END
+

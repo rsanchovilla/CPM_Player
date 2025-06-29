@@ -1,0 +1,690 @@
+{ K E R N E L . G I C        Include-File fÅr MSX-Grafik V 3.22   22-OKT-1988 }
+
+{nur lauffÑhig mit Turbo 3.0; nicht Ñsthetisch programmiert, aber platzsparend}
+
+{$A+,U-,W1}
+
+const
+  G_PSET   =  0;  G_TPSET   =  8;
+  G_AND    =  1;  G_TAND    =  9;
+  G_OR     =  2;  G_TOR     = 10;
+  G_XOR    =  3;  G_TXOR    = 11;
+  G_PRESET =  4;  G_TPRESET = 12;
+
+var CALSLT: array[0..2] of byte absolute $001C;
+procedure  ENASLT;external $0024;
+
+(* Verwendete BASIC-Systemvariablen *)
+
+var
+ACPAGE:byte absolute $FAF6;
+ATRBAS:integer absolute $F928;
+ATRBYT:byte absolute $F3F2;
+BAKCLR:byte absolute $F3EA;
+BASE:  array[0..19] of integer absolute $F3B3;
+BDRCLR:byte absolute $F3EB;
+border:byte absolute BDRCLR;
+CGPBAS:integer absolute $F924;
+CNSDFG:byte absolute $F3DE;
+CRTCNT:byte absolute $F3B1;
+CSRX:  byte absolute $F3DD;
+CSRY:  byte absolute $F3DC;
+CSTYLE:boolean absolute $FCAA;
+DPPAGE:byte absolute $FAF5;
+EXBRSA:byte absolute $FAF8;
+EXPTBL:array[0..3] of byte absolute $FCC1;
+FILNAM:array[1..11]of byte absolute $F866;
+FORCLR:byte absolute $F3E9;
+GRPACX:integer absolute $FCB7;
+GRPACY:integer absolute $FCB9;
+GXPOS: integer absolute $FCB3;
+GYPOS: integer absolute $FCB5;
+ink:   byte absolute FORCLR;
+LINL40:byte absolute $F3AE;
+LINL32:byte absolute $F3AF;
+LINLEN:byte absolute $F3B0;
+LINWRK:array[0..39] of byte absolute $FC18;
+LOGOPR:byte absolute $FB02;
+NAMBAS:integer absolute $F922;
+paper: byte absolute BAKCLR;
+PATBAS:integer absolute $F926;
+SCRMOD:byte absolute $FCAF;
+TIME:  integer absolute $FC9E;
+TXTCOL:integer absolute $F3B5;
+VDPSAV1:array[0..7]of byte absolute $F3DF;
+VDPSAV2:array[8..23]of byte absolute $FFE7;
+VRAMflag:byte absolute $FAFC;
+V9938command:record sx,sy,dx,dy,nx,ny:integer;col,arg,l_op:byte;end absolute $F562;
+
+(* Kernel-Variablen *)
+
+  MSX2,blinkflg,BlinkEnable: boolean;
+  dxGRPPRT,_LINLEN,_wx1,_wy1,_wx2,_wy2,_nxpos: integer;
+  AttrBits: array[0..239] of byte;
+
+
+{-----------------------------------------------------------------}
+{ Die folgenden Prozeduren sind nur fÅr den internen Bedarf der   }
+{ Grafik-Kernelroutinen und kînnen von Pascal aus AUF KEINEN FALL }
+{ aufgerufen werden! Deshalb auch die etwas obskure Deklaration.  }
+{-----------------------------------------------------------------}
+
+const
+
+(* CALL BASIC ROM ADDR. 0000..3FFF *)
+
+(* Aufruf:
+ * LD    IX, <zieladresse im ROM>
+ * CALL  _CALROM
+ *)
+
+_CALROM: array[0..6] of byte = ($FD,$21,$00,$00,$C3,$D4,$20);
+
+
+
+(* CALL MSX2 SUBROM *)
+
+(* Aufruf:
+ * LD    IX, <zieladresse im ROM>
+ * CALL  _CALSUB
+ *)
+
+_CALSUB: array[0..6] of byte = ($FD,$21,$00,$00,$C3,$D4,$20);
+
+
+
+
+procedure _CALP1;(* CALL BASIC ROM ADDR. 4000..7FFF *)
+
+(* Aufruf:
+ * LD    IX, <zieladresse im ROM>
+ * CALL  _CALP1
+ *)
+
+begin
+inline ($D9/$08/$DB/$A8/$32/*+$56/$E6/$03/$4F/$06/$00/$21/EXPTBL/$09/$B6/$F2/
+        *+$13/$4F/$23/$23/$23/$23/$7E/$32/*+$48/$22/*+$47/$E6/$03/$07/$07/$B1/
+        $32/*+$39/$21/*+$19/$E5/$ED/$5B/heapptr/$7A/$E6/$C0/$20/$03/$11/$4000/
+        $D5/$21/*+$0C/$01/$22/$00/$ED/$B0/$C9/$FB/$08/$D9/$C9/$DD/$E5/$3A/
+        EXPTBL/$21/$59/$01/$CD/$24/$00/$08/$D9/$DD/$E1/$CD/$59/$01/$D9/$08/$3E/
+        $00/$D3/$A8/$3E/$00/$B7/$F0/$3E/$00/$32/$00/$00/$C9);
+end;
+
+
+
+
+{-------------------------------------------------------------}
+{ Es folgen die von Pascal direkt aufrufbaren Kernel-Routinen }
+{-------------------------------------------------------------}
+
+
+procedure pencolor (n: byte);
+  begin inline($32/ATRBYT/$32/FORCLR);end;
+
+procedure SetVDP (register, value: byte);
+  begin inline($4D/$3A/value/$47/$DD/$21/$47/$00/$C3/_CALROM); end;
+
+function GetVDP (register: byte): byte;
+  begin
+    if register < 8
+    then GetVDP:=VDPSAV1[register]
+    else GetVDP:=VDPSAV2[register];
+  end;
+
+function VDPstatus (register: byte): byte;
+  begin inline($DD/$21/$31/$01/$CD/_CALSUB/$6F/$26/$00/$C9); end;
+
+procedure Interlace (n: integer);
+  begin
+    SetVDP (9, (GetVDP(9) and $F3) + ((n and 1) shl 3) + ((n and 2) shl 1));
+  end;
+
+procedure ReadVRAM    (VRAMaddress: integer;var RAMaddress;NumberOfbytes: integer);
+  begin
+   inline ($DD/$21/$59/$00/$ED/$4B/NumberOfbytes/$ED/$5B/RAMaddress/$2A/VRAMaddress/$C3/_CALROM);
+  end;
+
+procedure WriteVRAM    (VRAMaddress: integer;var RAMaddress;NumberOfbytes: integer);
+  begin
+   inline ($DD/$21/$5C/$00/$ED/$4B/NumberOfbytes/$ED/$5B/VRAMaddress/$2A/RAMaddress/$C3/_CALROM);
+  end;
+
+procedure fillVRAM (VRAMaddress: integer;NumberOfbytes: integer;value: byte);
+  begin
+   if MSX2 then inline ($DD/$21/$6B/$01) else inline ($DD/$21/$56/$00);
+   inline ($ED/$4B/NumberOfbytes/$2A/VRAMaddress/$3A/value/$C3/_CALROM);
+  end;
+
+function vpeek (VRAMaddress: integer): byte;
+
+  begin
+    if MSX2 then inline($DD/$21/$74/$01) else inline($DD/$21/$4A/$00);
+    inline($2A/VRAMaddress/$CD/_CALROM/$6F/$26/$00/$C9);
+  end;
+
+procedure vpoke (VRAMaddress: integer;value: byte);
+begin
+if MSX2 then inline($DD/$21/$77/$01) else inline($DD/$21/$4D/$00);
+inline($2A/VRAMaddress/$3A/value/$C3/_CALROM);
+end;
+
+procedure doV9938;      { VDP-Befehl in V9938command ausfÅhren. }
+                        { LÑ·t im C-Register die VDP-Adresse!   }
+  begin
+    inline ($21/$07/$00/$3A/$C1/$FC/$CD/$0C/$00/$4F/$0C/$11/$02/$8F/$F3/$ED/
+            $59/$ED/$51/$ED/$78/$0F/$38/$FB/$AF/$ED/$79/$ED/$51/$11/$20/$91/
+            $ED/$59/$ED/$51/$0C/$0C/$06/$0F/$21/V9938COMMAND/$ED/$B3/$FB);
+  end;
+
+
+procedure _CRTEXIT;begin CrtExit end;
+
+procedure beep;begin inline ($DD/$21/$C0/$00/$C3/_CALROM) end;
+
+procedure BlinkInit;
+begin if (_LINLEN>40) and (SCRMOD=0) then begin fillchar (AttrBits, 240, 0);fillVRAM (TXTCOL, 240, 0) end end;
+
+procedure BlinkColor (ink, paper, blinkon, blinkoff: integer);
+
+  begin
+    if MSX2 and (SCRMOD = 0) and (_LINLEN > 40)
+    then begin
+      if not BlinkEnable then BlinkInit;
+      SetVDP (12, (ink shl 4) + paper);
+      SetVDP (13, (blinkon shl 4) + blinkoff);
+      BlinkEnable:=TRUE;
+      end;
+  end;
+
+procedure BlinkOff;
+
+  begin
+    if MSX2 and (SCRMOD = 0) and (_LINLEN > 40)
+    then begin
+      SetVDP (12, (FORCLR shl 4) + BAKCLR);
+      SetVDP (13, 0);
+      BlinkEnable:=FALSE;
+      blinkflg   :=FALSE;
+      end;
+  end;
+
+
+procedure HighVideo;
+
+  begin
+    if MSX2 and (SCRMOD = 0) and (_LINLEN > 40)
+    then begin
+      blinkflg:=TRUE;
+      if not BlinkEnable then BlinkColor (BAKCLR+ord(BAKCLR=0),FORCLR,15,0);
+      end;
+  end;
+
+
+procedure NormVideo;
+  begin
+    blinkflg:=FALSE;
+  end;
+
+
+procedure SetAttribute (x,y: integer;InversEin: boolean);
+
+
+  const
+   bittab: array[0..7] of byte = ($80,$40,$20,$10,$08,$04,$02,$01);
+
+  begin
+    inline ($3A/x/$3D/$47/$E6/$07/$5F/$16/$00/$21/bittab/$19/$4E/$3A/y/$3D/
+            $87/$5F/$87/$87/$83/$5F/$78/$0F/$0F/$0F/$E6/$1F/$83/$5F/$21/
+            AttrBits/$19/$46/$3A/InversEin/$0F/$9F/$A8/$A1/$C8/$78/$A9/$77/
+            $2A/TXTCOL/$19/$DD/$21/$77/$01/$C3/_CALROM);
+  end;
+
+
+
+
+function GetAttribute (x,y: integer): boolean;
+
+  var i,j,bit: integer;
+
+  begin
+    GetAttribute := (AttrBits[pred(y)*10 + (pred(x) shr 3)] and (128 shr (pred(x) and 7))) <> 0;
+  end;
+
+
+procedure _WindowMask (x1,x2,y: integer;var at1,at2,m1,m2: integer);
+
+  begin
+    at1:=10*y + (x1 shr 3);at2:=10*y + (x2 shr 3);
+    m1:=not pred (256 shr (x1 and 7));
+    m2:=pred (128 shr (x2 and 7));
+  end;
+
+procedure gotoXY (x, y: integer);
+  var bottom: integer;
+  begin
+    if SCRMOD < 2
+    then begin
+      bottom:=lo(CRTCNT+CNSDFG);
+      if _wy1>bottom then _wy1:=bottom;
+      if _wy2>bottom then _wy2:=bottom;
+      CSRX:=pred(_wx1)+x;CSRY:=pred(_wy1)+y;
+      if CSRX > _wx2 then CSRX:=_wx2;
+      if CSRY > _wy2 then CSRY:=_wy2;
+      _nxpos:=NAMBAS+pred(CSRY)*_LINLEN+pred(CSRX);
+      end
+    else begin GRPACX:=x;GRPACY:=y;end;
+  end;
+
+function whereX: integer;
+  begin
+  if SCRMOD<2 then whereX:=succ(CSRX-_wx1) else whereX:=GRPACX;
+  end;
+
+function whereY: integer;
+  begin
+  if SCRMOD<2 then whereY:=succ(CSRY-_wy1) else whereY:=GRPACY;
+  end;
+
+procedure _checkwindow;
+  var bottom:integer;
+  begin
+    bottom:=lo(CRTCNT+CNSDFG);
+    if _wy1>bottom then _wy1:=bottom;
+    if _wy2>bottom then _wy2:=bottom;
+    if CSRY>bottom then begin CSRY:=bottom;_nxpos:=NAMBAS+pred(CSRY)*_LINLEN+pred(CSRX);end;
+  end;
+
+procedure window (x1,y1,x2,y2: integer);
+  begin
+  _wx1:=x1;_wy1:=y1;_wx2:=x2;_wy2:=y2;_checkwindow;gotoXY (1,succ(y2-y1));
+  end;
+
+procedure ClrEOL;
+
+  var at1,at2,m1,m2: integer;
+
+  begin
+    _WindowMask (pred(CSRX),pred(_wx2),pred(CSRY),at1,at2,m1,m2);
+    FillVRAM (_nxpos, succ(_wx2-CSRX), 32);
+    if BlinkEnable
+    then begin
+      AttrBits[at1]:=(AttrBits[at1] and m1);
+      AttrBits[at2]:=(AttrBits[at2] and m2);
+      if at2 > succ(at1) then fillchar (AttrBits[succ(at1)], pred(at2-at1), 0);
+      WriteVRAM (TXTCOL+at1, AttrBits[at1], succ(at2-at1));
+      end;
+  end;
+
+
+procedure ClrEOS;
+
+  var i,at1,at2,m1,m2: integer;
+
+  begin
+    ClrEOL;_checkwindow;
+    _WindowMask (pred(_wx1),pred(_wx2),CSRY,at1,at2,m1,m2);
+    for i:=succ(CSRY) to _wy2 do
+      begin
+      FillVRAM (NAMBAS+pred(i)*_LINLEN+pred(_wx1),succ(_wx2-_wx1),32);
+      if BlinkEnable then begin
+        AttrBits[at1]:=(AttrBits[at1] and m1);
+        AttrBits[at2]:=(AttrBits[at2] and m2);
+        if at2 > succ(at1) then fillchar (AttrBits[succ(at1)], pred(at2-at1), 0);
+        WriteVRAM (TXTCOL+at1, AttrBits[at1], succ(at2-at1));
+        at1:=at1+10;at2:=at2+10;
+        end;
+      end;
+  end;
+
+
+procedure ScrollWindowDown (x1,y1,x2,y2: integer);
+
+  var i, j, zl, at1, at2, m1, m2: integer; bigline:  boolean;
+
+  begin
+    x1:=pred(x1);x2:=pred(x2);y1:=pred(y1);y2:=pred(y2);
+    _WindowMask (x1,x2,y2,at1,at2,m1,m2);
+    zl:=succ(x2-x1);
+    if zl > 40 then begin bigline:=TRUE;zl:=zl - 40;end else bigline:=FALSE;
+    i:=NAMBAS+y2*_LINLEN+x1;
+    for y2:=y2 downto succ(y1) do (** while i > y1*_LINLEN+x1 do *)
+      begin
+        if bigline
+        then begin
+          readVRAM  (i-_LINLEN, LINWRK, 40);
+          writeVRAM (i, LINWRK, 40);
+          readVRAM  (i+40-_LINLEN, LINWRK, zl);
+          writeVRAM (i+40, LINWRK, zl);
+          end
+        else begin
+          readVRAM  (i-_LINLEN, LINWRK, zl);
+          writeVRAM (i, LINWRK, zl);
+          end;
+        if BlinkEnable
+        then begin
+          AttrBits[at1]:=(AttrBits[at1] and m1) + (AttrBits[at1-10] and not m1);
+          AttrBits[at2]:=(AttrBits[at2] and m2) + (AttrBits[at2-10] and not m2);
+          if at2 > succ(at1) then move (AttrBits[at1-9], AttrBits[succ(at1)], pred(at2-at1));
+          WriteVRAM (TXTCOL+at1, AttrBits[at1], succ(at2-at1));
+          at1:=at1-10;at2:=at2-10;
+          end;
+        i:=i - _LINLEN;
+      end;
+    FillVRAM (NAMBAS+y1*_LINLEN+x1, succ(x2-x1), 32);
+    if BlinkEnable
+    then begin
+      AttrBits[at1]:=(AttrBits[at1] and m1);
+      AttrBits[at2]:=(AttrBits[at2] and m2);
+      if at2 > succ(at1) then fillchar (AttrBits[succ(at1)], pred(at2-at1), 0);
+      WriteVRAM (TXTCOL+at1, AttrBits[at1], succ(at2-at1));
+      end;
+  end;
+
+procedure ScrollWindowUp (x1,y1,x2,y2: integer);
+
+  var i, j, zl, at1, at2, m1, m2: integer;
+      bigline:  boolean;
+
+  begin
+    x1:=pred(x1);x2:=pred(x2);y1:=pred(y1);y2:=pred(y2);
+    _WindowMask (x1,x2,y1,at1,at2,m1,m2);
+    zl:=succ(x2-x1);
+    if zl > 40 then begin bigline:=TRUE;zl:=zl - 40;end else bigline:=FALSE;
+    i:=NAMBAS+y1*_LINLEN+x1;
+    for y1:=y1 to pred(y2) do (** while i < y2*_LINLEN+x1 do *)
+      begin
+        if bigline then
+            inline ($2A/I/$E5/$ED/$5B/_LINLEN/$19/$11/$18/$FC/$01/$28/
+            $00/$DD/$21/$59/$00/$CD/_CALROM/$D1/$D5/$21/$18/$FC/$01/$28/$00/
+            $DD/$21/$5C/$00/$CD/_CALROM/$E1/$11/$28/$00/$19/$E5/$ED/$5B/
+            _LINLEN/$19/$11/$18/$FC/$ED/$4B/ZL/$DD/$21/$59/$00/$CD/_CALROM/
+            $D1/$21/$18/$FC/$ED/$4B/ZL/$DD/$21/$5C/$00/$CD/_CALROM)
+        else begin
+          readVRAM  (i+_LINLEN, LINWRK, zl);
+          writeVRAM (i, LINWRK, zl);
+          end;
+        if BlinkEnable
+        then begin
+          AttrBits[at1]:=(AttrBits[at1] and m1) + (AttrBits[at1+10] and not m1);
+          AttrBits[at2]:=(AttrBits[at2] and m2) + (AttrBits[at2+10] and not m2);
+          if at2 > succ(at1) then move (AttrBits[at1+11], AttrBits[succ(at1)], pred(at2-at1));
+          WriteVRAM (TXTCOL+at1, AttrBits[at1], succ(at2-at1));
+          at1:=at1+10;at2:=at2+10;
+          end;
+        i:=i + _LINLEN;
+      end;
+    FillVRAM (NAMBAS+y2*_LINLEN+x1, succ(x2-x1), 32);
+    if BlinkEnable
+    then begin
+      AttrBits[at1]:=(AttrBits[at1] and m1);
+      AttrBits[at2]:=(AttrBits[at2] and m2);
+      if at2 > succ(at1) then fillchar (AttrBits[succ(at1)], pred(at2-at1), 0);
+      WriteVRAM (TXTCOL+at1, AttrBits[at1], succ(at2-at1));
+      end;
+  end;
+
+procedure DelLine;
+  begin
+    _checkwindow;write (#13);ScrollWindowUp (_wx1,CSRY,_wx2,_wy2);
+  end;
+
+procedure InsLine;
+  begin
+    _checkwindow;write (#13);ScrollWindowDown (_wx1,CSRY,_wx2,_wy2);
+  end;
+
+function maxX: integer;
+
+   begin
+     case SCRMOD of
+       2..5, 8:  maxX:=255;
+          6, 7:  maxX:=511;
+       else      maxX:=succ(_wx2-_wx1);
+     end {case};
+   end;
+
+function maxY: integer;
+
+  begin
+    case SCRMOD of
+      2..4: maxY:=191;
+      5..8: maxY:=211;
+      else  maxY:=succ(_wy2-_wy1);
+    end {case};
+  end;
+
+procedure FullWindow;
+  begin
+  if SCRMOD<2
+  then window (succ((_LINLEN-LINLEN) shr 1), 1, ((_LINLEN-LINLEN) shr 1)+LINLEN, lo(CRTCNT+CNSDFG))
+  else window (0,0,maxX,maxY);
+  end;
+
+procedure screen (n: byte);
+  begin
+    inline ($18/$06/$33/$14/$2E/$09/$2B/$19/$FE/$04/$38/$12/$FE/$09/$30/$06/$3A/
+    MSX2/$0F/$38/$08/$DD/$E1/$11/$91/$02/$C3/$2C/$20/$E5/$CD/BLINKOFF/$E1/$7D/
+    $DD/$21/$5F/$00/$CD/_CALROM/$FB/$3A/$AF/$FC/$21/$20/$00/$3D/$28/$0D/$3A/$B0/
+    $F3/$21/$28/$00/$FE/$29/$38/$03/$21/$50/$00/$22/_LINLEN/$3A/MSX2/$0F/$30/
+    $0B/$CD/BLINKINIT/$DD/$21/$41/$01/$CD/_CALSUB/$FB/$CD/FULLWINDOW/$21/$01/
+    $00/$E5/$E5/$CD/GOTOXY);
+  end;
+
+
+{ CrtExit: ZurÅckschalten auf den Textmodus, bei MSX2 Einstellen }
+{          der mit SET SCREEN festgehaltenen Bildschirmparameter }
+
+procedure CrtExit;
+  begin
+    inline ($DD/$21/$D2/$00/$CD/_CALROM);
+    if MSX2 then begin BlinkOff;
+       inline ($DD/$21/$85/$01/$CD/_CALSUB);CRTCNT:=24;end;
+    _CRTEXIT;
+  end;
+
+procedure CrtInit;
+
+function constatus: boolean;
+begin inline ($DD/$21/$9C/$00/$CD/_CALROM/$21/$00/$00/$C8/$23/$C9) end;
+
+function conin: char;
+var memo: integer;
+begin memo:=LINLEN;LINLEN:=_LINLEN;
+inline ($DD/$21/$9F/$00/$CD/_CALROM/$6F/$26/$00/$3A/memo/$32/LINLEN/$C9);
+end;
+
+{$A-}
+procedure conout (chr: char);
+
+const i: integer = 0;
+
+begin
+ if SCRMOD < 2
+ then begin
+   case chr of
+    #1: i:=-64;
+    #7: beep;
+    #8: if CSRX > _wx1
+        then begin CSRX:=pred(CSRX);_nxpos:=pred(_nxpos);end
+        else if CSRY > _wy1
+        then begin CSRY:=pred(CSRY);CSRX:=_wx2;_nxpos:=NAMBAS+pred(CSRY)*_LINLEN+pred(CSRX);end;
+    #9: repeat conout(' ') until ((CSRX-_wx1) and 7) = 0;
+   #10: begin
+        _checkwindow;
+        if CSRY = _wy2 then ScrollWindowUp (_wx1,_wy1,_wx2,_wy2)
+        else begin CSRY:=succ(CSRY);_nxpos:=_nxpos+_LINLEN;end;
+        end;
+   #12: begin gotoXY (1,1);ClrEOS;end;
+   #13: begin CSRX:=_wx1;_nxpos:=NAMBAS + pred(CSRY)*_LINLEN + pred(CSRX);end;
+   else begin
+        if BlinkEnable then SetAttribute (CSRX,CSRY,blinkflg);
+        inline ($2A/_nxpos/$3A/chr/$4F/$3A/i/$81/$DD/$21/$4D/$00/$CD/_CALROM/$23/$22/_nxpos);
+        CSRX:=succ(CSRX);
+        i:=0;
+        end;
+   end {case};
+   if CSRX > _wx2 then begin conout (#13);conout (#10);end;
+  end
+ else begin
+   inline ($DD/$21/$8D/$00/$3A/chr/$CD/_CALROM);
+   case chr of
+            #8: if GRPACX + dxGRPPRT >= 8
+                  then GRPACX:=GRPACX + dxGRPPRT-8;
+           #12: ClrScr;
+     #32..#255: if GRPACX >= dxGRPPRT
+                  then GRPACX:=GRPACX - dxGRPPRT;
+     end {case}
+   end;
+end;
+{$A+}
+
+procedure lstout (chr: char);
+begin inline ($DD/$21/$A5/$00/$3A/chr/$C3/_CALROM);end;
+
+procedure Error (dummy1, dummy2: integer);
+begin CrtExit;end;
+
+  begin
+    inline ($21/$00/$00/$39/$7C/$FE/$82/$30/$08/$DD/$E1/$11/$FF/$02/$C3/$2C/$20/
+            $CD/$0A/$03/$11/$0B/$00/$2A/*+$0045/$19/$0E/$04/$11/$00/$00/$37/$F5/
+            $06/$08/$F1/$F5/$30/$02/$CB/$06/$CB/$13/$CB/$12/$30/$08/$7A/$EE/$80/
+            $57/$7B/$EE/$05/$5F/$10/$EA/$23/$0D/$20/$E4/$F1/$30/$05/$B7/$0E/$02/
+            $18/$DB/$2B/$2B/$1B/$7B/$BE/$20/$05/$23/$7A/$BE/$28/$0D/$2A/*+$000A/
+            $36/$F3/$23/$36/$76/$18/$03/$CD/SCREEN/$CD/$00/$02/$1B/$78/$35/$00/
+            $21/$02/$00/$22/DXGRPPRT/$21/$20/$00/$3A/$AF/$FC/$3D/$28/$0D/$21/
+            $28/$00/$3A/$B0/$F3/$FE/$29/$38/$03/$21/$50/$00/$22/_LINLEN/$11/$03/
+            $00/$21/_CALROM/$19/$3A/$C1/$FC/$77/$23/$EB/$21/$1C/$00/$01/$03/$00/
+            $ED/$B0);
+
+    if EXBRSA <> 0
+    then begin
+      inline ($DD/$2A/$1D/$00/$11/$BF/$00/$DD/$19/$3E/$47/$DD/$BE/$00/$20/$44/
+              $3E/$7B/$DD/$BE/$01/$20/$3D/$DD/$22/*+$0039/$F3/$DD/$36/$FD/$C3/
+              $DD/$36/$FE/$9A/$DD/$36/$FF/$F3/$11/$9A/$F3/$21/*+$001B/$01/$0D/
+              $00/$ED/$B0/$DB/$A8/$E6/$03/$5F/$16/$00/$21/$C5/$FC/$19/$DD/$75/
+              $2D/$DD/$74/$2E/$FB/$18/$0D/$E5/$6F/$DB/$A8/$92/$E6/$03/$7D/$E1/
+              $C0/$C3/$00/$00);
+      _CALSUB[3] :=EXBRSA;move (CALSLT, _CALSUB[4], 3);
+      LOGOPR     :=G_PSET;
+      MSX2       :=TRUE;
+      if (VRAMflag and 6) <> 0 then VRAMflag := VRAMflag or 8;
+      BlinkOff;
+      SetVDP(8,GetVDP(8) and $DD);
+      end
+    else MSX2:=FALSE;
+
+    FullWindow;ConStPtr:=addr(constatus);
+    ConInPtr :=addr(conin);
+    ConOutPtr:=addr(conout);
+    LstOutPtr:=addr(lstout);
+    ErrorPtr :=addr(Error);
+  end;
+
+
+procedure SetPage (dp, ap: integer);
+  begin DPPAGE:=dp;ACPAGE:=ap;inline ($DD/$21/$3D/$01/$C3/_CALSUB);end;
+
+procedure cwidth (n: integer);
+  begin dxGRPPRT:=8-n;end;
+
+procedure color (c1, c2, c3: byte);
+  begin FORCLR:=c1;BAKCLR:=c2;BDRCLR:=c3;ATRBYT:=c1;inline ($DD/$21/$62/$00/$C3/_CALROM);end;
+
+procedure scaleXY (var x, y: integer);
+  begin
+   inline ($2A/x/$4E/$23/$46/$2A/y/$5E/$23/$56/$DD/$21/$0E/$01/$CD/_CALROM/
+           $72/$2B/$73/$2A/x/$71/$23/$70/$DD/$21/$11/$01/$CD/CALSLT/$FB);
+  end;
+
+
+procedure pset (x,y: integer);
+
+  begin
+   GXPOS:=x;GYPOS:=y;ScaleXY (x,y);
+   inline ($DD/$21/$20/$01/$CD/_CALROM/$FB);
+  end;
+
+
+procedure preset (x,y: integer);
+
+  var colorsave: integer;
+
+  begin
+   colorsave:=ATRBYT; ATRBYT:=BAKCLR; pset (x,y); ATRBYT := colorsave;
+  end;
+
+function point (x,y: integer): integer;
+  begin
+    if (x >= 0) then if (y >= 0) then if (x <= maxX) then if (y <= maxY)
+    then begin
+      GXPOS:=x;GYPOS:=y;
+      ScaleXY (x,y);
+      inline ($DD/$21/$1D/$01/$CD/_CALROM/$FB/$6F/$26/$00/$C9);
+      end;
+    point:=-1;
+  end;
+
+procedure line (x1,y1, x2,y2: integer);
+  begin
+   GXPOS:=x1;GYPOS:=y1;
+   inline ($ED/$4B/x2/$ED/$5B/y2/$3A/SCRMOD/$FE/$02/$D8/$FE/$05/$38/$09/$DD/
+           $21/$85/$00/$CD/_CALSUB/$18/$07/$DD/$21/$FC/$58/$CD/_CALP1);
+   GXPOS:=x2;GYPOS:=y2;
+  end;
+
+
+
+procedure lineto (x,y: integer);
+  begin
+    inline ($ED/$4B/x/$ED/$5B/y/$3A/SCRMOD/$FE/$02/$D8/$FE/$05/$38/$09/$DD/$21/
+            $85/$00/$CD/_CALSUB/$18/$07/$DD/$21/$FC/$58/$CD/_CALP1);
+    GXPOS:=x;
+    GYPOS:=y;
+  end;
+
+
+
+procedure boxfill (x1,y1, x2,y2: integer);
+  begin
+   GXPOS:=x2;GYPOS:=y2;
+   inline ($ED/$4B/x1/$ED/$5B/y1/$3A/SCRMOD/$FE/$02/$D8/$FE/$05/$38/$07/$DD/
+           $21/$CD/$00/$C3/_CALSUB/$DD/$21/$C1/$58/$C3/_CALP1);
+  end;
+
+procedure box (x1,y1, x2,y2: integer);
+  begin
+   if (abs(x2-x1)<2) or (abs(y2-y1)<2) then boxfill (x1,y1, x2,y2)
+   else case SCRMOD of
+     2..4: begin
+           line (x2, y2, x1, y2);lineto (x1, y1);lineto (x2, y1);lineto (x2, y2);
+           end;
+     5..8: begin
+           GXPOS:=x2;GYPOS:=y2;
+           inline ($ED/$4B/x1/$ED/$5B/y1/$DD/$21/$C9/$00/$C3/_CALSUB);
+           end;
+      end{case};
+  end;
+
+
+
+procedure ClrScr;
+  begin
+    case SCRMOD of
+      0, 1: write (#12);
+      2..4: screen (SCRMOD);
+      else  begin
+            inline ($DD/$21/$15/$01/$C3/_CALSUB);
+            end;
+      end {case};
+  end;
+
+procedure width (n: byte);
+  begin
+    inline ($3A/$B0/$F3/$BD/$C8/$3A/$AF/$FC/$B7/$4F/$7D/$28/$05/$32/$AF/$F3/
+            $18/$03/$32/$AE/$F3/$C5/$CD/SCREEN);
+  end;
+
+procedure InsertCursor;begin CSTYLE:=TRUE;end;
+procedure NormCursor;begin CSTYLE:=FALSE;end;
+procedure VDPsync; begin inline ($FB/$76) end;
+procedure ClrSprites; begin inline ($DD/$21/$69/$00/$C3/_CALROM); end;

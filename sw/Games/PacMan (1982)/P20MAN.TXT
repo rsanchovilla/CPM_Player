@@ -1,0 +1,575 @@
+Johnny's P.D. game #2, PacPerson R2.0
+Manual/release note, January, 1991.
+(If there is any copyright violation here, please let me know!)
+
+Special thanks to:  David Goodenough, Ralph Becker-Szendy,
+Larry Moore, and Ronn for testing out for me!
+
+This is a follow-up to Tetris R2.0 for CP/M-Z80.  PacMan has
+always been my favorite game; we once chose Atari 2600 over
+Intellivision system only because PacMan was available for Atari,
+and not for Intellivision, despite the obvious "superiority" of
+the "I" machine.  (Old-days version of choosing Nintendo over
+Genesis to get Mario Bros... or MS-DOS over CP/M to...  Hmmmm...
+Wouldn't you know it; I'm stuck.)  So, I figured, if a fair
+version of PacMan existed for CP/M, everyone would be using CP/M,
+and that's my contribution to this society and the world at large.
+(Why this is called PacPerson, rather than PacMan, is explained in
+the "peculiarities" section below.)
+
+As I mention in the manual for Tetris R2.0, I had completely
+rewritten the code for Tetris so that the subroutines can be used
+for writing other games, as most real-time interactive computer
+games tend to rely on similar principles.  The code for PacPerson
+is a major modification over Tetris, but the subroutines used for
+Tetris sure made my life easier as I pursued the project.
+
+The sad fact is, due to some irregularities in my life, I did not
+work on this for the past few months.  The majority of the code
+was written in the spring of 1990, and I was able to play decent
+games (that included EVERYTHING in this version except for some
+options and the bonus pills) since June.  I just spent three more
+weekends (Dec. 1990 - Jan. 1991) to make it what it is now.
+
+Although this is the first "formal" release version, I numbered it
+2.0 so that it is more or less in synch with the versions of
+Tetris floating around.  (I did send a copy of an earlier version
+to a couple of people.)  I intend to update all of the games (yeah,
+all two of them) whenever I can so the features available for each
+game runs parallel to one another.
+
+I am sure everyone is familiar with the concept behind PacPerson,
+so I will not elaborate too much here.  In short, the PacPerson
+symbolizes the greed and insatiable, adaptive desires of the
+modern Bourgeoisie, who endeavors to take over the world-at-large
+(or such as it is limited by human capacity) and devour everything
+in its way.  The Proletariat will attempt to break away from their
+confines and use their moral superiority to devour the Bourgeoisie
+in turn, yet the Bourgeoisie controls certain key elements of the
+society which can be used to control the Proletariat, and return
+them to the dictates of... (Can't you tell I've been a poli-phil
+major too long?  It sounds like this throughout this document, so
+beware!)
+
+Hmmmm... makes sense, doesn't it?  Unfortunately, there are more
+Proletariat than Bourgeoisie in the world, so the game had to be
+oriented around the Bourgeoisie; i.e., I let you control one
+Bourgeoisie being chased (which is difficult enough) rather than
+the four Proletariat chasing.  And, it is your mission to maintain
+the persistence of the evil of Capitalism!  Oi.
+
+In simpler words, try to eat up all of the dots.  Try to avoid the
+"ghosts" of revolution, as, when you come in contact with them, you
+simply die.  You are given three extra lives, with more to come
+every 1,000 points (since history of class struggle is not a story
+of one individual but many individuals passing on the baton...
+Something like that).
+
+When you eat one of the "pills," you attain the capacity to kill
+the ghosts as well.  The ghosts notice this and try to run away
+from you, turning "blue" in the face.  But, soon they turn into
+the unstable "white" state as your powerpill wears out, and
+everything eventually comes back to normal.
+
+Occasionally, a "bonus pill" will wander (or stand) around the
+game field. Depending on how far you have come through the game,
+eating the bonus pill will give you some extra points.
+
+The game field itself is organized 30-by-24.  The screen display
+is designed so that it can be played on a 40-column machine.
+
+-----------------------------
+PECULIARITIES OF THIS VERSION
+-----------------------------
+
+When I was putting together the manual for Tetris R2.0, I decided
+against giving out ALL the important, usual strategic pointers,
+which have become my second nature over the hours of intensive
+development and "testing."  It is not because I am selfish or that
+I want you to suffer before you learn (like what Japanese
+Blacksmiths are infamous for).  It's just that nothing will make
+sense if you don't know the game already, and if you do, you know
+it all.
+
+However, to help you get used to some "implementation-specific"
+elements, here are some peciliarities of this particular
+derivative of PacMan.  Some of the configurations can be altered
+during or before the game, but some cannot.  For all configurable
+variables, when the program is first loaded, the "options" screen
+will display the values that I recommend for a "decent" and
+"normal" game; except for speed, which will be set to the slowest
+level. The bonus pill mode also reflects my "purely" personal
+preference, not a recommendation.
+
+Non-configurable variables can be altered with simple hacking, and
+I will make the source code available to anyone who wants it.
+
+-Characters
+@  is the PacPerson, you, the capitalist pig.
+.  is the worldly good made abundant by Nature and History.
+o  is the tool of oppression with which you dominate the Proletariat.
+   (the "powerpill")
++  is the occasional treasure which is of no intrinsic value, but
+   which attains certain meaning for the owning class of a Capitalist
+   society. (the "bonus pill")
+
+Following are our Proletariat Heroes:
+B  Blinky (sometimes referred to as Binky)
+P  Pinky
+I  Inky (Bonnie, if you want a sexually-balanced working class;
+   and if you believe in name-gender correlation)
+C  Clyde
+X  when they are running away from the private militia of the...
+   ("blue")
+?  when they are still running away, but beginning to reclaim
+   their initial state of power ("white"; blinks in original
+   PacMan derivatives)
+"  their heroic state of martyrdom, seeking to regain their
+   strength by going underground and reaffirming their
+   strategies... ("dead"; eyeballs)
+
+Note that if you eat the powerpill while the ghosts are still in
+the "dead" stage ('"'), the dead ghosts will go back to their home
+and become "normal" even if your pill has not worn out.  This is
+the same in the arcade version, and, of course, has some strategy
+implications.
+
+-Scoring
+Each "dot" will give you one point.  Eating the powerpill will
+give you ten points initially, and, as you chase the ghosts, you
+will get 20, 40, 80, 160 successively.  The score gain is reset to
+20 if you eat the powerpill before the previous one wears out.  (I
+don't know what the arcade version does. Never got that far...
+Tell me if you know.)
+
+The bonus pill will give you 10, 20, 50, 70, 100, 150, 200, 300,
+and 500 points for each successive "screen," independent of the
+speed level.  500 is maximum.  (Agian, tell me what the arcade
+version does.)
+
+An extra life is given every 1,000 points.
+
+-Speed
+As in Tetris, there are, well, 99 levels, although after the 20th
+level (depending on the speed of your machine), there is
+absolutely no difference.  The higher the number, the faster
+everybody moves.  The speed increases by one level with each
+successive screen.  I consider "5" to be a fair value for my
+dexterity; the program will set it to level "0," the slowest, when
+first loaded, so you can make your way up.  If you forget to
+change it, you can increase it while playing - which allows for
+further adjustment in case of misjudgement.  If you find the
+initial value annoying (which I just began to), just hack it.
+You cannot slow down, tho'.
+
+The "blue" and "white" ghosts and the bonus pill move slower than
+the PacPerson, which moves slower than the normal ghosts.  The
+relative speed between the figures DO NOT change throughout the
+game.  This is something that can be changed in later versions;
+the concept is that the difficulty increasing with the demands on
+the dexterity makes more sense than the player moving at a fixed
+velocity while the ghosts move at exponentially faster speeds.
+
+I was told also that in the arcade version, the "cornering speed"
+of the ghosts are slightly lower than the PacMan's, which allows
+the player to get oneself away from the chasing menaces by
+changing the direction as often as possible.  I did not implement
+this in this version, since I didn't see it to be that exciting a
+feature.  However, as the movements of the ghosts have elements of
+randomness in them, the more you corner, more likely you will
+"lose" the ghosts, just like in the movies.  It's not the car;
+it's the driver.  (Also, it's not the engine; it's the suspension
+system.)
+
+-Randomness
+Despite what I just said, the basic philosophy behind all of my
+game writing is that everything be as configurable as possible. A
+friend of mine suggested that the degree of randomness in the
+movement of the ghosts and the bonus pill is more pertinent to the
+difficulty than is the speed.  I agreed with that point, but could
+not figure out a way to effectively and fairly combine the two
+changes in difficulty as the level goes up.  So, I decided to have
+one of them "held" throughout the game, and the other increasing
+as the game progresses.  The player can decide what level of
+challenge one would like; less random it is, more difficult it is.
+You can also turn the randomness completely off, which makes life
+surely interesting.  I recommend 53% randomness ("8"), although
+75% randomness ("11") may be more suitable for beginners.  Note
+that even when the randomness is set to "0," there is some amount
+of randomness, such as when there's a wall between you and the
+ghost and the ghost has to choose which way to go.  I didn't
+want to bother with "shortest route" algorithms.  (Approximate
+percentage randomness = randomness / 15 * 100.  For source code
+hackers: the randomness is referred to as "difficulty" in the
+source code for some obvious/historic reasons...)
+
+Unlike in some of the versions I saw (one being "PCMan" written
+for PC-compatibles), the ghosts will never "turn around."  They
+will either make a turn left or right, or go straight ahead, like
+in the arcade version.  This has some interesting implications for
+strategy and such, one of them being that with 100% randomness,
+the only way you will die is if the ghost has no choice but to
+bump right into your face.  This can happen in the corners the
+most often - when you "trap yourself" - and also in "long alleys"
+where the ghosts will just have to keep following you and
+eventually catch up.  You'll see what I mean.
+
+-The Bonus Pill
+The major triumph of this version is its "agenderality."  No real
+political implications here (or anywhere in this document!).  It is
+NOT with some pseudo-feminist political correctness that I named
+this game "PacPerson."  It is simply that this version incorporates
+two major members of the PacMan family: the original PacMan and
+Ms. PacMan.  The only difference that I perceived between the two,
+aside from the silly, degrading, and genderizing bow on Ms.
+PacMan's head/body and the arrangement of the game field, was the
+fact that the bonus pill "moves around" in Ms. PacMan, and "stays
+put" in the original.  In the spirit of configurability, I did not
+want people to have to chose between the male and the female
+version of the same... uh... well... story of class struggle.
+(Yeah, yeah!)  Or, rather, I wanted the player to chose and
+alternate between the two, rather than ME doing the deciding.
+
+So, the "staying" bonus pill will stay put where it belongs, and
+the "moving" bonus pill will be moving around where it belongs!
+The configuration cannot be altered during the game, as that will
+make the game into a "different" game.  (It's easy to implement,
+tho', so maybe in a later version.)  The program sets to "moving"
+on load-up, to reflect my preference; it's just more interesting
+and easier. If you don't like it, again, hack it.
+
+If you die or complete the screen while the bonus pill is around,
+the staying pill will remain there, but the moving pill will
+disappear.  I was bent on keeping them both around no matter
+what, but the moving pill hovering around as the screen resets
+just looked a little silly.  (I'd like to hear your opinions on
+this, of course.)
+
+-the duration of the pills
+The powerpills and the bonus pills (staying) last exactly the same
+amount of time.  The moving bonus pill moves at the same speed as
+the blue/white ghosts, until it disappears into the tunnels.
+Again, in the spirit of configurability, you can alter the
+difficulty of the game by selecting the duration of those pills,
+but the configuration cannot be altered during the game.  I
+recommend "three pills," or about thirty blue-ghost steps.
+
+--------
+PATCHING
+--------
+
+Please, please note that this is written for Z80.  I believe that
+Intel engineers totally lack something of a creative imagination.
+8080 was at its time quite an innovation, but that shouldn't
+prevent me from calling it "stuck-up."  This tendency is still
+manifest in the iAPX 86 family.  Actually, they are TOO
+imaginative with their processor designs.  Why not make things
+simpler and more general, for my sake!  (I did not, however, use
+that many "exclusively Z80" instructions, so it should be easy to
+convert it to 8080 if you have to.  After all, I must admit, Z80
+is only a slight improvement over 8080.)
+
+The package is configured for a TVI-920-compatible terminal.  But,
+any terminal that has cursor addressing and clear-screen (you
+know, like all of the terminals?!) can be used.
+
+To make patching easier, I used David Goodenough's QTerm Patching.
+David is quite a productive programmer, so I suggest you keep a
+complete QTerm.pat around for your terminal.  Who knows; at the
+rate at which my life is going, I might end up writing a dozen
+games by the time I find a real career.  (For Tetris owners: no, I
+wrote only two games since the beginning of my Division III.)
+Besides, Rogue and Wanderer are also available for use with
+QTerm.pat.  You should be able to get one from many BBS's, as well
+as the SIMTEL archive at the White Sands Missile Range.
+
+If you don't know where to get a QTerm.pat, write one yourself.
+	ORG	0100h	;DO NOT touch the following five lines
+	JP	0506h	;beginning of the program
+	JP	0006h	;BIOS keyboard status routine
+	JP	0009h	;BIOS keyboard input routine
+	JP	000Ch	;BIOS screen out routine
+			;an appropriate value (the content of 0002h)
+			; is added to the above three to get the
+			; BIOS addresses.
+	JP	0500h
+;
+	ORG	01CEh
+	DB	4	;CPU clock speed in MHz, rounded up.  Crucial.
+;
+	ORG	01D0h
+	DB	'Name of your terminal', 00h
+;
+	ORG	01F0h
+	DB	'String for Clear Screen', 00h
+;
+	ORG	0200h
+;	routine to move the cursor to
+;	   row (y) = H
+;	   col (x) = L
+;	not to go over 022Eh
+	RET
+
+should be enough to run with PacPerson.  Whether this works with
+QTERM, I refuse to tell :-).  Assemble this and patch this to
+P20.COM using DDT or whatever you have.  The main code starts at
+0506h and ends a bit before 1900h. (Tetris was 1500h.) I think
+"SAVE 24 B:filename.ext" should be good enough.  See TVI920.PAT or
+ANSI.PAT for details (or, just more English).
+
+Or, you can tell me your terminal type and the controls, and I'll
+be glad to patch it for you!  (You can even customize keystrokes
+that way.)
+
+-------
+CONTROL
+-------
+
+This program allows "type ahead."  That is, when a key is pressed,
+it is immediately decoded (at the very next loop), and the
+corresponding command is stored.  Only when the interval timer is
+"up," the command is honored: if the figure is at a spot where it
+is possible to execute the command (e.g., turn), it executes it;
+if it is not possible, it attempts to continue in the same
+direction (i.e., move straight ahead); and, if neither is
+possible, the figure stays.  This helps very much at higher
+speeds and for beginners who wouldn't quite know when exactly to
+press the key; I have seen many games, especially hand-held, where
+the keystroke could not be either too early or too late.  With
+systems with huge key-in buffers, I suggest you try not to keep
+your finger (or whatever body part you use) on the keyboard, as it
+may "spill over" and not let the program decode a command until
+too late, although the type-ahead will more or less take care of
+this.
+
+One problem is that at very low speeds, you may enter more than
+one keystrokes before the timer is up (before the figure takes a
+step) and only the last will be honored.  The impression may be
+that the command is lost.  It is not: simply, the commands are not
+"queued" but only "stored."  Or, rather, the figure DOES move, but
+not visibly, as it would be on a graphics-terminal version with
+smooth movements.
+
+Another problem is that you cannot make the figure "stop" by
+"centering the joystick."  This is also a drag in the arcade
+version, but I didn't give much thought to fixing it - with my
+keyboard, which is interrupt-driven AND queued, "stop" command
+cannot be implemented except by adding a keystroke.  With
+"real-time" keyboards, the player will be forced to keep the
+finger on the keyboard to keep the figure moving, which is
+something I would like to avoid - too tiring, difficult for
+timing, and not good for keyboards and hard-tempered players.
+Unlike in some versions (arcade?), you won't be forced to turn, so
+when you need/want to stay somewhere, snug into a corner.
+
+I have considered many different ways of implementing the control
+processing, and all of them takes a little getting used to.  I
+just chose "decode-first, execute-later" because it seemed to make
+the most sense and is easiest to learn.  For instance, queuing
+will overflow easily with keyboards with very high scan/repeat
+rates or when the key stays pressed.  This also emulates real-time
+joysticks the best; normally, the status of a joystick is read at
+the very moment the timer is up, except that, in my
+implementation, the timing doesn't have to be exact - for many
+keyboards, mine being one, reading the key that is pressed at one,
+single moment is not an easy task, if at all possible.  The
+flexibility and type-ahead are helpful when you are kinda' tired -
+like when I lose all concentration and patience after hours of
+programming - and when you have a huge burrito in the other hand.
+
+Simply put, please just "touch type."
+
+(Thanks to Ralph B.-S. for reminding me to put this in.)
+
+------
+
+Key layout is something that I definitely need more input on.  I
+wanted to maintain compatibility with David Goodenough's Wanderer
+and Rogue, but it took me too long to learn those controls.  It
+was okay with Wanderer, since I had to think a lot with each move,
+but it was hell with Rogue when I ran into a room-full of pesky
+monsters.  Just imagine the pain in a real-time game.  So, in both
+Tetris and PacPerson, I followed the general, conventional
+personal-computer-game conventions.  I am hoping to allow both
+layouts in the next versions so the player can choose, as I do
+realize that the wanderer/rogue layout is quite a common one.  I
+couldn't do it this time because I used "S" for sound in Tetris,
+and wanted to maintain version-number compatibility while keeping
+the control key groups as far away from one another as possible. I
+also have concerns for people who are left-handed; I couldn't
+figure out a good one as most numeric keypads are far to the right
+of the keyboard, and the top row of the letters slant to the left,
+making the "up" key icky to reach.  The use of the bottom two rows
+is not any better, as the slant is usually one-half of the width
+of the thingies.  This is where the wanderer/rogue layout makes
+more sense.  Please let me know what you think.
+
+If you have a numeric keypad, use 4 and 6 to move the PacPerson
+left and right, and 8 and 5/2 for up and down.  (I hope your
+keyboard is not "backward," like the telephones...)  I recommend
+that you NOT get used to using "5" for "down," as I have some
+other plans for the key in other games; namely, Centiped.
+
+For others, I let I, J, K, and L (caps or not) do the same thing.
+If you don't like it, let me know.  This may also be a better
+layout than the numeric keypad for many people.
+
+"S" controls the sound; so no one can tell what you are up to.
+(Or, for when you have the need to express how upset you are with
+your co-occupants.  "!!!" will do the trick.)
+
+CTRL-S pauses the game until another key is pressed.
+
+CTRL-C quits the game, as in "JP 0000," dead warm boot.  CTRL-C
+can be used at any time the program is running (unless a glitch
+forces it into an infinite loop; hasn't happened, yet).
+
+CTRL-R redraws the screen.  CTRL-R works for both the game screen
+and the "options" screen.  (A feature that is common on real
+computers like CP/M and most mainframes, and which I miss a lot
+when using Mac's and PC's...)
+
+'^' increases the (speed) level by one, in case you find it too
+slow.  On my keyboard, this is way up in the upper left corner,
+making it tedious to reach.  Sorry, you can't go back down.
+
+The level will go up to 99, even after the interval is set down to
+zero.
+
+-------------------
+FUTURE IMPROVEMENTS
+-------------------
+
+Although I wanted to leave as many things up to the player's
+discretion as possible, I did have to make quite a few decisions
+so the "options" screen will not be so cluttered.  If you find
+any such decisions to be somewhat inadequate or inflexible,
+please let me know.  I will also be asking around for opinions
+before the next round of revisions.
+
+The possible improvements I can think of now are:
+
+- copyright acknowledgements....  Of course, my weakest point.
+
+- options to change relative speed of the characters.
+
+- different "cornering speed" for the ghosts.
+
+- option to change randomness, bonus pill mode, pill duration,
+  etc., while playing the game.  This is just an option, not quite
+  an "improvement."  (Option to let the player have an option,
+  that is...)
+
+- a better keyboard assignment.  I just need to do some
+  experiments.  Any suggestions?  As I write more games, I will
+  have a better idea as to what a "general" layout can be.  R3.0,
+  if ever made, will reflect this.
+
+- the "half-time" show!  The arcade version plays an impressive
+  show of the PacMan and the ghosts chasing one another every few
+  screens.  I initially had plans to insert it into the code, but
+  haven't gotten to it.  I thought it would be neat and
+  interesting.
+
+- the "super pacman" feature.  Just imagine our little bugger
+  jumping around and across the ghosts!  A bit difficult
+  on the two-dimensional field, but doable.
+
+- a "screen editor."  Like Wanderer and other such games, you
+  can play the same, fun PacPerson on a variety of challenging
+  screens.  I hope to include a field editor in the program
+  one of these days.
+
+- a "patch editor."  Most good programs come with an easy-to-use
+  terminal configuration editor.  Just a neat idea.  Great for
+  non-programmers (any?) or those without a good assembler.
+
+- more comprehensive hacking instructions.  It would be nice
+  if I could simply provide info such as "change nnnn to bb
+  in order to..."  It is just that I modify the code so often -
+  in simple ways, such as adding a byte or two here and there -
+  that such recommendations will not last too long.  I will
+  eventually rearrange the code so it is okay (not an easy
+  thing to do with the editor I use), and, until then, have the
+  source code always available to anybody who wants it.
+
+- a double-character option for 80-columners.  One persistent
+  complaint I have been hearing about Tetris is how narrow the
+  screen is and the tendency of the figures to elongate
+  vertically.  I did figure out a simple way of making "doubling"
+  possible, so I may implement that.  But, I will maintain the
+  40-column format for those of us less fortunate.  (I can always
+  ship the source code with pointers, so just drop me a line.)
+
+- spelling mistakes?  Tell me if you found one here.
+
+- cutting down on the rhetorics in this document.  It makes it
+  sound like I'm a Marxist or something.  Disclaimer:  I spit on
+  the grave of Marx; I spit on the grave of Hegel.  I was thinking
+  about Foucaultian alternatives, or linking it to South Africa,
+  or toning up the feminist rhetoric... but Marxist language fits
+  so neatly!  Besides, without the rhetoric, the game totally
+  lacks a purpose.  Maybe in a later version or for a different
+  game...  Me:  I'm still an idealistic, pseudo-anarchist-
+  symphathizing, nihilist, young flounderer.  (And Daddy wants me
+  to be a lawyer?!)  Wanna help me out?
+
+  Come to think of it, Tetris lacks a purpose, too!  Well, let's
+  see...  How about "it symbolizes the people's struggle to
+  turn the central power's attempts to impose a structure around
+  them into a means towards the dismantling of the power itself."
+  Hey, I like that... whatever you think is appropriate.  I like
+  "to avoid becoming a mental slave of my Thesis project" better,
+  tho'.
+
+- a highscore thingie file.  I think I mention in the
+  documentation for Tetris that I didn't think a highscore file
+  would be appropriate.  So many factors can be changed so easily
+  that "objective" (if this be at all a viable concept) comparison
+  is close to impossible and is definitely impractical.  Besides,
+  a more proper mode of comparison would be NOT the score, but how
+  many screens you've managed to pass without dying once, or how
+  many screens you can do overall.  I'm ecstatic to get to screen
+  5 with the initial three lives, beginning from level 5 and
+  randomness of 8 and three pills; or, I try to catch all the
+  ghosts at least once per screen; or, reach every 1,000 points
+  fast enough to keep myself going; or, catch all of the moving
+  bonus pills; etc., etc., etc.  Like a good self-motivated
+  person, set a goal for yourself, and try to achieve it; then, you
+  can raise the stake.  Also try it at different times of the day or
+  days of the week.  A good monitor of self-improvement.
+
+- a blatant way of asking for money.  Much as I wrote this program
+  for my own benefit and that only, if it benefits other people,
+  maybe I should demand something, but it's just not in my blood...
+  With Tetris, I didn't ask for anything fearing copyright
+  problems and such, but, hey, if you think I'm worth it,
+  give me something...  I could really use it, you know.
+
+  I am still in that stage of life where $20 represents a major
+  financial windfall...  whatever your pocketbook feels
+  comfortable with in that general range will be infinitely
+  appreciated.  (I am usually more than happy with flatteries and
+  "I'm addicted" stories.)
+
+  Still, this is NOT written to be "shareware."  I absolutely
+  condemn and loathe that concept.  Please, copy and modify and
+  distribute freely as you wish, and, most of all, enjoy!!!
+
+If you have any other ideas or comments, please let me know.  For
+academic year 1990-91 I can be reached at:
+
+	JShin@HampVMS.bitnet (we don't have any other Net, yet)
+
+	413-549-4600, ext. 517 (Western Mass.)
+	82-2-739-4539 (that's Korea, you know.)
+
+	John Juncholl Shin
+	Alumni Relations Office
+	Hampshire College
+	Amherst, MA 01002-5001
+(The post office here will forward mail even if I don't work here
+any more.)
+
+After that, who knows?
+

@@ -1,0 +1,134 @@
+		         BD BAD DISK PROGRAM
+			     11 May 1987
+ 			       Irv Hoff
+
+'BD' stands for "bad disk".  It reads the records on a disk (floppy or
+hard) and finds those that are unacceptable.  It then makes a file named
+[LOCKED].OUT containing those records.	This prevents them being used in
+any new files, thus allowing normal use of the disk.  It also shows the
+names of any files that might be defective.  It works with CP/M v2.2 or
+v3.0 (often called CP/M+).  It is 5-1/2k in length.
+
+Small floppies usually have 1k blocks, larger floppies 2k blocks.  Most
+hard disks use 4k blocks although a few have 8k blocks.  'BD' counts the
+blocks in increments of 5.  A disk with 360k would thus show 180 blocks.
+A hard disk partitioned for 8 Mb per drive and using 4k blocks will show
+2048 blocks (etc.)
+
+If a block has one or more bad records, this informaion overwrites the
+progress report.  It then resumes the progress report on the following
+line.
+
+This gives an attractive display.
+
+BUG NOTE (D.J.C.P. 27 Nov. 87):  BD seems to require so much RAM
+that it crashes should SMARTKEY definitions be loaded.
+
+TO USE:
+------
+Any of the following three will work.  The first permits removing the
+disk from the current drive and replacing with the disk to be checked.
+Useful for only one drive or if you want to check a disk in any drive.
+(For floppies, it is often beneficial to check the same disk in every
+drive you have, they occasionally act differently in different drives.)
+
+		A>BD		activates pgm, will ask what drive
+		A>BD B		activates pgm, checks drive B:
+		A>BD B: 	activates pgm, checks drive B:
+
+      NOTE:  The program can be aborted at any time, but
+             but in a somewhat unusual manner.  Just type
+	     type CTL-S to stop the display and then CTL-C.
+
+
+EXAMPLE 1:
+---------
+If the disk already has a [LOCKED].OUT file from a previous check, the
+results might look like this:
+
+
+		BD v04 - bad disk blocks/files
+
+		check drive: A	      (automatically logs in that drive)
+		checking....
+
+		prior check: 127
+		prior check: 148
+		prior check: 149
+		prior check: 160
+		 this check: 162
+		prior check: 204
+		 this check: 225
+
+		494		      (total data blocks checked)
+
+		bad blocks: 7
+
+		bad files:
+
+		A:CRT	  ASM
+		A:LIST	  DOC
+
+		A>
+
+
+As it checks the file, if the current block has previously been reported
+as bad, that is shown as "prior check", and if not previously reported,
+it shows as "this check".  Thus you can see if the disk has new problems
+since the prior check.	You can manually erase the [LOCKED].OUT file if
+you wish and rerun the program to see what it will report "this time".
+(If results vary more than slightly, you may have a bum drive that is
+giving erratic results, or that initially did a poor job formatting the
+disk.)
+
+When showing 'bad files' it may show the same file name more than one
+time, indicating that particular file has multiple bad areas and will be
+difficult to rebuild into a normal file.
+
+	 NOTE:	2k blocks have 16 records.  Thus a bad
+		block could have from 1-16 bad records.
+		4k blocks have 32 records.  Thus a bad
+		block could have from 1-32 bad records.
+
+EXAMPLE 2:
+---------
+
+This is what you are hoping to see, for a normal disk:
+
+
+		BD v04 - bad disk block/files
+
+		check drive: B
+		checking....
+
+		494
+
+		bad blocks: 0
+		bad files : 0
+
+		B>
+
+OPTIONS:
+-------
+
+     1)  0103h	sets the user area for [LOCKED].OUT file.
+
+		00 = user area zero
+		0F = user area 15
+
+
+     2)  0105h	turns progress reports on/off.  You may want a
+	        version with them turned off, so you can use the
+		printer to display the results.
+
+		00 = no progress reports
+		FF = progress reports shown (anything but 00)
+
+	(then save 22 pages if using DDT or SID, etc.)
+
+					- Irv Hoff W6FFC
+
+
+
+When showing 'bad files' it may show the same file name more than one
+time, indicating that particular fil

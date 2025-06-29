@@ -1,0 +1,60 @@
+SEARCH version 2.1 searches text files for up to 16 words or
+phrases, by either multiple parameter command line or menu, which
+prompts for target strings and filenames but allows no switches
+(see below.)   SEARCH reads files within libraries, as well as
+SQUEEZED and CRUNCHED  files.   
+
+SYNTAX:  SEARCH file?.X "" -NU  -Ioutput.fil =TARGET&EITHER|OR
+    SEARCH [filename] [separator] [-switches] [=search strings] [>output]
+			 (in any order)
+
+E.g.  SEARCH la*.mss l -un =@chapter|@section|@subsection >sought.un
+	 writes to file all 3 target strings in files LA*.MSS
+         including filenames where no hits scored
+E.g.  SEARCH *.* l -nIsought.n =@chapter|@section|@subsection 
+queries before writing to SOUGHT.N all hits, omitting filenames with none.
+
+FILENAMES:
+   Libraries and members must be in quotes - "du:ambiglbr ambig.typ"
+   Also target strings (?)
+
+SEPARATORS:
+    ""  Blank line (each paragraph is one item)
+    L   Each line is one item
+    Anything else is used literally (assumed followed by CRLF), e.g. ----
+
+SWITCHES:  prefixed by hyphen:  may be concatenated (I must be last)
+    -F  Suppress filename display, but DO show text
+    -M  Pause screen output every 23 lines 
+    -N  Display line numbers (within each file)
+    -S  Seek only first match in each file (no text display)
+    -U  Show filenames for unsuccesful searches. "-F" overrides this.
+    -I  INSPECT mode:  queries before appending chosen items to
+    file.  Must be followed by filename e.g. -Ioutput.fil.  -I
+    switch must be last of any switches (may precede targets, etc.)
+
+OUTPUT:  for Menu, may be input as SEARCH >OUTPUT.FIL
+    >FILENAME.TYP   output to diskfile [>DU: prefix not permitted]
+    >LST:           output to printer
+    -Ioutput.fil    automatically omits filenames (?)
+If file output specified, text is not echoed to screen.  File will
+   be silently overwritten if it already exists.  DU: not allowed.
+
+Target string SEPARATORS:  Prefix = equals sign:  NO spaces between
+targets; upper/lower case is irrelevant.
+   &   AND
+   |   (inclusive) OR
+   !   AND NOT (negates next string)
+   \   Escape char:  \& finds ampersand, \| finds vertical bar
+   " " Used when target strings include spaces.
+   ^   at beginning or end of target string marks word beginning/end
+SEARCH b3:myfile L -MF =CP/M&EDITOR|MS-DOS&COMPILER 
+SEARCH "b15:mylbr *.txt" "" "=TEXT SEARCHING&COMPUTER PROGRAMS"
+
+KEY COMMANDS
+^C to abort SEARCH
+^X to skip current file
+^S to pause
+^Q to resume
+.g. -Ioutput.fil.  -I
+ 

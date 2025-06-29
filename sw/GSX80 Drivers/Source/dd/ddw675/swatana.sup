@@ -1,0 +1,125 @@
+h25648
+s 00113/00000/00000
+d D 1.1 83/03/17 15:51:01 tes 1 0
+c date and time created 83/03/17 15:51:01 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  watana.sup          local   03/24/82  11:21
+#-h-  dpwata.rat          local   03/24/82  11:21
+subroutine dpwata (color)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver pen changer for the Watanabe    #
+#               plotter                                                #
+#                                                                      #
+#     Input Parameters:                                                #
+#            color - pen station to change to                          #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            gdstot - output a string to the current routine           #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+integer color
+ 
+integer pencmd(3), penc
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       pencmd(2) :: penc
+ 
+equivalence (pencmd(2), penc)
+ 
+#            Get new pen color /J0<CR>/
+data pencmd /BIGJ,0,CR/
+ 
+   ndclrp = color         # set the current pen color
+ 
+   # pencmd(2)
+   penc = ndclrp          # set the requested pen
+   call gdstot (3, pencmd)
+ 
+   return
+end
+#-t-  dpwata.rat          local   03/24/82  11:21
+#-h-  drwata.rat          local   03/24/82  11:21
+subroutine drwata (opcode, rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver move/draw for Watanabe          #
+#               plotter                                                #
+#                                                                      #
+#     Input Parameters:                                                #
+#           opcode - driver function, either move/draw                 #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            gdstot - output a string to the plotter                   #
+#            itoch   - convert a binary integer to a character string  #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+integer opcode
+real rlin(1)
+ 
+integer length,positn,xcoord,ycoord,string(4)
+ 
+include mgscom
+ 
+equivalence (xcoord , ycoord) , (length , positn)
+ 
+   positn = BIGM                              # move
+   if (opcode == DRAW) { positn = BIGD }      # draw
+   call gdevot (positn)
+   zdxpos = rlin(1)
+   xcoord = int (zdxpos*zdlgax)
+   length = itoch (xcoord, string, 4, ierror)
+   call gdstot (length, string)
+   call gdevot (COMMA)
+   zdypos = rlin(2)
+   ycoord = int (zdypos*zdlgax)
+   length = itoch (ycoord, string, 4, ierror)
+   call gdstot (length, string)
+   call gdevot (CR)
+ 
+   return
+end
+#-t-  drwata.rat          local   03/24/82  11:21
+#-t-  watana.sup          local   03/24/82  11:21
+#-t-  ddw675.c            local   03/24/82  11:21
+#-h-  dd4662.c            local   03/24/82  11:21
+E 1

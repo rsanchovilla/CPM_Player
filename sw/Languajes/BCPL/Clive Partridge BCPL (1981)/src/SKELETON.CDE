@@ -1,0 +1,139 @@
+*  SKELETON .CDE   -  an outline of how to interface assembler to BCPL
+*  Most of this is deduceable from the module RTS2 and the (?) documents.
+*  Note that in many of my m/c modules there are redundant saves of the
+*  BC register pair - this was before I realised that it is the alternate
+*  register that holds the program counter.  These modules could therefore
+*  be made more efficient by removing the pushes and pops and freeing BC.
+*
+*  General note 1.  Results are returned via the HL register pair.
+*  General note 2.  Two stacks are used, the z80 stack as a working stack
+*       and a main (run-time) stack, whose pointer is generally kept in
+*       HL.  The only time this needs to be preserved is when a simple 
+*       function, with no passed parameters, is required to return a 
+*       result. In this case HL should be pushed onto the working stack
+*       before it gets used.  See, e.g. RDCH() in RTS2.  When there are
+*       parameters involved this all gets done automatically (see notes
+*       on DPUSH below)
+*  General note 3.  The stack-pointer should, of course, be preserved
+*       and so should IY.  The y-code interpreter uses some of the
+*       alternate registers (DE and BC) and, in general, they should not
+*       be used.
+*  General note 4.  Watch out for addresses that need to be used as BCPL
+*       addresses - they always need to be EVEN.
+*
+*  The following is a generally sensible ordering of the code.
+*  -----------------------------------------------------------
+*
+*  This is a RELocateable module - so no ORG.
+*
+*  First set out any globals, internal or external.
+
+	GLOBAL	XRET	; This is always needed.
+	GLOBAL  UCSE	; e.g. a short routine in RTS2
+
+	GLOBAL  MYCODE  ; e.g. a routine in this module useful elsewhere.
+
+*  Then set any EQUates required
+
+BDOS	EQU	5
+DPUSH	EQU	38H	; NB this is the y-code that pushes a parameter
+			; from the main stack onto the working stack. It
+			; is always followed by a second byte, which is the
+			; number of the param required PLUS 1.  e.g. if a
+			; routine is called  func(x,y,z) then DPUSH,2 puts
+			; x on the stack and DPUSH, 4 puts z on the stack.
+			; Note how (nicely !) you can control access to the
+			; order of parameters on the stack.  The last-pushed
+			; parameter is left in HL, so that the sequence
+			; DPUSH,2,DPUSH,3,DPUSH,4  will put x & y on the stack
+			; and leave z ready in HL.
+
+*  BEFORE ANY OTHER EXECUTABLE CODE - the first 2 bytes of the module must
+*  contain the length of the module-2.  The assembler can calculate this if
+*  you label the last word of the module as ENDMOD.
+
+BASE:	DEFW	ENDMOD-$
+
+*  Subroutines, data areas etc may be anywhere - bearing in mind note 5.
+*  But not after the globals list !
+
+SUBR:   LD	A,(DATA)  	:etc
+
+DATA:   DEFS	64    		;etc
+
+*  Now the added procedure or function itself.  Note that its label need
+*  NOT be the same as the procedure name - it is the global NUMBER which
+*  is important, and that will appear in two places. 1) in LIBHDR or as
+*  a global declaration in a program. 2) at the end of this module in a
+*  a list giving the address of the procedures and their global numbers.
+*
+*  The first 2 bytes give the number of parameters PLUS 2
+
+MYPROC:	DEFW	<numberofparams+2>
+
+*  Then follow 1-byte y-codes, almost always DPUSH,n - but others may be
+*  used  (see APTOVEC or LONGJUMP in RTS2).
+
+	DEFB	DPUSH,2,DPUSH,4, DPUSH,3  ;etc....
+
+*  Then the y-user (00H) code to indicate that the following bytes are to
+*  be interpreted directly as z80 instructions.
+
+	DEFB	0
+
+*  If there were no parameters, but a result is required - save STACKP
+;	PUSH	HL		; see note 2
+
+*  Now your code - the first act might be to get parameters remaining on
+*  the stack.
+*  If you have a lot of data on the stack an are running out of registers
+*  a store-location will be necessary.
+
+	LD	(DATA),HL	; save param 2 
+	POP	HL		; get  param 3
+	POP	DE		; get  param 1
+	CALL	SUBR		;etc.....
+ 
+*  when all is done,  make sure the result is in HL (if you want one).
+*  e.g.  returning the character currently in A
+
+	LD	L,A
+	LD	H,0
+
+*  finally, return from the procedure.
+
+	JP	XRET
+
+*  Other subroutines, other procedures etc may follow
+
+ANOTHER:DEFW  3
+	DEFB  DPUSH,2
+	DEFB  0
+; etc...................
+	JP    XRET
+
+*  When all code is finished, make sure we are at an EVEN address.
+
+	IF   ($.AND.1)=1
+	DEFB  0
+	ENDIF
+
+*  Now, provide a list of globals you have just defined.
+
+	DEFW   140,MYPROC-BASE
+	DEFW   141,ANOTHER-BASE
+
+*  Give the number of globals in this module
+
+	DEFW	2
+
+*  Finally, the highest global number in the module, and label this as
+*  the end of the module. (i.e. BASE will contain length-2)
+
+ENDMOD: DEFW    141
+
+*  Nothing should follow this !
+*  The last module to be linked will end with a 0 word (this is,conventionally,
+*  the runtime routines RTS2 - and I see no reason to change it).
+
+

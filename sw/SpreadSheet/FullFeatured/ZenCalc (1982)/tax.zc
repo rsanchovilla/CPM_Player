@@ -1,0 +1,175 @@
+\wg15
+>a1:" 1040 INDIVIDUAL TAX RETURN -- 1982      READ INSTRUCTIONS BEFORE USING
+>a1:\wc45
+>b1:\dc38
+>c1:\dc38
+>c1:\wc12
+>a2:"  6 Exemptions (col. b = "Error" if 0)
+>b2:=c2/c2
+>a2:\dl0
+>a3:"Income
+>a4:"  7 Wages, salaries, tips, etc.
+>a5:"  8 Interest income
+>a6:"  9a Dividends
+>c6:"       -
+>a7:"  9b Exclusion
+>b7:=lsr(c104,b6)
+>c7:"       -
+>a8:"  9c Dividends less exclusion
+>c8:=b6-b7
+>a9:"  10 State & local income tax refunds
+>a10:"  11 Alimony
+>a11:"  12 Business income (Sched. C)
+>a12:"  13 Capital Gain (Sched. D)
+>a13:"  14 40% capital gain distr.
+>a14:"  15 Supplemental gains
+>a15:"  16 Pensions and annuities
+>a16:"  17b Other taxable pensions and annuities
+>a17:"  18 Rents, royalties, ... (Sched. E)
+>a18:"  19 Farm income (Sched. F)
+>a19:"  20b Taxable unemployment compensation
+>a20:"  21 Other income
+>a21:"  22 Total income
+>c21:=sum(c4...c20)
+>a22:"Adjustments to Income
+>a23:"  23 Moving Expense
+>c23:"       -
+>a24:"  24 Employee business expense
+>c24:"       -
+>a25:"  25 IRA payments
+>c25:"       -
+>a26:"  26 Keogh payments
+>c26:"       -
+>a27:"  27 Interest penalty
+>c27:"       -
+>a28:"  28 Alimony
+>c28:"       -
+>a29:"  29 Married couple (Sched. W)
+>c29:"       -
+>a30:"  30 Disability income
+>c30:"       -
+>a31:"  31 Total adjustments
+>c31:=sum(b23...b30)
+>a32:"  32 Adjusted Gross Income
+>c32:=c21-c31
+>a33:"Tax Computation
+>a34:"  34a Itemized deductions
+>c34:=c100
+>a35:"  34b Contributions (Complete Sch. A lines 20&21)
+>c35:=b88+b89
+>a36:"  35 Income less deductions
+>c36:=c32-gtr(c34,0.25*c35)
+>a37:"  36 $1000 per exemption
+>c37:=1000*c2
+>a38:"  37 Taxable income
+>c38:=c36-c37
+>a39:"Note: If you must use Tax Table, enter tax from Tax Table in "40c"
+>a40:"   Tax (from Sched. X, Y or Z)
+>c40:=lookup(c38,b106.b120)
+>a41:"  39 Additional taxes
+>a42:"  40 Total taxes
+>c42:=c40+c41
+>a43:"Credits
+>a44:"  49 Total credits (sum of lines 41-48 on Form 1040)
+>a45:"  50 Balance
+>c45:=gtr(c42-c44,0)
+>a46:"Other Taxes
+>a47:"  51-58 (Enter sum of lines 51-58 on Form 1040)
+>a48:"  59 Total tax
+>c48:=c45+c47
+>a49:"Payments
+>a50:"  60 Federal income tax withheld
+>c50:"       -
+>a51:"  61 1981 estimated tax payments
+>c51:"       -
+>a52:"  62 Earned income credit
+>c52:"       -
+>a53:"  63 Form 4868
+>c53:"       -
+>a54:"  64 Excess FICA
+>c54:"       -
+>a55:"  65 Fuels tax
+>c55:"       -
+>a56:"  66 Regulated investment co.
+>c56:"       -
+>a57:"  67 Total payments
+>c57:=sum(b50...b56)
+>a58:"Refund or Balance Due
+>a59:"  68 Amount OVERPAID
+>c59:=gtr(c57-c48,0)
+>a60:"  69 REFUNDED TO YOU
+>c60:=c59
+>a61:"  70 Applied to 1983 tax
+>a62:"  71 BALANCE DUE
+>c62:=gtr(c48-c57,0)
+>a64:"SCHEDULE A - ITEMIZED DEDUCTIONS
+>b64:"Enter amounts a
+>c64:"t "<-".
+>a65:"Medical and Dental Expenses
+>a66:"  1 Medicine and drugs
+>c66:"  <-
+>a67:"  2 1% of Form 1040, Line 33
+>b67:=c32*0.01
+>a68:"  3 line 1 - line 2
+>b68:=gtr(b66-b67,0)
+>a69:"  4 Total insurance premiums
+>c69:"  <-
+>a70:"  5 Other medical and dental expenses
+>c70:"  <-
+>a71:"  6 Total
+>b71:=sum(b68...b70)
+>a72:"  7 3% of form 1040, line 33
+>b72:=c32*0.03
+>a73:"  8 line 6 - line 7
+>b73:=gtr(0,b71-b72)
+>a74:"  8 One-half of line 4 (but not over $150)
+>b74:=lsr(150,0.5*b69)
+>a75:"  10 Greater of line 8 and 9
+>c75:=gtr(b73,b74)
+>a76:"Taxes
+>a77:"  11 State and local income
+>c77:"  <-
+>a78:"  12 Real estate
+>c78:"  <-
+>a79:"  13 General sales
+>c79:"  <-
+>a80:"  14 Personal property
+>c80:"  <-
+>a81:"  15 Total
+>c81:=sum(b77...b80)
+>a82:"Interest expense
+>a83:"  16 Home mortgage
+>c83:"  <-
+>a84:"  17 Credit card
+>c84:"  <-
+>a85:"  18 Other
+>c85:"  <-
+>a86:"  19 Total
+>c86:=sum(b83...b85)
+>a87:"Contributions
+>a88:"  20 Cash contributions
+>c88:"  <-
+>a89:"  21 Other than cash
+>c89:"  <-
+>a90:"  22 Carryover
+>c90:"  <-
+>a91:"  23 Total
+>c91:=sum(b88...b90)
+>a92:"Miscellaneous Deductions
+>a93:"  24 Casualty Losses
+>c93:"  <-
+>a94:"  25a Union dues
+>c94:"  <-
+>a95:"  25b Tax preparation fee
+>c95:"  <-
+>a96:"  26 Other
+>c96:"  <-
+>a97:"  27 Total
+>c97:=sum(b93...b96)
+>a98:"  28 Total Itemized Deductions
+>c98:=c75+c81+c86+c91+c97
+>a99:"  29 Zero Bracket Amount
+>c99:=b107
+>a100:"  30 Allowed Ded'ns (to 1040 line 34a)
+>c100:=gtr(0,c98-c99)
+

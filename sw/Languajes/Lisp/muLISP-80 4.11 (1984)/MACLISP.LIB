@@ -1,0 +1,1230 @@
+;File:  MACLISP.LIB		12/01/83	The Soft Warehouse
+
+
+;		 Equivalent muLISP definitions
+;	  of the basic Maclisp and Zetalisp functions
+
+;This file is primarily for those users familiar with the MIT Maclisp
+;dialect of LISP or its derivative the Lisp Machine Zetalisp dialect.
+;The file is divided in sections corresponding to the chapters in the 1981
+;edition of the Lisp Machine Manual, by Daniel Weinreb and David Moon
+;both of Symbolics, Inc., Cambridge, Massachusetts.  Each function
+;definition is preceded by a brief description of its affect and value.
+;See the Lisp Machine Manual for a more complete description of the
+;function.
+
+
+;	Chapter 2:  P R I M I T I V E   O B J E C T   T Y P E S
+
+(PUTD 'DEFUN '(NLAMBDA EXP$
+  ((OR (ATOM EXP$) (ATOM (CDR EXP$)) (NOT (ATOM (CAR EXP$)))) NIL)
+  ( ((NAME (CADR EXP$))
+      ((OR (EQ (CADR EXP$) 'LAMBDA) (EQ (CADR EXP$) 'NLAMBDA)))
+      (SETQ EXP$ (CONS (CAR EXP$) (CONS 'LAMBDA (CDR EXP$)))) )
+    ((OR (NUMBERP (CADR EXP$))
+	 (EQ (CAADR EXP$) 'LAMBDA)
+	 (EQ (CAADR EXP$) 'NLAMBDA) )
+      (SETQ EXP$ (CONS (CAR EXP$) (CADR EXP$))) )
+    (SETQ EXP$ (CONS (CAR EXP$) (CONS 'LAMBDA (CDR EXP$)))) )
+  ((EQUAL (GETD (CAR EXP$)) (CDR EXP$)))
+  (PUTD (CAR EXP$) (CDR EXP$))
+  (CAR EXP$) ))
+
+
+;	Section 2.2:  Predicates
+
+;The following functions described in this section are primitively
+;defined in muLISP:  ATOM, NUMBERP, EQ, EQUAL, NOT, and NULL.
+
+(MOVD 'NAME 'SYMBOLP)			;Symbol recognizer
+
+(DEFUN NSYMBOLP (OBJ)			;Nonsymbol recognizer
+  (NOT (NAME OBJ)) )
+
+(DEFUN LISTP (OBJ)			;List recognizer
+  (NOT (ATOM OBJ)) )
+
+(MOVD 'ATOM 'NLISTP)			;Nonlist recognizer
+
+(DEFUN NEQ (OBJ1 OBJ2)			;Not equal predicate
+  (NOT (EQ OBJ1 OBJ2)) )
+
+
+;	Chapter 3:  E V A L U A T I O N
+
+;The following functions described in this chapter are primitively
+;defined in muLISP:  SETQ, EVAL, APPLY, QUOTE, and PROG1.
+
+(DEFUN FUNCALL ARGS
+  (APPLY (CAR ARGS) (CDR ARGS)) )
+
+(DEFUN FALSE () NIL)
+
+(DEFUN TRUE () 'T)
+
+(DEFUN PROGN ARGS
+  (CAR (LAST ARGS)) )
+
+(DEFUN PROG2 ARGS
+  (CADR ARGS) )
+
+
+
+;	Chapter 4:  F L O W   O F   C O N T R O L
+
+;	Section 4.1:  Conditionals
+
+;The following functions described in this section are primitively
+;defined in muLISP:  COND, AND, OR.
+
+
+;SELECTQ [object, clause1, clause2, ..., default]  selects a clause-
+;list to be evaluated when <object> matches the car of the clause-list.
+
+(DEFUN SELECTQ NLAMBDA LST$
+  (SELECTQ-AUX (EVAL (CAR LST$)) (CDR LST$)) )
+
+(DEFUN SELECTQ-AUX (OBJ$ LST$
+    % LocaL: % TST$ )
+  (LOOP
+    ((NULL LST$) NIL)
+    (SETQ TST$ (CAAR LST$))
+    ((OR (EQ TST$ OBJ$)
+	 (EQ TST$ 'T)
+	 (EQ TST$ 'OTHERWISE)
+	 (AND (NOT (ATOM TST$)) (MEMBER OBJ$ TST$)) )
+      (SETQ LST$ (CDAR LST$))
+      (LOOP
+	((NULL (CDR LST$))
+	  (EVAL (CAR LST$)) )
+	(EVAL (POP LST$)) ) )
+    (POP LST$) ) )
+
+(MOVD 'SELECTQ 'CASEQ)
+
+
+;SELECT [object, clause1, clause2, ..., default]  selects a clause-
+;list to be evaluated when <object> matches the evaluated car of the
+;clause-list.
+
+(DEFUN SELECT NLAMBDA LST$
+  (SELECT-AUX (EVAL (CAR LST$)) (CDR LST$)) )
+
+(DEFUN SELECT-AUX (OBJ$ LST$
+    % LocaL: % TST$ )
+  (LOOP
+    ((NULL LST$) NIL)
+    (SETQ TST$ (EVAL (CAAR LST$)))
+    ((OR (EQ TST$ OBJ$)
+	 (EQ TST$ 'T)
+	 (EQ TST$ 'OTHERWISE)
+	 (AND (NOT (ATOM TST$)) (MEMBER OBJ$ TST$)) )
+      (SETQ LST$ (CDAR LST$))
+      (LOOP
+	((NULL (CDR LST$))
+	  (EVAL (CAR LST$)) )
+	(EVAL (POP LST$)) ) )
+    (POP LST$) ) )
+
+
+;	Section 4.3:  Non-Local Exits
+
+(MOVD 'CATCH '*CATCH)
+
+(MOVD 'THROW '*THROW)
+
+
+;	Section 4.4:  Mapping
+
+;ATM-LST [list]  returns T if there exists an atomic element of <list>.
+
+(DEFUN ATM-LST (LST)
+  (LOOP
+    ((NULL LST) NIL)
+    ((ATOM (POP LST))) ) )
+
+
+;POP-LST [list]  returns a list of the cars of the elements of <list> and
+;modifies <list> so each element points to the cdr of the list it used
+;to point to.
+
+(DEFUN POP-LST (LST)
+  ((NULL LST) NIL)
+  (PROG1 (CONS (CAAR LST) (POP-LST (CDR LST)))
+	 (RPLACA LST (CDAR LST)) ) )
+
+
+;MAP [function, list1, list2, ..., listn]  applies <function> to successive
+;cdrs of <list1> through <listn> beginning with whole lists.
+
+(DEFUN MAP LST$
+  (MAP-AUX (CAR LST$) (CDR LST$)) )
+
+(DEFUN MAP-AUX (FUN$ LST$)
+  (LOOP
+    ((ATM-LST LST$) NIL)
+    (APPLY FUN$ LST$)
+    (POP-LST LST$) ) )
+
+
+;MAPC [function, list1, list2, ..., listn]  applies <function> to successive
+;elements of <list1> through <listn> beginning with the first elements.
+
+(DEFUN MAPC LST$
+  (MAPC-AUX (CAR LST$) (CDR LST$)) )
+
+(DEFUN MAPC-AUX (FUN$ LST$)
+  (LOOP
+    ((ATM-LST LST$) NIL)
+    (APPLY FUN$ (POP-LST LST$)) ) )
+
+
+;MAPLIST [function, list1, list2, ..., listn]  returns a list of the same
+;values computed by MAP [function, list1, list2, ..., listn].
+
+(DEFUN MAPLIST LST$
+  (MAPLIST-AUX (CAR LST$) (CDR LST$)) )
+
+(DEFUN MAPLIST-AUX (FUN$ LST$)
+  ((ATM-LST LST$) NIL)
+  (CONS (APPLY FUN$ LST$) (MAPLIST-AUX FUN$ LST$ (POP-LST LST$))) )
+
+
+;MAPCAR [function, list1, list2, ..., listn]  returns a list of the same
+;values computed by MAPC [function, list1, list2, ..., listn].
+
+(DEFUN MAPCAR LST$
+  (MAPCAR-AUX (CAR LST$) (CDR LST$)) )
+
+(DEFUN MAPCAR-AUX (FUN$ LST$)
+  ((ATM-LST LST$) NIL)
+  (CONS (APPLY FUN$ (POP-LST LST$)) (MAPCAR-AUX FUN$ LST$)) )
+
+
+;MAPCON [function, list1, list2, ..., listn]  concatenates the values
+;computed by MAP [function, list1, list2, ..., listn] using RPLACD.
+
+(DEFUN MAPCON LST$
+  (MAPCON-AUX (CAR LST$) (CDR LST$)) )
+
+(DEFUN MAPCON-AUX (FUN$ LST$
+    % Local: % RSLT ANS )
+  (LOOP
+    ((ATM-LST LST$) RSLT)
+    (SETQ RSLT (APPLY FUN$ LST$))
+    (POP-LST LST$)
+    ((NOT (ATOM RSLT))
+      (SETQ ANS RSLT)
+      (LOOP
+	((ATM-LST LST$) ANS)
+	(SETQ RSLT (LAST RSLT))
+	(RPLACD RSLT (APPLY FUN$ LST$))
+	(POP-LST LST$) ) ) ) )
+
+
+;MAPCAN [function, list1, list2, ..., listn]  concatenates the values
+;computed by MAPC [function, list1, list2, ..., listn]  using RPLACD.
+
+(DEFUN MAPCAN LST$
+  (MAPCAN-AUX (CAR LST$) (CDR LST$)) )
+
+(DEFUN MAPCAN-AUX (FUN$ LST$
+    % Local: % RSLT ANS )
+  (LOOP
+    ((ATM-LST LST$) RSLT)
+    (SETQ RSLT (APPLY FUN$ (POP-LST LST$)))
+    ((NOT (ATOM RSLT))
+      (SETQ ANS RSLT)
+      (LOOP
+	((ATM-LST LST$) ANS)
+	(SETQ RSLT (LAST RSLT))
+	(RPLACD RSLT (APPLY FUN$ (POP-LST LST$))) ) ) ) )
+
+
+
+; Chapter 5:  M A N I P U L A T I N G   L I S T   S T R U C T U R E
+
+
+;	Section 5.1:  Conses
+
+;The following functions described in this section are primitively
+;defined in muLISP:  CAR, CDR, CAAR, CADR, CDAR, CDDR, CAAAR, CAADR,
+;CADAR, CADDR, CDAAR, CDADR, CDDAR, CDDDR, CONS.
+
+
+(DEFUN CAAAAR (OBJ)
+  (CAR (CAAAR OBJ)) )
+
+(DEFUN CAAADR (OBJ)
+  (CAR (CAADR OBJ)) )
+
+(DEFUN CAADAR (OBJ)
+  (CAR (CADAR OBJ)) )
+
+(DEFUN CAADDR (OBJ)
+  (CAR (CADDR OBJ)) )
+
+(DEFUN CADAAR (OBJ)
+  (CAR (CDAAR OBJ)) )
+
+(DEFUN CADADR (OBJ)
+  (CAR (CDADR OBJ)) )
+
+(DEFUN CADDAR (OBJ)
+  (CAR (CDDAR OBJ)) )
+
+(DEFUN CADDDR (OBJ)
+  (CAR (CDDDR OBJ)) )
+
+
+(DEFUN CDAAAR (OBJ)
+  (CDR (CAAAR OBJ)) )
+
+(DEFUN CDAADR (OBJ)
+  (CDR (CAADR OBJ)) )
+
+(DEFUN CDADAR (OBJ)
+  (CDR (CADAR OBJ)) )
+
+(DEFUN CDADDR (OBJ)
+  (CDR (CADDR OBJ)) )
+
+(DEFUN CDDAAR (OBJ)
+  (CDR (CDAAR OBJ)) )
+
+(DEFUN CDDADR (OBJ)
+  (CDR (CDADR OBJ)) )
+
+(DEFUN CDDDAR (OBJ)
+  (CDR (CDDAR OBJ)) )
+
+(DEFUN CDDDDR (OBJ)
+  (CDR (CDDDR OBJ)) )
+
+(MOVD 'CONS 'NCONS)
+
+(DEFUN XCONS (OBJ1 OBJ2)
+  (CONS OBJ2 OBJ1) )
+
+
+;	Section 5.2:  Lists
+
+;The following functions described in this section are primitively
+;defined in muLISP:  LENGTH, NTH, LAST, LIST, REVERSE, APPEND, NCONC.
+
+
+(MOVD 'CAR 'FIRST)
+(MOVD 'CADR 'SECOND)
+(MOVD 'CADDR 'THIRD)
+(MOVD 'CADDDR 'FOURTH)
+
+(DEFUN FIFTH (LST)
+  (CADR (CDDDR LST)) )
+
+(DEFUN SIXTH (LST)
+  (CADDR (CDDDR LST))) )
+
+(DEFUN SEVENTH (LST)
+  (CAR (CDDDR (CDDDR LST))) )
+
+(MOVD 'CDR 'REST1)
+(MOVD 'CDDR 'REST2)
+(MOVD 'CDDDR 'REST3)
+(MOVD 'CDDDDR 'REST4)
+
+(DEFUN NTHCDR (NUM LST)
+  (NTH LST (PLUS NUM 1)) )
+
+(DEFUN LIST* ARGS
+  ((ATOM (CDDR ARGS)) (CONS (CAR ARGS) (CADR ARGS)))
+  (CONS (CAR ARGS) (APPLY 'LIST* (CDR ARGS))) )
+
+(DEFUN MAKE-LIST (NUM OBJ
+    % Local: % LST )
+  (LOOP
+    ((NOT (PLUSP NUM)) LST)
+    (PUSH OBJ LST)
+    (SETQ NUM (PLUS NUM -1)) ) )
+
+(DEFUN CIRCULAR-LIST ARGS
+  (NCONC ARGS ARGS) )
+
+
+;COPYLIST [list]  copies the top level conses of <list>.
+
+(MOVD 'APPEND 'COPYLIST)
+
+
+;COPYALIST [list]  copies the top level conses of <list> and the first
+;cons pointed to by each element of <list>.
+
+(DEFUN COPYALIST (LST)
+  ((NULL LST) NIL)
+  ((ATOM (CAR LST))
+    (CONS (CAR LST) (COPYALIST (CDR LST))) )
+  (CONS (CONS (CAAR LST) (CDAR LST)) (COPYALIST (CDR LST))) )
+
+
+;COPYTREE [object]  copies the conses of <object> down to the atomic level.
+
+(DEFUN COPYTREE (OBJ)
+  ((ATOM OBJ) OBJ)
+  (CONS (COPYTREE (CAR OBJ)) (COPYTREE (CDR OBJ))) )
+
+
+;NREVERSE [list]  reverses <list> without consing by modifying <list>.
+
+(DEFUN NREVERSE (LST1
+    % Local: % LST2 )
+  (LOOP
+    ((ATOM LST1) LST2)
+    (SETQ LST2 (RPLACD LST1 LST2 (POP LST1))) ) )
+
+
+;NRECONC [list, object]  reverse <list> and concatenates it to <object>.
+
+(MOVD 'REVERSE 'NRECONC)
+
+
+;BUTLAST [list]  returns a list of all but the last element of <list>.
+
+(DEFUN BUTLAST (LST)
+  ((OR (ATOM LST) (ATOM (CDR LST))) NIL)
+  (CONS (CAR LST) (BUTLAST (CDR LST))) )
+
+
+;NBUTLAST [list]  removes the last element of <list> by modifying <list>.
+
+(DEFUN NBUTLAST (LST
+    % Local: % OBJ )
+  ((OR (ATOM LST) (ATOM (CDR LST))) NIL)
+  (SETQ OBJ LST)
+  (LOOP
+    ((ATOM (CDDR LST))
+      (RPLACD LST)
+      OBJ )
+    (POP LST) ) )
+
+
+;FIRSTN [n, list]  returns a list of the first <n> elements of <list>.
+
+(DEFUN FIRSTN (NUM LST)
+  ((ZEROP NUM) NIL)
+  ((ATOM LST)
+    (CONS LST (FIRSTN (PLUS NUM -1) LST)) )
+  (CONS (CAR LST) (FIRSTN (PLUS NUM -1) (CDR LST))) )
+
+
+;NLEFT [n, list, tail]  returns <n> more elements from the end of <list>
+;than <tail>.  <tail> should be NIL or a tail of <list>.
+
+(DEFUN NLEFT (NUM LST TAIL)
+  ((OR (NULL LST) (EQ LST TAIL))
+    ((OR (NOT (NUMBERP NUM)) (ZEROP NUM)) LST)
+    1 )
+  (SETQ TAIL (NLEFT NUM (CDR LST) TAIL))
+  ((NUMBERP TAIL)
+    ((EQ TAIL NUM) LST)
+    (PLUS TAIL 1) )
+  TAIL )
+
+
+;LDIFF [list, tail]  returns a list of the elements of <list> up to
+;<tail>.
+
+(DEFUN LDIFF (LST TAIL)
+  ((ATOM TAIL) LST)
+  (LDIFF-AUX LST)) )
+
+(DEFUN LDIFF-AUX (LST)
+  ((OR (ATOM LST) (EQ LST TAIL)) NIL)
+  (CONS (CAR LST) (LDIFF-AUX (CDR LST))) )
+
+
+;	Section 5.3:  Alteration of List Structure
+
+;The following functions described in this section are primitively
+;defined in muLISP:  RPLACD, RPLACA.
+
+
+;SUBST [new, old, object]  copies <object> using consing and replaces
+;all sub-expressions EQUAL to <old> with <new>.
+
+(DEFUN SUBST (NEW OLD OBJ)
+  ((EQUAL OLD OBJ) NEW)
+  ((ATOM OBJ) OBJ)
+  (CONS (SUBST NEW OLD (CAR OBJ)) (SUBST NEW OLD (CDR OBJ))) )
+
+
+;NSUBST [new, old, object]  substitutes <new> for all sub-expressions
+;EQ to <old> in <object> without consing.
+
+(DEFUN NSUBST (NEW OLD OBJ)
+  ((EQ OLD OBJ) NEW)
+  ((ATOM OBJ) OBJ)
+  (RPLACA OBJ (NSUBST NEW OLD (CAR OBJ)))
+  (RPLACD OBJ (NSUBST NEW OLD (CDR OBJ))) )
+
+
+;SUBLIS [a-list, object]  substitutes in <object> for each key in
+;<a-list> the associated value.  New structure is created only if
+;necessary.
+
+(DEFUN SUBLIS (ALST OBJ
+    % Local: % TEMP1 TEMP2 )
+  ((ATOM OBJ)
+    (SETQ TEMP1 (ASSOC OBJ ALST))
+    ((NULL TEMP1) OBJ)
+    (CDR TEMP1) )
+  (SETQ TEMP1 (SUBLIS ALST (CAR OBJ)))
+  (SETQ TEMP2 (SUBLIS ALST (CDR OBJ)))
+  ((AND (EQ (CAR OBJ) TEMP1) (EQ (CDR OBJ) TEMP2)) OBJ)
+  (CONS TEMP1 TEMP2) )
+
+
+;NSUBLIS [a-list, object]  produces the same result as SUBLIS by
+;modifying <object>.
+
+(DEFUN NSUBLIS (ALST OBJ
+    % Local: % TEMP )
+  ((ATOM OBJ)
+    (SETQ TEMP (ASSOC OBJ ALST))
+    ((NULL TEMP) OBJ)
+    (CDR TEMP) )
+  (RPLACA OBJ (NSUBLIS ALST (CAR OBJ)))
+  (RPLACD OBJ (NSUBLIS ALST (CDR OBJ))) )
+
+
+;	Section 5.6:  Lists as Tables
+
+;The following function(s) described in this section are primitively
+;defined in muLISP:  MEMBER.
+
+
+;MEM [function, object, list]  returns the first sublist of <list> for
+;which <function> of <object> and the first element of the sublist is
+;nonNIL.
+
+(DEFUN MEM (FUN$ OBJ LST)
+  (LOOP
+    ((ATOM LST) NIL)
+    ((FUN$ OBJ (CAR LST)) LST)
+    (POP LST) ) )
+
+
+;MEMQ [atom, list]  is equivalent to MEMBER [atom, list] except that an
+;EQ test is used instead of EQUAL.  In muLISP, MEMBER is faster since
+;it is defined in machine language.
+
+(DEFUN MEMQ (ATM LST)
+  (MEM 'EQ ATM LST) )
+
+
+;FIND-POSITION-IN-LIST [object, list]  returns the position of the
+;element in <list> EQ to <object>; if not found, NIL is returned.
+
+(DEFUN FIND-POSITION-IN-LIST (OBJ LST
+    % Local: % NUM )
+  (SETQ NUM 0)
+  (LOOP
+    ((ATOM LST) NIL)
+    ((EQ OBJ (POP LST)) NUM)
+    (SETQ NUM (PLUS NUM 1)) ) )
+
+
+;FIND-POSITION-IN-LIST [object, list]  returns the position of the
+;element in <list> EQUAL to <object>; if not found, NIL is returned.
+
+(DEFUN FIND-POSITION-IN-LIST-EQUAL (OBJ LST
+    % Local: % NUM )
+  (SETQ NUM 0)
+  (LOOP
+    ((ATOM LST) NIL)
+    ((EQUAL OBJ (POP LST)) NUM)
+    (SETQ NUM (PLUS NUM 1)) ) )
+
+
+;TAILP [object, list]  returns T if <object> is EQ to some 0 or more
+;cdrs of <list>.  Otherwise, it returns NIL.
+
+(DEFUN TAILP (OBJ LST)
+  (LOOP
+    ((EQ OBJ LST) T)
+    ((ATOM LST) NIL)
+    (POP LST) ) )
+
+
+;DEL [function, object, list, n]  deletes from <list> those elements for
+;which <function> of <object> and the element is nonNIL by modifying
+;<list>.  At most <n> elements are deleted if <n> is a nonnegative integer.
+
+(DEFUN DEL (FUN$ OBJ LST NUM
+    % Local: % TEMP )
+  ((OR (ATOM LST) (ZEROP NUM)) LST)
+  ((FUN$ OBJ (CAR LST))
+    ((PLUSP NUM)
+      (DEL FUN$ OBJ (CDR LST) (PLUS NUM -1)) )
+    (DEL FUN$ OBJ (CDR LST)) )
+  (SETQ TEMP LST)
+  ((PLUSP NUM)
+    (LOOP
+      ((ATOM (CDR TEMP)) LST)
+      ( ((FUN$ OBJ (CADR TEMP))
+	  (SETQ NUM (PLUS NUM -1))
+	  (RPLACD TEMP (CDDR TEMP)) )
+	(POP TEMP) )
+      ((ZEROP NUM) LST) ) )
+  (LOOP
+    ((ATOM (CDR TEMP)) LST)
+    ( ((FUN$ OBJ (CADR TEMP))
+	(RPLACD TEMP (CDDR TEMP)) )
+      (POP TEMP) ) ) )
+
+
+;DELQ [object, list, n]  deletes from <list> elements EQ to <object>.
+
+(DEFUN DELQ (OBJ LST NUM)
+  (DEL (QUOTE EQ) OBJ LST NUM) )
+
+
+;DELETE [object, list, n]  deletes from <list> elements EQUAL to <object>.
+
+(DEFUN DELETE (OBJ LST NUM)
+  (DEL (QUOTE EQUAL) OBJ LST NUM) )
+
+
+;REM [function, object, list, n]  returns a copy of <list> minus those
+;elements of <list> for which <function> of <object> and the element is
+;nonNIL.  At most <n> elements are removed if <n> is a nonnegative integer.
+
+(DEFUN REM (FUN$ OBJ LST NUM)
+  ((ZEROP NUM)
+    LST )
+  ((PLUSP NUM)
+    (REM-AUX-NUM LST NUM) )
+  (REM-AUX LST) )
+
+(DEFUN REM-AUX (LST)
+  ((ATOM LST) LST)
+  ((FUN$ OBJ (CAR LST))
+    (REM-AUX (CDR LST)) )
+  (CONS (CAR LST) (REM-AUX (CDR LST))) )
+
+(DEFUN REM-AUX-NUM (LST NUM)
+  ((ATOM LST) LST)
+  ((ZEROP NUM) LST)
+  ((FUN$ OBJ (CAR LST))
+    (REM-AUX-NUM (CDR LST) (PLUS NUM -1)) )
+  (CONS (CAR LST) (REM-AUX-NUM (CDR LST) NUM)) )
+
+
+;REMQ [object, list, n]  returns a copy of <list> with the first <n>
+;elements EQ to <object> removed.
+
+(DEFUN REMQ (OBJ LST NUM)
+  (REM 'EQ OBJ LST NUM) )
+
+
+;REMOVE [object, list, n]  returns a copy of <list> with the first <n>
+;elements EQUAL to <object> removed.
+
+(DEFUN REMOVE (OBJ LST NUM)
+  (REM 'EQUAL OBJ LST NUM) )
+
+
+;SUBSET [function, list]  applies <function> to the elements of <list>
+;and returns a list of the elements for which the results were nonNIL.
+
+(DEFUN SUBSET (FUN$ LST)
+  ((ATOM LST) NIL)
+  ((FUN$ (CAR LST))
+    (CONS (CAR LST) (SUBSET FUN$ (CDR LST))) )
+  (SUBSET FUN$ (CDR LST)) )
+
+(MOVD 'SUBSET 'REM-IF-NOT)
+
+
+;SUBSET-NOT [function, list]  applies <function> to the elements of <list>
+;and returns a list of the elements for which the results were NIL.
+
+(DEFUN SUBSET-NOT (FUN$ LST)
+  ((ATOM LST) NIL)
+  ((FUN$ (CAR LST))
+    (SUBSET-NOT FUN$ (CDR LST)) )
+  (CONS (CAR LST) (SUBSET-NOT FUN$ (CDR LST))) )
+
+(MOVD 'SUBSET-NOT 'REM-IF)
+
+
+;DEL-IF [function, list]  is the same as REM-IF except <list> is modified.
+
+(DEFUN DEL-IF (FUN$ LST
+    % Local: % TEMP )
+  (LOOP
+    ((ATOM LST) NIL)
+    ((NOT (FUN$ (CAR LST)))
+      (SETQ TEMP LST)
+      (LOOP
+	((ATOM (CDR TEMP)) LST)
+	( ((FUN$ (CADR TEMP))
+	    (RPLACD TEMP (CDDR TEMP)) )
+	  (POP TEMP) ) ) )
+    (POP LST) ) )
+
+
+;DEL-IF-NOT [function, list]  is the same as REM-IF-NOT except <list> is
+;modified.
+
+(DEFUN DEL-IF-NOT (FUN$ LST
+    % Local: % TEMP )
+  (LOOP
+    ((ATOM LST) NIL)
+    ((FUN$ (CAR LST))
+      (SETQ TEMP LST)
+      (LOOP
+	((ATOM (CDR TEMP)) LST)
+	( ((FUN$ (CADR TEMP))
+	    (POP TEMP) )
+	  (RPLACD TEMP (CDDR TEMP)) ) ) )
+    (POP LST) ) )
+
+
+;EVERY [list, function1, function2]  returns T if the result of applying
+;<function1> to every element of <list> is nonNIL.  Otherwise, NIL.  If
+;<function2> is nonNIL, it is used to step through <list>.
+
+(DEFUN EVERY (LST FUN1 FUN2)
+  ((NULL FUN2)
+    (LOOP
+      ((ATOM LST))
+      ((NOT (FUN1 (CAR LST) LST)) NIL)
+      (POP LST) ) )
+  (LOOP
+    ((ATOM LST))
+    ((NOT (FUN1 (CAR LST) LST)) NIL)
+    (SETQ LST (FUN2 LST)) ) )
+
+
+;SOME [list, function1, function2]  returns the tail of <list> beginning
+;with the first element for which <function1> is nonNIL.  Otherwise, it
+;returns NIL.  If <function2> is nonNIL, it is used to step through <list>.
+
+(DEFUN SOME (LST FUN1 FUN2)
+  ((NULL FUN2)
+    (LOOP
+      ((ATOM LST) NIL)
+      ((FUN1 (CAR LST) LST) LST)
+      (POP LST) ) )
+  (LOOP
+    ((ATOM LST) NIL)
+    ((FUN1 (CAR LST) LST) LST)
+    (SETQ LST (FUN2 LST)) ) )
+
+
+;	Section 5.7:  Association Lists
+
+;The following function(s) described in this section are primitively
+;defined in muLISP:  ASSOC.
+
+
+;ASS [function, object, a-list]  returns the element of <a-list> for
+;which <function> of <object> and the car of the element is nonNIL.
+
+(DEFUN ASS (FUN$ OBJ ALST)
+  (LOOP
+    ((ATOM ALST) NIL)
+    ((AND (NOT (ATOM (CAR ALST))) (FUN$ OBJ (CAAR ALST)))
+      (CAR ALST) )
+    (POP ALST) ) )
+
+
+;ASSQ [object, a-list]  returns the element of <a-list> whose car is
+;EQ to <object>.  In muLISP, the machine language ASSOC function is
+;faster than this LAMBDA defined ASSQ.
+
+(DEFUN ASSQ (OBJ ALST)
+  (ASS (QUOTE EQ) OBJ ALST) )
+
+
+;MEMASS [function, object, a-list]  returns the sublist of <a-list> for
+;which <function> of <object> and the car of the first element of the
+;sublist is nonNIL.
+
+(DEFUN MEMASS (FUN$ OBJ ALST)
+  (LOOP
+    ((ATOM ALST) NIL)
+    ((AND (NOT (ATOM (CAR ALST))) (FUN$ OBJ (CAAR ALST))) ALST)
+    (POP ALST) ) )
+
+
+;RASS [function, object, a-list]  returns the element of <a-list> for
+;which <function> of <object> and the cdr of the element is nonNIL.
+
+(DEFUN RASS (FUN$ OBJ ALST)
+  (LOOP
+    ((ATOM ALST) NIL)
+    ((AND (NOT (ATOM (CAR ALST))) (FUN$ OBJ (CDAR ALST)))
+      (CAR ALST) )
+    (POP ALST) ) )
+
+
+;RASSQ [object, a-list]  returns the element of <a-list> whose cdr is
+;EQ to <object>.
+
+(DEFUN RASSQ (OBJ ALST)
+  (RASS 'EQ OBJ ALST) )
+
+
+;RASSOC [object, a-list]  returns the element of <a-list> whose cdr is
+;EQUAL to <object>.
+
+(DEFUN RASSOC (OBJ ALST)
+  (RASS 'EQUAL OBJ ALST) )
+
+
+;SASSQ [object, a-list, function]  is equivalent to ASSQ except <function>
+;is called if <object> is not found in <a-list>.
+
+(DEFUN SASSQ (OBJ ALST FUN$)
+  ((ASS 'EQ OBJ ALST))
+  (FUN$) )
+
+
+;SASSOC [object, a-list, function]  is equivalent to ASSOC except <function>
+;is called if <object> is not found in <a-list>.
+
+(DEFUN SASSOC (OBJ ALST FUN$)
+  ((ASS 'EQUAL OBJ ALST))
+  (FUN$) )
+
+
+;PAIRLIS [list1, list2]  returns an association list of the elements of
+;<list1> paired with the elements of <list2>.
+
+(DEFUN PAIRLIS (LST1 LST2)
+  ((OR (ATOM LST1) (ATOM LST2)) NIL)
+  (CONS (CONS (CAR LST1) (CAR LST2)) (PAIRLIS (CDR LST1) (CDR LST2))) )
+
+
+;	Section 5.8:  Property Lists
+
+;The following function(s) described in this section are primitively
+;defined in muLISP:  GET, REMPROP.
+
+;GETL [name, list]  returns the sublist of <name>'s property list
+;beginning with the first element whose car is a MEMBER of <list>.
+
+(DEFUN GETL (NAM LST)
+  (LOOP
+    (SETQ NAM (CDR NAM))
+    ((ATOM NAM) NIL)
+    ((MEMBER (CAAR NAM) LST)
+      NAM ) ) )
+
+
+;PUTPROP [name, object, key]  puts on <name>'s property list under the
+;indicator <key> the value <object>.  Note that the last two arguments
+;are in the reverse order from that used by the muLISP PUT function.
+
+(DEFUN PUTPROP (NAM OBJ KEY)
+  (PUT NAM KEY OBJ) )
+
+
+;DEFPROP [name, object, key]  is a no-eval version of PUTPROP.
+
+(DEFUN DEFPROP NLAMBDA (NAM OBJ KEY)
+  (PUT NAM KEY OBJ) )
+
+
+;	Section 5.10:  Sorting
+
+;SORT [list, function]  returns a sorted list version of <list> using the
+;predicate <function> on the elements of <list>.
+
+(DEFUN SORT (LST FUN$
+    % Local: % LST1 LST2 LST3)
+  (LOOP
+    (SETQ LST3 LST)
+    (LOOP
+      ((EQ LST3 LST2))
+      ((NULL (CDR LST3)))
+      ( ((FUN$ (CADR LST3) (CAR LST3))
+	  (SETQ LST1 (CADR LST3))
+	  (RPLACA (CDR LST3) (CAR LST3))
+	  (RPLACA LST3 LST1)
+	  (SETQ LST1 LST3) ) )
+      (POP LST3) )
+    ((NULL LST1) LST)
+    (SETQ LST2 LST1)
+    (SETQ LST1) ) )
+
+
+;SORTCAR [list, function]  returns a sorted list version of <list> using
+;the predicate <function> on the cars of the elements of <list>.
+
+(DEFUN SORTCAR (LST FUN$
+    % Local: % LST1 LST2 LST3)
+  (LOOP
+    (SETQ LST3 LST)
+    (LOOP
+      ((EQ LST3 LST2))
+      ((NULL (CDR LST3)))
+      ( ((FUN$ (CAADR LST3) (CAAR LST3))
+	  (SETQ LST1 (CADR LST3))
+	  (RPLACA (CDR LST3) (CAR LST3))
+	  (RPLACA LST3 LST1)
+	  (SETQ LST1 LST3) ) )
+      (POP LST3) )
+    ((NULL LST1) LST)
+    (SETQ LST2 LST1)
+    (SETQ LST1) ) )
+
+
+
+;		* * *   Chapter 6:  S Y M B O L S   * * *
+
+;	Section 6.1:  The Value Cell
+
+;The following function(s) described in this section are primitively
+;defined in muLISP:  SET.
+
+(DEFUN SYMEVAL (NAM)			;Symbol's value
+  ((NAME NAM)
+    (CAR NAM) ) )
+
+(DEFUN BOUNDP (NAM)			;Bound symbol predicate
+  ((NAME NAM)
+    (NOT (EQ NAM (CAR NAM))) ) )
+
+(DEFUN MAKUNBOUND (NAM)			;Make symbol unbound
+  ((NAME NAM)
+    (RPLACA NAM NAM) ) )
+
+
+;	Section 6.2:  The Function Cell
+
+(MOVD 'GETD 'FSYMEVAL)			;Symbol's function definition
+
+(MOVD 'PUTD 'FSET)			;Sets symbol's definition
+
+(DEFUN FBOUNDP (NAM)			;Defined function predicate
+  ((GETD NAM) T) )
+  
+(DEFUN FMAKUNBOUND (FUN)		;Make symbol undefined
+  (MOVD 'NIL FUN) )
+
+
+;	Section 6.3:  The Property List
+
+(DEFUN PLIST (NAM)			;Symbol's property list
+  ((NAME NAM)
+    (CDR NAM) ) )
+
+(DEFUN SETPLIST (NAM LST)		;Sets symbol's propert list
+  ((NAME NAM)
+    (RPLACD NAM LST) ) )
+
+
+;	Section 6.6:  Creating Symbols
+
+(SETQ GENSYM-PREFIX 'G)
+
+(SETQ GENSYM-COUNTER 0)
+
+(DEFUN GENSYM (ATM)
+  ( ((NULL ATM))
+    ((NAME ATM)
+      (SETQ GENSYM-PREFIX (SUBSTRING ATM 1 1)) )
+    ((NUMBERP ATM)
+      (SETQ GENSYM-COUNTER ATM) ) )
+  (SETQ ATM (PACK (LIST
+	GENSYM-PREFIX
+	(SUBSTRING '"0000" 1 (DIFFERENCE 4 (LENGTH GENSYM-COUNTER)))
+	GENSYM-COUNTER)))
+  (SETQ GENSYM-COUNTER (PLUS GENSYM-COUNTER 1))
+  ATM )
+
+
+;	* * *   Chapter 7:  N U M B E R S   * * *
+
+;muLISP supports exact, infinite precision integer arithmetic.
+
+
+;	Section 7.1:  Numeric Predicates
+
+;The following functions described in this section are primitively
+;defined in muLISP:  ZEROP, PLUSP, MINUSP, and EVENP.  In muLISP, these
+;functions are considered recognizer functions and, therefore, do NOT
+;cause a "Non-numeric Argument" trap.
+
+(DEFUN ODDP (NUM)				;Odd number predicate
+  ((NUMBERP NUM)
+    (NOT (EVENP NUM)) ) )
+
+
+;	Section 7.2:  Numeric Comparisons
+
+;The following functions described in this section are primitively
+;defined in muLISP:  GREATERP and LESSP.  They cause a "Non-numeric
+;Argument" error if called with non-numeric arguments.
+
+(MOVD 'EQ '=)					;Equality comparator
+
+
+(MOVD 'GREATERP '>)				;Greater than comparator
+
+(DEFUN >= LST					;Greater than or equal
+  ((NULL LST))
+  (LOOP
+    ((NULL (CDR LST)))
+    ((LESSP (CAR LST) (CADR LST)) NIL)
+    (POP LST) ) )
+
+
+(MOVD 'LESSP '<)				;Less than comparator
+
+(DEFUN <= LST					;Less than or equal
+  ((NULL LST))
+  (LOOP
+    ((NULL (CDR LST)))
+    ((GREATERP (CAR LST) (CADR LST)) NIL)
+    (POP LST) ) )
+
+
+;MAX [n1, n2, ..., nm]  returns the maximum of <n1> through <nm>.
+
+(DEFUN MAX LST
+  (MAX-AUX (CAR LST) (CDR LST)) )
+
+(DEFUN MAX-AUX (NUM LST)
+  (LOOP
+    ((ATOM LST) NUM)
+    ( ((GREATERP NUM (CAR LST)))
+      (SETQ NUM (CAR LST)) )
+    (POP LST) ) )
+
+
+;MIN [n1, n2, ..., nm]  returns the minimum of <n1> through <nm>.
+
+(DEFUN MIN LST
+  (MIN-AUX (CAR LST) (CDR LST)) )
+
+(DEFUN MIN-AUX (NUM LST)
+  (LOOP
+    ((ATOM LST) NUM)
+    ( ((LESSP NUM (CAR LST)))
+      (SETQ NUM (CAR LST)) )
+    (POP LST) ) )
+
+
+;	Section 7.3:  Arithmetic
+
+;The following functions described in this section are primitively
+;defined in muLISP:  PLUS, DIFFERENCE, MINUS, TIMES, QUOTIENT, REMAINDER,
+;and GCD.  They cause a "Non-numeric Argument" error if called with
+;non-numeric arguments.  In muLISP, QUOTIENT must have exactly two
+;arguments.
+
+(MOVD 'PLUS '+)
+
+(MOVD 'DIFFERENCE '-)
+
+(DEFUN ABS (NUM)				;Absolute value
+  ((MINUSP NUM)
+    (MINUS NUM) )
+  NUM )
+
+(MOVD 'TIMES '*)
+
+(MOVD 'QUOTIENT '/)
+
+(MOVD 'REMAINDER '\)
+
+
+(DEFUN ADD1 (NUM)				;Add one
+  (PLUS NUM 1) )
+
+(DEFUN SUB1 (NUM)				;Subtract one
+  (DIFFERENCE NUM 1) )
+
+
+;EXPT [n, m]  returns the <n> raised to the <m>th power.
+
+(DEFUN EXPT (NUM1 NUM2
+    % Local: % NUM3 )
+  (SETQ NUM3 1)
+  (LOOP
+    (SETQ NUM2 (DIVIDE NUM2 2))
+    ( ((EQ (CDR NUM2) 1)
+	(SETQ NUM3 (TIMES NUM1 NUM3)) ) )
+    (SETQ NUM2 (CAR NUM2))
+    ((ZEROP NUM2) NUM3)
+    (SETQ NUM1 (TIMES NUM1 NUM1)) ) )
+
+
+;SQRT [n]  returns the truncated integer square root of <n>.
+
+(DEFUN SQRT (NUM
+    % Local: % ANS DELTA)
+  ((ZEROP NUM) NUM)
+  ((PLUSP NUM)
+    (SETQ ANS NUM)
+    (LOOP
+      (SETQ DELTA (QUOTIENT (DIFFERENCE NUM (TIMES ANS ANS))
+				(PLUS ANS ANS)))
+      ((NOT (MINUSP DELTA)) ANS)
+      (SETQ ANS (PLUS ANS DELTA)) ) ) )
+
+
+;LSH [n, m]  shifts <n> left <m> bits if <m> is nonnegative; shifts <n>
+;right <-m> bits if <m> is negative.
+
+(DEFUN LSH (NUM1 NUM2)
+  ((PLUSP NUM2)
+    (LOOP
+      (SETQ NUM1 (PLUS NUM1 NUM1))
+      (SETQ NUM2 (PLUS NUM2 -1))
+      ((ZEROP NUM2) NUM1) ) )
+  ((NUMBERP NUM2)
+    (LOOP
+      (SETQ NUM2 (PLUS NUM2 1))
+      ((PLUSP NUM2) NUM1)
+      (SETQ NUM1 (QUOTIENT NUM1 2)) ) ) )
+
+
+;HAULONG [n]  returns the number of significant bits in <n>.
+
+(DEFUN HAULONG (NUM
+    % Local: % RADIX)
+  ((ZEROP NUM) NUM)
+  (SETQ RADIX (RADIX 2))
+  (PROG1
+    (LENGTH (ABS NUM))
+    (RADIX RADIX) ) )
+
+
+
+;	Chapter 9:  S T R I N G S
+
+;Strings are not a separate data type in muLISP.  Instead, the print names
+;of atoms are used for string operations.  This requires the additional
+;overhead to intern strings; however, it eliminates the need for type 
+;conversions.
+
+
+;	Section 9.1:  Characters
+
+(DEFUN CHARACTER (ATM)			;Convert name to ASCII character
+  ((NUMBERP ATM) ATM)
+  (ASCII ATM) )
+
+(DEFUN CHAR-EQUAL (CHR1 CHR2)		;Same characters, ignore case
+  (EQ (CHAR-UPCASE CHR1) (CHAR-UPCASE CHR2)) )
+
+(DEFUN CHAR-LESSP (CHR1 CHR2)		;Compare characters, ignore case
+  (LESSP (CHAR-UPCASE CHR1) (CHAR-UPCASE CHR2)) )
+
+
+;	Section 9.2:  Upper and Lower Case Letters
+
+(DEFUN CHAR-UPCASE (CHR)		;Convert char to upper-case
+  ((LESSP 96 CHR 123)
+    (DIFFERENCE CHR 32) )
+  CHR )
+
+(DEFUN CHAR-DOWNCASE (CHR)		;Convert char to lower-case
+  ((LESSP 64 CHR 91)
+    (PLUS CHR 32) )
+  CHR )
+
+(DEFUN STRING-UPCASE (ATM)		;Convert name to upper-case
+  (PACK (MAPCAR '(LAMBDA (NAM)
+			(ASCII (CHAR-UPCASE (CHARACTER NAM))) )
+		(UNPACK ATM))) )
+ 
+(DEFUN STRING-DOWNCASE (ATM)		;Convert name to lower-case
+  (PACK (MAPCAR '(LAMBDA (NAM)
+			(ASCII (CHAR-DOWNCASE (CHARACTER NAM))) )
+		(UNPACK ATM))) )
+
+
+;	Section 9.3:  Basic String Operations
+
+;In Maclisp, string position counters are indexed from 0.  In muLISP,
+;string are indexed from 1.  The following functions have been defined
+;using the Maclisp convention.
+
+(DEFUN STRING (ATM)			;Convert ASCII to name
+  ((NAME ATM) ATM)
+  (ASCII ATM) )
+
+(DEFUN STRING-LENGTH (ATM		;Length of print name string
+    % Local: % LENGTH )
+  ((ATOM ATM)
+    ((NUMBERP ATM) 1)
+    (LENGTH ATM) ) )
+
+
+;STRING-LESSP [atom1, atom2]  a predicate for alphabetizing atoms.  Numbers
+;come before names and are sorted numerically.
+
+(DEFUN STRING-LESSP (ATM1 ATM2)
+  ((NUMBERP ATM1)
+    ((NUMBERP ATM2)
+      (LESSP ATM1 ATM2) )
+    T )
+  ((NUMBERP ATM2) NIL)
+  (SETQ ATM1 (UNPACK ATM1))
+  (SETQ ATM2 (UNPACK ATM2))
+  (LOOP
+    ((NULL ATM1))
+    ((NULL ATM2) NIL)
+    ((NOT (EQ (CAR ATM1) (CAR ATM2)))
+      (LESSP (ASCII (CAR ATM1)) (ASCII (CAR ATM2))) )
+    (POP ATM1)
+    (POP ATM2) ) )
+
+(MOVD 'STRING-LESSP 'ALPHALESSP)
+
+
+;*SUBSTRING [atom, n, m]  returns the substring of <atom> starting from
+;the <n>th character up to but not including the <m>th character.
+;Note: the muLISP SUBSTRING function should retain its original
+;definition so as not to lead to incompatibilites with other muLISP
+;programs.
+
+(DEFUN *SUBSTRING (ATM NUM1 NUM2)
+  (SUBSTRING ATM (PLUS NUM1 1) NUM2) )
+
+
+;STRING-APPEND [atom1, atom2, ..., atomn]  returns the name whose print
+;name string consists of print names of <atom1> through <atomn>
+;concatenated together.
+
+(DEFUN STRING-APPEND LST
+  (PACK LST) )
+
+
+;STRING-REVERSE [atom]  returns the name whose print name string consists
+;of the characters of <atom>'s print name in reverse order.
+
+(DEFUN STRING-REVERSE (ATM)
+  (PACK (REVERSE (UNPACK ATM))) )
+
+
+;	Section 9.4:  String Searching
+
+;STRING-SEARCH [atom1, atom2, n, m]  returns the first position of
+;<atom1> in <atom2> beginning after the <n>th character of <atom2>.
+;The search is limited by <m>.
+
+(DEFUN STRING-SEARCH (ATM1 ATM2 NUM1, NUM2)
+  (SETQ NUM1 (PLUS -1 (COND
+    ((NULL NUM1) (FINDSTRING ATM1 ATM2))
+    ((FINDSTRING ATM1 ATM2 (PLUS NUM1 1))) )))
+  ((NULL NUM2) NUM1)
+  ((GREATERP NUM1 NUM2) NIL)
+  NUM1 )
+
+(RDS)
+

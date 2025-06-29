@@ -1,0 +1,74 @@
+.macro chttl = Validation
+.ahd Validation#Suite#Results#(Preliminary#3.0.79)
+.asis
+Pascal Processor Identification
+  Machines     :  8080 under CPM 2.2, Interpreter 2.2.6
+                  HP3000 under MPE HP32002C.G0.C3
+  Compiler     :  Pascal-P V3.0.79 (Revised to 3.1.1)
+  Level        :  0
+  Date         :   8 Mar. 1983
+  Tests by     :  C.B.Falconer
+  Test Version : 3.1
+!
+
+.note NOTE
+system maxset is 127. Tests 6.7.1-9 & 6.7.2.4-6 modified accordingly.
+.res
+
+.asis
+Conformance Tests:             HP3000        8080 CPM
+=================              ======        ========
+Number of tests passed       =    166             159
+Number of tests failed       =     13              20
+!
+
+Details of failed tests:
+.sav .tabs 20 35 50 .list 1
+
+Six primary reasons (apply to both systems) :
+.le    functional  and procedural parameters are not  implemented.
+Affects tests: 
+.cr .t           6.6.3.1-4   .t    6.6.3.4-1 .t      6.6.3.4-2 
+.cr .t                 6.6.3.5-1 
+.le Variables  are  identified by their initial 8  chars. only.  Affects:
+.cr .t                 6.1.3-2  .t       6.4.3.5-11
+.le (* *)  and {} comments are separate, and one type may
+be nested within the other,  although comments of any
+single type may not be nested. Affects:
+.cr .t                 6.1.9-1
+.le GOTO's  out  of a procedure/function  block  are  not
+implemented.  Affects:
+.cr .t                 6.8.2.4-1
+.le     File types can be used in structured  variables,  but
+only   if  the  system  special  standard   procedure
+FILEINIT(f) is executed on each such file, i.e. array
+of  file.   Test  is  successful  with  this  change.
+Affects:
+.cr .t                 6.4.3.5-4
+.le     CASE table size restricted to 1000 entries. Affects:
+.cr .t                 6.8.3.5-2
+
+
+Implementation errors detected (both systems):
+.le     Functional  values  may only be assigned  within  the
+main function block. Affects:
+.cr .t                 6.2.2-6
+.le     Real output formatting is non-standard.
+.cr .t                 6.9.3.5.1-1 .t    6.9.3.5.1-2
+
+8080 CPM implementation errors detected:
+.le     In the CPM file environment,  for non TEXT files, no
+accurate  EOF marker is available.   Thus eof is  not
+necessarily set after read-back from a non-text file.
+6.4.3.5-11  already  failed  for  identifier  length.
+Affects:
+.cr .t                 6.4.3.5-5 .t      6.5.3.5-6 .t      6.4.3.5-7
+.cr .t                 6.4.3.5-8 .t      6.5.3.5-9  .t     6.4.3.5-10
+.cr .t                 6.4.3.5-11 .t     6.4.3.5-12
+.endlist .res
+
+.note NOTE
+Except as noted above for system maxset,  no textual changes whatsoever
+were made to the validation suite programs.
+.res
+.‡

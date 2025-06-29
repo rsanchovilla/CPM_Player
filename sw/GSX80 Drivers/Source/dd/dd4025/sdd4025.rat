@@ -1,0 +1,320 @@
+h53672
+s 00308/00000/00000
+d D 1.1 83/03/15 21:08:51 tes 1 0
+c date and time created 83/03/15 21:08:51 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  dd4025.rat          local   03/24/82  11:21
+subroutine dd4025 (contrl, intin, rlin, intout, rlout)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Input Parameters:                                                #
+#            contrl(1-3) - An integer array with following information #
+#                          contrl(1) - opcode for driver function      #
+#                          contrl(2) - length of integer array intin   #
+#                          contrl(3) - length of real input array rlin #
+#                                                                      #
+#            intin   -     Array of integer input parameters           #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters:                                               #
+#            contrl(4-6) - contrl(4) - length of integer array intout  #
+#                          contrl(5) - length of integer array rlout   #
+#                          contrl(6) - count of any other control parms#
+#                                                                      #
+#             rlout  -     Array of integer output parameters          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             chtoi   - convert a character string to a binary integer #
+#             dm40xx - marker output emulation for TEK 40xx devices    #
+#             dr40xx - move/draw for TEK 40xx devices                  #
+#             GDEVIN  - get a character from the device                #
+#             gdevot  - put a character to device                      #
+#             gdstot - put a character string to the device            #
+#             gdstin - get a string of characters from the device      #
+#             gimnmx - bound an integer variable                       #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+# local defines
+define(X_LIMITS_4025,639.)             # screen surface width
+define(Y_LIMITS_4025,419.)             # screen surface height
+define(COM_CHAR,BANG)                  # command character
+ 
+integer contrl(1),intin(1),intout(1)
+real rlin(1),rlout(1)
+ 
+integer c, opcode, i, j, k, l, line(30), nx, ny, gimnmx,
+        enagin(8), monspc(8), newfrm(8), setup(26), wrkspc(7),
+        lstyle(8), kstyle,
+        txtjmp(11), xhi, xlo, yhi, ylo,
+        txtcap, lstcap, tszcap, gincap, mrkcap, bflcap
+real chrwid, chrhgt, lastpt(2)
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       devcap(TEXT_CAP)         :: txtcap
+#       devcap(LINESTYLE_CAP)    :: lstcap
+#       devcap(TEXT_SIZE_CAP)    :: tszcap
+#       devcap(GIN_CAP)          :: gincap
+#       devcap(MARKER_CAP)       :: mrkcap
+#       devcap(BAR_FILL_CAP)     :: bflcap
+#
+#       txtjmp(6)  :: yhi
+#       txtjmp(7)  :: ylo
+#       txtjmp(9)  :: xhi
+#       txtjmp(10) :: xlo
+#
+#       lstyle(6) :: kstyle
+ 
+equivalence (devcap(TEXT_CAP), txtcap), (devcap(LINESTYLE_CAP), lstcap),
+            (devcap(TEXT_SIZE_CAP), tszcap), (devcap(GIN_CAP), gincap),
+            (devcap(MARKER_CAP), mrkcap), (devcap(BAR_FILL_CAP), bflcap),
+            (txtjmp(6), yhi), (txtjmp(7), ylo),
+            (txtjmp(9), xhi), (txtjmp(10), xlo),
+            (lstyle(6), kstyle)
+ 
+#   The TEK 402x devices can only place characters on character cell boundries
+#   and therefore we use the full character cell size here. The actual
+#   character is 7x9 in a 8x14 cell.
+ 
+#            chrwid = 8./X_LIMITS_4025
+data chrwid /0.0125/
+ 
+#            chrhgt = 14./X_LIMITS_4025
+data chrhgt /0.021875/
+ 
+#            Enable gin - <COM_CHAR>ENA 1
+data enagin/ COM_CHAR,BIGE,BIGN,BIGA,BLANK,DIG1,CR,NEWLINE/
+ 
+#            Line style - <COM_CHAR>LIN <style>
+data lstyle/ COM_CHAR,BIGL,BIGI,BIGN,BLANK,0,CR,NEWLINE/
+ 
+#            Host monitor - <COM_CHAR>MON H
+data monspc/ COM_CHAR,BIGM,BIGO,BIGN,BLANK,BIGH,CR,NEWLINE/
+ 
+#            New frame - <COM_CHAR>ERA G
+data newfrm/ COM_CHAR,BIGE,BIGR,BIGA,BLANK,BIGG,CR,NEWLINE/
+ 
+#            Set up for grahics - build work space, graphics space and
+#            position cursor -
+#            <COM_CHAR>WOR 30;<COM_CHAR>GRA 1,30;<COM_CHAR>JUM 1
+data setup / COM_CHAR,BIGW,BIGO,BIGR,BLANK,DIG3,DIG0,SEMICOL,_
+             COM_CHAR,BIGG,BIGR,BIGA,BLANK,DIG1,COMMA,DIG3,DIG0,SEMICOL,_
+             COM_CHAR,BIGJ,BIGU,BIGM,BLANK,DIG1,CR,NEWLINE/
+ 
+#            Set up for text output - <COM_CHAR>JUM <x>,<y>;
+data txtjmp/ COM_CHAR,BIGJ,BIGU,BIGM,BLANK,0,0,COMMA,0,0,SEMICOL/
+ 
+#            Host work - <COM_CHAR>WOR H
+data wrkspc/ COM_CHAR,BIGW,BIGO,BIGR,BLANK,BIGH,CR/
+ 
+ 
+opcode=contrl(OPCODE)
+ 
+#
+#  opcode move and draw
+#
+if  ((opcode == DRAW) | (opcode == MOVE)) {
+   call dr40xx (opcode, rlin)
+   }
+ 
+#
+#  opcode text
+#
+else if (opcode == TEXT) {
+   call gdevot (NEWLINE)     # make sure the buffer is empty
+   call gdstot (7, wrkspc)   # open workspace for output
+ 
+   # nx and ny are the character coordinates on the display surface. The
+   #    screen is 80 characters wide and 30 characters wide with character
+   #    location (1,1) being the upper left hand corner. Each character cell
+   #    is 8 rasters wide and 14 rasters in height.
+ 
+   #                               79.875 = X_LIMITS_4025/8.
+   nx = gimnmx (ifix(zdxpos*79.875 + 1.5), 1, 80)
+   #                            30. - zdypos*X_LIMITS_4025/14. + .5
+   ny = gimnmx (ifix(30.5 - zdypos*45.642857), 1, 30)
+ 
+   # txtjmp(6)
+   yhi = ny/10 + DIG0
+ 
+   # txtjmp(7)
+   ylo = mod(ny,10) + DIG0
+ 
+   # txtjmp(9)
+   xhi = nx/10 + DIG0
+ 
+   # txtjmp(10)
+   xlo = mod(nx,10) + DIG0
+ 
+   call gdstot (11, txtjmp)      # Position the cursor for text output
+   j = contrl(INTEGER_IN_LENGTH)
+   call gdstot (j, intin)        # Output the text string
+   call gdstot (8, monspc)       # Close the workspace for text output
+   }
+ 
+#
+#  opcode marker
+#
+else if (opcode == MARKER) {
+   kstyle = DIG1        # Set solid line style
+   call gdstot (8, lstyle)
+   call dm40xx (intin, rlin)   # Emulate a marker
+   kstyle = ndlntp + DIG0 # Restore line style
+   call gdstot (8, lstyle)
+   }
+ 
+#
+#  opcode fill pattern
+#
+else if (opcode == SET_FILL_COLOR) {
+      ndclrf = gimnmx (intin(1), 0, 7)   # Emulation supports 8 patterns
+      intout(1) = ndclrf
+      }
+ 
+#
+#  opcode polygon edge style
+#
+else if (opcode == SET_POLYGON_EDGE_STYLE) {
+      ndedgs = intin(1)
+      }
+ 
+#
+#  opcode text size
+#
+else if (opcode == TEXT_SIZE) {
+   rlout(1) = chrwid
+   rlout(2) = chrhgt
+   }
+ 
+#
+#  opcode line style
+#
+else if (opcode == LINESTYLE) {
+   ndlntp = gimnmx (intin(1), 1, 8)   # The 4025 has 8 line styles (1-8)
+   kstyle = ndlntp + DIG0
+   intout(1) = ndlntp               # Return the actual linestyle selected
+   call gdstot (8, lstyle)
+   }
+ 
+#
+#    opcode new_frame
+#
+else if (opcode == NEW_FRAME) {
+   call gdstot (8, newfrm)
+   }
+ 
+#
+#    opcode get_point
+#
+else if (opcode == GET_POINT) {
+   for (i=1; i<=3; i=i+1) {  # try 3 times for a good input point
+      call gdstot (8, enagin)    # Enable gin
+      call gdstin (30, line, j)      # Read the device's response
+      for (k=1; k<=j; k=k+1) {   # Find the response - <COM_CHAR>DAT,
+         if (line(k) == COM_CHAR & line(k+1) == BIGD & line(k+2) == BIGA &
+             line(k+3) == BIGT) break
+         }
+      if (line(k) == COM_CHAR) {
+         for (k=k; k<=j; k=k+1) {    # Now find the first COMMA delimiter
+            if (line(k) == COMMA) break
+            }
+         if (line(k) == COMMA) {
+            call chtoi (line, k, nchar, kstop)   # Get the character struck
+            k = kstop
+            if (k <= j) {
+               call chtoi (line, k, nx, kstop)   # Convert the x coordinate
+               k = kstop
+               if (k <= j) {
+                  call chtoi (line, k, ny, kstop)   # Convert the y coordinate
+                  k = kstop
+                  break
+                  }
+               }
+            }
+         }
+      }
+   contrl(4) = 0
+   if (i <= 3) {  # check to see if we got our data
+      contrl(4) = 1       # inform high level that we got a point
+      intout(1) = nchar
+      rlout(1) = float(nx)/zdlgax
+      rlout(2) = float(ny)/zdlgax
+      }
+   }
+ 
+#
+# opcode set_device_parameters
+#
+else if (opcode == SET_DEVICE_PARAMETERS) {
+ 
+   # set up device capability array
+ 
+   txtcap = YES   # Text capability
+   lstcap = 8     # Capable of 8 different linestyles
+   tszcap = 1     # Capable of 1 text size
+   gincap = YES   # Gin capability
+   mrkcap = 5     # Capable of 5 different markers
+ 
+   zdlgax = X_LIMITS_4025      # Set the length of the longest axis.
+   zdxlng = 1.0                # Set the length of each axis in NDCs
+   zdylng = 0.65571205         # Y_LIMITS_4025 / X_LIMITS_4025
+   zdxpos = 0.0                # Initialize the device position registers
+   zdypos = 0.0
+   ndlntp = 1                  # Set current device line style
+   ndtxsz = 1                  # Set current device text size
+ 
+   # initialize device
+ 
+   call gdstot (26, setup)
+   }
+ 
+#
+#     stop graphics
+#
+else if (opcode == STOP_GRAPHICS) {
+   call gdevot (NEWLINE)   # Insure that buffer has been output
+   }
+ 
+#
+#     inquire screen size
+#
+else if (opcode == INQUIRE_SCREEN_SIZE) {
+   rlout(1) = zdxlng
+   rlout(2) = zdylng
+   rlout(3) = X_LIMITS_4025
+   }
+ 
+#
+#  opcode escape
+#
+else if (opcode == ESCAPE) {
+   j = contrl(INTEGER_IN_LENGTH)
+   call gdstot (j, intin)
+   }
+ 
+return
+end
+#-t-  dd4025.rat          local   03/24/82  11:21
+#-h-  dd4027.c            local   03/24/82  11:21
+E 1

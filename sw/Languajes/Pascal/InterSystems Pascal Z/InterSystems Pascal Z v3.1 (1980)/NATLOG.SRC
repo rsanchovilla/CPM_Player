@@ -1,0 +1,253 @@
+;   intrinsic function for calculating natural log
+;
+	NAME NATLOG  
+	ENTRY LN,L134
+	EXT FPSQR
+	INCLUDE DEFLT.SRC
+	INCLUDE FCTMAC.SRC
+;
+L118	EQU	FPSQR
+;
+;
+; function ln( x: real ): real;
+; const	c1 = 2.8853913;
+; 	c3 = 0.9614706;
+; 	c5 = 0.59897865;
+; 	sqrtp5 = 0.7071068;
+; 	loge2 = 0.6931472;
+; var y: record
+; 	case char of
+; 	  'a': ( a: real );
+; 	  'b': ( b1, b2, b3, b4: 0..255 )
+; 	end;
+;     z, z2: real;
+;     i: integer;
+; begin
+L134:
+ln:
+	ENTR	D,2,14
+;     if x = 1.0 then ln := 0.0
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,8
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,320
+	MOV	D,A
+	MOV	E,A
+	PUSH	H
+	PUSH	D
+	EQUL	D,-4
+	JNC	FC2193
+;     else begin
+	MOV	H,A
+	MOV	L,A
+	MOV	D,A
+	MOV	E,A
+	PUSH	H
+	PUSH	D
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,15
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	JMP	FC2206
+FC2193
+; 	y.a := x;
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,8
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-10
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+; 	i := (y.b1 + 128) mod 256 - 128;
+	MOV	H,A
+	MOV	L,-10(IX)
+	LXI	D,128
+	DADD	D,0
+	LXI	D,256
+	MMOD	D,0
+	LXI	D,-128
+	DADD	D,0
+	MOV	-8(IX),H
+	MOV	-9(IX),L
+; 	y.b1 := 0;
+	MOV	-10(IX),A
+; 	z := (y.a - sqrtp5) / (y.a + sqrtp5);
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-13
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,90
+	LXI	D,-32135
+	PUSH	H
+	PUSH	D
+	DSUB	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-13
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,90
+	LXI	D,-32135
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	FDVD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+; 	z2 := sqr( z );
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	CALL	L118
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+; 	ln := (((c5*z2 + c3)*z2 + c1)*z - 0.5 + i) * loge2;
+	LXI	H,76
+	LXI	D,-21675
+	PUSH	H
+	PUSH	D
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,123
+	LXI	D,4471
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,604
+	LXI	D,21792
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,64
+	MOV	D,A
+	MOV	E,A
+	PUSH	H
+	PUSH	D
+	DSUB	D,-4
+	MOV	L,-9(IX)
+	MOV	H,-8(IX)
+	PUSH	H
+	CVTF	B
+	DADD	D,-4
+	LXI	H,88
+	LXI	D,-18164
+	PUSH	H
+	PUSH	D
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,15
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+;     end
+; end;
+FC2206
+	EXIT	D,4
+;
+

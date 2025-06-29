@@ -1,0 +1,129 @@
+!  April 29, 1983
+
+VARIABLE MEN1
+@1
+RECOVER 1
+CLEARSCREEN
+!!========================================================
+!!	LEGENDS, TITLES AND NAMES MENU
+!!========================================================
+!!1  .. HELP .............................................
+!!2  .. ERASE SCREEN .....................................
+!!3  .. RETURN TO CALLING MENU ...........................
+!!4  .. CLEAR TEXT FROM SCREEN (CR BRINGS IT BACK) .......
+!!
+!!5  .. DON'T PRODUCE LEGENDS ............................
+!!6  .. PRODUCE AUTOMATIC LEGEND .........................
+!!7  .. PRODUCE A SINGLE LEGEND LINE .....................
+!!8  .. PRODUCE LEGEND AT SPOT CHOSEN WITH JOYSTICK ......
+!!
+!!9  .. NO TITLES ........................................
+!!10 .. CHOOSE A TITLE ...................................
+!!
+!!11 .. NAME X AXIS ......................................
+!!12 .. NAME Y AXIS ......................................
+!!13 .. DON'T NAME X AXIS ................................
+!!14 .. DON'T NAME Y AXIS ................................
+!!========================================================
+!!ENTER YOUR CHOICE >
+MENU MEN1 14 1 ^
+COMPARE MEN1 1
+IF YES JUMP 2
+COMPARE MEN1 2
+IF YES ERASE
+COMPARE MEN1 3
+IF YES END
+COMPARE MEN1 4
+IF YES JUMP 40
+COMPARE MEN1 5
+IF YES NO LEGEND
+COMPARE MEN1 6
+IF YES JUMP 4
+COMPARE MEN1 7
+IF YES JUMP 5
+COMPARE MEN1 8
+IF YES JUMP 6
+COMPARE MEN1 9
+IF YES NO TITLE
+COMPARE MEN1 10
+IF YES JUMP 8
+COMPARE MEN1 11
+IF YES JUMP 9
+COMPARE MEN1 12
+IF YES JUMP 10
+COMPARE MEN1 13
+IF YES NO X NAME
+COMPARE MEN1 14
+IF YES NO Y NAME
+JUMP 1
+
+@4
+!!ENTER LEGEND TEXT FOR EACH BOX ON A SEPARATE LINE.
+!!WHEN YOU ARE THROUGH, ENTER A BLANK LINE.
+LEGEND AUTO \^\
+JUMP 1
+
+@2
+CLEARSCREEN
+!!HELP INFORMATION FOR LEGENDS, TITLES AND NAMES
+!!=============================================================================
+!!
+!!LEGENDS:   There are	three types of legends:	 AUTOMATIC, JOYSTICK and SINGLE.
+!! AUTOMATIC  legends are  produced in	space set  aside by GrafTalk.  You must
+!!  supply the text  before you make the bar, pie  or plot.  The same legend is
+!!  used each time you make a chart unless you disable the feature.
+!! With JOYSTICK  legends, you are given the opportunity to position the cursor
+!!  before each box is drawn.  If you do not position it, the box will be drawn
+!!  at the current location.
+!! SINGLE legends are produced a line at a time at the current cursor location.
+!!
+!!TITLE:   You may specify  a title to	be used with bar charts, pie charts and
+!!line and symbol charts.  You must specify the title before you make the chart.
+!!The title will be used each time unless you disable the titles.
+!!
+!!NAMES:   You may  name the x axis, the  y axis or both.  Unlike the TITLE and
+!!the LEGEND, NAMES do not  apply to pie charts.  They apply only to bar charts
+!!and line and symbol plots, or to boxes drawn.
+!!
+!!Labels are  discussed more fully  under the  HELP command for the label menu.
+!!For pie chart labels, see the PIE menu.
+!!
+!!TYPE <cr> TO RETURN TO MENU >
+STOP
+JUMP 1
+
+@5
+!!ENTER LEGEND TEXT FOR A SINGLE LEGEND BOX.
+LEGEND SINGLE \^\
+JUMP 1
+
+@6
+!!ENTER LEGEND TEXT FOR EACH BOX ON A SEPARATE LINE.
+!!WHEN YOU ARE THROUGH, ENTER A BLANK LINE.
+LEGEND JOY \^\
+!!YOU ARE NOW IN JOYSTICK MODE.	 POSITION PEN OR CURSOR TO BEGIN LEGEND.
+JUMP 1
+
+@8
+!!ENTER ONE-LINE TITLE FOLLOWED BY A BLANK LINE
+TITLE \^\
+JUMP 1
+
+@9
+!!ENTER ONE-LINE NAME FOR X AXIS FOLLOWED BY A BLANK LINE
+X NAME \^\
+JUMP 1
+
+@10
+!!ENTER ONE-LINE NAME FOR Y AXIS FOLLOWED BY A BLANK LINE
+Y NAME \^\
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+UMP 1
+
+@10
+!!ENTER ONE-L

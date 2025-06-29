@@ -1,0 +1,61 @@
+(*  P A L E T T E . G I C       Palettenwerte       V 1.1  3-APR-1988  *)
+
+
+
+
+procedure ColorRestore;     { Palette aus VRAM setzen }
+
+  begin
+    inline ($DD/$21/$45/$01/  {  LD   IX,RSTPLT }
+            $C3/_CALSUB);     {  JP   _CALSUB   }
+  end;
+
+
+
+procedure ColorNew;         { Palette auf Einschaltwerte zurÅcksetzen }
+
+  begin
+    inline ($DD/$21/$41/$01/  {  LD   IX,INIPLT }
+            $C3/_CALSUB);     {  JP   _CALSUB   }
+  end;
+
+
+
+
+{ GetColor liefert die Rot/GrÅn/Blau-Anteile einer gegebenen Farbe }
+
+procedure GetColor (color: byte; var Rot, Gruen, Blau: byte);
+
+  begin
+    inline ($3A/COLOR/$47/$3A/$AF/$FC/$FE/$08/$20/$1D/$78/$1E/$07/$87/$A3/$FE/
+            $06/$20/$01/$3C/$2A/BLAU/$77/$78/$0F/$0F/$A3/$2A/ROT/$77/$78/$07/
+            $07/$07/$C3/*+$001D/$78/$DD/$21/$49/$01/$CD/_CALSUB/$1E/$07/$78/
+            $A3/$2A/BLAU/$77/$78/$0F/$0F/$0F/$0F/$A3/$2A/ROT/$77/$79/$A3/$2A/
+            GRUEN/$77);
+  end;
+
+
+
+{ SetColor setzt die Rot/GrÅn/Blau-Anteile einer gegebenen Farbe }
+
+procedure SetColor (color, Rot, Gruen, Blau: byte);
+
+  begin
+   inline ($2E/$0F/           {  LD   L,15      }
+           $3A/COLOR/         {  LD   A,(COLOR) }
+           $A5/               {  AND  L         }
+           $57/               {  LD   D,A       }
+           $3A/GRUEN/         {  LD   A,(GRUEN) }
+           $A5/               {  AND  L         }
+           $5F/               {  LD   E,A       }
+           $3A/BLAU/          {  LD   A,(BLAU)  }
+           $A5/               {  AND  L         }
+           $47/               {  LD   B,A       }
+           $3A/ROT/           {  LD   A,(ROT)   }
+           $A5/               {  AND  L         }
+           $07/$07/           {  RLCA ! RLCA    }
+           $07/$07/           {  RLCA ! RLCA    }
+           $B0/               {  OR   B         }
+           $DD/$21/$4D/$01/   {  LD   IX,SETPLT }
+           $C3/_CALSUB);      {  JP   _CALSUB   }
+  end;

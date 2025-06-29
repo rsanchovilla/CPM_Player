@@ -1,0 +1,13 @@
+;do not include the .PAS extension in param source filename
+ptc -o prg.tm0 $1.pas
+cpp -o prg.tm1 -x prg.tm0
+cp1 -cem -b0 -n8 -u -o prg.tm2 prg.tm1
+cp2 -o prg.s prg.tm2
+era prg.tm*
+a80 -o prg.o prg.s
+lnk -u_main -eb__memory -tb0x100 -htr -o $1.com crtx.o prg.o libp.80 libc.80
+era prg.o
+era prg.s
+;execute compiled prog
+$1
+

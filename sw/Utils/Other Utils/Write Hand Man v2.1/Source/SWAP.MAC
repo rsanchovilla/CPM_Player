@@ -1,0 +1,679 @@
+;
+;	Swapper for Write-Hand-Man
+;
+;	Copyright (c) 1986 by Poor Person Software
+;
+false	equ	0
+true	equ not false
+;
+turbo	equ	false
+	org	0
+base	equ	$
+fcb1	equ	05ch	       ; the real one
+fcb2	equ	06ch	       ; the real one
+;
+swapfcb equ	base+05ch      ; do swapping with this one
+swapbuf equ	base+080h      ; won't use this
+swapcr	equ	swapfcb+32
+swapex	equ	swapfcb+12
+;
+;
+pstring equ	9
+conin	equ	1
+conout	equ	2
+conio	equ	6
+open	equ	15
+close	equ	16
+create	equ	22
+delete	equ	19
+read	equ	20
+write	equ	21
+setdma	equ	26
+;
+bdos	equ	base+5
+home	equ	base+010h
+tdos	equ	base+050h
+;
+incnt	equ	base+080h
+inbuf	equ	base+082h
+;
+	org	0100h
+;
+	call	dwind		; display the window
+	lxi	d,swapout
+	call	dmsg
+;
+	lda	7		; end of memory (page)
+	mov	l,a
+	mvi	h,0
+	dad	h		; end of memory (records)
+	lda	6
+	ora	a		; any odd bytes
+	jz	gotsize 	; no
+	inx	h		; then add one
+	ani	080h		; this many at least
+	jz	gotsize
+	inx	h
+gotsize:
+	shld	memsize 	; save
+	xra	a
+	sta	swapex
+	sta	swapcr
+	lxi	d,swapfcb
+	mvi	c,delete
+	call	bdos
+	lxi	d,swapfcb
+	mvi	c,create
+	call	bdos		; get fresh swap file
+	xra	a
+	sta	swapcr
+;
+	lxi	d,0		; starting address
+	lhld	memsize 	; number of records to write
+swoloop:
+	push	h
+	push	d
+	mvi	c,setdma
+	call	bdos		; set dma
+	lxi	d,swapfcb
+	mvi	c,write
+	call	bdos		; write a record
+	ora	a
+	jnz	writerr 	; bad bad
+	pop	d
+	lxi	h,080h		; add 128
+	dad	d		; new value to hl
+	xchg			; to de
+	pop	h		; get count
+	dcx	h
+	mov	a,h
+	ora	l		; see if done
+	jnz	swoloop 	; no  loop till all written
+	lxi	d,swapfcb
+	mvi	c,close
+	call	bdos		; close swap file
+;
+	lhld	1
+	shld	savel1
+	inx	h		; to warm boot address
+	mov	e,m
+	inx	h
+	mov	d,m		; get warm boot address to de
+	lxi	b,myboot
+	mov	m,b
+	dcx	h
+	mov	m,c		; set my address to warm boot
+	xchg
+	shld	savewb		; save this 
+;
+;  intercept location 6 as well
+;
+	lhld	6		; get loc 6
+	shld	rbdos+1 	; here
+	lxi	d,0fffdh	; -3
+	dad	d
+	shld	6		; set 3 earlier
+	mvi	m,0c3h		; a jump
+	lxi	d,mybdos
+	inx	h
+	mov	m,e
+	inx	h
+	mov	m,d		; put in new address
+;
+	lhld	051h		; get old t-function entry
+	shld	rtdos+1 	; save
+	lhld	tdos+1
+	shld	051h		; and route to mine (reenterant)
+;
+enter:
+	lda	swapfcb 	; get disk
+	adi	040h		; to a letter
+	sta	disk
+	mvi	c,32
+	mvi	e,255
+	call	bdos		; get user code
+	mov	e,a
+	mvi	d,0
+	lxi	h,usertab
+	dad	d
+	mov	a,m
+	sta	duser
+	lxi	d,enterm
+	call	dmsg
+	lxi	h,0
+	dad	sp
+	shld	savestk 	; save the stack
+;
+cloop:
+	call	getcmd		; get the command
+	jc	done		; leave
+;
+	call	loadit		; load in program
+	jc	cloop		; try again	 
+	mvi	a,10  
+	call	dconio
+;
+	lxi	d,080h
+	mvi	c,setdma
+	call	bdos		; set default dma
+	call	0100h		; call program
+myboot: 			; come back to here
+	lhld	savestk 	; get stack
+	sphl			; restore the stack
+	call	dwind		; put up window
+	jmp	enter
+;
+mybdos:
+	mov	a,c
+	cpi	13
+	jz	nobdos
+	cpi	14
+	jz	nobdos
+	cpi	37
+	jz	nobdos		; protect the innocent
+	jmp	bdos		; use mine as it works in TURBO
+rbdos:	jmp	0
+rtdos:	jmp	0
+nobdos:
+	xra	a
+	lxi	h,0
+	ret			; very fast
+done:
+	lhld	rbdos+1
+	shld	6		; restore in case can't read swap file
+	lhld	rtdos+1
+	shld	051h		; restore in case can't read swap file
+	call	dwind
+	lxi	d,swapin
+	call	dmsg
+	xra	a
+	sta	swapex		; open first extent
+	sta	swapcr
+	lxi	d,swapfcb
+	mvi	c,open
+	call	bdos
+	inr	a
+	jz	noread		; can't read, the dummy zapped it
+	xra	a
+	sta	swapcr
+;
+	lxi	d,0		; dma
+swiloop:
+	push	d		; save it
+	mvi	c,setdma
+	call	bdos		; do it
+	lxi	d,swapfcb
+	mvi	c,read
+	call	bdos		; read block
+	pop	d
+	ora	a
+	jnz	endswi		; done
+	lxi	h,080h
+	dad	d
+	xchg
+	jmp	swiloop
+endswi:
+noread:
+	lxi	d,swapfcb
+	mvi	c,close
+	call	bdos
+;
+	lhld	savewb
+	xchg
+	lhld	savel1		; put it here
+	inx	h
+	mov	m,e
+	inx	h
+	mov	m,d		; restore warm boot
+	jmp	base
+writerr:
+;	 lxi	 d,diskfm
+;	 call	 dmsg
+;	 mvi	 a,255
+;	 call	 dconio 	 ; wait for ack 
+	jmp	base
+;
+getcmd:
+;
+;	read in three fcbs and set the tail of the command line
+;
+	lxi	h,zero
+	lxi	d,fcb1
+	lxi	b,36
+	call	mvcon		; zero the fcb
+;
+	lxi	h,zero
+	lxi	d,loadfcb
+	lxi	b,36
+	call	mvcon		; zero load fcb
+;
+	lxi	d,incnt
+	mvi	a,80
+	stax	d		; set max
+	call	rdbuf
+	rc			; return with carry
+	mvi	a,13
+	call	dconio
+	lxi	d,inbuf 	; the string
+	lda	incnt+1 	; the length
+	call	getfn		; get the file name
+	shld	tail		; save it
+	sta	tailleng	; and length
+;
+	lxi	h,dfcb
+	lxi	d,loadfcb
+	lxi	b,9
+	call	mvcl
+	lxi	h,dcom
+	lxi	d,loadfcb+9
+	lxi	b,3
+	call	mvcl
+;
+	lhld	tail
+	xchg
+	lda	tailleng
+	call	getfn		; get fn 1
+	shld	next
+	sta	nextlen
+;
+	lxi	h,dfcb
+	lxi	d,fcb1
+	lxi	b,12
+	call	mvcl
+;
+	lhld	next
+	xchg	
+	lda	nextlen
+	call	getfn		; get fn2
+;
+	lda	nextlen 	; was there any
+	ora	a
+	jnz	wasfn2
+	xra	a
+	sta	dfcb		; zap disk if no fn2
+wasfn2:
+	lxi	h,dfcb
+	lxi	d,fcb2
+	lxi	b,12
+	call	mvcl
+;
+	lxi	d,80h
+	lxi	b,128
+	lxi	h,zero
+	call	mvcon		; zero command area
+;	
+	lda	tailleng
+	ora	a
+	jz	setzero
+	inr	a
+	sta	tailleng
+;
+	lhld	tail   
+	dcx	h		; back up one byte
+	lxi	d,081h
+	lda	tailleng	; dont count trailing CR
+	mov	c,a
+	mvi	b,0
+	call	mvcl
+	lda	tailleng
+setzero:
+	sta	080h
+;
+	if not turbo
+	lda	loadfcb 	; get disk from load
+	sta	050h		; for cp/m 3.0
+	endif
+;
+	ret			; go call it
+;
+loadit:
+	lxi	d,loadfcb
+	mvi	c,open
+	call	bdos		; try to open it
+	inr	a
+	jz	loaderr 	; an error
+;
+	xra	a
+	sta	loadcr		; ready for sequential read
+;
+	lxi	d,0100h 	; start here
+loadlp:
+	lda	7		; get page upon which is bdos
+	cmp	d
+	jz	loaderr 	; can't do that
+	push	d
+	mvi	c,setdma
+	call	bdos
+	lxi	d,loadfcb
+	mvi	c,read
+	call	bdos
+	pop	d
+	ora	a
+	jnz	loadend
+	lxi	h,080h
+	dad	d
+	xchg
+	jmp	loadlp
+loaderr:
+	lxi	d,loadm
+	call	dmsg
+	lxi	d,disk
+	call	putstr
+	stc
+	ret
+loadend:
+	lxi	d,loadfcb
+	mvi	c,close
+	call	bdos
+	xra	a
+	ret
+dwind:
+	call	home
+	mvi	b,2
+	mvi	c,32
+dwlp:
+	mvi	a,' '
+	call	dconio
+	dcr	c
+	jnz	dwlp
+	mvi	c,32
+	lxi	d,crlf-1
+	call	putstr
+	dcr	b
+	jnz	dwlp
+	mvi	c,32
+dwlp1:
+	mvi	a,'_'
+	call	dconio
+	dcr	c
+	jnz	dwlp1
+	lda	crlf-1
+	call	dconio
+	ret
+dmsg:
+	push	d
+	call	home
+	pop	d
+	call	putstr
+	ret
+;
+getfn:			; returns with FCB filled in for search
+;
+	sta	incount
+	xchg
+	shld	inptr	; input pointer
+	lxi	h,bl 
+	lxi	d,dfcbfn
+	lxi	b,11
+	call	mvcon		; put in blanks
+	lda	swapfcb 	; set to default
+	sta	dfcb		; copy the disk
+;
+	lhld	inptr		; start here
+	lxi	d,dfcbfn	 ; to here
+	mvi	b,0		; count filename
+;				; skip leading blanks
+skipbl:
+	call	getbyt
+	jz	getfnend
+	cpi	' '
+	jz	skipbl
+	jmp	fnlp1
+fnlp:
+	call	getbyt		; get a byte
+	jz	getfnend	; done	   
+fnlp1:
+	cpi	':'		; 
+	jz	docolon 	; process
+	cpi	'.'
+	jz	doperiod	; process
+	cpi	' '		; a blank
+	jz	getfnend
+	mov	c,a
+	mov	a,b
+	cpi	8		; extra
+	jz	fnlp		; skip it
+	mov	a,c		; get character back
+	stax	d		; put into place
+	inx	d		; next
+	inr	b		; count
+	jmp	fnlp
+;
+docolon:
+	lda	dfcbfn		 ; get first character
+	cpi	' '
+	jz	fnlp		; skip colon  no disk
+	cpi	041h
+	jc	nodisk
+	cpi	05bh
+	jnc	nodisk
+	sui	040h		; make A=1
+	ani	01fh		; mask
+	sta	dfcb		 ; set disk number
+nodisk:
+	lxi	d,dfcbfn	 ; reset file name ptr
+	mvi	b,0		; reset counter
+	mvi	a,' '
+	stax	d		; zap byte
+;
+	jmp	fnlp		; continue
+;
+doperiod:
+	lxi	d,dfcbty
+	mvi	b,0		; count
+tylp:
+	call	getbyt		; do file type
+	jz	getfnend
+	cpi	' '
+	jz	getfnend	; stop at blank
+	stax	d
+	inx	d
+	inr	b
+	mov	a,b
+	cpi	3
+	jz	getfnend
+	jmp	tylp
+;
+getfnend:
+	lda	dfcbfn		; see if '*'
+	cpi	'*'
+	jnz	getfn1
+	lxi	h,qmark
+	lxi	d,dfcbfn
+	lxi	b,8
+	call	mvcon
+getfn1:
+	lda	dfcbty
+	cpi	'*'
+	jnz	getfn2
+	lxi	h,qmark
+	lxi	d,dfcbty
+	lxi	b,3
+	call	mvcon
+getfn2:
+	lda	incount
+	ret
+;
+getbyt: 			; get byte from console buffer
+	lda	incount 	; get count left
+	ora	a
+	rz			; none left
+	dcr	a
+	sta	incount
+	mov	a,m
+	inx	h
+getret:
+	ora	a
+	ret
+;
+;
+mvcl:			; hl -> de  count bc
+	mov	a,b
+	ora	c
+	rz
+	mov	a,m
+	stax	d
+	inx	h
+	inx	d
+	dcx	b
+	jmp	mvcl
+;
+mvcon:			; to de, count bc, character in m
+	mov	a,m
+	stax	d
+	inx	d
+	dcx	b
+	mov	a,c
+	ora	b
+	jnz	mvcon
+	ret
+;
+rdbuf:
+				; d = buffer   max,len,xxxxx
+	ldax	d		; get max
+	mov	b,a		;   b has max 
+	inx	d		; d to len
+	xra	a
+	stax	d
+	mov	h,d
+	mov	l,e
+	inx	h		; h to place
+rdlp:
+	mvi	a,255
+	call	dconio
+;
+	cpi	8		; is it a BS
+	jz	dobsp		; yes
+	cpi	018h		; ^x
+	jz	dctlx
+	cpi	13
+	rz			; done
+	cpi	27		; esc
+	jz	rdquit		; yes exit
+	cpi	32
+	jc	rdlp		; forget it
+	cpi	127
+	jz	dobsp 
+	push	psw
+	call	dconio		 ; echo the character
+	pop	psw
+;
+	cpi	061h		; force upper case
+	jc	rdlp1
+	cpi	07bh
+	jnc	rdlp1
+	ani	05fh
+rdlp1:
+;
+	mov	m,a		; put into area
+	inx	h
+	ldax	d
+	inr	a
+	stax	d
+	dcr	b
+	jnz	rdlp		; go some more
+	xra	a
+	ret			; return with no carry
+;
+dctlx:
+	ldax	d
+	ora	a
+	jz	rdlp		; stop when none
+	call	dobsps
+	jmp	dctlx
+;
+dobsp:
+	call	dobsps
+	jmp	rdlp
+dobsps:
+	ldax	d		; get current length
+	ora	a
+	rz			; just skip it
+	mvi	a,8
+	call	dconio
+	mvi	a,32
+	call	dconio
+	mvi	a,8
+	call	dconio
+	ldax	d
+	dcr	a
+	stax	d
+	inr	b
+	dcx	h	       ; correct the counters
+	ret	      
+rdquit:
+	stc
+	ret			; return with carry
+dconio:
+	push	d
+	push	b
+	push	h
+	mov	e,a
+	mvi	c,6
+	call	bdos 
+	pop	h
+	pop	b
+	pop	d
+	ret
+;
+putstr: 		; de to string
+	push	b
+	push	h
+	mvi	c,pstring
+	call	bdos
+	pop	h
+	pop	b
+	ret
+;
+;home:
+;	 lxi	 d,hs
+;	 call	 putstr
+;	 ret
+;hs:	 db	 30,'$'
+;
+usertab:
+	db	'0123456789abcdef'
+bl:	db	' |'
+crlf:	db	13,10,'$'
+swapout: db	'Swapping out current context$'
+swapin:  db	'Swapping in old context     $'
+enterm:  db	'   Enter CP/M command       ',13,10
+disk:	db	'A0>$'
+duser	equ	 disk+1
+loadm:	 db	'  >> Load error       ',13,10,'$'
+;diskfm:  db	 ' SWAP file write error      ',13,10
+;	  db	 ' Acknowledge >$'
+dcom:	 db	'COM'
+savestk: dw	0
+;
+loadfcb: db    0,'           ',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+loadcr	equ	loadfcb+32
+;
+tail:	dw	0
+tailleng: db	 0
+next:	dw	0
+nextlen: db	0
+inptr:	dw	0
+incount: db	0
+;
+zero:	db	0
+qmark:	db	'?'
+;
+dfcb:	ds	1
+dfcbfn: ds	8
+dfcbty: ds	3
+;
+savel1: dw	0
+savewb: dw	0
+memsize: dw	0
+;
+	end
+
+zero:	db	0
+qmark:	db	'?'
+;
+dfcb:	ds	1
+dfcbfn: ds	8
+dfcbty: ds	3
+;
+savel1: d

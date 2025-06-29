@@ -1,0 +1,805 @@
+.po5
+.FO FRONT.DOC v. 5.0  (C) 1984, 1985 BY CLAUDE OSTYN           PAGE # 
+                              FRONT.DOC
+               Documentation for FRONT.COM version 5.0
+              Copyright (c) 1984, 1985 by Claude Ostyn 
+
+  This document and the programs it describes may be copied, used 
+and distributed freely at no cost for the benefit and enjoyment 
+of all CP/M users.  They may not be sold or included in a package 
+for sale, under any name, in whole or in part, without the prior 
+written permission of the copyright owner, but copies may be sold
+by non-profit users groups as long as the price does not exceed 
+the cost of the blank media and duplication.  Commercial use is 
+subject to payment of a fee or of royalties.  The programs may 
+only be distributed as a package including FRONT50.COM, 
+FRNSTL50.COM, FRNT50PT.ASM, FRONTSUB.DOC and FRONT50.DOC (this 
+document).  The copyright notices may not be altered.
+  I specifically disclaim any warranties, implied or otherwise, 
+as to the performance and suitability of this software for any 
+purpose.  If it works, great.  If it doesn't, don't blame me, 
+but feel free to blame whoever concocted your version of CP/M. 
+
+       Since I spent considerable time and effort to 
+     develop and debug this software, I would like a 
+     reasonable payment if it turns out to be useful to 
+     you.  A modest contribution ($15 or more) will be 
+     welcome as a tangible sign of appreciation.  
+       I also trust that you will be totally honest and 
+     will mention this when you pass FRONT around.
+
+       Comments, reviews, picture postcards, gourmet 
+     chocolate, suggestions and bug reports are also 
+     welcome, of course.
+
+                          Claude Ostyn
+                          P.O. Box 2035                            
+                       Sitka, Alaska 99835
+
+
+                            CONTENTS
+
+1.    Changes since last versions
+2.    Introduction
+3.    Description of FRONT
+      A.  Short description
+      B.  Hardware/software requirements       
+      C.  Using FRONT
+4.    Installation
+5.    Installation procedures using FRNSTL50.COM
+      A.  Terminal installation
+      B.  File types installation
+      C.  Special features
+      D.  Saving the installed FRONT
+6.    Custom installation using FRNT50PT.ASM
+7.    Technical notes
+8.    Troubleshooting      
+9.    Using FRONT with a hard disk.
+
+
+1. CHANGES SINCE LAST VERSION
+
+               The last circulated version FRONT was FRONT49.
+               The following have been added or corrected in v.5.0
+               - fixed bug in Osborne 1 installation
+               - supports more non-standard CP/M implementations
+
+               Other improvements over the original FRONT.COM 
+               which had been added in previous versions include: 
+               - CP/M Plus compatibility; 
+               - ability to change the user area as well as the 
+                 logged drive;
+               - optional alphabetic sorting of the command on 
+                 the menu;   
+               - compatibility with some Trantor hard disk CCP 
+                 modifications; 
+               - improved compatibility with CP/M Plus;
+               - compatibility with JG Communications clock 
+                 software version 3.2 for the Osborne 1;   
+               - automatic repetition of FRONT after execution of 
+                 the called program by using a standard CP/M 
+                 feature available on most systems (the feature
+                 can be cancelled by ESCaping);
+               - improved installation program with display of 
+                 all settings at main menu;
+               - support for ANSI terminal video addressing and 
+                 support for arrow keys on more terminals;  
+               - optional and adjustable delay before execution 
+                 of the called program (for those "oops!" 
+                 situations);
+               - optional display of disk label below drive name;
+               - for Osborne 1 owners, more reliable screen size 
+                 recognition with or without Screen-Pac.  
+               - additional terminal support
+               - options submenu
+               - improved compatibility with old Kaypro II;
+               - conflict with SUBMIT in the standard Osborne 1
+                 installation has been eliminated;
+
+                                    -----
+      
+2. INTRODUCTION
+
+               A while back I got frustrated with the otherwise 
+               excellent public-domain program MENU.COM because 
+               it did not allow me to enter arguments after 
+               selecting a command, or to run CBASIC and DBASE
+               programs without creating an extra alias .COM 
+               program.  I also needed to set up turn-key systems
+               for people who were utterly confused by CP/M.
+               Out of this came FRONT.COM.  
+
+
+3. DESCRIPTION
+
+A. SHORT         FRONT.COM is a front-end utility for CP/M.  It
+   DESCRIPTION replaces the A> prompt with a menu of available 
+               programs and lets you select the command to run by 
+               just moving a highlight to the command name with 
+               the arrow keys and pressing one other key.  Its 
+               size is only 6K.
+
+                 The menu shows the names of programs (.COM) 
+               files present on the disk.  Optionally, the menu 
+               will also show the names of .SUB, .BAS and other 
+               program files which require an interpreter to run.
+
+                 The menu is automatically updated as files are 
+               added to the disk or erased, or if you log in 
+               another disk or user area.  The menu order 
+               is normally the same as in the disk directory.  It 
+               can also be in alphabetical order.
+
+                 There are two ways to execute a command from the 
+               menu.  One way is to use the arrow keys to move 
+               the cursor to the name of the program to run and 
+               press either RETURN or the space bar.  If you 
+               press the space bar, you will be prompted for 
+               additional arguments.  The second way is to start 
+               typing in the command.  As you type, the names 
+               which do not match the command you are typing 
+               disappear from the menu, so you only have to type 
+               in enough characters to uniquely identify the 
+               command.  As soon as FRONT recognizes what you 
+               want, it will show you the command and ask for 
+               optional arguments.
+
+                 To run a Basic program, for instance, you would 
+               not have to type in MBASIC MYPROGRM, but you would 
+               just move the cursor over the name MYPROGRM and 
+               press RETURN and it will be executed.  Or you 
+               could start typing "M" and all the names which 
+               don't begin with "M" would disappear from the 
+               menu.  Then you would type "Y" and, if no other 
+               command begins with "MY", FRONT would show you 
+               "MYPROGRM" and ask for optional arguments.  As 
+               soon as you press RETURN, FRONT will execute the 
+               command MBASIC MYPROGRAM.  
+
+                 FRONT.COM is designed to be reloaded every time 
+               a program ends with a "warm boot", so it is very 
+               possible that you will never see the A> prompt.  
+               However, it will also let you exit to CP/M by just 
+               pressing the ESC key.
+
+
+
+
+B. HARDWARE      FRONT.COM can run on just about any computer 
+  & SOFTWARE   which has an addressable cursor video display and 
+ REQUIREMENTS  runs CP/M 2.2 or CP/M Plus.  The minimum allowable
+               screen width is 52 columns.
+
+
+Video control    FRINSTAL.COM, which should be distributed along 
+               with FRONT.COM, will automatically patch FRONT.COM 
+               for a number of different terminals and computers.  
+               Note that the version number for FRINSTAL has to 
+               match the version number for FRONT.
+                 When installed for an Osborne 1, FRONT will 
+               automatically adjust the width of the menu 
+               according to the current screen size if it detects 
+               the Osborne 80-column upgrade.
+
+Operating        FRONT has no special requirements and will run 
+system         with any standard CP/M 2.2 or CP/M Plus system 
+               configuration, and with reasonably standard ZCPR 
+               implementations.  It has been tested successfully 
+               on several models of Kaypro, Osborne and other 
+               brands.  FRONT will automatically recognize and 
+               adjust itself to work with different CP/M sizes 
+               and versions.  It does not leave a "sleeper" in 
+               memory and therefore has no effect on the size of 
+               the TPA and does not interfere with programs which 
+               make direct calls or integrity checks on the BDOS 
+               or BIOS.
+
+Auto-repeat      With most CP/M machines, FRONT can reload itself 
+feature        automatically after executing the selected 
+               program.  Since different machines can handle this 
+               differently, FRINSTAL will allow you to select a 
+               method to do this.
+
+Auto-start       With the Osborne 1, FRONT should normally be 
+feature        renamed AUTOST and will then be loaded 
+               automatically.  With other machines, you may have 
+               to patch your system to take advantage of the 
+               undocumented CP/M autoload feature.  More details 
+               in the technical section.   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+C. USING FRONT
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  Drive A            FRONT - (c) 1985 by Claude Ostyn  - Version 5.0  +
++  Label: -WSASM.001                                                   +
++                                                                      +
++   (WORDSTAR)  SUPERDIR  FILTER    XERA      UNERA                    +
++    PROOF      NSWEEP    PIP       COPYDISK  MODEM7                   +
++    ASM        LOAD      ASM&LOAD  RESOURCE                           +
++                                                                      +
++                                                                      +
++                                                                      +
++                                                                      +
++                                                                      +
++                                                                      +
++                                                                      +
++                                                                      +
++   Use (ARROW KEYS) to select command, (RETURN) to run it,            +
++   (SPACE) to enter optional execution parameters,                    +
++   (+) to change logged drive/user or (ESC) for options               +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ Fig. 1:  FRONT.COM  menu display.  Yours will probably look
+          different, depending on the files on your disk and your 
+          screen size.  
+
+
+HOW IT WORKS     FRONT looks up all the files of certain types 
+               (such as .COM, .SUB, .BAS, etc.--as determined 
+               during installation ) present on the disk in the 
+               default user area and displays them in a table.   
+               The type can be shown after the name or not (this 
+               can be toggled by pressing "." (the period key).  
+
+What's on        Files with the SYS attribute set, which would 
+the menu       not be show with the CP/M DIR command, are not 
+               included in the menu.  Files are listed in the 
+               same order as in the directory, with the first 
+               name in the top left corner, then second one to 
+               its right, etc. (see Figure 1), unless the sorted 
+               menu option has been selected with FRNSTL50, in 
+               which case they are listed in alphabetic order.
+
+Selecting        The first name on the list is underlined or 
+a command      highlighted (depending on the terminal), or set 
+with the       between brackets on terminals which do not have 
+cursor         highlighting or underlining capabilities.
+                 By using the arrow keys (or either the standard 
+               CP/M ^H^J^K^L or the WordStar ^S^X^D^E diamond if 
+               the arrow keys don't work), the highlight is moved 
+               from name to name.  It can be moved freely in any 
+               direction and will wrap around at the end of each 
+               line and back to the first name if moved beyond 
+               the last one on the list.
+
+
+Logging to       If the desired command is not on the disk, 
+another disk   pressing the "+" or "=" key will let you log in 
+               another disk or drive or another user area. 
+
+Executing        Once the desired command is highlighted, 
+a command      pressing RETURN will automatically load and 
+               execute it.  If additional arguments are 
+               required, pressing SPACE instead will present a 
+               prompt line to be filled in.
+
+Another way      You can also start typing the name of the 
+to select a    command.  The names that do not match are erased 
+command        from the menu until only one name is left, and 
+               then you are prompted for parameters.  If the 
+               command name is shorter than other names which 
+               begin with the same letter, just press RETURN to 
+               indicate the end of the name.
+
+Special types    In addition to the .COM files, the following 
+on the menu    file types can be listed in the menu:  .SUB, .BAS, 
+               INT, .CMD, or other types of your choice.  Up to 
+               eight different file types, in addition to COM, 
+               may be selected by using FRINSTAL.COM.
+
+                 Files with the type .SUB require that SUBMIT.COM 
+               or an improved version of it such as EX14.COM be 
+               available--usually on drive A.  If the .COM file 
+               is not present, you will be warned with an error 
+               message when you try to execute that command, and 
+               returned to the menu.  Similarly, .BAS files will 
+               require MBASIC, etc.  You may have to use 
+               FRINSTAL.COM to change the name of the .COM file 
+               used to run the files of each type.
+
+Running FRONT    Some programs do not end with a warm boot, and 
+again          you will just see the dreaded old A> prompt.  If 
+               your system is set to re-run FRONT at every warm 
+               boot, just force the warm boot by typing ^C.  On 
+               some machines, you may have to log back to the A: 
+               drive, user 0 before typing ^C.  If FRONT still 
+               does not run, type A:FRONT (or whatever name under 
+               which FRONT was installed).
+
+                 The last line of any submit file must be the 
+               command A:FRONT (or the name under which FRONT was 
+               installed).
+
+Adding hidden    To see and execute commands which have been 
+files to the   "hidden" by setting the SYS attribute, press ESC 
+menu           for the options menu, then H to toggle the hidden
+               file display.  These files will now be added to 
+               the menu.  
+
+
+
+The "?"          If you read this far, you deserve a goodie.  By 
+peek trick     pressing '?' when the highlight is over a command 
+               name, whatever is printable in the first 128 bytes 
+               of the corresponding file will be displayed.  If 
+               the command is a .SUB file, you will be able to 
+               read at least the first few lines and figure out 
+               what it does.  Most .COM files do or should have 
+               some kind of ASCII tag at the beginning to 
+               identify the program and version number.
+
+Painless         You can exit to CP/M without executing a menu 
+exit with ESC  command by pressing ESC the selecting X for eXit.
+               This turns off the auto-repeat feature, so you 
+               will have to restart FRONT yourself at the A> 
+               prompt if you want to see the menu again.
+
+
+4. INSTALLATION
+
+Setting up       On most disks, the most often used program 
+the menu       should be listed first on the menu.  Since FRONT 
+               will find and list the executable files on any 
+               disk, this section deals with how to set up the 
+               disks from which you will be reading a menu.
+
+Using the        To be listed first on the menu, a name must be   
+directory      first in the disk directory and the sorted menu.                     
+order option   option must be off.
+                  There are two ways to achieve this:            
+               a. Use PIP or NSWEEP to copy the programs onto an 
+                  empty formatted disk in the order in which you 
+                  want them to appear.
+               b. Use a utility such a SAP.COM or SORTDIR.COM to 
+                  rearrange the directory (not available at this 
+                  writing for CP/M Plus).  Temporarily rename the 
+                  files, giving them names in the alphabetic 
+                  order of the final directory.  Run SAP, and 
+                  rename the files to their old name.
+               c. If you are using a hard disk, use NSWEEP to 
+                  copy all the files to another user area, delete 
+                  them in the current area, log to the other user 
+                  area and copy the files back one by one in the 
+                  desired order to the original area.
+
+Using the        The file starting with the smallest valid ASCII
+sorted menu    character will be listed first on a sorted menu.
+option         Therefore, the command ABC will be listed before 
+               the command BCD if the sorted menu option is 
+               installed (see FRNSTL50 below).  The advantage is 
+               that you don't have to do any copying of files or 
+               manipulation of your directory, and it makes 
+               commands easier to find in a crowded menu.  The 
+               disadvantage is that your favorite commands will 
+               usually not be listed first.
+ 
+
+Selecting        Use the "STAT filename $SYS" command or the 
+what to show   attribute setting facility of NSWEEP to hide 
+               the .COM files and other files which you want to 
+               have on the disk but which should not be listed.  
+               (If you have CP/M Plus, use the SET command).  I 
+               usually hide FRONT.COM also.
+  
+                 It is a good idea to have a directory program such 
+               as SUPERDIR.COM, SD.COM or NSWEEP.COM which can 
+               list files hidden with the SYS attribute.  
+               Obviously this directory program is one you will 
+               want to be able to call from the menu.  Do not set 
+               it to SYS.
+
+                 Note that since it is no longer necessary to 
+               type the command names, they can be as long as 
+               CP/M will allow.  "WORDSTAR" is a lot friendlier 
+               than WS.
+
+ 
+Easy             FRINSTAL.COM will patch FRONT.COM (or its  
+installation   renamed version AUTOST.COM on an Osborne 1).
+with           It will prompt you and you can run through the 
+FRINSTAL       whole procedure in less than three minutes.  
+
+                 FRINSTAL.COM installs the video screen control 
+               codes for your terminal or computer, and certain 
+               functional characteristics, such as whether to 
+               show the type after the command name, which types 
+               of files will be listed on the menu, and which 
+               .COM files are used to run the commands listed.
+
+
+5.  INSTALLATION PROCEDURES USING FRNSTL50.COM
+ 
+                 (FRONT INSTALLATION PROGRAM, version 5.0)
+
+                 To use FRINSTAL, put the disk with FRINSTAL.COM 
+               (normally distributed under the name FRNSTL50.COM)
+               and FRONT.COM (normally distributed under the name 
+               FRONT50.COM) in drive A.  If FRONT50.COM is not on 
+               the same disk as FRINSTAL, put the disk that 
+               contains it in drive B.
+
+   STARTING      At the A> prompt, type FRNSTL50 <cr>
+   FRNSTL50    (<cr> stands for "press the RETURN key").
+               If the file name offered by FRNSTL50 is not 
+               correct, type in the file name under which we 
+               should look for FRONT50, then <cr>.   If the file 
+               is found and is indeed a compatible version, you 
+               will be presented with the main menu, otherwise 
+               try another name, or press CTRL-C to exit. 
+                 All the changes you make with FRNSTL50 are 
+               reversible at any time.
+
+                 The version number for FRINSTAL has to be the 
+               same as the version number for the FRONT.COM 
+               program you are installing.  FRINSTAL will check 
+               and refuse to install an incorrect version, since 
+               it would probably clobber it.
+
+Installation     The main menu presents you with a screenful of 
+main menu      information.  It will show:
+               - The current file name for your version of 
+                 FRONT;
+               - the computer or terminal for which FRONT is 
+                 currently installed;
+               - which file types will be listed and executed by 
+                 FRONT;
+               - current settings of some special features;
+               - a menu from which you may select an item by 
+                 pressing just one key.  The choices are 
+                 "A", "B", "C", "S" ,"?" or "ESC".
+                   You press "?" for more information or "ESC"
+                 to quit and return to CP/M.  The other choices 
+                 are explained below.
+
+A. TERMINAL      All you have to do here is press one key for the 
+  INSTALLATION terminal or computer of your choice.  Then look at 
+               the top of the screen to confirm your selection 
+               and press "X" to return to the main menu.  If your 
+               terminal is not listed, another selection might 
+               work, or special installation will be required.  
+               (See section 6).
+
+B. FILE TYPES   The file types which FRONT will list and execute 
+               can be modified here.  There are 8 "slots" for 
+               file types in addition to .COM (only the 
+               "occupied" slots are shown on the main menu).  If 
+               you change, add or remove any of the types, you 
+               will also be asked to define the name and drive 
+               for the .COM file used to execute the command.
+
+C. SPECIAL       Here you are prompted for certain operational 
+   FEATURES    settings.  If you like the current setting, just 
+               press RETURN to leave it as it is.
+                 The first question you must answer here is      
+               whether you want the type to be shown after the  
+               file name on the FRONT menu.  This has no effect 
+               on whether the file names themselves will be     
+               listed.  Answering "N" for no makes for a less   
+               cluttered menu on which more names can fit.      
+
+                 You will then be asked if you want the menu 
+               sorted alphabetically.
+
+                 The next question is whether to display the disk 
+               label.  The disk label is an empty file beginning 
+               with a "-" which many CP/M users put on their 
+               disks for use with the public-domain CAT.COM 
+               cataloguing program.  If you are using CPM Plus 
+               and there is a label in the directory that label 
+               will be shown instead. 
+
+                 Next is the auto-repeat method.
+
+                 If you have an Osborne 1, you may select the 
+               auto-repeat option 1, "Osborne 1 AUTOST", and then 
+               save FRONT under the name A:AUTOST.COM.
+
+                 On most other systems, you may select option 2, 
+               "Standard CP/M autorepeat", unless your version of 
+               CP/M has a better way to do it, in which case you 
+               would select option 0.
+
+                 If you select option 2, you will have to follow 
+               certain simple rules when using FRONT (see 
+               FRONTSUB.DOC for details).  In case of doubt, 
+               select option 2.
+
+D. SAVING        You can save as many copies of your installed 
+   AFTER       FRONT under as many names as you want.  Just enter 
+   INSTAL-     the new name after selecting "S" for save, or <cr> 
+   LATION      to save under the current name.  Since FRNSTL50 
+               does a disk reset, do NOT press CTRL-C if you 
+               put in a new disk.  You will be returned to the 
+               main menu after each save operation.  If you are 
+               using option 2 to auto-repeat FRONT, rename it 
+               ONLY by reading it then saving it under another 
+               name with FRNSTL50.
+                 
+
+6. CUSTOM INSTALLATION USING FRNT50PT.ASM
+
+                 The file FRNT50PT.ASM contains a listing of the 
+               user-patchable areas of FRONT.COM.  If you are 
+               knowledgeable in 8080 assembly language and 
+               FRNSTL50.COM is not enough for you, you can use 
+               this listing to create a patch overlay for FRONT.  
+               There are 3 major patch areas:  terminal 
+               installation, the additional patch area MORPAT 
+               which could be used to set up FRONT to auto-repeat, 
+               and functional installation.  Every label shown in 
+               the listing corresponds to an address called by 
+               FRONT, so be careful not to change the memory 
+               location of any label or the copyright notice.  In 
+               case of doubt, it is safer to use 
+                              ORG address
+               before any label in your ASM file.  FRINSTAL may 
+               affect the INISUB, UNISUB, EXESUB, ESCSUB and 
+               MORPAT areas.  The Osborne 1 and Radio-Shack 
+               installations, for instance, modify these areas.  
+               Do not try to patch your original version of 
+               FRONT; always work on a copy.  Note that FRONT 
+               will not work if the copyright notice is altered.
+
+
+7. TECHNICAL AND SPECIAL SYSTEM INFORMATION
+
+Setting up to start FRONT automatically
+
+   OSBORNE 1:    If your computer is an Osborne 1, rename 
+               FRONT.COM to AUTOST.COM.  Make sure your system 
+               has not been modified to look for a file other 
+               than AUTOST.  You should run the FRINSTAL program 
+               to confirm that FRONT or AUTOST is set correctly 
+               and to see what other functional choices are 
+               available.  If you use the newer JG Communications 
+               clock software, use auto-repeat option 2 only 
+               since it does its own thing with warm boots and 
+               defeats the normal Osborne way of doing things.
+
+   MORROW        The default setting for the arrow keys on the 
+   MD5 & MD11  Morrow is bizarre and non-standard.  You can 
+               insert the command KEY CPM into PROFILE.SUB, and 
+               create a CPM.KEY file with standard definitions.
+               FRONT will not run properly if COPILOT has been
+               run, so it should be listed before COPILOT GO in 
+               PROFILE.SUB.
+  
+  ALL          Insert the command FRONT as the last line of    
+  CP/M Plus    the file PROFILE.SUB on your boot disk (except on 
+  SYSTEMS      Morrow, see above).  FRONT will execute 
+               automatically every time you start or reset your 
+               computer.  It  will be executed again at the end 
+               of a called program if the autorepeat option 2 has 
+               been selected.  FRONT.COM must be in user area 0 
+               on drive A and set to SYS with the SET command.
+
+
+  OTHER          If your computer is not an Osborne and you want 
+  CP/M 2.2     FRONT to start automatically, it is a little more 
+  SYSTEMS      complicated.
+
+                 First check if your particular CP/M is set up
+               to run a program automatically (a menu program, 
+               for instance).  If it does, you're in luck:  just 
+               install FRONT.COM with FRINSTAL and rename it to 
+               whatever name your CP/M looks for.  If you're 
+               really lucky, there may be a way to make it run 
+               the program at every warm boot (in which case 
+               you'd use the autorepeat option 0 in the special 
+               features menu).
+
+                 If your CP/M implementation does not have a 
+               convenient way to set up a program to run 
+               automatically, you will have to patch it.  Follow 
+               the instructions below very carefully, and it 
+               should work.  You will need the public domain 
+               program DU.COM (also known as DSKNURSE), found on 
+               the FOG/UTL.019 disk under the name DU-V77.COM, or 
+               a more recent version.  
+
+                 In the instructions that follow, (cr) means 
+               "press the RETURN or ENTER key".
+
+                 First make a working copy of your system disk 
+               and put DU.COM and FRONT.COM on the working disk.  
+               Use SYSGEN to copy the system tracks onto the 
+               working disk.  Put your originals away.  Do no 
+               write-protect the new disk.
+
+                 Boot the new disk and at the A> prompt, type
+               
+                    DU(cr) 
+
+                The DU prompt is a ':' 
+
+                  Type in the following lines in UPPERCASE.  Do 
+               not type the ':' which is just the prompt.  The 
+               "0" in "T0" is a zero. 
+
+                   :T0;S1;=COPYRIGHT(cr)
+
+                         (Do not type this:  DU will show track 
+                          and sector number, then "AT 21".
+                          If you do not see "AT 21", quit now, 
+                          you have a nonstandard version of CP/M)
+
+                   :CH7,5(cr)
+                   :CA8,FRONT (cr)   
+                   :W(cr)
+                   :X(cr)
+                   A> (you are back at CP/M prompt)
+
+                 This will patch your system to run FRONT 
+               automatically.  Reboot, and FRONT.COM should come 
+               on.  If it does not, use SYSGEN to copy the CP/M 
+               system again on your working disk and try again, 
+               watching your typing carefully.  If it still does 
+               not work, seek help from someone familiar with 
+               your version of CP/M.  Some versions, like the 
+               Pickles & Trout CP/M for the TRS-80 computers, 
+               have a special utility to set up a program to run 
+               automatically, and this patch may not work with 
+               them.  This is why you did this experiment using a 
+               copy, not an irreplaceable master disk...  Right?
+
+                 If this patch does work, you can use SYSGEN to 
+               copy the modified CP/M to any disk on which you 
+               might put FRONT.  Remember:  Never modify or copy 
+               anything on your original disks!
+
+
+Automatic re-execution of FRONT
+
+                 With most CP/M machines, FRONT can reload itself 
+               automatically at a warm boot.  Since different 
+               machines can handle this differently, FRINSTAL 
+               will allow you to select a method.  The easiest 
+               is if your version of CP/M can be set to execute 
+               the program at every warm boot.  In that case, you 
+               would select autorepeat option 0.
+
+                 The "standard CP/M" method (autorepeat option 2) 
+               uses the facility built into the CCP to handle 
+               SUBMIT files.  See FRONTSUB.DOC for more details.
+
+                 With the Osborne 1, if FRONT has been renamed 
+               AUTOST and the autorepeat option 1 selected, then 
+               it can be reloaded automatically if you end up 
+               on drive A.  It does this by setting a "legal" 
+               flag in the Osborne 1 BIOS (versions 1.3 and 1.4x) 
+               to make this happen again at every warm boot.
+                 This method cannot be used when a .SUB file is 
+               executed, and thus your .SUB files must end with a 
+               command to run FRONT again.
+
+
+8. TROUBLESHOOTING
+
+Garbage on screen     
+
+               - Run FRNSTL50 and check terminal installation.
+                 If it is correct according to FRNSTL50 and it 
+                 does not work, drop me a note.
+
+Arrow keys don't work properly
+
+               - Check terminal installation 
+                 or use CTRL-H, CTRL-J, CTRL-K, CTRL-L.
+               - If you are using a Morrow machine, see your
+                 documentation on how to set the arrow keys.   
+               - If you know how to use DDT or SID, use the 
+                 information in FRNT50PT.ASM to modify the arrow 
+                 key definitions.
+
+System crashes when trying to execute a command
+
+               - Probably non-standard CCP or system 
+                 configuration.  Use FRNSTL50 and set "Standard
+                 CP/M" to "No".
+               - Some programs which alter high memory may
+                 interfere with the normal functioning of CP/M
+                 (UNIFORM, or CO-PILOT on the Morrow, for 
+                 example).  Try without these programs.
+
+
+
+FRONT won't run again automatically after executing a command
+
+               - FRONT.COM must be on drive A, user 0.
+               - FRONT.COM should only be renamed by reading it 
+                 with FRNSTL50 and saving it under the new name.
+               - Check that the self-repeat option has been 
+                 installed correctly (by reading FRONT.COM with 
+                 FRNSTL50).
+               - If using option 2, read FRONTSUB.DOC.
+               - If using the Osborne 1 AUTOST repeat method, you 
+                 must log back to drive A and do a ^C if your
+                 program did not return you to drive A.
+               - If you use the Osborne 1 AUTOST method, a copy
+                 of AUTOST.COM must be present in each user area.
+               - The last line of a .SUB file executed by FRONT 
+                 must be the command to run FRONT again.
+
+
+"A$USER " or " A>USER" followed by a number appears on the screen 
+after executing a command.  Is that an error message?
+
+               - No, it is only CP/M executing a command that 
+                 FRONT put in $$$.SUB to make sure you would be 
+                 returned to the user area you started from (this 
+                 is mostly for the benefit of hard disk users).
+
+
+When executing a command, there is no time to read the screen 
+before FRONT runs again and overwrites it
+
+               - Try to freeze the screen with Control-S.
+                 Hit Control-S again to continue.
+               
+
+Not enough space on screen for all the names to list
+
+               - See Section 9 below.
+
+
+System crashes when exiting the called program
+
+               - See installation notes about the auto-
+                 repeat feature
+               - Make sure the disk in drive A has valid system 
+                 tracks.
+
+
+Front crashes or freezes up when using a hard disk
+
+               - There may be too many files to list and 
+                 the internal name buffer was not large enough. 
+                 See section 9.
+               - Your hard disk BIOS or CCP location in memory 
+                 may be non-standard.
+
+
+Other bizarre behavior
+
+               - Drop me a note.  Describe what happened as 
+                 precisely and completely as possible.  Also       
+                 describe your machine and disk setup.  Be sure 
+                 to indicate which FRONT version number you are 
+                 using.  Be patient.
+
+
+9. FRONT WITH A HARD DISK
+
+                 The menu space in FRONT is limited (it depends 
+               on your screen size) and hard disk users may find 
+               that there is not enough room for all the commands 
+               to be listed, so the names will start overwriting 
+               each other as the cursor moves around.  FRONT 
+               itself will in theory still be functional, so if 
+               you select a command or press ESC it will respond, 
+               though it may display garbage instead of the name 
+               of the executed command.  There are two ways 
+               around this problem:
+               - Use the 16 user areas which are available under 
+                 CP/M.  Put your word processing stuff in one 
+                 user area, your spreadsheet stuff in another 
+                 one, etc.  
+               - Hide all non-menu executable files of the types 
+                 listed by FRONT by setting them to "SYS" status;  
+                 this way they won't be crowding the menu, but 
+                 they will still be available by ESCaping to 
+                 CP/M or for use by SUBMIT or other programs.
+
+                 they will still be availa«

@@ -1,0 +1,116 @@
+.macro chttl = Getting Started
+.ch .chttl
+
+.note CPM version
+This chapter is directed towards CPM 2.2 users.  Other systems must
+make slight modifications, especially MS/PCDOS users.
+.hl 1 Files needed.
+To compile and execute Pascal programs you should have available:
+
+.list 1
+.le RUNPCD.COM (and possibly RUNPCDI.COM).  These are distributed
+    as INTERP.COM and INTERPI.COM, and may be renamed as is, or
+    customized for access to system timers.
+.le PASCALP.PCD, the compiler
+.le either ASSMPCD.COM or ASSMPCD.PCD.  The _.PCD version is much
+    more compact, but significantly slower in execution.
+.le (optional) EF (no extension). The error messages file for compilation.
+.le (optional) PCDHELP.PCD, which is executed by RUNPCD whenever
+    no code file is specified.  This gives on-line information.
+.le Your favorite text editor.
+.endlist .b
+
+For _.COM file generation under CPM you will also need: .b
+.list 1
+.le SLRMAC.COM from SLR systems (Z80ASM may also be used).
+.le SLRNK.COM from SLR systems
+.le PASCLIB.SLR.  The run-time library.
+.le CPMLINK.SLR.  The master interface to CPM
+.le (optional) HEAPMARK.SLR (allows reduced object size when no
+    use of the DISPOSE procedure is made).
+.le (optional) ERRMSGL.SLR (allows more elaborate run-time error
+    messages. The "L" stands for long.)
+.endlist
+
+Also recommended, for convenience:
+.list 1
+.le JOB.COM.  The improved replacement for SUBMIT.
+.le JOBS.LBR (or extractions of COMPILE.JOB and/or PASCPREP.JOB) to
+    allow single command compilation.
+.endlist
+
+.note	ASSMPCD and ASSMAP.COM
+If you use these rather than the _.PCD versions simply omit the
+"runpcd#" prefix for them in the following.
+.res
+.hl 1 Creating _.PCD programs
+To compile the source program YOURPROG.PAS to a _.PCD file, do: .b
+.i 10 runpcd pascalp (yourprog.pas, con, yourprog.tic) .b
+where "con" (the console) will receive the list file, and "yourprog.tic"
+will receive the temporary intermediate code.  At completion enter: .b
+.i 10 runpcd assmpcd (yourprog.tic,yourprog.pcd) .b
+If JOB.COM and COMPILE.JOB are available (COMPILE.JOB may be a component of
+JOBS.LBR) this can all be simplified to: .b
+.i 10 job compile yourprog .b
+At completion YOURPROG.TIC may be erased. To then execute yourprog, enter: .b
+.i 10 runpcd yourprog .b
+
+.hl 1 Creating _.COM programs
+To compile the source program YOURPROG.PAS to a _.COM file, do: .b
+.i 10 runpcd pascalp (yourprog.pas, con, yourprog.tic) .b
+just as for a _.PCD file.  If you have saved the _.TIC file from a previous
+compilation (above) this step can be eliminated. .b
+.i 10 runpcd assmap (yourprog.tic, yourprog.mac) .b
+Again, at completion YOURPROG.TIC may be erased, unless required to create
+a _.PCD executable file.  If you are going to use Z80ASM in place of SLRMAC
+add "[64]" to the above command line, replace ".mac" with ".z80", and 
+replace "slrmac" with "z80asm" in the following step.  The resultant
+intermediate source file will be about 10% larger, but the final code will
+be unchanged. .b
+.i 10 slrmac yourprog.@@z/rf .b
+will assemble the _.MAC source file.  At completion YOURPROG.SLR will have
+been created, and the _.MAC file is no longer needed.  (If you have not
+configured SLRMAC to use the _.SLR extension, change the extension
+accordingly) .b
+.i 10 slrnk /a:100,cpmlink,yourprog,pasclib/s,yourprog/n,/e .b
+will do the complete linking, and leave you with YOURPROG.COM. .b
+Again, if JOB.COM and PASCPREP.JOB are available (PASCPREP.JOB may be
+a component of JOBS.LBR) this can be simplified to: .b
+.i 10 job pascprep yourprog .b
+YOURPROG can then be executed just like any other program.
+
+.hl 1 Using PCDS.LBR
+Any _.PCD file may be stored in PCDS.LBR, and RUNPCD will find and
+load it whenever no file.PCD is found.  Since _.PCD files tend to
+be small, this can result in significant savings in disk storage.
+
+.hl 1 Connecting files to programs
+The standard input and output may always be redirected by including
+">outputfile" and/or "_<inputfile" on the command line.  This applies
+to both _.COM and _.PCD programs.  Other external files should have
+been described in the program header line, and are simply described
+as parameters to the program by suitable replacements within parenthesis
+in the command line.  Any unspecified file will be attached to the
+default name, which is the name used in the source program, with no
+extension.  The standard input and output must be text files, but other
+files may be of any type.
+
+Standard device file names available (on CPM) are:
+.list 1
+.le CON the console for output, keyboard for input.  Lines are buffered
+and input lines can be edited.
+.le KBD The console for output, keyboard for input.  No buffering.
+.le RDR The system RDR: device.  Input lines are buffered, but may not
+be edited.
+.le PUN The system PUN: device. No buffering.
+.le LST The system LST: device. No buffering.
+.le AUX The system RDR: device, no input buffering.
+.endlist
+All these file are textfiles.
+.hl 1 Using CCP+ (and possibly DOS+)
+If you have installed CCP+ in your system, together with CCPXTEND.SYS,
+you can omit the "runpcd" prefixes.  The system will automatically
+execute RUNPCD if no _.COM file is found.
+
+
+ƒ

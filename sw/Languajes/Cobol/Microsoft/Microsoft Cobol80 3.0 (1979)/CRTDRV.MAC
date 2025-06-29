@@ -1,0 +1,99 @@
+;
+;	INTERTEC SUPERBRAIN CRT DRIVER
+;
+;	WRITTEN 02/13/80
+;
+;	BY TERENCE M. KENNEDY
+;
+;	SYNCHRO SOUND ENTERPRISES, INC.
+;
+;
+	TITLE	CRT - CRT DRIVER FOR INTERTEC SUPERBRAIN
+
+	ENTRY	$CRLEN,$CRWID,$SETCR,$CURON,$CUROF
+	ENTRY	$CURBK,$ERASE,$ALARM,$CLIST
+
+	EXT	$OUTCH
+
+
+;*****************************************************
+; TERMINAL CHARACTER DEFINITIONS
+;*****************************************************
+;
+ESCAPE	EQU	X'1B'
+TILDE	EQU	X'7E'
+BSPACE	EQU	X'08'
+BELL	EQU	X'07'
+
+$CLIST:				; KEYBOARD CHARACTER DEFINITIONS
+	DB	X'15'		; LINE DELETE (^U)
+	DB	X'7F'		; CHARACTER DELETE (RUBOUT)
+	DB	X'06'		; FORWARD SPACE (^F)
+	DB	X'08'		; BACK SPACE (^H)
+	DB	'+'		; PLUS SIGN
+	DB	'-'		; MINUS SIGN
+	DB	0		; END OF LIST
+
+
+;*****************************************************
+; TERMINAL SCREEN DIMENSIONS
+;*****************************************************
+;
+$CRLEN:	DB	24		; 24 LINES
+$CRWID:	DB	80		; 80 COLUMNS
+
+;*****************************************************
+; SET CURSOR POSITION
+;     [H] = ROW #
+;     [L] = COLUMN #
+;*****************************************************
+;
+$SETCR:
+	MVI	A,ESCAPE
+	CALL	$OUTCH
+	MVI	A,'Y'
+	CALL	$OUTCH
+	MOV	A,H
+	ADI	20
+	CALL	$OUTCH
+	MOV	A,L
+	ADI	20
+	JMP	$OUTCH
+
+;*****************************************************
+; CURSOR ON/OFF (NOT AVAILABLE ON THIS UNIT)
+;*****************************************************
+;
+$CURON:
+$CUROF:	RET
+
+;*****************************************************
+; BACKSPACE CURSOR
+;*****************************************************
+;
+$CURBK:	MVI	A,BSPACE
+	JMP	$OUTCH
+
+;*****************************************************
+; ERASE TO END-OF-SCREEN
+;*****************************************************
+;
+$ERASE:	MVI	A,ESCAPE
+	CALL	$OUTCH
+	MVI	A,TILDE
+	CALL	$OUTCH
+	MVI	A,'k'		; NOTICE - THIS MUST BE LOWER CASE K
+	JMP	$OUTCH
+
+;*****************************************************
+; SOUND TERMINAL'S BELL
+;*****************************************************
+;
+$ALARM:	MVI	A,BELL
+	JMP	$OUTCH
+
+
+
+
+	END
+

@@ -1,0 +1,42 @@
+// SYSHDR  - for NewBrain OS-interface
+
+// A temporary slot (either 3 or 5) in various forms
+
+MANIFEST   $(
+	     temp = 5
+	     tslot= temp*#X20
+	     tslotcode = (tslot << 8)/bytesperword
+           $)
+
+MANIFEST    $(
+	      sysp0 = #XF8C9   
+	      cpm0  = #XF8AE /bytesperword
+              s0    = #X8B     
+            $)
+
+//  Bytes of the s-p-n
+
+MANIFEST    $(
+              slot = 1   // for z80
+              page = 0
+              slt  = 0   // for BCPL
+ 	      pge  = 1
+            $)
+
+         
+//  The Global routines in the module
+
+GLOBAL	    $(
+	       /* in SYS1 */
+	       pagein :150
+	       disableInt:151
+	       enableInt:152
+	       /* in SYS2 */
+               getSpn :153
+               makeSpn:154
+               sysin:155
+               sysout:156
+	       setSlot:157
+	       syspstore:158
+	    $)
+

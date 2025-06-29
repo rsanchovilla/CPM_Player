@@ -1,0 +1,651 @@
+;
+;	PHONEBOOK application for Write-Hand-Man
+;
+;	Copyright (c) 1985 by Poor Person Software
+;
+.8080
+	org	0
+base	equ	$
+bdos	equ	base+5
+home	equ	base+010h
+fcb	equ	base+05ch
+fcbcr	equ	fcb+32
+fcbr0	equ	fcb+33
+fcbr2	equ	fcb+35
+fcbs2	equ	fcb+14
+bdos	equ	base+5
+buf	equ	base+080h
+;
+open	equ	15
+close	equ	16
+ranread equ	33
+ranwrit equ	34
+pstring equ	9
+setdma	equ	26
+conio	equ	6
+;
+ctlu	equ	05	; up  CTL E
+ctld	equ	24	; down CTL X
+ctle	equ	25	; erase CTL Y
+ctll	equ	19	; left	CTL S
+ctlj	equ	10	; jump	CTL J
+ctlr	equ	04	; right CTL D
+ctlb	equ	2	; backward  CTL B
+ctlf	equ	6	; forward   CTL F
+ctlh	equ	8	; destructive backspace CTL H
+ctldel	equ	127	; del
+ctltone equ	20	; tone dial   ^t
+ctlpuls equ	16	; pulse dial  ^p
+ctlpro	equ	015h	; ^u undetermined dial
+ctlo	equ	15	; output to printer
+;
+	org	0100h
+;
+	jmp	go
+	org	0200h		; second/third page buffer
+go:
+	xra	a		; clear fcb fields
+	sta	fcbs2
+	sta	fcbr2
+	lxi	d,fcb		; open dat file
+	mvi	c,open
+	call	bdos
+	inr	a		; see if error
+	jz	base		; yes return
+;
+	lxi	h,0
+	shld	page		; set current page #  to 0
+	call	getpage 	; read in page
+	call	dispage 	; display page
+;
+	lxi	h,buf
+	mvi	c,32		; look on page 1 for 32 chars
+portl:
+	mov	a,m
+	cpi	027h		; '
+	jz	gotport
+	inx	h
+	dcr	c
+	jnz	portl
+	jmp	loop		; no port
+gotport:
+	inx	h		; first char
+	mov	a,m
+	call	tr		; translate
+	rlc
+	rlc
+	rlc
+	rlc
+	mov	b,a
+	inx	h
+	mov	a,m
+	call	tr		; translate 
+	add	b
+	sta	port		; this is port address
+loop:
+	call	inkey
+	sta	key
+	cpi	31
+	jnc	update		; a character so update screen
+;
+	lxi	h,table
+lookup:
+	mov	e,m
+	inx	h
+	mov	d,m
+	inx	h
+	cmp	m
+	inx	h
+	jnz	lookup
+	xchg
+	pchl			; go do it
+;
+table:
+	dw	exit
+	db	27		; escape means exit
+	dw	loop  
+	db	ctldel		; skip delete
+	dw	doreturn
+	db	13		; carriage return
+	dw	dodwn		;     
+	db	ctld		; down
+	dw	doleft
+	db	ctll		; left
+	dw	dofor		;   
+	db	ctlf		; forward
+	dw	doback
+	db	ctlb		; backward
+	dw	doup		; 
+	db	ctlu		; up cursor
+	dw	dorgt
+	db	ctlr		; right
+	dw	doers
+	db	ctle		; erase page
+	dw	dojump
+	db	ctlj		; jump to page
+	dw	doprint
+	db	ctlo		; output page
+	dw	dobsp
+	db	ctlh		; destructive backspace
+	dw	dtone
+	db	ctltone 	; tone dial
+	dw	dpulse
+	db	ctlpuls 	; pulse dial
+	dw	dundial 	; 
+	db	ctlpro		; prometheus dial
+	dw	loop		; do again
+key:	db	0
+;
+tr:
+;
+;	translate for hexadecimal conversion
+;
+	push	h
+	ani	01fh
+	mov	e,a
+	mvi	d,0
+	lxi	h,trtab-1
+	dad	d
+	mov	a,m
+	pop	h
+	ret
+trtab:	db	10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9
+;
+exit:
+	call	putpage 	; flush page if needed
+;
+	lxi	d,fcb
+	mvi	c,close
+	call	bdos		; close file
+	jmp	base		; return    
+;
+getpage:
+;
+	call	set1		; set first third
+	call	page3		; get CP/M record number
+	shld	fcbr0		; read record
+	call	readit		; read record
+	call	set2		; set second third
+	call	page3		; CP/M record number
+	inx	h		; plus 1
+	shld	fcbr0
+	call	readit		; read record
+	call	set3
+	call	page3		; repeat for 
+	inx	h
+	inx	h
+	shld	fcbr0
+	call	readit		; final third of page
+	lxi	h,buf+382
+	mvi	m,020h
+	inx	h
+	mvi	m,020h		; replace cr/lf with blanks
+	ret
+;
+readit:
+	mvi	c,ranread	; read 
+	lxi	d,fcb
+	call	bdos
+	ora	a
+	pop	h		; rectify stack in case of error
+	jnz	blkpage
+	pchl			; return
+;
+set1:				; set dma to first part of buffer
+	lxi	d,buf
+	call	setd
+	ret
+set2:				; second part of buffer
+	lxi	d,buf+128
+	call	setd
+	ret
+set3:				; third part of buffer
+	lxi	d,buf+256
+	call	setd
+	ret
+;
+setd:				; set dma
+	mvi	c,26
+	call	bdos
+	ret
+;
+putpage:
+	lda	flush		; no changes on this page
+	ora	a
+	rz			; nothing to do
+	lxi	h,buf+382
+	mvi	m,13
+	inx	h
+	mvi	m,10		; put in cr/lf for editors
+	call	set1		; set dma
+	call	page3		; get CP/M record number
+	shld	fcbr0		  
+	call	writit		; write record
+	call	set2
+	call	page3
+	inx	h		; second part
+	shld	fcbr0
+	call	writit
+	call	set3
+	call	page3
+	inx	h
+	inx	h		; third part
+	shld	fcbr0
+	call	writit
+	xra	a
+	sta	flush		; clear changed flag
+	ret
+;
+writit: 			; actual write
+	mvi	c,ranwrit
+	lxi	d,fcb
+	call	bdos
+	ret
+;
+page3:
+	lhld	page		; get page number
+	xchg			; to de
+	lhld	page		; and hl
+	dad	d		; times 2
+	dad	d		; times 3
+	ret
+blkpag: 			; blank the whole buffer
+	lxi	b,384
+	lxi	h,buf
+blklp:
+	mvi	m,32		; store blank in memory
+	inx	h
+	dcx	b		; count
+	mov	a,b
+	ora	c
+	jnz	blklp
+	mvi	a,1		; mark as changed
+	sta	flush
+	ret
+blkpg1: 			; blank all but line 1
+	lxi	b,352
+	lxi	h,buf+32
+	jmp	blklp
+;
+dispage:			; display the page
+	call	home		; home cursor
+dispg1:
+	lxi	h,buf		; start of buffer
+	mvi	b,12		; 12 lines
+dloop:
+	call	dline		; display the line
+	dcr	b
+	jnz	dloop
+	mvi	b,33
+dlp1:				; put out bottom line
+	mvi	e,'-'
+	push	b
+	call	putchar
+	pop	b
+	dcr	b
+	jnz	dlp1
+;
+	lda	list
+	ora	a
+	rnz			; not for print function
+;
+	call	home		; home cursor
+	mvi	e,10
+	call	putchar 	; put on line 1
+	xra	a
+	sta	curcol		; set column to 0
+	inr	a
+	sta	curlin		; set line to 1
+	ret
+;
+dline:
+	push	b		; save b
+;
+	mvi	c,32		; characters per line
+;
+dlp:
+	mov	e,m		; get byte
+	push	h
+	push	b
+	call	putchar 	; write it to screen
+	pop	b
+	pop	h
+	inx	h		; bump pointer
+	dcr	c		; count
+	jnz	dlp
+;
+	push	h		; save buffer pointer
+	mvi	e,'|'		; put out border
+	call	putchar
+	call	crlf		; next line
+	pop	h
+	pop	b
+	ret
+;
+inkey:
+	mvi	e,255
+	mvi	c,conio
+	call	bdos		; get character
+	ora	a
+	jz	inkey
+	ret
+;
+putchar:			; write character to console
+	mvi	c,conio
+	lda	list
+	ora	a
+	jz	pch1
+	mvi	c,5		; to printer
+pch1:
+	call	bdos
+	ret
+crlf:				; write CR/LF
+	mvi	e,13
+	call	putchar
+	mvi	e,10
+	call	putchar
+	ret
+update: 			; replace character in buffer
+	push	psw
+	mov	e,a
+	call	putchar 	; put onto screen
+	lda	curcol		; column number
+	call	getadr		; calculate address in buffer
+	pop	psw		; get character
+	mov	m,a		; to buffer
+	mvi	a,1
+	sta	flush		; mark as changed
+;
+nxtchar:			; advance pointers
+	lda	curcol
+	inr	a
+	sta	curcol		; first column
+	cpi	32		; did it pass the end of line
+	jc	loop		; no then done
+	xra	a
+	sta	curcol		; set to column 0
+	call	crlf		; move cursor on screen
+;
+nxtline:
+	lda	curlin		; advance line pointer
+	inr	a
+	sta	curlin
+;
+	cpi	12		; did it pass the window 
+	jc	loop		; no still within
+	xra	a
+	sta	curcol
+	sta	curlin		; set line 0
+	call	home		; home the cursor
+	jmp	loop
+;
+getadr: 			; calculate address in buffer
+	push	psw		; save column
+	lhld	curlin		; current line
+	dad	h		; times 2
+	dad	h
+	dad	h
+	dad	h	
+	dad	h		; times 32
+	pop	psw		; get column
+	mov	c,a
+	mvi	b,0
+	dad	b
+	lxi	b,buf		; get buffer base
+	dad	b		; add in offset
+	ret
+;
+dodwn:				; move cursor down
+	mvi	e,10
+	call	putchar 	; put line feed
+	jmp	nxtline 	; join UPDATE
+;
+doleft:
+	lda	curcol
+	ora	a
+	jz	loop		; dont do anything
+	dcr	a
+	sta	curcol		; update pointer
+	mvi	e,8
+	call	putchar 	; move cursor
+	jmp	loop
+dofor:
+	lda	page
+	cpi	12		; ************* 1 page per letter pair
+;
+;  the above line should be "cpi  51" for BIGPHONE  (4 pages per letter pair)
+;
+	jz	loop		; dont
+	call	putpage 	; put current page if needed
+	lhld	page
+	inx	h
+	shld	page		; bump page indicator
+	call	getpage
+	call	dispage
+	jmp	loop		; loop
+doback:
+	call	putpage 	; put current page if needed
+	lhld	page
+	mov	a,h
+	ora	l
+	jz	loop		; on page zero
+	dcx	h		; back up the page
+	shld	page
+	call	getpage 	; get page
+	call	dispage 	; display page
+	jmp	loop
+;
+doreturn:			; go to next line
+	mvi	a,32
+	sta	curcol
+	jmp	nxtchar 	; force new line
+;
+doers:				; erase page
+	call	blkpg1
+	call	dispage
+	jmp	loop
+;
+;
+dobsp:
+	lda	curcol
+	ora	a		; are we at beginning
+	jz	loop		; do nothing
+	dcr	a
+	sta	curcol		; update column pointer
+	call	getadr		; get address
+	mvi	m,32		; put in blank
+	mvi	e,ctlh		; output bsp
+	call	putchar
+	mvi	e,32
+	call	putchar
+	mvi	e,ctlh
+	call	putchar
+	mvi	a,1
+	sta	flush		; note change in buffer
+	jmp	loop
+;
+dorgt:				; go right 
+	lda	curcol
+	call	getadr
+	mov	e,m		; redisplay current character
+	call	putchar
+	jmp	nxtchar 	; advance pointers
+;
+doup:				; cursor up
+	lda	curlin
+	ora	a		; at top?
+	jz	loop		; yes
+;
+	dcr	a
+	sta	curlin		; decrement
+	call	home		; start from here
+;
+	lda	curlin
+	ora	a		; are we no at top
+	jz	upcol		; skip line do column
+uplp1:
+	mvi	e,10		; output a LF
+	push	psw
+	call	putchar
+	pop	psw
+	dcr	a		; loop till correct line
+	jnz	uplp1
+upcol:
+	lda	curcol		; now position to correct column
+	ora	a
+	jz	loop		; already there
+	mvi	b,0
+uplp2:
+	push	b
+	mov	a,b
+	call	getadr		; get address of this character
+	mov	e,m
+	call	putchar 	; re display  (move cursor to right)
+	pop	b  
+	inr	b		; advance counter
+	lda	curcol
+	cmp	b		; see if returned to correct column
+	jnz	uplp2		; no
+	jmp	loop		; yep
+;
+dojump: 			; go to correct page
+	call	inkey
+	ani	05fh		; force upper case
+	cpi	041h		; check range
+	jc	loop
+	cpi	05bh
+	jnc	loop
+	sui	041h		; a becomes 0
+	rrc			; two letters per page
+	ani	07fh		; get rid of wrap around
+	mov	l,a
+	mvi	h,0
+	push	h		; new page number
+	call	putpage 	; put current page
+	pop	h
+;				 *******************************
+;	dad	h		; 2 pages per letter pair (times 2)
+;	dad	h		; 4 pages per letter pair (times 4)
+;				 *******************************
+;  The above lines should be inserted for BIGPHONE
+;
+	shld	page		; set new page
+	call	getpage 	; get and display
+	call	dispage
+	jmp	loop
+;
+doprint:
+	sta	list
+	call	crlf
+	call	dispg1
+	call	crlf
+	xra	a
+	sta	list
+	jmp	loop
+dundial:
+	xra	a    
+	sta	dials+3
+	jmp	dodial
+dtone:
+	mvi	a,'T'
+	sta	dials+3
+	jmp	dodial
+dpulse:
+	mvi	a,'P'
+	sta	dials+3
+dodial:
+	xra	a		; curcol of 0
+	call	getadr		; h=first character this line
+	push	h		; save
+	mvi	c,32		; scan for 2 $
+	mvi	b,0
+sclp:
+	mov	a,m
+	cpi	'$'
+	jnz	sclpe
+	inr	b
+sclpe:
+	inx	h
+	dcr	c
+	jnz	sclp
+;
+	mov	a,b
+	cpi	2		 ; must be two
+	pop	h		; rectify stack
+	jnz	loop
+dialp1:
+	mov	a,m
+	cpi	'$'
+	inx	h
+	jnz	dialp1		; already verified 2 $
+;				; got 1st $
+	lxi	d,dials 	; the first string
+	mvi	c,4		; this many
+attnlp:
+	ldax	d
+	call	doout		; send and wait
+	inx	d
+	dcr	c
+	jnz	attnlp
+;				; now the numbers
+dialp2:
+	mov	a,m
+	cpi	'$'	
+	inx	h		; to next
+	jz	enddial 	; send cr
+	cpi	030h
+	jc	dialp2		; not digit
+	cpi	03ah
+	jnc	dialp2		; not digit
+	call	doout		; send and wait
+	jmp	dialp2
+enddial:
+	mvi	a,13		; cr
+	call	doout
+	jmp	loop
+;
+doout:
+	ora	a		; see of zero
+	rz			; skip if so
+	push	b
+	push	psw
+	lda	port
+	cpi	255		; is it ff
+	jz	doutp		; use printer
+	sta	outi+1
+	pop	psw		; recover character
+outi:
+	out	0
+	jmp	dialwt		; go wait
+doutp:
+	pop	psw
+	push	d
+	push	h
+	mov	e,a
+	mvi	c,5
+	call	bdos
+	pop	h
+	pop	d
+dialwt:
+	lxi	b,04000h
+waitlp:
+	xthl
+	xthl
+	dcx	b
+	mov	a,b
+	ora	c
+	jnz	waitlp
+	pop	b
+	ret
+;
+dials:	db	'ATDT'
+port:	db	255	; default to printer
+list:	db	0
+curlin: dw	0	; current line
+curcol: dw	0	; current col
+flush:	db	0
+page:	dw	0
+	end
+
+
+	; defaul

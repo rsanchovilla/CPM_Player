@@ -1,0 +1,33 @@
+CC1:
+fputs::
+CC3:
+LXI H,4
+DAD SP
+CALL CCGINT##
+CALL CCGCHAR##
+MOV A,H
+ORA L
+JZ CC4
+LXI H,4
+DAD SP
+MOV D,H
+MOV E,L
+CALL CCGINT##
+INX H
+CALL CCPINT##
+DCX H
+CALL CCGCHAR##
+PUSH H
+LXI H,4
+DAD SP
+CALL CCGINT##
+PUSH H
+CALL fputc
+POP B
+POP B
+JMP CC3
+CC4:
+RET
+EXT fputc
+END
+

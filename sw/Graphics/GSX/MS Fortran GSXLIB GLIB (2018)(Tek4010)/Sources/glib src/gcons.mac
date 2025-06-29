@@ -1,0 +1,44 @@
+;
+; Created 2020 Martin Hepperle
+;
+     CSEG
+
+     PUBLIC   GCONS
+
+;
+; CP/M call
+;
+     BDOS   EQU   5
+;
+; CP/M function - output device
+;
+     CONOUT EQU   2      ; console
+     PUNOUT EQU   4      ; punch
+     LSTOUT EQU   5      ; list
+;
+; Output a raw string from Microsoft Fortran-80 3.44
+;
+; INTEGER*1 STR(5)
+; DATA STR /'H','e','l','l','o'/
+; CALL GCONS(STR,5)
+;
+; ADDR of STR in HL, STR is a array of LOGICAL*1 or INTEGER*1
+; ADDR of LEN in DE, LEN is INTEGER*2, in [1...255]
+;
+GCONS:  XCHG          ; swap DE<>HL
+        MOV  B,M      ; string length to B,     LD B,(HL)
+        XCHG          ; swap back, HL
+NEXT:   MOV  E,M      ; get next byte from *HL, LD C,(HL)
+        MVI  C,CONOUT ; console output
+        PUSH H        ; save
+        PUSH B        ;   "
+        CALL BDOS     ; print it
+        POP  B        ; restore
+        POP  H        ;   "
+        INX  H        ; next one
+        DCR  B        ;   "
+        JNZ  NEXT     ; loop if not done
+        RET
+
+        END
+

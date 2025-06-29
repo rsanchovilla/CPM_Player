@@ -1,0 +1,85 @@
+EXT Ustatus
+CC1:
+fputc::
+LXI H,4
+DAD SP
+CALL CCGINT##
+JMP CC5
+CC6:
+LXI H,26
+PUSH H
+LXI H,4
+DAD SP
+CALL CCGINT##
+PUSH H
+CALL Uwrite
+POP B
+POP B
+JMP CC4
+CC7:
+LXI H,13
+PUSH H
+LXI H,4
+DAD SP
+CALL CCGINT##
+PUSH H
+CALL Uwrite
+POP B
+POP B
+LXI H,10
+PUSH H
+LXI H,4
+DAD SP
+CALL CCGINT##
+PUSH H
+CALL Uwrite
+POP B
+POP B
+JMP CC4
+CC8:
+LXI H,4
+DAD SP
+CALL CCGINT##
+PUSH H
+LXI H,4
+DAD SP
+CALL CCGINT##
+PUSH H
+CALL Uwrite
+POP B
+POP B
+JMP CC4
+CC5:
+CALL CCSWITCH##
+DW CC6,-1
+DW CC7,10
+DW 0
+JMP CC8
+CC4:
+LXI H,Ustatus
+XCHG;;
+POP B
+POP H
+PUSH H
+PUSH B
+DAD H
+DAD D
+CALL CCGINT##
+XCHG;;
+LXI H,8
+CALL CCAND##
+MOV A,H
+ORA L
+JZ CC9
+LXI H,-1
+RET
+CC9:
+LXI H,4
+DAD SP
+CALL CCGINT##
+RET
+putc equ   fputc
+     entry putc
+EXT Uwrite
+END
+

@@ -1,0 +1,2704 @@
+.help
+.title 0 80 26 General Help Topics
+.title 1 80 14 Condition Execution Commands
+.title 2 80 11 CLIP commands
+.title 3 80 11 Internal	Macros
+.title 4 80 11 UEDT Commands
+.title 5 80 11 CLIP Utilities
+.title 6 80 11 CLIP Tools
+.item overview 0
+			       CLIP Overview
+
+CLIP  is  a sophisticated state	of the art command line	 interpreter  which
+interfaces between you and the operating system	allowing effortless program
+development.   CLIP's  many  features include  multi-statement	lines,	I/O
+redirection, pipes, command files with conditional execution, and extensive
+on-line	help.
+.verbose
+
+CLIP uses concise, yet consistent, syntax to allow you to perform a variety
+of  tasks.   For example,  CLIP's TYPE command not only	types files to	the
+terminal  but  also allows you to specify the wildcard characters ?  and  *
+when  displaying files.	  Like all other CLIP commands,	 the output of	the
+TYPE command may be redirected from the	console	to another file	or even	the
+printer	so that	by typing
+
+			TYPE/>lst: *.PKG
+
+you can	get a listing of all the files with a .PKG extension.
+
+.end
+.item special_characters 0
+			  CLIP Special Characters
+
+CLIP  uses  several characters to denote the following	special	 functions:
+multi-statement	lines(;),  pipes(|),  comments(--), internal macros(%),	and
+switches(/).
+.verbose
+
+The following is a list	of CLIP's special characters:
+
+   	 ; (semicolon)	  Separates multiple statements on a line.
+   	 | (vertical bar) Separates piped programs or macros.
+   	-- (2 dashes)	  Denotes the start of	a comment.
+   	 % (percent sign) Begins and ends an internal macro name.
+   	 / (slash)	  Designates a	switch.
+
+Sometimes  it  may  be	necessary  to use  these  characters  without  CLIP
+attempting to interpret	them as	special	characters.  To	accomplish this	use
+the %ASCII% internal macro to generate the appropriate character literally.
+
+.end
+.item line_editing 0
+			       Line Editing
+
+CLIP allows you, through the use of special control characters,	to edit	any
+input  line  like a text editor	or word	processor,  to manipulate up to	 10
+previous command lines,	 to control the	flow of	output,	and to stop program
+execution.
+.verbose
+
+The standard line editing and control characters are:
+
+		^A - Move backward one	word.
+		^B - Move to beginning	of line.
+		^C - Exit program or macro in progress.
+		^D - Move forward one character.
+		^E - Move backward one	command	line.
+		^F - Move forward one word.
+		^H - Erase previous character.
+		^I - Tab.
+		^K - Erase to end of line.
+		^O - Discard terminal output toggle.
+		^P - Enter next character with	no interpretation.
+		^Q - Unsuspend	terminal output.
+		^R - Redisplay	previous line or move to end of	current	line.
+		^S - Move backward one	character or
+		     suspend terminal output.
+		^T - Toggle case of next character.
+		^U - Erase entire line.
+		^V - Toggle insert mode.
+		^X - Move forward one command line.
+		del- Erase previous character.
+
+.end
+.item command_files 0
+			  Command Files	(Macros)
+
+Command	files are the heart of the CLIP	system.	  CLIP commands	or most	any
+keystroke  may	be placed into a file called a macro.	When the  macro	 is
+invoked	 by  typing its	name or	by executing the MACRO command,	 CLIP  will
+process	the macro file as if its contents were input by	the user.
+.verbose
+
+If a macro encounters an error it displays the message:
+
+		ERROR in command:
+		(line in error)
+   		(error	explanation)
+
+When  an error is detected,  control will return to the	terminal regardless
+of how deep the	macro is nested.  Warning messages, however, will allow	the
+macro to continue as if	no warnings were given.
+
+Macro execution	may also be aborted by typing ^C.
+
+.end
+.item internal_macros 0
+			      Internal Macros
+
+CLIP has macros	that it	internally expands into	text strings whenever these
+macros	are encountered	in a command line.  The	text strings may be used in
+command	lines to substitute for	typed in text.	 Internal macros begin	and
+end with a percent character (%).
+.verbose
+
+The following example contains two internal macros:
+
+		WRITE I am on disk %DISK%: user #%USER%
+This command is	equivalent to the command:
+
+		WRITE I am on disk A: user #0
+if you are on disk A, user 0.
+
+.end
+.item argument_extraction 0
+			    Argument Extraction
+
+Arguments of the following form	may be sent to macros:
+
+   	argument/switch:value/switch=value/switch
+
+.verbose
+Specialized internal macros have been formed that expand to the	 arguments.
+These internal macros are
+
+   	%nn%	    - Expands	to argument number nn without any of  its
+		      switches.
+	%nn/x/y/z%  - Expands argument	nn with	the x,	y, or z	switches and
+		      the value	of the chosen switch(es), if present.
+	%nn/+%	     - Expands to argument nn PLUS all its switches.
+	%nn/*%	     - Expands to only the switches of argument	nn.
+	%=nn/x%	    - Expands to the value of the x switch.
+	%?nn/x%     - Expands to only the x switch, if	present.
+	%!nn%	    - Expands to all arguments, switches, and switch values
+		      beginning	with argument nn to the	end of the line.
+.pause
+Example:
+
+   	TEST filename.ext/T=NEW/Y nextarg/Z/A/P
+
+	%0%	= TEST
+	%1/T%	= FILENAME.TXT/T=NEW
+	%1/+%	= filename.ext/T=NEW/Y
+	%2/*%	= /Z/A/P
+	%=1/T%	= NEW
+	%?2/P%	= /P
+	%!1%	= FILENAME.EXT/T=NEW/Y	NEXTARG/Z/A/P
+
+.end
+.item io_redirection 0
+			      I/O Redirection
+
+Redirection  of	input allows you to take the contents of a file	and use	 it
+as  input  to  any program that	normally expects input from  the  terminal.
+Similarly,  output  redirection	 takes	output that normally  goes  to	the
+terminal and directs it	to a file instead,  allowing you,  for example,	 to
+see the	output at a later date.
+.verbose
+
+So that	you can	monitor	what is	going on,  CLIP	enables	you to specify that
+output	from a program can also	go to the terminal and the redirected  file
+at the same time.
+
+.pause
+
+Redirection switches:
+
+   	/>file		Redirects  output  to	file.  Deletes	file  before
+			starting redirection.
+	/>>file		Redirects output to file.   Doesn't delete file but
+			rather appends to end of file.
+	/>&file 	Same  as /> but also shows redirected output  on
+			the terminal.
+	/>>&file	Same as />> but also shows redirected output  on
+			the terminal.
+	/<file		Redirects input from file.
+	/<&file 	Same  as /< but also shows redirected	input  on
+			terminal.
+	/>-file		Redirect printer output to a file.
+	/>>-file	Append printer output to a file.
+
+.pause
+
+When  redirection is performed by a command in a macro it remains in effect
+until  another	redirection  command changes it	or  the	 macro	terminates.
+Therefore, if the following TYPE command were in a macro
+
+	DIR/>dir.lst; TYPE myfile
+
+it  would  send	 its output to dir.lst until the macro	terminates  or	the
+following were typed in	to cancel the redirection command
+
+	DIR/>dir.lst; TYPE/> myfile
+
+The /> has the effect of turning output	redirection off.
+
+.pause
+
+Examples:
+
+	A) PROGNAM/<IFILE/>OFILE
+
+PROGNAM	 is the	name of	a program (or a	macro) in which	I/O redirection	 is
+performed.   The  <  switch  pointing INto the program signals	that  input
+should	come from IFILE,  while	the > switch pointing OUT from the  program
+name indicates terminal	output will go to OFILE.
+
+The  addition  of  an  ampersand (&) at	 the  beginning	 of  the  filenames
+instructs CLIP to show terminal	input and output to the	user as	it  appears
+while using the	redirected files for I/O:
+
+	A) PROGNAM/<&IFILE/>&OFILE
+
+Both switches may be used independently	as needed.
+
+.end
+.item pipes 0
+				   Pipes
+
+PIPES  are an extension	of I/O redirection where not only is the input	and
+output	redirected but where the output	from one program becomes the  input
+of another.
+.verbose
+ 
+For example:
+
+	PROG1 | PROG2 | PROG3
+
+is equivalent to the command:
+
+	PROG1/>pipeout.pyp; PROG2/<pipeout.pyp/>pipein.pyp; PROG3/<pipein.pyp
+
+Pipes may be used freely with macros so	that
+
+	DIR/W:1 *.* | SRT | READ/N/P/1	| WRITE	%S/1%
+
+is a valid construct.
+
+.end
+.item description 1
+
+		    Description	of Conditional Commands
+
+Execution of CLIP commands may be conditional so that you may vary the	way
+your macros behave dynamically without having to write a new macro for each
+condition.
+.verbose
+
+The CLIP commands IF string1 relop string2 THEN, ELSE, ELSEIF string1 relop
+string2	THEN, and ENDIF	are designed to	facilitate conditional execution of
+commands.   String1  and  string2 are character	strings	or internal  macros
+that  expand  to character strings.   Relop is a relation  operation  which
+performs the following tests
+
+   	=	Are strings EQUAL?
+   	<>	Are strings NOT EQUAL?
+   	<	Is string1 LESS THAN string2?
+   	<=	Is string1 LESS THAN OR EQUAL to string2?
+   	>	Is string1 GREATER THAN string2?
+   	>=	Is string1 GREATER THAN OR EQUAL to string2?
+
+.pause
+
+Example:
+
+	IF Adam < Zany	THEN
+	   WRITE Adam is sure not Zany.
+	ELSE
+	   WRITE Who knows if Adam is sane?
+	ENDIF
+
+This  conditional  will	 cause the message "Adam is sure not Zany."  to	 be
+displayed since	the string Adam	is less	than the string	Zany.
+
+.pause
+
+The  following	contrived  macro reveals the power  of	CLIP's	conditional
+execution capability; the macro	will count from	0 to 25	and then stop:
+
+	IF %FIRST% = TRUE THEN	 -- this is the	first time the macro is	called
+	   calc/0 0  -- set variable 0	to 0 and display it
+	   NEXT 1 -- reexecute	macro
+	ELSEIF	%V/0% =	25 THEN	-- have	reached	last number
+	   BREAK  -- exit out of macro
+	ELSE  -- the macro is looping
+	   calc/0 0 1 +  -- add 1 to variable 0 and display result
+	   NEXT 1  -- reexecute macro
+	ENDIF
+
+.end
+.item if 1
+IF ... THEN - Execute commands conditionally
+
+Format:	IF{switches} string1 relop string2 {THEN}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+A description of all conditional commands follows.
+.pause
+
+.goto description
+.end
+.item else 1
+ELSE - Execute the other condition of an IF ...	THEN
+
+Format:	ELSE{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+A description of all conditional commands follows.
+.pause
+
+.goto description
+.end
+.item elseif 1
+ELSEIF ... THEN	- Check	another	IF condition if	previous IF was	unsuccessful
+
+Format:	ELSEIF{switches} string1 relop	string2	{THEN}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+A description of all conditional commands follows.
+.pause
+
+.goto description
+.end
+.item endif 1
+ENDIF -	Terminate an IF	expression
+
+Format:	ENDIF{switches}
+
+Switches
+/>,/>&,/>>,/>>&,/< and /<&  see	the IO_REDIRECTION help	topic
+.verbose
+
+A description of all conditional commands follows.
+.pause
+
+.goto description
+.end
+.item break 2
+BREAK -	Break (exit) out of a macro.
+
+Format:	BREAK{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+BREAK stops execution of a macro,  pops	all levels of IF nesting, and exits
+to the CLIP command level.
+
+Why use	it?
+Use  BREAK to exit from	a macro	regardless of the level	of macro nesting or
+IF nesting.
+
+.pause
+
+Examples (in a macro):
+
+	IF "%S/1%" = "END" THEN
+	   BREAK
+	ELSE
+	   NEXT 1
+	ENDIF
+causes the macro to stop executing if string 1 is END; otherwise, the macro
+loops on itself.
+
+	WRITE line 1
+	BREAK
+	WRITE line 2
+displays "line 1" and finishes execution of the	macro; "line 2"	will not be
+displayed.
+
+.end
+.item bye 2
+BYE - Exit CLIP	and return to CCP
+
+Format:	BYE{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+BYE  causes CLIP to swap itself	out to disk and	return control back to	the
+console	 command processor (CCP).   When CLIP is later reinvoked its  state
+(e.g., values of string) will be as it was before BYE was issued.
+
+Why use	it?
+Use  BYE  to return control to the console command processor  in  order	 to
+execute	programs without CLIP.
+
+.pause
+
+Examples:
+
+	A) BYE
+returns	control	to the CCP
+
+	A) BYE; stat
+returns	 control to the	CCP;  but when CLIP is reinvoked,  it will run	the
+stat program automatically.
+
+.end
+.item calc 2
+CALC - Perform mathematical calculations
+
+Format:	CALC{switches}	RPN-expression
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/n	Place result in numeric variable n (n ranges from 0 to	9).
+	/N 	Perform  calculation but don't	display	results	on  standard
+		output.
+.verbose
+
+What it	does
+CALC  is a reverse polish notation (RPN) calculator that performs the  math
+operations: +, -, *, /,	# (modulus), ' (complement), & (and), !	(or), and X
+(exclusive or) on unsigned 16 bit numbers in any base (see RADIX); displays
+the results to standard	output;	and optionally assigns the result to any of
+the 10 built-in	 register variables.
+
+Why use	it?
+Use  CALC as a calculator or in	conjunction with the RADIX command and	the
+%V% internal macro to form iteration counters and radix	converters.
+
+.pause
+
+Examples:
+
+	A) CALC 45 30 - 2 *
+	30
+subtracts  30 from 45,	multiplies the result by 2,  and displays the final
+result to the terminal.
+
+	A) CALC/0/1/N 4 100 25	/ *
+divides	 100  by 25,  multiplies by 4,	and stores the	result	in  numeric
+variables 0 and	1 but does not display it.
+
+.end
+.item chain 2
+CHAIN -	Execute	a macro	file at	the current level
+
+Format:	CHAIN{switches} macro-name
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+CHAIN  exits the current macro and starts executing the	macro specified	 by
+macro-name but does not	push a level of	macro nesting.	This has the effect
+of never returning to the macro	that did the CHAIN.
+
+Why use	it?
+Use  CHAIN  to	pass  control to another macro	without	 returning  to	the
+"calling" macro.
+
+Examples (in a macro):
+
+	CHAIN nextmac
+chains to macro	nextmac.
+
+	CHAIN/<newinp nextmac
+chains to macro	nextmac	with redirected	input from newinp.
+
+.end
+.item close 2
+CLOSE -	Close a	previously open	file
+
+Format:	CLOSE{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/f	Close open file number	f (f ranges from 1 to 3).
+.verbose
+
+What it	does
+CLOSE closes a file that has been previously opened by an OPEN command.
+
+Why use	it?
+Use  CLOSE  to	close an open file so that its file number can be  used	 by
+another	OPEN.	Remember CLIP allows a maximum of 3 files to be	open at	one
+time.
+
+.pause
+
+Examples:
+
+	A) CLOSE/3
+closes file number 3 if	it is open.
+
+	A) CLOSE/2/3
+closes both files 2 and	3 if they are open.
+
+.end
+.item copy 2
+COPY - Copy files
+
+Format:	COPY{switches}	destination{/U:u} source{/U:u}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/U:u	File resides in user number u (u ranges from 0	to 31).
+.verbose
+
+What it	does
+COPY  copies files from	source to destination between any two disks  and/or
+user numbers; source and destination are file names in the form	d:file.ext.
+
+Why use	it?
+Use  COPY to transfer files from other disks and/or user numbers into  your
+current	disk or	user number making the files more accessible to	you.
+
+.pause
+
+Examples:
+
+	A) COPY text1.src b:alltext.bak/U:4
+copies	the file alltext.bak from disk B user 4	onto the current  disk	and
+user number with the new file name text.src.
+
+	A) COPY c:pip.com/U:1 b:pip.com/U:0
+copies the file	pip.com	from disk B user 0 onto	file pip.com disk C user 1.
+
+.end
+.item date 2
+DATE - Display or set the current date
+
+Format:	DATE{switches}	{MM DD YY}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+If MM DD YY is present,	 DATE sets the current date to month MM, day DD	and
+year  YY;  otherwise,  DATE displays the current date in the form DD-Mmm-YY
+where DD is the	day, Mmm is a character	representation of the month, and YY
+is the year.
+
+Why use	it?
+Use DATE in conjunction	with the %DATE%	internal macro to timestamp events.
+
+.pause
+
+Examples:
+
+	A) DATE
+	22-Mar-83
+displays the current date.
+
+	A) DATE 3 27 83; DATE
+	27-Mar-83
+sets the date and displays it.
+
+.end
+.item del 2
+DEL - Delete one or more files from disk
+
+Format:	DEL{switches} file-template ...
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/N	No  warnings.	 Don't	give a warning if the file does	 not
+		exist.
+.verbose
+
+What it	does
+DEL deletes a file or a	list of	files from the current disk.  The filenames
+may contain wildcard characters	such as	? or *.
+
+Why use	it?
+Use  DEL  to  remove  unwanted files from disk so that disk  space  may	 be
+conserved.
+
+.pause
+
+Examples:
+
+	A) DEL	game1.bas game2.bas game33.bas
+deletes	the files game1.bas game2.bas and game33.bas
+
+	A) DEL/N *.bak	frq*.com
+deletes	 all  files  that match	the templates *.bak  and  frq*.com  on	the
+current	disk but does not issue	any warnings if	the files cannot be found.
+
+.end
+.item dir 2
+DIR - Produce a	listing	of the directory
+
+Format:	DIR{switches} file-template ...
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/W:w	Change	the width of the DIR command output so that w  files
+		per line are displayed.	 The default width is 5.
+	/S	Display  system files only.   Normally	system files are not
+		displayed.
+.verbose
+
+What it	does
+DIR  produces a	list of	all the	files that match a list	of  file-templates.
+DIR  also  optionally formats the display so that the number of	 files	per
+line may be changed.
+
+Why use	it?
+Use DIR	to see a complete list of files	on your	disk or	a partial directory
+of files that you have selected.
+
+.pause
+
+Examples:
+
+	A) DIR
+produces a listing of all the files on the currently logged on disk.
+
+	A) DIR/>&flist/W:1 *.PAS
+produces  a  listing of	all the	*.PAS files on the terminal and	 into  file
+flist with one filename	per line.
+
+.end
+.item disk 2
+DISK - Change or display the current disk
+
+Format:	DISK{switches}	new-disk
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+DISK  allows you to change your	currently logged on disk to  new-disk.	 If
+new-disk is not	present, DISK displays the currently logged on disk.
+
+Why use	it?
+Use DISK to change your	currently logged on disk so that files on the newly
+logged on disk are more	accessible.
+
+.pause
+
+Examples:
+
+	A) DISK
+	A:
+displays A: which is the currently logged on disk.
+
+	C) DISK A
+	A)
+changes	the currently logged on	disk drive from	C to A.
+
+.end
+.item exec 2
+EXEC - Execute a .COM file
+
+Format:	EXEC{switches}	filename
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/S:r	Save r	records	of memory into file MEMORY.SAV after program
+		finishes execution.
+.verbose
+
+What it	does
+EXEC  searches for a file called filename.COM and attempts to  execute	it.
+This command is	identical to typing filename.
+
+Why use	it?
+Use  EXEC  when	there exists both a .CLI file and a .COM and  you  wish	 to
+execute	 only  the  .COM  file.	  Normally CLIP	finds the  .CLI	 first	and
+executes it.
+
+.pause
+
+Examples:
+
+	A) EXEC stat
+executes the stat program.  This is identical to typing
+	A) stat
+provided that the file STAT.CLI	does not exist.
+
+	A) EXEC/>out/<in JANUS
+executes a program JANUS.COM and redirects its input and output.
+
+	A) EXEC/S:12 DDT exty
+executes DDT.  When DDT	finishes 12 records are	saved into file	MEMORY.SAV.
+
+.end
+.item getword 2
+GETWORD	- Get a	word from a string
+
+Format:	GETWORD{switches} string
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/n	Put the extracted word	in string n.
+	/W:w	Extract  word	number w.   Word 0 is the  GETWORD  command.
+		Word 1 is the first word in the	string.
+	/U	Convert the word to upper case	before storing in string.
+.verbose
+
+What it	does
+GETWORD	 extracts  a word from a string	and then places	that  word  into  a
+string variable.
+
+Why use	it?
+Use  GETWORD to	extract	fields of data from a string that may then be  used
+for further processing.
+
+.pause
+
+Examples:
+
+	A) GETWORD/3/W:4 The phone is off the hook
+extracts the word "off"	from the above string and stores it in string 3.
+
+	A) GETWORD/1/U	%s/1%
+extracts the first word	in string 1 and	stores it back into string 1.
+
+.end
+.item help 2
+HELP - Display help on topics or commands
+
+Format:	HELP{switches}	help-item
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+What it	does
+HELP attempts to find help-item	in the CLIPHELP.OVL file and then  displays
+information about help-item on the terminal.
+
+Why use	it?
+Use HELP to familiarize	yourself with CLIP's many commands.
+
+.pause
+
+Examples:
+
+	A) HELP
+displays a list	of items on which help is available.
+
+	A) HELP/>dir.hlp DIR
+creates	a file called dir.hlp which contains text from the DIR help topic.
+
+.end
+.item initial 2
+INITIAL	- Define a command to be executed at initialization
+
+Format:	INITIAL{switches} command
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+INITIAL	 allows	 you  to set up	a command that will be executed	 when  CLIP
+comes up for the first time.
+Note:  In  order  for this command to "take effect" use	any  command  which
+causes CLIP to swap  itself out	(e.g., BYE).
+
+Why use	it?
+Use  INITIAL  to  perform a certain CLIP command or  to	 run  a	 particular
+program	when CLIP first	comes up.
+
+.pause
+
+Examples:
+
+	A) INITIAL start
+executes the macro file	start.cli when CLIP is first invoked.
+
+	A) INITIAL PROMPT/D/U Albert!
+sets  CLIP's initial command to	be PROMPT/D/U Albert!  This is a common	way
+to  insure that	the prompt will	automatically be set when you first  invoke
+CLIP.
+
+.end
+.item macro 2
+MACRO -	Execute	a macro	file explicitly
+
+Format:	MACRO{switches} filename
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+MACRO  executes	 filename.CLI as a macro file.	This command has  the  same
+effect as typing filename.
+
+Why use	it?
+Use MACRO to  explicitly execute a macro file.	In particular, use MACRO to
+execute	 a macro file whose name is the	same as	a CLIP command.
+
+.pause
+
+Examples:
+
+	A) MACRO quickly
+executes the macro quickly.cli.
+
+	A) MACRO/>&del.prn del
+executes the macro del.CLI and redirects output	to del.prn.
+
+.end
+.item mask 2
+MASK - Set up a	filename template for %DIR%
+
+Format:	MASK{switches}	file-template
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+MASK sets up a filename	template so that calls to the internal macro  %DIR%
+return filenames that match the	template.
+
+Why use	it?
+Use  MASK  with	 %DIR% to perform operations on	files that  match  a  given
+template.
+
+.pause
+
+Examples:
+
+	A) MASK *.BAK;write %DIR% %DIR% %DIR%
+displays the first three *.BAK files from disk A.
+
+	A) MASK largedb.dat
+	A) IF "%DIR%" <> "" THEN
+	A)    WRITE largedb.dat is there
+	A) ELSE
+	A)    WRITE largedb.dat is not	there
+	A) ENDIF
+checks	to see if file largedb.dat exists and then displays (writes) if	 it
+does on	the terminal.
+
+.end
+.item next 2
+NEXT - Reexecute the current macro
+
+Format:	NEXT{switches}	{level}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+NEXT  causes  the  current macro it is in to be	 reexcuted  and	 optionally
+ENDIF  a  specific number of pending IFs.   Level is  an  optional  integer
+ranging	from 0 to 64.  If level	is not present,	the value 0 is assumed.
+
+
+Why use	it?
+Use  NEXT to cause a macro to loop on itself.	Or use NEXT in	conjunction
+with BREAK to repeatedly execute a macro until a condition is met.  Use	the
+optional level argument	when NEXT occurs inside	an IF.
+
+.pause
+
+Examples (in a macro):
+
+	WRITE Over and	over again!
+	NEXT
+repeatedly writes out "Over and	over again!"
+
+	IF %V/1:2% = 04 THEN
+	   NEXT 1
+	ENDIF
+repeats	 the  macro if variable	1 is equal to 04.   The	level is set  to  1
+since NEXT would leave the IF pending if it were not.
+
+.end
+.item null 2
+NULL - Don't execute anything
+
+Format:	NULL{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+Except for executing its switches, NULL	performs no action.
+
+Why use	it?
+Use  NULL as a convenient NOP instruction to change redirected output in  a
+macro.
+
+Example	(in a macro):
+
+	DIR/>dir.lst *.*;NULL/>
+NULL is	used to	redirect output	back to	the console.
+
+.end
+.item open 2
+OPEN - Open a disk file
+
+Format:	OPEN{switches}	filename
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/f	Open file number f (f ranges from 1 to	3).
+	/I	Open file for input.
+	/O	Open file for output.
+.verbose
+
+What it	does
+OPEN  opens file filename for input or output so that invocations of  %GET%
+and PUT	can do file I/O.
+
+Why use	it?
+Use  OPEN to open a file and to	either read or write lines or characters to
+it.
+
+.pause
+
+Examples:
+
+	A) OPEN/1/I dump.lst
+opens file dump.lst for	input and assigns it file number 1.
+
+	A) OPEN/3/O dart.dmp
+opens file dart.dmp for	output and assigns it file number 3.
+
+.end
+.item pause 2
+PAUSE -	Pause CLIP for a specified amount of time
+
+Format:	PAUSE{switches} time-value
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+PAUSE causes CLIP to delay for a time-value (in	tenth's	of  seconds).	The
+time-value must	range from 0 to	65535 (0 to 6553.5 seconds).
+
+Why use	it?
+Use PAUSE to delay CLIP	for a period of	time so	that messages may remain
+on the screen longer or	programs and macros may	be time-sequenced properly.
+
+Example:
+
+	A) WRITE Error	encountered in program;	PAUSE 50
+displays an error message on the screen	for 5 seconds.
+
+.end
+.item poke 2
+POKE - Change a memory byte to a value
+
+Format: POKE address value
+
+	A) POKE 80 2A
+
+Changes memory location 80H to 2AH (both numbers are always in hex).
+.end
+.item pop 2
+POP - Pop a previously PUSHed image of CLIP back
+
+Format:	POP{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+POP restores CLIP to the state it was in just before it	was swapped out.
+
+Why use	it?
+Use  POP  to restore CLIP's state (e.g.,  string variables) to what it	was
+previous to a PUSH or program execution.
+
+Example:
+
+	A) STRING/1 good string; PUSH;	STRING/1 bad string; POP
+POP restores string 1 to "good string".
+
+.end
+.item prompt 2
+PROMPT - Change	CLIP's standard	prompt
+
+Format:	PROMPT{switches} new-prompt
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/D	Display the current logged on disk before the prompt.
+	/U	Display the current user number before	the prompt.
+.verbose
+
+What it	does
+PROMPT	allows you to change CLIP's prompt to new-prompt and to	 optionally
+display	the current disk and user number.
+
+Why use	it?
+Use PROMPT to personalize CLIP's prompt.
+
+.pause
+
+Examples:
+
+	A) PROMPT Enter command-
+	Enter command-
+Changes	CLIP's prompt to "Enter	command- "
+
+	Enter command-	PROMPT/D/U -Ready:
+	A0-Ready:
+Changes	CLIP's prompt to display the current disk, the user number, and	the
+string "-Ready:	"
+
+.end
+.item push 2
+PUSH - Push a copy of CLIP's current status to disk
+
+Format:	PUSH{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+PUSH  writes  a	current	copy of	CLIP's status (e.g.,  string variables)	 to
+disk.	CLIP  performs	an implicit PUSH when it executes a program  or	 is
+exited via the BYE command.
+
+Why use	it?
+Use  PUSH to save CLIP's status	so that	later on it can	be restored with  a
+POP command.
+
+.pause
+
+Example:
+
+	A) PUSH; STRING/4 Garbage; POP
+PUSHes CLIP's state,  sets string 4 to "Garbage",  and then restores CLIP's
+state (which also restores string 4's previous value).
+
+.end
+.item put 2
+PUT - Write text to a file OPENed for output
+
+Format:	PUT{switches} text/character
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/C	Write out only	one character.
+	/P 	Pause	at  the	end of the line	 (i.e.,	 don't	generate  a
+		newline at the	end of line).
+.verbose
+
+What it	does
+PUT writes one character or line of text to a file that	has been opened	for
+output with the	OPEN command.
+
+Why use	it?
+Use  PUT as a convenient and fast way of writing data to a file	 from  CLIP
+command	level or a macro.
+
+.pause
+	
+Examples:
+
+	A) PUT/1 line 1; PUT/1	line 2
+writes two lines to file number	1.
+
+	A) PUT/2/C %S%
+writes the first character from	string variable	1 to file number 2.
+
+	A) PUT/3/P and	you may	assume that ;PUT/3/P this is on	one line
+writes "and you	may assume that	this is	on one line" to	file number 3.
+
+.end
+.item radix 2
+RADIX -	Change or display the input and	output radix for numerics
+
+Format:	RADIX{switches} {new-radix}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+RADIX  changes	the input and output radix to new-radix	where new-radix	 is
+always a decimal number	from 2 to 16.	If new-radix is	not given, then	the
+current	radix is displayed.
+
+Why use	it?
+Use RADIX to convert numbers from one radix to another.
+
+.pause
+
+Examples:
+
+	A) RADIX 8
+changes	 the  radix to octal so	that further input and	output	of  numeric
+variables is in	octal.
+
+	A) RADIX 10; CALC/1/N 125; RADIX 16; WRITE %V/1%
+	7D
+Writes the hexadecimal equivalent of the decimal 125.
+
+.end
+.item read 2
+READ - Display prompt and read text into string
+
+Format:	READ{switches}	{prompt}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/n	Read text into	string n.
+	/D	Display text in string	n so that it may be edited.
+	/N	No newline after carriage return is entered.
+	/P	Pause	at  the	end of the prompt (i.e prompt user  on	same
+		line).
+.verbose
+
+What it	does
+READ  displays a prompt	text onto the standard output,	reads text from	the
+standard input,	and stores the input text into a string	variable.
+
+Why use	it?
+Use  READ to prompt someone for	input and then to store	that input  into  a
+string for later processing.
+
+.pause
+
+Examples:
+
+	A) READ/1 Enter your name:; WRITE Hi there %S/1%
+	Enter your name:
+	Samantha
+	Hi there Samantha
+prompts	for a string and then displays it.
+
+	A) STRING/1 NO!
+	A) READ/D/1/P Do you want to start over?
+	Do you	want to	start over? NO!
+prompts	with "Do you want to start over?  NO!".	  You can change (edit)	the
+NO! or just type a RETURN to store "NO!" in string 1.
+
+	A) READ/2/P/U File to delete?
+	File to delete? bond.007
+prompts	and reads BOND.007 into	string variable	2.
+
+.end
+.item ren 2
+REN - Rename a disk file
+
+Format:	REN{switches} new-filename old-filename
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+REN  changes the name of the existing file old-filename	to new-filename	 as
+long as	new-filename does not exit.
+
+Why use	it?
+Use REN	to rename an existing file so that the name is more appropriate.
+
+.pause
+
+Examples:
+
+	A) REN	mario.sav mario.bak
+changes	the name of the	file mario.bak to mario.sav.
+
+	A) REN	b:stereo b:radio
+changes	the name of the	file radio on disk B to	stereo.
+
+.end
+.item return 2
+RETURN - Return	from a macro
+
+Format:	RETURN{switches} {level}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+RETURN	returns	 from a	macro and optionally ENDIFs a specified	 number	 of
+IFs.   Level is	an optional integer ranging from 0 to 64.   If level is	not
+present, the value 0 is	assumed.
+
+Why use	it?
+Use RETURN to return from a macro at any point in the macro execution.	Use
+the optional level argument when RETURN	occurs inside an IF.
+
+.pause
+
+Examples:  (in a macro)
+
+	IF "%S/1%" = "END" THEN
+	   RETURN 1
+	ELSE
+	   NEXT 1
+	ENDIF
+
+causes the macro to stop executing if string 1 is END; otherwise, the macro
+loops on itself.
+
+	WRITE line 1
+	RETURN
+	WRITE line 2
+
+displays "line 1",  finishes execution of the macro, and therefore "line 2"
+is not displayed.
+
+.end
+.item search 2
+SEARCH - Turn automatic	searchlisting ON or OFF
+
+Format:	SEARCH{switches} ON/OFF
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+If the argument	to SEARCH is ON, then all file opens will attempt to follow
+the automatic searchlist (currently disk A user	0).
+If  the	 argument to SEARCH is OFF then	all file opens will occur  as  they
+always do.
+
+Why use	it?
+SEARCH	may  be	 used to turn automatic	searchlisting ON or  OFF  to  allow
+programs  and  data  files to be stored	in a common place and  be  accessed
+without	regard to disk and/or user number.
+
+.pause
+
+Example:
+
+	A) SEARCH OFF;	EXEC dbinvert; SEARCH ON
+Turns	searchlisting	off,   runs  program  dbinvert,	  and  then   turns
+searchlisting on.
+
+.end
+.item set 2
+SET - Set the attributes for a list of files
+Format:	SET{switches} filename	...
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/S	Set the system	attribute for a	file.
+	/R	Set the read/only attribute for a file.
+.verbose
+
+What it	does
+SET changes the	system and read/only attributes	for a list of files.  Set
+with no	switches removes both the system and read/only attributes.
+
+Why use	it?
+Use SET	to make	certain	files read only	or to designate	them as	system
+files.	System files are not normally displayed	with DIR and read/only
+files cannot be	written	to or deleted.
+
+.pause
+
+Examples:
+
+	A) SET/R secret.txt
+sets the attributes of file secret.txt so that it may only be read.
+
+	A) SET/S/R reboot.com
+sets the attributes of file reboot.com so that it does not display on a	DIR
+list and cannot	be written to or deleted.
+
+	A) SET	retry.pas
+removes	the system and read/only attributes of file retry.pas.
+
+.end
+.item size 2
+SIZE - Display size of a list of files
+
+Format:	SIZE{switches}	filename...
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+SIZE displays the size,	in 128-byte records, of	a list of files.
+
+Why use	it?
+Use SIZE to determine how much space a file occupies.
+
+.pause
+
+Examples:
+
+	A) SIZE main.pas main.com
+	MAIN.PAS	145
+	MAIN.COM	89
+displays the size of files main.pas and	main.com.
+
+	A) SIZE main.pas| READ/1/P/N;	-- get	size of	file in	string 1
+	A) GETWORD/2/W:2 %S/1%; CALC/1/N %S/2%	128 *;	-- convert to byte size
+	A) WRITE %S/1%	records	%V/1% bytes;  -- display record	and byte size
+	MAIN.PAS     145 records 18560	bytes
+displays the size of file main.pas in both records and bytes.
+
+.end
+.item string 2
+STRING - Store text in a string	variable
+
+Format:	STRING{switches} text
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/n	Store text in string n	where n	ranges from 0 to 9.
+	/F	Find text in string n.	 Return	position of found text in
+		numeric	variable 0.  Variable 0	is 0 when no match.
+	/U	Convert string	to upper case before storing in	string n.
+	/S:j	Start extracting characters from string position j.
+	/E:k	End extracting	characters at string position k.
+.verbose
+
+What it	does
+STRING stores text in any CLIP internal	string and optionally performs
+simple string manipulations.
+
+Why use	it?
+Use STRING to manipulate text.
+
+.pause
+
+Examples:
+
+	A) STRING/3 Don't touch my car!
+puts the string	"Don't touch my	car!" in string	3.
+
+	A) STRING/3/U Don't touch my car!
+capitalizes the	string and then	puts "DON'T TOUCH MY CAR!" in string 3.
+
+	A) STRING/3/S:7 Don't touch my	car!
+puts the string	"touch my car!"	in string 3.
+
+	A) STRING/5/3/S:7/E:11/U Don't	touch my car!
+puts the string	"TOUCH"	in strings 3 and 5.
+
+.end
+.item time 2
+TIME - Set or display time
+
+Format:	TIME{switches}	{HH MM SS}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+TIME  without any arguments displays the current time in the form HH:MM:SS,
+where  HH  is hours,  MM is minutes,  and SS is	 seconds.   TIME  with	the
+arguments HH MM	SS sets	the time.
+
+Why use	it?
+Use TIME to determine the current time or the execution	time of	a program.
+
+.pause
+
+Examples:
+
+	A) TIME
+	16:46:31
+displays the current time (4:46:31 p.m.).
+
+	A) TIME 00 00 00; EXEC	sort address; TIME
+	00:02:18
+sets  the time to 0,  executes a program, and then displays the	elapsed	time
+(2 min.	18 sec.)
+
+.end
+.item trace 2
+TRACE -	Enable or disable tracing of CLIP commands
+
+Format:	TRACE{switches}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/I	Input:	 show lines that CLIP inputs.
+	/E	Expand:  show lines after internal macro expansion.
+.verbose
+
+What it	does
+TRACE  enables or disables two types of	tracing	of  CLIP  commands.   Trace
+without	 /I or /E turns	all tracing off.
+
+Why use	it?
+Use  TRACE  as a debugging aid to "see"	macro  executions  and/or  internal
+macro expansions.
+
+.pause
+
+Examples:
+
+	A) TRACE/I
+	/I-A) WRITE Let there be light.
+	Let there be light.
+traces the input "WRITE	Let there be light." by	displaying it.
+
+	A) TRACE/I/E
+	/I-A) WRITE We	must be	on disk	%DISK%
+	/E-A) WRITE We	must be	on disk	A
+	We must be on disk A
+enables	 input and execution tracing by	displaying the command after  input
+and before execution.
+
+.end
+.item type 2
+TYPE - Display file(s) on standard output
+
+Format:	TYPE{switches}	file-template ...
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/V	Verbose  output;  display  the	 file  with  a	header	that
+		contains the file's name.
+.verbose
+
+What it	does
+TYPE  takes  a	list of	file templates and displays them  on  the  standard
+output with an optional	banner.
+
+Why use	it?
+Use TYPE  to view the contents of files.
+
+.pause
+
+Examples:
+
+	A) TYPE mwrite.pas
+displays the file mwrite.pas on	the terminal.
+
+	A) TYPE/V/>output.prn *.pas c*.doc
+copies	all  *.pas files and all c*.doc	files onto file	output.prn  with  a
+banner between each file.
+
+.end
+.item uc 2
+UC - Turn case conversion of command line ON or	OFF
+
+Format:	UC{switches} ON/OFF
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+UC  ON converts	the command line to upper case when programs or	CLIP macros
+attempt	to reference it.
+UC  OFF	leaves the command line	as is when programs or CLIP macros  attempt
+to reference it.
+
+Why use	it?
+Use  UC	 ON to convert the command line	arguments to your program  or  CLIP
+macro to upper case regardless of what case you	have typed them	in.
+Use  UC	 OFF to	leave the command line unchanged so that programs  or  CLIP
+macros	see it as it was typed in.   This is the preferred way	of  running
+CLIP  since many programs are case sensitive and therefore work	better when
+you have full control over the case.
+
+.pause
+
+Example:
+
+	A) UC ON; EXEC	prefix FilE
+converts  FilE	to  FILE when program prefix attempts to read  the  command
+line.
+
+	A) UC OFF; exec findpat MacIntosh
+leaves the command line	untouched so that when program findpat attempts	 to
+read it, it finds the string "MacIntosh" in both upper and lower case.
+
+.end
+.item uedt 2
+UEDT - Universal EDiTor
+
+Format:	UEDT{switches}	filename
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/M	Reenter UEDT and use the file in memory for editing.
+.verbose
+
+What it	does
+UEDT  transfers	a file into memory and thereby allows you to edit the  file
+using line editing commands.  If filename is not found,	it is created.	Use
+UEDT's INFORM command for more information on how to use UEDT.
+
+Why use	it?
+Use UEDT as a quick way	to create or edit small	files.
+
+.pause
+
+Example:
+
+	A) UEDT newone.cli
+	1:@	WRITE Testing
+	2:@	<ESC>
+	*DONE
+invokes	UEDT with file newone.cli.  Since newone.cli does not already exist,
+UEDT  creates  it  and then automatically  goes	 into  insert  mode.   UEDT
+afterwards accepts the input text and goes into	command	mode when an  <ESC>
+(escape) is typed.   The command DONE writes the file out to disk and  then
+exits UEDT.
+
+.end
+.item user 2
+USER - Display or change the current user number
+
+Format:	USER{switches}	user-number
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+USER  changes  the user	number to user-number if user-number is	 specified
+or displays the	current	user number if user-number is not  specified.  User-
+number must range from 0 to 31.
+
+Why use	it?
+Use USER to display or change your current user	number.
+
+Example:
+
+	A) USER 15; USER
+	15
+changes	the current user number	to 15 and then displays	it.
+
+.end
+.item write 2
+WRITE -	Display	text on	the standard output
+
+Format:	WRITE{switches} text
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+	/P	Pause at end of line (i.e., don't generate a newline).
+.verbose
+
+What it	does
+WRITE  displays	a line of text on the standard output  and  optionally
+pauses at the end of the line.
+
+Why use	it?
+Use WRITE to display messages from a macro.
+
+.pause
+
+Examples:
+
+	A) WRITE Once a cat always a cat.
+	Once a	cat always a cat.
+
+	A) WRITE/P Once a cat;	WRITE/P	always a; WRITE	cat
+	Once a	cat always a cat.
+
+	A) WRITE/P/>term.lin A	full duplex modem
+writes the string "A full duplex modem"	to file	term.lin.
+
+.end
+.item -ascii 3
+%ASCII%	- Convert a hex	number into ASCII
+
+Format:	%ASCII	n%
+.verbose
+
+What it	does
+%ASCII%	expands	to the ASCII equivalent	of the hexadecimal number nn.
+
+Why use	it?
+Use %ASCII% to generate	ASCII characters that cannot be	typed in directly.
+
+Examples:
+
+	A) WRITE %ASCII 7%
+Ring the terminal bell.
+
+	A) WRITE The stock has	risen 34.4%ASCII 25%
+Writes "The stock has risen 34.4%".
+
+.end
+.item -comlin 3
+%COMLIN% - Expands to the command line tail (See the manual for examples).
+.end
+.item -date 3
+%DATE% - Expand	to the current date
+
+Format:	%DATE%
+
+What it	does
+%DATE% expands to the current date in the form DD-Mmm-YY, where	DD is day,
+Mmm is month, and YY is	year.
+
+Why use	it?
+Use %DATE% in commands or macros to implement date stamping.
+
+Example:
+
+	A) WRITE/>daily.log Computer was brought up on	%DATE%
+
+.end
+.item -dir 3
+%DIR% -	Expand the the next MASKed file	name
+
+Format:	%DIR%
+.verbose
+
+What it	does
+%DIR% expands to the next file name based on the filename template given in
+a MASK command.
+
+Why use	it?
+See the	following explanation on MASK:
+.pause
+
+.goto mask
+.end
+.item -disk 3
+%DISK% - Expand	to the current disk
+
+Format:	%DISK%
+
+What it	does
+%DISK% expands to a string that	is the disk letter of the currently  logged
+in disk.
+
+Why use	it?
+Use %DISK% in your macros instead of hardcoding	in a disk letter.
+
+Examples:
+
+	A) TYPE %DISK%:local.txt
+Types the file local.txt from the current disk.
+ 
+	IF %DISK% <> A	THEN
+	   DISK A
+	ENDIF
+Changes	the current disk to disk A if the current disk is not A.
+
+.end
+.item -file 3
+%FILE% - Expand	to the first line of a file
+
+Format:	%FILE filename%
+.verbose
+
+What it	does
+%FILE% expands to the first line of text contained in filename.
+
+Why use	it?
+Use %FILE% as a	quick way of using the contents	of a file in in	commands or
+macros.
+
+Example:
+
+	A) TYPE/V %FILE allpas%
+If  the	first line in file allpas is "main.pas loc.pas endit.pas" then	the
+above command is equivalent to typing:
+
+	A) TYPE/V main.pas loc.pas endit.pas
+
+.end
+.item -first 3
+%FIRST%	- Determine if this is the first time a	macro is executed
+
+Format:	%FIRST%
+.verbose
+
+What it	does
+%FIRST%	 expands to the	string TRUE if the macro it is in has been  invoked
+for the	first time;  otherwise,	it expands to FALSE.  %FIRST% becomes FALSE
+once a macro loops.
+
+Why use	it?
+Use %FIRST% to determine if a macro has	just been invoked so that variables
+may be initialized.
+
+Example	(in a macro):
+
+	IF %FIRST% = TRUE THEN;  -- first time	macro is invoked
+	   STRING/1;  -- clear	string 1
+	ENDIF
+
+.end
+.item -get 3
+%GET% -	Expand to a line or character from a file
+
+Format:	%GET{switches}%
+
+Switches
+	/n	Read from file	number n.
+	/C	Read a	character at a time.
+.verbose
+
+What it	does
+%GET%  expands	a line of text or just a character from	a file	opened	for
+input with the OPEN command.
+
+Why use	it?
+Use %GET% to read characters or	text from a file.
+
+.pause
+
+Example:
+
+	A) DIR/W:1/>dir.lst *.*
+	A) OPEN/I/1 dir.lst
+	A) WRITE %GET/1% %GET/1% %GET/1/C% %GET/1/C%
+
+Displays the first three lines of file dir.lst and the first two characters
+of the third line of dir.lst.
+
+.end
+.item -iflev 3
+%IFLEV%	- Expand to the	current	IF level
+
+Format:	%IFLEV%
+.verbose
+
+What it	does
+%IFLEV%	 expands to a numeric string that corresponds to the current  level
+of IF nesting.
+
+Why use	it?
+Use  %IFLEV% when you want to exit from	all pending IF statements  and	you
+don't know what	level you are at.
+
+Example	(in a macro):
+
+	IF %S/1% = ABORT THEN
+	   RETURN %IFLEV%
+	ENDIF
+
+.end
+.item -length 3
+%LENGTH% - Determine the length	of a string
+
+Format:	%LENGTH{switches}%
+
+Switches
+	/n	Expand	to the length of string	n.
+.verbose
+
+What it	does
+%LENGTH% expands to the	numeric	string length of a string.
+
+Why use	it?
+Use %LENGTH% when you don't know the length of a string	but need it in some
+numeric	calculation.
+
+.pause
+
+Example:
+
+	-- 40 blanks
+	STRING/1 %ASCII a0%					      ;
+	STRING/2 This will be centered; -- text to center
+	CALC/3/N 80 %LENGTH/2%	- 2 /; -- compute correct spaces for centering
+	STRING/1/E:%V/3% %S/1%; -- generate correct spaces
+	WRITE %S/1%%S/2%; -- write out	centered text
+This  will  write  the text "This will be centered" in the  center  of	the
+terminal screen	(assuming the terminal is 80 characters	wide).
+
+.end
+.item -level 3
+%LEVEL%	- Expand to the	current	macro nesting level
+
+Format:	%LEVEL%
+.verbose
+
+What it	does
+%LEVEL%	 will  expand to a numeric string that corresponds to  the  current
+level of macro nesting.
+
+Why use	it?
+Use  %LEVEL%  to determine how deep macro nesting is so	that you may  avert
+calling	another	macro that would exceed	the macro nesting.
+
+.pause
+
+Example	(in a macro):
+
+	IF %LEVEL% < 8	THEN
+	   nextmac
+	ELSE
+	   chain nextmac
+	ENDIF
+Performs  macro	nextmac	either normally	and thus nesting the macro level or
+by chaining to it which	will leave the macro nesting unchanged.
+
+.end
+.item -peek 3
+%PEEK address% - Expands to a memory byte (address in hex).
+.end
+.item -radix 3
+%RADIX%	- Expand to the	current	radix
+
+Format:	%RADIX%
+.verbose
+
+What it	does
+%RADIX%	returns	a numeric string that corresponds to the current radix.
+
+Why use	it?
+Use %RADIX% when you want to save the current radix before changing it.
+
+Example:
+
+	A) CALC/N/0 %RADIX%;  - save current radix
+	A) RADIX 2;  -- change	current	radix to base 2
+	A) CALC 101 1111 10000101 + +
+	100011001
+	A) RADIX %V/0%
+saves the current radix	in variable 0,	sets the radix to two,	performs  a
+calculation and	restores the radix to its previous value.
+
+.end
+.item -s 3
+%S% - Expand to	a string
+
+Format:	%S{switches}%
+
+Switches
+	/n	Expand	to string number n
+.verbose
+
+What it	does
+%S% expands to the value of a string variable.
+
+Why use	it?
+Use %S%	when you need the value	of a string.
+
+.pause
+
+Examples:
+
+	A) STRING/7 enter a value
+	A) WRITE You may %S/7%:
+	A) WRITE You will %S/7%!
+This will write	out "You may enter a value:" and "You will enter a value!".
+
+	A) READ/4/P What day is it today? ; --	ask for	a day
+	A) STRING/4/U %S/4%;  -- make it all upper case
+	A) IF "%S/4%" = "SUNDAY" THEN
+	A)    WRITE I don't work on %S/4%!
+	A) ELSE
+	A)    WRITE Boy! I'm ready to go to work.
+	A) ENDIF
+
+.end
+.item -status 3
+%STATUS% - Expand to the status	of a file
+
+Format:	%STATUS{switches}%
+
+Switches
+	/f	Get the status	of file	f.
+
+.verbose
+
+What it	does
+%STATUS% expands a string which	represents the status of a file:
+
+	CLOSED	- file is closed (not open).
+	OPENI	- file is open for input.
+	OPENO	- file is open for output.
+	EOF	- end of file for input	file.
+
+Why use	it?
+Use  %STATUS% to determine what	the status of a	file may be so that you	can
+perform	different tasks	accordingly.
+.pause
+
+Example	(in a macro):
+
+	IF %STATUS/1% = CLOSED	THEN
+	   OPEN/I/1 file
+	ELSEIF	%STATUS/2% = CLOSED THEN
+	   OPEN/I/2 file
+	ELSEIF	%STATUS/3% = CLOSED THEN
+	   OPEN/I/3 file
+	ELSE
+	   WRITE No free files	in macro %0%
+	   BREAK
+	ENDIF
+This  macro attempts to	find a file number that	is not open so that it	can
+use it for its OPEN.   If no free file numbers can be found the	macro exits
+after printing an error	message.
+
+.end
+.item -time 3
+%TIME% - Expand	to the current time
+
+Format:	%TIME%
+.verbose
+
+What it	does
+%TIME% expands to the current time in the form HH:MM:SS.
+
+Why use	it?
+Use %TIME% in macros or	commands to display the	current	time.
+
+Example:
+
+	A) WRITE The current time is %TIME%
+	The current time is 11:27:18
+
+.end
+.item -user 3
+%USER% - Expand	to the current user number
+
+Format:	%USER%
+.verbose
+
+What it	does
+%USER%	expands	to a numeric string that represents the	current	user number
+that you are at.
+
+Why use	it?
+Use %USER% with	CALC or	STRING to save the current user	number so that	you
+may get	it back	letter.
+
+.pause
+
+Example:
+
+	A) STRING/9 %USER%
+	A) USER 12
+	A) COPY here.com there.com/U:%S/9%
+	A) USER %S/9%
+
+Saves the current user number in string	9;  sets the current user number to
+12;  copies  the  file	there.com from the previous user number	to  a  file
+called	here.com  in  the current user number;	and  then  returns  to	the
+original user number.
+
+.end
+.item -v 3
+%V% - Expand to	a numeric variable
+
+Format:	%V{switches}%
+
+Switches
+	/n:m	the  value of integer variable	n forced to be length  m  by
+		the addition of	leading	zeroes (m is optional).
+.verbose
+
+What it	does
+%V% expands to the numeric string value	of a numeric variable.
+
+Why use	it?
+Use  %V%  when you need	the values of numeric variables	in calculations	 or
+conditional testing.
+
+.pause
+
+Examples:
+
+	A) RADIX 10;	-- set base to 10
+	A) CALC/1 67;	-- set variable	1 to 67
+	A) CALC/2 89;	-- set variable	2 to 89
+	A) CALC/3 9000;  -- set variable 3 to 9000
+	A) CALC/4 %V/1% %V/2% + %V/3% -;  -- compute 67+89-9000
+	56692
+
+	A) IF %V/5% = 34 THEN
+	A)    EXEC PIP
+	A) ELSE
+	A)    EXEC COPY
+	A) ENDIF
+Executes the PIP program if variable 5 is 34 otherwise it executes the COPY
+program.
+
+.end
+.item abort 4
+ABORT -	Exit UEDT without making any changes to	file
+
+Format:	ABORT
+.verbose
+
+What it	does
+ABORT  exits  UEDT  and	 returns control to CLIP without  having  made	any
+changes	to the file being edited.
+
+Why use	it?
+Use  ABORT  to exit UEDT when you have made severe errors such as  deleting
+large  amount of data and you don't want those changes to wind up  in  your
+file.
+
+Example:
+
+	*ABORT
+
+.end
+.item done 4
+DONE - Exit UEDT and apply all changes to file
+
+Format:	DONE
+.verbose
+
+What it	does
+DONE  exits  UEDT  and applies the changes you have made to  your  file	 in
+memory to the file on disk.   A	backup copy of the original file is  always
+made and has an	extension of .BAK.
+
+Why use	it?
+Use DONE when you are through editing your file	and want to return to CLIP.
+
+Example:
+
+	*DONE
+	A)
+
+.end
+.item find 4
+FIND - Find a character	string in UEDT buffer
+
+Format:	FIND string
+.verbose
+
+What it	does
+FIND  locates  and  displays the line that contains  string.   FIND  starts
+searching from the current position to the end of the file.   If string	 is
+found  the  line it is on is displayed,	 if it is not found then  an  error
+message	is printed but the current position is not changed.
+
+Why use	it?
+Use FIND to locate a string and	print the line it is on.
+
+Example:
+
+	*FIND uncle
+	16:	so it was uncle Bert that found the large tomato patch!
+Looks for "uncle" and displays the line	it was found on.
+
+.end
+.item inform 4
+INFORM - Give information about	UEDT commands
+
+Format:	INFORM	UEDT-command
+.verbose
+
+What it	does
+INFORM	displays information about an UEDT or CLIP commands when you are in
+UEDT.	If  UEDT-command  is not given,	 then a	list of	 all  the  commands
+information is available for is	given.
+
+Why use	it?
+Use INFORM to familiarize yourself with	either UEDT's or CLIP's	commands.
+
+Examples:
+
+	*INFORM VIEW
+Displays information about the view command.
+
+	*INFORM
+Displays all the UEDT commands that information	is available for.
+
+.end
+.item ins 4
+INS - Begin inserting BEFORE a line number when	in UEDT
+
+Format:	INS line-number
+.verbose
+
+What it	does
+INS inserts text BEFORE	a given	line number when you are in UEDT.  If line-
+number is not specified, INS will insert BEFORE	the current line.
+
+Why use	it?
+Use INS	to add text into your file.
+
+Example:
+
+	*INS 15
+	Inserts lines before line number 15.
+
+.end
+.item mod 4
+MOD - Modify a line number when	in UEDT
+
+Format:	MOD line-number
+.verbose
+
+What it	does
+MOD  puts UEDT into modify mode	on a given line	number.	  If line-number is
+not given the current line is assumed.	 Line editing control character	may
+then be	used to	change the contents of a line.	In addition to the standard
+characters ^E will go to the previous line; ^X will go to the next line.
+
+Why use	it?
+Use  MOD if you	want to	make changes to	your text and don't want to  delete
+and reenter lines.
+
+Example:
+
+	*MOD 103
+Puts UEDT in modify mode on line 103.
+
+.end
+.item pos 4
+POS - Set UEDT's current line position
+
+Format:	POS line-number
+.verbose
+
+What it	does
+POS  positions UEDT to a given line number and then make that  line  number
+the current line.
+
+Why use	it?
+Use POS	to position UEDT quickly to a line number.
+
+Examples:
+
+	*POS 14
+Sets the current line position to line 14.
+
+	*POS 788
+	*DEL
+Positions UEDT to line 788 and then deletes that line.
+
+.end
+.item remove 4
+REMOVE - Remove	a number of lines from UEDT text buffer
+
+Format:	REMOVE	first-line last-line
+.verbose
+
+What it	does
+REMOVE	deletes	 a number of lines starting from first-line and	 ending	 at
+last-line.   If	 last-line is omitted then only	first-line is removed.	 If
+both first-line	and last-line are omitted then the current line	is deleted.
+first-line must	always be less than or equal to	last-line.
+
+Why use	it?
+Use REMOVE to remove unwanted lines from your file.
+
+Examples:
+
+	*REMOVE 10 23
+Removes	line 10	through	23 inclusive.
+
+	*REMOVE
+Removes	1 line at the current position.
+
+.end
+.item view 4
+VIEW - View text around	the current line position when in UEDT
+
+Format:	VIEW line-number
+.verbose
+
+What it	does
+VIEW  displays text before and after line-number and sets the current  line
+position  to  line-number.   A	* is placed after the line  number  of	the
+current	 line.	 If  line-number is missing VIEW displays text	around	the
+current	line.
+
+Why use	it?
+Use VIEW to position to	a line number and then see a portion of	text around
+the current line number.
+
+Example:
+
+	*VIEW 45
+Position to line 45 and	view adjacent text.
+
+.end
+.item helpgen 5
+HELPGEN	- Generate help	and error message files
+
+Format:	HELPGEN{switches} input-file output-file {verbose}
+
+Switches
+	/>,/>&,/>>,/>>&,/< and	/<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+HELPGEN	 generates  help and error message files that may be used by  CLIP.
+HELPGEN	 reads	input-file  which contains  special  commands  that  direct
+HELPGEN	 to  build  output-file.  The  option verbose  is  only	 used  when
+generating  help  files	and indicates to HELPGEN that a	verbose	version	 of
+the help file should be	built.
+
+Why use	it?
+Use HELPGEN after you have changed text	in the CLIP help or error files	and
+you  want that text incorporated in on-line help and error  messages.	Use
+the verbose option to generate a lengthy help file.
+
+.pause
+
+Format of special commands:
+(Note: all commands that begin with a period (.) should	start in column	1.)
+
+For error files:
+	.error		Designates the	start of an error message file.
+	.item n		Begins	error message number n.
+	.end		Marks the end of the error message file.
+	|		Specifies  that a new line not	be generated on	this
+			line.
+.pause
+
+For help files:
+	.help		Designates the	start of a help	message	file.
+	.title	c w n text-title
+			Creates	a help class number c with a title of text-
+			title.	 The  items in the help	menu will be placed
+			on a line of width w with n items per line.
+	.item text c	Begins	an item	whose name is text and which belongs
+			to help	class c.
+	.verbose	Designates  the start of verbose text until a	.end
+			is encountered.
+	.pause		Causes	 the CLIP to pause when	displaying the	help
+			information.
+	.goto text	Causes	 help  information  from  item	text  to  be
+			displayed in place of the .goto	command.
+	.end		Marks the end of an individual	help item.
+
+.pause
+
+Type
+	A) HELPGEN cliphelp.msg cliphelp.ovl verbose
+to generate a verbose (long) help message file.
+
+Type
+	A) HELPGEN cliphelp.msg cliphelp.ovl
+to generate a short help message file.
+
+Type
+	A) HELPGEN cliermsg.msg cliermsg.ovl
+to generate an error message file.
+
+Examples  on  the usage	of HELPGEN commands may	be found in  error  message
+file CLIERMSG.MSG and in the help file CLIPHELP.MSG.
+
+.end
+.item bc 6
+BC - Binary file comparison
+
+Format:	BC{switches} file1 file2
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+BC compares two	files byte by byte and reports their differences.
+
+Why use	it?
+Use BC to determine if two binary files	(e.g., .COM files) are different.
+
+.pause
+
+Examples:
+
+	A) BC jar.com glass.com
+	BC - Binary File Comparer
+	Copyright 1983	Thoughtware, Inc.
+
+	   	   JAR.COM	GLASS.COM
+	00000049:  67		FE
+	0000004A:  22		2B
+	0000004C:  FE		96
+displays the differences between files jar.com and glass.com.
+
+	A) BC flag.old	flag.new
+	BC - Binary File Comparer
+	Copyright 1983	Thoughtware, Inc.
+compares file flag.old with flag.new and finds no differences.
+
+.end
+.item bfe 6
+BFE - Binary file editor
+
+Format:	BFE{switches} file
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+BFE interactively edits	a file in binary.  BFE commands	are
+
+	hhhhhh<ESC>	opens	 file  location	 hhhhhh	 and  displays	 the
+			contents of the	file in	hex and	ASCII.
+	^X or {CR}	opens next file location.
+	^E		opens previous	file location.
+	hh		deposits hex value hh at current open file location.
+	"c or 'c	deposits  ASCII  character  c at current  open	 file
+			location.
+	.		exits BFE.
+
+.pause
+
+Why use	it?
+Use  BFE for examining or modifying files larger than your available memory
+or for patching	.COM files.
+
+Example:
+
+	A) BFE	umbrella.com
+	BFE - Binary File Editor	      Copyright	1983  Thoughtware, Inc.
+	_15<ESC>
+	00000015/ 61 a	_^X
+	00000016/ 72 r	_31{cr}
+	00000017/ 65 e	_^E{cr}
+	00000016/ 31 1	_feff<ESC>
+	0000FEFF/ 1A .	_"?{cr}
+	0000FF00/ 1A .	_^E{cr}
+	0000FEFF/ 3F ?	_.{cr}
+
+	2 locations modified.	9 locations examined.
+
+.end
+.item dmp 6
+DMP - Dump file	in hex and ASCII
+
+Format:	DMP{switches} file {starting-record} {ending-record}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+DMP  displays  a  file	in  both  hex  and  ASCII  optionally  starting	 at
+hexadecimal  record  starting-record and optionally ending  at	hexadecimal
+record	ending-record.	 If  starting-record is	omitted	then  record  0	 is
+assumed;   if  ending-record is	omitted	then the last logical record in	the
+file is	assumed.
+
+Why use	it?
+Use DMP	to display portions or all of a	file in	hex and	ASCII.
+
+.pause
+
+Examples:
+
+	A) DMP	phone.com
+displays the complete contents of file phone.com.
+
+	A) DMP	phone.com 4F
+displays file phone.com	starting at record 4F to the end of the	file.
+
+	A) DMP	phone.com 31 44
+displays file phone.com	starting at record 31 and ending at record 44.
+
+.end
+.item HC 6
+HC - Horizontal	file concatenate
+
+Format:	HC{switches} file1 file2
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+HC concatinates	each line of file1 with	each line of file2 respectively.
+
+Why use	it?
+Use HC to join two files so that the first line	of one file is joined  with
+the first line of the other file and so	on.
+
+.pause
+
+Examples:
+
+	A) HC/>hc.out filter.out pad.out
+horizontally concatenates filter.out with pad.out.
+
+	A) DIR/W:1 | SRT | PAD/>file1 20
+	A) DIR/W:1 | SRT /d | PAD/>file2 20
+	A) HC/>both file1 file2
+produces  a  sorted list of the	directory in both ascending and	 descending
+order in file both.
+
+.end
+.item lcase 6
+LCASE -	Convert	text to	lower case
+
+Format:	LCASE{switches}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+LCASE converts the standard input to lower case.
+
+Why use	it?
+Use LCASE to convert all text to the same case.
+
+Examples:
+
+	A) DIR	| LCASE
+produces a directory listing in	lower case.
+
+	A) LCASE/<report.txt
+converts text in report.txt to lower case and displays it.
+
+	A) LCASE/<report.txt/>report.out
+converts text in report.txt to lower case and stores it	in report.out
+
+.end
+.item pad 6
+PAD - Pad standard input with blanks
+
+Format:	PAD{switches} {w}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+PAD blank pads the standard input so that it is	w characters wide.  If w is
+omitted	80 is assumed.	If the line to be padded is greater than w, then it
+will truncated to w characters.
+
+Why use	it?
+Used PAD to make each line in a	file the same length.
+
+.pause
+
+Examples:
+
+	A) PAD/>padded
+pads input from	the keyboard to	80 characters and stores it in file padded.
+
+	A) PAD/<bug/>bug.out 40
+pads file bug to 40 characters and stores it in	file bug.out.
+
+.end
+.item sc 6
+SC - Source file comparison
+
+Format:	SC{switches} file1 file2 {match-size} {window-size}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+SC compares two	text files and displays	their differences.   The match-size
+is   the  number  of  lines  that  have	 to  match  before  the	 files	are
+resynchronized.	  The  window-size  is the number of look ahead	lines  that
+will  be used to to find matches.  The default match-size is 4.
+
+.pauae
+
+Why use	it?
+Use SC to determine the	differences between two	files.
+
+Examples:
+	A) SC hart.old	hart.new
+compares file hart.old with file hart.new.
+
+	A) SC market.pas market.bak 1
+compares file market.pas with file market.bak with a match size	of 1.
+
+.end
+.item sr 6
+SR - Search for	a pattern
+
+Format:	SR{switches} pattern
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+SR  searches  for  a pattern and displays it.	Patterns  may  contain	the
+following templates:
+
+	+	matches any number of characters.
+	*	matches only one character.
+	@c	matches the character c literally.
+	\	matches not the following pattern.
+
+.pause
+
+Why use	it?
+USE SR to find and display lines which match certain patterns.
+
+Examples:
+
+	A) SR/<error.lst +ERROR+
+displays  all the lines	which contain any number of characters followed	 by
+ERROR  followed	 by any	number of characters (i.e.  ERROR anywhere  on	the
+line).
+
+	A) SR/<report1.txt +an+\+another+\+and+
+displays all lines that	contain	the text "an" but not the text "another" or
+"and".
+
+	A) DIR/w:1 | SR M*
+displays all the two letter directory files that begin with M.
+
+	A) SR/<addition.pkg/>addition.out + :=	+ @+ +%ascii 3b%
+places in file addition.out all	lines of the form a := b + c;.
+
+.end
+.item srt 6
+SRT - Sort a file in memory
+
+Format:	SRT{switches} {/d}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+SRT  sorts a file in memory in ascending order.	  The /d switch	produces  a
+sort in	descending order.
+
+Why use	it?
+Use SRT	to sort	files.
+
+.pause
+
+Examples:
+
+	a) SRT/<word.lst/>word.srt
+sorts file word.lst and	stores it in file word.srt
+
+	A) DIR/W:1 | SRT
+produces a sorted directory with one line per file.
+
+	A) XW/<report.txt | SRT/>words.srt /d
+produces a sorted list of every	word in	report.txt in descending order.
+
+.end
+.item ucase 6
+UCASE -	Convert	text to	upper case
+
+Format:	UCASE{switches}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+UCASE converts the input to all	upper case.
+
+Why use	it?
+Use UCASE to convert text to only one case.
+
+Examples:
+
+	A) UCASE/<memo1.txt/>lst:
+produces the file memo1.txt in upper case on the lst device.
+
+	A) HELP UCASE | UCASE
+displays the UCASE help	text in	upper case.
+
+.end
+.item uniq 6
+UNIQ - Display unique lines of text
+
+Format:	UNIQ{switches}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+UNIQ  displays	unique	lines  of text from a  sorted  list  by	 discarding
+duplicate lines.
+
+Why use	it?
+Use  UNIQ  to produce a	unique word list suitable for use with	a  spelling
+checker.
+
+.pause
+
+Examples:
+
+	A) UNIQ/<list.srt
+displays all the unique	lines in file list.srt.
+
+	A) DIR/W:1/>files.out a:*.*; DIR/W:1/>>files.out b:*.*
+	A) SRT/<file.out | UNIQ
+displays all the unique	file names from	disk A and disk	B.
+
+	A) XW/<letter | SRT | UNIQ/>words
+extracts all the unique	words from file	letter.
+
+.end
+.item wc 6
+WC - Count lines, words, and bytes
+
+Format:	WC{switches}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+WC counts all the lines, words,	and bytes in a file.
+
+Why use	it?
+Use WC to determine the	size of	a file in terms	of lines words and bytes.
+
+.pause
+
+Examples:
+
+	A) WC/<drum
+	12 134	4567
+displays the lines, words, and bytes of	file drum.
+
+	A) DIR	| WC
+	3 8 180
+shows that there are 8 directory files.
+
+.end
+.item xc 6
+XC - Extract columns
+
+Format:	XC{switches} starting-column {ending-column}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+XC  extracts  a	range of columns starting at starting-column and ending	 at
+ending-column  inclusively.   If  ending-column	is not specified  the  last
+column is assumed.
+
+Why use	it?
+Use XC to remove columns of text from a	file.
+
+Examples:
+
+	A) XC/<balance	7 20
+displays the columns 7 to 20 inclusively.
+
+	A) DIR	| XC 3 3
+displays column	3 from the directory.
+
+	A) XC/<purchase 40 67 | pad/>purchase.col 30
+	A) HC purchase.col purchase | srt | XC/>purchase.srt 31
+produces a sorted version of file purchase, sorted on columns 40 to 67.
+
+.end
+.item xw 6
+XW - Extract words from	a file
+
+Format:	XW{switches}
+
+Switches
+   />,/>&,/>>,/>>&,/< and /<&  see the IO_REDIRECTION help topic
+.verbose
+
+What it	does
+XW extracts words and places them one word per line.   Words are defined as
+the letters A-Z, a-z, the numbers 0-9, and the symbols ', _, and -.
+
+Why use	it?
+Use XW to create a wordlist.
+
+.pause
+
+Examples:
+
+	A) XW/<planet.bas
+displays all the words in file planet.bas.
+
+	A) TYPE *.LSP | XW
+displays all the words from all	the *.LSP files.
+
+	A) DIR	| XW
+displays the directory with one	file per line analogous	with DIR/W:1.
+
+.end
+

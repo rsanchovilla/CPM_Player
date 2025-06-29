@@ -1,0 +1,436 @@
+;
+;	Directory viewer for Write-Hand-Man
+;
+;	Copyright (c) 1985 by Poor Person Software
+;
+	org	0
+base	equ	$
+fcb	equ	base+05ch
+fcbfn	equ	fcb+1
+fcbty	equ	fcb+9
+fcbex	equ	fcb+12
+buf	equ	base+080h
+;
+pstring equ	9
+fsearch equ	17
+nsearch equ	18
+usern	equ	32
+conin	equ	1
+;
+bdos	equ	base+5
+home	equ	base+010h
+;
+;
+	org	0100h
+	mvi	e,255
+	mvi	c,usern
+	call	bdos
+	sta	user		; get default user number
+start:
+	lda	user
+	mov	e,a
+	mvi	c,usern
+	call	bdos		; set to default user number
+;
+	call	blank		; blank the screen
+	call	getfn		; get file name
+	jc	base 
+	lxi	d,fcb
+	mvi	c,fsearch
+	call	bdos		; get first
+	cpi	255		; did it 
+	jz	start		; loop if not found
+	push	psw
+f1:
+	call	blank
+	pop	psw
+	mvi	c,8		; loop for 8 names
+fl:
+	push	b		; save count
+	call	pname		; print name
+	lxi	d,fcb
+	mvi	c,nsearch
+	call	bdos
+	cpi	255
+	pop	b
+	jz	endit		; pause then quit
+	dcr	c
+	jnz	fl		; loop 
+	push	psw
+	call	pause		; pause
+	jnz	f1
+	jmp	start
+endit:
+	call	pause
+	jmp	start
+leave:
+	lda	user
+	mov	e,a
+	mvi	c,usern
+	call	bdos
+;
+	jmp	base
+;
+pause:
+	mvi	c,conin
+	call	bdos
+	cpi	27		; control c
+	ret
+;
+pname:
+	call	getadr
+	inx	h		; to name
+	lxi	d,outnam
+	lxi	b,8
+	call	mvcl
+	lxi	d,outtyp
+	lxi	b,3
+	call	mvcl
+	lxi	d,outbuf
+	call	putstr
+	lxi	d,crlf
+	call	putstr
+	ret
+blank:
+	call	home
+	mvi	c,8
+bllp:
+	push	b
+	lxi	d,bl
+	call	putstr
+	pop	b
+	dcr	c
+	jnz	bllp
+	lxi	d,botl
+	call	putstr
+	call	home
+	ret
+bl:	db	'               ',13,10,'$'
+botl:	db	'_______________',13,'$'
+;
+getfn:			; returns with FCB filled in for search
+;
+	xra	a
+	sta	fcbex		; set default
+;
+	call	home
+	lxi	d,prmpt 
+	call	putstr
+	lxi	d,incnt
+	call	rdbuf
+	rc	       
+;
+	lxi	h,bl 
+	lxi	d,fcbfn
+	lxi	b,11
+	call	mvcon
+;
+	lxi	h,inbuf 	; start here
+	lxi	d,fcbfn 	; to here
+	mvi	b,0		; count filename
+fnlp:
+	call	getbyt		; get a byte
+	jz	finname 	; finish up
+	cpi	':'		; 
+	jz	docolon 	; process
+	cpi	'.'
+	jz	doperiod	; process
+	mov	c,a
+	mov	a,b
+	cpi	8		; extra
+	jz	fnlp		; skip it
+	mov	a,c		; get character back
+	stax	d		; put into place
+	inx	d		; next
+	inr	b		; count
+	jmp	fnlp
+;
+docolon:
+	lda	fcbfn		; get first character
+	cpi	' '
+	jz	fnlp		; skip colon  no disk
+	cpi	041h
+	jc	nodisk
+	cpi	05bh
+	jnc	nodisk
+	sui	040h		; make A=1
+	ani	01fh		; mask
+	sta	fcb		; set disk number
+nodisk:
+	lxi	d,fcbfn 	; reset file name ptr
+	mvi	b,0		; reset counter
+	mvi	a,' '
+	stax	d		; zap byte
+;
+	lda	fcbfn+1
+	cpi	' '		; is this blank
+	jz	fnlp		; yes no user number specd
+	cpi	030h
+	jc	fnlp		; out of range
+	cpi	03ah		; 
+	jnc	tryhex		; out of number range
+	sui	030h		; normalize
+setuser:
+	push	h
+	push	d
+	push	b
+	mov	e,a
+	mvi	c,usern
+	call	bdos
+	pop	b
+	pop	d
+	pop	h
+	mvi	a,' '
+	sta	fcbfn+1
+	jmp	fnlp		; continue
+tryhex:
+	ani	05fh
+	cpi	041h
+	jc	fnlp		; below a
+	cpi	047h
+	jnc	fnlp		; above f
+	ani	0fh
+	adi	09h		; A goes to 10
+	jmp	setuser
+doperiod:
+	lxi	d,fcbty
+	mvi	b,0		; count
+tylp:
+	call	getbyt
+	jz	finname
+	stax	d
+	inx	d
+	inr	b
+	mov	a,b
+	cpi	3
+	jz	finname
+	jmp	tylp
+;
+finname:			; expand wild cards
+	lda	fcbfn		; see if any name
+	cpi	' '
+	jz	noname
+	lxi	d,fcbfn
+	lxi	b,0108h
+	call	wildexp
+	lxi	d,fcbty
+	lxi	b,0103h
+	call	wildexp
+	xra	a
+	ret
+noname:
+	lxi	h,qmark
+	lxi	d,fcbfn
+	lxi	b,11
+	call	mvcon
+	ret
+;
+wildexp:			; expand * to ??
+	push	d
+	pop	h		; copy de to hl
+	dad	b		; add b
+	dcx	h
+	dcr	h		; compensate for 0100	 h to last character
+				;			 d to first
+wlp:
+	ldax	d		; look at character
+	cpi	'*'		; is it a start
+	jz	expstar
+	inx	d
+	inr	b		; count
+	mov	a,c
+	cmp	b
+	rc			; return if done
+	jmp	wlp		; loop
+expstar:
+	mvi	a,'?'
+	stax	d
+	mov	a,m
+	cpi	' '
+	rnz			; done
+;
+;	move d to h  up one byte and repeat at expstar
+;
+	push	b
+	push	d
+	push	h
+;
+	mov	a,l
+	sub	e
+	mov	c,a
+	mov	a,h
+	sbb	d
+	mov	b,a		; length
+	push	d
+	pop	h		; copy de
+	inx	d		; destination
+	call	mvclu		; move up
+;
+	pop	h
+	pop	d
+	pop	b
+	jmp	expstar 	; loop again till last character not ' '
+;
+getbyt:
+	lda	incnt+1 	; get count left
+	ora	a
+	rz			; none left
+	dcr	a
+	sta	incnt+1
+	mov	a,m
+	inx	h
+	cpi	061h
+	jc	getret
+	cpi	07bh
+	jnc	getret
+	ani	05fh
+getret:
+	ora	a
+	ret
+;
+getadr: 		; return with hl point at directory entry
+			; enter with a = directory code
+;
+	mov	l,a
+	mvi	h,0
+	dad	h
+	dad	h	; times  4
+	dad	h
+	dad	h
+	dad	h	; times 32
+	lxi	d,buf
+	dad	d	; hl has address of entry
+	ret
+
+;
+mvcl:			; hl -> de  count bc
+	mov	a,m
+	ani	07fh
+	stax	d
+	inx	h
+	inx	d
+	dcx	b
+	mov	a,b
+	ora	c
+	jnz	mvcl
+	ret
+;
+mvclu:			; move long up hl->de count bc
+	mov	a,b
+	ora	c
+	rz		; nothing to do
+	dcx	b
+	dad	b	; to end hl
+	xchg
+	dad	b	; to end de
+	xchg
+	inx	b	; restore count
+mvclul:
+	mov	a,m
+	stax	d
+	dcx	h
+	dcx	d
+	dcx	b
+	mov	a,b
+	ora	c
+	jnz	mvclul
+	ret
+;
+mvcon:			; to de, count bc, character in m
+	mov	a,m
+	stax	d
+	inx	d
+	dcx	b
+	mov	a,c
+	ora	b
+	jnz	mvcon
+	ret
+;
+rdbuf:
+				; d = buffer   max,len,xxxxx
+	ldax	d		; get max
+	mov	b,a		;   b has max 
+	inx	d		; d to len
+	xra	a
+	stax	d
+	mov	h,d
+	mov	l,e
+	inx	h		; h to place
+rdlp:
+	mvi	a,255
+	call	conio
+	cpi	8		; is it a BS
+	jz	dobsp		; yes
+	cpi	13
+	rz			; done
+	cpi	27		; esc
+	jz	rdquit		; yes exit
+	cpi	32
+	jc	rdlp		; forget it
+	cpi	127
+	jz	dobsp
+	push	psw
+	call	conio		; echo the character
+	pop	psw
+	mov	m,a		; put into area
+	inx	h
+	ldax	d
+	inr	a
+	stax	d
+	dcr	b
+	jnz	rdlp		; go some more
+	xra	a
+	ret			; return with no carry
+dobsp:
+	ldax	d		; get current length
+	ora	a
+	jz	rdlp		; just skip it
+	mvi	a,8
+	call	conio
+	mvi	a,32
+	call	conio
+	mvi	a,8
+	call	conio
+	ldax	d
+	dcr	a
+	stax	d
+	inr	b
+	dcx	h	       ; correct the counters
+	jmp	rdlp
+rdquit:
+	stc
+	ret			; return with carry
+conio:
+	push	d
+	push	b
+	push	h
+	mov	e,a
+	mvi	c,6
+	call	bdos 
+	pop	h
+	pop	b
+	pop	d
+	ret
+;
+putstr: 		; de to string
+	mvi	c,pstring
+	call	bdos
+	ret
+;
+prmpt:	db	'Dn:FILENAME.TYP',13,10,10,'_',8,'$'
+incnt:	db	14,0
+inbuf:	ds	16
+outbuf: db	' ','        ',' ','   ','$'
+outnam	equ	outbuf+1
+outtyp	equ	outbuf+10
+crlf:	db	13,10,'$'
+qmark:	db	'?'
+user:	ds	1
+ersav:	dw     0
+	end
+ ','   ','$'
+outnam	equ	outbuf+1
+outtyp	equ	outbuf+10
+crlf:	db	13,10,'$'
+qmark:	db	'?'
+user:	ds	1

@@ -1,0 +1,19 @@
+; assemble FS1: it loads exidy sorcerer port FS1.BIN
+; that runs on Exidy Sorcerer at address $4000, patches it
+; so it can be run on WaveMate Terminal-125 TV Video Card, and 
+; creates a new patched version named FS1.COM 
+; 
+; do not include the .ASM extension in param source filename
+; initial clean up
+ERA FLOAD.REL
+ERA FLOAD.TXT
+ERA FLOAD.COM
+; assemble and generate listing file
+M80 FLOAD,FLOAD.TXT=FLOAD.ASM /Z/M
+L80 FLOAD,FLOAD/N/E
+ERA FLOAD.REL
+; build new program concatenating the loader and the original program
+; the [O] with is necessary to force .BIN file to be copied as binary 
+PIP B:FS1.COM=FLOAD.COM,C:FS1SOR.BIN[O]
+; delete loader, not necessary anymore
+ERA FLOAD.COM

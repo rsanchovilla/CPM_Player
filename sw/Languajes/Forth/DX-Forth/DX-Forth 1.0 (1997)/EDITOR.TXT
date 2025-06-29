@@ -1,0 +1,122 @@
+
+Screen Editor                                          97-12-28
+-------------
+
+This is the documentation for EDITOR.SCR - the full-screen 
+editor.
+
+
+General screen commands:
+------------------------
+
+ EDIT  ( -- u )                                        S
+
+     Enter the full screen editor, selecting screen u for 
+     editing.
+
+ WHERE  ( -- )                                         S
+
+     Used after a LOAD error, WHERE performs the same function as 
+     EDIT but the screen and the cursor position are 
+     automatically set to the location where the error occured.
+
+ L  ( -- )          List                               S
+
+     Lists the current screen.  The screen number is obtained 
+     from the variable SCR and is set by LIST, EDIT or when a 
+     LOAD error occurs.
+
+ N  ( -- )          Next                               S
+
+     Increments the screen number by one.  Typically used 
+     immediately before the L command.
+
+ B  ( -- )          Back                               S
+
+     Decrements the screen number by one.  Typically used 
+     immediately before the L command.
+
+ COPY  ( u1 u2 -- )                                    S
+
+     Copy the contents of screen u1 to screen u2.
+
+ COPIES  ( u1 u2 u3 -- )                               S
+
+     Copy a range of screens - u1 is the first source screen, u2 
+     is the first destination screen, u3 is the number of screens 
+     to be copied. The user is prompted before copying begins.  
+     Pressing any key during copy aborts the process.  Overlap of 
+     source and destination screens is automatically handled.
+
+
+Editor commands:
+----------------
+
+NOTE: After editing a source screen, ensure the changes are made 
+permanent by entering the update command (ctrl-K) before moving 
+to another screen or exiting the editor.
+
+
+1. Cursor movement
+
+Ctrl-E    Move cursor up.
+
+Ctrl-X    Move cursor down.
+
+Ctrl-D    Move cursor right.
+
+Ctrl-S    Move cursor left.
+
+Ctrl-I    Move cursor 4 places to the right (HTAB).
+
+Ctrl-Q    Move cursor to the upper left of the screen.
+
+
+2. Editing
+
+Ctrl-G    Delete the character to the right of the cursor.
+
+Ctrl-H    Delete the character to the left of the cursor.
+
+Ctrl-T    Erase all characters to the right of the cursor.
+
+Ctrl-O    Insert a space at the current cursor position.
+
+Ctrl-Y    Delete the current line.  Lines below the cursor are 
+          moved up one position.  Pop a line from the circular 
+          buffer into the bottom line.
+
+Ctrl-N    Insert a blank line.  Lines below the cursor are moved 
+          down one position.  Push the bottom line to the 
+          circular buffer.
+
+Ctrl-W    Split the current line at the cursor position.
+
+Ctrl-F    Join the next line at the cursor position
+
+Ctrl-A    Copy the contents of the current line to the one-line 
+          buffer.
+
+Ctrl-P    Copy the contents of the one-line buffer to the current 
+          line.
+
+Ctrl-K    Update all changes made to the screen.
+
+
+3. Miscellaneous
+
+Ctrl-C    Move to the next screen.
+
+Ctrl-R    Move to the previous screen.
+
+Ctrl-J    Jump to another screen.
+
+Ctrl-Z    Clear the screen or circular buffer.
+
+Ctrl-B    Redraw the screen.
+
+Ctrl-L    Reload the current file block.
+
+Ctrl-V    Toggle between insert or overwrite mode.
+
+Ctrl-U    Exit the editor.

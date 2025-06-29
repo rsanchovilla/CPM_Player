@@ -1,0 +1,161 @@
+                           ; NEVADA EDIT (C) COPYRIGHT 1981, 1982 ELLIS COMPUTING
+                           ; VIDEO BASED TEXT EDITOR
+                           ; REV 2.2
+                           ; EDIT sfile.xxx ofile.xxx
+                           ;
+                           ; This information may be used to configure EDIT for terminals
+                           ; not offered as choices during initial setup.
+                           ; Use DDT as follows: "DDT EDIT.COM"  Then return to CP/M
+                           ; and type: "SAVE 45 EDIT.COM" to create a working EDIT.
+                           *       Users of MP/M must use a different SAVE procedure described
+                           *       in the MP/M manual (see V and W command).
+                           *       MP/M 1.1 must have CONSW set to non-zero.
+                           ;
+     0000                  RELOC  EQU    0      STD 0, TRS-80 4200H
+     0005                  BDOS   EQU    5+RELOC
+                           *
+     0020                  SPACE  EQU    ' '
+     000D                  CR     EQU    0DH
+     000A                  LF     EQU    0AH
+     0001                  EOF    EQU    01H
+     00FF                  LLEN   EQU    255    ;MAX LINE LENGTH
+     0042                  LMAX   EQU    66     ;MAX NO OF LINES
+                           ;
+0100                              ORG    100H+RELOC  ;NORMAL STARTUP
+0100 C3 D1 23              START  JMP    GPRAM
+0103 C3 77 0B                     JMP    STRTED  ;RESTART
+                           ;
+                           ; I/O JUMP TABLE
+0106 C3 C0 1F              CONTST JMP    CTST   ;CONSOLE STATUS (uses CP/M function 6)
+0109 C3 AA 1F              CONIN  JMP    CIN    ;CONSOLE INPUT (uses CP/M function 6)
+                           ; For CP/M versions below 2, STATUS & INPUT use BIOS directly)
+010C C3 87 20              CONOUT JMP    COUT   ;CONSOLE OUTPUT from B (uses CP/M function 2/6)
+010F C3 A1 20              AOUT   JMP    LISTCH  ;LIST OUTPUT from B    (uses CP/M function 5)
+0112 C3 AE 20              PUNCH  JMP    PNCH   ;PARALLEL PORT OUT to B (uses CP/M function 4)
+0115 C3 BB 20              READER JMP    RDR    ;IN FROM PARALLEL PORT (uses CP/M function 3)
+                           ;
+0118                              DS     3      ;Matches PILOT addresses
+011B 20                    FILL   DB     ' '    ;Fills empty lines
+011C 2B                    MARK   DB     '+'    ;Marker for wrapped lines
+011D FF                    BIT8   DB     -1     If non-zero strip bit-8 on input files
+011E 00 04                 DELAY  DW     400H   ;Tab Set blink rate change to 700H on 4MHz
+0120 FF                    AUTOLF DB     0FFH   ;If non-zero, avoids auto LF at end of line
+0121 00                    CONFG  DB     0      ;Terminal identity
+0122 00                    CONSW  DB     0      ;If non-zero, console will use BIOS directly
+0123 00 00                 T1     DW     0      delay after line feed to crt's
+0125 00 00                 T2     DW     0      delay after cursor escape seq to crt
+0127 00 00                 T3     DW     0      delay after screen clear to crt
+0129 00 00                 T4     DW     0      delay after crt delete line
+012B 00 00                 T5     DW     0      delay after crt insert line
+012D 00                    FULPG  DB     0      ;If non-zero, scrolling will be full page
+012E 00                    UCASE  DB     0      ;If non-zero, console output & file input UPPER CASE
+012F 00                    OSBSW  DB     0      If non-zero, top line will blank on insert(osborne)
+0130 FF                    LLLC   DB     -1     If non-zero don't display last line last char
+                           ;
+                           ; CONFIGURING TABLE
+                           ;
+0131 10                    LINES  DB     16     ;# OF LINES ON SCREEN
+0132 40                    CHARS  DB     64     ;# OF CHARACTERS PER LINE
+0133 00 00                 VMEM   DW     0      ;ADDRESS OF MEMORY MAPPED VIDEO (0000) IF UNUSED
+                           ;              CONTROLS CA THRU NSHFT = 0 IF USED
+                           ;
+                           ; CONTROL SEQUENCES FOR OUTPUT TO TERMINAL
+                           ; FIRST BYTE IS CHAR COUNT, THEN SEQUENCE TO BE SENT TO TERMINAL
+                           
+                           ; THE FOLLOWING ARE REQUIRED FOR POSITIONING THE CURSOR
+0135 00 1B 59 00           CA     DB     0,1BH,59H,0,0,0,0,0,0  ;CURSOR DIRECT ADDRESS, LEAD CHARS
+013E 00 00 00 00           CURSEP DB     0,0,0,0,0  ;CURSOR POSITION, LINE/COL SEPARATOR CHARS
+0143 00 00 00 00           CUREND DB     0,0,0,0,0  CURSOR POSITION, END CHARS
+0148 20                    LINADD DB     20H    ;ADD OFFSET TO LINE
+0149 20                    COLADD DB     20H    ;ADD OFFSET TO COLUMN
+014A 00                    CBL    DB     0      ;COLUMN BEFORE THE LINE FLAG, IF 0, LINE IS BEFORE COL
+                           ; THE FOLLOWING ARE OPTIONAL, USED IF COUNT IS NON ZERO
+014B 00 1B 45 00           CH     DB     0,1BH,45H,0,0,0,0  ;CLEAR SCREEN, HOME CURSOR
+0152 00 1B 4C 00           IL     DB     0,1BH,4CH,0,0,0,0  ;INSERT LINE
+0159 00 1B 4D 00           DL     DB     0,1BH,4DH,0,0,0,0  ;DELETE LINE
+0160                              DS     35     ; spacing to match with PILOT
+0183 00 1B 78 36           SHFT   DB     0,1BH,78H,36H,0,0,0  ;SHIFT KEYPAD
+018A 00 1B 79 36           NSHFT  DB     0,1BH,79H,36H,0,0,0  ;UNSHIFT KEYPAD
+                           ;
+0191 00 00 00              SSUBR  DB     0,0,0  ;JMP TO USER STARTUP SUBROUTINE
+0194 00 00 00              FSUBR  DB     0,0,0  ;JMP TO USER FINISH SUBROUTINE
+                           ; USER SUBROUTINES MAY BE PUT IN USRPCH AREA BELOW
+0197 00 00 00              USRCA  DB     0,0,0  ;JMP TO USER CA ROUTINE. IF FIRST BYTE NON-ZERO
+                           ; THEN SPECIAL CA.  YOUR ROUTINE WILL FIND CURSOR X & Y VALUES
+                           ; IN VLX & VLY.  CREATE ENTIRE OUTPUT STRING STARTING IN CA
+                           ; LOCATION, THEN CALL SOUT TO SEND EACH CHARACTER TO TERMINAL.
+                           ;
+019A 00                    VLX    DB     0      ;CURSOR COLUMN ADDRESS
+019B 00                    VLY    DB     0      ;CURSOR LINE ADDRESS
+                           ;
+     019C                  USRPCH EQU    $      ;USER PATCH AREA
+019C                              DS     100
+                           ;
+                           ; KEYBOARD INPUT
+                           ; The default control characters may be changed either to
+                           ; another control character or to a single character that will
+                           ; be recognized following ESCape (1BH). For example, if a
+                           ; special key sends ESC, then "S", put 53H (S) in the table.
+                           ;
+0200 0D                    KRET   DB     'M'-40H  CARRIAGE RETURN
+0201 0A                    KLF    DB     'J'-40H  LINE FEED
+0202 09                    KTAB   DB     'I'-40H  TAB
+0203 08                    KBK    DB     'H'-40H  BACKSPACE
+0204 7F                    KDEL   DB     7FH    BACKSPACE/ERASE
+0205 17                    KCU    DB     'W'-40H  CURSOR UP ONE LINE
+0206 1A                    KCD    DB     'Z'-40H  CURSOR DOWN ONE LINE
+0207 01                    KCL    DB     'A'-40H  CURSOR LEFT ONE CHAR
+0208 13                    KCR    DB     'S'-40H  CURSOR RIGHT ONE CHAR
+0209 14                    KICY   DB     'T'-40H  INSERT CHAR MODE ON
+020A 14                    KICN   DB     'T'-40H  INSERT CHAR MODE OFF
+020B 07                    KDC    DB     'G'-40H  DELETE CHAR UNDER CURSOR
+020C 02                    KIL    DB     'B'-40H  INSERT LINE ABOVE CURSOR
+020D 10                    KDL    DB     'P'-40H  DELETE LINE
+020E 0B                    KDE    DB     'K'-40H  DELETE TO END OF LINE
+020F 0E                    KCH    DB     'N'-40H  CURSOR TO UPPER LEFT (HOME)
+0210 05                    KSU    DB     'E'-40H  SCROLL UP ONE LINE
+0211 18                    KSD    DB     'X'-40H  SCROLL DOWN ONE LINE
+0212 12                    KPU    DB     'R'-40H  SCROLL UP 1/2 SCREEN
+0213 03                    KPD    DB     'C'-40H  SCROLL DOWN 1/2 SCREEN
+0214 11                    KCM    DB     'Q'-40H  CURSOR TO MID LINE, COL. 1
+0215 0F                    KFND   DB     'O'-40H  FIND COMMAND
+0216 0C                    KFR    DB     'L'-40H  CONTINUE FIND COMMAND
+0217 19                    KRPT   DB     'Y'-40H  COMMAND REPEAT
+0218 15                    KCUS   DB     'U'-40H  USER CUSTOM COMMAND
+0219 16                    KHF    DB     'V'-40H  HIGHER FUNCTIONS
+021A 06                    KEX    DB     'F'-40H  EDITOR EXIT
+021B 00                           DB     0
+                           ;
+021C 20 20 20              DEFTYP ASC    '      '  ;DEFAULT FILE TYPE
+                           ;
+021F 31 32 33 34           TABMAP ASC    '12345'
+0224 B6                           DB     '6'+80H
+0225 37 38 39                     ASC    '789'
+0228 B0                           DB     '0'+80H
+0229 31                           ASC    '1'
+022A B2                           DB     '2'+80H
+022B 33                           ASC    '3'
+022C B4                           DB     '4'+80H
+022D 35                           ASC    '5'
+022E B6                           DB     '6'+80H
+022F 37 38 39 30                  ASC    '7890'
+0233 B1                           DB     '1'+80H
+0234 32 33 34 35                  ASC    '234567'
+023A B8                           DB     '8'+80H
+023B 39 30 31 32                  ASC    '901234'
+0241 B5                           DB     '5'+80H
+0242 36 37 38 39                  ASC    '678901'
+0248 B2                           DB     '2'+80H
+0249 33 34 35 36                  ASC    '345678'
+024F B9                           DB     '9'+80H
+0250 30 31 32 33                  ASC    '012345'
+0256 B6                           DB     '6'+80H
+0257 37 38 39 30                  ASC    '789012'
+025D B3                           DB     '3'+80H
+025E 34 35 36 37                  ASC    '45678901234567890'   80th column
+026F 31 32 33 34                  ASC    '12345678901234567890'
+0283 31 32 33 34                  ASC    '12345678901234567890'
+0297 31 32 33 34                  ASC    '1234567890123'       133th max screen tab size
+                           *
+02A4 11                    FULCHR DB     'Q'-40H  Character waited for after FULL message
+

@@ -1,0 +1,32 @@
+EXT Ustatus
+CC1:
+clearerr::
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL Umode
+POP B
+MOV A,H
+ORA L
+JZ CC3
+LXI H,Ustatus
+XCHG;;
+POP B
+POP H
+PUSH H
+PUSH B
+DAD H
+DAD D
+PUSH H
+CALL CCGINT##
+XCHG;;
+LXI H,-9
+CALL CCAND##
+CALL CCPDPI##
+CC3:
+RET
+EXT Umode
+END
+

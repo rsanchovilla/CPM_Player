@@ -1,0 +1,366 @@
+h10190
+s 00354/00000/00000
+d D 1.1 83/03/15 21:09:03 tes 1 0
+c date and time created 83/03/15 21:09:03 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  40xx.sup            local   03/24/82  11:21
+#-h-  da40xx.rat          local   03/24/82  11:21
+subroutine da40xx (rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver dash emulation for 40xx devices #
+#                                                                      #
+#     Input Parameters:                                                #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             dr40xx - do a move/draw                                  #
+#                                                                      #
+########################################################################
+include mgsdef
+ 
+#local defines
+define (DASH_INCREMENT,.015625)
+ 
+real rlin(1)
+ 
+integer actary(16), action, j, k, kk, opcode
+real dx, dy, dxinc, dyinc, px1, py1, px2, py2,
+     dr, p1(2), x, y
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       p1(1) :: x
+#       p1(2) :: y
+ 
+equivalence (p1(1), x), (p1(2), y)
+ 
+ 
+#action definitions for line styles 2-5: 0=move, 1=draw, 2=point
+data actary / 2, 2, 2, 2,  2, 0, 1, 2,  0, 1, 0, 1,  0, 1, 1, 0 /
+ 
+   dx = rlin(1) - zdxpos   # determine the distance from the current position
+   dy = rlin(2) - zdypos
+   dr = sqrt(dx**2 + dy**2)
+   if (dr <= zeps) return   # If we are already there just return
+ 
+   dxinc = (dx/dr)*DASH_INCREMENT   #normalize dx and dy
+   dyinc = (dy/dr)*DASH_INCREMENT   #   and scale to incremental value
+   plngth = abs(dy)
+   pinc = abs(dyinc)
+   if (abs(dx) > abs(dy)) {
+      plngth = abs(dx)
+      pinc = abs(dxinc)
+      }
+   # p1(1)
+   x = zdxpos
+   # p1(2)
+   y  = zdypos
+   j = 0
+   k = (ndlntp-2)*4 + 1
+   for (p=0.0; p<=plngth; p=p+pinc) {
+      if (j > 3) {
+         j = 0
+         call gdevot (NEWLINE)   #flush output buffer
+         }
+      kk = k + j
+      action = actary(kk)
+      if (action == 0)      { opcode = MOVE }
+      else if (action == 1) { opcode = DRAW }
+      else {
+         call dr40xx (MOVE, p1)
+         opcode = DRAW
+         }
+      call dr40xx (opcode, p1)
+      # p1(1) = p(1) + dxinc
+      x = x + dxinc
+      # p1(2) = p1(2) + dyinc
+      y = y + dyinc
+      j = j + 1
+      }
+   if (j > 3) j = 0
+   kk = k + j
+   if (actary(kk) == 1) { call dr40xx (DRAW, rlin) }
+   else                 { call dr40xx (MOVE, rlin) }  # Insure that we are at
+                                                      #    the end point.
+   return
+end
+#-t-  da40xx.rat          local   03/24/82  11:21
+#-h-  dm40xx.rat          local   03/24/82  11:21
+subroutine dm40xx (marker,rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: Place a marker at the current location on 40xx type    #
+#               devices                                                #
+#                                                                      #
+#     Input Parameters:                                                #
+#            marker - marker symbol index (1-5)                        #
+#            rlin   - x/y location for marker                          #
+#     Output Parameters:                                               #
+#            none                                                      #
+#                                                                      #
+#     Routines Called:                                                 #
+#            dr40xx - TEK 40xx move/draw routine                       #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+define (MARK_PERIOD,1)
+define (MARK_PLUS,2)
+define (MARK_STAR,3)
+define (MARK_O,4)
+define (MARK_X,5)
+define (FULLSZ,.0125)
+define (HALFSZ,.00625)
+define (FPERSZ,.005)
+define (HPERSZ,.0025)
+ 
+integer marker
+real rlin(1)
+ 
+real fsize, hsize, x1, x2, y1, y2
+real rxy(2), rxy1, rxy2
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       rxy(1) :: rxy1
+#       rxy(2) :: rxy2
+ 
+equivalence (rxy(1), rxy1), (rxy(2), rxy2)
+ 
+ 
+   if (marker == MARK_PERIOD) {
+      fsize = FPERSZ
+      hsize = HPERSZ
+      }
+   else {
+      fsize = FULLSZ
+      hsize = HALFSZ
+      }
+ 
+   x1 = rlin(1) - hsize        #clip marker to device limits
+   x2 = x1 + fsize
+   y1 = rlin(2) - hsize
+   y2 = y1 + fsize
+   if ((amin1(x1,y1) < 0.0) | (x2 > zdxlng) | (y2 > zdylng)) return
+ 
+   # output appropriate marker centered on location
+ 
+   rxy1 = x1
+   rxy2 = y1
+   call dr40xx (MOVE, rxy)   # move to lower left corner of character cell
+ 
+   if (marker == MARK_PERIOD | marker == MARK_O) {
+      rxy1 = x2
+      call dr40xx (DRAW, rxy)
+      rxy2 = y2
+      call dr40xx (DRAW, rxy)
+      rxy1 = x1
+      call dr40xx (DRAW, rxy)
+      rxy2 = y1
+      call dr40xx (DRAW, rxy)
+      }
+   else {
+      if (marker == MARK_X | marker == MARK_STAR) {
+         rxy1 = x2
+         rxy2 = y2
+         call dr40xx (DRAW, rxy)
+         rxy2 = y1
+         call dr40xx (MOVE, rxy)
+         rxy1 = x1
+         rxy2 = y2
+         call dr40xx (DRAW, rxy)
+         }
+      if (marker == MARK_PLUS | marker == MARK_STAR) {
+         rxy2 = y1 + hsize
+         call dr40xx (MOVE, rxy)
+         rxy1 = x2
+         call dr40xx (DRAW, rxy)
+         rxy1 = x1 + hsize
+         rxy2 = y1
+         call dr40xx (MOVE, rxy)
+         rxy2 = y2
+         call dr40xx (DRAW, rxy)
+         }
+      }
+   call dr40xx (MOVE, rlin)     # Return the cursor position to the original
+                                #    value
+   return
+end
+#-t-  dm40xx.rat          local   03/24/82  11:21
+#-h-  dr40xx.rat          local   03/24/82  11:21
+subroutine dr40xx (opcode, rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver move/draw for all TEK 40xx      #
+#                                                                      #
+#     Input Parameters:                                                #
+#           opcode - driver function, either move/draw                 #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            gdevot - put a character to device                        #
+#            xy40xx - convert x,y coordinate to hiy...lox              #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+integer opcode
+real rlin(1)
+ 
+integer alfamd(6), bytes(4), xhi, xlo, yhi, ylo
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       bytes(1) :: yhi
+#       bytes(2) :: ylo
+#       bytes(3) :: xhi
+#       bytes(4) :: xlo
+ 
+equivalence (bytes(1), yhi), (bytes(2), ylo), (bytes(3), xhi), (bytes(4), xlo)
+ 
+ 
+data alfamd /SYN,SYN,SYN,SYN,US,NEWLINE/
+ 
+   call gdevot (GS)
+ 
+   #
+   #     draw
+   #
+   if (opcode == DRAW) {
+      #move to last point
+      call gdevot (nhiy)
+      call gdevot (nloy)
+      call gdevot (nhix)
+      call gdevot (nlox)
+      }
+ 
+   # output all bytes for draw, since if you optimize you
+   # have to precede the bytes with syncs anyway at 9600 baud
+ 
+   call xy40xx (rlin(1), rlin(2), bytes)
+ 
+   # save the hiy...lox bytes
+   nhiy = yhi   # bytes(1)
+   nloy = ylo   # bytes(2)
+   nhix = xhi   # bytes(3)
+   nlox = xlo   # bytes(4)
+ 
+   zdxpos = rlin(1)   # Save the current device cursor position in NDC units
+   zdypos = rlin(2)
+ 
+   call gdstot (6, alfamd)   # Restore alpha mode
+ 
+   return
+end
+#-t-  dr40xx.rat          local   03/24/82  11:21
+#-h-  xy40xx.rat          local   03/24/82  11:21
+subroutine xy40xx (x, y, bytes)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: Convert 40xx x,y coordinate to hiy,loy,hix,lox bytes   #
+#               and output them                                        #
+#                                                                      #
+#     Input Parameters:                                                #
+#            x       - x-coordinate in 0 to device dependent space     #
+#            y       - y-coorindate in 0 to device dependent space     #
+#                                                                      #
+#     Output Parameters:                                               #
+#            bytes   - Plot-10 command bytes in ade                    #
+#                      bytes(1) - hi y                                 #
+#                      bytes(2) - lo y                                 #
+#                      bytes(3) - hi x                                 #
+#                      bytes(4) - lo x                                 #
+#                                                                      #
+#     Routines Called:                                                 #
+#            gdstot - Output a character string to the device          #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+# local defines
+define(HI_Y,32)                    #Tek hi y tag
+define(LO_Y,96)                    #Tek lo y tag
+define(HI_X,32)                    #Tek hi x tag
+define(LO_X,64)                    #Tek lo x tag
+define(EXTRA_BYTE,96)              #Tek extra byte tag
+ 
+integer bytes(4),i,kx,ky
+real x,y
+ 
+include mgscom
+ 
+   kx = zdlgax*x    # Transform point from ndc to device dependent coordinate
+   ky = zdlgax*y    #    'zdlgax' is the length of the longest axis.
+ 
+   bytes(1) = ky/32 + HI_Y                 #shift left 5 bits and set tag
+   bytes(2) = mod(ky,32) + LO_Y            #set lo bits and add lo tag
+ 
+   bytes(3) = kx/32 + HI_X                 #shift left 5 bits and set tag
+   bytes(4) = mod(kx,32) + LO_X            #set lo bits and add lo tag
+ 
+   call gdstot (4, bytes)
+ 
+   return
+end
+#-t-  xy40xx.rat          local   03/24/82  11:21
+#-t-  40xx.sup            local   03/24/82  11:21
+E 1

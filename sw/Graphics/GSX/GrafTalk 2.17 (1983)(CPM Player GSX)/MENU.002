@@ -1,0 +1,113 @@
+! May 6, 1983
+! FOR INTEGRATED SCREEN GRAPHICS VERSION
+
+@1
+VARIABLE MEN1, MC
+CLEARSCREEN
+RECOVER 1
+!!====================================================
+!!	BAR CHART MENU
+!!====================================================
+!!1  .. HELP .........................................
+!!2  .. ERASE GRAPHICS ...............................
+!!3  .. RETURN TO MAIN MENU ..........................
+!!4  .. CLEAR TEXT FROM SCREEN (CR BRINGS IT BACK) ...
+!!
+!!5  .. CHOOSE CLUSTERED BARS ........................
+!!6  .. CHOOSE STACKED BARS ..........................
+!!7  .. CHOOSE FLOATING BARS .........................
+!!8  .. CHOOSE PERCENT BARS ..........................
+!!
+!!9  .. CHOOSE HORIZONTAL BARS .......................
+!!10 .. CHOOSE VERTICAL BARS .........................
+!!11 .. SET THE BAR BASE .............................
+!!
+!!12 .. LEGEND, TITLE AND NAME MENU ..................
+!!13 .. COLOR AND SHADING MENU .......................
+!!14 .. AXIS LABELING MENU ...........................
+!!
+!!15 .. DRAW A BAR CHART .............................
+!!====================================================
+!!ENTER YOUR CHOICE >
+MENU MEN1 15 1 ^
+COMPARE MEN1 1
+IF YES JUMP 2
+COMPARE MEN1 3
+IF YES END
+COMPARE MEN1 5
+IF YES BAR CLUSTERED
+COMPARE MEN1 6
+IF YES BAR STACKED
+COMPARE MEN1 7
+IF YES BAR FLOATING
+COMPARE MEN1 8
+IF YES BAR PERCENT
+COMPARE MEN1 9
+IF YES BAR HORIZONTAL
+COMPARE MEN1 10
+IF YES BAR VERTICAL
+COMPARE MEN1 11
+IF YES JUMP 7
+COMPARE MEN1 12
+IF YES RUN MENU.005
+COMPARE MEN1 13
+IF YES RUN MENU.006
+COMPARE MEN1 14
+IF YES RUN MENU.008
+COMPARE MEN1 15
+IF YES JUMP 8
+COMPARE MEN1 2
+IF YES ERASE
+COMPARE MEN1 4
+IF YES JUMP 40
+JUMP 1
+
+@7
+!!ENTER VALUE FOR BAR BASE >
+BAR BASE ^
+JUMP 1
+
+@8
+!!ENTER ROWS OR COLUMNS FOR BAR CHART >
+BAR ^
+!!ENTER	  1 TO DUMP TO PRINTER	OR   2 TO ERASE >
+MENU MC 2 8 ^
+COMPARE MC 1
+IF YES DUMP
+ERASE
+JUMP 1
+
+@2
+CLEAR
+!!HELP INFORMATION FOR BAR CHARTS
+!!============================================================================
+!!
+!!Bar charts are made from one or several rows or columns of data. You may not
+!!not, however, mix rows and columns on a single chart.
+!!
+!!Bars can be  horizontal or vertical and they	can be one of these four types:
+!!  CLUSTERED  - bars representing data points from each row or column are
+!!		 drawn side by side;
+!!  STACKED    - bars representing data points from each row or column are
+!!		 drawn one after the other as a single stack of bars;
+!!  PERCENT    - these are  stacked bars with the length  of each stack ad-
+!!		 justed to be equal the same length;
+!!  FLOATING   - these are stacked bars with the base of  each stack begin-
+!!		 ning at the values of the first row or column given, thus
+!!		 floating bars	require at  least two  rows or two columns.
+!!You may set the value at which the bars are to begin with menu choice 10.
+!!
+!!Set names, titles, labels, legends, color & shading at the appropriate menus.
+!!Use the LINE AND SYMBOL PLOT menu to add curve(s) to a bar chart.
+!!
+!!Unless you specify otherwise bars will be  vertical, clustered with base = 0.
+!!TYPE <cr> TO RETURN TO MENU >
+STOP
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+ will be  vertical, clustered with base = 0.
+!!TYPE <cr> TO RETURN TO MENU >

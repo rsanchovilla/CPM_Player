@@ -1,0 +1,210 @@
+TOPIC : 8080-Z80 AND Z80-8080 SOURCE CODE TRANSLATE PROGRAMS
+
+DATE  : 27 APRIL 1986
+
+FROM  : IRV HOFF W6FFC
+
+
+		 NOTE:	The library name stands for
+			I-to-Z and Z-to-I translators.
+			This leaves room for a version
+			number.
+
+
+	The XIZI.LBR contains two translators.	The first is XIZ.COM for
+conterting Intel 8080 source code to Zilog Z80 source code and the other
+is XZI.COM for converting Zilog Z80 source code into Intel 8080 source
+code.
+
+	XIZ.COM is by far the most useful of the two.	Nearly all CP/M
+programs were originally written in 8080 code.	Most new computers have
+been using the Z80 for some years.  Several new macro assemblers have
+become available at moderate cost, such as the Echelon ZAS and the very
+fast SLR Z80ASM assembler.  Z80MR is a public domain assembler.  Likely
+the most common of all is the Microsoft M80 assembler which can handle
+either Zilog Z80 source code or Intel 8080 source code (or any mixture
+of both with proper instructions).
+
+	If using a Z80 processor, you can use a good translator such as
+XIZ.COM to change the 8080 source code into Zilog Z80 source code.  Then
+only one assembler will be needed for all your work.  This saves disk
+space, procurement costs and notes on how to use the various assemblers
+you might otherwise acquire.  (At last count I had 5 for Z80 code and 6
+for 8080 code.	It does get a bit silly.)
+
+
+USING XIZ
+===========
+	Several options are available, which can easily be set using DDT
+or SID:
+
+	0103h	00  defaults to .Z80 extent for the new file
+		FF  defaults to .MAC extent for the new file
+		       (You can manually type in anything else
+		       needed, see examples below.)
+
+	0104h	00  for assemblers other than Microsoft M80
+		FF  puts .Z80 and ASEG lines in the new file
+
+	0105h	00  normal Zilog DEFB, DEFS and DEFW codes
+		FF  defaults to Intel DB, DS and DW codes
+
+   examples:
+   --------
+
+	B>XIZ HELLO <ret>		a)
+	B>XIZ HELLO THINK <ret> 	b)
+	B>XIZ HELLO.MAC THINK.AZM <ret> c)
+
+   a) Translates HELLO.ASM to HELLO.Z80 (or to HELLO.MAC with 0103h)
+   b) Translates HELLO.ASM to THINK.Z80 (or to THINK.MAC with 0103h)
+   c) Translates HELLO.MAC to THINK.AZM
+
+
+FEATURES OF XIZ
+===============
+	Source code with '!' used for separating several instructions on
+the same line is properly converted to individual lines as few non-DRI
+assemblers can handle this type of programming.  (Most translators can't
+handle this, either, leaving the line only partially translated.)
+
+	Dual colons after global labels are retained.
+
+	Properly reformats the new file with customary fields separated
+by tabs.  Inline comments are all moved to a common column position.
+
+	It's FAST.  Using 16k buffers, XIZ runs 2-4 times faster than
+most other translators available, such as XLATE or ZCON.  It's somewhat
+faster than ITOZ.  It's quiet since there is comparatively little disk
+activity.
+
+	It can be used with any 8080, 8085 or Z80 computer.  Most other
+translators require a Z80 processor.
+
+
+USING XZI
+=========
+	If running an 8080 or 8085, you may have some program that you
+want to convert to INTEL source code.  This is not as simple as using an
+8080-to-Z80 translator since the Z80 has extra commands not recognized
+by the 8080 or 8085 processors.
+
+	XZI shows line numbers of any Z80 code that cannot be changed
+to normal 8080 code.  This information is also placed at the end of the
+new file generated.  A '#' is included on each of those lines, allowing
+an editor to quickly find their location.
+
+	One option is available which can easily be set with DDT or SID:
+
+	0103h	00  defaults to .Z80 extent for the new file
+		FF  defaults to .MAC extent for the new file
+		       (You can manually type in anything else
+		       needed, see examples shown for X80-8 above.)
+
+
+SIMILAR FEATURES:
+================
+	Colons are removed after any labels if EQU, MACRO or SET follow.
+Colons are added to all other labels, if not already present.  This is a
+standard M80 convention which is acceptable to all other assemblers that
+are normally used.
+
+	IF, ELSE and ENDIF conditionals are indented one space so they
+can be easily seen when studying the source code.
+
+	Progress reports given.  Displays a dot each 100 lines of code
+translated.  Ten dots to a group.  Shows total number of lines at end.
+
+	The M80 assembler will not accept asterisks at the beginning of
+a full-line comment.  These translators both substitute a semicolon for
+such asterisks.  Numerous translators (such as ZCON and prior versions
+of these programs) did that after the line had already been capitalized.
+Both XIZ and XZI have fixed this problem.
+
+	If a file already exists with the name selected for the output
+file, it will notify the operator and ask his further instructions.  A
+few other translators just go ahead and erase the other file, which at
+times could be disastrous.  (ITOZ even wipes out the original if a 2nd
+file is not named.  ZCON does not permit any second file name and also
+erases any existing file having the same name it plans to use...)
+
+	Both programs reformat text for normal column locations.  (ZCON
+does not.)  This includes putting the inline comments in the same area,
+giving an uniform appearance throughout the new file.
+
+
+COMPARISON:
+==========
+	A typical 48k 8080 source code program was used for a test.  It
+was run on four different translators with the following results:
+
+
+  Xlator  time			comments
+
+  XIZ	  0:45	  progress reports, no known faults, very fast, free
+  ITOZ	  1:11	  commercial, hard to find, barfs on any lower case code
+  ZCON	  2:35	  slow, minor problems, cannot specify second file name
+  XLATE6  3:31	  good program, progress reports, free, just slow
+
+
+	A special test was made where the file was run back and forth
+through alternating between the two translators several times.	It was
+then assembled and the resulting object code compared with that of the
+original program.  It was identical.
+
+
+NOTE:
+====
+	Due to the way the cross-reference tables are built, the maximum
+length instruction that may be accepted is five characters.  This should
+be adequate for all normal purposes.  The user should be aware that some
+unusual words used by various assemblers might need special attention.
+Normally those would be at the beginning of the file and easy to spot.
+The assembler itself should kick out an error in this case, providing an
+easy means of spotting any problems of this type.  Words such as MACRO,
+PRINT, TITLE, etc. are handled normally when in the instruction field.
+
+
+
+CREDITS:
+=======
+	Richard Conn originally disassembled a commercial translator in
+the early 1980's and called it XLATE2.	That spawned a number of other
+translators, one of which we converted to 8080 source code so it could
+be assembled with any normal 8080 assembler and then used on 8080, 8085
+or Z80 computers.  At this writing that is up to XLATE6.  It is slow but
+does a suitable job otherwise.	Has small buffers, much disk activity.
+It does not move comment fields to an uniform area (neither does ZCON).
+(That could be easily fixed, but hardly seems worth the bother now that
+XIZ is available.)  Frank Zerilli did a very nice job in adding quite
+worthy features to XLATE2 and called his version 2.64.	It (like XLATE2)
+retained Zilog source code, needed a Z80 assembler and would only run on
+computers with a Z80 processor.  It has 2k buffers.
+
+	I have rewritten that program for 8080 source code and made many
+of the changes already mentioned.  It has been carefully checked for all
+8080 to Z80 translations that are shown in normal cross-reference lists.
+I gave it a new name, since the changes are so extensive and numerous, I
+did not want to destroy the author's original version in case he wanted
+to remain associated with that program or preferred the features it has.
+I did the same with XZI, starting with the version Frank Zerilli made.
+
+SPECIAL THANKS:
+==============
+	Joe Wright (an independent commercial programmer) was very help-
+ful in testing the program.  He has extensively used macro routines and
+other exotic types of pseudo ops, etc.	 He has recently updated VFILER
+for ZCPR3 users.  He used that 142k source code as an additional test of
+these two programs.  "Before and after" results were the same, when the
+comparison was made.
+
+	Other extensive testing has been accomplished and the programs
+appear to work as intended.  I hope they will find an useful place among
+your other utility routines.  The programs are released for individual
+use on a non-commercial basis.
+					- Irv Hoff W6FFC
+					  Los Altos Hills, CA
+					  (415) 948-2166 voice
+
+
+

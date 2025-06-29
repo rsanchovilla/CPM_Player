@@ -1,0 +1,193 @@
+#  msort.rtf - sort lines in memory
+#
+#  this program allocates both a buffer (linbuf) and pointers into that
+#  buffer (linptr) above then end of the program using ialloc.
+#  note that when words are allocated, 2*LEN+1 must be allocated, the +1
+#  in case the array address is on an odd word boundary.  However,
+#  as long as all of the pointer and buffer manipulations are done in
+#  subroutines, these irregularities disappear by using linbuf(bptr) and
+#  linptr(lptr) as the argument to the subroutine.
+
+include "ratdefn.rtf"
+
+define(MERGEORDER,7)
+define(NAMESIZE,20)
+define(MAXTEXT,10000)
+define(MAXPTR,2000)
+define(LOGPTR,20)
+# sort - sort text lines in memory
+   character linbuf(ARB)
+   character argbuf(MAXLINE)
+   character clower
+   integer gtext,ialloc,iaddr, getarg
+   integer linptr(ARB), nlines, lptr, bptr
+   integer isp
+   logical rvflag
+ 
+   call initio
+
+   rvflag = NO
+
+   if (getarg(1,argbuf,MAXLINE)!=EOF)
+	if (argbuf(1)==MINUS & clower(argbuf(2))==LETR & argbuf(3)==EOS)
+		rvflag = YES
+	else 
+		call error("usage: sort [-r].")
+
+   isp = ialloc(2*MAXPTR+1)	# allocating words is more difficult than chars
+   if (isp==NO) call error("cannot allocate memory.")
+	else lptr=(isp+1-iaddr(linptr))/2+1
+   isp=ialloc(MAXTEXT)
+   if (isp==NO) call error("cannot allocate memory.")
+	else bptr=isp-iaddr(linbuf)+1
+   if (gtext(linptr(lptr), nlines, linbuf(bptr), STDIN) == EOF) {
+      call quick(linptr(lptr), nlines, linbuf(bptr))
+      call ptext(linptr(lptr), nlines, linbuf(bptr), rvflag, STDOUT)
+      call putch(EOF,STDOUT)
+      }
+   else
+      call error("too big to sort.")
+   stop
+   end
+# shell - Shell sort for character lines
+   subroutine shell(linptr, nlines, linbuf)
+   character linbuf(ARB)
+   integer compar
+   integer gap, i, ig, j, k, linptr(ARB), nlines
+ 
+   for (gap = nlines/2; gap > 0; gap = gap/2)
+      for (j = gap + 1; j <= nlines; j = j + 1)
+	 for (i = j - gap; i > 0; i = i - gap) {
+	    ig = i + gap
+	    if (compar(linptr(i), linptr(ig), linbuf) <= 0)
+	       break
+	    call exchan(linptr(i), linptr(ig), linbuf)
+	    }
+   return
+   end
+# gtext - get text lines into linbuf
+   integer function gtext(linptr, nlines, linbuf, infile)
+   character linbuf(ARB)
+   integer getlin
+   integer infile, lbp, len, linptr(ARB), nlines
+ 
+   nlines = 0
+   lbp = 1
+   repeat {
+      len = getlin(linbuf(lbp), infile)
+      if (len == EOF)
+	 break
+      nlines = nlines + 1
+      linptr(nlines) = lbp
+      lbp = lbp + len + 1   # "1" = room for EOS
+      } until (lbp >= MAXTEXT-MAXLINE | nlines >= MAXPTR)
+   gtext = len
+   return
+   end
+# ptext - output text lines from linbuf
+   subroutine ptext(linptr, nlines, linbuf, rvflag, outfil)
+   character linbuf(MAXTEXT)
+   logical rvflag
+   integer i, j, linptr(MAXPTR), nlines, outfil
+ 
+   if (rvflag == YES)
+	for (i = nlines; i >= 1; i = i - 1) {
+	   j = linptr(i)
+	   call putlin(linbuf(j), outfil)
+	   }
+   else
+	for (i = 1; i <= nlines; i = i + 1) {
+	   j = linptr(i)
+	   call putlin(linbuf(j), outfil)
+	   }
+   return
+   end
+# compar - compare linbuf(lp1) with linbuf(lp2)
+   integer function compar(lp1, lp2, linbuf)
+   character linbuf(ARB)
+   integer i, j, lp1, lp2
+ 
+   i = lp1
+   j = lp2
+   while (linbuf(i) == linbuf(j)) {
+      if (linbuf(i) == EOS) {
+	 compar = 0
+	 return
+	 }
+      i = i + 1
+      j = j + 1
+      }
+   if (linbuf(i) < linbuf(j))
+      compar = -1
+   else
+      compar = +1
+   return
+   end
+# exchan - exchange linbuf(lp1) with linbuf(lp2)
+   subroutine exchan(lp1, lp2, linbuf)
+   character linbuf(ARB)
+   integer k, lp1, lp2
+ 
+   k = lp1
+   lp1 = lp2
+   lp2 = k
+   return
+   end
+# quick - quicksort for character lines
+   subroutine quick(linptr, nlines, linbuf)
+   character linbuf(ARB)
+   integer compar
+   integer i, j, linptr(ARB), lv(LOGPTR), nlines, p, pivlin, uv(LOGPTR)
+ 
+   lv(1) = 1
+   uv(1) = nlines
+   p = 1
+   while (p > 0)
+      if (lv(p) >= uv(p))      # only one element in this subset
+	 p = p - 1	# pop stack
+      else {
+	 i = lv(p) - 1
+	 j = uv(p)
+	 pivlin = linptr(j)   # pivot line
+	 while (i < j) {
+	    for (i=i+1; compar(linptr(i), pivlin, linbuf) < 0; i=i+1)
+	       ;
+	    for (j = j - 1; j > i; j = j - 1)
+	       if (compar(linptr(j), pivlin, linbuf) <= 0)
+		  break
+	    if (i < j)	    # out of order pair
+	       call exchan(linptr(i), linptr(j), linbuf)
+	    }
+	 j = uv(p)	   # move pivot to position i
+	 call exchan(linptr(i), linptr(j), linbuf)
+	 if (i-lv(p) < uv(p)-i) {   # stack so shorter done first
+	    lv(p+1) = lv(p)
+	    uv(p+1) = i - 1
+	    lv(p) = i + 1
+	    }
+	 else {
+	    lv(p+1) = i + 1
+	    uv(p+1) = uv(p)
+	    uv(p) = i - 1
+	    }
+	 p = p + 1	   # push onto stack
+	 }
+   return
+   end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

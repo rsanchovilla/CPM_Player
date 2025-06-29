@@ -1,0 +1,3535 @@
+	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                ; ----------------------------------------------------------------------------
+                                ;Micro-Soft Altair BASIC 3.2 (4K) - Annotated Disassembly
+                                ;	
+                                ;Copyright 1975, Bill Gates, Paul Allen, Monte Davidoff
+                                ;Source: http://altairbasic.org/ compiled by Reuben Harris
+                                ;Additional cleanup, relocation by Charles Mangin, March, 2019
+                                ;patched to run on CP/M-80 By Roberto Sancho, Dec 2019
+                                ; ----------------------------------------------------------------------------
+                                
+                                ; Ported to CP/M By Roberto Sancho Dec 2019
+                                ; Changes
+                                ;    - uses m80 syntax
+                                ;    - uses CPM BDOS for console i/o
+                                ;    - convert console typed chars to uppercase
+                                ;    - fix parity flag to allow working on z80 using code from Patches to Altair 
+                                ;      Extended BASIC 4.0 to allow it to run on a Z80, by Mike Douglas, June 16, 2013 
+                                ;    - allow ^H (BackSpace) to delete last type char
+                                ;    - SYSTEM command to return to CP/M
+                                ;    - LOAD "file.ext" to load a progran from cp/m ascii file
+                                ;      on files, allow lowercase chars. Basic commands must be in uppercase
+                                ;      if file not found, prints "?IO ERROR"
+                                
+  0000'                         	aseg
+                                        org 0100h
+                                
+  0100    C3 1517                       jmp CPMStart
+                                
+  0103                          BIN_Start:        
+                                        .phase 0000h
+                                        .8080
+                                        
+  0000    F3                    Start:	DI
+  0001    C3 0D21                       JMP Init	
+                                
+  0004    0490                  	DW 0490h	
+  0006    07F9                  	DW 07F9h	
+                                
+  0008                          SyntaxCheck:
+  0008    7E                    	MOV A,M	;A=Byte of BASIC program.
+  0009    E3                    	XTHL	;HL=return address.
+  000A    BE                    	CMP M	;Compare to byte expected.
+  000B    23                    	INX H	;Return address++;
+  000C    E3                    	XTHL	;
+  000D    C2 01D0               	JNZ SyntaxError	;Error if not what was expected.
+  0010                          NextChar:
+  0010    23                    	INX H	
+  0011    7E                    	MOV A,M	
+  0012    FE 3A                 	CPI 3Ah	
+  0014    D0                    	RNC	
+  0015    C3 045E               	JMP NextChar_tail	
+  0018                          OutChar:
+  0018    F5                    	PUSH PSW	
+  0019    3A 0027               	LDA TERMINAL_X	
+  001C    C3 036E               	JMP OutChar_tail	
+  001F    00                    	NOP	
+  0020                          CompareHLDE:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+  0020    7C                    	MOV A,H	
+  0021    92                    	SUB D	
+  0022    C0                    	RNZ	
+  0023    7D                    	MOV A,L	
+  0024    93                    	SUB E	
+  0025    C9                    	RET	
+  0026    01                    TERMINAL_Y:	DB 01	
+  0027    00                    TERMINAL_X:	DB 00	
+  0028                          FTestSign:
+  0028    3A 0172               	LDA FACCUM+3	
+  002B    B7                    	ORA A	
+  002C    C2 09DA               	JNZ FTestSign_tail	
+  002F    C9                    	RET	
+  0030                          PushNextWord:
+  0030    E3                    	XTHL	
+  0031    22 003B               	SHLD L003A+1	
+  0034    E1                    	POP H	
+  0035    4E                    	MOV C,M	
+  0036    23                    	INX H	
+  0037    46                    	MOV B,M	
+  0038    23                    	INX H	
+  0039    C5                    	PUSH B	
+  003A    C3 003A               L003A:	JMP L003A	
+                                
+  003D                          KW_INLINE_FNS:
+  003D    09E4                  	DW Sgn	
+  003F    0AA2                  	DW Int	
+  0041    09F8                  	DW Abs	
+  0043    0498                  	DW FunctionCallError	
+  0045    0C21                  	DW Sqr	
+  0047    0C5F                  	DW Rnd	
+  0049    0C95                  	DW Sin	
+  004B                          KW_ARITH_OP_FNS:
+  004B    79                    	DB 79h
+  004C    0810                  	DW FAdd	;+
+  004E    79                    	DB 79h
+  004F    080A                  	DW FSub	;-
+  0051    7C                    	DB 7Ch 
+  0052    08E3                  	DW FMul	;*
+  0054    7C                    	DB 7Ch 
+  0055    092F                  	DW FDiv	;/
+  0057                          KEYWORDS:
+  0057    45 4E C4              	DC "END"	; 80
+  005A    46 4F D2              	DC "FOR"	; 81
+  005D    4E 45 58 D4           	DC "NEXT"	; 82
+  0061    44 41 54 C1           	DC "DATA"	; 83
+  0065    49 4E 50 55           	DC "INPUT"	; 84
+  0069    D4                    
+  006A    44 49 CD              	DC "DIM"	; 85
+  006D    52 45 41 C4           	DC "READ"	; 86
+  0071    4C 45 D4              	DC "LET"	; 87
+  0074    47 4F 54 CF           	DC "GOTO"	; 88
+  0078    52 55 CE              	DC "RUN"	; 89
+  007B    49 C6                 	DC "IF"		; 8A
+  007D    52 45 53 54           	DC "RESTORE"	; 8B
+  0081    4F 52 C5              
+	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  0084    47 4F 53 55           	DC "GOSUB"	; 8C
+  0088    C2                    
+  0089    52 45 54 55           	DC "RETURN"	; 8D
+  008D    52 CE                 
+  008F    52 45 CD              	DC "REM"	; 8E
+  0092    53 54 4F D0           	DC "STOP"	; 8F
+  0096    50 52 49 4E           	DC "PRINT"	; 90
+  009A    D4                    
+  009B    4C 49 53 D4           	DC "LIST"	; 91
+  009F    43 4C 45 41           	DC "CLEAR"	; 92
+  00A3    D2                    
+  00A4    4E 45 D7              	DC "NEW"	; 93
+                                ;
+  00A7    54 41 42 A8           	DC "TAB("	; 94
+  00AB    54 CF                 	DC "TO"		; 95
+  00AD    54 48 45 CE           	DC "THEN"	; 96
+  00B1    53 54 45 D0           	DC "STEP"	; 97
+                                ;
+  00B5    AB                    	DB 0ABh		; "+"	98
+  00B6    AD                    	DB 0ADh		; "-"	99
+  00B7    AA                    	DB 0AAh		; "*"	9A
+  00B8    AF                    	DB 0AFh		; "/"	9B
+  00B9    BE                    	DB 0BEh		; ">"	9C
+  00BA    BD                    	DB 0BDh		; "="	9D
+  00BB    BC                    	DB 0BCh		; "<"	9E
+                                ;
+  00BC    53 47 CE              	DC "SGN"	; 9F
+  00BF    49 4E D4              	DC "INT"	; A0
+  00C2    41 42 D3              	DC "ABS"	; A1
+  00C5    55 53 D2              	DC "USR"	; A2
+  00C8    53 51 D2              	DC "SQR"	; A3
+  00CB    52 4E C4              	DC "RND"	; A4
+  00CE    53 49 CE              	DC "SIN"	; A5
+                                	
+  00D1    00                    	DB 0	
+                                 	
+  00D2                          KW_GENERAL_FNS:
+  00D2    01F7                  	DW Stop			;END
+  00D4    03D5                  	DW For			;FOR
+  00D6    0649                  	DW Next			;NEXT
+  00D8    04F5                  	DW FindNextStatement	;DATA
+  00DA    05E4                  	DW Input		;INPUT
+  00DC    0716                  	DW Dim			;DIM
+  00DE    05F6                  	DW Read			;READ
+  00E0    0502                  	DW Let			;LET
+  00E2    04CF                  	DW Goto			;GOTO
+  00E4    02A1                  	DW Run			;RUN
+  00E6    0516                  	DW If			;IF
+  00E8    0469                  	DW Restore		;RESTORE
+  00EA    04BE                  	DW Gosub		;GOSUB
+  00EC    04DF                  	DW Return		;RETURN
+  00EE    04F7                  	DW Rem			;REM
+  00F0    01F7                  	DW Stop			;STOP
+  00F2    0557                  	DW Print		;PRINT
+  00F4    038E                  	DW List			;LIST
+  00F6    02A6                  	DW Clear		;CLEAR
+	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+  00F8    0295                  	DW New			;NEW
+                                
+  00FA                          ERROR_CODES:
+  00FA    4E C6                 	DC "NF"		; NEXT without FOR.
+  00FC    53 CE                 	DC "SN"		; Syntax Error
+  00FE    52 C7                 	DC "RG"		; RETURN without GOSUB.
+  0100    4F C4                 	DC "OD"		; Out of Data
+  0102    46 C3                 	DC "FC"		; Illegal Function Call
+  0104    4F D6                 	DC "OV"		; Overflow.
+  0106    4F CD                 	DC "OM"		; Out of memory.
+  0108    55 D3                 	DC "US"		; Undefined Subroutine
+  010A    42 D3                 	DC "BS"		; Bad Subscript
+  010C    44 C4                 	DC "DD"		; Duplicate Definition
+  010E    2F B0                 	DC "/0"		; Division by zero.
+  0110                          ID_IO_ERR_COD:
+  0110    49 C4                 	DC "ID"		; Invalid in Direct mode.
+  0112    2C                     	DB ','		; 
+                                 	
+  0113                          LINE_BUFFER:
+  0113    0000 0000             	DW 0000,0000,0000,0000h	;72 chars
+  0117    0000 0000             
+  011B    0000 0000             	DW 0000,0000,0000,0000h	;
+  011F    0000 0000             
+  0123    0000 0000             	DW 0000,0000,0000,0000h	;
+  0127    0000 0000             
+  012B    0000 0000             	DW 0000,0000,0000,0000h	;
+  012F    0000 0000             
+  0133    0000 0000             	DW 0000,0000,0000,0000h	;
+  0137    0000 0000             
+  013B    0000 0000             	DW 0000,0000,0000,0000h	;
+  013F    0000 0000             
+  0143    0000 0000             	DW 0000,0000,0000,0000h	;
+  0147    0000 0000             
+  014B    0000 0000             	DW 0000,0000,0000,0000h	;
+  014F    0000 0000             
+  0153    0000 0000             	DW 0000,0000,0000,0000h	;		
+  0157    0000 0000             
+                                
+  015B    00                    DIM_OR_EVAL:	DB 00h		; 
+  015C    00                    INPUT_OR_READ:	DB 00h		; 
+  015D    0000                  PROG_PTR_TEMP:	DW 0000h	;
+  015F    0000                  L015F:		DW 0000h	;
+  0161    0000                  CURRENT_LINE:	DW 0000h	;
+  0163    0F1A                  STACK_TOP:	DW 0F1Ah	; RELOCATE***
+  0165    0000                  PROGRAM_BASE:	DW 0000h	;
+  0167    0000                  VAR_BASE:	DW 0000h	;
+  0169    0000                  VAR_ARRAY_BASE:	DW 0000h	;
+  016B    0000                  VAR_TOP:	DW 0000h	;
+  016D    0000                  DATA_PROG_PTR:	DW 0000h	;
+  016F    00 00 00 00           FACCUM:		DB 00,00,00,00	;
+  0173    00                    FTEMP:		DB 00
+  0174    0000 0000             FBUFFER:	DW 0000,0000,0000
+  0178    0000                  
+  017A    0000 0000             		DW 0000,0000,0000
+  017E    0000                  
+  0180    00                    		DB 00	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+                                
+  0181    20 45 52 52           szError:	DC 	" ERROR"	 
+  0185    4F D2                 
+  0187    00                    		DB 00	
+  0188    20 49 4E A0           szIn:		DC 	" IN "
+  018C    00                    		DB 00	
+  018D    0D                    szOK:		DB 13
+  018E    4F CB                 		DC 	"OK"
+  0190    0D 00                 		DB 13,0
+                                		
+  0192                          GetFlowPtr:
+  0192    21 0004               	LXI H,0004h	;HL=SP+4 (ie get word
+  0195    39                    	DAD SP		;just past return addr)
+  0196    7E                    	MOV A,M		;
+  0197    23                    	INX H		;
+  0198    FE 81                 	CPI 81h		;'FOR'?
+  019A    C0                    	RNZ		;Return if not 'FOR'
+  019B    F7                    	RST 6		; RST PushNextWord	;PUSH (HL)
+  019C    E3                    	XTHL		;POP HL (ie HL=(HL))
+  019D    E7                    	RST 4		; RST CompareHLDE	;HL==DE?
+  019E    01 000D               	LXI B,000Dh	;
+  01A1    E1                    	POP H		;Restore HL
+  01A2    C8                    	RZ		;Return if var ptrs match.
+  01A3    09                    	DAD B		;HL+=000D
+  01A4    C3 0196               	JMP GetFlowPtr+4	;Loop
+                                	
+  01A7                          CopyMemoryUp:
+  01A7    CD 01C3               	CALL CheckEnoughMem;
+  01AA    C5                    	PUSH B	;Exchange BC with HL.
+  01AB    E3                    	XTHL	;
+  01AC    C1                    	POP B	;
+  01AD                          CopyMemLoop:
+  01AD    E7                    	RST 4	;HL==DE?
+  01AE    7E                    	MOV A,M	;
+  01AF    02                    	STAX B	;
+  01B0    C8                    	RZ	;Exit if DE reached.
+  01B1    0B                    	DCX B	;
+  01B2    2B                    	DCX H	;
+  01B3    C3 01AD               	JMP CopyMemLoop	;
+  01B6                          CheckEnoughVarSpace:
+  01B6    E5                    	PUSH H	;
+  01B7    2A 016B               	LHLD VAR_TOP	;
+  01BA    06 00                 	MVI B,00h	;BC=C*4
+  01BC    09                    	DAD B	;
+  01BD    09                    	DAD B	;
+  01BE    CD 01C3               	CALL CheckEnoughMem;
+  01C1    E1                    	POP H	;
+  01C2    C9                    	RET	;
+  01C3                          CheckEnoughMem:
+  01C3    D5                    	PUSH D	;
+  01C4    EB                    	XCHG	;
+  01C5    21 FFDE               	LXI H,0FFDEh;	;HL=-34 (extra 2 bytes for return address)
+  01C8    39                    	DAD SP	;
+  01C9    E7                    	RST 4	;
+  01CA    EB                    	XCHG	;
+  01CB    D1                    	POP D	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+  01CC    D0                    	RNC	;
+  01CD                          OutOfMemory:
+  01CD    1E 0C                 	MVI E,0Ch	;
+  01CF    01                    	DB 01	;LXI B,....	;
+  01D0                          SyntaxError:
+  01D0    1E 02                 	MVI E,02h	;
+  01D2    01                    	DB 01	;LXI B,....	;
+  01D3                          DivideByZero:
+  01D3    1E 14                 	MVI E,14h	;
+  01D5                          Error:
+  01D5    CD 02B5               	CALL ResetStack	;
+  01D8    CD 058A               	CALL NewLine	;
+  01DB    21 00FA               	LXI H,ERROR_CODES	;
+  01DE    57                    	MOV D,A	;
+  01DF    3E 3F                 	MVI A,'?'	;Print '?'
+  01E1    DF                    	RST 03	;RST OutChar	;
+  01E2    19                    	DAD D	;HL points to error code.
+  01E3    7E                    	MOV A,M	;
+  01E4    DF                    	RST 03	;RST OutChar 11 011 111	;Print first char of code.
+  01E5    D7                    	RST 02	;RST NextChar 11 010 111	;
+  01E6    DF                    	RST 03	;RST OutChar	;Print second char of code.
+  01E7    21 0181               	LXI H,szError	;Print " ERROR".
+  01EA    CD 05A3               	CALL PrintString	;
+  01ED    2A 0161               	LHLD CURRENT_LINE	;
+  01F0    7C                    	MOV A,H	;
+  01F1    A5                    	ANA L	;
+  01F2    3C                    	INR A	;
+  01F3    C4 0B2F               	CNZ PrintIN	;
+  01F6    01                    	DB 01	;LXI B,....	;LXI over Stop and fall into Main
+  01F7                          Stop:
+  01F7    C0                    	RNZ	;Syntax Error if args.
+  01F8    C1                    	POP B	;Lose return address.
+  01F9                          Main:
+  01F9    21 018D               	LXI H,szOK	 
+  01FC    CD 0D21               	CALL Init	
+  01FF                          GetNonBlankLine:
+  01FF    21 FFFF               	LXI H,0FFFFh	;
+  0202    22 0161               	SHLD CURRENT_LINE	;
+  0205    CD 033C               	CALL InputLine	; 
+  0208    D7                    	RST 02	;RST NextChar	; 
+  0209    3C                    	INR A	;
+  020A    3D                    	DCR A	; 
+  020B    CA 01FF               	JZ GetNonBlankLine	; 
+  020E    F5                    	PUSH PSW	 
+  020F    CD 049D               	CALL LineNumberFromStr	 
+  0212    D5                    	PUSH D	 
+  0213    CD 02CC               	CALL Tokenize	 
+  0216    47                    	MOV B,A	
+  0217    D1                    	POP D	 
+  0218    F1                    	POP PSW	 
+  0219    D2 043E               	JNC Exec	 
+  021C                          StoreProgramLine:
+  021C    D5                    	PUSH D	;Push line number
+  021D    C5                    	PUSH B	;Push line length
+  021E    D7                    	RST 02	;RST NextChar	;Get first char of line
+  021F    B7                    	ORA A	;Zero set if line is empty (ie removing a line)
+	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+  0220    F5                    	PUSH PSW	;Preserve line-empty flag
+  0221    CD 027D               	CALL FindProgramLine	;Get nearest program line address in BC.
+  0224    C5                    	PUSH B	;Push line address.
+  0225    D2 0239               	JNC InsertProgramLine	;If line doesn't exist, jump ahead to insert it.
+  0228                          RemoveProgramLine:
+  0228    EB                    	XCHG	;DE=Next line address.
+  0229    2A 0167               	LHLD VAR_BASE	;
+  022C                          RemoveLine:
+  022C    1A                    	LDAX D	;Move byte of program remainder down
+  022D    02                    	STAX B	;in memory.
+  022E    03                    	INX B	;
+  022F    13                    	INX D	;
+  0230    E7                    	RST 4	;Loop until DE==VAR_BASE, ie whole
+  0231    C2 022C               	JNZ RemoveLine	;program remainder done.
+  0234    60                    	MOV H,B	;
+  0235    69                    	MOV L,C	;Update VAR_BASE from BC.
+  0236    22 0167               	SHLD VAR_BASE	;
+  0239                          InsertProgramLine:
+  0239    D1                    	POP D	;DE=Line address (from 224)
+  023A    F1                    	POP PSW	;Restore line-empty flag (see above)
+  023B    CA 0260               	JZ UpdateLinkedList;If line is empty, then we don't need to insert it so can jump ahead.
+  023E    2A 0167               	LHLD VAR_BASE	;
+  0241    E3                    	XTHL	;HL = Line length (see 21D)
+  0242    C1                    	POP B	;BC = VAR_BASE
+  0243    09                    	DAD B	;HL = VAR_BASE + line length.
+  0244    E5                    	PUSH H	;
+  0245    CD 01A7               	CALL CopyMemoryUp	;Move remainder of program so there's enough space for the new line.
+  0248    E1                    	POP H	;
+  0249    22 0167               	SHLD VAR_BASE	;Update VAR_BASE
+  024C    EB                    	XCHG	;HL=Line address, DE=VAR_BASE
+  024D    74                    	MOV M,H	;???
+  024E    23                    	INX H	;Skip over next line ptr (updated below)
+  024F    23                    	INX H	;
+  0250    D1                    	POP D	;DE = line number (see 21C)
+  0251    73                    	MOV M,E	;Write line number to program line memory.
+  0252    23                    	INX H	;
+  0253    72                    	MOV M,D	;
+  0254    23                    	INX H	;
+  0255                          CopyFromBuffer:
+  0255    11 0113               	LXI D,LINE_BUFFER	;Copy the line into the program.
+  0258    1A                    	LDAX D	;
+  0259    77                    	MOV M,A	;
+  025A    23                    	INX H	;
+  025B    13                    	INX D	;
+  025C    B7                    	ORA A	;
+  025D    C2 0258               	JNZ CopyFromBuffer+3;
+  0260                          UpdateLinkedList:
+  0260    CD 02A2               	CALL ResetAll	;
+  0263    23                    	INX H	;
+  0264    EB                    	XCHG	;
+  0265    62                    L0265:	MOV H,D	;
+  0266    6B                    	MOV L,E	;
+  0267    7E                    	MOV A,M	;If the pointer to the next line is a null
+  0268    23                    	INX H	;word then we've reached the end of the
+  0269    B6                    	ORA M	;program, job is done, and we can jump back
+  026A    CA 01FF               	JZ GetNonBlankLine	;to let the user type in the next line.
+	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+
+
+  026D    23                    	INX H	;Skip over line number.
+  026E    23                    	INX H	;
+  026F    23                    	INX H	;
+  0270    AF                    	XRA A	;
+  0271    BE                    L0271:	CMP M	;
+  0272    23                    	INX H	;
+  0273    C2 0271               	JNZ L0271	;
+  0276    EB                    	XCHG	;
+  0277    73                    	MOV M,E	;
+  0278    23                    	INX H	;
+  0279    72                    	MOV M,D	;
+  027A    C3 0265               	JMP L0265	;
+  027D                          FindProgramLine:
+  027D    2A 0165               	LHLD PROGRAM_BASE	;
+  0280    44                    	MOV B,H	;BC=this line
+  0281    4D                    	MOV C,L	;
+  0282    7E                    	MOV A,M	;If we've found two consecutive
+  0283    23                    	INX H	;null bytes, then we've reached the end
+  0284    B6                    	ORA M	;of the program and so return.
+  0285    2B                    	DCX H	;
+  0286    C8                    	RZ	;
+  0287    C5                    	PUSH B	;Push this line address
+  0288    F7                    	RST 6	;Push (next line address)
+  0289    F7                    	RST 6	;Push (this line number)
+  028A    E1                    	POP H	;HL = this line number
+  028B    E7                    	RST 4	;Compare line numbers
+  028C    E1                    	POP H	;HL = next line address
+  028D    C1                    	POP B	;BC = this line address
+  028E    3F                    	CMC	;
+  028F    C8                    	RZ	;Return carry set if line numbers match.
+  0290    3F                    	CMC	;
+  0291    D0                    	RNC	;Return if we've reached a line number greater than the one required.
+  0292    C3 0280               	JMP FindProgramLine+3	
+  0295    C0                    New:	RNZ	 
+  0296    2A 0165               	LHLD PROGRAM_BASE	 
+  0299    AF                    	XRA A	
+  029A    77                    	MOV M,A	
+  029B    23                    	INX H	
+  029C    77                    	MOV M,A	
+  029D    23                    	INX H	 
+  029E    22 0167               	SHLD VAR_BASE	 
+  02A1    C0                    Run:	RNZ	
+  02A2                          ResetAll:
+  02A2    2A 0165               	LHLD PROGRAM_BASE	
+  02A5    2B                    	DCX H	
+  02A6                          Clear:
+  02A6    22 015D               	SHLD PROG_PTR_TEMP	
+  02A9    CD 0469               	CALL Restore	
+  02AC    2A 0167               	LHLD VAR_BASE	
+  02AF    22 0169               	SHLD VAR_ARRAY_BASE	
+  02B2    22 016B               	SHLD VAR_TOP	
+  02B5                          ResetStack:
+  02B5    C1                    	POP B	
+  02B6    2A 0163               	LHLD STACK_TOP	
+  02B9    F9                    	SPHL	
+  02BA    AF                    	XRA A	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+
+
+  02BB    6F                    	MOV L,A	
+  02BC    E5                    	PUSH H	
+  02BD    C5                    	PUSH B	
+  02BE    2A 015D               	LHLD PROG_PTR_TEMP	
+  02C1    C9                    	RET	
+  02C2                          InputLineWith:
+  02C2    3E 3F                 	MVI A,'?'	;Print '?'
+  02C4    DF                    	RST 03	;RST OutChar	;
+  02C5    3E 20                 	MVI A,' '	;Print ' '
+  02C7    DF                    	RST 03	;RST OutChar	;
+  02C8    CD 033C               	CALL InputLine	;
+  02CB    23                    	INX H	;
+  02CC                          Tokenize:
+  02CC    0E 05                 	MVI C,05	;Initialise line length to 5.
+  02CE    11 0113               	LXI D,LINE_BUFFER	;ie, output ptr is same as input ptr at start.
+  02D1    7E                    	MOV A,M	;
+  02D2    FE 20                 	CPI ' '	;
+  02D4    CA 0302               	JZ WriteChar	;
+  02D7    47                    	MOV B,A	;
+  02D8    FE 22                 	CPI '"'	;
+  02DA    CA 0315               	JZ FreeCopy	;
+  02DD    B7                    	ORA A	;
+  02DE    CA 0329               	JZ Exit	;
+  02E1    D5                    	PUSH D	;Preserve output ptr.
+  02E2    06 00                 	MVI B,00	;Initialise Keyword ID to 0.
+  02E4    11 0056               LdKwTb1:LXI D,KEYWORDS-1	;
+  02E7    E5                    	PUSH H	;Preserve input ptr.
+  02E8    3E                    	DB 3Eh	;LXI over get-next-char
+  02E9                          KwCompare:
+  02E9    D7                    	RST 02 	; RST 01	; SyntaxCheck0	;Get next input char
+  02EA    13                    	INX D	;
+  02EB    1A                    	LDAX D	;Get keyword char to compare with.
+  02EC    E6 7F                 	ANI 7Fh	;Ignore bit 7 of keyword char.
+  02EE    CA 02FF               	JZ NotAKeyword	;If keyword char==0, then end of keywords reached.
+  02F1    BE                    	CMP M	;Keyword char matches input char?
+  02F2    C2 031C               	JNZ NextKeyword	;If not, jump to get next keyword.
+  02F5    1A                    	LDAX D	;
+  02F6    B7                    	ORA A	;
+  02F7    F2 02E9               	JP KwCompare	;
+  02FA    F1                    	POP PSW	;Remove input ptr from stack. We don't need it.
+  02FB    78                    	MOV A,B	;A=Keyword ID
+  02FC    F6 80                 	ORI 80h	;Set bit 7 (indicates a keyword)
+  02FE    F2                    	DB 0F2h	;JP ....	;LXI trick again.
+  02FF                          NotAKeyword:
+  02FF    E1                    	POP H	;Restore input ptr
+  0300    7E                    	MOV A,M	;and get input char
+  0301    D1                    	POP D	;Restore output ptr
+  0302    23                    WriteChar:	INX H	;Advance input ptr
+  0303    12                    	STAX D	;Store output char
+  0304    13                    	INX D	;Advance output ptr
+  0305    0C                    	INR C	;C++ (arf!).
+  0306    D6 8E                 	SUI 8Eh	;If it's not the
+  0308    C2 02D1               	JNZ Tokenize+5	;
+  030B    47                    	MOV B,A	;B=0
+  030C                          FreeCopyLoop:
+  030C    7E                    	MOV A,M	;A=Input char
+	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+
+
+  030D    B7                    	ORA A	;If char is null then exit
+  030E    CA 0329               	JZ Exit	;
+  0311    B8                    	CMP B	;If input char is term char then
+  0312    CA 0302               	JZ WriteChar	;we're done free copying.
+  0315                          FreeCopy:
+  0315    23                    	INX H	;
+  0316    12                    	STAX D	;
+  0317    0C                    	INR C	;
+  0318    13                    	INX D	;
+  0319    C3 030C               	JMP FreeCopyLoop	;
+  031C                          NextKeyword:
+  031C    E1                    	POP H	;Restore input ptr
+  031D    E5                    	PUSH H	;
+  031E    04                    	INR B	;Keyword ID ++;
+  031F    EB                    	XCHG	;HL=keyword table ptr
+  0320                          NextKwLoop:
+  0320    B6                    	ORA M	;Loop until
+  0321    23                    	INX H	;bit 7 of previous
+  0322    F2 0320               	JP NextKwLoop	;keyword char is set.
+  0325    EB                    	XCHG	;DE=keyword ptr, HL=input ptr
+  0326    C3 02EB               	JMP KwCompare+2	;
+  0329                          Exit:
+  0329    21 0112               	LXI H,LINE_BUFFER-1	;
+  032C    12                    	STAX D	;
+  032D    13                    	INX D	;
+  032E    12                    	STAX D	;
+  032F    13                    	INX D	;
+  0330    12                    	STAX D	;
+  0331    C9                    	RET	;
+  0332                          Backspace:
+  0332    05                    	DCR B	;Char count--;
+  0333    2B                    	DCX H	;Input ptr--;
+  0334    DF                    	RST 03	;RST OutChar	;Print backspace char.
+  0335    C2 0341               	JNZ InputNext	;
+  0338                          ResetInput:
+  0338    DF                    	RST 03	;RST OutChar	;
+  0339    CD 058A               	CALL NewLine	;
+  033C                          InputLine:
+  033C    21 0113               	LXI H,LINE_BUFFER	;
+  033F    06 01                 	MVI B,01	;
+  0341                          InputNext:
+  0341    CD 0382               	CALL InputChar	;
+  0344    FE 0D                 	CPI 0Dh	;
+  0346    CA 0585               	JZ TerminateInput	;
+  0349    FE 20                 	CPI ' '	;If < ' '
+  034B    DA 0341               	JC InputNext	;or
+  034E    FE 7D                 	CPI 7Dh	;> '}'
+  0350    D2 0341               	JNC InputNext	;then loop back.
+  0353    FE 40                 	CPI '@'	;
+  0355    CA 0338               	JZ ResetInput	;
+  0358    FE 5F                         CPI '_'	;
+  035A    CA 0332               	JZ Backspace	;
+  035D    4F                    L035D:	MOV C,A	;
+  035E    78                    	MOV A,B	;
+  035F    FE 48                 	CPI 48h	;
+  0361    3E 07                 	MVI A,07	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+
+
+  0363    D2 036A               	JNC L036A	;
+  0366    79                    	MOV A,C	;Write char to LINE_BUFFER.
+  0367    71                    	MOV M,C	;
+  0368    23                    	INX H	;
+  0369    04                    	INR B	;
+  036A    DF                    L036A:	RST 03	;RST OutChar	;
+  036B    C3 0341               	JMP InputNext	;
+  036E                          OutChar_tail:
+  036E    FE 48                 	CPI 48h	;
+  0370    CC 058A               	CZ NewLine	;
+  0373    3C                    	INR A	;
+  0374    32 0027               	STA TERMINAL_X	;
+  0377                          WaitTermReady:
+  0377    DB 00                 	IN 00	;
+  0379    E6 80                 	ANI 80h	;
+  037B    C2 0377               	JNZ WaitTermReady	;
+  037E    F1                    	POP PSW	;
+  037F    D3 01                 	OUT 01	;
+  0381    C9                    	RET	;
+  0382                          InputChar:
+  0382    DB 00                 	IN 00	; 
+  0384    E6 01                 	ANI 01	; 
+  0386    C2 0382               	JNZ InputChar	;
+  0389    DB 01                 	IN 01	; 
+  038B    E6 7F                 	ANI 7Fh	; 
+  038D    C9                    	RET	;
+  038E                          List:
+  038E    CD 049D               	CALL LineNumberFromStr	
+  0391    C0                    	RNZ	
+  0392    C1                    	POP B	;?why get return address?
+  0393    CD 027D               	CALL FindProgramLine	
+  0396    C5                    	PUSH B	
+  0397                          ListNextLine:
+  0397    E1                    	POP H	
+  0398    F7                    	RST 6	
+  0399    C1                    	POP B	
+  039A    78                    	MOV A,B	
+  039B    B1                    	ORA C	
+  039C    CA 01F9               	JZ Main	
+  039F    CD 0473               	CALL TestBreakKey	
+  03A2    C5                    	PUSH B	
+  03A3    CD 058A               	CALL NewLine	
+  03A6    F7                    	RST 6	
+  03A7    E3                    	XTHL	
+  03A8    CD 0B37               	CALL PrintInt	
+  03AB    3E 20                 	MVI A,' '	
+  03AD    E1                    	POP H	
+  03AE                          ListChar:
+  03AE    DF                    	RST 03	;RST OutChar	
+  03AF    7E                    	MOV A,M	
+  03B0    B7                    	ORA A	
+  03B1    23                    	INX H	
+  03B2    CA 0397               	JZ ListNextLine	
+  03B5    F2 03AE               	JP ListChar	
+  03B8    D6 7F                 	SUI 7Fh	;A is now keyword index + 1.
+  03BA    4F                    	MOV C,A	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+
+
+  03BB    E5                    	PUSH H	
+  03BC    11 0057               LdKwTb2:LXI D,KEYWORDS	
+  03BF    D5                    	PUSH D	
+  03C0                          ToNextKeyword:
+  03C0    1A                    	LDAX D	
+  03C1    13                    	INX D	
+  03C2    B7                    	ORA A	
+  03C3    F2 03C0               	JP ToNextKeyword	
+  03C6    0D                    	DCR C	
+  03C7    E1                    	POP H	
+  03C8    C2 03BF               	JNZ ToNextKeyword-1	
+  03CB                          PrintKeyword:
+  03CB    7E                    	MOV A,M	
+  03CC    B7                    	ORA A	
+  03CD    FA 03AD               	JM ListChar-1	
+  03D0    DF                    	RST 03	;RST OutChar	
+  03D1    23                    	INX H	
+  03D2    C3 03CB               	JMP PrintKeyword	
+  03D5                          For:
+  03D5    CD 0502               	CALL Let	
+  03D8    E3                    	XTHL	
+  03D9    CD 0192               	CALL GetFlowPtr	
+  03DC    D1                    	POP D	
+  03DD    C2 03E2               	JNZ L03E2	
+  03E0    09                    	DAD B	
+  03E1    F9                    	SPHL	
+  03E2    EB                    L03E2:	XCHG	
+  03E3    0E 08                 	MVI C,08	
+  03E5    CD 01B6               	CALL CheckEnoughVarSpace	
+  03E8    E5                    	PUSH H	
+  03E9    CD 04F5               	CALL FindNextStatement	
+  03EC    E3                    	XTHL	
+  03ED    E5                    	PUSH H	
+  03EE    2A 0161               	LHLD CURRENT_LINE	
+  03F1    E3                    	XTHL	
+  03F2    CF                    	RST 01	; SyntaxCheck; SyntaxCheck	
+  03F3    95                    	DB 95h	;KWID_TO	
+  03F4    CD 068A               	CALL EvalExpression	
+  03F7    E5                    	PUSH H	
+  03F8    CD 0A1D               	CALL FCopyToBCDE	
+  03FB    E1                    	POP H	
+  03FC    C5                    	PUSH B	
+  03FD    D5                    	PUSH D	
+  03FE    01 8100               	LXI B,8100h	
+  0401    51                    	MOV D,C	
+  0402    5A                    	MOV E,D	
+  0403    7E                    	MOV A,M	
+  0404    FE 97                 	CPI 97h	;KWID_STEP	
+  0406    3E 01                 	MVI A,01h	
+  0408    C2 0414               	JNZ PushStepValue	
+  040B    CD 068B               	CALL EvalExpression+1	
+  040E    E5                    	PUSH H	
+  040F    CD 0A1D               	CALL FCopyToBCDE	
+  0412    EF                    	RST 05	; FTestSign	
+  0413    E1                    	POP H	
+  0414                          PushStepValue:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+
+
+  0414    C5                    	PUSH B	
+  0415    D5                    	PUSH D	
+  0416    F5                    	PUSH PSW	
+  0417    33                    	INX SP	
+  0418    E5                    	PUSH H	
+  0419    2A 015D               	LHLD PROG_PTR_TEMP	
+  041C    E3                    	XTHL	
+  041D                          EndOfForHandler:
+  041D    06 81                 	MVI B,81h	
+  041F    C5                    	PUSH B	
+  0420    33                    	INX SP	
+  0421                          ExecNext:
+  0421    CD 0473               	CALL TestBreakKey	
+  0424    7E                    	MOV A,M	
+  0425    FE 3A                 	CPI ':'	
+  0427    CA 043E               	JZ Exec	
+  042A    B7                    	ORA A	
+  042B    C2 01D0               	JNZ SyntaxError	
+  042E    23                    	INX H	
+  042F    7E                    	MOV A,M	
+  0430    23                    	INX H	
+  0431    B6                    	ORA M	
+  0432    23                    	INX H	
+  0433    CA 01F9               	JZ Main	
+  0436    5E                    	MOV E,M	
+  0437    23                    	INX H	
+  0438    56                    	MOV D,M	
+  0439    EB                    	XCHG	
+  043A    22 0161               	SHLD CURRENT_LINE	
+  043D    EB                    	XCHG	
+  043E    D7                    Exec:	RST 02	;RST NextChar	
+  043F    11 0421               	LXI D,ExecNext	
+  0442    D5                    	PUSH D	
+  0443    C8                    	RZ	
+  0444    D6 80                 	SUI 80h	
+  0446    DA 0502               	JC Let	
+  0449    FE 14                 	CPI 14h	
+  044B    D2 01D0               TrapTk: JNC SyntaxError	
+  044E    07                    	RLC	;BC = A*2
+  044F    4F                    	MOV C,A	
+  0450    06 00                 	MVI B,00h	
+  0452    EB                    	XCHG	
+  0453    21 00D2               	LXI H,KW_GENERAL_FNS	
+  0456    09                    	DAD B	
+  0457    4E                    	MOV C,M	
+  0458    23                    	INX H	
+  0459    46                    	MOV B,M	
+  045A    C5                    	PUSH B	
+  045B    EB                    	XCHG	
+  045C    D7                    	RST 02	;RST NextChar	
+  045D    C9                    	RET	
+  045E                          NextChar_tail:
+  045E    FE 20                 	CPI ' '	
+  0460    CA 0010               	JZ NextChar	
+  0463    FE 30                 	CPI '0'	
+  0465    3F                    	CMC	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+
+
+  0466    3C                    	INR A	
+  0467    3D                    	DCR A	
+  0468    C9                    	RET	
+  0469                          Restore:
+  0469    EB                    	XCHG	
+  046A    2A 0165               	LHLD PROGRAM_BASE	
+  046D    2B                    	DCX H	
+  046E    22 016D               L046E:	SHLD DATA_PROG_PTR	
+  0471    EB                    	XCHG	
+  0472    C9                    	RET	
+  0473                          TestBreakKey:
+  0473    DB 00                 	IN 00	;Exit if no key pressed.
+  0475    E6 01                 	ANI 01	;
+  0477    C0                    	RNZ	;
+  0478    CD 0382               	CALL InputChar	;
+  047B    FE 03                 	CPI 03h	;Break key?
+  047D    C3 01F7               	JMP Stop	
+  0480                          CharIsAlpha:
+  0480    7E                    	MOV A,M	
+  0481    FE 41                 	CPI 'A'	
+  0483    D8                    	RC	
+  0484    FE 5B                 	CPI 'Z'+1	
+  0486    3F                    	CMC	
+  0487    C9                    	RET	
+  0488                          GetSubscript:
+  0488    D7                    	RST 02	;RST NextChar	
+  0489    CD 068A               	CALL EvalExpression	
+  048C    EF                    	RST 05	; FTestSign	
+  048D    FA 0498               	JM FunctionCallError	
+  0490    3A 0172               	LDA FACCUM+3	
+  0493    FE 90                 	CPI 90h	
+  0495    DA 0A77               	JC FAsInteger	
+  0498                          FunctionCallError:
+  0498    1E 08                 	MVI E,08h	
+  049A    C3 01D5               	JMP Error	
+  049D                          LineNumberFromStr:
+  049D    2B                    	DCX H	
+  049E    11 0000               	LXI D,0000	
+  04A1                          NextLineNumChar:
+  04A1    D7                    	RST 02	;RST NextChar	
+  04A2    D0                    	RNC	
+  04A3    E5                    	PUSH H	
+  04A4    F5                    	PUSH PSW	;Preserve flags
+  04A5    21 1998               	LXI H,1998h	;Decimal 6552
+  04A8    E7                    	RST 4	
+  04A9    DA 01D0               	JC SyntaxError	
+  04AC    62                    	MOV H,D	
+  04AD    6B                    	MOV L,E	
+  04AE    19                    	DAD D	
+  04AF    29                    	DAD H	
+  04B0    19                    	DAD D	
+  04B1    29                    	DAD H	
+  04B2    F1                    	POP PSW	
+  04B3    D6 30                 	SUI '0'	
+  04B5    5F                    	MOV E,A	
+  04B6    16 00                 	MVI D,00h	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+
+
+  04B8    19                    	DAD D	
+  04B9    EB                    	XCHG	
+  04BA    E1                    	POP H	
+  04BB    C3 04A1               	JMP NextLineNumChar	
+  04BE                          Gosub:
+  04BE    0E 03                 	MVI C,03h	
+  04C0    CD 01B6               	CALL CheckEnoughVarSpace	
+  04C3    C1                    	POP B	
+  04C4    E5                    	PUSH H	
+  04C5    E5                    	PUSH H	
+  04C6    2A 0161               	LHLD CURRENT_LINE	
+  04C9    E3                    	XTHL	
+  04CA    16 8C                 	MVI D,8Ch	
+  04CC    D5                    	PUSH D	
+  04CD    33                    	INX SP	
+  04CE    C5                    	PUSH B	
+  04CF                          Goto:
+  04CF    CD 049D               	CALL LineNumberFromStr	
+  04D2    C0                    	RNZ	
+  04D3    CD 027D               	CALL FindProgramLine	
+  04D6    60                    	MOV H,B	
+  04D7    69                    	MOV L,C	
+  04D8    2B                    	DCX H	
+  04D9    D8                    	RC	
+  04DA    1E 0E                 	MVI E,0Eh	
+  04DC    C3 01D5               	JMP Error	
+  04DF                          Return:
+  04DF    C0                    	RNZ	
+  04E0    16 FF                 	MVI D,0FFh	
+  04E2    CD 0192               	CALL GetFlowPtr	
+  04E5    F9                    	SPHL	
+  04E6    FE 8C                 	CPI 8Ch	
+  04E8    1E 04                 	MVI E,04h	
+  04EA    C2 01D5               	JNZ Error	
+  04ED    E1                    	POP H	
+  04EE    22 0161               	SHLD CURRENT_LINE	
+  04F1    21 0421               	LXI H,ExecNext	
+  04F4    E3                    	XTHL	
+  04F5                          FindNextStatement:
+  04F5    01 3A                 	DB 01,3Ah ;LXI B,..3A	
+  04F7                          Rem:
+  04F7    10                    	DB 10h	
+  04F8    00                    	NOP	
+  04F9                          FindNxtStatementLoop:
+  04F9    7E                    	MOV A,M	
+  04FA    B7                    	ORA A	
+  04FB    C8                    	RZ	
+  04FC    B9                    	CMP C	
+  04FD    C8                    	RZ	
+  04FE    23                    	INX H	
+  04FF    C3 04F9               	JMP FindNxtStatementLoop	
+  0502                          Let:
+  0502    CD 071B               	CALL GetVar	
+  0505    CF                    	RST 01	; SyntaxCheck	
+  0506    9D                    	DB 9Dh	
+  0507                          AssignVar:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+
+
+  0507    D5                    	PUSH D	
+  0508    CD 068A               	CALL EvalExpression	
+  050B    E3                    	XTHL	
+  050C    22 015D               	SHLD PROG_PTR_TEMP	
+  050F    E5                    	PUSH H	
+  0510    CD 0A29               	CALL FCopyToMem	
+  0513    D1                    	POP D	
+  0514    E1                    	POP H	
+  0515    C9                    	RET	
+  0516                          If:
+  0516    CD 068A               	CALL EvalExpression	
+  0519    7E                    	MOV A,M	
+  051A    CD 0A02               	CALL FPush	
+  051D    16 00                 	MVI D,00	
+  051F                          GetCompareOpLoop:
+  051F    D6 9C                 	SUI 9Ch	; KWID_>	
+  0521    DA 0532               	JC GotCompareOp	
+  0524    FE 03                 	CPI 03h	
+  0526    D2 0532               	JNC GotCompareOp	
+  0529    FE 01                 	CPI 01h
+  052B    17                    	RAL	
+  052C    B2                    	ORA D	
+  052D    57                    	MOV D,A	
+  052E    D7                    	RST 02	;RST NextChar	
+  052F    C3 051F               	JMP GetCompareOpLoop	
+  0532                          GotCompareOp:
+  0532    7A                    	MOV A,D	
+  0533    B7                    	ORA A	
+  0534    CA 01D0               	JZ SyntaxError	
+  0537    F5                    	PUSH PSW	
+  0538    CD 068A               	CALL EvalExpression	
+  053B    CF                    	RST 01	; SyntaxCheck	
+  053C    96                    	DB 96h	;KWID_THEN	
+  053D    2B                    	DCX H	
+  053E    F1                    	POP PSW	
+  053F    C1                    	POP B	
+  0540    D1                    	POP D	
+  0541    E5                    	PUSH H	
+  0542    F5                    	PUSH PSW	
+  0543    CD 0A4C               	CALL FCompare	
+  0546    3C                    	INR A	
+  0547    17                    	RAL	
+  0548    C1                    	POP B	
+  0549    A0                    	ANA B	
+  054A    E1                    	POP H	
+  054B    CA 04F7               	JZ Rem	
+  054E    D7                    	RST 02	;RST NextChar	
+  054F    DA 04CF               	JC Goto	
+  0552    C3 0443               	JMP Exec+5	
+  0555    2B                    	DCX H	
+  0556    D7                    	RST 02	;RST NextChar	
+  0557                          Print:
+  0557    CA 058A               	JZ NewLine	
+  055A    C8                    	RZ	
+  055B    FE 22                 	CPI '"'	
+  055D    CC 05A2               	CZ PrintString-1	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+
+
+  0560    CA 0555               	JZ Print-2	
+  0563    FE 94                 	CPI 94h	;KWID_TAB	 
+  0565    CA 05C7               	JZ Tab	
+  0568    E5                    	PUSH H	
+  0569    FE 2C                 	CPI ','	
+  056B    CA 05B3               	JZ ToNextTabBreak	
+  056E    FE 3B                 	CPI ';'	
+  0570    CA 05DF               	JZ ExitTab	
+  0573    C1                    	POP B	
+  0574    CD 068A               	CALL EvalExpression	
+  0577    E5                    	PUSH H	
+  0578    CD 0B42               	CALL FOut	
+  057B    CD 05A3               	CALL PrintString	
+  057E    3E 20                 	MVI A,' '	
+  0580    DF                    	RST 03	;RST OutChar	
+  0581    E1                    	POP H	
+  0582    C3 0555               	JMP Print-2	
+  0585                          TerminateInput:
+  0585    36 00                 	MVI M,00h	
+  0587    21 0112               	LXI H,LINE_BUFFER-1	
+  058A                          NewLine:
+  058A    3E 0D                 	MVI A,0Dh	
+  058C    32 0027               	STA TERMINAL_X	
+  058F    DF                    	RST 03	;RST OutChar	
+  0590    3E 0A                 	MVI A,0Ah	
+  0592    DF                    	RST 03	;RST OutChar	
+  0593    3A 0026               	LDA TERMINAL_Y	
+  0596                          PrintNullLoop:
+  0596    3D                    	DCR A	
+  0597    32 0027               	STA TERMINAL_X	
+  059A    C8                    	RZ	
+  059B    F5                    	PUSH PSW	
+  059C    AF                    	XRA A	
+  059D    DF                    	RST 03	;RST OutChar	
+  059E    F1                    	POP PSW	
+  059F    C3 0596               	JMP PrintNullLoop	
+  05A2    23                    	INX H	
+  05A3                          PrintString:
+  05A3    7E                    	MOV A,M	
+  05A4    B7                    	ORA A	
+  05A5    C8                    	RZ	
+  05A6    23                    	INX H	
+  05A7    FE 22                 	CPI '"'	
+  05A9    C8                    	RZ	
+  05AA    DF                    	RST 03	;RST OutChar	
+  05AB    FE 0D                 	CPI 0Dh
+  05AD    CC 058A               	CZ NewLine	
+  05B0    C3 05A3               	JMP PrintString	
+  05B3                          ToNextTabBreak:
+  05B3    3A 0027               	LDA TERMINAL_X	
+  05B6    FE 38                 	CPI 38h
+  05B8    D4 058A               	CNC NewLine	
+  05BB    D2 05DF               	JNC ExitTab	
+  05BE                          CalcSpaceCount:
+  05BE    D6 0E                 	SUI 0Eh	
+  05C0    D2 05BE               	JNC CalcSpaceCount	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+
+
+  05C3    2F                    	CMA	
+  05C4    C3 05D6               	JMP PrintSpaces	
+  05C7                          Tab:
+  05C7    CD 0488               	CALL GetSubscript	
+  05CA    CF                    	RST 01	; SyntaxCheck	
+  05CB    29                    	DB 29h	;')'	
+  05CC    2B                    	DCX H	
+  05CD    E5                    	PUSH H	
+  05CE    3A 0027               	LDA TERMINAL_X	
+  05D1    2F                    	CMA	
+  05D2    83                    	ADD E	
+  05D3    D2 05DF               	JNC ExitTab	
+  05D6    3C                    PrintSpaces:	INR A	
+  05D7    47                    	MOV B,A	
+  05D8    3E 20                 	MVI A,' '	
+  05DA                          PrintSpaceLoop:
+  05DA    DF                    	RST 03	;RST OutChar	
+  05DB    05                    	DCR B	
+  05DC    C2 05DA               	JNZ PrintSpaceLoop	
+  05DF                          ExitTab:
+  05DF    E1                    	POP H	
+  05E0    D7                    	RST 02	;RST NextChar	
+  05E1    C3 055A               	JMP Print+3	
+  05E4                          Input:
+  05E4    E5                    	PUSH H	
+  05E5    2A 0161               	LHLD CURRENT_LINE	
+  05E8    1E 16                 	MVI E,16h	
+  05EA    23                    	INX H	
+  05EB    7D                    	MOV A,L	
+  05EC    B4                    	ORA H	
+  05ED    CA 01D5               	JZ Error	
+  05F0    CD 02C2               	CALL InputLineWith	
+  05F3    C3 05FB               	JMP L05FA+1	
+  05F6                          Read:
+  05F6    E5                    	PUSH H	
+  05F7    2A 016D               	LHLD DATA_PROG_PTR	
+  05FA                          L05FA:
+  05FA    F6 AF                 	ORI 0AFh
+                                	;XRA A	
+  05FC    32 015C               	STA INPUT_OR_READ	
+  05FF    E3                    	XTHL	
+  0600    01                    	DB 01	;LXI B,....	
+  0601                          ReadNext:
+  0601    CF                    	RST 01	; SyntaxCheck	
+  0602    2C                    	DB 2Ch	;','	
+  0603    CD 071B               	CALL GetVar	
+  0606    E3                    	XTHL	
+  0607    D5                    	PUSH D	
+  0608    7E                    	MOV A,M	
+  0609    FE 2C                 	CPI ','	
+  060B    CA 0620               	JZ GotDataItem	
+  060E    B7                    	ORA A
+  060F    C2 01D0               	JNZ SyntaxError	
+  0612    3A 015C               	LDA INPUT_OR_READ	
+  0615    B7                    	ORA A	
+  0616    23                    	INX H	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-18
+
+
+  0617    C2 0636               	JNZ NextDataLine+1	
+  061A    3E 3F                 	MVI A,'?'	
+  061C    DF                    	RST 03	;RST OutChar	
+  061D    CD 02C2               	CALL InputLineWith	
+  0620                          GotDataItem:
+  0620    D1                    	POP D	
+  0621    23                    	INX H	
+  0622    CD 0507               	CALL AssignVar	
+  0625    E3                    	XTHL	
+  0626    2B                    	DCX H	
+  0627    D7                    	RST 02	;RST NextChar	
+  0628    C2 0601               	JNZ ReadNext	
+  062B    D1                    	POP D	
+  062C    3A 015C               	LDA INPUT_OR_READ	
+  062F    B7                    	ORA A	
+  0630    C8                    	RZ	
+  0631    EB                    	XCHG	
+  0632    C2 046E               	JNZ L046E	
+  0635                          NextDataLine:
+  0635    E1                    	POP H	
+  0636    F7                    	RST 6	
+  0637    79                    	MOV A,C	
+  0638    B0                    	ORA B	
+  0639    1E 06                 	MVI E,06h	
+  063B    CA 01D5               	JZ Error	
+  063E    23                    	INX H	
+  063F    D7                    	RST 02	;RST NextChar	
+  0640    FE 83                 	CPI 83h	;KWID_DATA	 
+  0642    C2 0635               	JNZ NextDataLine	
+  0645    C1                    	POP B	
+  0646    C3 0620               	JMP GotDataItem	
+  0649                          Next:
+  0649    CD 071B               	CALL GetVar	
+  064C    22 015D               	SHLD PROG_PTR_TEMP	
+  064F    CD 0192               	CALL GetFlowPtr	
+  0652    F9                    	SPHL	
+  0653    D5                    	PUSH D	
+  0654    7E                    	MOV A,M	
+  0655    23                    	INX H	
+  0656    F5                    	PUSH PSW	
+  0657    D5                    	PUSH D	
+  0658    1E 00                 	MVI E,00h	
+  065A    C2 01D5               	JNZ Error	
+  065D    CD 0A0F               	CALL FLoadFromMem	
+  0660    E3                    	XTHL	
+  0661    E5                    	PUSH H	
+  0662    CD 0804               	CALL FAddMem	
+  0665    E1                    	POP H	
+  0666    CD 0A29               	CALL FCopyToMem	
+  0669    E1                    	POP H	
+  066A    CD 0A20               	CALL FLoadBCDEfromMem	
+  066D    E5                    	PUSH H	
+  066E    CD 0A4C               	CALL FCompare	
+  0671    E1                    	POP H	
+  0672    C1                    	POP B	
+  0673    90                    	SUB B	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-19
+
+
+  0674    CD 0A20               	CALL FLoadBCDEfromMem	
+  0677    CA 0683               	JZ ForLoopIsComplete	
+  067A    EB                    	XCHG	
+  067B    22 0161               	SHLD CURRENT_LINE	
+  067E    69                    	MOV L,C	
+  067F    60                    	MOV H,B	
+  0680    C3 041D               	JMP EndOfForHandler	
+  0683                          ForLoopIsComplete:
+  0683    F9                    	SPHL	
+  0684    2A 015D               	LHLD PROG_PTR_TEMP	
+  0687    C3 0421               	JMP ExecNext	
+  068A                          EvalExpression:
+  068A    2B                    	DCX H	
+  068B    16 00                 	MVI D,00h	
+  068D    D5                    	PUSH D	
+  068E    0E 01                 	MVI C,01h	
+  0690    CD 01B6               	CALL CheckEnoughVarSpace	
+  0693    CD 06C4               	CALL EvalTerm	
+  0696    22 015F               	SHLD L015F	
+  0699                          ArithParse:
+  0699    2A 015F               	LHLD L015F	
+  069C    C1                    	POP B	
+  069D    7E                    	MOV A,M	
+  069E    16 00                 	MVI D,00h	
+  06A0    D6 98                 	SUI 98h	;KWID_PLUS	
+  06A2    D8                    	RC	
+  06A3    FE 04                 	CPI 04h
+  06A5    D0                    	RNC	
+  06A6    5F                    	MOV E,A	
+  06A7    07                    	RLC	
+  06A8    83                    	ADD E	
+  06A9    5F                    	MOV E,A	
+  06AA    21 004B               	LXI H,KW_ARITH_OP_FNS	
+  06AD    19                    	DAD D	
+  06AE    78                    	MOV A,B	
+  06AF    56                    	MOV D,M	
+  06B0    BA                    	CMP D	
+  06B1    D0                    	RNC	
+  06B2    23                    	INX H	
+  06B3    C5                    	PUSH B	
+  06B4    01 0699               	LXI B,ArithParse	
+  06B7    C5                    	PUSH B	
+  06B8    4A                    	MOV C,D	;???
+  06B9    CD 0A02               	CALL FPush	
+  06BC    51                    	MOV D,C	
+  06BD    F7                    	RST 6	
+  06BE    2A 015F               	LHLD L015F	
+  06C1    C3 068D               	JMP EvalExpression+3	
+  06C4                          EvalTerm:
+  06C4    D7                    	RST 02	;RST NextChar	
+  06C5    DA 0AB3               	JC FIn	
+  06C8    CD 0480               	CALL CharIsAlpha	
+  06CB    D2 06F3               	JNC EvalVarTerm	
+  06CE    FE 98                 	CPI 98h	;KWID_PLUS	
+  06D0    CA 06C4               	JZ EvalTerm	
+  06D3    FE 2E                 	CPI '.'	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-20
+
+
+  06D5    CA 0AB3               	JZ FIn	
+  06D8    FE 99                 	CPI 99h	;KWID_MINUS	
+  06DA    CA 06EA               	JZ EvalMinusTerm	
+  06DD    D6 9F                 	SUI 9Fh	
+  06DF    D2 06FD               	JNC EvalInlineFn	
+  06E2                          EvalBracketed:
+  06E2    CF                    	RST 01	; SyntaxCheck	
+  06E3    28                    	DB 28h	;'('	
+  06E4    CD 068A               	CALL EvalExpression	
+  06E7    CF                    	RST 01	; SyntaxCheck	
+  06E8    29                    	DB 29h	;')'	
+  06E9    C9                    	RET	
+  06EA                          EvalMinusTerm:
+  06EA    CD 06C4               	CALL EvalTerm	
+  06ED    E5                    	PUSH H	
+  06EE    CD 09FA               	CALL FNegate	
+  06F1    E1                    	POP H	
+  06F2    C9                    	RET	
+  06F3                          EvalVarTerm:
+  06F3    CD 071B               	CALL GetVar	
+  06F6    E5                    	PUSH H	
+  06F7    EB                    	XCHG	
+  06F8    CD 0A0F               	CALL FLoadFromMem	
+  06FB    E1                    	POP H	
+  06FC    C9                    	RET	
+  06FD                          EvalInlineFn:
+  06FD    06 00                 	MVI B,00h	
+  06FF    07                    	RLC	
+  0700    4F                    	MOV C,A	
+  0701    C5                    	PUSH B	
+  0702    D7                    	RST 02	;RST NextChar	
+  0703    CD 06E2               	CALL EvalBracketed	
+  0706    E3                    	XTHL	
+  0707    11 06F1               	LXI D,06F1h	
+  070A    D5                    	PUSH D	
+  070B    01 003D               	LXI B,KW_INLINE_FNS	
+  070E    09                    	DAD B	
+  070F    F7                    	RST 6	
+  0710    C9                    	RET	
+  0711                          DimContd:
+  0711    2B                    	DCX H	
+  0712    D7                    	RST 02	;RST NextChar	
+  0713    C8                    	RZ	
+  0714    CF                    	RST 01	; SyntaxCheck	
+  0715    2C                    	DB 2Ch	;','	
+  0716                          Dim:
+  0716    01 0711               	LXI B,DimContd	
+  0719    C5                    	PUSH B	
+  071A    F6                    	DB 0F6h	
+  071B                          GetVar:
+  071B    AF                    	XRA A	
+  071C    32 015B               	STA DIM_OR_EVAL	
+  071F    46                    	MOV B,M	
+  0720    CD 0480               	CALL CharIsAlpha	
+  0723    DA 01D0               	JC SyntaxError	
+  0726    AF                    	XRA A	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-21
+
+
+  0727    4F                    	MOV C,A	
+  0728    D7                    	RST 02	;RST NextChar	
+  0729    D2 072E               	JNC 072Eh	
+  072C    4F                    	MOV C,A	
+  072D    D7                    	RST 02	;RST NextChar	
+  072E    D6 28                 	SUI '('	
+  0730    CA 078A               	JZ GetArrayVar	
+  0733    E5                    	PUSH H	
+  0734    2A 0169               	LHLD VAR_ARRAY_BASE	
+  0737    EB                    	XCHG	
+  0738    2A 0167               	LHLD VAR_BASE	
+  073B                          FindVarLoop:
+  073B    E7                    	RST 4	
+  073C    CA 0752               	JZ AllocNewVar	
+  073F    79                    	MOV A,C	
+  0740    96                    	SUB M	
+  0741    23                    	INX H	
+  0742    C2 0747               	JNZ L0747	
+  0745    78                    	MOV A,B	
+  0746    96                    	SUB M	
+  0747    23                    L0747:	INX H	
+  0748    CA 0782               	JZ L0782	
+  074B    23                    	INX H	
+  074C    23                    	INX H	
+  074D    23                    	INX H	
+  074E    23                    	INX H	
+  074F    C3 073B               	JMP FindVarLoop	
+  0752                          AllocNewVar:
+  0752    E1                    	POP H	;HL=prog ptr
+  0753    E3                    	XTHL	;(SP)=prog ptr, HL=ret.addr.
+  0754    D5                    	PUSH D	;
+  0755    11 06F6               	LXI D,06F6h	;an address inside EvalTerm
+  0758    E7                    	RST 4	;
+  0759    D1                    	POP D	;
+  075A    CA 0785               	JZ AlreadyAllocd	;
+  075D    E3                    	XTHL	;(SP)=ret.addr, HL=prog ptr.
+  075E    E5                    	PUSH H	;Prog ptr back on stack
+  075F    C5                    	PUSH B	;Preserve var name on stack
+  0760    01 0006               	LXI B,0006h	
+  0763    2A 016B               	LHLD VAR_TOP	
+  0766    E5                    	PUSH H	
+  0767    09                    	DAD B	
+  0768    C1                    	POP B	
+  0769    E5                    	PUSH H	
+  076A    CD 01A7               	CALL CopyMemoryUp	
+  076D    E1                    	POP H	
+  076E    22 016B               	SHLD VAR_TOP	
+  0771    60                    	MOV H,B	
+  0772    69                    	MOV L,C	
+  0773    22 0169               	SHLD VAR_ARRAY_BASE	
+  0776                          InitVarLoop:
+  0776    2B                    	DCX H	
+  0777    36 00                 	MVI M,00h	
+  0779    E7                    	RST 4	
+  077A    C2 0776               	JNZ InitVarLoop	
+  077D    D1                    	POP D	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-22
+
+
+  077E    73                    	MOV M,E	
+  077F    23                    	INX H	
+  0780    72                    	MOV M,D	
+  0781    23                    	INX H	
+  0782    EB                    L0782:	XCHG	
+  0783    E1                    	POP H	
+  0784    C9                    	RET	
+  0785                          AlreadyAllocd:
+  0785    32 0172               	STA FACCUM+3	;A was set to zero at 075A.
+  0788    E1                    	POP H	
+  0789    C9                    	RET	
+  078A                          GetArrayVar:
+  078A    C5                    	PUSH B	
+  078B    3A 015B               	LDA DIM_OR_EVAL	
+  078E    F5                    	PUSH PSW	
+  078F    CD 0488               	CALL GetSubscript	
+  0792    CF                    	RST 01	; SyntaxCheck	
+  0793    29                    	DB 29h	;')'	
+  0794    F1                    	POP PSW	
+  0795    32 015B               	STA DIM_OR_EVAL	
+  0798    E3                    	XTHL	
+  0799    EB                    	XCHG	
+  079A    29                    	DAD H	
+  079B    29                    	DAD H	
+  079C    E5                    	PUSH H	
+  079D    2A 0169               	LHLD VAR_ARRAY_BASE	
+  07A0    01                    	DB 01h	;LXI B,....	
+  07A1                          FindArray:
+  07A1    C1                    	POP B	
+  07A2    09                    	DAD B	
+  07A3    EB                    	XCHG	
+  07A4    E5                    	PUSH H	
+  07A5    2A 016B               	LHLD VAR_TOP	
+  07A8    E7                    	RST 4	
+  07A9    EB                    	XCHG	
+  07AA    D1                    	POP D	
+  07AB    CA 07CD               	JZ AllocArray	
+  07AE    F7                    	RST 6	
+  07AF    E3                    	XTHL	
+  07B0    E7                    	RST 4	
+  07B1    E1                    	POP H	
+  07B2    F7                    	RST 6	
+  07B3    C2 07A1               	JNZ FindArray	
+  07B6    3A 015B               	LDA DIM_OR_EVAL	
+  07B9    B7                    	ORA A	
+  07BA    1E 12                 	MVI E,12h	
+  07BC    C2 01D5               	JNZ Error	
+  07BF    D1                    L07BF:	POP D	
+  07C0    1B                    	DCX D	
+  07C1    E3                    	XTHL	
+  07C2    E7                    	RST 4	
+  07C3    1E 10                 	MVI E,10h	
+  07C5    D2 01D5               	JNC Error	
+  07C8    D1                    	POP D	
+  07C9    19                    	DAD D	
+  07CA    D1                    	POP D	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-23
+
+
+  07CB    EB                    	XCHG	
+  07CC    C9                    	RET	
+  07CD                          AllocArray:
+  07CD    73                    	MOV M,E	
+  07CE    23                    	INX H	
+  07CF    72                    	MOV M,D	
+  07D0    23                    	INX H	
+  07D1    11 002C               	LXI D,002Ch	
+  07D4    3A 015B               	LDA DIM_OR_EVAL	
+  07D7    B7                    	ORA A	
+  07D8    CA 07E1               	JZ L07E1
+  07DB    D1                    	POP D	
+  07DC    D5                    	PUSH D	
+  07DD    13                    	INX D	
+  07DE    13                    	INX D	
+  07DF    13                    	INX D	
+  07E0    13                    	INX D	
+  07E1    D5                    L07E1:	PUSH D	
+  07E2    73                    	MOV M,E	
+  07E3    23                    	INX H	
+  07E4    72                    	MOV M,D	
+  07E5    23                    	INX H	
+  07E6    E5                    	PUSH H	
+  07E7    19                    	DAD D	
+  07E8    CD 01C3               	CALL CheckEnoughMem	
+  07EB    22 016B               	SHLD VAR_TOP	
+  07EE    D1                    	POP D	
+  07EF                          InitElements:
+  07EF    2B                    	DCX H	
+  07F0    36 00                 	MVI M,00h	
+  07F2    E7                    	RST 4	
+  07F3    C2 07EF               	JNZ InitElements	
+  07F6    C3 07BF               	JMP L07BF	
+  07F9                          FWordToFloat:
+  07F9    50                    	MOV D,B	
+  07FA    1E 00                 	MVI E,00h	
+  07FC    06 90                 	MVI B,90h	;exponent=2^16
+  07FE    C3 09EA               	JMP FCharToFloat+5	;
+  0801                          FAddOneHalf:
+  0801    21 0C0B               	LXI H,ONE_HALF	;Load BCDE with (float) 0.5.
+  0804                          FAddMem:
+  0804    CD 0A20               	CALL FLoadBCDEfromMem	
+  0807    C3 0812               	JMP FAdd+2	
+  080A                          FSub:
+  080A    C1                    	POP B	;Get lhs in BCDE.
+  080B    D1                    	POP D	;
+  080C    CD 09FA               	CALL FNegate	;Negate rhs and slimily
+  080F    21                    	DB 21h	;LXI H,....	;LXI into FAdd + 2.
+  0810                          FAdd:
+  0810    C1                    	POP B	;Get lhs in BCDE.
+  0811    D1                    	POP D	;
+  0812    78                    	MOV A,B	;If lhs==0 then we don't need
+  0813    B7                    	ORA A	;to do anything and can just
+  0814    C8                    	RZ	;exit.
+  0815    3A 0172               	LDA FACCUM+3	;If rhs==0 then exit via a copy
+  0818    B7                    	ORA A	;of lhs to FACCUM.
+	MACRO-80 3.44	09-Dec-81	PAGE	1-24
+
+
+  0819    CA 0A12               	JZ FLoadFromBCDE	;
+  081C    90                    	SUB B	;A=rhs.exponent-lhs.exponent.
+  081D    D2 082C               	JNC L082C	;If rhs' exponent >= lhs'exponent, jump ahead.
+  0820    2F                    	CMA	;Two's complement the exponent
+  0821    3C                    	INR A	;difference, so it's correct.
+  0822    EB                    	XCHG	;
+  0823    CD 0A02               	CALL FPush	;Push old rhs
+  0826    EB                    	XCHG	;
+  0827    CD 0A12               	CALL FLoadFromBCDE	;rhs = old lhs
+  082A    C1                    	POP B	;lhs = old rhs.
+  082B    D1                    	POP D	;
+  082C    F5                    L082C:	PUSH PSW	;Preserve exponent diff
+  082D    CD 0A37               	CALL FUnpackMantissas	
+  0830    67                    	MOV H,A	;H=sign relationship
+  0831    F1                    	POP PSW	;A=exponent diff.
+  0832    CD 08C9               	CALL FMantissaRtMult	;Shift lhs mantissa right by (exponent diff) places.
+  0835    B4                    	ORA H	;A=0 after last call, so this tests
+  0836    21 016F               	LXI H,FACCUM	;the sign relationship.
+  0839    F2 084D               	JP FSubMantissas	;Jump ahead if we need to subtract.
+  083C    CD 08A9               	CALL FAddMantissas	;
+  083F    D2 087E               	JNC FRoundUp	;Jump ahead if that didn't overflow.
+  0842    23                    	INX H	;Flip the sign in FTEMP_SIGN.
+  0843    34                    	INR M	; 
+  0844    CA 08A4               	JZ Overflow	;Error out if exponent overflowed.
+  0847    CD 08D6               	CALL FMantissaRtOnce;Shift mantissa one place right
+  084A    C3 087E               	JMP FRoundUp	;Jump ahead.
+  084D                          FSubMantissas:
+  084D    AF                    	XRA A	;B=0-B
+  084E    90                    	SUB B	;
+  084F    47                    	MOV B,A	;
+  0850    7E                    	MOV A,M	;E=(FACCUM)-E
+  0851    9B                    	SBB E	;
+  0852    5F                    	MOV E,A	;
+  0853    23                    	INX H	;
+  0854    7E                    	MOV A,M	;D=(FACCUM+1)-D
+  0855    9A                    	SBB D	
+  0856    57                    	MOV D,A	
+  0857    23                    	INX H	
+  0858    7E                    	MOV A,M	;C=(FACCUM+2)-C
+  0859    99                    	SBB C	;
+  085A    4F                    	MOV C,A	;
+  085B                          FNormalise:
+  085B    DC 08B5               	CC FNegateInt	; 
+  085E    26 00                  	MVI H,00h	;
+  0860    79                    	MOV A,C	;Test most-significant bit of mantissa
+  0861    B7                    	ORA A	;and jump ahead if it's 1.
+  0862    FA 087E               	JM FRoundUp	;
+  0865                          NormLoop:
+  0865    FE E0                 	CPI 0E0h	;If we've shifted 32 times,
+  0867    CA 09BE               	JZ FZero	;then the number is 0.
+  086A    25                    	DCR H	;
+  086B    78                    	MOV A,B	;Left-shift extra mantissa byte
+  086C    87                    	ADD A	; 
+  086D    47                    	MOV B,A	; 
+  086E    CD 0890               	CALL FMantissaLeft	;Left-shift mantissa.
+  0871    7C                    	MOV A,H	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-25
+
+
+  0872    F2 0865               	JP NormLoop	;Loop
+  0875    21 0172               	LXI H,FACCUM+3	;
+  0878    86                    	ADD M	;
+  0879    77                    	MOV M,A	;Since A was a -ve number, that certainly should
+  087A    D2 09BE               	JNC FZero	;have carried, hence the extra check for zero.
+  087D    C8                    	RZ	;?why?
+  087E                          FRoundUp:
+  087E    78                    	MOV A,B	;A=extra mantissa byte
+  087F    21 0172               	LXI H,FACCUM+3	;
+  0882    B7                    	ORA A	;If bit 7 of the extra mantissa byte
+  0883    FC 089A               	CM FMantissaInc	;is set, then round up the mantissa.
+  0886    46                    	MOV B,M	;B=exponent
+  0887    23                    	INX H	;
+  0888    7E                    	MOV A,M	;A=FTEMP_SIGN
+  0889    E6 80                 	ANI 80h	;
+  088B    A9                    	XRA C	;Bit 7 of C is always 1. Thi
+  088C    4F                    	MOV C,A	;
+  088D    C3 0A12               	JMP FLoadFromBCDE	;Exit via copying BCDE to FACCUM.
+  0890                          FMantissaLeft:
+  0890    7B                    	MOV A,E	
+  0891    17                    	RAL	
+  0892    5F                    	MOV E,A	
+  0893    7A                    	MOV A,D	
+  0894    17                    	RAL	
+  0895    57                    	MOV D,A	
+  0896    79                    	MOV A,C	
+  0897    8F                    	ADC A	
+  0898    4F                    	MOV C,A	
+  0899    C9                    	RET	
+  089A                          FMantissaInc:
+  089A    1C                    	INR E	
+  089B    C0                    	RNZ	
+  089C    14                    	INR D	
+  089D    C0                    	RNZ	
+  089E    0C                    	INR C	
+  089F    C0                    	RNZ	
+  08A0    0E 80                 	MVI C,80h	;Mantissa overflowed to zero, so set it
+  08A2    34                    	INR M	;to 1 and increment the exponent.
+  08A3    C0                    	RNZ	;And if the exponent overflows...
+  08A4                          Overflow:
+  08A4    1E 0A                 	MVI E,0Ah	
+  08A6    C3 01D5               	JMP Error	
+  08A9                          FAddMantissas:
+  08A9    7E                    	MOV A,M	
+  08AA    83                    	ADD E	
+  08AB    5F                    	MOV E,A	
+  08AC    23                    	INX H	
+  08AD    7E                    	MOV A,M	
+  08AE    8A                    	ADC D	
+  08AF    57                    	MOV D,A	
+  08B0    23                    	INX H	
+  08B1    7E                    	MOV A,M	
+  08B2    89                    	ADC C	
+  08B3    4F                    	MOV C,A	
+  08B4    C9                    	RET	
+  08B5                          FNegateInt:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-26
+
+
+  08B5    21 0173               	LXI H,FTEMP	
+  08B8    7E                    	MOV A,M	
+  08B9    2F                    	CMA	
+  08BA    77                    	MOV M,A	
+  08BB    AF                    	XRA A	
+  08BC    6F                    	MOV L,A	
+  08BD    90                    	SUB B	
+  08BE    47                    	MOV B,A	
+  08BF    7D                    	MOV A,L	
+  08C0    9B                    	SBB E	
+  08C1    5F                    	MOV E,A	
+  08C2    7D                    	MOV A,L	
+  08C3    9A                    	SBB D	
+  08C4    57                    	MOV D,A	
+  08C5    7D                    	MOV A,L	
+  08C6    99                    	SBB C	
+  08C7    4F                    	MOV C,A	
+  08C8    C9                    	RET	
+  08C9                          FMantissaRtMult:
+  08C9    06 00                 	MVI B,00h	;Initialise extra mantissa byte
+  08CB    3C                    	INR A	
+  08CC    6F                    	MOV L,A	
+  08CD                          RtMultLoop:
+  08CD    AF                    	XRA A	
+  08CE    2D                    	DCR L	
+  08CF    C8                    	RZ	
+  08D0    CD 08D6               	CALL FMantissaRtOnce	
+  08D3    C3 08CD               	JMP RtMultLoop	
+  08D6                          FMantissaRtOnce:
+  08D6    79                    	MOV A,C	
+  08D7    1F                    	RAR	
+  08D8    4F                    	MOV C,A	
+  08D9    7A                    	MOV A,D	
+  08DA    1F                    	RAR	
+  08DB    57                    	MOV D,A	
+  08DC    7B                    	MOV A,E	
+  08DD    1F                    	RAR	
+  08DE    5F                    	MOV E,A	
+  08DF    78                    	MOV A,B	;NB: B is the extra
+  08E0    1F                    	RAR	;mantissa byte.
+  08E1    47                    	MOV B,A	;
+  08E2    C9                    	RET	;
+  08E3                          FMul:
+  08E3    C1                    	POP B	;Get lhs in BCDE
+  08E4    D1                    	POP D	;
+  08E5    EF                    	RST 05	; FTestSign	;If rhs==0 then exit
+  08E6    C8                    	RZ	;
+  08E7    2E 00                 	MVI L,00h	;L=0 to signify exponent add
+  08E9    CD 099B               	CALL FExponentAdd	
+  08EC    79                    	MOV A,C	
+  08ED    32 0917               	STA FMulInnerLoop+13	
+  08F0    EB                    	XCHG	
+  08F1    22 0912               	SHLD FMulInnerLoop+8	
+  08F4    01 0000               	LXI B,0000h	
+  08F7    50                    	MOV D,B	
+  08F8    58                    	MOV E,B	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-27
+
+
+  08F9    21 085E               	LXI H,FNormalise+3	
+  08FC    E5                    	PUSH H	
+  08FD    21 0905               	LXI H,FMulOuterLoop	
+  0900    E5                    	PUSH H	
+  0901    E5                    	PUSH H	
+  0902    21 016F               	LXI H,FACCUM	
+  0905                          FMulOuterLoop:
+  0905    7E                    	MOV A,M	;A=FACCUM mantissa byte
+  0906    23                    	INX H	;
+  0907    E5                    	PUSH H	;Preserve FACCUM ptr
+  0908    2E 08                 	MVI L,08h	;8 bits to do
+  090A                          FMulInnerLoop:
+  090A    1F                    	RAR	;Test lowest bit of mantissa byte
+  090B    67                    	MOV H,A	;Preserve mantissa byte
+  090C    79                    	MOV A,C	;A=result mantissa's high byte
+  090D    D2 0919               	JNC L0919	;If that bit of multiplicand was 0, then skip over adding mantissas.
+  0910    E5                    	PUSH H	;
+  0911    21 0000               	LXI H,0000h	;
+  0914    19                    	DAD D	;
+  0915    D1                    	POP D	;
+  0916    CE 00                 	ACI 00	;A=result mantissa high byte. This gets back to C
+  0918    EB                    	XCHG	;in the call to FMantissaRtOnce+1.
+  0919    CD 08D7               L0919:	CALL FMantissaRtOnce+1	
+  091C    2D                    	DCR L	
+  091D    7C                    	MOV A,H	;Restore mantissa byte and
+  091E    C2 090A               	JNZ FMulInnerLoop	;jump back if L is not yet 0.
+  0921                          PopHLandReturn:
+  0921    E1                    	POP H	;Restore FACCUM ptr
+  0922    C9                    	RET	;Return to FMulOuterLoop, or if finished that then exit to FNormalise
+  0923                          FDivByTen:
+  0923    CD 0A02               	CALL FPush	;
+  0926    01 8420               	LXI B,8420h	;BCDE=(float)10;
+  0929    11 0000               	LXI D,0000h	
+  092C    CD 0A12               	CALL FLoadFromBCDE	
+  092F                          FDiv:
+  092F    C1                    	POP B	 
+  0930    D1                    	POP D	
+  0931    EF                    	RST 05	; FTestSign	 
+  0932    CA 01D3               	JZ DivideByZero	
+  0935    2E FF                 	MVI L,0FFh	 
+  0937    CD 099B               	CALL FExponentAdd	
+  093A    34                    	INR M	 
+  093B    34                    	INR M	
+  093C    2B                    	DCX H	
+  093D    7E                    	MOV A,M	
+  093E    32 0960               	STA L095F+1	
+  0941    2B                    	DCX H	
+  0942    7E                    	MOV A,M	
+  0943    32 095C               	STA L095F-3	
+  0946    2B                    	DCX H	
+  0947    7E                    	MOV A,M	
+  0948    32 0958               	STA L095F-7	
+  094B    41                    	MOV B,C	
+  094C    EB                    	XCHG	
+  094D    AF                    	XRA A	
+  094E    4F                    	MOV C,A	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-28
+
+
+  094F    57                    	MOV D,A	
+  0950    5F                    	MOV E,A	
+  0951    32 0963               	STA L095F+4	
+  0954                          FDivLoop:
+  0954    E5                    	PUSH H	
+  0955    C5                    	PUSH B	
+  0956    7D                    	MOV A,L	
+  0957    D6 00                 	SUI 00h	
+  0959    6F                    	MOV L,A	
+  095A    7C                    	MOV A,H	
+  095B    DE 00                 	SBI 00	
+  095D    67                    	MOV H,A	
+  095E    78                    	MOV A,B	
+  095F    DE 00                 L095F:	SBI 00	
+  0961    47                    	MOV B,A	
+  0962    3E 00                 	MVI A,00h	
+  0964    DE 00                 	SBI 00	
+  0966    3F                    	CMC	
+  0967    D2 0971               	JNC L0971	
+  096A    32 0963               	STA L095F+4h	
+  096D    F1                    	POP PSW	
+  096E    F1                    	POP PSW	
+  096F    37                    	STC	
+  0970    D2                    	DB 0D2h	;JNC ....	
+  0971    C1                    L0971:	POP B	
+  0972    E1                    	POP H	
+  0973    79                    	MOV A,C	
+  0974    3C                    	INR A	
+  0975    3D                    	DCR A	
+  0976    1F                    	RAR	
+  0977    FA 087F               	JM FRoundUp+1	
+  097A    17                    	RAL	
+  097B    CD 0890               	CALL FMantissaLeft	
+  097E    29                    	DAD H	
+  097F    78                    	MOV A,B	
+  0980    17                    	RAL	
+  0981    47                    	MOV B,A	
+  0982    3A 0963               	LDA L095F+4h	
+  0985    17                    	RAL	
+  0986    32 0963               	STA L095F+4h	
+  0989    79                    	MOV A,C	
+  098A    B2                    	ORA D	
+  098B    B3                    	ORA E	
+  098C    C2 0954               	JNZ FDivLoop	
+  098F    E5                    	PUSH H	
+  0990    21 0172               	LXI H,FACCUM+3	
+  0993    35                    	DCR M	
+  0994    E1                    	POP H	
+  0995    C2 0954               	JNZ FDivLoop	
+  0998    C3 08A4               	JMP Overflow	
+  099B                          FExponentAdd:
+  099B    78                    	MOV A,B	 
+  099C    B7                    	ORA A	
+  099D    CA 09BA               	JZ FExponentAdd+31	
+  09A0    7D                    	MOV A,L	;A=0 for add, FF for subtract.
+  09A1    21 0172               	LXI H,FACCUM+3	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-29
+
+
+  09A4    AE                    	XRA M	;XOR with FAccum's exponent.
+  09A5    80                    	ADD B	;Add exponents
+  09A6    47                    	MOV B,A	;
+  09A7    1F                    	RAR	;Carry (after the add) into bit 7.
+  09A8    A8                    	XRA B	;XOR with old bit 7.
+  09A9    78                    	MOV A,B	;
+  09AA    F2 09B9               	JP FExponentAdd+30	;If
+  09AD    C6 80                 	ADI 80h	 
+  09AF    77                    	MOV M,A	 
+  09B0    CA 0921               	JZ PopHLandReturn	 
+  09B3    CD 0A37               	CALL FUnpackMantissas	
+  09B6    77                    	MOV M,A	
+  09B7    2B                    	DCX H	
+  09B8    C9                    	RET	
+  09B9    B7                    	ORA A	
+  09BA    E1                    	POP H	;Ignore return address so we'll end
+  09BB    FA 08A4               	JM Overflow	
+  09BE    AF                    FZero:	XRA A	
+  09BF    32 0172               	STA FACCUM+3	
+  09C2    C9                    	RET	
+  09C3                          FMulByTen:
+  09C3    CD 0A1D               	CALL FCopyToBCDE	
+  09C6    78                    	MOV A,B	
+  09C7    B7                    	ORA A	
+  09C8    C8                    	RZ	
+  09C9    C6 02                 	ADI 02	
+  09CB    DA 08A4               	JC Overflow	
+  09CE    47                    	MOV B,A	
+  09CF    CD 0812               	CALL FAdd+2	
+  09D2    21 0172               	LXI H,FACCUM+3	
+  09D5    34                    	INR M	
+  09D6    C0                    	RNZ	
+  09D7    C3 08A4               	JMP Overflow	
+  09DA                          FTestSign_tail:
+  09DA    3A 0171               	LDA FACCUM+2	
+  09DD    FE                    	DB 0FEh	
+  09DE                          InvSignToInt:
+  09DE    2F                    	CMA	
+  09DF                          SignToInt:
+  09DF    17                    	RAL	
+  09E0    9F                    	SBB A	
+  09E1    C0                    	RNZ	
+  09E2    3C                    	INR A	
+  09E3    C9                    	RET	
+  09E4                          Sgn:
+  09E4    EF                    	RST 05	; FTestSign	
+  09E5                          FCharToFloat:
+  09E5    06 88                 	MVI B,88h	;ie 2^8
+  09E7    11 0000               	LXI D,0000h	
+  09EA    21 0172               	LXI H,FACCUM+3	
+  09ED    4F                    	MOV C,A	
+  09EE    70                    	MOV M,B	
+  09EF    06 00                 	MVI B,00h	
+  09F1    23                    	INX H	
+  09F2    36 80                 	MVI M,80h	
+  09F4    17                    	RAL	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-30
+
+
+  09F5    C3 085B               	JMP FNormalise	
+  09F8                          Abs:
+  09F8    EF                    	RST 05	; FTestSign	
+  09F9    F0                    	RP	
+  09FA                          FNegate:
+  09FA    21 0171               	LXI H,FACCUM+2	
+  09FD    7E                    	MOV A,M	
+  09FE    EE 80                 	XRI 80h	
+  0A00    77                    	MOV M,A	
+  0A01    C9                    	RET	
+  0A02                          FPush:
+  0A02    EB                    	XCHG	
+  0A03    2A 016F               	LHLD FACCUM	
+  0A06    E3                    	XTHL	
+  0A07    E5                    	PUSH H	
+  0A08    2A 0171               	LHLD FACCUM+2	
+  0A0B    E3                    	XTHL	
+  0A0C    E5                    	PUSH H	
+  0A0D    EB                    	XCHG	
+  0A0E    C9                    	RET	
+  0A0F                          FLoadFromMem:
+  0A0F    CD 0A20               	CALL FLoadBCDEfromMem	
+  0A12                          FLoadFromBCDE:
+  0A12    EB                    	XCHG	
+  0A13    22 016F               	SHLD FACCUM	
+  0A16    60                    	MOV H,B	
+  0A17    69                    	MOV L,C	
+  0A18    22 0171               	SHLD FACCUM+2	
+  0A1B    EB                    	XCHG	
+  0A1C    C9                    	RET	
+  0A1D                          FCopyToBCDE:
+  0A1D    21 016F               	LXI H,FACCUM	
+  0A20                          FLoadBCDEfromMem:
+  0A20    5E                    	MOV E,M	
+  0A21    23                    	INX H	
+  0A22    56                    	MOV D,M	
+  0A23    23                    	INX H	
+  0A24    4E                    	MOV C,M	
+  0A25    23                    	INX H	
+  0A26    46                    	MOV B,M	
+  0A27                          IncHLReturn:
+  0A27    23                    	INX H	
+  0A28    C9                    	RET	
+  0A29                          FCopyToMem:
+  0A29    11 016F               	LXI D,FACCUM	
+  0A2C    06 04                 	MVI B,04h	
+  0A2E                          FCopyLoop:
+  0A2E    1A                    	LDAX D	
+  0A2F    77                    	MOV M,A	
+  0A30    13                    	INX D	
+  0A31    23                    	INX H	
+  0A32    05                    	DCR B	
+  0A33    C2 0A2E               	JNZ FCopyLoop	
+  0A36    C9                    	RET	
+  0A37                          FUnpackMantissas:
+  0A37    21 0171               	LXI H,FACCUM+2	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-31
+
+
+  0A3A    7E                    	MOV A,M	;
+  0A3B    07                    	RLC	;Move FACCUM's sign to bit 0.
+  0A3C    37                    	STC	;Set MSB of FACCUM mantissa,
+  0A3D    1F                    	RAR	;FACCUM's sign is now in carry.
+  0A3E    77                    	MOV M,A	;
+  0A3F    3F                    	CMC	;Negate FACCUM's sign.
+  0A40    1F                    	RAR	;Bit 7 of A is now FACCUM's sign.
+  0A41    23                    	INX H	;Store negated FACCUM sign at FTEMP_SIGN.
+  0A42    23                    	INX H	;
+  0A43    77                    	MOV M,A	;
+  0A44    79                    	MOV A,C	;
+  0A45    07                    	RLC	;Set MSB of BCDE mantissa,
+  0A46    37                    	STC	;BCDE's sign is now in carry.
+  0A47    1F                    	RAR	;
+  0A48    4F                    	MOV C,A	;
+  0A49    1F                    	RAR	;Bit 7 of A is now BCDE's sign
+  0A4A    AE                    	XRA M	;XORed with FTEMP_SIGN.
+  0A4B    C9                    	RET	;
+  0A4C                          FCompare:
+  0A4C    78                    	MOV A,B	 
+  0A4D    B7                    	ORA A	
+  0A4E    CA 0028               	JZ FTestSign	
+  0A51    21 09DE               	LXI H,InvSignToInt	 
+  0A54    E5                    	PUSH H	
+  0A55    EF                    	RST 05	; FTestSign	
+  0A56    79                    	MOV A,C	
+  0A57    C8                    	RZ	
+  0A58    21 0171               	LXI H,FACCUM+2	
+  0A5B    AE                    	XRA M	
+  0A5C    79                    	MOV A,C	
+  0A5D    F8                    	RM	
+  0A5E    CD 0A64               	CALL FIsEqual	
+  0A61    1F                    	RAR	
+  0A62    A9                    	XRA C	
+  0A63    C9                    	RET	
+  0A64                          FIsEqual:
+  0A64    23                    	INX H	
+  0A65    78                    	MOV A,B	
+  0A66    BE                    	CMP M	
+  0A67    C0                    	RNZ	
+  0A68    2B                    	DCX H	
+  0A69    79                    	MOV A,C	
+  0A6A    BE                    	CMP M	
+  0A6B    C0                    	RNZ	
+  0A6C    2B                    	DCX H	
+  0A6D    7A                    	MOV A,D	
+  0A6E    BE                    	CMP M	
+  0A6F    C0                    	RNZ	
+  0A70    2B                    	DCX H	
+  0A71    7B                    	MOV A,E	
+  0A72    96                    	SUB M	
+  0A73    C0                    	RNZ	;
+  0A74    E1                    	POP H	;Lose 0A5E
+  0A75    E1                    	POP H	;Lose 09DE
+  0A76    C9                    	RET	;Return to caller
+  0A77                          FAsInteger:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-32
+
+
+  0A77    47                    	MOV B,A	;
+  0A78    4F                    	MOV C,A	
+  0A79    57                    	MOV D,A	
+  0A7A    5F                    	MOV E,A	
+  0A7B    B7                    	ORA A	
+  0A7C    C8                    	RZ	
+  0A7D    E5                    	PUSH H	
+  0A7E    CD 0A1D               	CALL FCopyToBCDE	
+  0A81    CD 0A37               	CALL FUnpackMantissas	
+  0A84    AE                    	XRA M	;Get sign back
+  0A85    67                    	MOV H,A	
+  0A86    FC 0A9B               	CM FMantissaDec	
+  0A89    3E 98                 	MVI A,98h	
+  0A8B    90                    	SUB B	;by (24-exponent) places?
+  0A8C    CD 08C9               	CALL FMantissaRtMult	;WHY?
+  0A8F    7C                    	MOV A,H	
+  0A90    17                    	RAL	
+  0A91    DC 089A               	CC FMantissaInc	
+  0A94    06 00                 	MVI B,00h	;Needed for FNegateInt.
+  0A96    DC 08B5               	CC FNegateInt	
+  0A99    E1                    	POP H	
+  0A9A    C9                    	RET	
+  0A9B                          FMantissaDec:
+  0A9B    1B                    	DCX D	;DE--
+  0A9C    7A                    	MOV A,D	;If DE!=FFFF...
+  0A9D    A3                    	ANA E	;
+  0A9E    3C                    	INR A	;
+  0A9F    C0                    	RNZ	;... then return
+  0AA0    0D                    	DCR C	;C--
+  0AA1    C9                    	RET	;
+  0AA2                          Int:
+  0AA2    21 0172               	LXI H,FACCUM+3	;
+  0AA5    7E                    	MOV A,M	;
+  0AA6    FE 98                 	CPI 98h	;
+  0AA8    D0                    	RNC	;
+  0AA9    CD 0A77               	CALL FAsInteger	;
+  0AAC    36 98                 	MVI M,98h	;
+  0AAE    79                    	MOV A,C	;
+  0AAF    17                    	RAL	;
+  0AB0    C3 085B               	JMP FNormalise	;
+  0AB3                          FIn:
+  0AB3    2B                    	DCX H	;
+  0AB4    CD 09BE               	CALL FZero	;
+  0AB7    47                    	MOV B,A	;B=count of fractional digits
+  0AB8    57                    	MOV D,A	;D=exponent sign
+  0AB9    5F                    	MOV E,A	;E=exponent
+  0ABA    2F                    	CMA	;C=decimal_point_done (FF for no, 00 for yes)
+  0ABB    4F                    	MOV C,A	;
+  0ABC                          FInLoop:
+  0ABC    D7                    	RST 02	;RST NextChar	
+  0ABD    DA 0B04               	JC ProcessDigit	
+  0AC0    FE 2E                 	CPI '.'	
+  0AC2    CA 0AE4               	JZ L0AE4	
+  0AC5    FE 45                 	CPI 'E'	
+  0AC7    C2 0AE8               	JNZ ScaleResult	
+  0ACA                          GetExponent:
+	MACRO-80 3.44	09-Dec-81	PAGE	1-33
+
+
+  0ACA    D7                    	RST 02	;RST NextChar	
+  0ACB    15                    	DCR D	
+  0ACC    FE 99                 	CPI 99h	;KWID_MINUS	
+  0ACE    CA 0AD8               	JZ NextExponentDigit	
+  0AD1    14                    	INR D	
+  0AD2    FE 98                 	CPI 98h	;KWID_PLUS	
+  0AD4    CA 0AD8               	JZ NextExponentDigit	
+  0AD7    2B                    	DCX H	
+  0AD8                          NextExponentDigit:
+  0AD8    D7                    	RST 02	;RST NextChar	
+  0AD9    DA 0B23               	JC DoExponentDigit	
+  0ADC    14                    	INR D	
+  0ADD    C2 0AE8               	JNZ ScaleResult	
+  0AE0    AF                    	XRA A	
+  0AE1    93                    	SUB E	
+  0AE2    5F                    	MOV E,A	
+  0AE3    0C                    	INR C	;C was FF, so here it
+  0AE4                          L0AE4:
+  0AE4    0C                    	INR C	;becomes 01.
+  0AE5    CA 0ABC               	JZ FInLoop	;If C is now zero
+  0AE8                          ScaleResult:
+  0AE8    E5                    	PUSH H	
+  0AE9    7B                    	MOV A,E	
+  0AEA    90                    	SUB B	
+  0AEB                          DecimalLoop:
+  0AEB    F4 0AFC               	CP DecimalShiftUp	
+  0AEE    F2 0AF7               	JP DecimalLoopEnd	
+  0AF1    F5                    	PUSH PSW	
+  0AF2    CD 0923               	CALL FDivByTen	
+  0AF5    F1                    	POP PSW	
+  0AF6    3C                    	INR A	
+  0AF7                          DecimalLoopEnd:
+  0AF7    C2 0AEB               	JNZ DecimalLoop	
+  0AFA    E1                    	POP H	
+  0AFB    C9                    	RET	
+  0AFC                          DecimalShiftUp:
+  0AFC    C8                    	RZ	
+  0AFD    F5                    	PUSH PSW	
+  0AFE    CD 09C3               	CALL FMulByTen	
+  0B01    F1                    	POP PSW	
+  0B02    3D                    	DCR A	
+  0B03    C9                    	RET	
+  0B04                          ProcessDigit:
+  0B04    D5                    	PUSH D	
+  0B05    57                    	MOV D,A	
+  0B06    78                    	MOV A,B	
+  0B07    89                    	ADC C	
+  0B08    47                    	MOV B,A	
+  0B09    C5                    	PUSH B	
+  0B0A    E5                    	PUSH H	
+  0B0B    D5                    	PUSH D	
+  0B0C    CD 09C3               	CALL FMulByTen	
+  0B0F    F1                    	POP PSW	
+  0B10    D6 30                 	SUI '0'	
+  0B12    CD 0A02               	CALL FPush	
+  0B15    CD 09E5               	CALL FCharToFloat	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-34
+
+
+  0B18    C1                    	POP B	
+  0B19    D1                    	POP D	
+  0B1A    CD 0812               	CALL FAdd+2	
+  0B1D    E1                    	POP H	
+  0B1E    C1                    	POP B	
+  0B1F    D1                    	POP D	
+  0B20    C3 0ABC               	JMP FInLoop	
+  0B23                          DoExponentDigit:
+  0B23    7B                    	MOV A,E	
+  0B24    07                    	RLC	
+  0B25    07                    	RLC	
+  0B26    83                    	ADD E	
+  0B27    07                    	RLC	
+  0B28    86                    	ADD M	
+  0B29    D6 30                 	SUI '0'	
+  0B2B    5F                    	MOV E,A	
+  0B2C    C3 0AD8               	JMP NextExponentDigit	
+  0B2F                          PrintIN:
+  0B2F    E5                    	PUSH H	
+  0B30    21 0188               	LXI H,szIn	
+  0B33    CD 05A3               	CALL PrintString	
+  0B36    E1                    	POP H	
+  0B37                          PrintInt:
+  0B37    EB                    	XCHG	;DE=integer
+  0B38    AF                    	XRA A	;A=0 (ends up in C)
+  0B39    06 98                 	MVI B,98h	;B (ie exponent) = 24
+  0B3B    CD 09EA               	CALL FCharToFloat+5	
+  0B3E    21 05A2               	LXI H,PrintString-1	
+  0B41    E5                    	PUSH H	
+  0B42                          FOut:
+  0B42    21 0174               	LXI H,FBUFFER	
+  0B45    E5                    	PUSH H	
+  0B46    EF                    	RST 05	; FTestSign	
+  0B47    36 20                 	MVI M,' '	
+  0B49    F2 0B4E               	JP DoZero	
+  0B4C    36 2D                 	MVI M,'-'	
+  0B4E                          DoZero:
+  0B4E    23                    	INX H	
+  0B4F    36 30                 	MVI M,'0'	
+  0B51    CA 0BF7               	JZ NullTerm-3	
+  0B54    E5                    	PUSH H	
+  0B55    FC 09FA               	CM FNegate	
+  0B58    AF                    	XRA A	
+  0B59    F5                    	PUSH PSW	
+  0B5A    CD 0BFD               	CALL ToUnder1000000	
+  0B5D                          ToOver100000:
+  0B5D    01 9143               	LXI B,9143h	;BCDE=(float)100,000.
+  0B60    11 4FF8               	LXI D,4FF8h	;
+  0B63    CD 0A4C               	CALL FCompare	;If FACCUM >= 100,000
+  0B66    E2 0B7A               Fix2zJ:	JPO PrepareToPrint	;then jump to PrepareToPrint.
+  0B69    F1                    	POP PSW	;A=DecExpAdj
+  0B6A    CD 0AFD               	CALL DecimalShiftUp+1	;FACCUM*=10; DecExpAdj--;
+  0B6D    F5                    	PUSH PSW	;
+  0B6E    C3 0B5D               	JMP ToOver100000	
+  0B71                          L0B71:
+  0B71    CD 0923               	CALL FDivByTen	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-35
+
+
+  0B74    F1                    	POP PSW	
+  0B75    3C                    	INR A	;DecExpAdj++;
+  0B76    F5                    	PUSH PSW	
+  0B77    CD 0BFD               	CALL ToUnder1000000	
+  0B7A                          PrepareToPrint:
+  0B7A    CD 0801               	CALL FAddOneHalf	
+  0B7D    3C                    	INR A	
+  0B7E    CD 0A77               	CALL FAsInteger	
+  0B81    CD 0A12               	CALL FLoadFromBCDE	
+  0B84    01 0206               	LXI B,0206h	
+  0B87    F1                    	POP PSW	;A=DecExpAdj+6.
+  0B88    81                    	ADD C	;
+  0B89    FA 0B95               	JM L0B95	;If A<1 or A>6 Then goto fixme.
+  0B8C    FE 07                 	CPI 07h	;
+  0B8E    D2 0B95               	JNC L0B95	;
+  0B91    3C                    	INR A	;
+  0B92    47                    	MOV B,A	;
+  0B93    3E 01                 	MVI A,01h	;A=1, indicating scientific notation.
+  0B95                          L0B95:
+  0B95    3D                    	DCR A	;
+  0B96    E1                    	POP H	;HL=output buffer
+  0B97    F5                    	PUSH PSW	;Preserve decimal exponent adjustment (and preserve zero flag used to indicate scientific notation wanted).
+  0B98    11 0C0F               	LXI D,DECIMAL_POWERS	
+  0B9B                          NextDigit:
+  0B9B    05                    	DCR B	
+  0B9C    36 2E                 	MVI M,'.'	
+  0B9E    CC 0A27               	CZ IncHLReturn	;0A27 just happens to inc HL and RET.
+  0BA1    C5                    	PUSH B	;
+  0BA2    E5                    	PUSH H	;
+  0BA3    D5                    	PUSH D	;DE=>decimal power
+  0BA4    CD 0A1D               	CALL FCopyToBCDE	;Store BCDE to FACCUM.
+  0BA7    E1                    	POP H	;HL=>decimal power.
+  0BA8    06 2F                 	MVI B,'0'-1	;
+  0BAA                          DigitLoop:
+  0BAA    04                    	INR B	;
+  0BAB    7B                    	MOV A,E	;
+  0BAC    96                    	SUB M	;
+  0BAD    5F                    	MOV E,A	;
+  0BAE    23                    	INX H	;
+  0BAF    7A                    	MOV A,D	;
+  0BB0    9E                    	SBB M	;
+  0BB1    57                    	MOV D,A	;
+  0BB2    23                    	INX H	;
+  0BB3    79                    	MOV A,C	;
+  0BB4    9E                    	SBB M	;
+  0BB5    4F                    	MOV C,A	;
+  0BB6    2B                    	DCX H	;
+  0BB7    2B                    	DCX H	;
+  0BB8    D2 0BAA               	JNC DigitLoop	;
+  0BBB    CD 08A9               	CALL FAddMantissas	;
+  0BBE    23                    	INX H	;???
+  0BBF    CD 0A12               	CALL FLoadFromBCDE	;
+  0BC2    EB                    	XCHG	;
+  0BC3    E1                    	POP H	;HL=output buffer
+  0BC4    70                    	MOV M,B	;
+  0BC5    23                    	INX H	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-36
+
+
+  0BC6    C1                    	POP B	;B=decimal point place
+  0BC7    0D                    	DCR C	;C=digits remaining, minus one.
+  0BC8    C2 0B9B               	JNZ NextDigit	;
+  0BCB    05                    	DCR B	;
+  0BCC    CA 0BDB               	JZ L0BDB	;
+  0BCF                          L0BCF:
+  0BCF    2B                    	DCX H	;
+  0BD0    7E                    	MOV A,M	;
+  0BD1    FE 30                 	CPI '0'	;
+  0BD3    CA 0BCF               	JZ L0BCF	;
+  0BD6    FE 2E                 	CPI '.'	;
+  0BD8    C4 0A27               	CNZ IncHLReturn	;
+  0BDB                          L0BDB:
+  0BDB    F1                    	POP PSW	;
+  0BDC    CA 0BFA               	JZ NullTerm	;
+  0BDF    36 45                 	MVI M,'E'	;Write 'E'
+  0BE1    23                    	INX H	;
+  0BE2    36 2B                 	MVI M,'+'	;Write '+' or '-'
+  0BE4    F2 0BEB               	JP L0BEB	;
+  0BE7    36 2D                 	MVI M,'-'	;Write '-' if it's negative, also
+  0BE9    2F                    	CMA	;two's complement the decimal exponent
+  0BEA    3C                    	INR A	;so printing it will work.
+  0BEB                          L0BEB:
+  0BEB    06 2F                 	MVI B,'0'-1	;
+  0BED                          ExpDigitLoop:
+  0BED    04                    	INR B	;
+  0BEE    D6 0A                 	SUI 0Ah	;
+  0BF0    D2 0BED               	JNC ExpDigitLoop	;
+  0BF3    C6 3A                 	ADI 3Ah	;Adding '0'+10 gives us the 2nd digit
+  0BF5    23                    	INX H	;of the exponent.
+  0BF6    70                    	MOV M,B	;Write first digit.
+  0BF7    23                     	INX H	;
+  0BF8    77                    	MOV M,A	;Write second digit of exponent.
+  0BF9    23                    	INX H	;
+  0BFA                          NullTerm:
+  0BFA    71                    	MOV M,C	;Null byte terminator.
+  0BFB    E1                    	POP H	;
+  0BFC    C9                    	RET	;
+  0BFD                          ToUnder1000000:
+  0BFD    01 9474               	LXI B,9474h	;
+  0C00    11 23F7               	LXI D,23F7h	;
+  0C03    CD 0A4C               	CALL FCompare	;
+  0C06    E1                    	POP H	;
+  0C07    E2 0B71               Fix1zJ: JPO L0B71	;
+  0C0A    E9                    	PCHL	;
+  0C0B                          ONE_HALF:
+  0C0B    00 00 00 80           	DB 0,0,0,80h	; DD 0.5	 
+  0C0F                          DECIMAL_POWERS:
+  0C0F    A0 86 01              	DB 0A0h,86h,01h	; DT 100000	 
+  0C12    10 27 00              	DB  10h,27h,00h	; DT 10000	 
+  0C15    E8 03 00              	DB 0E8h,03h,00h	; DT 1000	 
+  0C18    64 00 00              	DB  64h,00h,00h	; DT 100	 
+  0C1B    0A 00 00              	DB  0Ah,00h,00h	; DT 10	 
+  0C1E    01 00 00              	DB  01h,00h,00h	; DT 1	 
+  0C21                          Sqr:
+  0C21    EF                    	RST 05	; FTestSign	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-37
+
+
+  0C22    FA 0498               	JM FunctionCallError;
+  0C25    C8                    	RZ	;
+  0C26    21 0172               	LXI H,FACCUM+3	;
+  0C29    7E                    	MOV A,M	;
+  0C2A    1F                    	RAR	;
+  0C2B    F5                    	PUSH PSW	;
+  0C2C    E5                    	PUSH H	;
+  0C2D    3E 40                 	MVI A,40h	;
+  0C2F    17                    	RAL	;
+  0C30    77                    	MOV M,A	;
+  0C31    21 0174               	LXI H,FBUFFER	;
+  0C34    CD 0A29               	CALL FCopyToMem	;
+  0C37    3E 04                 	MVI A,04h	;
+  0C39                          SqrLoop:
+  0C39    F5                    	PUSH PSW	;
+  0C3A    CD 0A02               	CALL FPush	;
+  0C3D    21 0174               	LXI H,FBUFFER	;
+  0C40    CD 0A20               	CALL FLoadBCDEfromMem	
+  0C43    CD 0931               	CALL FDiv+2	
+  0C46    C1                    	POP B	
+  0C47    D1                    	POP D	
+  0C48    CD 0812               	CALL FAdd+2	
+  0C4B    01 8000               	LXI B,8000h	
+  0C4E    51                    	MOV D,C	
+  0C4F    59                    	MOV E,C	
+  0C50    CD 08E5               	CALL FMul+2	
+  0C53    F1                    	POP PSW	
+  0C54    3D                    	DCR A	
+  0C55    C2 0C39               	JNZ SqrLoop	
+  0C58    E1                    	POP H	
+  0C59    F1                    	POP PSW	
+  0C5A    C6 C0                 	ADI 0C0h	
+  0C5C    86                    	ADD M	
+  0C5D    77                    	MOV M,A	
+  0C5E    C9                    	RET	
+  0C5F                          Rnd:
+  0C5F    EF                    	RST 05	; FTestSign	
+  0C60    FA 0C7C               	JM L0C7C	
+  0C63    21 0C91               	LXI H,RND_SEED	
+  0C66    CD 0A0F               	CALL FLoadFromMem	
+  0C69    C8                    	RZ	
+  0C6A    01 9835               	LXI B,9835h	
+  0C6D    11 447A               	LXI D,447Ah	
+  0C70    CD 08E5               	CALL FMul+2	
+  0C73    01 6828               	LXI B,6828h	
+  0C76    11 B146               	LXI D,0B146h	
+  0C79    CD 0812               	CALL FAdd+2	
+  0C7C    CD 0A1D               L0C7C:	CALL FCopyToBCDE	
+  0C7F    7B                    	MOV A,E	
+  0C80    59                    	MOV E,C	
+  0C81    4F                    	MOV C,A	
+  0C82    36 80                 	MVI M,80h	
+  0C84    2B                    	DCX H	
+  0C85    46                    	MOV B,M	
+  0C86    36 80                 	MVI M,80h	
+  0C88    CD 085E               	CALL FNormalise+3	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-38
+
+
+  0C8B    21 0C91               	LXI H,RND_SEED	
+  0C8E    C3 0A29               	JMP FCopyToMem	
+  0C91                          RND_SEED:
+  0C91    52 C7 4F 80           	DB 52h,0C7h,4Fh,80h	
+  0C95                          Sin:
+  0C95    CD 0A02               	CALL FPush	;ush x
+  0C98    01 8349               	LXI B,8349h	;CDE=2p
+  0C9B    11 0FDB               	LXI D,0FDBh	;
+  0C9E    CD 0A12               	CALL FLoadFromBCDE	;hs = 2p
+  0CA1    C1                    	POP B	;hs = x
+  0CA2    D1                    	POP D	;
+  0CA3    CD 0931               	CALL FDiv+2	;=x/2p
+  0CA6    CD 0A02               	CALL FPush	;
+  0CA9    CD 0AA2               	CALL Int	;hs = INT(u)
+  0CAC    C1                    	POP B	;hs = u
+  0CAD    D1                    	POP D	;
+  0CAE    CD 080C               	CALL FSub+2	;=u-INT(u)
+  0CB1    01 7F00               	LXI B,7F00h	;CDE=0.25
+  0CB4    51                    	MOV D,C	;
+  0CB5    59                    	MOV E,C	;
+  0CB6    CD 080C               	CALL FSub+2	;
+  0CB9    EF                    	RST 05	; FTestSign	;
+  0CBA    37                    	STC	;set carry (ie no later negate)
+  0CBB    F2 0CC3               	JP NegateIfPositive	;
+  0CBE    CD 0801               	CALL FAddOneHalf	;
+  0CC1    EF                    	RST 05	;
+  0CC2    B7                    	ORA A	;resets carry (ie later negate)
+  0CC3                          NegateIfPositive:
+  0CC3    F5                    	PUSH PSW	;
+  0CC4    F4 09FA               	CP FNegate	;
+  0CC7    01 7F00               	LXI B,7F00h	;CDE=0.25
+  0CCA    51                    	MOV D,C	;
+  0CCB    59                    	MOV E,C	;
+  0CCC    CD 0812               	CALL FAdd+2	;
+  0CCF    F1                    	POP PSW	;
+  0CD0    D4 09FA               	CNC FNegate	;
+  0CD3    CD 0A02               	CALL FPush	;
+  0CD6    CD 0A1D               	CALL FCopyToBCDE	;
+  0CD9    CD 08E5               	CALL FMul+2	; = x*x
+  0CDC    CD 0A02               	CALL FPush	;ush x*x
+  0CDF    21 0D03               	LXI H,TAYLOR_SERIES	;
+  0CE2    CD 0A0F               	CALL FLoadFromMem	;
+  0CE5    C1                    	POP B	;
+  0CE6    D1                    	POP D	;
+  0CE7    3E 04                 	MVI A,04h	;
+  0CE9                          TaylorLoop:
+  0CE9    F5                    	PUSH PSW	;ush #terms remaining
+  0CEA    D5                    	PUSH D	;ush BCDE
+  0CEB    C5                    	PUSH B	;
+  0CEC    E5                    	PUSH H	;
+  0CED    CD 08E5               	CALL FMul+2	;
+  0CF0    E1                    	POP H	;
+  0CF1    CD 0A20               	CALL FLoadBCDEfromMem	;
+  0CF4    E5                    	PUSH H	;
+  0CF5    CD 0812               	CALL FAdd+2	;
+  0CF8    E1                    	POP H	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-39
+
+
+  0CF9    C1                    	POP B	;
+  0CFA    D1                    	POP D	;
+  0CFB    F1                    	POP PSW	;op #terms remaining into A.
+  0CFC    3D                    	DCR A	;ecrement #terms and loop back if not
+  0CFD    C2 0CE9               	JNZ TaylorLoop	;one all 4 of them.
+  0D00    C3 08E3               	JMP FMul	;
+  0D03                          TAYLOR_SERIES:
+  0D03    BA D7 1E 86           	DB 0BAh,0D7h, 1Eh,86h	;DD 39.710670	 
+  0D07    64 26 99 87           	DB  64h, 26h, 99h,87h	;DD -76.574982	 
+  0D0B    58 34 23 87           	DB  58h, 34h, 23h,87h	;DD 81.602234	 
+  0D0F    E0 5D A5 86           	DB 0E0h, 5Dh,0A5h,86h	;DD -41.341675	 
+  0D13    DA 0F 49 83           	DB 0DAh, 0Fh, 49h,83h	;DD 6.283185	 
+  0D17                          L0D17:
+  0D17    00 00 00 00           	DB 0,0,0,0,0,0,0,0,0,0
+  0D1B    00 00 00 00           
+  0D1F    00 00                 
+                                
+  0D21    21 0F1A               Init:	LXI H,0F1Ah	; *** STACK_TOP RELOCATE
+  0D24    F9                    	SPHL	;
+  0D25    22 0163               	SHLD STACK_TOP	;
+  0D28    DB 01                 	IN 01	;
+  0D2A    0E FF                 	MVI C,0FFh	;
+  0D2C    11 0D8E               	LXI D,ConfigIOcode	;
+  0D2F    D5                    	PUSH D	;
+  0D30    3A 0FFF               	LDA 0FFFh	; *** RELOCATE
+  0D33    47                    	MOV B,A	;
+  0D34    DB FF                 	IN 0FFh	;
+  0D36    1F                    	RAR	;
+  0D37    DA 0D41               	JC L0D42-1	;
+  0D3A    E6 0C                 	ANI 0Ch	;
+  0D3C    CA 0D42               	JZ L0D42	;
+  0D3F    06 10                 	MVI B,10h	;
+  0D41    78                    	MOV A,B	;
+  0D42    32 0D8C               L0D42:	STA L0D8D-1	;
+  0D45    DB FF                 	IN 0FFh	;
+  0D47    17                    	RAL	;
+  0D48    17                    	RAL	;
+  0D49    06 20                 	MVI B,20h	;
+  0D4B    11 CA02               L0D4B:	LXI D,0CA02h	;
+  0D4E    D8                    	RC	;
+  0D4F    17                    	RAL	;
+  0D50    43                    	MOV B,E	;
+  0D51    1D                    	DCR E	;
+  0D52    D8                    	RC	;
+  0D53    17                    	RAL	;
+  0D54    DA 0D6F               	JC L0D6F	;
+  0D57    43                    	MOV B,E	;
+  0D58    11 C280               	LXI D,0C280h	;
+  0D5B    17                    	RAL	;
+  0D5C    D0                    	RNC	;
+  0D5D    17                    	RAL	;
+  0D5E    3E 03                 	MVI A,03h	;
+  0D60    CD 0D8B               	CALL L0D8B	;
+  0D63    3D                    	DCR A	;
+  0D64    8F                    	ADC A	;
+  0D65    87                    	ADD A	;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-40
+
+
+  0D66    87                    	ADD A	;
+  0D67    3C                    	INR A	;
+  0D68    CD 0D8B               	CALL L0D8B	;
+  0D6B    37                    	STC	;
+  0D6C    C3 0D4B               	JMP L0D4B	;
+  0D6F    AF                    L0D6F:	XRA A	;
+  0D70    CD 0D8B               	CALL L0D8B	;
+  0D73    CD 0D87               	CALL L0D87	;
+  0D76    CD 0D87               	CALL L0D87	;
+  0D79    4B                    	MOV C,E	;
+  0D7A    2F                    	CMA	;
+  0D7B    CD 0D87               	CALL L0D87	;
+  0D7E    3E 04                 	MVI A,04h	;
+  0D80    35                    	DCR M	;
+  0D81    CD 0D8B               	CALL L0D8B	;
+  0D84    35                    	DCR M	;
+  0D85    35                    	DCR M	;
+  0D86    35                    	DCR M	;
+  0D87    21 0D8C               L0D87:	LXI H,L0D8D-1	;
+  0D8A    34                    	INR M	;
+  0D8B    D3 00                 L0D8B:	OUT 00	;
+  0D8D    C9                    L0D8D:	RET	;
+  0D8E                          ConfigIOcode:
+  0D8E    62                    	MOV H,D	;
+  0D8F    68                    	MOV L,B	;
+  0D90    22 0385               	SHLD InputChar+3	;
+  0D93    7C                    	MOV A,H	;
+  0D94    E6 C8                 	ANI 0C8h	;
+  0D96    67                    	MOV H,A	;
+  0D97    22 0476               	SHLD TestBreakKey+3	;
+  0D9A    EB                    	XCHG	;
+  0D9B    22 037A               	SHLD WaitTermReady+3	;
+  0D9E    3A 0D8C               	LDA L0D8D-1	;
+  0DA1    32 0383               	STA InputChar+1	;
+  0DA4    32 0474               	STA TestBreakKey+1	;
+  0DA7    3C                    	INR A	;
+  0DA8    32 038A               	STA InputChar+8	;
+  0DAB    81                    	ADD C	;
+  0DAC    32 0378               	STA WaitTermReady+1	;
+  0DAF    3C                    	INR A	;
+  0DB0    32 0380               	STA InputChar-2	;
+  0DB3    21 FFFF               	LXI H,0FFFFh	;
+  0DB6    22 0161               	SHLD CURRENT_LINE	;
+  0DB9    CD 058A               	CALL NewLine	;
+  0DBC    21 0EF0               	LXI H,szMemorySize	;
+  0DBF    CD 05A3               	CALL PrintString	
+  0DC2    CD 02C2               	CALL InputLineWith	
+  0DC5    D7                    	RST 02	;RST NextChar	
+  0DC6    B7                    	ORA A	
+  0DC7    C2 0DDE               	JNZ L0DDE	
+  0DCA    21 0EFC               	LXI H,UnusedMemory	
+  0DCD                          FindMemTopLoop:
+  0DCD    23                    	INX H	
+  0DCE    3E 37                 	MVI A,37h	
+  0DD0    77                    	MOV M,A	
+  0DD1    BE                    	CMP M	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-41
+
+
+  0DD2    C2 0DEA               	JNZ DoneMemSize	
+  0DD5    3D                    	DCR A	
+  0DD6    77                    	MOV M,A	
+  0DD7    BE                    	CMP M	
+  0DD8    CA 0DCD               	JZ FindMemTopLoop	
+  0DDB    C3 0DEA               	JMP DoneMemSize	
+  0DDE                          L0DDE:
+  0DDE    21 0113               	LXI H,LINE_BUFFER	
+  0DE1    CD 049D               	CALL LineNumberFromStr	
+  0DE4    B7                    	ORA A	
+  0DE5    C2 01D0               	JNZ SyntaxError	
+  0DE8    EB                    	XCHG	
+  0DE9    2B                    	DCX H	
+  0DEA                          DoneMemSize:
+  0DEA    2B                    	DCX H	
+  0DEB    E5                    	PUSH H	
+  0DEC                          GetTerminalWidth:
+  0DEC    21 0EB4               	LXI H,szTerminalWidth	
+  0DEF    CD 05A3               	CALL PrintString	
+  0DF2    CD 02C2               	CALL InputLineWith	
+  0DF5    D7                    	RST 02	;RST NextChar	
+  0DF6    B7                    	ORA A	
+  0DF7    CA 0E1B               	JZ DoOptionalFns	
+  0DFA    21 0113               	LXI H,LINE_BUFFER	
+  0DFD    CD 049D               	CALL LineNumberFromStr	
+  0E00    7A                    	MOV A,D	
+  0E01    B7                    	ORA A	
+  0E02    C2 0DEC               	JNZ GetTerminalWidth	
+  0E05    7B                    	MOV A,E	
+  0E06    FE 10                 	CPI 10h	
+  0E08    DA 0DEC               	JC GetTerminalWidth	
+  0E0B    32 036F               	STA OutChar_tail+1	
+  0E0E                          CalcTabBrkSize:
+  0E0E    D6 0E                 	SUI 0Eh	
+  0E10    D2 0E0E               	JNC CalcTabBrkSize	
+  0E13    C6 1C                 	ADI 1Ch	
+  0E15    2F                    	CMA	
+  0E16    3C                    	INR A	
+  0E17    83                    	ADD E	
+  0E18    32 05B7               	STA ToNextTabBreak+4	
+  0E1B                          DoOptionalFns:
+  0E1B    21 0E85               	LXI H,OPT_FN_DESCS	
+  0E1E                          OptionalFnsLoop:
+  0E1E    F7                    	RST 6	
+  0E1F    11 0E99               	LXI D,szWantSin	
+  0E22    E7                    	RST 4	
+  0E23    CA 0E32               	JZ L0E32	
+  0E26    F7                    	RST 6	
+  0E27    E3                    	XTHL	
+  0E28    CD 05A3               	CALL PrintString	
+  0E2B    CD 02C2               	CALL InputLineWith	
+  0E2E    D7                    	RST 02	;RST NextChar	
+  0E2F    E1                    	POP H	
+  0E30    FE 59                 	CPI 'Y'	
+  0E32    D1                    L0E32:	POP D	
+  0E33    CA 0E47               	JZ InitProgramBase	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-42
+
+
+  0E36    FE 4E                 	CPI 'N'	
+  0E38    C2 0E1B               	JNZ DoOptionalFns	
+  0E3B    F7                    	RST 6	
+  0E3C    E3                    	XTHL	
+  0E3D    11 0498               	LXI D,FunctionCallError	
+  0E40    73                    	MOV M,E	
+  0E41    23                    	INX H	
+  0E42    72                    	MOV M,D	
+  0E43    E1                    	POP H	
+  0E44    C3 0E1E               	JMP OptionalFnsLoop	
+  0E47                          InitProgramBase:
+  0E47    EB                    	XCHG	
+  0E48    36 00                 	MVI M,00h	
+  0E4A    23                    	INX H	
+  0E4B    22 0165               	SHLD PROGRAM_BASE	
+  0E4E    E3                    	XTHL	
+  0E4F    11 0F1A               	LXI D,0F1Ah	; *** RELOCATE STACK_TOP	
+  0E52    E7                    	RST 4	
+  0E53    DA 01CD               	JC OutOfMemory	
+  0E56    D1                    	POP D	
+  0E57    F9                    	SPHL	
+  0E58    22 0163               	SHLD STACK_TOP	
+  0E5B    EB                    	XCHG	
+  0E5C    CD 01C3               	CALL CheckEnoughMem	
+  0E5F    7B                    	MOV A,E	
+  0E60    95                    	SUB L	
+  0E61    6F                    	MOV L,A	
+  0E62    7A                    	MOV A,D	
+  0E63    9C                    	SBB H	
+  0E64    67                    	MOV H,A	
+  0E65    01 FFF0               	LXI B,0FFF0h	
+  0E68    09                    	DAD B	
+  0E69    CD 058A               	CALL NewLine	
+  0E6C    CD 0B37               	CALL PrintInt	
+  0E6F    21 0EC3               	LXI H,szVersionInfo	
+  0E72    CD 05A3               	CALL PrintString	
+  0E75    21 05A3               	LXI H,PrintString	
+  0E78    22 01FD               	SHLD Main+4	
+  0E7B    CD 0296               	CALL New+1	
+  0E7E    21 01F9               	LXI H,Main	
+  0E81    22 0002               	SHLD Start+2	
+  0E84    E9                    	PCHL	
+                                
+  0E85                          OPT_FN_DESCS:
+  0E85    0D17                  	DW L0D17	
+  0E87    0E99                   	DW szWantSin	
+  0E89    0049                   	DW KW_INLINE_FNS+12	
+  0E8B    0C95                   	DW Sin	
+  0E8D    0EA2                   	DW szWantRnd	
+  0E8F    0047                   	DW KW_INLINE_FNS+10	
+  0E91    0C5F                   	DW Rnd	
+  0E93    0EAB                   	DW szWantSqr	
+  0E95    0045                   	DW KW_INLINE_FNS+8	
+                                
+  0E97    0C21                   	DW Sqr	
+                                
+	MACRO-80 3.44	09-Dec-81	PAGE	1-43
+
+
+  0E99                          szWantSin:
+  0E99    57 41 4E 54           	DC "WANT SIN"
+  0E9D    20 53 49 CE           
+  0EA1    00                    	DB 0
+  0EA2                          szWantRnd:	
+  0EA2    57 41 4E 54           	DC "WANT RND"
+  0EA6    20 52 4E C4           
+  0EAA    00                    	DB 0
+  0EAB                          szWantSqr:	
+  0EAB    57 41 4E 54           	DC "WANT SQR"
+  0EAF    20 53 51 D2           
+  0EB3    00                    	DB 0
+                                
+  0EB4                          szTerminalWidth:
+  0EB4    54 45 52 4D           	DC "TERMINAL WIDTH"
+  0EB8    49 4E 41 4C           
+  0EBC    20 57 49 44           
+  0EC0    54 C8                 
+  0EC2    00                    	DB 0
+                                
+  0EC3                          szVersionInfo:	
+  0EC3    20 42 59 54           	DC " BYTES FREE"
+  0EC7    45 53 20 46           
+  0ECB    52 45 C5              
+  0ECE    0D 0D                 	DB 13,13
+  0ED0    42 41 53 49           	DC "BASIC VERSION 3.2"
+  0ED4    43 20 56 45           
+  0ED8    52 53 49 4F           
+  0EDC    4E 20 33 2E           
+  0EE0    B2                    
+  0EE1    0D                    	DB 13
+  0EE2    5B 34 4B 20           	DC "[4K VERSION]"
+  0EE6    56 45 52 53           
+  0EEA    49 4F 4E DD           
+  0EEE    0D 00                 	DB 13,0
+                                
+  0EF0                          szMemorySize:
+  0EF0    4D 45 4D 4F           	DC "MEMORY SIZE"
+  0EF4    52 59 20 53           
+  0EF8    49 5A C5              
+  0EFB    00                    	DB 0
+                                
+  0EFC    00 00                 UnusedMemory:	DB 00, 00
+                                
+                                	.dephase
+  1001                          BIN_End:	
+                                
+                                
+                                                ;--------------------------------------------------------------------------
+                                                ;
+                                                ;  fixPrty - Fix Parity Bit
+                                                ;	This routine will fix the parity bit in the status flags and leave
+                                                ;	all other status flags unaffected IF the instruction to fix
+                                                ;	fix modifed the accumulator. For example, subtract, add, inc,
+                                                ;	dec, etc., will be properly adjusted. However, for compare
+                                                ;	instructions, parity is computed on the result of the compare
+	MACRO-80 3.44	09-Dec-81	PAGE	1-44
+
+
+                                                ;	subtraction, not the value in A.
+                                                ;
+                                                ;  8080 status flags in memory (from PUSH PSW)
+                                                ;     7  6  5  4  3  2  1  0
+                                                ;     S  Z  0  AC 0  P  1  C
+                                                ;
+                                                ;--------------------------------------------------------------------------
+  1001    C5                    fixPrty:push	b		;save bc for later restore
+  1002    F5                            push	psw		;move a and status flags into b,c
+  1003    C1                            pop	b		;   (parity bit in c is wrong)
+  1004    B7                            ora	a		;real parity flag now correct for 8080
+  1005    79                            mov	a,c		;a=flags with parity wrong
+  1006    EA 100E                       jpe	setPrty		;if parity even, go set parity flag
+  1009    E6 FB                         ani	0fbh		;otherwise, clear the parity flag
+  100B    C3 1010                       jmp	fixExit
+  100E    F6 04                 setPrty:ori	4		;set the parity flag
+  1010    4F                    fixExit:mov	c,a		;c=final 8080 sbb status flags
+  1011    C5                            push	b		;put a and flags on stack
+  1012    F1                            pop	psw		;and put them back in a and in flags
+  1013    C1                            pop	b		;restore bc
+  1014    C9                            ret
+                                
+                                	.z80
+                                
+  1015                          ZeroPage:
+  1015                                  DS 256
+                                
+  0005                          bdos    equ 5
+  0003                          ctrlz   equ 3
+                                
+  1115                          SaveZP: ; Copy Zero Page -> Save Area
+  1115    21 0000                       ld hl, 0
+  1118    11 1015                       ld de, ZeroPage
+  111B    01 0100                       ld bc,  256
+  111E    7E                    MovMem: ld a, (hl)
+  111F    12                            ld (de), a
+  1120    23                            inc hl
+  1121    13                            inc de
+  1122    0B                            dec bc
+  1123    78                            ld a, b
+  1124    B1                            or c
+  1125    C2 111E                       jp nz,MovMem
+  1128    C9                            ret
+                                
+  1129                          RestoreZP: ; Copy Save Area -> Zero Page
+  1129    21 1015                       ld hl, ZeroPage
+  112C    11 0000                       ld de, 0
+  112F    01 0100                       ld bc,  256
+  1132    C3 111E                       jp MovMem
+                                
+  1135                          SwapZP: ; Swap Zero Page <-> Save Area
+  1135    21 0000                       ld hl, 0
+  1138    11 1015                       ld de, ZeroPage
+  113B    01 0100                       ld bc,  256
+  113E    7E                    svzp2:  ld a, (hl)
+  113F    32 1151                       ld (zpswp), a
+	MACRO-80 3.44	09-Dec-81	PAGE	1-45
+
+
+  1142    1A                            ld a, (de)
+  1143    77                            ld (hl), a
+  1144    3A 1151                       ld a, (zpswp)
+  1147    12                            ld (de), a
+  1148    23                            inc hl
+  1149    13                            inc de
+  114A    0B                            dec bc
+  114B    78                            ld a, b
+  114C    B1                            or c
+  114D    C2 113E                       jp nz,svzp2
+  1150    C9                            ret
+  1151    00                    zpswp:  db 0;         
+                                
+  1152                          MoveBASIC: ; move basic to original location at 0000h
+  1152    01 0EFE               	ld bc, BIN_End-BIN_Start
+  1155    21 0103                       ld hl, BIN_Start
+  1158    11 0000                       ld de, 0
+  115B    C3 111E                       jp MovMem
+                                	
+  115E                          Wait1TermReady:	; replacement for WaitTermReady
+  115E    3E 00                 	ld a, 0 ; holds modified value during config 
+  1160    3E 00                 	ld a, 0 ; holds modified value during config
+  1162    F1                    	pop af
+  1163    C3 1193               	jp CPMOutChar
+  1166                          Wait2TermReady:
+                                
+  1166                          Input1Char:	; replacement for InputChar
+  1166    3E 00                 	ld a, 0 ; holds modified value during config 
+  1168    3E 00                 	ld a, 0 ; holds modified value during config
+  116A    C3 11B3               	jp CPMInChar
+  116D                          Input2Char:
+                                
+  116D                          Test1BreakKey:
+  116D    3E 00                 	ld a, 0 ; holds modified value during config 
+  116F    3E 00                 	ld a, 0 ; holds modified value during config
+  1171    C3 1174               	jp CPMBrkChar
+  1174                          Test2BreakKey:
+                                
+  1174                          CPMBrkChar:	
+  1174    E5                    	push hl
+  1175    D5                    	push de
+  1176    C5                    	push bc
+  1177    CD 1135               	call SwapZP
+  117A    0E 06                 	ld c,6 		; bdos call read console non blocking
+  117C    1E FF                 	ld e,255
+  117E    CD 0005               	call bdos
+  1181    32 148B                       ld (ch), a
+  1184    CD 1135               	call SwapZP
+  1187    3A 148B                       ld a,(ch)
+  118A    C1                    	pop bc
+  118B    D1                    	pop de
+  118C    E1                    	pop hl
+  118D    FE 03                 	cp ctrlz
+  118F    CA 01F7               	jp z,Stop
+  1192    C9                    	ret
+                                
+	MACRO-80 3.44	09-Dec-81	PAGE	1-46
+
+
+  1193                          CPMOutChar:     
+  1193    E6 7F                         and 7fh
+  1195    C8                            ret z
+  1196    32 148B                       ld (ch), a
+  1199    C5                    	push bc
+  119A    D5                    	push de
+  119B    E5                    	push hl
+  119C    CD 1135               	call SwapZP
+  119F    3A 148B                       ld a,(ch)
+  11A2    5F                            ld e,a
+  11A3    0E 02                         ld c,2		; BDOS Console Output
+  11A5    CD 0005                       call bdos
+  11A8    CD 1135               	call SwapZP
+  11AB    E1                    	pop hl
+  11AC    D1                    	pop de
+  11AD    C1                    	pop bc	
+  11AE    3A 148B               	ld a,(ch)
+  11B1    B7                    	or a
+  11B2    C9                    	ret
+                                
+  11B3                          CPMInChar:     
+  11B3    C5                    	push bc
+  11B4    D5                    	push de
+  11B5    E5                    	push hl
+  11B6    CD 1135               	call SwapZP
+  11B9    3A 1203               	ld a, (tapes)	; check if input from file
+  11BC    FE 01                 	cp 1
+  11BE    C2 11D6               	jp nz, cpmin1	; no, continue to keyboard input
+  11C1    CD 1321               	call TAPIN	; yes, read from file
+  11C4    FE 03                 	cp 3
+  11C6    C2 11ED               	jp nz, cpmin2	; not ^C, so process char read from file as it was read from keyboard 
+  11C9    3E 00                 	ld a, 0		; yes, is ^C so terminate reading
+  11CB    32 1203               	ld (tapes), a
+  11CE    CD 1346               	call closef
+  11D1    3E 03                 	ld a,3		; return 
+  11D3    C3 11ED               	jp cpmin2
+  11D6    0E 06                 cpmin1: ld c,6		; BDOS Direct Console I/O, read nonblocking
+  11D8    1E FF                         ld e,255
+  11DA    CD 0005                       call 5
+  11DD    B7                    	or a
+  11DE    CA 11D6               	jp z, cpmin1
+  11E1    FE 7B                 	cp 'z'+1
+  11E3    D2 11ED               	jp nc,cpmin2
+  11E6    FE 61                 	cp 'a'
+  11E8    DA 11ED               	jp c,cpmin2
+  11EB    D6 20                 	sub 'a'-'A'
+  11ED    32 148B               cpmin2: ld (ch), a
+  11F0    CD 1135               	call SwapZP
+  11F3    E1                    	pop hl
+  11F4    D1                    	pop de
+  11F5    C1                    	pop bc
+  11F6    3A 148B               	ld a, (ch)
+  11F9    FE 03                 	cp 3		; Pressed ^C ?
+  11FB    CA 01F7               	jp z, Stop
+  11FE    E6 7F                 	and 7fh
+  1200    C9                    	ret
+	MACRO-80 3.44	09-Dec-81	PAGE	1-47
+
+
+                                	
+  1201    0000                  RAMTOP: DW 0 ; RAM Top addr (first unavailable addr) 	
+  1203    00                    tapes:  db 0 ; 0=i/o from kbs/console, 1=input from cpm file, 2=output to cpm file
+                                
+  1204                          PatchBASIC:
+                                        ; Patch char input
+  1204    21 1166                       ld hl, Input1Char
+  1207    11 0382                       ld de, InputChar
+  120A    01 0007                       ld bc,  Input2Char-Input1Char
+  120D    CD 111E                       call MovMem
+                                        ; Patch char output
+  1210    21 115E                       ld hl, Wait1TermReady
+  1213    11 0377                       ld de, WaitTermReady
+  1216    01 0008                       ld bc,  Wait2TermReady-Wait1TermReady
+  1219    CD 111E                       call MovMem
+                                        ; Patch break char test
+  121C    21 116D                       ld hl, Test1BreakKey
+  121F    11 0473                       ld de, TestBreakKey
+  1222    01 0007                       ld bc,  Test2BreakKey-Test1BreakKey
+  1225    CD 111E                       call MovMem
+                                        ; Patch to fix 8080 flag usage (parity) that does not work in z80 cpu
+                                        ; Patch 0C07    E2 0B71         Fix1zJ:	JPO L0B71	;
+  1228    3E C3                 	ld a, 0c3h	; Jump opcode
+  122A    32 0C07               	ld (Fix1zJ), a
+  122D    21 126C               	ld hl, Fix1z
+  1230    22 0C08               	ld (Fix1zJ+1), hl
+                                	; Patch 0B66    E2 0B7A         Fix2zJ:	JPO PrepareToPrint	;then jump to PrepareToPrint.
+  1233    3E C3                 	ld a, 0c3h	; Jump opcode
+  1235    32 0B66               	ld (Fix2zJ), a
+  1238    21 1275               	ld hl, Fix2z
+  123B    22 0B67               	ld (Fix2zJ+1), hl
+                                	; Patch backspace char handling
+  123E    3E C3                 	ld a, 0c3h	; Jump opcode
+  1240    32 0341               	ld (InputNext), a
+  1243    21 1289               	ld hl, Input1Next
+  1246    22 0342               	ld (InputNext+1), hl
+                                	; Patch keywords table address when using it to tokenize
+                                	; LdKwTb1:LXI D,KEYWORDS-1	;
+                                	; LdKwTb2:LXI D,KEYWORDS		
+  1249    21 148B               	ld hl, KeyWords2-1
+  124C    22 02E5               	ld (LdKwTb1+1), hl
+  124F    21 148C               	ld hl, KeyWords2
+  1252    22 03BD               	ld (LdKwTb2+1), hl
+                                	; Patch to trap new tokens for save/load/system 
+                                	; TrapTk: JNC SyntaxError	
+  1255    21 12D4               	ld hl, ExecNewCommands
+  1258    22 044C               	ld (TrapTk+1), hl;
+                                	; patch input to make sure ID error is setup
+                                	; Input:	PUSH H	
+                                	;		LHLD CURRENT_LINE -> call FixImp
+  125B    3E CD                 	ld a, 0cdh	; call opcode
+  125D    32 05E5               	ld (Input+1), a
+  1260    21 127E               	ld hl, FixImp
+  1263    22 05E6               	ld (Input+2), hl
+                                	; set default tape mode to none (input/output from kwyboard)
+  1266    3E 00                 	ld a,0
+	MACRO-80 3.44	09-Dec-81	PAGE	1-48
+
+
+  1268    32 1203               	ld (tapes), a
+  126B    C9                    	ret
+                                	
+  126C    CD 1001               Fix1z:  call fixPrty
+  126F    E2 0B71               	jp po, L0B71
+  1272    C3 0C0A               	jp Fix1zJ+3
+                                		
+  1275    CD 1001               Fix2z:  call fixPrty
+  1278    E2 0B7A               	jp po, PrepareToPrint
+  127B    C3 0B69               	jp Fix2zJ+3
+                                	
+  127E    F5                    FixImp: push af
+  127F    3E 44                 	ld a, 'D'		; convert IO error in ID error
+  1281    32 0111               	ld (ID_IO_ERR_COD+1),a
+  1284    F1                    	pop af
+  1285    2A 0161               	ld hl,(CURRENT_LINE)
+  1288    C9                    	ret
+                                	
+  1289                          Input1Next:
+  1289    CD 0382               	call InputChar	;
+  128C    FE 0D                 	cp 0dh	;
+  128E    CA 0585               	jp z,TerminateInput	;
+  1291    FE 08                         cp 08h	;
+  1293    CA 12A8               	jp z,Back1space	;
+  1296    FE 20                 	cp 32	;If < ' '
+  1298    DA 0341               	jp c,InputNext	;or
+  129B    FE 7D                 	cp 7dh	;> '}'
+  129D    D2 0341               	jp nc,InputNext	;then loop back.
+  12A0    FE 40                 	cp '@'	;
+  12A2    CA 0338               	jp z,ResetInput	;
+  12A5    C3 035D               	jp L035D
+                                
+  12A8                          Back1space:
+  12A8    78                    	ld a,b		; b=char count in line+1
+  12A9    FE 01                 	cp 1
+  12AB    C2 12B3               	jp nz, bk1	
+  12AE    3E 00                 	ld a,0		; empty line, nothing to backspace
+  12B0    C3 0341               	jp InputNext
+  12B3    E5                    bk1:	push hl
+  12B4    D5                    	push de
+  12B5    C5                    	push bc
+  12B6    CD 1135               	call SwapZP
+  12B9    3E 08                 	ld a, 08h	; BackSpace
+  12BB    5F                            ld e,a
+  12BC    0E 02                         ld c,2		; BDOS Console Output
+  12BE    CD 0005                       call bdos
+  12C1    3E 20                 	ld a, ' '	; erase char
+  12C3    5F                            ld e,a
+  12C4    0E 02                         ld c,2		; BDOS Console Output
+  12C6    CD 0005                       call bdos
+  12C9    CD 1135               	call SwapZP
+  12CC    C1                    	pop bc
+  12CD    D1                    	pop de
+  12CE    E1                    	pop hl
+  12CF    3E 08                 	ld a, 08h	; BackSpace
+  12D1    C3 0332               	jp BackSpace	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-49
+
+
+                                	
+  12D4                          ExecNewCommands:
+                                	; was	TrapTk:	jp nc, SyntaxError
+  12D4    DA 044E               	jp c, TrapTk+3	; regular command, execute it
+                                	; now check for new commands
+  12D7    FE 26                 	cp 26h		; load command
+  12D9    CA 12E9               	jp z,Load
+  12DC    FE 27                 	cp 27h		; system command
+  12DE    CA 12E4               	jp z,System
+  12E1    C3 01D0               	jp SyntaxError	; not a new command -> proceed to syntax error
+                                	
+  12E4    D7                    System:	RST 10h	;RST NextChar	
+  12E5    C0                    	ret nz	;if args syntax error
+  12E6    C3 1511               	jp CPMExit
+                                
+  12E9    D7                    Load: 	RST 10h	;RST NextChar	
+  12EA    CA 01D0               	jp z, SyntaxError	;if no args syntax error
+  12ED    FE 22                 	cp '"'	
+  12EF    C2 01D0               	jp nz, SyntaxError	;if arg is not string literal then systema error
+  12F2    C5                    	push bc
+  12F3    D5                    	push de
+  12F4    E5                    	push hl
+  12F5    23                    	inc hl
+  12F6    22 1489               	ld (NBYTES), hl		; save pointer to begin of filename
+  12F9    CD 1135               	call SwapZP
+  12FC    ED 5B 1489            	ld de,(NBYTES)		; load pointer to begin of filename
+  1300    CD 1355               	call OPENFR
+  1303    F5                    	push af
+  1304    CD 1135               	call SwapZP
+  1307    F1                    	pop af
+  1308    E1                    	pop hl
+  1309    D1                    	pop de
+  130A    C1                    	pop bc
+  130B    B7                    	or a 
+  130C    C2 1317               	jp nz, IOErr
+  130F    3E 01                 	ld a,1
+  1311    32 1203               	ld (tapes), a
+  1314    C3 04F5               	jp FindNextStatement	; open file ok
+  1317    3E 4F                 IOErr:	ld a, 'O'		; convert ID error in IO error
+  1319    32 0111               	ld (ID_IO_ERR_COD+1),a
+  131C    1E 16                 	ld e, 16h
+  131E    C3 01D5               	jp Error		; I/O error
+                                	
+                                ;
+                                ; RSV-OPENF/CLOSEF FUNCTIONS FOR LOAD/SAVE FILE UNDER CPM 
+                                ;     RETURNS 0 ON OK, NOT ZERO ON I/O ERROR
+                                ;
+                                        .Z80
+                                
+  001A                          CNTRLZ	EQU	1AH		;control-z (end-of-file mark)
+                                
+  1321    3A 005C               TAPIN:	LD	A,(FCB)		;READ CHAR FROM FILE
+  1324    FE FF                 	CP	255		;IF (FCB)=FF THERE IS NO FILE OPEN
+  1326    CA 1343               	JP	Z,TAPBRK	;IF NO FILE OPEN END TAPE READ
+  1329    CD 136C               	CALL	TYPE1		;GET CHAR FROM FILE C=CHAR, A=0 OK, A<>0 ERROR/EOF
+  132C    B7                    	OR	A
+	MACRO-80 3.44	09-Dec-81	PAGE	1-50
+
+
+  132D    C2 1343               	JP	NZ,TAPBRK	;IF ERROR/EOF->RETURN ^C TO CALLER
+  1330    79                    	LD	A,C
+  1331    FE 0D                 	CP      13
+  1333    C0                    	RET	NZ		;RET IF CHAR FROM FILE NOT <CR>
+  1334    0E 06                         LD	C,6		;CHAR FROM FILE=<CR> -> CHECK KBD FOR ^C
+  1336    1E FF                         LD	E,255
+  1338    CD 0005                       CALL    BDOS
+  133B    FE 03                         CP	3
+  133D    CA 1343                       JP	Z,TAPBRK	;IF ^C PRESSED->RETURN ^C TO CALLER
+  1340    3E 0D                         LD	A,13
+  1342    C9                    	RET
+  1343    3E 03                 TAPBRK:	LD	A,3
+  1345    C9                    	RET	
+                                        
+  1346    3A 005C               CLOSEF: LD	A,(FCB)		;IF (FCB)=FF THERE IS NO FILE OPEN
+  1349    FE FF                 	CP	255
+  134B    C8                    	RET	Z
+  134C    CD 1480               	CALL	CLOSFCB		;  ELSE CLOSE FILE IN FCB
+  134F    3E FF                 CLRFCB:	LD	A,255
+  1351    32 005C               	LD	(FCB),A
+  1354    C9                    	RET
+                                        
+  1355    CD 139F               OPENFR:	CALL	CONVERT		;convert file name.
+  1358    B7                    	OR	A
+  1359    C2 1394               	JP	NZ,TYPERR	;wild cards not allowed.
+  135C    CD 146A               	CALL	OPENFCB		;open the file.
+  135F    FE FF                 	CP	255
+  1361    CA 1394               	JP	Z,TYPERR	;not there?
+  1364    21 1489               	LD	HL,NBYTES	;initialize byte counter.
+  1367    36 FF                 	LD	(HL),0FFH	;set to read first sector.	
+  1369    3E 00                 	LD 	A,0		;return A=0 -> OK
+  136B    C9                    	RET
+                                	
+  136C    21 1489               TYPE1:	LD	HL,NBYTES
+  136F    7E                    TYPE2:	LD	A,(HL)		;have we written the entire sector?
+  1370    FE 80                 	CP	128
+  1372    DA 1380               	JP	C,TYPE3
+  1375    E5                    	PUSH	HL		;yes, read in the next one.
+  1376    CD 1477               	CALL	READFCB
+  1379    E1                    	POP	HL
+  137A    B7                    	OR	A
+  137B    C2 1391               	JP	NZ,TYPERR2	;end or error?
+  137E    AF                    	XOR	A		;ok, clear byte counter.
+  137F    77                    	LD	(HL),A
+  1380    34                    TYPE3:	INC	(HL)		;count this byte.
+  1381    21 0080               	LD	HL,TBUFF	;and get the (A)th one from the buffer (TBUFF).
+  1384    CD 139A               	CALL	ADDHL
+  1387    7E                    	LD	A,(HL)
+  1388    4F                    	LD      C,A
+  1389    FE 1A                 	CP	CNTRLZ		;end of file mark?
+  138B    CA 1391               	JP	Z,TYPERR2
+  138E    3E 00                 	LD 	A,0		;return A=0 -> OK
+  1390    C9                    	RET			; C=CHAR READ
+                                ;
+                                ;   Get here on an end of file or read error or open error.
+                                ;
+	MACRO-80 3.44	09-Dec-81	PAGE	1-51
+
+
+  1391    CD 1480               TYPERR2:CALL	CLOSFCB
+  1394    CD 134F               TYPERR:	CALL	CLRFCB
+  1397    3E FF                   	LD	A,255		;eof found
+  1399    C9                            RET
+                                ;
+                                ;   Add (HL)=(HL)+(A)
+                                ;
+  139A    85                    ADDHL:	ADD	A,L
+  139B    6F                    	LD	L,A
+  139C    D0                    	RET	NC		;take care of any carry.
+  139D    24                    	INC	H
+  139E    C9                    	RET	
+                                ;
+                                ;   Convert the name in (de) to (FCB).
+                                ;   Format a file name (convert * to '?', etc.). On return,
+                                ; (A)=0 is an unambigeous name was specified. Enter with (A) equal to
+                                ; the position within the fcb for the name (either 0 or 16).
+                                ;
+  139F    21 005C               CONVERT:LD	HL,FCB
+  13A2    1A                    	LD	A,(DE)		;get first character of filename
+  13A3    B7                    	OR	A
+  13A4    C2 13AA               	JP	NZ,CONVRT1
+  13A7    3E 01                 	LD	A,1		;error: empty filename
+  13A9    C9                    	RET
+  13AA    DE 40                 CONVRT1:SBC	A,'A'-1		;might be a drive name, convert to binary.
+  13AC    47                    	LD	B,A		;and save.
+  13AD    13                    	INC	DE		;check next character for a ':'.
+  13AE    1A                    	LD	A,(DE)
+  13AF    FE 3A                 	CP	':'
+  13B1    CA 13BB               	JP	Z,CONVRT2
+  13B4    1B                    	DEC	DE		;nope, move pointer back to the start of the line.
+  13B5    3E 00                 	LD	A,0             ;default drive
+  13B7    77                    	LD	(HL),A
+  13B8    C3 13BD               	JP	CONVRT3
+  13BB    70                    CONVRT2:LD	(HL),B
+  13BC    13                    	INC	DE
+                                ;
+                                ;   Convert the basic file name.
+                                ;
+  13BD    06 08                 CONVRT3:LD	B,08H
+  13BF    CD 144E               CONVRT4:CALL	CHECK
+  13C2    CA 13E0               	JP	Z,CONVRT8
+  13C5    23                    	INC	HL
+  13C6    FE 2A                 	CP	'*'		;note that an '*' will fill the remaining
+  13C8    C2 13D0               	JP	NZ,CONVRT5	;field with '?'.
+  13CB    36 3F                 	LD	(HL),'?'
+  13CD    C3 13D2               	JP	CONVRT6
+  13D0    77                    CONVRT5:LD	(HL),A
+  13D1    13                    	INC	DE
+  13D2    05                    CONVRT6:DEC	B
+  13D3    C2 13BF               	JP	NZ,CONVRT4
+  13D6    CD 144E               CONVRT7:CALL	CHECK		;get next delimiter.
+  13D9    CA 13E7               	JP	Z,GETEXT
+  13DC    13                    	INC	DE
+  13DD    C3 13D6               	JP	CONVRT7
+  13E0    23                    CONVRT8:INC	HL		;blank fill the file name.
+	MACRO-80 3.44	09-Dec-81	PAGE	1-52
+
+
+  13E1    36 20                 	LD	(HL),' '
+  13E3    05                    	DEC	B
+  13E4    C2 13E0               	JP	NZ,CONVRT8
+                                ;
+                                ;   Get the extension and convert it.
+                                ;
+  13E7    06 03                 GETEXT:	LD	B,03H
+  13E9    FE 2E                 	CP	'.'
+  13EB    C2 1410               	JP	NZ,GETEXT5
+  13EE    13                    	INC	DE
+  13EF    CD 144E               GETEXT1:CALL	CHECK
+  13F2    CA 1410               	JP	Z,GETEXT5
+  13F5    23                    	INC	HL
+  13F6    FE 2A                 	CP	'*'
+  13F8    C2 1400               	JP	NZ,GETEXT2
+  13FB    36 3F                 	LD	(HL),'?'
+  13FD    C3 1402               	JP	GETEXT3
+  1400    77                    GETEXT2:LD	(HL),A
+  1401    13                    	INC	DE
+  1402    05                    GETEXT3:DEC	B
+  1403    C2 13EF               	JP	NZ,GETEXT1
+  1406    CD 144E               GETEXT4:CALL	CHECK
+  1409    CA 1417               	JP	Z,GETEXT6
+  140C    13                    	INC	DE
+  140D    C3 1406               	JP	GETEXT4
+  1410    23                    GETEXT5:INC	HL
+  1411    36 20                 	LD	(HL),' '
+  1413    05                    	DEC	B
+  1414    C2 1410               	JP	NZ,GETEXT5
+  1417    06 03                 GETEXT6:LD	B,3
+  1419    23                    GETEXT7:INC	HL
+  141A    36 00                 	LD	(HL),0
+  141C    05                    	DEC	B
+  141D    C2 1419               	JP	NZ,GETEXT7
+                                ;
+                                ; Check to see if this is an ambigeous file name specification.
+                                ; Set the (A) register to non zero if it is.
+                                ;
+  1420    01 000B               	LD	BC,11		;set name length.
+  1423    21 005C               	LD	HL,FCB	
+  1426    23                    GETEXT8:INC	HL
+  1427    7E                    	LD	A,(HL)
+  1428    FE 3F                 	CP	'?'		;any question marks?
+  142A    C2 142E               	JP	NZ,GETEXT9
+  142D    04                    	INC	B		;count them.
+  142E    0D                    GETEXT9:DEC	C
+  142F    C2 1426               	JP	NZ,GETEXT8
+  1432    78                    	LD	A,B
+  1433    B7                    	OR	A
+  1434    C0                    	RET     NZ		;do niot allow ? in filename
+  1435    3A 005C               	LD 	A,(FCB)
+  1438    B7                    	OR	A
+  1439    CA 1445               	JP	Z,GETEXTA
+  143C    3D                    	DEC	A
+  143D    5F                    	LD	E,A
+  143E    0E 0E                 	LD	C,14		;DSKSEL
+	MACRO-80 3.44	09-Dec-81	PAGE	1-53
+
+
+  1440    CD 0005               	CALL	BDOS		
+  1443    B7                    	OR	A
+  1444    C0                    	RET	NZ		;not ready?
+  1445    11 0080               GETEXTA:LD	DE,TBUFF
+  1448    0E 1A                 	LD	C,26		;SETDMA
+  144A    CD 0005               	CALL 	BDOS
+  144D    C9                    	RET	
+                                ;
+                                ; Check character at (DE) for legal command input. Note that the
+                                ; zero flag is set if the character is a delimiter.
+                                ;
+  144E    1A                    CHECK:	LD	A,(DE)
+  144F    B7                    	OR	A
+  1450    C8                    	RET	Z
+  1451    FE 3D                 	CP	'='
+  1453    C8                    	RET	Z
+  1454    FE 5F                 	CP	'_'
+  1456    C8                    	RET	Z
+  1457    FE 2E                 	CP	'.'
+  1459    C8                    	RET	Z
+  145A    FE 3A                 	CP	':'
+  145C    C8                    	RET	Z
+  145D    FE 3B                 	CP	';'
+  145F    C8                    	RET	Z
+  1460    FE 3C                 	CP	'<'
+  1462    C8                    	RET	Z
+  1463    FE 3E                 	CP	'>'
+  1465    C8                    	RET	Z
+  1466    FE 22                 	CP	'"'	; close filename literal
+  1468    C8                    	RET	Z
+  1469    C9                    	RET	
+                                ;
+                                ;   Routine to open file at (FCB).
+                                ;
+  146A    AF                    OPENFCB:XOR	A		;clear the record number byte at fcb+32
+  146B    32 007C               	LD	(FCB+32),A
+  146E    11 005C               	LD	DE,FCB
+  1471    0E 0F                 	LD	C,15
+  1473    CD 0005               	CALL 	BDOS		;open file (error if file does not exist)
+  1476    C9                    	RET
+                                ;
+                                ;   Routine to read file at (FCB).
+                                ;
+  1477    11 005C               READFCB:LD	DE,FCB
+  147A    0E 14                 	LD	C,20
+  147C    CD 0005               	CALL 	BDOS
+  147F    C9                    	RET
+                                ;
+                                ;   Routine to close file at (FCB).
+                                ;
+  1480    11 005C               CLOSFCB:LD	DE,FCB
+  1483    0E 10                 	LD	C,16
+  1485    CD 0005               	CALL 	BDOS
+  1488    C9                    	RET
+                                
+                                
+	MACRO-80 3.44	09-Dec-81	PAGE	1-54
+
+
+                                ;
+                                ; File control block setup by the CCP.
+                                ;
+  005C                          FCB	EQU	5CH		;default file control block.
+  0080                          TBUFF	EQU	80H		;i/o buffer and command line storage.
+  1489    0000                  NBYTES:	DW	0		;byte counter used by tape command
+  148B    00                    CH:	DB	0		;save char
+                                
+                                	
+  148C                          KeyWords2:	
+  148C    45 4E C4              	DC "END"	; 80
+  148F    46 4F D2              	DC "FOR"	; 81
+  1492    4E 45 58 D4           	DC "NEXT"	; 82
+  1496    44 41 54 C1           	DC "DATA"	; 83
+  149A    49 4E 50 55           	DC "INPUT"	; 84
+  149E    D4                    
+  149F    44 49 CD              	DC "DIM"	; 85
+  14A2    52 45 41 C4           	DC "READ"	; 86
+  14A6    4C 45 D4              	DC "LET"	; 87
+  14A9    47 4F 54 CF           	DC "GOTO"	; 88
+  14AD    52 55 CE              	DC "RUN"	; 89
+  14B0    49 C6                 	DC "IF"		; 8A
+  14B2    52 45 53 54           	DC "RESTORE"	; 8B
+  14B6    4F 52 C5              
+  14B9    47 4F 53 55           	DC "GOSUB"	; 8C
+  14BD    C2                    
+  14BE    52 45 54 55           	DC "RETURN"	; 8D
+  14C2    52 CE                 
+  14C4    52 45 CD              	DC "REM"	; 8E
+  14C7    53 54 4F D0           	DC "STOP"	; 8F
+  14CB    50 52 49 4E           	DC "PRINT"	; 90
+  14CF    D4                    
+  14D0    4C 49 53 D4           	DC "LIST"	; 91
+  14D4    43 4C 45 41           	DC "CLEAR"	; 92
+  14D8    D2                    
+  14D9    4E 45 D7              	DC "NEW"	; 93
+                                ;
+  14DC    54 41 42 A8           	DC "TAB("	; 94
+  14E0    54 CF                 	DC "TO"		; 95
+  14E2    54 48 45 CE           	DC "THEN"	; 96
+  14E6    53 54 45 D0           	DC "STEP"	; 97
+                                ;
+  14EA    AB                    	DB 0ABh		; "+"	98
+  14EB    AD                    	DB 0ADh		; "-"	99
+  14EC    AA                    	DB 0AAh		; "*"	9A
+  14ED    AF                    	DB 0AFh		; "/"	9B
+  14EE    BE                    	DB 0BEh		; ">"	9C
+  14EF    BD                    	DB 0BDh		; "="	9D
+  14F0    BC                    	DB 0BCh		; "<"	9E
+                                ;
+  14F1    53 47 CE              	DC "SGN"	; 9F
+  14F4    49 4E D4              	DC "INT"	; A0
+  14F7    41 42 D3              	DC "ABS"	; A1
+  14FA    55 53 D2              	DC "USR"	; A2
+  14FD    53 51 D2              	DC "SQR"	; A3
+  1500    52 4E C4              	DC "RND"	; A4
+	MACRO-80 3.44	09-Dec-81	PAGE	1-55
+
+
+  1503    53 49 CE              	DC "SIN"	; A5
+                                	
+  1506    4C 4F 41 C4           	DC "LOAD"	; A6	; New commands
+  150A    53 59 53 54           	DC "SYSTEM"	; A7
+  150E    45 CD                 
+                                
+  1510    00                    	DB 0	
+                                			
+  1511                          CPMExit: ; Exit to CPM
+  1511    CD 1129                       call RestoreZP
+  1514    C3 0000                       jp 0
+                                
+  1517                          CPMStart:
+  1517    2A 0006                       ld hl, (6) 	; BDOS vector signals the end of tpa address
+  151A    2B                            dec hl
+  151B    22 1201                       ld (RAMTOP), hl
+  151E    CD 1115                       call SaveZP
+  1521    CD 1152                       call MoveBASIC
+  1524    CD 1204                       call PatchBASIC
+  1527    C3 152A                       jp InitBASIC                                
+                                
+  152A                          InitBASIC:	
+  152A    2A 1201               	ld hl, (RAMTOP)
+  152D    01 FF80               	ld bc, 0ff80h
+  1530    09                    	add hl, bc
+  1531    22 0163               	ld (STACK_TOP), hl
+  1534    F9                    	ld sp, hl
+                                	
+  1535    21 FFFF               	ld hl, 0FFFFh	
+  1538    22 0161               	ld (CURRENT_LINE), hl
+  153B    CD 058A               	call NewLine	
+  153E    21 0EF0               	ld hl, szMemorySize	
+  1541    CD 05A3               	call PrintString	
+  1544    CD 02C2               	call InputLineWith	
+  1547    D7                    	rst 10h			; RST NextChar 
+  1548    B7                    	or a			; if a=0 -> user just hit return
+  1549    C2 1552               	jp nz, iL0DDE	
+  154C    2A 0163               	ld hl, (STACK_TOP)	
+  154F    C3 155E               	jp iDoneMemSize	
+  1552                          iL0DDE:
+  1552    21 0113               	ld hl,LINE_BUFFER	
+  1555    CD 049D               	CALL LineNumberFromStr	; de=number
+  1558    B7                    	or a			; a=0 if is input line is a number
+  1559    C2 01D0               	jp nz, SyntaxError	
+  155C    EB                    	ex de,hl
+  155D    2B                    	dec hl
+  155E                          iDoneMemSize:
+  155E    2B                            dec hl 
+  155F    E5                            push hl
+  1560                          iGetTerminalWidth:
+  1560    21 0EB4               	ld hl,szTerminalWidth	
+  1563    CD 05A3               	CALL PrintString	
+  1566    CD 02C2               	CALL InputLineWith	
+  1569    D7                    	RST 10h	;RST NextChar		
+  156A    B7                    	or a
+  156B    CA 158F               	jp z, iDoOptionalFns	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-56
+
+
+  156E    21 0113               	ld hl,LINE_BUFFER	
+  1571    CD 049D               	CALL LineNumberFromStr	
+  1574    7A                    	ld a,d
+  1575    B7                    	or a
+  1576    C2 1560               	jp nz,iGetTerminalWidth	
+  1579    7B                    	ld a,e
+  157A    FE 10                 	cp 10h	
+  157C    DA 1560               	jp c,iGetTerminalWidth	
+  157F    32 036F               	ld (OutChar_tail+1),a
+  1582                          iCalcTabBrkSize:
+  1582    D6 0E                 	sub 0Eh	
+  1584    D2 1582               	jp nc,iCalcTabBrkSize	
+  1587    C6 1C                 	add a,1Ch	
+  1589    2F                    	cpl
+  158A    3C                    	inc a
+  158B    83                    	add a,e	
+  158C    32 05B7               	ld (ToNextTabBreak+4),a
+  158F                          iDoOptionalFns:
+  158F    21 0E85               	ld hl, OPT_FN_DESCS	
+  1592                          iOptionalFnsLoop:
+  1592    F7                    	RST 30h	
+  1593    11 0E99               	ld de, szWantSin	
+  1596    E7                    	RST 20h
+  1597    CA 15A6               	jp z,iL0E32	
+  159A    F7                    	RST 30h
+  159B    E3                    	ex (sp),hl
+  159C    CD 05A3               	CALL PrintString	
+  159F    CD 02C2               	CALL InputLineWith	
+  15A2    D7                    	RST 10h	;RST NextChar	
+  15A3    E1                    	pop hl
+  15A4    FE 59                 	cp 'Y'	
+  15A6    D1                    iL0E32:	pop de
+  15A7    CA 15BB               	jp z,iInitProgramBase	
+  15AA    FE 4E                 	cp 'N'	
+  15AC    C2 158F               	jp nz,iDoOptionalFns	
+  15AF    F7                    	RST 30h	
+  15B0    E3                    	ex (sp),hl
+  15B1    11 0498               	ld de,FunctionCallError	
+  15B4    73                    	ld (hl),e
+  15B5    23                    	inc hl
+  15B6    72                    	ld (hl),d
+  15B7    E1                    	pop hl
+  15B8    C3 1592               	jp iOptionalFnsLoop	
+  15BB                          iInitProgramBase:
+  15BB    EB                            ex de,hl
+  15BC    21 15FF               	ld hl, EndOfBASIC+1
+  15BF    36 00                 	ld (hl), 0
+  15C1    22 0165               	ld (PROGRAM_BASE), hl
+  15C4    E3                    	ex (sp),hl		; hl=addr typed on MEMORY? or RAMTOP if user just hit return
+  15C5    E5                    	push hl
+  15C6    2A 0163               	ld hl, (STACK_TOP)	; de=stack_top = current high addr of basic
+  15C9    EB                    	ex de,hl
+  15CA    E1                    	pop hl
+  15CB    E7                    	RST 20h	                ; calc hl-de
+  15CC    D2 01CD               	jp nc,OutOfMemory	
+  15CF    D1                    	pop de
+	MACRO-80 3.44	09-Dec-81	PAGE	1-57
+
+
+  15D0    F9                    	ld sp,hl
+  15D1    22 0163               	ld (STACK_TOP),hl
+  15D4    EB                    	ex de,hl
+  15D5    CD 01C3               	CALL CheckEnoughMem	
+  15D8    7B                    	ld a,e
+  15D9    95                    	sub l 
+  15DA    6F                    	ld l,a
+  15DB    7A                    	ld a,d
+  15DC    9C                    	sbc a,h
+  15DD    67                    	ld h,a
+  15DE    01 FFF0               	ld bc, 0fff0h
+  15E1    09                    	add hl,bc
+  15E2    CD 058A               	CALL NewLine	
+  15E5    CD 0B37               	CALL PrintInt	
+  15E8    21 0EC3               	ld hl, szVersionInfo	 
+  15EB    CD 05A3               	CALL PrintString	
+  15EE    21 05A3               	ld hl, PrintString	
+  15F1    22 01FD               	ld (Main+4), hl
+  15F4    CD 0296               	CALL New+1	
+  15F7    21 01F9               	ld hl, Main	
+  15FA    22 0002               	ld (Start+2), hl
+  15FD    E9                    	jp (hl)	
+                                
+  15FE                          EndOfBASIC: 
+  15FE    00                    	db 0
+                                
+                                	end
+	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+09F8 	ABS             139A 	ADDHL           07CD 	ALLOCARRAY      
+0752 	ALLOCNEWVAR     0785 	ALREADYALLOCD   0699 	ARITHPARSE      
+0507 	ASSIGNVAR       12A8 	BACK1SPACE      0332 	BACKSPACE       
+0005 	BDOS            1001 	BIN_END         0103 	BIN_START       
+12B3 	BK1             05BE 	CALCSPACECOUNT  0E0E 	CALCTABBRKSIZE  
+148B 	CH              0480 	CHARISALPHA     144E 	CHECK           
+01C3 	CHECKENOUGHMEM  01B6 	CHECKENOUGHVARSP 02A6 	CLEAR           
+1346 	CLOSEF          1480 	CLOSFCB         134F 	CLRFCB          
+001A 	CNTRLZ          0020 	COMPAREHLDE     0D8E 	CONFIGIOCODE    
+139F 	CONVERT         13AA 	CONVRT1         13BB 	CONVRT2         
+13BD 	CONVRT3         13BF 	CONVRT4         13D0 	CONVRT5         
+13D2 	CONVRT6         13D6 	CONVRT7         13E0 	CONVRT8         
+0255 	COPYFROMBUFFER  01AD 	COPYMEMLOOP     01A7 	COPYMEMORYUP    
+1174 	CPMBRKCHAR      1511 	CPMEXIT         11D6 	CPMIN1          
+11ED 	CPMIN2          11B3 	CPMINCHAR       1193 	CPMOUTCHAR      
+1517 	CPMSTART        0003 	CTRLZ           0161 	CURRENT_LINE    
+016D 	DATA_PROG_PTR   0AEB 	DECIMALLOOP     0AF7 	DECIMALLOOPEND  
+0AFC 	DECIMALSHIFTUP  0C0F 	DECIMAL_POWERS  0BAA 	DIGITLOOP       
+0716 	DIM             0711 	DIMCONTD        015B 	DIM_OR_EVAL     
+01D3 	DIVIDEBYZERO    0B23 	DOEXPONENTDIGIT 0DEA 	DONEMEMSIZE     
+0E1B 	DOOPTIONALFNS   0B4E 	DOZERO          15FE 	ENDOFBASIC      
+041D 	ENDOFFORHANDLER 01D5 	ERROR           00FA 	ERROR_CODES     
+06E2 	EVALBRACKETED   068A 	EVALEXPRESSION  06FD 	EVALINLINEFN    
+06EA 	EVALMINUSTERM   06C4 	EVALTERM        06F3 	EVALVARTERM     
+043E 	EXEC            12D4 	EXECNEWCOMMANDS 0421 	EXECNEXT        
+0329 	EXIT            05DF 	EXITTAB         0BED 	EXPDIGITLOOP    
+016F 	FACCUM          0810 	FADD            08A9 	FADDMANTISSAS   
+0804 	FADDMEM         0801 	FADDONEHALF     0A77 	FASINTEGER      
+0174 	FBUFFER         005C 	FCB             09E5 	FCHARTOFLOAT    
+0A4C 	FCOMPARE        0A2E 	FCOPYLOOP       0A1D 	FCOPYTOBCDE     
+0A29 	FCOPYTOMEM      092F 	FDIV            0923 	FDIVBYTEN       
+0954 	FDIVLOOP        099B 	FEXPONENTADD    0AB3 	FIN             
+07A1 	FINDARRAY       0DCD 	FINDMEMTOPLOOP  04F5 	FINDNEXTSTATEMEN 
+04F9 	FINDNXTSTATEMENT 027D 	FINDPROGRAMLINE 073B 	FINDVARLOOP     
+0ABC 	FINLOOP         0A64 	FISEQUAL        126C 	FIX1Z           
+0C07 	FIX1ZJ          1275 	FIX2Z           0B66 	FIX2ZJ          
+1010 	FIXEXIT         127E 	FIXIMP          1001 	FIXPRTY         
+0A20 	FLOADBCDEFROMMEM 0A12 	FLOADFROMBCDE   0A0F 	FLOADFROMMEM    
+0A9B 	FMANTISSADEC    089A 	FMANTISSAINC    0890 	FMANTISSALEFT   
+08C9 	FMANTISSARTMULT 08D6 	FMANTISSARTONCE 08E3 	FMUL            
+09C3 	FMULBYTEN       090A 	FMULINNERLOOP   0905 	FMULOUTERLOOP   
+09FA 	FNEGATE         08B5 	FNEGATEINT      085B 	FNORMALISE      
+03D5 	FOR             0683 	FORLOOPISCOMPLET 0B42 	FOUT            
+0A02 	FPUSH           0315 	FREECOPY        030C 	FREECOPYLOOP    
+087E 	FROUNDUP        080A 	FSUB            084D 	FSUBMANTISSAS   
+0173 	FTEMP           0028 	FTESTSIGN       09DA 	FTESTSIGN_TAIL  
+0498 	FUNCTIONCALLERRO 0A37 	FUNPACKMANTISSAS 07F9 	FWORDTOFLOAT    
+09BE 	FZERO           078A 	GETARRAYVAR     051F 	GETCOMPAREOPLOOP 
+0ACA 	GETEXPONENT     13E7 	GETEXT          13EF 	GETEXT1         
+1400 	GETEXT2         1402 	GETEXT3         1406 	GETEXT4         
+1410 	GETEXT5         1417 	GETEXT6         1419 	GETEXT7         
+1426 	GETEXT8         142E 	GETEXT9         1445 	GETEXTA         
+	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+
+
+0192 	GETFLOWPTR      01FF 	GETNONBLANKLINE 0488 	GETSUBSCRIPT    
+0DEC 	GETTERMINALWIDTH 071B 	GETVAR          04BE 	GOSUB           
+0532 	GOTCOMPAREOP    0620 	GOTDATAITEM     04CF 	GOTO            
+1582 	ICALCTABBRKSIZE 155E 	IDONEMEMSIZE    158F 	IDOOPTIONALFNS  
+0110 	ID_IO_ERR_COD   0516 	IF              1560 	IGETTERMINALWIDT 
+15BB 	IINITPROGRAMBASE 1552 	IL0DDE          15A6 	IL0E32          
+0A27 	INCHLRETURN     0D21 	INIT            152A 	INITBASIC       
+07EF 	INITELEMENTS    0E47 	INITPROGRAMBASE 0776 	INITVARLOOP     
+05E4 	INPUT           1166 	INPUT1CHAR      1289 	INPUT1NEXT      
+116D 	INPUT2CHAR      0382 	INPUTCHAR       033C 	INPUTLINE       
+02C2 	INPUTLINEWITH   0341 	INPUTNEXT       015C 	INPUT_OR_READ   
+0239 	INSERTPROGRAMLIN 0AA2 	INT             09DE 	INVSIGNTOINT    
+1317 	IOERR           1592 	IOPTIONALFNSLOOP 0057 	KEYWORDS        
+148C 	KEYWORDS2       02E9 	KWCOMPARE       004B 	KW_ARITH_OP_FNS 
+00D2 	KW_GENERAL_FNS  003D 	KW_INLINE_FNS   003A 	L003A           
+015F 	L015F           0265 	L0265           0271 	L0271           
+035D 	L035D           036A 	L036A           03E2 	L03E2           
+046E 	L046E           05FA 	L05FA           0747 	L0747           
+0782 	L0782           07BF 	L07BF           07E1 	L07E1           
+082C 	L082C           0919 	L0919           095F 	L095F           
+0971 	L0971           0AE4 	L0AE4           0B71 	L0B71           
+0B95 	L0B95           0BCF 	L0BCF           0BDB 	L0BDB           
+0BEB 	L0BEB           0C7C 	L0C7C           0D17 	L0D17           
+0D42 	L0D42           0D4B 	L0D4B           0D6F 	L0D6F           
+0D87 	L0D87           0D8B 	L0D8B           0D8D 	L0D8D           
+0DDE 	L0DDE           0E32 	L0E32           02E4 	LDKWTB1         
+03BC 	LDKWTB2         0502 	LET             049D 	LINENUMBERFROMST 
+0113 	LINE_BUFFER     038E 	LIST            03AE 	LISTCHAR        
+0397 	LISTNEXTLINE    12E9 	LOAD            01F9 	MAIN            
+1152 	MOVEBASIC       111E 	MOVMEM          1489 	NBYTES          
+0CC3 	NEGATEIFPOSITIVE 0295 	NEW             058A 	NEWLINE         
+0649 	NEXT            0010 	NEXTCHAR        045E 	NEXTCHAR_TAIL   
+0635 	NEXTDATALINE    0B9B 	NEXTDIGIT       0AD8 	NEXTEXPONENTDIGI 
+031C 	NEXTKEYWORD     0320 	NEXTKWLOOP      04A1 	NEXTLINENUMCHAR 
+0865 	NORMLOOP        02FF 	NOTAKEYWORD     0BFA 	NULLTERM        
+0C0B 	ONE_HALF        146A 	OPENFCB         1355 	OPENFR          
+0E1E 	OPTIONALFNSLOOP 0E85 	OPT_FN_DESCS    0018 	OUTCHAR         
+036E 	OUTCHAR_TAIL    01CD 	OUTOFMEMORY     08A4 	OVERFLOW        
+1204 	PATCHBASIC      0921 	POPHLANDRETURN  0B7A 	PREPARETOPRINT  
+0557 	PRINT           0B2F 	PRINTIN         0B37 	PRINTINT        
+03CB 	PRINTKEYWORD    0596 	PRINTNULLLOOP   05DA 	PRINTSPACELOOP  
+05D6 	PRINTSPACES     05A3 	PRINTSTRING     0B04 	PROCESSDIGIT    
+0165 	PROGRAM_BASE    015D 	PROG_PTR_TEMP   0030 	PUSHNEXTWORD    
+0414 	PUSHSTEPVALUE   1201 	RAMTOP          05F6 	READ            
+1477 	READFCB         0601 	READNEXT        04F7 	REM             
+022C 	REMOVELINE      0228 	REMOVEPROGRAMLIN 02A2 	RESETALL        
+0338 	RESETINPUT      02B5 	RESETSTACK      0469 	RESTORE         
+1129 	RESTOREZP       04DF 	RETURN          0C5F 	RND             
+0C91 	RND_SEED        08CD 	RTMULTLOOP      02A1 	RUN             
+1115 	SAVEZP          0AE8 	SCALERESULT     100E 	SETPRTY         
+09E4 	SGN             09DF 	SIGNTOINT       0C95 	SIN             
+0C21 	SQR             0C39 	SQRLOOP         0163 	STACK_TOP       
+0000 	START           01F7 	STOP            021C 	STOREPROGRAMLINE 
+113E 	SVZP2           1135 	SWAPZP          0008 	SYNTAXCHECK     
+01D0 	SYNTAXERROR     12E4 	SYSTEM          0181 	SZERROR         
+0188 	SZIN            0EF0 	SZMEMORYSIZE    018D 	SZOK            
+	MACRO-80 3.44	09-Dec-81	PAGE	S-2
+
+
+0EB4 	SZTERMINALWIDTH 0EC3 	SZVERSIONINFO   0EA2 	SZWANTRND       
+0E99 	SZWANTSIN       0EAB 	SZWANTSQR       05C7 	TAB             
+1343 	TAPBRK          1203 	TAPES           1321 	TAPIN           
+0CE9 	TAYLORLOOP      0D03 	TAYLOR_SERIES   0080 	TBUFF           
+0027 	TERMINAL_X      0026 	TERMINAL_Y      0585 	TERMINATEINPUT  
+116D 	TEST1BREAKKEY   1174 	TEST2BREAKKEY   0473 	TESTBREAKKEY    
+02CC 	TOKENIZE        03C0 	TONEXTKEYWORD   05B3 	TONEXTTABBREAK  
+0B5D 	TOOVER100000    0BFD 	TOUNDER1000000  044B 	TRAPTK          
+136C 	TYPE1           136F 	TYPE2           1380 	TYPE3           
+1394 	TYPERR          1391 	TYPERR2         0EFC 	UNUSEDMEMORY    
+0260 	UPDATELINKEDLIST 0169 	VAR_ARRAY_BASE  0167 	VAR_BASE        
+016B 	VAR_TOP         115E 	WAIT1TERMREADY  1166 	WAIT2TERMREADY  
+0377 	WAITTERMREADY   0302 	WRITECHAR       1015 	ZEROPAGE        
+1151 	ZPSWP           
+
+
+
+No Fatal error(s)
+
+
+   03C0 	TONEXTKEYWORD   05B3 	TONEXTTABBREAK  
+0B5D 	TOOVER100000    0BFD 	TOUNDER1000000  044

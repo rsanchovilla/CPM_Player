@@ -1,0 +1,416 @@
+COMMAND SUMMARY:
+Define: Enters Define mode to allow calculation definitions to be edited.
+
+Erase: Erases all or part of the Plansheet data area or label area.
+
+Help: Invokes the function which you are now using.
+
+Jump: Moves the entry position, the display window, or changes pages.
+
+Mode: Autocalculation on or off, Autotab direction or off, and calc precision.
+
+Print: Prints the Plansheet on the current printer.
+
+Quit: Ends the current PlanMaster session (with a Save option).
+
+Read: Reads previously saved Data and/or Format files (or lists their names).
+
+Set (format): Changes col width, decimal places, # format, line label len, etc.
+
+Verify: Recalculates all equations for all relevant lines and columns.
+
+Write: Writes Data and/or Format, or Table ('print' format) files to disk.
+ [press RETURN or first letter of the desired command (L for Error List)]
+GENERAL INFORMATION
+
+   To  enter  Command  Mode press the ESC key.  Most of the commands are one
+ key commands; that is, it is not necessary to press RETURN  after  pressing
+ the  first  letter  of  the  command.  The ESC key will generally abort any
+ command.
+
+   In the label area any characters may be entered as line or column labels.
+ Labels are entered or changed by moving the cursor to the desired  position
+ (using the arrow keys (or ^W,^Z,^A,^D) or TAB & CONTROL-TAB (or ^I,^U)) and
+ typing the desired characters.  In the matrix area data can only be entered
+ beginning  just  to the left of the '.'  but previously entered numbers may
+ be overwritten and a digit or '-'  may  be  entered  just  in  front  of  a
+ previously entered number.
+
+   NOTE:  Calculations  are  performed  in the order that they are listed in
+ Define, and unless using Verify,  calculations  only  take  place  for  the
+ current  line  and  col.   After  the  data has been entered, use Verify to
+ calculate ALL results.  If '****' is displayed the number is too large  for
+ column (To correct, increase using Set col_width).
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+GENERAL INFORMATION:
+
+NOTE:
+    Autocalculation is off by default (use Mode command to turn autocalc on).
+
+   The  verify  command  is a switch and can be negated (no calculations) by
+ preceeding the V with a minus  sign  ('-').   The  '-'  will  otherwise  be
+ ignored.
+
+   CONTROL-SHIFT-DEL or CONTROL X will clear one element or line/col label.
+ Ins-line (or CONTROL-N) (in the label area) inserts a blank line or column.
+ Del-Line (or CONTROL-T) deletes the current line or col, moving others in.
+
+CAUTION:  PlanMaster requires at least 4K bytes per data page in memory
+    and approximately 2K bytes for each of the format and definition files.
+    Error #35 informs the user that there is not enough space for a new
+    page. If your system is space limited, do a DIR periodically to know
+    how much space is available.
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+DEFINE:
+  
+    The Define command is used to tell PlanMaster what calculations are
+    to take place and in which order to perform them. In this 'mode' the
+    window into the Plansheet is replaced with a display of the current
+    equations or 'definitions'. These definitions can be changed, in
+    Define, like you would change a text file using WriteMaster or the
+    Screen Editor. In fact the Screen Editor can be used outside of
+    PlanMaster to change the definitions file (extension of .de0, etc).
+
+      The define relationship is like an equation with the display field
+    name or number (where the result goes) on the left of the equals sign
+    and the names of the components on the right, separated by arithmetic
+    operators(+,-,*,/,** etc.) and numeric data. 
+
+    NOTE: Define equations should not contain ANY blank spaces and 
+    should start in the first column (left justified).
+
+      For the second half of the Define help file and information on
+    Functions in Define, "Out of Memory" error message, and temporary
+    variables, press F.
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+DEFINE (cont) (page 2)
+Lines and columns in define statements may be identified in one of two ways.
+      The simplest method uses absolute line or column numbers, with
+    integers preceeded by L (or l) or C (or c). This method conserves
+    Define space and  speeds up calculations.  
+      For example:		c5=c1+c2*3.6
+    will display in column 5 (of the current line) the result of
+    multiplying the contents of column 2 (current line) times 3.6 
+    added to column 1.
+      And:			L7=L2-L3*L4/2
+    will display on line 7 the result of multiplying line 3 times line 4,
+    dividing this by 2 and subtracting that result from line 2. (Verify
+    will  calculate ALL results.)
+      Once the lines (and/or columns) have been assigned names (labels),
+    these labels can be used to redefine the calculations that take
+    place, the  relationship between the lines (and/or columns), and 
+    where to display the result.
+      For example: 	totsales=sales-sales*discount
+
+If you wish, the line and column numbers can be used instead of, or
+in addition to, the labels.  To use a label in a Definition it cannot have 
+any blank spaces or minus (-) signs (instead, use _ or ' to separate words).
+ [To continue press RETURN or first letter of command. To return press ESC.]
+DEFINE (cont.) (page 3)
+
+      The definitions will apply to any (the current) line (if it 
+    is a column relationship) or any (the current) column (for line
+    relationships) unless the resultant name is qualified.  That is, the
+    define relationship can be made to apply to only one line (or column)
+    by qualifying the name to the left of the '=' sign.
+     For example :      (i.e.: sales(june)=   OR  L1(c3)=  )
+
+NOTE: A Column cannot be qualified by anything but a Line, Page, or Line
+  and Page (ie; c6(L3) or c3(P2) or C2(L15,P2)) and the same applies to
+  Lines (with Column substituted for Line).  With two qualifiers, Page
+  must be the second qualifier.  The names on the right of the '=' sign
+  can be qualified in this manner also in order to override the default 
+  of assuming the line/column is the same as the line/column of the
+  destination field (name on the left of the '=').
+    For example:  	sales(feb)=sales(jan)*2.5
+
+EXAMPLES OF SOME VALID REFERENCES:
+  L2  C4  P6  L3(C2)  L6(P2)  C13(P9)  L4(C8,P2)  C3(L2,P1) 
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+DEFINE (cont.) (page 4)
+ 
+  Other pages may be referenced in several ways:
+			ie, L4=L2(p1)+L3, L1=L1(P1).,etc.
+
+  P2=99.9 will set the entire second page (exclusive of C13 and L101)
+  equal to 99.9.
+  p3=p1 will set the entire third page (except C13 & L101) equal to page 1.
+
+A positive or negative integer qualifier is relative to the current line/col.
+For example: L2(-1) refers to the line one previous to the current line 
+(line 1).  C3(+2) is the column two after the current column (column 5).
+
+Hexadecimal numbers in equations are followed by 'h' (ie: C2=4Fh).
+Exponential (scientific) notation may be used (ie: L4=4.567E+45).
+
+INS LINE (or CONTROL-N) inserts a blank line and DEL LINE (or CONTROL-T) will
+  delete a line (moving following lines up) in Define (as it does with labels).
+INS CHAR (CONTROL-E) will insert 1 blank character in a line. DEL CHAR (CONTROL
+  R) deletes the character under the cursor and moving following characters in.
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+FUNCTIONS IN DEFINE:
+CALCULATIONS ARE ALWAYS PERFORMED IN THE ORDER THAT THEY ARE LISTED IN DEFINE.
+Therefore if total sums are used they should appear after other calculations.
+
+Ln & Cn are destination line/col locations, Cs & Ls are starting column/line,
+Ce & Le are ending col/line,expression is any valid expression (ex.REPEAT & IF)
+
+PLANMASTER BUILT-IN FUNCTIONS:
+Ln=SUM(Ls,Le) -or- Ln(Cn)=SUM(Ls,Le) -or- Cn=SUM(Cs,Ce) -or- Cn(Ln)=SUM(Cs,Ce)
+    -or- Ln=SUM(Ls(Px),Le(Px)) -or- Cn=SUM(Cs(Px),Ce(Px)) etc. (Px is P2 etc)
+  SUM may be used in any manner in an expression. (ie: L12=L1+SUM(L3,L5)+L8).
+  The function SUM may only reference one page of the file (see Px above).
+AVERAGE: AVG may be used in the same format as SUM with a beginning and ending
+   range.   The range must be sequential.
+MINIMUM and MAXIMUM: MIN and MAX may be used in the same format as SUM with a
+   beginning and ending range.  The range must be sequential.
+
+Ln=REPEAT(Cs,Ce,expression) - or - Cn=REPEAT(Ls,Le,expression)
+  NOTE: In Autocalc, the Repeat function only calculates the current line;
+    otherwise, the repeat is calculated in the verify mode.
+
+PERCENTAGE: Use '%' as an operator. For 5% of line 3, use '5%L1'.
+ [To continue press RETURN or first letter of command. To return press ESC.]
+FUNCTIONS IN DEFINE (cont.)(page 2)
+Other functions:
+In the following functions, the expression may be a line number/label, column
+number/label, an algebraic expression, or a SUM, AVG, MIN, or MAX expression.
+
+ ABS(expression)--Absolute value (always positive) of function (any expression)
+ EXP(expression) - Finds the exponential (e to the 'function' power)
+ LOG(expression) - Finds the logarithm to the base e.
+ INT(expression) - Finds the integer portion of a number.  To find the
+    fractional portion of a number, use 'NUMBER-INT(NUMBER)'.
+ SQRT(expression) - Finds the square root of an expression.
+
+ IF(expression)
+   any number of statements (definition lines) - except other IF statements
+ ELSE
+   any number of statements (definition lines) - except other IF statements
+ ENDIF
+
+All letters (including keywords - SUM etc) may be upper or lower case, but
+the capitalized words above must be spelled exactly as shown, and IF, ELSE,
+ENDIF must begin in the first column. 
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+FUNCTIONS IN DEFINE (cont.)(page 3)
+
+SPEED CONSIDERATIONS FOR CALCULATIONS:
+  Using Line/Col numbers is faster than using labels in calculations.
+  SUM relationships should include only the lines/columns that you are using.
+  Equations which access other than the current page are necessarily slower.
+  Since each equation only accesses one page (other than current one - P3),
+      P3=P1+P2   is slower than:     P3=P1
+                                     P3=P3+P2
+ 
+  The totline (L101) and totcol (c13) are special cases.  C13 may be used to
+input data but is not automatically assumed to be part of a global reference.
+That is L101=sum(L1,L100) applies to all columns except C13 (see default.de0).
+L101 can only be used to display results and will not allow data entry.
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+FUNCTIONS IN DEFINE (cont) (page 4)
+
+      The default files load column (C13) and line (L101) total equations
+    into  the Define area. If these files are inaccessable to PlanMaster, a
+    non-fatal error message  will be displayed on entry to PlanMaster.  It
+    is advisable  to keep the default files accessable.
+
+      If, while in the Define window, an "Out of Memory" message appears on
+    the screen, Verify using the current definitions, and save the data and
+    format /definitions using the Write-Both command.  If you need more
+    space for definitions, delete the define window, fill in the new
+    definitions, verify, and save data and format again under a different
+    name.  Now the first saved data and format files may be deleted.  When 
+    you want to reaccess and reverify the file, call up the saved file,
+    read in definitions from the first file (Read-Format-Definitions Only),
+    perform Verify, read in the definitions from the second file, and
+    verify again.
+	      
+      If you know in advance that the define files will be lengthy, use
+    Screen Editor to create the define files within the buffer size.  Save
+    them in the current directory, using the extension ".de0".
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+FUNCTIONS IN DEFINE (cont.) (page 5)
+
+TEMPORARY VARIABLES:
+      There are two Temporary Variables available for storing intermediate
+    results. These variables may be used to split up long equations or to
+    save a frequently  used number (like pi - 3.14159265 - for instance).
+    These variables are used just like line/col labels:
+                           (ie:  pi=3.14159265
+                               area=pi*radius**2).
+      In the above: area and radius are labels and pi isn't, so it is
+    assumed to be a temporary variable. If a line or column label is
+    spelled differently in define then it will be assumed to be a temporary
+    variable.
+
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+ERASE:
+ Data - Erases the data displayed and zeros out the data matrix for the 
+  current line or column or the entire data matrix (in current page only).
+ Labels - Erases the line and/or column labels or title for current page.
+ All - Erases both Data and Labels for current page.
+
+HELP:
+  Prints this listing.
+
+JUMP:
+  Allows the access 'window' to be shifted to another area of the stored
+   data matrix without having to scroll one line or column at a time.
+   Entering an ESC followed by a 'j' will invoke the JUMP command which
+   will ask for 'line # (1,100)'. This is answered with the numberof the
+   line to which you would like to go to and RETURN or only a RETURN if
+   you wish to stay on the same line as before. Then the question for new
+   column number must be answered likewise as well as the page number 
+   question.  When you jump to a new page, PlanMaster will ask you if you
+   want to keep the same format and/or data as the previously accessed page.
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+MODE:
+
+  AutoCalc (Automatic Calculation) Mode:
+    Yes (Y): Performs calculations for current line/col when RETURN is pressed.
+    No (N): Calculations are only performed during Verify (displayed at end).
+
+  AutoTab:
+    Down (D) or (d): Cursor automatically moves down 1 line after each RETURN.
+    Right (R) or (r): Cursor automatically tabs right 1 col after each RETURN.
+    Off (O) or (o): Cursor remains at current position after RETURN.
+
+  Round Off Calculations:
+    Y limits the precision (rounds&truncates) to the # of dec places displayed
+    N (No) uses all numbers as they are (including 'invisible' decimal digits)
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+
+PRINT:
+
+      Prints the plansheet as it stands to the current default printer,
+    asking if the define relationships should be printed, if zero fields
+    should be printed as blanks, if negative values should print in
+    brackets, and if commas should be added.  If extra work is to be done 
+    on the file before printing, use Write Table and print the file after-
+    wards. If there are more than 132 characters across (thru increased
+    col widths) it is possible to exceed the capacity of the printer's
+    width. Use Multiple pages to split the extra columns onto a different
+    page. The addition of commas may cause misalignment of the columns 
+    if there's not enough space between them.
+
+QUIT:
+Ends PlanMaster. First asks if the Plansheet should be saved (like Write Both).
+
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+READ:
+
+Format - Loads the line and column labels, definitions, column width and
+  decimal place data that have been saved from a previous run with 'Write'
+  (file must have a .fm0 extension). Can be used to read Definitions only.
+
+Data - Requests a filename and Loads previously 'Written' data into the Data
+  Matrix and does a Verify Screen (see Write). This command assumes that the
+  column widths are wide enough for the data from the run under which the file
+  was 'written'. First Page Data (and/or Format) can be read into any page.This
+  can be used to make summaries by reading separate files into different pages.
+
+Both - Reads both the Format and Data saved from a previous run.
+
+List - Displays the names of the saved Data, Format & Definition files on disk.
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+SET FORMAT:
+
+      The 'Set format' command allows the user to change the format of the
+    display. It can be used to change the current or all column widths or
+    length of the line labels.
+
+      The number of decimal places displayed for any column may be changed
+    after the col width by entering the new number (0 <= n <= 4). Answering
+    RETURN for Col_width, Number_format, or Dec_places will leave the
+    current value unchanged.
+
+      Number format may be changed to hexadecimal or scientific notation.
+
+VERIFY:
+
+      This will recalculate or Verify calculations on the current or (all) 
+    page(s).  If preceeded by a '-', Verify will erase the screen and re- 
+    display the current window.
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+WRITE:
+
+Table - This will save the 'Print' file on disk (can be printed or used
+  as input for WriteMaster or Screen). An extension of .prt will be added.
+  Otherwise it's just like Print. Write Table will overwrite an existing file
+  with the same name without any indication and will not erase old data at end.
+  It allows the option of saving only the current page or all pages.
+
+Format - The labels and the relationships created with the define command can
+  be saved on disk with this command. Only pages accessed in the current
+  session are written. The 'Format' will be saved as two separate files for
+  each page accessed. The define equations will be written as one file for
+  each page (an extension of .de0 will be added to the first page, .de1 for the
+  2nd page, etc.) and the labels etc. will be written to separate files (one
+  for each page, with .fm0, .fm1, .fm2 etc. extensions).
+
+Data - The Data matrix is saved as disk file(s) with the name that is entered
+   at the time of the command (extensions of .da0, .da1, etc. will be added).
+Both - Writes both Data and Format files to disk (same as Quit with Save).
+
+ [To continue press RETURN or first letter of command. To return press ESC.]
+LIST OF ERRORS
+
+ERROR #                   Explanation
+  1          Expression error
+  2          Too many operands for the number of operators (statement too long)
+  3          Too few operands for the number of operators (statement too long)
+  4          Syntax error in Sum command
+  5          Too many left parenthesis
+  6          Divide by zero (denominator=zero). Try using 'If' to check denom.
+  7          Syntax error in Repeat command 
+  8          No matching if (endif without if)
+  9          No matching endif (if without endif)
+ 10          Syntax error in 'if' statement
+ 11          Attempt to take power (**) of a negative number (Use ABS first)
+ 12          Too many operators for the number of operands(like #2)
+ 13          Too few operators for the number of operands (like #3)
+ 14          Too many temporary variables
+ 15          Label not found (or qualified temporary variable)
+ 16          Label qualified with same type (ie: C1(C2))
+ 17          Syntax error in Define equation (general)
+ 18          Invalid number or numeric literal
+ 19          Label or expression too long
+ [To continue press RETURN or first letter of command. To return press ESC.]
+ERRORS Cont.
+ 20          Undefined symbol
+ 27          Out of Memory (Define space is exausted - see Define)
+Calling Errors:
+ 22          Incorrect number of arguments
+ 23          Invalid parameter
+             Out of Memory (Define space is exausted - see Define)
+System Errors:
+ 34          Invalid filename (data or format)
+ 35	     Read-Write error: disk full or write protected
+ 40          Invalid column number (possible memory problem)
+ 41          Incorrect array location (possible memory problem)
+ 45          Invalid Page number
+             All memory in use (see Print command)
+Informative messages (Not necessarily errors):
+             Create Temp Variable=>    OR       Changing to page n
+PlanMaster calling options:
+ PLANMAST                     (reads default format and no data file)
+ PLANMAST filename            (reads the existing format file named filename)
+ PLANMAST filename1 filename2  (filename1 is the format, filename2 is the data)
+ PLANMAST -B filename       (reads both format and data files named filename)
+ PLANMAST -D filename    (reads default format and data file named filename)
+     [To display summary press RETURN - to return to plansheet press ESC.]

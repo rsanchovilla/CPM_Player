@@ -1,0 +1,77 @@
+.macro chttl = Program File Preparation
+.ch .chttl
+.hl 1 Line Numbers and Line Length
+.bb Source files for Pascal-P are normally variable line length Ascii files, 
+with or without FRONT numbering (described below). .eb  By default any
+characters past the first 80 of a line are ignored,  and treated as
+comments. 
+
+Source  lines  containing  an initial string of  8  digits  are
+treated  as numbered,  and the line numbers retained and processed by the 
+compiler.   These 8 digits are not included in the 80 
+(or other,  see w  compiler
+option)  character line length limitation.   The compiler assigns sequential
+line numbers to un-numbered source (but see _$include below).
+
+.hl 1 Indentation coding
+Source  files may use data compression for indentation,  consisting of an
+initial  "DLE"  (chr(16)) followed by  the printing character  chr(ord(' ')  +
+indentation_count).   This both compresses source code storage,  and speeds up
+compilation  by  eliminating  scanning of  unnecessary  blanks.   The  utility
+programs  "EXPAND" and "COMPRESS" can be used to control this formatting. 
+The above line length limitation applies to the expanded source line.
+
+.hl 1 Comments
+Comments follow the standard Pascal conventions using either (* and *) or
+{  and } as delimiters.   Note that "(*" cannot be terminated by "}",  nor can
+"{"  be  terminated  by "*)".   This is a deliberate deviation  from  the  ISO
+standard.
+
+.hl 1 File inclusion
+A  line  beginning (at the extreme left,  apart from  line  number)  with
+"$include filename" causes that file to be included in the compilation at that
+point.  The remainder of the line is listed but ignored.  If the included file
+is  unnumbered further line numbers are assigned at the next multiple of  1000
+plus 1.  
+
+The "i" compiler option, (See compiler options) avoids the line number control
+and may be combined with other options on the same line.  
+
+At present the master file and two (2) levels of inclusion are available.
+
+.hl 1 Characters and Identifiers
+The compiler recognizes both UPPER and lower case letters.  
+A tab character  is treated as a space,  but listed as a tab char. .bb A tab
+is considered a single character in evaluating line length.  .eb
+The compiler considers
+names which differ only in the case of letters to be identical.  The  underbar
+character  "__"  is  considered to be alphabetic in names. Only the first  8
+characters  of names are significant,  although reserved words are checked for
+exact spelling.   Thus "procedur" and "procedure" are distinct, but "procedur"
+and  "procedures"  are  not distinct.   The 8  character  names  are  retained
+throughout any linking/loading processes which may follow.  However non-global
+procedures use compiler assigned unique names, rather than user names, thus
+avoiding name collisions in any following assembly and linkage operations.
+
+.hl 1 Integers and Sets
+Integers are currently limited to the range -32768..32767, although 32768
+may  not be used as a constant in a source program.   Sets are limited to  the
+range 0..127.  This allows the complete ASCII character set.
+
+.hl 1 Editors
+The  CP/m based systems are completely compatible with source files  
+prepared by .bb most editors (but do not use Wordstar under the "D" option,
+use the "N" option), .eb and with files prepared by the
+various UCSD editors.  The significant line termination character is the _<CR>,
+and _<LF> is ignored.  Line indentation coding is identical to that of the UCSD
+system,  but is controlled by application programs, and thus not forced.  Note
+that source files must not have the eighth bit set in characters, and must not
+contain non-printing characters outside of dle, cr, lf and tab.
+.note CAUTION
+For efficiency reasons the compiler (and many other  utilities)
+do not check for EOF except after EOLN.   Files with EOF in unterminated lines
+are illegal according to the various Pascal standards, and will cause run-time
+errors.  Thus source files should always be terminated by a final end-of-line.
+WordStar users should especially note this, and not inject a final space.
+.res
+†y

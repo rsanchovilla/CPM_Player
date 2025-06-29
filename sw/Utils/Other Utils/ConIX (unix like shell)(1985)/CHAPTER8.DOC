@@ -1,0 +1,2707 @@
+
+
+
+
+			   Chapter 8 - Utility Commands
+
+
+	Description of the ConIX internal utility commands, available  for
+	use on the command line.
+
+
+				   - CONTENTS -
+	__________________________________________________________________
+
+
+	  8.  Utility Commands......................................   8-1
+
+	    8.1	  = (Equals): Set Disk Variables....................   8-1
+
+	    8.2	  ATRIB: Get/Set File Attributes....................   8-2
+
+	    8.3	  BDEC:	Convert	Binary to Decimal...................   8-3
+
+	    8.4	  BOT: Print Bottom Address of ConIX................   8-3
+
+	    8.5	  BTOP:	Print BDOS Top Address......................   8-4
+
+	    8.6	  BYE: Exit to CP/M.................................   8-4
+
+	    8.7	  CHR: Convert ASCII to	Hex.........................   8-4
+
+	    8.8	  CLS: Output Clear Screen Sequence.................   8-4
+
+	    8.9	  COPY:	Copy a Disk File............................   8-5
+
+	    8.10  DECB:	Convert	Decimal	to Binary...................   8-5
+
+	    8.11  DEL: Delete Files with Confirmation...............   8-6
+
+	    8.12  DIR: List Directory...............................   8-6
+
+	    8.13  ECHO:	Print Arguments.............................   8-8
+
+	    8.14  ERA: Erase Files..................................   8-9
+
+	    8.15  EXAM:	Examine	Memory..............................   8-9
+
+	    8.16  EXEC:	Execute	Arguments...........................   8-9
+
+	    8.17  FILL:	Fill Memory with a Constant.................  8-10
+
+	    8.18  FIND:	Find File in Search Path....................  8-10
+
+	    8.19  FLUSH: Empty the Print Spooler....................  8-11
+
+	    8.20  HXPR:	Convert	Hex to ASCII........................  8-11
+
+	    8.21  IN: Input Data From a	Port........................  8-11
+
+
+
+				      -	i -
+
+
+
+
+
+
+
+	    8.22  INDEX: Find String................................  8-11
+
+	    8.23  LOG: Log-In a	Drive...............................  8-12
+
+	    8.24  MOVE:	Copy Memory.................................  8-13
+
+	    8.25  OPT: Enter ConIX Options..........................  8-13
+
+	      8.25.1   +/-AF: Set Archive File Location.............  8-14
+
+	      8.25.2   +/-BC: Set Boot Command......................  8-15
+
+	      8.25.3   +BP: Set	Bell in	Prompt......................  8-15
+
+	      8.25.4   -BP: Remove Bell	in Prompt...................  8-15
+
+	      8.25.5   +/-CD: Set Data Files Location...............  8-15
+
+	      8.25.6   +/-CS: Set Clear	String Sequence.............  8-15
+
+	      8.25.7   +/-CX: Set ConIX	Program	Location............  8-16
+
+	      8.25.8   +/-DC: Set Number of DIR	Columns.............  8-16
+
+	      8.25.9   +DL: Auto-Login on Disk Reset................  8-16
+
+	      8.25.10  -DL: No Login on	Disk Reset..................  8-17
+
+	      8.25.11  +DR: Disk Reset on Warm Boot.................  8-17
+
+	      8.25.12  -DR: No Reset on	Warm Boot...................  8-17
+
+	      8.25.13  +DW: Enable Disk	Wait Control................  8-17
+
+	      8.25.14  -DW: Disable Disk Wait Control...............  8-17
+
+	      8.25.15  +/-ER: Restore ConIX Environment.............  8-17
+
+	      8.25.16  +/-ES: Save ConIX Environment................  8-18
+
+	      8.25.17  +/-FC: Set Function Character Keys...........  8-18
+
+	      8.25.18  +/-FK: Set Function Keys	Lead-in.............  8-19
+
+	      8.25.19  +GS: Set	the GOSUB Stack.....................  8-19
+
+	      8.25.20  -GS: Restore the	GOSUB Stack.................  8-19
+
+	      8.25.21  +/-IA: Set Input	Port Address................  8-20
+
+	      8.25.22  +/-IB: Set Input	Buffer Length...............  8-20
+
+	      8.25.23  +/-IP: Set Input	Port Device.................  8-20
+
+	      8.25.24  +/-MM: Set Memory Management.................  8-21
+
+
+
+				      -	ii -
+
+
+
+
+
+
+
+	      8.25.25  +/-OA: Set Output Port Address...............  8-21
+
+	      8.25.26  +/-OB: Set Output Buffer	Length..............  8-22
+
+	      8.25.27  +/-OP: Set Output Port Device................  8-22
+
+	      8.25.28  +PC: Enable Command Print....................  8-23
+
+	      8.25.29  -PC: Disable Command Print...................  8-23
+
+	      8.25.30  +/-PF: Set Pipe File Location................  8-23
+
+	      8.25.31  +PR: Enable Transcript Mode..................  8-23
+
+	      8.25.32  -PR: Disable Transcript Mode.................  8-24
+
+	      8.25.33  +PS: Set	Print Spooling......................  8-24
+
+	      8.25.34  -PS: Disable Print Spooling..................  8-24
+
+	      8.25.35  +SA: Enable Archive Searching................  8-25
+
+	      8.25.36  -SA: Disable Archive Searching...............  8-25
+
+	      8.25.37  +SB: Set	BDOS Address (&0006)................  8-25
+
+	      8.25.38  -SB: Reset BDOS Address......................  8-26
+
+	      8.25.39  +/-SL: Set Screen Length.....................  8-26
+
+	      8.25.40  +SO: Enable Spooler on Output................  8-26
+
+	      8.25.41  -SO: Disable Spooler on Output...............  8-26
+
+	      8.25.42  +/-SP: Set Disk Search Path..................  8-26
+
+	      8.25.43  +SS: Set	the SWITCH Stack....................  8-27
+
+	      8.25.44  -SS: Restore the	SWITCH Stack................  8-27
+
+	      8.25.45  +/-ST: Set Sleep	Time Constant...............  8-27
+
+	      8.25.46  +TA: Set	Type-Ahead Buffer...................  8-28
+
+	      8.25.47  -TA: Reset Type-Ahead Buffer.................  8-28
+
+	      8.25.48  +/-TC: Set Type-Ahead Cancel Character.......  8-28
+
+	      8.25.49  +TE: Enable Type-Ahead Echo..................  8-28
+
+	      8.25.50  -TE: Disable Type-Ahead Echo.................  8-29
+
+	      8.25.51  +TR: Enable Command Tracer...................  8-29
+
+	      8.25.52  -TR: Disable Command Tracer..................  8-29
+
+
+
+				     - iii -
+
+
+
+
+
+
+
+	      8.25.53  +UC: Set	Upper Case Mapping..................  8-29
+
+	      8.25.54  -UC: Disable Upper Case Mapping..............  8-29
+
+	      8.25.55  +/-VF: Set Variable File	Location............  8-30
+
+	      8.25.56  +XD: Enable ExpanDisk References.............  8-30
+
+	      8.25.57  -XD: Disable ExpanDisk References............  8-30
+
+	      8.25.58  +/-XS: Set Extension Search List.............  8-30
+
+	      8.25.59  +XU: Set	Extended User Areas.................  8-30
+
+	      8.25.60  -XU: Disable Extended User Areas.............  8-31
+
+	    8.26  OUT: Output Data to a	Port........................  8-31
+
+	    8.27  READ:	Read a File into Memory.....................  8-31
+
+	    8.28  REN: Rename a	Disk File...........................  8-31
+
+	    8.29  RESET: Reset Disks................................  8-32
+
+	    8.30  SET: Set Disk	Variables...........................  8-32
+
+	    8.31  SRCH:	Search for a Byte in Memory.................  8-33
+
+	    8.32  TEXT:	Read Text with Editing......................  8-34
+
+	    8.33  TOP: Print Top Address of ConIX...................  8-34
+
+	    8.34  TYPE:	List File Contents..........................  8-35
+
+	    8.35  UDIR:	List Files Through User	Areas...............  8-35
+
+	    8.36  WP: Write Protect Disks...........................  8-35
+
+	    8.37  WRITE: Write Memory to a File.....................  8-36
+
+	    8.38  XSTAT: Print Exit Status..........................  8-36
+
+	    8.39  ZAP: Modify Memory................................  8-37
+
+	    8.40  Command Name Conflicts............................  8-37
+
+
+
+
+
+
+
+
+
+
+
+
+
+				      -	iv -
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.  Utility Commands
+
+	There are two major classifications of commands	under the ConIX
+	environment.  The first	is the disk-based commands, which are
+	executable programs stored on disk in files whose names	end with a
+	.COM extension.	 These commands	are loaded from	disk into memory
+	each time they are requested on	the command line.
+
+	The second classification is the internal commands, which are
+	executable programs that are resident within ConIX itself.  They
+	are loaded from	the main CONIX.COM file, and executed directly
+	from the memory	which ConIX occupies.  These built-in functions
+	are used for such mundane tasks	as listing, examining, erasing,
+	and renaming files.  Also available are	commands that allow access
+	to system memory.  The sections	that follow will detail	the usage
+	of the ConIX internal utility commands.
+
+
+	8.1  = (Equals): Set Disk Variables
+
+		<A:00> = <variable> (value)
+
+	The `='	or Equals command is used to set the contents of the 52
+	disk-based letter variables.  The variable to be set is	specified
+	by a single upper/lower	case letter, a-z or A-Z.  Its value may	be
+	supplied as the	following argument on the command line.	 If no
+	value is given,	a line of raw (uneditable) console input will be
+	taken as the value.
+
+	For example, the command line:
+
+		<A:00> = a "hello"
+
+	will set the variable $A to contain the	string "hello".
+	Similarly, the command:
+
+		<A:00> = a
+		hello
+		<A:00>
+
+	will also set the $A variable to the value of "hello".	The only
+	difference is that, in the latter case,	the value of the variable
+	was taken from the console input stream	instead	of the command
+	line.  This is most useful for setting a variable from the output
+	stream of a program, as:
+
+		<A:00> dir | = a
+
+	where $A is set	to the first line of the output	from the DIR
+	command.  Any control characters passed	through	the input stream
+	of the command will not	be stripped, but stored	as data	within the
+	variable.  For example,	the sequence:
+
+
+
+
+
+
+				       8-1
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+		<A:00> = a
+		g<-hello
+		<A:00>
+
+	where you typed	a `g' by mistake, hit backspace, then typed the
+	correct	string.	 The $A	variable will contain the backspace
+	control	character (CTRL-H), since the variable is set to the raw
+	input from the keyboard.  The end of input is signaled by the
+	<RETURN> or CTRL-M character.  To input	with editing, use:
+
+		<A:00> getl |@ = <variable>
+
+	where the GETL command will read a line	of editable input from the
+	system keyboard	into the given variable.
+
+	The contents of	all letter variables are stored	in the disk file
+	A:0/VARS.SET.  This file is created with its SYStem attribute set,
+	and will therefore not appear in a regular directory listing.  If
+	the file does not exist, it will be created when a variable is
+	set.  Each variable stored in the file is assigned a maximum space
+	of 255 bytes.  The directory location of the variables file is
+	settable via the OPT +/-VF internal command.
+
+	Should the command line	argument be null (""), or the input
+	contain	only a blank line, the variable	will be	reset to contain
+	no value.  All letter variables	are initialized	to hold	no data
+	value.	If the variable	had a value and	was later reset	to null,
+	its entry slot is freed	from the disk variable file.  This slot
+	may later be occupied by the same or another variable.	Disk space
+	is not freed by	this action.
+
+
+	8.2  ATRIB: Get/Set File Attributes
+
+		<A:00> atrib <#num> <#action> <filename>
+
+	There are special attributes which may be set in the name of a
+	file that indicate certain things about	the way	it is stored.  For
+	example, the SYStem or DIRectory attribute determines whether or
+	not the	file will be printed in	a regular directory listing.
+	There is also the R/O (Read-Only) and R/W (Read-Write) attribute
+	which determines if a file may be modified.
+
+	The ATRIB command allows you to	manipulate these file attributes.
+	The num	argument refers	to the particular attribute bit, a number
+	which may range	from 0-11.  Each attribute number corresponds the
+	setting	of the high-bit	of one of the twelve possible characters
+	in a filename.
+
+	The action argument determines the action that is to take place	on
+	the specified attribute.  If action is 0, the attribute	is reset
+	to zero	(the hi-bit turned off).  If action is 1, the attribute
+	bit will be activated.	If action is 2,	the current setting of the
+	attribute will be listed.  The filename	argument specifies the
+	file that is to	be affected by this action.
+
+
+
+				       8-2
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	Although 12 attributes are available, only two are actually pre-
+	assigned certain meanings.  They are:
+
+	     tab(@); lw(.5i)0 l	l.  #9@0 = R/W@1 = R/O #10@0 = DIR@1 = SYS
+
+	The others are available for your own purposes.
+
+	To illustrate, let's say you wanted to find if a file has its SYS
+	attribute set.	You may	type:
+
+		<A:00> atrib 10	2 foo.asm
+		0
+		<A:00>
+
+	which prints the setting of the	tenth attribute	bit of the file
+	FOO.ASM.  In this case it is zero, indicating that the file is
+	DIR.
+
+	You may	now decide to change it	to SYS,	as:
+
+		<A:00> atrib 10	1 foo.asm
+
+	which sets the tenth attribute to an ``on'' value, thus	making the
+	file SYS.  Examining this attribute would now show:
+
+		<A:00> atrib 10	2 foo.asm
+		1
+		<A:00>
+
+	where the `1' indicates	that the attribute bit is set.
+
+
+	8.3  BDEC: Convert Binary to Decimal
+
+		<A:00> bdec (&num)
+
+	BDEC will convert the 16-bit hexadecimal number, num, given as its
+	argument into its decimal equivalent.  For example:
+
+		<A:00> bdec ffff
+		65535
+		<A:00>
+
+	where FFFF hex is equal	to 65535 decimal.
+
+
+	8.4  BOT: Print	Bottom Address of ConIX
+
+		<A:00> bot
+
+	The BOT	internal command prints	the bottom or ending address of
+	ConIX in memory.  This address references the first byte after the
+	last memory location occupied by ConIX.	 Memory	between	this
+	address	and the	start of the BDOS (as reported by the BTOP
+	command) is not	used by	any system or application software, and	is
+
+
+
+				       8-3
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	available for private data storage.  Note that this area may be
+	lengthened by specifying a lower relocation address at INSTALL
+	time.
+
+
+	8.5  BTOP: Print BDOS Top Address
+
+		<A:00> btop
+
+	BTOP is	used to	determine the top or starting address of the CP/M
+	BDOS in	memory.	 This address points to	the first byte of the JMP
+	instruction into the original CP/M syscall decoder.
+
+
+	8.6  BYE: Exit to CP/M
+
+		<A:00> bye
+
+	The BYE	command	will terminate the execution of	ConIX, and return
+	control	to the resident	CP/M CCP.  This	command, in effect,
+	performs a BIOS	warm boot operation, which causes CP/M and the CCP
+	to be reloaded from the	system tracks of the A:	disk, and then
+	executed.  Of course, be sure that the disk in A: contains a CP/M
+	system image before executing BYE.
+
+
+	8.7  CHR: Convert ASCII	to Hex
+
+		<A:00> chr (string)
+
+	CHR will convert and print the hexadecimal equivalent of the ASCII
+	character string given as its first argument.  For example, the
+	command:
+
+		<A:00> chr "hello"
+		68 65 6C 6C 6F
+		<A:00>
+
+	where `h' was converted	to 68 hex, `e' to 65, etc.
+
+
+	8.8  CLS: Output Clear Screen Sequence
+
+		<A:00> cls
+
+	CLS will output	the contents of	the clear screen sequence, as set
+	by the OPT +/-CS internal command.  This feature was chosen so as
+	to provide portability between systems that use	different
+	character sequences to clear the terminal screen.
+
+
+
+
+
+
+
+
+
+				       8-4
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.9  COPY: Copy	a Disk File
+
+		<A:00> copy <dest>=<source>
+
+	This command will copy the contents of the disk	file source to the
+	file dest.  For	example:
+
+		<A:00> copy foo.sav=foo.asm
+
+	will make a copy of the	file FOO.ASM in	FOO.SAV.  The destination
+	file must be non-existent, or else an error message will be
+	printed	and the	copy function will be aborted.
+
+	Additionally, you may copy from	a source file that is stored in	a
+	different disk or user area, as:
+
+		<A:00> copy foo.sav=b:10/foo.asm
+
+	where the source file resides on B:10/ and the copy will be made
+	in the current default directory.  If the copy is also to reside
+	in a different directory, specify the disk and/or user area as:
+
+		<A:00> copy b:10/foo.sav=b:10/foo.asm
+
+	where the copy will be made in B:10/, the same directory that
+	contains the source file.
+
+	If the filename	and extension specification in dest is not
+	supplied, the source filename will be assumed, as:
+
+		<A:00> copy a:=b:foo.asm
+
+	where a	copy of	B:0/FOO.ASM is made in A:0/.
+
+	Note that the COPY command uses	TPA memory from	location 100 until
+	the top	of ConIX (if necessary)	to buffer the read/writes.
+	Programs or data residing in the TPA may be overwritten	by this
+	function.
+
+	Note that COPY strips the R/O (read-only) attribute bit	when
+	creating the destination file.
+
+
+	8.10  DECB: Convert Decimal to Binary
+
+		<A:00> decb (#num)
+
+	DECB will convert the decimal number, num, given as its	argument,
+	into its 16-bit	hexadecimal equivalent.	 For example:
+
+		<A:00> decb 65535
+		FFFF
+		<A:00>
+
+
+
+
+
+				       8-5
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	where 65535 decimal is equal to	FFFF hex.
+
+
+	8.11  DEL: Delete Files	with Confirmation
+
+		<A:00> del <file(s)>
+
+	The DEL	command	is used	for deleting disk files	with user-
+	interactive questioning.  For each file	that is	specified or
+	matched, the user is asked to confirm whether or not the file is
+	to be deleted.	Respond	with a `y' to erase the	file, or any other
+	character to leave it on disk.	These responses	are read in
+	``raw''	mode as	single characters, therefore no	carriage return	is
+	necessary after	your response.	Any combination	of filenames or
+	patterns (using	the `*'	and `?'	characters) may	be specified as
+	arguments to DEL.  For example:
+
+		<A:00> del foo.asm 10/*.com
+		A:00/FOO.ASM (y/n) ? y
+		A:10/FOO.COM (y/n) ? n
+		A:10/BAR.COM (y/n) ? <RETURN>
+		<A:00>
+
+	where only the first file, FOO.ASM, was	deleted	since the user
+	responded with a `y' affirmative.  Note	that the command:
+
+		<A:00> del *.*
+
+	is quite powerful, although not	dangerous at all, since	you are
+	given the ability to selectively delete	the matched files.  It is
+	recommended if you have	a disk with many files to clean	up, and	do
+	not want to specify each one on	the command line.
+
+
+	8.12  DIR: List	Directory
+
+		<A:00> dir (file(s))
+
+	The DIR	command	is used	to list	the files stored in the	disk
+	directory.  Any	combination of filenames or patterns (using the
+	`?' and	`*' characters)	may be specified as arguments to DIR.  For
+	example:
+
+		<A:00> dir foo.asm *.com
+		A:00  FOO      ASM
+		A:00  FOO      COM  :  BAR	COM
+		<A:00>
+
+	where the requested file and any files matching	the given pattern
+	were listed.  If no file arguments are specified, the current disk
+	directory will be listed, as:
+
+
+
+
+
+
+
+				       8-6
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+		<A:00> dir
+		A:00  FOO      ASM  :  FOO	COM  :	BAR	 COM
+		<A:00>
+
+	If only	a disk and/or user area	is specified, the entire directory
+	of that	disk and user area will	be listed, as in:
+
+		<A:00> dir b: 10/
+		B:00  FOOBAR   ASM
+		A:10  FOOSAV   ASM  :  BARSAV	ASM
+		<A:00>
+
+	Note that the extra white space	before and after the listed
+	filenames is used to indicate whether a	file has its SYStem
+	(invisible) or R/O (read-only) attributes set.	If the file is
+	stored with its	invisible attribute set, it can	only be	listed by
+	specifying a pattern or	its exact filename, and	its name will be
+	enclosed in parenthesis	to indicate the	setting	of this	attribute.
+	A file which is	stored with its	read-only attribute set	will be
+	listed with an asterisk	to the right of	its name.
+
+	For example, let's say the directory of	A:01 contained the
+	following files:  TEST.ASM - Read Only,	TEST.HEX - System, and
+	TEST.COM - Read	Only and System.  The command:
+
+		<A:00> dir 1/
+		A:01  TEST     ASM *
+		<A:00>
+
+	lists only one file, TEST.ASM, which is	read-only.  The	other two
+	files are not listed because they have the invisible attribute
+	set.  We can, therefore, define	``invisible'' as meaning that the
+	file will not be printed in a regular directory	listing.  This
+	feature	can be defeated	by typing:
+
+		<A:00> dir 1/*.*
+		A:01  TEST    ASM *: (TEST    HEX) : (TEST    COM)*
+		<A:00>
+
+	which lists all	the files in the directory, including the
+	invisible ones.	 The total number of all files listed is stored	in
+	the $$0	hex variable, which is accessible as:
+
+		<A:00> bdec $$0
+		3
+		<A:00>
+
+	which, after the previous example, would be 3, since that many
+	files were listed.
+
+
+
+
+
+
+
+
+
+				       8-7
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	8.13  ECHO: Print Arguments
+
+		<A:00> echo (arg(s)) (\>#column) . . .
+
+	The simplest form of the ECHO command occurs when it is	used to
+	display	its arguments on the console screen, as:
+
+		<A:00> echo hello world!
+		HELLO WORLD!
+		<A:00>
+
+	where the two arguments	HELLO and WORLD!  were output to the
+	console	screen.
+
+	ECHO also contains a special formatting	instruction which may be
+	used to	generate columnar output.  For example:
+
+		<A:00> echo  1 \>5  2  \>10  3	\>15  4
+		1      2      3	     4
+		<A:00>
+
+	where ``\>5'' indicates	a tab to column	5, ``\>10'' to column 10,
+	etc.  If the actual column number is greater than the one
+	requested, no tab will take place.  The	tabified format	is
+	achieved through the output of the appropriate number of space
+	characters.
+
+	ECHO terminates	each line of output with a CR/LF sequence.  If
+	this is	not desired, simply place two backslashes after	the last
+	character in the last argument,	as:
+
+		<A:00> echo hello\\; echo \ there!
+		HELLO THERE!
+		<A:00>
+
+	where the first	ECHO didn't terminate the output line with a CR/LF
+	so that	the second could continue from that point.  This is most
+	useful for prompting for user input within Command Language
+	programs.
+
+	ECHO is	also useful for	outputting strings to memory or	system
+	devices.  For example, to feed a sheet of paper	out of your
+	printer, you can use:
+
+		<A:00> echo ^l\\ > :lst
+
+	which will send	a form-feed (CTRL-L) character to the system
+	printer	device.
+
+
+
+
+
+
+
+
+
+
+				       8-8
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.14  ERA: Erase Files
+
+		<A:00> era <file(s)>
+
+	The ERA	command	is used	to erase files stored in the disk
+	directory.  Each file which is specified or matched by a pattern
+	(using the `?' and `*' characters) will	be removed without
+	confirmation, as in:
+
+		<A:00> era foo.asm 10/*.com
+		<A:00>
+
+	Only error messages are	printed	after the invocation of	ERA to
+	indicate a bad or non-existent filename	or pattern.  A returned
+	prompt should be taken as an indication	that the requested files
+	were successfully deleted.
+
+	Users that are left rather uncomfortable by the	silence	of ERA
+	should use the DEL command instead, which prompts for each
+	individual file	to be deleted.
+
+
+	8.15  EXAM: Examine Memory
+
+		<A:00> exam <&start> <&end>
+
+	EXAM is	used to	examine	the contents of	system memory.	The hex
+	data values in memory from the start to	end addresses will be
+	listed to the console screen.  The right margin	of the listing
+	will contain an	ASCII interpretation of	the data in memory.  If
+	the data at a particular memory	location is a printable	character
+	(20 hex	to 7E hex), it will be printed in ASCII	as that	character.
+	Otherwise, a `.' will be substituted in	its place.  If the hi-bit
+	of the character is on,	it will	be interpreted as if it	had been
+	off.  The value	of the first and last byte printed is saved in the
+	hex variables $$0 and $$1, respectively.
+
+
+	8.16  EXEC: Execute Arguments
+
+		<A:00> exec (arg(s))
+
+	EXEC takes its arguments and transmits them back into the input
+	command	line to	be re-parsed.  In effect, it's like EXEC types the
+	input once again for you.  It is mainly	intended for use with the
+	ConIX variables.
+
+	To illustrate, let's say the variable $A contained the string:
+
+		dir>dir.out
+
+	which appears to be a command that would execute the DIR command
+	with its output	redirected into	the file DIR.OUT.  If you were to
+	try and	execute	the contents of	this variable as:
+
+
+
+
+				       8-9
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+		<A:00> $a
+		DIR>DIR.OUT?
+		<A:00>
+
+	you'd get an error, because ConIX does not ``parse'' the
+	characters within the variable,	and didn't determine that output
+	redirection was	requested.  To get this	to function properly, use
+	the EXEC command, as:
+
+		<A:00> exec $a
+
+	which would then reparse the contents of the $A	variable as its
+	argument into the proper command sequence.
+
+	If you wanted to execute $A more conveniently, you could set the
+	variable to contain the	EXEC command, as:
+
+		exec dir>dir.out
+
+	and then you could simply type:
+
+		<A:00> $a
+
+	to execute the command.
+
+	Note that any arguments	to EXEC	which were specified in	double
+	quotes will remain in double quotes when reparsed.  Additionally,
+	EXEC can only reparse up to 128	characters.  Excess characters
+	will cause an ``overflow'' message to be printed.
+
+
+	8.17  FILL: Fill Memory	with a Constant
+
+		<A:00> fill <&start> <&end> <&value>
+
+	The FILL command is used to fill an area of system memory from the
+	start to end addresses with the	specified value.  The most common
+	usage is:
+
+		<A:00> fill 100	fff 0
+
+	which will zero	memory so you can see what a program modified in
+	memory after it	executes.
+
+
+	8.18  FIND: Find File in Search	Path
+
+		<A:00> find <filename>
+
+	The FIND command is used to locate a file in the search	path.  If
+	the given filename contains no disk or user area reference, a
+	search through the path	will be	performed.  Otherwise, FIND will
+	look only in the specified directory.  If the file is found, its
+	full disk and user specification, including the	filename itself,
+	will be	printed	to the screen.	Bad exit status	will be	returned
+
+
+
+				       8-10
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	if the file cannot be found.
+
+
+	8.19  FLUSH: Empty the Print Spooler
+
+		<A:00> flush
+
+	The FLUSH command is used to wait until	all characters in the
+	spool file have	been sent to the printer.  This	is useful in
+	combination with the OPT -PS command, which is used to turn the
+	spooler	off.  Use a FLUSH beforehand to	make sure that the spooler
+	is not disabled	while there are	still characters in it that are
+	waiting	to be sent to the printer.
+
+
+	8.20  HXPR: Convert Hex	to ASCII
+
+		<A:00> hxpr (&numlist)
+
+	HXPR will convert the 8-bit hex	numbers	given as its arguments
+	into their ASCII equivalents.  These characters	will be	printed	to
+	the screen, as in:
+
+		<A:00> hxpr 68 65 6C 6C	6F
+		hello
+		<A:00>
+
+	where 68 was converted to `h', 65 to `e', and so on.
+
+
+	8.21  IN: Input	Data From a Port
+
+		<A:00> in <&port>
+
+	The IN command is used to read and print the value at the
+	specified system machine port, as in:
+
+		<A:00> in 20
+		FF
+		<A:00>
+
+	where FF is the	hex value read from system port	#20 hex, and is
+	saved in the $$0 hex variable.	Legal port numbers range from 0	to
+	FF, which is the standard number of ports that the 8080/Z80
+	processors can address.
+
+
+	8.22  INDEX: Find String
+
+		<A:00> index <str1> (str2)
+
+	INDEX is used to search	for the	occurrence of the string str1
+	within str2.  If found,	the character position of the match is
+	stored in $$0, and good	exit status is returned.  Otherwise, $$0
+	is set to zero,	and INDEX returns bad exit status.  For	example:
+
+
+
+				       8-11
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+		<A:00> index hello abchellodef
+		<A:00> xstat
+		00
+		<A:00> bdec $$0
+		4
+		<A:00>
+
+	This command sequence indicates	that the string	HELLO was found
+	within the string ABCHELLODEF, starting	at the fourth character.
+	Good exit status was also returned.
+
+	If str2	is omitted, the	input stream is	searched for a match of
+	str1.  Each line which contains	str1 within it will be printed to
+	the screen.  If	a match	occurs,	$$0 will be set	to the character
+	position of the	first match, and $$1 to	the last.  Bad exit status
+	will be	returned if no match occurred.	For example,
+
+		<A:00> index test < file.txt
+
+	will list each line read from the given	input file, FILE.TXT, that
+	contains the character string TEST.
+
+
+	8.23  LOG: Log-In a Drive
+
+		<A:00> log (drive(s))
+
+	When CP/M is initially booted, all disk	drives,	except for A:,
+	come up	in a ``reset state'', namely CP/M does not yet know of
+	their existence.  That's why the first time you	type ``B:'' there
+	is a delay while CP/M tries to figure out what kind of a drive it
+	is, and	what is	stored in the directory.  This process is called
+	the Disk Login,	and is used mainly to determine	the amount of free
+	space that is available	for writing onto the disk.  From then on,
+	every time the disk directory is accessed, CP/M	compares it to
+	what the directory should be.  If they differ, then the	disk was
+	probably changed, and the drive	is set to read only.
+
+	The LOG	command	is used	to activate the	disk login vector.  The
+	specified drives are referenced	by a single letter (A-P)
+	corresponding to the drive to be logged	in.  For example:
+
+		<A:00> log b
+
+	will cause drive B: to be logged in.  Similarly,
+
+		<A:00> log bcd
+
+	will cause drive B:, C:	and D: to be activated.	 If the	drive
+	specification is eliminated, as:
+
+		<A:00> log
+
+	then all drives	appearing in the disk search path will be logged
+	in.  This is especially	useful for conveniently	activating your
+
+
+
+				       8-12
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	drives for auto	searching after	a disk reset.
+
+	Note that any drives which were	already	activated will not be
+	logged in again.  Any drive which is unlogged must be ready and
+	on-line, since the login process requires a disk to be loaded in
+	the drive.  If there is	none, the system may hang.
+
+	If a question mark is given as an argument to LOG, a single letter
+	corresponding to each currently	logged-in disk will be printed to
+	the screen.  For example:
+
+		<A:00> log ?
+		AB
+		<A:00>
+
+	indicates that drives A: and B:	are currently activated.
+
+
+	8.24  MOVE: Copy Memory
+
+		<A:00> move <&start> <&end> <&new>
+
+	MOVE will move or copy memory from one region to another.  The
+	block to be copied is specified	by the start and end addresses.
+	The location to	which it is to be copied is specified as new.  The
+	amount of memory which will be changed is determined by	the size
+	of the source block.
+
+
+	8.25  OPT: Enter ConIX Options
+
+		<A:00> opt +/-/?<option> (arg(s))
+
+	The OPT	command	is the most extensive of all the internal
+	utilities, allowing you	to change many default settings	within the
+	ConIX system.  With this command, you can customize the	way ConIX
+	will operate in	your particular	environment.
+
+	The option argument is a two letter mnemonic referring to the
+	specific setting you wish to change.  The option name must be
+	preceded by a `+', `-',	or `?',	to indicate the	action to be
+	taken.
+
+	Many options have dual purposes.  The first may	be a positive
+	action,	as ``yes'' to do the action, as	indicated by the `+'
+	character.  The	second may be negative,	as ``not'' to do the
+	action,	or to reverse its meaning, as indicated	by the `-'
+	character.  The	`?' is used to query the current setting of the
+	specified option.
+
+	For example, the action	of the BP option is to set a bell in the
+	system prompt.	It may be used as:
+
+		<A:00> opt +bp
+
+
+
+
+				       8-13
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	where the `+' means, ``yes, set	the bell in the	prompt''.
+	Conversely, you	could type:
+
+		<A:00> opt -bp
+
+	where the `-' means, ``no, do not set the bell'', which	would turn
+	off the	bell if	it was on.
+
+	Some options require arguments which may be given on the command
+	line, immediately following the	option name.  For example, the DC
+	option sets the	number of columns displayed by the DIR command,
+	as:
+
+		<A:00> opt +dc 4
+
+	where the argument to the DC option indicates that four	columns
+	are to be printed in a directory listing.
+
+	To query the current setting of	an option, use the `?' specifier,
+	as, for	example:
+
+		<A:00> opt ?dc
+		4
+		<A:00>
+
+	which shows the	DC option to be	set for	4 output columns.
+
+	Note that, in order to save memory, there is very little error
+	checking done by the OPT command.  It is assumed that the user
+	will supply the	correct	arguments and values to	the selected
+	option.	 Be careful, as	specifying incorrect options may produce
+	strange	results.  The following	sections contain usage
+	descriptions of	all available options.
+
+
+	8.25.1	+/-AF: Set Archive File	Location
+
+		<A:00> opt +/-af (D:)(#/)
+
+	Commands which are preceded by a `%' are read from the default
+	archive	file, %.ARC.  By default, ConIX	will look for this file	on
+	drive A, user area 0 (A:0/).  This location may	be changed by
+	using the AF option, where D: is the disk code (A: - P:), and #/
+	is the user area (0/ - 31/).  Either or	both of	these codes may	be
+	specified in the argument string.  If any is omitted, the current
+	value will be assumed.	For example:
+
+		<A:00> opt +af b:
+
+	changes	the default from A:0/ to B:0/.
+
+
+
+
+
+
+
+
+				       8-14
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.25.2	+/-BC: Set Boot	Command
+
+		<A:00> opt +/-bc <command>
+
+	ConIX provides a special ``command boot'' feature that allows the
+	user to	simply hit CTRL-B at the system	prompt and boot	up a
+	predetermined program.	By default, this program is set	to
+	``MENU'', but may be changed with the BC option	to the desired
+	command	string (maximum	32 characters).
+
+
+	8.25.3	+BP: Set Bell in Prompt
+
+		<A:00> opt +bp
+
+	Invoking the +BP option	will set a bell	character (07) to be
+	embedded within	the system prompt string.  This	will cause the
+	console	terminal bell to sound each time the prompt is listed.
+	This is	useful if you are performing many time consuming
+	operations, and	would like an audible notification of when the
+	process	is completed, and the prompt is	returned.
+
+
+	8.25.4	-BP: Remove Bell in Prompt
+
+		<A:00> opt -bp
+
+	The -BP	option is used to remove the bell character from the
+	system prompt string, returning	it to a	``silent mode''.  This
+	setting	is the startup default.
+
+
+	8.25.5	+/-CD: Set Data	Files Location
+
+		<A:00> opt +/-cd (D:)(#/)
+
+	The CD option is used to change	the directory in which ConIX will
+	store its temporary operational	data files.  This includes the
+	CONIX.DAT/$ file which holds the contents of the Permanent Data
+	Storage	Section	of ConIX, created when the highest level of memory
+	management is invoked.	Also included is the CONIX.ENV environment
+	file, which is utilized	whenever one Command Language program
+	nests to another.
+
+	By default, these files	are stored in the directory from which
+	ConIX was initially invoked.  This location may	be changed by the
+	CD option to the specified disk	and/or user area.
+
+
+	8.25.6	+/-CS: Set Clear String	Sequence
+
+		<A:00> opt +/-cs (string)
+
+	This option will set the value of the clear string sequence output
+	to the screen by the CLS command.  The characters in this string
+
+
+
+				       8-15
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	should cause the console screen	to clear, placing the cursor in
+	the left topmost position (home).  If the console is a printer,
+	this string should contain a character sequence	that would advance
+	the paper to the top of	the next page, with the	carriage
+	positioned at the beginning of the line.
+
+	The characters in the string are specified directly on the command
+	line in	the first argument to the CS option.  Up to 7 characters
+	may be used for	the clear string.  Control codes may be
+	represented by using the `^' character.	 By default, the clear
+	string is not set.
+
+
+	8.25.7	+/-CX: Set ConIX Program Location
+
+		<A:00> opt +/-cx (D:)(#/)
+
+	The ConIX Operating System is stored on	disk in	the file
+	CONIX.COM, which is loaded into	memory from the	CP/M CCP after a
+	cold system reset.  This file is later used by ConIX to	reload
+	itself after memory management is invoked.  It is assumed to be
+	stored,	by default, on the drive and user area from which ConIX
+	was initially loaded.
+
+	The CX option is used to change	the directory of the ConIX machine
+	code file.  The	new location is	specified in the first argument,
+	where D: is the	disk code (A: -	P:), and `#/' is the user area (0/
+	- 31/).	 Either	or both	of these codes may be supplied in the
+	argument string.
+
+
+	8.25.8	+/-DC: Set Number of DIR Columns
+
+		<A:00> opt +/-dc <#cols>
+
+	The DIR	command	lists directory	files in columnar form.	 With the
+	DC option, you can set the output to be	formatted by cols number
+	of columns.  The default startup setting is 4.
+
+
+	8.25.9	+DL: Auto-Login	on Disk	Reset
+
+		<A:00> opt +dl
+
+	When this option is set, all search path disks will be
+	automatically logged in	after a	disk reset.  This entire operation
+	has the	same effect as typing the commands RESET and LOG on the
+	command	line.
+
+	If the +DR and +DL options are both in effect, a warm boot by a
+	program	or a CTRL-C entered at the system prompt will cause the
+	reset and login	function to be executed.  Otherwise, should the	-
+	DR option alone	be in effect, only a CTRL-C at the prompt level
+	will cause this	operation to take place.
+
+
+
+
+				       8-16
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.25.10	 -DL: No Login on Disk Reset
+
+		<A:00> opt -dl
+
+	The -DL	option is used to disable the drive auto-login feature.
+	This is	the default mode of operation.	The current setting of
+	+/-DR will remain unchanged after this option is iNvoked.
+
+
+	8.25.11	 +DR: Disk Reset on Warm Boot
+
+		<A:00> opt +dr
+
+	When this option is enabled, a program which terminates	in a warm
+	boot (jump to location 0000 or BDOS system call	0) will	cause an
+	automatic disk reset.  This is operationally equivalent	to
+	entering the RESET command at the system prompt	after the program
+	finishes execution.  In	addition, if the +DL option is set, all
+	search path disks will be logged in after the reset.
+
+
+	8.25.12	 -DR: No Reset on Warm Boot
+
+		<A:00> opt -dr
+
+	This option is used to disable auto-reset after	program	warm boot,
+	and is the default mode	of operation.  The setting of +/-DL will
+	not be changed by the invocation of this option.
+
+
+	8.25.13	 +DW: Enable Disk Wait Control
+
+		<A:00> opt +dw
+
+	The +DW	option enables Disk Wait Control, which	allows you to use
+	a CTRL-S to pause execution when a program is accessing	disk.
+	Once paused, you may abort using CTRL-C, or continue by	typing any
+	other character.  This feature is, by default, enabled on startup.
+
+
+	8.25.14	 -DW: Disable Disk Wait	Control
+
+		<A:00> opt -dw
+
+	The -DW	option disables	CTRL-S pause control during disk accesses,
+	and is used primarily to disallow an abort when	performing
+	operations that	should not be disturbed	by the user.
+
+
+	8.25.15	 +/-ER:	Restore	ConIX Environment
+
+		<A:00> opt +/-er
+
+	The ER option is used to restore the ConIX environment saved in
+	the CONIX.DAT/$	file by	the ES option, below.  Note that, when
+
+
+
+				       8-17
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	used with Command Language programs, the restoration of	the
+	environment will cause command execution to start from the point
+	at which the environment was initially saved.
+
+
+	8.25.16	 +/-ES:	Save ConIX Environment
+
+		<A:00> opt +/-es
+
+	The ConIX environment refers to	the permanent data section, namely
+	Memory Management level	7.  It is in this section that the current
+	settings of all	options	and features are stored.  When managed out
+	(memory	level above 7),	this segment is	saved into and recalled
+	from the CONIX.DAT/$ file.  The	ES option simulates this ``save''
+	operation, storing the contents	of the permanent data section in
+	the environment	file.  This file can be	used later to facilitate
+	the quick restoration of the environment if ConIX has to be
+	``cold'' reloaded (as is done within the WARMBT	program.)
+
+
+	8.25.17	 +/-FC:	Set Function Character Keys
+
+		<A:00> opt +/-fc <&lead-in> (+)(&key) (&value) . . .
+
+	This option is used to set the lead-in character used to access
+	the Programmable Function Character Keys as well as the	values of
+	the keys themselves.  To change	only the lead-in character,
+	specify	its hex	code as	the first argument after the FC	option.
+	This will set the given	key to indicate	the start of a function
+	character sequence.  Typically,	you should set the lead-in
+	character to be	in the control range (00 - 1F hex), although any
+	value is allowed.  To enter the	lead-in	character as input to a
+	program, simply	type it	twice.	By default, the	lead-in	is not
+	set, but CTRL-K	or 0B hex is recommended.
+
+	To set the function character keys, specify the	hex code for the
+	key and	its corresponding value, each as separate arguments.
+	These definitions must appear on the command line directly after
+	the lead-in argument.  To avoid	resetting the lead-in each time	a
+	key is given, substitute the null string ("") for the lead-in
+	argument, and the current value	will be	assumed.
+
+	Setting	one character key will cause all other key values to be
+	reset, unless a	`+' is specified before	the first key argument.
+	In this	case, all subsequent definitions will be added to those
+	keys currently set.  Up	to 24 key definitions can be made.  Any
+	excess will be ignored.	 By default, some character keys will be
+	preset at startup, as:
+
+		A = @	At-sign
+		B = \	Backslash
+		C = ^	Caret or Circumflex
+		D = DEL	DELETE or Rub Out (7F hex)
+		K = }	Close Brace
+		L = [	Left Bracket
+
+
+
+				       8-18
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+		O = {	Open Brace
+		P = |	Pipe Symbol
+		Q = `	Backwards Quote
+		R = ]	Right Bracket
+		T = ~	Tilde
+		U = _	Underscore
+		X = !	Exclamation Point
+
+	These keys were	chosen because they are	often not found	on some	older
+	keyboards.  Many of them have special meaning to ConIX,	and
+	come preset and	ready for use, if needed.
+
+
+	8.25.18	 +/-FK:	Set Function Keys Lead-in
+
+		<A:00> opt +/-fk <&lead-in>
+
+	This option is used to set the lead-in for the Programmable
+	Function Keys.	The lead-in argument is	a hex byte code
+	corresponding to the character which would indicate the	start of a
+	function key sequence.	It should be set to a value in the control
+	range (00 - 1F hex), although any value	is permissible.	 To enter
+	the lead-in as an actual character to a	program, simply	type it
+	twice.	By default, the	lead-in	is not set, although a CTRL-F or
+	06 hex is recommended.
+
+
+	8.25.19	 +GS: Set the GOSUB Stack
+
+		<A:00> opt +gs <&address> (#levels)
+
+	The +GS	option allows the location in memory of	the GOSUB stack	to
+	be set to a user-supplied address.  The	size of	the stack is
+	specified by levels, which indicates the maximum number	of levels
+	to which a GOSUB may be	nested.	 If no level number is specified,
+	a default of 16	will be	assumed, with each level requiring 3 bytes
+	of memory.  The	end address of the stack is equal to address +
+	(levels	* 3).
+
+	The default stack setting resides in an	area within ConIX memory
+	that can accommodate up	to 16 nested levels.  This default is
+	activated whenever a Command Language program is invoked.
+	Therefore, the GS option can only be used to modify the	stack
+	location within	a running program.
+
+
+	8.25.20	 -GS: Restore the GOSUB	Stack
+
+		<A:00> opt -gs
+
+	The -GS	option is used to reset	the GOSUB stack	to use the default
+	internal stack of 16 levels.
+
+
+
+
+
+
+				       8-19
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	8.25.21	 +/-IA:	Set Input Port Address
+
+		<A:00> opt +/-ia <&address>
+
+	The input port address is used to reference a machine code routine
+	which will do character	input as the :UIA device.  The IA option
+	is used	to set this routine to begin at	the specified address in
+	memory.	 This program should return the	input character	in the CPU
+	Accumulator, with the end of the input stream marked by	an EOF
+	character (CTRL-Z).  Of	course,	the device driver should be loaded
+	into memory before the device is referenced on the command line.
+
+
+	8.25.22	 +/-IB:	Set Input Buffer Length
+
+		<A:00> opt +/-ib <#records>
+
+	A data buffer is automatically created at the end of the TPA
+	whenever input is being	redirected from	a disk file.  This buffer
+	will contain the characters being read from the	input file, and	is
+	intended to cut	down on	the number of disk accesses necessary when
+	reading	data from a file.  ConIX will read a block of characters
+	into the memory	buffer and then	transfer them individually to the
+	input of the running program.
+
+	The IB option will set the number of 128 byte records that are to
+	be used	for buffering the input	file in	memory.	 The maximum
+	number of records is 16, or a buffer size of 2048 bytes, with the
+	startup	default	being 8	records.
+
+	Note that this option is most useful for computers which use
+	single density disks.  Many double density systems already buffer
+	1024 bytes in memory, therefore	making the input redirection
+	buffer redundant and unnecessary.  For such systems, the minimum
+	record count of	1 is recommended.
+
+
+	8.25.23	 +/-IP:	Set Input Port Device
+
+	       <A:00> opt +/-ip	<&stat><&mask><0/1><&data>
+
+	The IP option will set the parameters of the special user-
+	definable input	device,	:UDI.  This is done by internally using	a
+	procedure to read a system status port,	stat, masking off the
+	ready bits using the mask byte,	and checking if	the data is ready.
+	The 0/1	argument specifies which overall value at the status port
+	indicates the ready condition.	If "0" is given, a zero	value of
+	the masked bits	means that the data is ready.  Otherwise, if a "1"
+	is given, a non-zero value is taken to indicate	data ready.  In
+	any case, when the data	is tested to be	ready, it is read from the
+	machine	port data and returned to the running program.
+
+	This entire procedure can be internally	summarized as a	simple
+	8080 assembly language routine:
+
+
+
+
+				       8-20
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	1) For a zero mask value:
+
+	    wait: in	 status	; read the status port		 ani
+	mask   ; strip off the ready bits	    jnz	   wait	  ; if any
+	bits are on, keep trying	   in	  data	 ; read	the data
+		  ret		; return character to program
+
+	2) For a non-zero mask value:
+
+	    wait: in	 status	; read the status port		 ani
+	mask   ; strip off the ready bits	    jz	   wait	  ; if no
+	bits are on, keep trying	   in	  data	 ; read	the data
+		  ret		; return character to program
+
+	The most typical implementation	is the second one, since most I/O
+	ports use a non-zero value in the mask bits to indicate	the data
+	ready condition.  The end of the stream	of input characters should
+	be marked by an	EOF (CTRL-Z).
+
+
+	8.25.24	 +/-MM:	Set Memory Management
+
+		<A:00> opt +/-mm <#level>
+
+	This option is used to set the default memory management level,
+	indicating the topmost segment of ConIX	which is to remain in
+	memory when a disk-based command (.COM)	file is	executed.  The
+	level number may range from 1 to 8, where 1 is the lowest level
+	(all of	ConIX remains in memory) and 8 is the largest (all but the
+	1/2K loader will be removed).  By default, the management level	is
+	set to 1 at startup.
+
+	Note that, as expected,	OPT ?MM	will print the current memory
+	level number.  In addition, supplying a	particular level argument
+	will give you the address in memory of the beginning of	the
+	specified level.
+
+
+	8.25.25	 +/-OA:	Set Output Port	Address
+
+		<A:00> opt +/-oa <&address>
+
+	The output port	address	is used	to reference a machine code
+	routine	which will do character	output as the :UOA device.  The	OA
+	option is used to set this routine to begin at the specified
+	address	in memory.  The	device handler should expect to	receive
+	the output character in	the E register.	 Be sure that this routine
+	has been loaded	into memory before referencing the device.
+
+
+
+
+
+
+
+
+
+
+				       8-21
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	8.25.26	 +/-OB:	Set Output Buffer Length
+
+		<A:00> opt +/-ob <#records>
+
+	When output is redirected to a disk file, a buffer is
+	automatically created at the TPA end in	order to cut down on the
+	number of disk accesses	necessary when writing the output file.
+	ConIX will first fill this block in memory with	the output
+	characters before transferring them to the disk	file.
+
+	The OB option will set the number of 128 byte records of output	to
+	be buffered in memory.	The maximum number of records that can be
+	allocated to this buffer is 16,	or 2048	bytes.	The default buffer
+	size is	8 records, although a record count of 1	is recommended for
+	systems	which internally buffer	disk operations	in 1024	byte
+	blocks.
+
+
+	8.25.27	 +/-OP:	Set Output Port	Device
+
+	       <A:00> opt +/-op<&stat><&mask><0/1><&data>
+
+	This option will set the parameters of the special user-definable
+	output device, :UDO.  Output to	this device references an internal
+	procedure to read a system status port,	masking	off the	ready bits
+	using the mask byte, and checking if the device	is ready to
+	receive	the data.  The 0/1 argument specifies what overall value
+	of the mask bits will indicate that the	output port is ready.  If
+	"0" is given, a	zero value of the masked bits means that the data
+	can be sent to the device.  Otherwise, if a "1"	is given, a non-
+	zero value will	indicate the ready condition.  In any case, when
+	the device is tested to	be ready, the character	will be	sent to
+	the given data port.
+
+	The following 8080 code	demonstrates this operation:
+
+	1) For a zero mask value:
+
+	    wait: in	 status	; read the status port		 ani
+	mask   ; strip off the ready bits	    jnz	   wait	  ; if any
+	bits are on, keep trying	   mov	  a,e	 ; get the data
+	from the E register	      out    data   ; send it to the
+	device		 ret	       ; done
+
+	2) For a non-zero mask value:
+
+	    wait: in	 status	; read the status port		 ani
+	mask   ; strip off the ready bits	    jz	   wait	  ; if no
+	bits are on, keep trying	   mov	  a,e	 ; get the data
+	from the E register	      out    data   ; send it to the
+	device		 ret	       ; done
+
+	The latter routine represents the most typical implementation, as
+	I/O ports generally use	a non-zero mask	to indicate the	data ready
+	condition.
+
+
+
+				       8-22
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.25.28	 +PC: Enable Command Print
+
+		<A:00> opt +pc
+
+	The +PC	option allows the printing of commands entered at the
+	prompt level when transcript mode is enabled by	CTRL-P or the +PR
+	option.	 With this feature, the	output to the printer will be an
+	exact replica of what was typed	and displayed at the system
+	console.  This is the default setting on startup.
+
+
+	8.25.29	 -PC: Disable Command Print
+
+		<A:00> opt -pc
+
+	The -PC	option will disable command printing when transcript mode
+	is in effect.  Commands	entered	at the prompt level will not be
+	displayed on the printer device.  Only output from an executing
+	command	will be	printed.  This is useful when a	contiguous
+	printout of many commands is desired, without having the listing
+	marred by the instructions typed at the	prompt level.
+
+
+	8.25.30	 +/-PF:	Set Pipe File Location
+
+		<A:00> opt +/-pf (D:)(#/)
+
+	The PF option provides the user	with the ability to select the
+	directory which	will be	used to	hold the temporary pipe
+	redirection file TMPIPnnn.$$$.	Upon startup, the default is to
+	create the temporary file in the directory from	which the piped
+	commands were invoked.	Using the PF option, any desired directory
+	can be used for	this file.
+
+	Users of hard disk or memory drive (ramdisk) systems should use
+	this feature to	have ConIX perform the pipe operation on the
+	fastest	storage	medium.	 This will reduce much of the delay when
+	using floppy disks for the temporary file.
+
+
+	8.25.31	 +PR: Enable Transcript	Mode
+
+		<A:00> opt +pr
+
+	This option enables printer transcript mode.  Console output will
+	be sent	to the printer device (:LST) as	well as	the console
+	screen.	 This option performs the same function	as when	CTRL-P is
+	hit to enable transcript printing.
+
+
+
+
+
+
+
+
+
+
+				       8-23
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	8.25.32	 -PR: Disable Transcript Mode
+
+		<A:00> opt -pr
+
+	This option disables transcript	print mode as set by the +PR
+	option or a CTRL-P.  This setting is the default on startup.
+
+
+	8.25.33	 +PS: Set Print	Spooling
+
+		<A:00> opt +ps (#size) (D:)(#/)	(&eof) (#delay)
+
+	The +PS	option is used to activate the print spooling feature.
+	The size argument specifies the	number of records to be	set aside
+	for use	by the spool file.  The	disk and user codes specify the
+	location on disk where the spool file is to be stored.	The name
+	of this	file is	CONIX.SPL and is created with its invisible (SYS)
+	attribute set.	The default disk and user area is A:0/,	and will
+	be used	to hold	the spool file if no location is specified.  The
+	default	size is	8 records.  Therefore, invoking	this option with
+	no arguments sets the spool file to be 8 records in length and
+	stored in A:0/.	 The maximum size of the spool file is 65,535
+	records, or, effectively, as large as available	disk space
+	permits.
+
+	The eof	argument specifies the character that is to be used as the
+	spooler	EOF.  This special character is	used internally	to
+	indicate the end of the	spool output stream.  It is set, by
+	default, to 0FF	hex.  You may set this to any character	you like
+	if FF would be an actual character output to the printer when
+	spooling, in which case, you wouldn't want it to be interpreted	as
+	an EOF.	 Since only text is sent to the	printer	in most
+	applications, the default setting should be fine.  If screen dumps
+	or bit-mapped images are output, you must find a character that
+	will never be output to	the printer, and set it	to be the EOF.
+	The eof	value must be unique in	order for the spooler to function
+	properly.
+
+	The delay argument specifies the loop constant used to determine
+	the amount of time that	should elapse before spooling restarts
+	after a	character is entered at	the console keyboard.  By default,
+	this constant is set to	2FFF hex, which	should be sufficient for
+	most systems.  If your system utilizes interrupt driven	input,
+	then this delay	is probably unnecessary, and should be set to 1,
+	the smallest possible value.
+
+
+	8.25.34	 -PS: Disable Print Spooling
+
+		<A:00> opt -ps
+
+	This option will disable the print spooling feature, and delete
+	the spooler file from disk.  Note that it is permissible to do
+	this while the system is still spooling	off the	disk file.  To
+	prevent	a loss of characters, use the FLUSH command to empty the
+
+
+
+				       8-24
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	spooler	before disabling it.
+
+
+	8.25.35	 +SA: Enable Archive Searching
+
+		<A:00> opt +sa
+
+	When archive searching is enabled by this option, ConIX	will
+	automatically search the default archive file, %.ARC, for a
+	requested command.  This searching takes place only if the command
+	could not be found in the default directory or on the disks in the
+	search path.
+
+
+	8.25.36	 -SA: Disable Archive Searching
+
+		<A:00> opt -sa
+
+	This option disables the automatic archive searching feature, and
+	is the default startup setting.
+
+
+	8.25.37	 +SB: Set BDOS Address (&0006)
+
+		<A:00> opt +sb <&address>
+
+	All programs communicate with the operating system through what
+	are known as System Calls, or syscalls for short.  These calls
+	request	certain	complex	functions to be	performed, such	as
+	creating, writing, reading, and	erasing	files.	A program accesses
+	the operating system through a JMP instruction stored at location
+	0005 in	memory,	which takes the	program	into the BDOS syscall
+	decoder.
+
+	This system entry point	may also be used by a program for
+	determining the	amount of TPA memory that is available for storing
+	its data.  The address at location 0006	points to the first byte
+	in memory occupied by the operating system.  All memory	from
+	location 100 hex until this address may	be used	by the program for
+	data manipulation.
+
+	The +SB	option allows you to change this address to any	location
+	in memory between 100 hex and the top of ConIX (as determined by
+	the TOP	internal command).  This is useful for ``cordoning off''
+	an area	in memory for data storage (by redirection into	memory,
+	etc.) so that programs will not	access it and modify it.
+
+	For example, let's say you wanted to reserve 256 bytes of memory
+	for data storage.  You would first determine the top location of
+	ConIX, which, for demonstration	purposes, we will say is at the
+	address	6000 hex.  Next, subtract 256 from this	number,	giving you
+	5F00 hex.  This	will be	the address which you specify to the +SB
+	option.	 The actual BDOS entry address will be set to 11 bytes
+	before this location.  These bytes will	hold a JMP into	the
+	syscall	decoder	and the	four error vector addresses.  The area
+
+
+
+				       8-25
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	between	5F00 and 6000 can now be used for safe data storage.  When
+	a program looks	at location 0006, it just sees a smaller memory
+	space, and will	not disturb your private data area.
+
+	Note that memory management will not execute while the +SB address
+	is set.	 This is because the memory size is fixed by this option,
+	and managing out ConIX is not going to change it.
+
+
+	8.25.38	 -SB: Reset BDOS Address
+
+		<A:00> opt -sb
+
+	The -SB	option is used to restore the default BDOS address.  It
+	will also return memory	management to its normal mode of
+	operation.
+
+
+	8.25.39	 +/-SL:	Set Screen Length
+
+		<A:00> opt +/-sl <#lines>
+
+	The SL option will set the number of lines per screen for the Auto
+	Screen Paging function.	 This number may range from 0 to 255.
+	After the specified number of lines are	printed	on the console
+	screen,	the system will	automatically wait for the user's signal
+	to continue.  The default number of lines per screenful	is set to
+	0, thus	disabling the auto-paging feature on startup.
+
+
+	8.25.40	 +SO: Enable Spooler on	Output
+
+		<A:00> opt +so
+
+	This option will enable	characters waiting in the print	spooler	to
+	be sent	to the printer during screen output as well as keyboard
+	input.	This setting is	the startup default.
+
+
+	8.25.41	 -SO: Disable Spooler on Output
+
+		<A:00> opt -so
+
+	This option will disable the print spooler from	outputting its
+	characters to the printer during screen	output.	 This setting is
+	useful for reducing the	extra overhead required	for running the
+	spooler	while characters are being output to the screen.
+
+
+	8.25.42	 +/-SP:	Set Disk Search	Path
+
+		<A:00> opt +/-sp (path)
+
+	The SP option is used to set the Search	Path which File	and
+	Extension Searching will use to	find a file.  The path argument
+
+
+
+				       8-26
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	takes the form:
+
+		<disk>(user#)
+
+	where disk represents the disk code, A-P, and user# the	optional
+	user code, 0-31.  If no	user number is supplied, 0 will	be
+	assumed.  If a `:' is given as the disk, the current default drive
+	at the time of the invocation will be assumed.	If a `/' is given
+	as the user#, the default user area at invocation will be assumed.
+
+	For example, a path of ``:ab'' will cause a command to be searched
+	in the current directory, user area 0 of the current disk, A:0/,
+	and B:0/.  Note	that even though there appears to be a chance that
+	one directory can be searched more than	once (if you were in A:0/,
+	for example), in reality this will never occur.	 Internally, all
+	directories that were searched are remembered, and ConIX will
+	never waste time searching a directory more than once.
+
+
+	8.25.43	 +SS: Set the SWITCH Stack
+
+		<A:00> opt +ss <&address> (&size)
+
+	With this option, the location in memory of the	SWITCH stack will
+	be set to reside at address.  The length of the	stack is specified
+	by the size argument, which indicates the number of characters
+	that may be in a SWITCH	construct at one time.	If no size is
+	specified, a default of	130 bytes will be assumed.
+
+	The default stack setting resides in area within ConIX memory that
+	can accommodate	up to 128 SWITCH characters.  This default is
+	activated whenever a Command Language program is invoked.
+	Therefore, the SS option can only be used to set the stack within
+	a running program.
+
+
+	8.25.44	 -SS: Restore the SWITCH Stack
+
+		<A:00> opt -ss
+
+	This option will reset the SWITCH stack	to use the default
+	internal buffer	of 130 bytes, or 128 characters.
+
+
+	8.25.45	 +/-ST:	Set Sleep Time Constant
+
+		<A:00> opt +/-st <#value>
+
+	The SLEEP command uses a built-in timing loop for determining the
+	amount of real time used by each increment of its argument.  This
+	loop simply decrements a number	until it becomes zero.	The ST
+	option is used to set this counter to value, which is the number
+	of iterations to be executed in	this timing loop.  This	value will
+	produce	varied results on different machines, and therefore, you
+	must experiment	with different numbers which may range from 0 to
+
+
+
+				       8-27
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	65535.	Each loop should idle the CPU for one-tenth of a second.
+
+
+	8.25.46	 +TA: Set Type-Ahead Buffer
+
+		<A:00> opt +ta <&address> (#size)
+
+	This option will set the address of the	buffer which is	used to
+	hold type-ahead	characters.  By	default, this buffer is	set to an
+	internal storage area capable of holding up to 80 characters.  The
+	specified address sets the location in memory of the type-ahead
+	buffer.	 The length of this buffer is determined by the	size
+	argument, which, if omitted, is	assumed	to be a	default	of 80
+	bytes.
+
+
+	8.25.47	 -TA: Reset Type-Ahead Buffer
+
+		<A:00> opt -ta
+
+	This option resets the type-ahead buffer address to the	default	80
+	character internal storage area.
+
+
+	8.25.48	 +/-TC:	Set Type-Ahead Cancel Character
+
+		<A:00> opt +/-tc <&char>
+
+	The type-ahead cancel character	is used	to flush all characters	in
+	the type-ahead buffer.	It is set by default to	CTRL-_ (1F hex),
+	and may	be changed with	this option, where char	is the hex value
+	of the new cancel character.  A	value in the control range is
+	recommended.
+
+
+	8.25.49	 +TE: Enable Type-Ahead	Echo
+
+		<A:00> opt +te
+
+	When the +TE option is specified, any input characters which enter
+	the type-ahead buffer will be printed to the screen.  This
+	provides for the viewing of characters as they are being read into
+	the type-ahead buffer.	This setting is	especially useful for
+	systems	which do not implement internal	type-ahead.  On	such a
+	system,	you would have to wait until a character is read by ConIX
+	before typing the next.	 This setting allows for visual
+	confirmation of	receipt	of the typed character so that you may
+	enter the next.
+
+	Note that echo is not instantaneous, as	ConIX only samples input
+	during disk operations and screen output.
+
+
+
+
+
+
+
+				       8-28
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.25.50	 -TE: Disable Type-Ahead Echo
+
+		<A:00> opt -te
+
+	The -TE	option disables	the echoing of type-ahead characters as
+	set by the +TE option.	This setting is	the default on startup.
+
+
+	8.25.51	 +TR: Enable Command Tracer
+
+		<A:00> opt +tr
+
+	This option is used to enable the Command Line Tracer, which
+	displays each entered command exactly as will be executed.
+	Variables referenced on	the command line will be expanded in the
+	trace.	In other words,	the contents of	the parsed or final
+	command	line will be displayed.
+
+	This command is	most useful for	tracing	the execution of a Command
+	Language program, where	each program step will be displayed on the
+	console	screen.	 A `+' sign is placed before each trace	line,
+	thereby	making it easier to distinguish	program	output from tracer
+	output.
+
+
+	8.25.52	 -TR: Disable Command Tracer
+
+		<A:00> opt -tr
+
+	This option is used to turn off	the command line tracer	which was
+	previously enabled by the +TR option.
+
+
+	8.25.53	 +UC: Set Upper	Case Mapping
+
+		<A:00> opt +uc
+
+	The +UC	option enables the standard action of mapping all
+	lowercase letters on the command line to uppercase before
+	execution.  This is the	default	mode of	operation on startup.
+
+
+	8.25.54	 -UC: Disable Upper Case Mapping
+
+		<A:00> opt -uc
+
+	This option will disable the uppercase mapping of all all
+	characters typed on the	command	line.  In this mode, the case of
+	the characters entered will remain unmodified.	The only exception
+	is the command name itself, which will be mapped to uppercase to
+	maintain compatibility with disk-based programs	and ConIX internal
+	commands.
+
+
+
+
+
+
+				       8-29
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	8.25.55	 +/-VF:	Set Variable File Location
+
+		<A:00> opt +/-vf (D:)(#/)
+
+	The 52 disk-based variables are	stored in the disk file	VARS.SET
+	which is created with its invisible (SYS) attribute enabled.  By
+	default, ConIX will assume to manipulate this file on A:0/.  This
+	location may be	changed	by using the VF	option,	where D: is the
+	disk code, and #/ is the user area.  Either or both of these codes
+	may be specified in the	argument string.
+
+
+	8.25.56	 +XD: Enable ExpanDisk References
+
+		<A:00> opt +xd <start> (end) (mount)
+
+	This option is used to set the disk drives which will be utilized
+	by the ExpanDisk feature.  Any disk drive code (A-P) that is
+	referenced in the range	of start to end, will be mounted on the
+	mount disk drive.  If the end disk is not specified, it	is set,	by
+	default, to drive P:.  If the mount disk is not	specified, it is
+	assumed	to be the start	disk minus one drive (as B: - 1	= A:).
+
+	By default, the	start disk is set to I:, the end disk to K:, and
+	the mount disk to A:.  Therefore, only drives I, J, and	K
+	reference the mount-disk A.  All other drive references	are passed
+	unmodified to CP/M.
+
+
+	8.25.57	 -XD: Disable ExpanDisk	References
+
+		<A:00> opt -xd
+
+	This option disables the ExpanDisk feature.  All drive references
+	will be	passed to CP/M for evaluation.
+
+
+	8.25.58	 +/-XS:	Set Extension Search List
+
+		<A:00> opt +/-xs <.EXT(s)>
+
+	The XS option sets the Extension Search	List, which contains the
+	filename extensions for	which ConIX will search	when not found in
+	the current directory.	The .EXT argument is the three character
+	filename extension of the file to be searched.	Up to 10 such
+	extension arguments may	be supplied.
+
+
+	8.25.59	 +XU: Set Extended User	Areas
+
+		<A:00> opt +xu
+
+	The +XU	option enables command line access to extended user areas
+	(16-31), which is the ConIX startup default.  When these user
+	areas are enabled, the byte at 0004h will no be	longer used for
+
+
+
+				       8-30
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	storing/retrieving the current user area.  This	will cause
+	incompatibility	with programs that modify 0004h	to change the
+	default	user area.  (A special syscall is now available	to perform
+	this function.)
+
+
+	8.25.60	 -XU: Disable Extended User Areas
+
+		<A:00> opt -xu
+
+	The -XU	option disables	command	line access to user areas above
+	15.  This setting provides compatibility with programs that use
+	location 0004h to change the default user area.
+
+
+	8.26  OUT: Output Data to a Port
+
+		<A:00> out <&port> <&data>
+
+	The OUT	command	is used	to write a data	value to a system port,	as
+	in:
+
+		<A:00> out 20 3F
+
+	which outputs a	3F to port 20.	Legal port numbers range from 0	to
+	FF, which is the standard number of ports that an 8080/Z80 can
+	address.
+
+
+	8.27  READ: Read a File	into Memory
+
+		<A:00> read <&start> <&end> <filename>
+
+	The READ command is used to read a disk	file directly into an area
+	of system memory specified by the start	and end	addresses.  The
+	filename argument indicates the	name of	the file to be read, as
+	in:
+
+		<A:00> read 100	fff foo.asm
+
+	which will read	the disk file FOO.ASM into memory from location
+	100 hex	to location FFF.
+
+	If the memory buffer is	not large enough to hold the file, the
+	remainder will be discarded.  In any case, the location	after the
+	last byte written in memory is stored in the hex variables, with
+	$$1 holding the	hi-byte	and $$2	the lo-byte of the address.
+
+
+	8.28  REN: Rename a Disk File
+
+		<A:00> ren <new>=<old>
+
+	This command is	used to	change the name	of an existing disk file.
+	The argument to	REN specifies the new filename to be assigned to
+
+
+
+				       8-31
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+	the old, or current name of the	file, as in:
+
+		<A:00> ren foo.sav=foo.asm
+
+	which will change the name of the file FOO.ASM to FOO.SAV.  If you
+	wish to	change the name	of a file in disk or user area other than
+	the one	you're currently working in, use:
+
+		<A:00> ren b:10/test.asm=test.sav
+
+	which renames the file B:10/TEST.SAV to	B:10/TEST.ASM.	You cannot
+	rename files across disks and user areas.  Instead, you	must make
+	a copy and delete the original.
+
+
+	8.29  RESET: Reset Disks
+
+		<A:00> reset (drive(s))
+
+	RESET is used to reset or unlog	the specified disk drive(s).  Each
+	drive to be reset is specified as a single letter (A-P)	in the
+	first argument.	 For example,
+
+		<A:00> reset bc
+
+	will reset only	drives B: and C:.  If the drive	specification is
+	eliminated, all	disks will be reset.  This command is useful for
+	cancelling any write protect settings which may	have occurred
+	after a	disk swap or write error.
+
+	NOTE: Rumors have it that there	exists a bug in	the CP/M RESET
+	DRIVE syscall (#37) which can sometimes	cause damage to	a disk
+	directory.  This syscall is used by RESET when the drive(s)
+	argument is specified.	We have	not been able to verify	the rumor,
+	so exercise caution when using this syscall.  Using RESET without
+	arguments to reset all disks at	once should not	be affected by
+	this problem.
+
+
+	8.30  SET: Set Disk Variables
+
+		<A:00> set ((variable) =) (value)
+
+	The SET	command	is used	to change the contents of the 52 disk-
+	based letter variables.	 The variable to be set	is specified by	a
+	single letter, a-z or A-Z.  Its	value may be given as the third
+	argument on the	command	line.  If no argument is given,	a line of
+	input will be taken as the value of the	variable.
+
+	For example, the command line:
+
+		<A:00> set a = "hello"
+
+	will set the variable $A to contain the	string "hello".	 The same
+	result will occur when using the command:
+
+
+
+				       8-32
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+		<A:00> set a =
+		hello
+		<A:00>
+
+	The only difference is that the	value of $A was	taken from the
+	console	input stream instead of	the command line.  Note	that if
+	the input stream should	contain	any control characters,	they will
+	be stored as a part of the variable.
+
+	If no arguments	are given to SET on the	command	line, then all
+	variables which	contain	a value	will be	listed to the screen, as:
+
+		<A:00> set
+		A: A:00	 FOO	  ASM  :  FOO	   COM
+		X: exec	asm foo.aaz; load foo; foo
+		<A:00>
+
+	The number of variables	listed by this operation will be saved in
+	the internal hex variable $$0.
+
+	This last feature is the only functional difference between the
+	SET and	= (Equals) command.  The Equals	command	was simply
+	provided as a matter of	style.	To illustrate, the command:
+
+		<A:00> dir | set a =
+
+	is 100%	equivalent in operation	to the command:
+
+		<A:00> dir | = a
+
+	Both of	these command lines set	the $A variable	to the first line
+	of the DIR command output.  However, the latter	usage reads and
+	looks much better than the former.  The	SET command seems to imply
+	the need for a value on	the command line, as ``set variable A
+	equal to something''.  The Equals command seems	to be best suited
+	to reading its value from the console input, as	``set something	to
+	equal variable A''.
+
+	All letter variables are stored	in the disk file, A:0/VARS.SET.
+	This file is created with its SYS attribute set, and will not
+	appear in a regular directory listing.	If this	file does not
+	exist, it will be created when a variable is set or accessed by
+	SET or Equals.	Each variable stored in	the variable file is
+	assigned a space of 255	bytes (two records).
+
+
+	8.31  SRCH: Search for a Byte in Memory
+
+		<A:00> srch <&start> <&end> <&byte> (&new)
+
+	SRCH will search an area of memory for a specific byte,	and print
+	each address at	which a	match was found.  The memory to	be
+	searched is specified by the start and end addresses.  The value
+	it will	be looking for is specified as byte.  For example:
+
+
+
+
+				       8-33
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+		<A:00> srch 100	1ff ff
+		13F
+		170
+		1FA
+		<A:00>
+
+	will search memory from	100 to 1FF hex for a data value	of FF.
+	The addresses printed represent	the locations in memory	which
+	contain	this value.
+
+	You may	also change all	matched	bytes by specifying the	new byte,
+	as:
+
+		<A:00> srch 100	1ff ff 0
+		13F
+		170
+		1FA
+		<A:00>
+
+	which changes the three	locations which	contained FF to	now
+	contain	0.
+
+
+	8.32  TEXT: Read Text with Editing
+
+		<A:00> text (-)
+
+	The TEXT command will read editable lines of text from the
+	keyboard and output them to the	console.  You may reference `$'
+	variables directly in the input	stream,	and their contents will	be
+	substituted automatically into the output stream.  If you do not
+	want this substitution to occur, preface the dollar sign with a
+	backslash.  Typing an exclamation point, `!', at the beginning of
+	a line,	with no	other characters following it, indicates the end
+	of the input stream.  TEXT will	always read from the console
+	keyboard, even when used from within a command file.
+
+	If the "-" argument is specified, all leading spaces or	tabs
+	before the text	on each	line of	input will be removed before
+	printing.  White space between words will be preserved.
+
+
+	8.33  TOP: Print Top Address of	ConIX
+
+		<A:00> top
+
+	TOP is used to determine the top or starting address of	ConIX in
+	memory.	 This address points to	the location in	memory before the
+	first byte of the ConIX	machine	code, and is useful for
+	calculating the	amount of available TPA	memory.	 Note that the
+	address	value returned by TOP is not changed when the OPT +SB
+	command	is used.  To determine the true	end of the TPA segment,
+	examine	the lo-hi word at location 0006	in memory.
+
+
+
+
+
+				       8-34
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.34  TYPE: List File Contents
+
+		<A:00> type (file(s))
+
+	TYPE will list the ASCII contents of the specified file(s) to the
+	console	screen.	 If no arguments are supplied, TYPE will read its
+	input from the console keyboard, terminated by an EOF (CTRL-Z).
+	This makes it useful as	a filter when reading characters through a
+	pipe stream.
+
+
+	8.35  UDIR: List Files Through User Areas
+
+		<A:00> udir <#start> <#end> (file(s))
+
+	UDIR will search from the start	to end user area for the specified
+	file(s).  If no	files are specified, or	a disk and/or user area	is
+	given, the entire directory will be listed.  Files may be
+	specified according to the syntax of the DIR command.  For
+	example,
+
+		<A:00> udir 0 10 *.asm
+
+	will list the names of all files that end with a .ASM extension	in
+	user areas 0 through 10.
+
+
+	8.36  WP: Write	Protect	Disks
+
+		<A:00> wp (drive(s))
+
+	The WP command will write protect the specified	drive(s), as in:
+
+		<A:00> wp ac
+		<A!00>
+
+	where disks A: and C: will be write protected.	If the drive
+	specification is omitted, the current drive will be assumed.
+	Writing	to a protected disk will cause a system	error:
+
+		Bdos Err On D: R/O
+
+	where R/O means	that the drive was read-only or	write protected.
+	This error will	cause the program's execution to be terminated.
+	Note that swapping disks without hitting a CTRL-C or performing	a
+	disk reset will	automatically cause the	drive to be write
+	protected the next time	its directory is accessed.
+
+	If a question mark is specified	as the argument	to WP, a single
+	letter corresponding to	each disk which	is software write-
+	protected will be listed to the	screen.	 For example:
+
+
+
+
+
+
+
+				       8-35
+
+
+
+
+
+	Utility	Commands			    ConIX Operating System
+
+		<A!00> wp ?
+		AC
+		<A!00>
+
+	indicates that disks A:	and C: are currently write-protected.
+
+
+	8.37  WRITE: Write Memory to a File
+
+		<A:00> write <&start> <&end> <filename>
+
+	The WRITE command is used to save an area of system memory to a
+	disk file.  This area is specified by the start	and end	addresses,
+	and the	filename indicates the file which is to	hold the data, as
+	in:
+
+		<A:00> write 100 fff mem.dat
+
+	which writes memory from location 100 hex to location FFF into the
+	file MEM.DAT.
+
+	Note: the WRITE	command	replaces the SAVE command that is built
+	into the CP/M CCP.  It's syntax	was:
+
+		SAVE <records> <filename>
+
+	where records indicated	the number of 256 byte buffers in memory
+	to be written to the file.  The	WRITE command makes this obsolete
+	because	SAVE was limited to starting from location 100 and writing
+	only in	increments of 256.  Using WRITE, you no	longer have to
+	convert	into records the amount	of memory which	is to be written.
+	Direct addressing specifies this for you, quickly and easily.
+
+	To convert from	the old	SAVE to	WRITE, use the formula:
+
+		end = (256*(records+1))-1
+
+	where records is the number of 256 byte	buffers	normally specified
+	to the SAVE command.  The start	address	should be specified as 100
+	hex.
+
+
+	8.38  XSTAT: Print Exit	Status
+
+		<A:00> xstat (&status)
+
+	The XSTAT command will report the exit status of the previously
+	executed command.  After XSTAT finishes	execution, it will set the
+	given exit status.  If invoked without the status argument, the
+	exit status of the previous command will be maintained.	 In this
+	way, you may place XSTAT in a command sequence to monitor the exit
+	status of a particular command without affecting the operation of
+	the whole.
+
+
+
+
+
+				       8-36
+
+
+
+
+
+	ConIX Operating	System				  Utility Commands
+
+	8.39  ZAP: Modify Memory
+
+		<A:00> zap <&address> (&value(s))
+
+	With the ZAP command you can change the	data stored at any
+	location in system memory.  The	start address points to	the first
+	location to be changed.	 The specified value will be placed in
+	memory at that location.  Additional values will be stored
+	sequentially from the start address, as:
+
+		<A:00> zap 100 c3 00 00
+
+	which changes location 100 hex to C3, and locations 101	and 102	to
+	00.
+
+
+	8.40  Command Name Conflicts
+
+	If you have a disk-based .COM file with	the same name as a ConIX
+	built-in command, the ConIX command will always	execute	when
+	requested.  This is because ConIX attempts to find a command
+	internally before searching the	disk directory.	 To resolve this
+	conflict, you can either change	the name of the	program	to one
+	that doesn't conflict, or preface the command name with	a colon
+	when invoked on	the command line, as:
+
+		<A:00> :<command> (arg(s))
+
+	where the requested command will only be searched for in the disk
+	directory and search path.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				       8-37
+
+
+
+
+	<A

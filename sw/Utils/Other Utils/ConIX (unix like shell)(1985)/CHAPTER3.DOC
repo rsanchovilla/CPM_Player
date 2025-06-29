@@ -1,0 +1,991 @@
+
+
+
+
+			   Chapter 3 - The Command Line
+
+
+	Discussion of the command line and prompt, entering and	 executing
+	commands,  changing  system  disks, how	ConIX processes	arguments,
+	and special requests to	the command line processor.
+
+
+				   - CONTENTS -
+	__________________________________________________________________
+
+
+	  3.  The Command Line......................................   3-1
+
+	    3.1	  The System Prompt.................................   3-1
+
+	    3.2	  Changing the Default Directory....................   3-1
+
+	    3.3	  The Warm Boot.....................................   3-2
+
+	      3.3.1  Warm Boot Density Change.......................   3-3
+
+	    3.4	  Command Line Editing..............................   3-4
+
+	    3.5	  Entering Commands.................................   3-6
+
+	    3.6	  Executing a Program in Memory	(!).................   3-7
+
+	    3.7	  Aborting Command Execution........................   3-8
+
+	    3.8	  Multiple Commands Per	Line........................   3-8
+
+	    3.9	  Command Arguments.................................   3-9
+
+	    3.10  Backslash (Non-Interpret) Character...............  3-10
+
+	    3.11  Forced Case Mapping...............................  3-11
+
+	    3.12  Control Characters................................  3-12
+
+	    3.13  Data Type Conversions.............................  3-13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				      -	i -
+
+
+
+
+
+	ConIX Operating	System				  The Command Line
+
+	3.  The	Command	Line
+
+	A major	portion	of the ConIX Operating System is devoted to the
+	processing of user commands.  These commands are generally entered
+	at the system prompt and form the command line.	 The Command Line
+	Processor is the part of the operating system that takes the
+	command	line, breaks it	up into	different segments, and	analyzes
+	it.  The power of ConIX	lies, for the most part, in its	enormous
+	flexibility with regard	to manipulating	the command line.  Exactly
+	how this is done, and what features are	available to the user, is
+	described in the sections that follow.
+
+
+	3.1  The System	Prompt
+
+	When ConIX is ready to process a command, it displays a	prompt on
+	the console screen in the form:
+
+		<d:##>
+
+	where the single letter	d indicates the	currently selected disk
+	drive (A-P) and	the two-digit number ##	indicates the currently
+	selected user area (00-31).  For example, the prompt displayed
+	when using drive A, user area 0	is:
+
+		<A:00>
+
+	and will be used to indicate the system	prompt in examples
+	throughout this	manual.
+
+	If the currently selected disk is write	protected by the operating
+	system (the drive set to Read Only), the `:' in	the prompt will	be
+	changed	to a `!', e.g.:
+
+		<A!00>
+
+	This will most often occur if you swap disks without resetting the
+	drive.	CP/M detects the change	and does not allow you write to
+	the new	disk.  To return the drive to normal use, simply hit
+	CTRL-C at the prompt level.  Under ConIX, diskettes need not
+	contain	a CP/M image on	the operating system tracks.
+
+	Note that the prompt change does not take place	immediately after
+	you swap disks.	 The R/O setting is activated only after the disk
+	directory has been accessed by a program.  For example,	if you ran
+	the DIR	(list directory) command after the swap, the next prompt
+	would indicate the write-protected status.
+
+
+	3.2  Changing the Default Directory
+
+	Whenever you cold load CP/M into your system after a reset or
+	power-up, you are automatically	placed into the	default	directory
+	of drive A, user area 0.  It is	from this directory that all .COM
+	programs will be loaded, unless	you specify otherwise.
+
+
+
+				       3-1
+
+
+
+
+
+	The Command Line			    ConIX Operating System
+
+	When ConIX is initially	loaded,	the default directory which was
+	set from CP/M will be maintained.  This	default	may be changed at
+	any time by specifying a new directory,	as:
+
+		<A:00> (D:)(#/)
+
+	where D	is the disk directory (A-P), and # is the user area (0-
+	31).  Either or	both may be supplied, and the default directory
+	and prompt will	be changed accordingly.	 All future commands and
+	files will then	be loaded from the new directory unless
+	respecified.
+
+	In addition, there exists a method of changing the default
+	directory only for the execution of a single command.  The syntax
+	of this	feature	is:
+
+		<A:00> @(D:)(#/) <command> (arg(s))
+
+	which executes the command as if it were requested from	the
+	specified disk and/or user area.  For example,
+
+		<A:00> stat foo.asm
+
+	will execute the Digital Research STAT command on the file FOO.ASM
+	stored in the current directory, namely	drive A, user area 0.  If
+	you wished to STAT a file in a user area and/or	disk other than
+	the current default, you couldn't supply a user	area with the
+	filename since CP/M does not support this.  Instead, you must
+	manually change	to the desired directory and then execute STAT
+	from there.  Or, more conveniently, you	can type:
+
+		<A:00> @B:10/ stat foo.asm
+
+	which will execute the STAT command from the directory of drive
+	B:, user area 10 and return you	to the default directory which was
+	previously set.	 This is exactly equivalent to typing:
+
+		<A:00> b:10/
+		<B:10> stat foo.asm
+		       .
+		       . STAT runs on the file FOO.ASM in B:10
+		       .
+		<B:10> a:0/
+		<A:00>
+
+	where you had to manually specify the desired directory	changes
+	before and after the STAT command was executed.
+
+
+	3.3  The Warm Boot
+
+	There are two kinds of boots (short for	bootstrap) under the CP/M
+	environment: they are the Cold Boot and	the Warm Boot.	Your
+	system does a cold boot	the first time CP/M is loaded.	By cold	we
+	mean that there	is no software in memory to perform operating
+
+
+
+				       3-2
+
+
+
+
+
+	ConIX Operating	System				  The Command Line
+
+	system functions.  Once	loaded,	a signon message is printed and
+	control	is passed to the CP/M CCP.
+
+	The warm boot occurs while the operating system	is resident in
+	memory.	 It has	two primary purposes.  The first is to reset the
+	disk system, returning all disks to a writable state.  This is
+	most often done	at the prompt level by hitting a CTRL-C	after you
+	change disks.
+
+	The second function performs a complete	reload of CP/M and the CCP
+	from system tracks of the A: disk.  This operation differs from	a
+	cold boot, as there still remains some software	in memory to do
+	the reload, namely the BIOS, which contains the	system-dependent
+	routines.
+
+	A warm boot most often occurs after a large disk-based command
+	program	finishes execution.  It	is really only necessary for the
+	purpose	of reloading CP/M, since such programs generally overwrite
+	the CCP	with their stack and data areas.
+
+	When working under CP/M, you will notice when a	warm boot occurs
+	if there is an increased delay after a program finishes	execution,
+	and before the prompt is displayed.  Some programs do not cause
+	this delay because they	do not require much memory and,	therefore,
+	do not have to overwrite the CCP.  Under ConIX,	this warm boot
+	delay is often eliminated entirely, as ConIX usually remains in
+	memory while programs execute.	A jump to location zero	or SysCall
+	#0 never enters	the BIOS, as this function is handled within ConIX
+	itself.
+
+	Hitting	a CTRL-C at the	ConIX prompt will cause	a reset	of the
+	write-protect setting of all disks without performing a	CP/M or
+	ConIX reload, thereby eliminating much of the usual delay.  This
+	should be done whenever	you change disks, otherwise you	will not
+	be allowed to modify the data stored on	the new	disk.
+
+
+	3.3.1  Warm Boot Density Change
+
+	Some computers may use the warm	boot operation to allow	you to
+	load different densities of disks into the system.  If this is
+	true, the media-type cannot be changed since ConIX will	not supply
+	the warm boot that is sometimes	used by	the BIOS to reset the
+	density	settings and disk parameter configurations.
+
+	The program WARMBT.COM has been	supplied on your distribution
+	diskette for the purpose of performing a BIOS Warm Boot	directly
+	from ConIX.  To	execute	a warm boot, simply type:
+
+		<A:00> warmbt
+
+	which will cause ConIX to store	its current environment	(option
+	settings, etc.)	on disk, and then exit to CP/M via a standard warm
+	boot operation.	 A command-submit file will have been created
+	which will cause ConIX to be reloaded along with its saved
+
+
+
+				       3-3
+
+
+
+
+
+	The Command Line			    ConIX Operating System
+
+	environment.
+
+	This complex operation is performed exclusively	by a ConIX Command
+	Language program, the source code to which has been provided on
+	the Distribution Diskette for your examination.
+
+	In addition, WARMBT will accept	command	line arguments in the
+	form:
+
+		<A:00> warmbt <command>	. . .
+
+	where the given	command(s) will	be executed after control is
+	returned to CP/M, and before ConIX is reloaded.	 This provides a
+	mechanism for executing	programs in the	resident operating system
+	without	intervention by	ConIX.
+
+	For example, the command line:
+
+		<A:00> warmbt "dir *.com" stat
+
+	will exit to CP/M, list	all files whose	names end with .COM, print
+	available disk space, and return to ConIX.
+
+	NOTE: in instances when	we will	mention	a warm boot in this
+	manual,	we refer only to the process by	which a	program's
+	execution is terminated.  This does not	mean that an actual CP/M
+	and BIOS warm boot operation will take place.  No CP/M reload can
+	ever take place	when a program exits via a warm	boot under ConIX.
+	It is for this reason that diskettes used with ConIX need not
+	contain	a CP/M image on	the operating system tracks unless, of
+	course,	an exit	to CP/M	will be	necessary.
+
+
+	3.4  Command Line Editing
+
+	ConIX supports the standard line editing functions available when
+	entering commands or other line	input (via BDOS	syscall	10).  The
+	editing	process	has been somewhat refined in operation and also
+	contains some new additions.  Valid commands are:
+
+	CTRL-B:	Boot Program
+
+	  When this control character is typed at the first character
+	  position after the system prompt, a predetermined program will
+	  be booted into memory.  By default, the command MENU will be
+	  executed, to facilitate the quick loading of a specialized
+	  user-friendly	menu program, if available.  The value of the
+	  CTRL-B key can be redefined using the	OPT +/-BC internal command
+	  to load and execute any program of your choice.
+
+	CTRL-C:	Warm Boot
+
+	  If this control sequence is entered at the first character
+	  position of an input line, a warm boot will take place.  If this
+	  was done while entering data into a running program, execution
+
+
+
+				       3-4
+
+
+
+
+
+	ConIX Operating	System				  The Command Line
+
+	  will be terminated and control returned to ConIX.  Otherwise,	if
+	  typed	at the system prompt level, all	disks will be reset to a
+	  writable state.
+
+	CTRL-E:	Next Line
+
+	  This sequence	is used	to advance the cursor to the beginning of
+	  the next physical input line.	 You may then continue entering
+	  data from that point.	 This function only modifies the screen
+	  and does not affect the actual input data.  It is useful for
+	  terminals or printers	which do not auto-wrap when the	cursor
+	  goes past the	end of a line.
+
+	CTRL-H:	Backspace
+
+	  Use this sequence to backspace on the	input line and delete the
+	  character preceding the current cursor position.  The	character
+	  to be	removed	will be	overwritten by a space or blank, thus
+	  causing it to	be erased from the screen.
+
+	CTRL-I:	Tab
+
+	  The tab character will advance the cursor to the next	screen tab
+	  stop,	which is preset	to every eight characters.  Although
+	  spaces will be displayed so as to move the cursor, the ASCII tab
+	  character (07h) will still remain in the line.
+
+	CTRL-J:	Line Feed
+	CTRL-M:	Carriage Return
+
+	  Either of these characters will terminate the	input line,
+	  sending it to	ConIX or the running program for processing.
+
+	CTRL-O:	Restore	Line
+
+	  This sequence	will recall the	previously entered input line as
+	  stored in the	input line buffer.  Therefore, if the previous
+	  line may be re-used with few or no changes, you may recall it
+	  without having to retype it.	Characters deleted by CTRL-H or
+	  CTRL-X can also be restored by using CTRL-O.
+
+	CTRL-P:	Transcript Mode	ON/OFF
+
+	  Entering this	sequence once will enable Printer Transcript Mode,
+	  which	will cause all characters displayed on the console screen
+	  to be	simultaneously printed on the printer (LST) device.
+	  Entering this	character again	will disable this feature.  In
+	  other	words, it has an on/off	toggling action.
+
+	CTRL-R:	Recall Line
+
+	  The current contents of the input line will be reprinted on the
+	  screen when this sequence is typed.  It is a form of screen
+	  refresh, which will display the input	line as	it has been
+	  entered thus far.
+
+
+
+				       3-5
+
+
+
+
+
+	The Command Line			    ConIX Operating System
+
+	CTRL-U:	Cancel Line
+
+	  This function	deletes	all previously typed characters	from the
+	  input	line buffer.  The deleted characters will remain on the
+	  screen, and the cursor will advance to the next line.
+
+	CTRL-X:	Erase Line
+
+	  When this control sequence is	entered, all input which had been
+	  displayed on the screen will be deleted, and the input will,
+	  once again, start from the beginning of the line.  The
+	  characters displayed on the screen will be overwritten with
+	  backspaces and, thus,	physically erased as well.
+
+	CTRL-\:	Non-Interpret
+
+	  Assigning control sequences to editing functions has caused
+	  these	characters to be excluded from direct entry as data on the
+	  input	line.  If any special editing characters are to	be
+	  entered, use the CTRL-\ sequence followed by the desired
+	  character.  This character will then be displayed on the screen
+	  and stored as	input without being interpreted	by ConIX.  To
+	  enter	the non-interpret sequence itself, simply type it twice.
+
+	DEL (7F	hex): Delete Character
+
+	  DEL is used to delete	the last typed character from the input
+	  line.	 The affected character	will be	echoed to the screen as	an
+	  indication of	its erasure.  This function is best suited for
+	  editing on a terminal	or printer that	cannot backspace.
+
+
+	3.5  Entering Commands
+
+	When the ConIX prompt is displayed, commands may be entered in the
+	same way as when CP/M was being	used.  For example:
+
+		<A:00> dir
+		     .
+		     .	displays the directory
+		     .
+		<A:00> era foo.asm
+		     .
+		     .	erases FOO.ASM
+		     .
+		<A:00> ed foo.asm
+		     .
+		     .	invokes	an editor on FOO.ASM
+		     .
+		<A:00>
+
+	As with	CP/M, all characters entered onto the command line in
+	lower case are mapped to upper case before execution.  If a
+	command	is built into ConIX, it	is run immediately (as are DIR and
+	ERA).  A command which is not internal (as ED) is searched for on
+
+
+
+				       3-6
+
+
+
+
+
+	ConIX Operating	System				  The Command Line
+
+	disk with a .COM ending	(as ED.COM).
+
+
+	3.6  Executing a Program in Memory (!)
+
+	ConIX contains a special command which allows you to execute a
+	program	stored in system memory	as if it were loaded from a .COM
+	file.  The syntax of this command is:
+
+		<A:00> !(&address) (arg(s))
+
+	where address is the location in memory	at which the program
+	resides.  The args list	is a group of filenames	or other data
+	which may be supplied to the program on	the command line for its
+	execution.  All	data areas and parameters will be set in the same
+	manner as when executing commands from disk.  Thus we can think	of
+	the ! command as causing the disk loading process to be	bypassed
+	entirely.
+
+	If address is not specified, a default location	of 100 hex is
+	assumed.  This address is most significant as it is the	beginning
+	of the Transient Program Area (TPA) in memory.	Since all .COM
+	programs are loaded into memory	starting at this address, they can
+	be re-executed directly	from memory without having to be reloaded
+	from disk.
+
+	Take, for example, the STAT program, supplied by Digital Research
+	with CP/M.  If you wanted to determine the size	of a file, you
+	would type:
+
+		<A:00> stat foo.asm
+
+	STAT.COM would be loaded from disk and executed, reporting the
+	number of Kbytes occupied by FOO.ASM on	disk.  Let's say you then
+	wanted to determine the	size of	another	file.  You could re-run
+	STAT in	the same way as	before,	except with a different	filename,
+	or, you	could type:
+
+		<A:00> !  foo.com
+
+	which would execute STAT directly from memory with the new
+	argument, FOO.COM.  The	reason this is possible	is that	all .COM
+	still remain in	memory after execution.	 Therefore, the	! command
+	skips the loading process and executes the program already stored
+	in memory.
+
+	There are a few	things that you	should be aware	of when	using this
+	feature.  Firstly, some	programs modify	their code and/or data
+	areas while running in memory and, therefore, may not re-execute
+	properly.  Secondly, ConIX has no way of telling whether garbage
+	or an actual program resides in	the memory you specify.
+	Therefore, be sure that	there really is	a program in memory before
+	you instruct ConIX to run it.  The system may hang if invalid
+	instructions are executed.  If used properly, this command could
+	really save quite a bit	of time.
+
+
+
+				       3-7
+
+
+
+
+
+	The Command Line			    ConIX Operating System
+
+	3.7  Aborting Command Execution
+
+	If you enter a command at the prompt level and then realize that
+	you do not want	to run it, you may abort its execution by using
+	any of a number	of different methods described below.
+
+	If you specified a disk-based command (.COM) program, you can
+	easily cancel the request before execution begins by simply
+	entering the CTRL-X sequence.  You can tell if the command has not
+	yet begun to execute if	the cursor is still sitting on top of the
+	`<' of the `<A:00>' prompt.  In	other words, the Line Feed
+	character has not yet been printed.  At	this point, ConIX is in
+	the process of loading the program into	memory from the	disk file,
+	and the	command	can be aborted before it starts	to execute.
+	However, once execution	begins,	it becomes somewhat more difficult
+	to cancel.
+
+	It is unfortunate that,	on most	systems, there exists no
+	convenient method of interrupting a program once invoked by the
+	user.  CP/M sometimes allows you to abort a program if it is
+	currently outputting to	the screen.  You may be	able to	stop the
+	output with a CTRL-S and then enter a CTRL-C which will	cause a
+	warm boot to take place.  However, if a	program	is disk-bound,
+	there is no way	it can be stopped other	than by	forcing	a BDOS
+	error message by pulling out the disk from the drive (aargh!), or
+	performing a cold system reset.
+
+	With ConIX, as in CP/M,	typing CTRL-S will temporarily stop screen
+	(CON) output and CTRL-C	can be used to abort execution.	 In
+	addition, ConIX	provides a feature called Disk Wait Control which
+	allows you to use a CTRL-S to pause execution when a program is
+	accessing a disk.  Once	paused,	you may	similarly abort	using
+	CTRL-C,	or continue running the	program	by typing any other
+	character.  The	only type program which	cannot be stopped is one
+	which is performing some in-memory calculation since it	would be
+	impossible for ConIX to	intervene.
+
+
+	3.8  Multiple Commands Per Line
+
+	More than one command may be entered on	a single command line by
+	simply separating each command and its arguments (if any) with a
+	semicolon, as:
+
+		<A:00> dir; era	foo.asm; ed foo.asm
+
+	which runs the commands	in sequence from left to right,	just as	if
+	you would have typed each command on a separate	command	line.  Any
+	spaces before or after the semicolon are optional.  This is very
+	useful if you have some	time consuming commands	to run in sequence
+	and don't really want to wait around for each one to finish before
+	starting the next.
+
+
+
+
+
+
+				       3-8
+
+
+
+
+
+	ConIX Operating	System				  The Command Line
+
+	3.9  Command Arguments
+
+	Most commands can be invoked with arguments, which are words
+	passed to the program that tells it something about what you want
+	done.  A program can either request data from the user while it's
+	running, through interactive prompts or	questions, or it could
+	take the needed	information from the command line arguments.  The
+	latter method is the route most	programs take if all they require
+	is, say, a filename, as	is the case with:
+
+		<A:00> ed foo.asm
+
+	where FOO.ASM is ED's command line argument.  This is also the
+	case with most of the ConIX internal commands which gather their
+	operational data from the command line.
+
+	ConIX and CP/M differentiate between separate arguments	by the
+	space or tab you type between them.  For example, COMPARE may be a
+	user-supplied program which compares two files,	as:
+
+		<A:00> compare <file1> <file2>
+
+	where the contents of file1 and	file2 are compared to each other.
+	The user may issue the command:
+
+		<A:00> compare foo.asm foo.sav
+
+	where FOO.ASM is the first argument, and FOO.SAV is the	second
+	argument to the	program	COMPARE.  Any spaces or	tabs between the
+	arguments or after the command name will be truncated to a single
+	space.
+
+	It is often useful to combine multiple words into one argument
+	without	having the spaces between them act as separators to break
+	them up.  Take,	for example, the internal command ECHO,	which is a
+	utility	that prints its	arguments, as:
+
+		<A:00> echo    Welcome	to  ConIX!
+		WELCOME	TO CONIX!
+		<A:00>
+
+	Notice how the spaces (or tabs)	were truncated to a single space
+	and the	lowercase letters were mapped to uppercase.  In	this
+	example, the total number of arguments to the ECHO command is
+	three.	If, however, you were to enclose the arguments in double
+	quotes,	you'd get:
+
+		<A:00> echo "	Welcome	 to  ConIX!"
+		   Welcome  to	ConIX!
+		<A:00>
+
+	You can	see that the spaces were included and the characters were
+	not mapped to uppercase.  In this instance, there is only one
+	argument which contains	the entire string of three words and
+	spaces.
+
+
+
+				       3-9
+
+
+
+
+
+	The Command Line			    ConIX Operating System
+
+	In effect, the double quotes tell ConIX	not to change the case of
+	letters	or interpret the meaning of any	separation characters
+	within them.  So far, you've been introduced to	the space, tab,
+	and semicolon as separator characters.	There are others which you
+	will come across as you	read on.
+
+	If you place nothing within a double quote string, then	what you
+	get is called the Null Argument.  It occupies space on the command
+	line as	an argument, however, it consists of only one character, a
+	NUL, which is the same as a CTRL-@ or 00 hex.
+
+
+	3.10  Backslash	(Non-Interpret)	Character
+
+	One of the most	powerful characters, so	to speak, is the
+	backslash, `\'.	 It removes any	special	meaning	that the character
+	following it may have to ConIX,	and puts it onto the command line
+	just like another character.  For example, if you want to place	a
+	double quote within a quoted argument string, you can precede it
+	with a backslash as:
+
+		<A:00> echo "\"	  Welcome  to  ConIX!\""
+		"   Welcome  to	 ConIX!"
+		<A:00>
+
+	If you forgot to enter the backslashes,	you'd get five arguments.
+	The first a null, the second WELCOME, the third	TO, the	fourth
+	CONIX!,	and the	fifth another null argument.
+
+	As you may suspect, the	backslash can also be used in many other
+	instances as well.  For	example:
+
+		<A:00> echo    Welcome\	\ to\ \	C\o\nIX!
+		WELCOME	 TO  ConIX!
+		<A:00>
+
+	The backslashes	before the spaces between the words serve to join
+	them together to form one argument.  The backslash tells the
+	Command	Line Processor to ignore the special meaning of	the space
+	characters, namely, to separate	arguments.  Thus, the spaces are
+	treated	as any other character and are included	within the
+	argument.  The backslash before	the o and n of ConIX! causes these
+	characters to be entered onto the command line in the same case	as
+	they were typed.  In this instance, the	mapping	of lowercase
+	characters to uppercase	is suppressed.
+
+	You can	even use the backslash itself as a character on	the
+	command	line.  Simply backslash	the backslash (meaning,	don't
+	interpret the non-interpret character) as:
+
+		<A:00> echo "Here is a Backslash \\ Character"
+		Here is	a Backslash \ Character
+		<A:00>
+
+
+
+
+
+				       3-10
+
+
+
+
+
+	ConIX Operating	System				  The Command Line
+
+	3.11  Forced Case Mapping
+
+	As we have shown in previous examples, characters entered on the
+	command	line are normally mapped to uppercase, unless they are
+	preceded by a backslash	or enclosed in double quotes.  Forced Case
+	Mapping	is a feature which can even cause the mapping of
+	characters within double quotes.  It is	implemented by using:
+
+		_L   to	map all	characters to lowercase
+		_U   to	map all	characters to uppercase
+		_N   do	not map	any characters
+		__   to	return to standard case	mapping
+
+	For example, `_L' (underscore followed by the letter ell) is used
+	as:
+
+		<A:00> echo _lHello "There"
+		hello there
+		<A:00>
+
+	where all characters in	lowercase remained untouched, but
+	characters in uppercase	were mapped to lowercase.  By definition,
+	the `_L' caused	all characters following it to be mapped to
+	lowercase, even	those in double	quotes.	 Similarly, using `_U'
+	yields the opposite result, as:
+
+		<A:00> echo _uHello "There"
+		HELLO THERE
+		<A:00>
+
+	where all characters were force-mapped to uppercase.
+
+	If no mapping is desired, use `_N' as:
+
+		<A:00> echo _nHello There
+		Hello There
+		<A:00>
+
+	where all characters remain in the same	case as	they were typed.
+	This is	operationally equivalent to using OPT -UC before the
+	command	and OPT	+UC after it (as described later).
+
+	By using `__' (two underscores), the standard case mapping can be
+	returned to its	default	setting, as:
+
+		<A:00> echo _uHello "There" __Hello "There"
+		HELLO THERE HELLO There
+		<A:00>
+
+	The `_U' converted all characters until	the `__' to uppercase, and
+	after the `__',	regular	case mapping was invoked, returning the
+	case privileges	of the double quotes.
+
+
+
+
+
+
+				       3-11
+
+
+
+
+
+	The Command Line			    ConIX Operating System
+
+	3.12  Control Characters
+
+	ConIX will not allow you to use	the CTRL key to	enter actual
+	control	characters onto	the command line.  These characters are
+	generally non-printable, and are sometimes used	to modify certain
+	terminal characteristics.  In most instances they can be
+	considered undesirable glitch, and may actually	interfere with
+	program	operation.  It is for this reason that they are	normally
+	stripped from the command line.
+
+	Control	characters span	the range of NUL (00 hex) to US	(1F hex).
+	One such character is a	CTRL-L,	which clears the screen	on most
+	terminals.  This sequence is entered by	holding	down the <CTRL>
+	key with one finger while pressing the `L' key with another.  If
+	you entered this sequence on the command line, you'd see:
+
+		<A:00> ^L
+
+	ConIX types the	`^' before the `L' to represent	the entry of the
+	CTRL-L character sequence.  If you entered a CTRL-L as an argument
+	to ECHO, you'd get:
+
+		<A:00> echo ^L
+
+		<A:00>
+
+	which will not clear the screen, but print just	a blank	line.
+	Why?  Because ConIX strips off all control characters from the
+	command	line.  It is as	if you hadn't typed the	control	character
+	at all.	 But we	shall not ban them totally, for	there are
+	instances when you would want them to be there.
+
+	There are a few	methods	that can be used to include control
+	characters on the command line.	 You could enter the control
+	sequence in double quotes, as:
+
+		<A:00> echo "^L"
+
+	because	the quotes allow control characters within them.  Or, you
+	could prefix the control sequence with a backslash:
+
+		<A:00> echo \^L
+
+	because	backslash removes any special meaning given by ConIX to
+	the character following	it.
+
+	There is also a	special	character, the circumflex or up-arrow,
+	which can be used to represent a control sequence, without
+	actually using the CTRL	key.  This two-character sequence appears
+	on the screen to be almost identical to	entering the actual
+	control	character.  Instead, you spell it out manually as:
+
+		<A:00> echo ^l
+
+
+
+
+
+				       3-12
+
+
+
+
+
+	ConIX Operating	System				  The Command Line
+
+	where you type a `^' followed by an `l'	(ell), as opposed to the
+	two-stroke CTRL-L code.	 This sequence will be changed into the
+	single control character code it represents.  It is especially
+	useful in command files	where, if the actual character would
+	appear inside it, the screen would clear when you TYPE or list the
+	file.  Also, some editors don't	allow entry of control characters.
+
+	Another	special	character is available which will change the
+	normal operation of ConIX to remove all	control	characters from
+	the command line.  This	is done	with the tilde or squiggle
+	character, where:
+
+		<A:00> ~echo ^L
+		 . . . screen clears
+		<A:00>
+
+	which allows a control character sequence to be	included anywhere
+	on the command line.  Using a second tilde would reset ConIX to
+	strip off control chars	for the	remainder of the line or until
+	another	tilde.	In other words,	the tilde has a	toggling on/off
+	action.	 For example:
+
+		<A:00> echo ~^L~ ^A^B^C~ ^G
+		 . . . screen clears and terminal beeps
+		<A:00>
+
+	causes only the	first CTRL-L and last CTRL-G to	be accepted.  The
+	first tilde turns control characters on, the second off, and the
+	third back on again.  Note that	using the tilde	will not affect
+	the other methods of enabling entry of control characters (i.e.
+	"", \, ^).
+
+
+	3.13  Data Type	Conversions
+
+	Many built-in functions	require	data to	be entered in the form of
+	hexadecimal or decimal numbers.	 For convenience, you may specify
+	such a number in either	hex or decimal format as:
+
+		&<hexnum>
+
+	where hexnum is	a hexadecimal number from 0-FFFF hex, or,
+
+		#<decnum>
+
+	where decnum is	a decimal number from 0-65535.	In addition, you
+	may specify a number as	its ASCII character equivalent,	as:
+
+		'<char>
+
+	which will cause the specified char to be converted into its
+	numeric	value and then passed to the command.
+
+	Wherever commands are listed as	requiring numeric arguments, we
+	will use certain conventions for describing the	default	data type
+
+
+
+				       3-13
+
+
+
+
+
+	The Command Line			    ConIX Operating System
+
+	that command or	function is expecting.	If an `&' is indicated,
+	the default data type is hexadecimal.  If a `#'	is indicated, the
+	default	data type is decimal.  In each case, the number	may be
+	entered	in the default type without specifying its corresponding
+	type character.	 Only when a non-default number	is entered must	it
+	be preceded by its special type	character.
+
+	To illustrate, take for	example	the EXAM command which examines
+	memory.	 It is defined as:
+
+		EXAM <&start> <&end>
+
+	where start and	end are, by default, two hexadecimal numbers
+	describing the start and end addresses.	 If you	wished to examine
+	memory between 00 and FF hex, you'd type:
+
+		<A:00> exam 0 ff
+
+	or, if you speak only decimal, you can type:
+
+		<A:00> exam #0 #255
+
+	which would produce operationally equivalent results.  ConIX
+	internally performs these conversions automatically.
+
+	Similarly, the SUM command will	add two	numbers, as:
+
+		SUM <#num1> <#num2>
+
+	where num1 and num2 are, by default, two decimal numbers.  If you
+	wished to add 10 and 15, you'd type:
+
+		<A:00> sum 10 15
+
+	or, if you wanted to sum two hex numbers, just type:
+
+		<A:00> sum &a &f
+
+	You can	also mix hex and decimal numbers as:
+
+		<A:00> sum &a 15
+
+	Additionally, you can use an ASCII character as:
+
+		<A:00> sum '^j 15
+
+	Each of	these examples would produce the decimal result	of 25.
+	Note that the data types given in the arguments	do not affect the
+	data type of the result.  SUM will always print	a decimal result,
+	regardless of whether it was given hex or decimal numbers as
+	arguments.  You	can convert results to decimal or hex by capturing
+	the command's output using redirection and then	passing	the data
+	to the BDEC or DECB internal commands.	This process will be
+	described clearly in later sections.
+
+
+
+
+				       3-14
+
+
+
+
+"  CHAPTER1DOC                ç  CHAPTER2DOC                `(  CHAPTER3DOC                     

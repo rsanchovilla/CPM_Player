@@ -1,0 +1,148 @@
+{ L I G H T P E N . G I C             V 1.1     30.08.1987  }
+{-----------------------------------------------------------}
+
+{ Routinen fÅr Lichtgriffel SANYO MLP-001                   }
+
+
+
+
+var
+  lightpen_offset: record
+                     x, y: integer;
+                   end;
+
+
+
+
+(* IsLightpen: TRUE, wenn Lichtgriffel angeschlossen (ohne GewÑhr) *)
+
+function IsLightpen: boolean;
+
+  begin
+    IsLightpen := (port[$BB]=0);
+  end;
+
+
+(* penswitch:  TRUE, wenn der Lightpen-Schalter betÑtigt wird *)
+
+function penswitch: boolean;
+
+  begin
+    penswitch := pad(11) <> 0;
+  end;
+
+
+
+(* penvalid: TRUE, wenn der Lightpen auf den Bildschirm gedrÅckt wird *)
+
+function penvalid: boolean;
+
+  begin
+    penvalid := pad(8) <> 0;
+  end;
+
+
+
+
+
+(* lightpen: liefert neue x- und y-Koordinate, wenn auf dem Bildschirm,
+             sonst bleiben x und y unverÑndert.
+
+*)
+
+procedure lightpen (var x, y: integer);
+
+  begin
+  case SCRMOD of
+    0:     begin
+           if LINLEN < 41
+           then x := ((pad(9) + lightpen_offset.x) div 6) - 1 - ((40 - LINLEN) shr 1)
+           else x := ((pad(9) + lightpen_offset.x) div 3) - 3 - ((80 - LINLEN) shr 1);
+           y := (pad(10) + lightpen_offset.y) div 8;
+           if x < 0 then x := 0;
+           if y < 0 then y := 0;
+           end;
+    1:     begin
+           x := (pad( 9) + lightpen_offset.x) div 8 - ((32 - LINLEN) shr 1);
+           y := (pad(10) + lightpen_offset.y) div 8;
+           if x < 0 then x := 0;
+           if y < 0 then y := 0;
+           end;
+    6, 7:  begin
+           x := (pad( 9) + lightpen_offset.x) shl 1;
+           y :=  pad(10) + lightpen_offset.y;
+           end;
+    else   begin
+           x := pad( 9) + lightpen_offset.x;
+           y := pad(10) + lightpen_offset.y;
+           end;
+    end { case };
+  end;
+
+
+
+
+
+(* CalibrateLightpen: mu· vor der Anwendung einmal aufgerufen werden *)
+
+procedure CalibrateLightpen;
+
+  const
+    MesspunktX = 192;
+    MesspunktY = 106;
+
+  var
+    sc, x, y, cf, ck, cb: integer;
+
+
+
+  function abort: boolean;
+
+  (* damit arme Kerls ohne Lichtgriffel hier wieder 'rauskommen! *)
+
+    var c: char;
+
+
+    begin
+      c := #0;
+      if KeyPressed then read (kbd, c);
+
+      if c = ^C
+      then begin
+        CrtExit;
+        Halt;
+        end;
+
+      abort := FALSE;
+    end;
+
+  begin
+    sc := SCRMOD;
+    cf := ink;
+    ck := paper;
+    cb := border;
+    color (15, 4, 4);
+    if sc < 5
+    then screen (2)
+    else screen (5);
+    lightpen_offset.x := 0;
+    lightpen_offset.y := 0;
+    gotoXY (MesspunktX-144, MesspunktY-3);
+    write ('Calibrate Lightpen '#1'Wœ');
+    pencolor (2);
+    boxfill (MesspunktX-9,MesspunktY-9, MesspunktX+9,MesspunktY+9);
+    pencolor (15);
+    boxfill (MesspunktX-1, MesspunktY-1, MesspunktX+1, MesspunktY+1);
+
+    repeat until (penswitch and penvalid) or abort;
+
+    lightpen (x, y);
+    lightpen_offset.x := MesspunktX - x;
+    lightpen_offset.y := MesspunktY - y;
+    color (cf, ck, cb);
+    screen (sc);
+    while penswitch do { sleep };
+  end;
+
+
+

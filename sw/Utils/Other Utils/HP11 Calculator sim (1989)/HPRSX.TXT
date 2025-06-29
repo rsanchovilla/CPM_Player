@@ -1,0 +1,205 @@
+=================================================================
+
+                            H P R S X
+
+              A Programmer's Integer RPN Calculator
+                      CP/M 2.2 RSX Version
+
+                  Version 1.0    July 20, 1989
+
+                       Copyright (c) 1989
+                               by
+                           Terry Hazen
+                      21460 Bear Creek Road
+                       Los Gatos, CA 95030
+
+                 Voice.......... (408) 354-7188
+                 Saratoga RBBS.. (408) 354-5934
+                 Zee-Machine.... (408) 245-1420
+
+
+  HPRSX and its documentation may not be circulated in any
+  incomplete or modified form without written permission of the
+  author.  Any commercial use of HPRSX where the user receives
+  revenue by duplicating or distributing HPRSX by itself or in
+  conjunction with any hardware or software product is expressly
+  prohibited unless authorized in writing by the author.  All
+  rights reserved.
+
+=================================================================
+
+Have you ever been using an editor to write source code and
+needed to know how many 128 byte records A00h worth of code took
+up or needed to know the binary equivalent of a character?  Or
+have you ever looked at a file with ZPATCH and tried to figure
+out relative jumps from an address?  The HP11 RSX lets you do all
+that without leaving the utility you are currently using!
+
+
+Note
+----
+
+This file describes only the specific features of the RAM-based
+HP11 RSX calculator.  See HP11.DOC for instructions on using the
+HP11 calculator.
+
+
+Introduction
+------------
+
+HPRSX creates a CP/M 2.2 resident system extension (RSX) version
+of the programmer's integer RPN calculator program HP11.COM that
+allows the calculator to remain installed in memory, always
+available for use, even within another program!
+
+HPRSX will run on any CP/M 2.2 system using a Z80-equivalent
+processor.  It emulates a simple integer Hewlett-Packard RPN
+calculator, that has hex, decimal, binary, and character display
+modes.
+
+HPRSX creates a memory-based HP11 RSX based on the Plu*Perfect
+CP/M 2.2 RSX standard developed by Bridger Mitchell (see his
+column in The Computer Journal issue #34, p30 for more
+information).  It will interface correctly with RSX's such as
+DateStamper and the ZSDOS LDTIM RSX that have been designed to
+the same standards.  If you are using HPRSX with other RSX's, you
+must determine for yourself whether they are compatible with
+HPRSX.
+
+When installed, the HP11 RSX occupies less than 1200 bytes of RAM
+just under the CCP or the last installed RSX, and is protected
+from being overwritten by transient programs.  If you attempt to
+install it more than once, an error message containing the load
+address will be displayed.
+
+The HP11 RSX can be called up for use at any time, even from
+within another program, by entering an intercept character.  The
+HP11 RSX has 'continuous memory'.  It is initialized when first
+loaded to memory.  Each time you exit and later return to the
+HP11 RSX, the stack and memories will remain exactly as you last
+left them.
+
+If you no longer need the HP11 RSX and wish to recover the memory
+it occupies, you can use HPRSX to remove it from memory provided
+that it is the bottom RSX, or it can be removed with a cold boot
+(reset).  If you try to remove the HP11 RSX when another RSX is
+installed below it, an error message will be displayed.
+
+
+Installation
+------------
+
+HPRSX will operate in CP/M 2.2 or ZCPR3 environments.  Operation
+in CP/M 2.2 or ZCPR3.3+ environments requires no installation.
+
+When operating in ZCPR3.0 environments, the environmental address
+may be installed using your usual method if you wish the current
+program name to be displayed in the HELP and installation
+messages.
+
+
+Syntax
+------
+
+     A0>HPRSX                - Install the HP11 calculator
+     A0>HPRSX R or /R        - Remove the HP11 calculator
+     A0>HPRSX ? or //        - HELP screen
+
+When installed:
+     Type Control-@ (^@)     - To invoke the HP11 calculator
+     Type Control-C (^C)     - To exit the HP11 calculator
+
+
+Operation
+---------
+
+The HP11 calculator is used according to the instructions in
+HP11.DOC.  HP11 works by watching the BIOS calls for character
+input from the keyboard.  If it sees the intercept character
+Control-@ (^@ -> 00h) entered, it invokes the HP11 calculator,
+which starts its display at the beginning of the current cursor
+line.
+
+The HP11 display is only overlaid on the screen and does not
+become part of the program from which it was called.  When you
+exit HP11, the HP11 display, which consists of the first part of
+the current cursor line, is cleared, leaving the cursor at the
+beginning of the cleared HP11 display.  You are returned to
+EXACTLY where you were in the program you were running, which
+doesn't know that it has been interrupted and is still expecting
+input from you.
+
+The HP11 RSX does not actually affect the program text that the
+screen is depicting, just the screen display, which may need
+refreshing.  If the cursor is located on a blank line when you
+invoke the HP11 RSX, as is the case with ZPATCH, no screen
+refresh will be needed when you exit.  In any case, however,
+normal activity in the program you are running should soon
+refresh the line partially cleared by HP11.  In a text editor,
+for example, the partially cleared HP11 display line will soon be
+replaced by the text that's really there when you shift the
+screen display up or down, which moves the partially cleared line
+off the screen, or when you move text around, covering the
+partially cleared line.  If you are running ZDE, you can also
+quickly refresh the screen using the commands ^O-Z and <ESC>.
+
+HP11 may produce unexpected effects in programs that use memory-
+mapped video.  However, these cosmetic differences shouldn't
+interfere with use of the calculator, or with normal editing.
+
+When you exit HP11 after invoking it from the command line, the
+cursor will be left in place at the beginning of the cleared HP11
+display and the CCP will still be expecting input from the
+original command prompt, just as it was when you invoked HP11.
+Entering a <RET> will move the cursor to the next line complete
+with a new command prompt, but this isn't really necessary.
+
+
+Applications
+------------
+
+When you are examining a file using DDT, ZPATCH, or other
+debugger, the HP11 RSX is very handy for calculating offsets,
+addresses, etc.  While HP11.COM can also be run from ZPATCH using
+the 'Z' command, the RSX version is much faster, since it doesn't
+require loading or reloading ZPATCH and the file being examined.
+
+The HP11 RSX is very useful when you are using WordStar, ZDE or
+other text editor to write programs or documentation.  You can
+use it for doing calculations and also for converting numbers to
+different bases.
+
+Since the HP11 RSX retains the contents of all registers between
+the times it is accessed, these registers can be used as a note
+pad to store data that you want available later, perhaps from
+within a different program.  For example, while you are viewing a
+LST or PRN file, you can store addresses to be used later when
+you are writing documentation.
+
+Remember to invoke the calculator with the cursor on a blank
+line, if possible, to eliminate the need for screen refresh when
+you exit from HP11.
+
+
+Acknowledgements
+----------------
+
+Bridger Mitchell's Advanced CP/M columns in The Computer Journal
+on relocation (TCJ #33, p9) and his Plu*Perfect CP/M 2.2 RSX
+standard (TCJ #34, p30) as well as Jay Sage's ZCPR3 Corner column
+on PRL files (TCJ #34, p20) provided the information and
+incentive for me to develop the PRL bitmap generator used to
+produce the bitmap for the HP11 RSX and the relocator used in
+HPRSX.  Easy production of relocated code without expensive
+commercial utilities!  Thanks, guys!
+
+
+Modifications
+-------------
+
+HPRSX.COM has several locations that can be patched using DDT,
+PATCH, ZPATCH, etc, to alter the operation of the program to suit
+the user.  See the file HPRSX.PAT for more information.
+
+=================================================================
+

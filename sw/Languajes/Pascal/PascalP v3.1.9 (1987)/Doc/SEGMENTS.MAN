@@ -1,0 +1,229 @@
+.macro chttl = Program#Segmentation
+.ch .chttl
+.hl 1 Overview
+Program segmentation is completely independant of program structure,  and
+is  controlled solely by the placement of (*$s'segname'*) compiler commands.
+Any procedure, whether nested or global, can be placed in any segment.  All
+segmentation may be performed after a program is operational.
+The source text never need be distorted to allow segmentation.
+
+Under  CPM  and  the interpreter system no final decision  on  segmented
+operation need be taken until after compilation.   The output of the  compiler
+is  a  TIC  (temporary intermediate code) file which  contains  ".SEG"  pseudo
+codes, created from the s'segname' commands.
+
+If this is converted into executable code with ASSMPCD no segmentation
+will be present in the final file.  This is often useful for debugging.  The
+output from ASSMPCD, however, will be in relocatable form, and must be passed
+through LINKER to create an executable file .bb (This may be prevented by
+use of [parm=64] when running ASSMPCD). .eb  Whenever a ".SEG" pseudo-op is
+encountered ASSMPCD assumes that a segmented file is being generated, and
+creates such a linkable object file.
+
+Programs created from separately compiled modules will normally be segmented
+and use the techniques described in this chapter.  The modules may themselves
+be segmented.  See the chapter on Separate Compilation.
+
+.hl 1 PCD segmentation (for interpreter execution)
+At  present,  to  implement  segmentation the "TIC" file  is  split  into
+multiple  single segment files with the utility  program  SPLITTIC.   Splittic
+will  create  a  file  for each named segment in  the  input  code,  with  the
+extension  _.TIC, and using the segment name truncated to .bb 8 characters
+(or to 7 characters with  a user  specified  prefix character). .eb
+Each of these segment files must  now  be
+converted  to a RBM (relocatable binary module) with ASSMPCD, just as a single
+segment program.  The results are then combined into a single program file by
+LINKER.   The first file linked must be .bb either "SEGS15.RBM" or
+"SEGS31.RBM",  which contains the outline of a segment table for a 15
+or 31 segment codefile.
+
+.hl 2 Splitting the TIC file
+Execute:
+.i 10 B>runpcd splittic (ticfilename) .cr
+.bb or .cr
+.i 10 B>splittic (ticfilename) .b
+and select a suitable prefix character when requested (a CTL-Z reply, or
+redirecting input from nul with "_<nul" will omit the prefix). .eb
+The split files will occupy at least as much space as the original.
+At completion the
+original TIC file may be discarded.  The following assumes the selection
+of a prefix letter "X" (must be upper case) and that segments are named
+"segfile".  SPLITTIC reports on the actual filenames created during execution.
+
+.hl 2 Assembly
+For each output file generated execute (omit "runpcd#" if using the _.COM
+versions) :
+
+.i 10 B>runpcd assmpcd (xsegfile.tic,xsegfile.rbm)
+
+.hl 2 Linking
+Execute linker as follows:
+
+.i 10 B>runpcd linker (objfile.pcd, loadmap) .b
+replacing objfile and loadmap with appropriate file names.  Loadmap may be
+designated con, lst, or a diskfile.  The information on it will be used in
+the next step, and therefore it should normally not be routed to the console.
+
+Reply to the first "filename" prompt with .bb "SEGS15.RBM", .eb
+and to the following
+prompts with the names of the just assembled segments.  Terminate the entries
+with an empty line.  The object file prompt is a last chance to change your
+mind on the output file name.
+The reply to the "loadpoint" prompt should be "0", and
+carriage returns can be entered for all other prompts.  LINKER will scan the
+files, announce that _.CODSIZE, _.DATASIZ, _.SEGS.,
+_.WHERE01 through _.WHERE15 are undefined, and
+ask whether more modules are available.  Reply "n".  LINKER will now generate
+the output file and the loadmap.  All intersegment procedure linkages have now
+been resolved.
+.note NOTE
+For programs using more than 15 segments replace SEGS15.RBM with SEGS31.RBM.
+.res
+.hl 2 Installing the segment map
+The  user must patch into the final file the addresses of the segments  in
+the code file, which are the loadpoint addresses of the segments in the LINKER
+output  loadmap  divided by 128.   These are CPM record numbers in  the  code
+file, and are the various ".WHEREnn" undefined in the preceding step.
+The   addresses   are  installed  at  locations  (segment_num*8)   and
+(segment_num*8+1),  high byte first.  Program "DISKEDIT" can be used for this.
+The two byte value at locations 0 and 1 (most significant byte first) must  be
+set  to  the negative count of segments present.   This is the undefined
+".SEGS" in the previous step. At present no more than  31
+segments  can  be used, and this section generally assumes a maximum of 15.
+If errors are made in calculating these values the program will not load.
+Any further operations may be performed by the "TUNE" utility program.
+
+.hl 2 Initial memory allocation
+The value at locations 4 and  5  of  the
+codefile  must be patched to specify the total codespace allocated.   This is
+the undefined ".CODSIZE" from the linking step. (.DATASIZ is unused). The  run
+time  system  will  then automatically swap code segments in and out  of  main
+memory  on demand,  and select segments for discard based on a least  recently
+used  algorithm.
+No more than the specified code space will be used for the program code.
+A  system  that buffers disk tracks  will  greatly  enhance
+performance.
+
+The critical quantity to be selected is the codespace above.   If this is
+too small the system will thrash, while if too large sufficient execution time
+data space will not be available.  It must be at least as large as the largest
+single segment in the codefile,  or the program can never be loaded.  Normally
+this  space is selected sufficiently large to hold the main execution portions
+of  the program without any initialization or rarely used error handling
+segments.   This  will automatically swap such segments out of main  memory,
+and have negligible performance effects.
+
+The  user  can also control the time span used by the  memory  management
+system  by altering byte 2 of the code file (range 2 to 255).   This  measures
+time in terms of inter-segment transfers performed.
+.note NOTE
+Since PCD files are quite compact, only the rare program will require
+segmentation.  Very large program systems can be written as a collection of
+procedures, pass data through a global area, and be supervised and
+co-ordinated by a small outer block using this segmentation scheme.
+There will be no necessity for duplicated code within sections of such
+a system if suitably segmented.
+.res
+.hl 1 Prestored alternative settings
+By convention, alternative settings for the  memory management period and
+codespace values are stored in locations  (8*i+5) and (8*i+6) to (8*i+7) for i
+:= 1 to number_of_segments.   If these values are present the utility  program
+"TUNE"  can  be  quickly  used to  alter  the  memory-requirements/performance
+balance  of  the program.   TUNE may also be used to initially  install  these
+values.
+
+The appearance of such a segment map may be examined by:
+
+.b .i 10            A>diskedit pascalp.pcd
+.b followed by the command
+.b .i 10            r0
+
+terminate the program by "q".  Use a copy of Pascalp in case of error.
+.note NOTE
+Other  areas within the segment map are used  by  the  memory
+manager. Therefore at run-time the map contents will be different.
+.b  Numerical
+input  to diskedit is normally decimal,  but may be prefixed by "_#" for
+hexadecimal input.  In some cases characters enclosed by single quotes may
+also be used.
+Diskedit provides no input line editing, and was built as a crude tool.
+.res
+After segment addresses and segment count have been entered via diskedit,
+further alterations may be performed by:
+.b .i 10            A>RUNPCD tune (codefilename.ext)
+
+using  the unprompted "I" and "D" commands (?  gets a prompt).  This  is  much
+safer than diskedit.
+
+
+
+.hl 1 The structure of a code file/segment
+All  executable  PCD files begin with a single descriptive integer,  which  is
+stored high byte first, in 2's complement notation.
+
+If this integer is positive the PCD file consists of a single segment, and the
+integer is the length of that segment.   The segment proper is enclosed by the
+integer,  an unused word, and (at the end) a single byte describing the number
+of transfer vectors.   These five (total) bytes are not included in the length
+descriptor.
+
+.hl 2 The segment map.
+If  this integer is negative it must be in the range -1 to -127 (only -31  for
+now),  and describes the number of segments in the PCD file.  The following is
+based  on  a 15 segment limitation.   The initial 128 bytes of the file are  a
+segment map, consisting of 16 8-byte entries which can be described as:
+.b .tp 11
+.asis
+   ARRAY[0..15] OF RECORD
+     CASE n OF
+0: (   segcount     : -1..-15); (* hi byte first integer *)
+       tunevalue    : byte;
+       entryseg     : byte; (* id of outer block *)
+       codespace    : hifirstinteger;
+       dataspace    : hifirstinteger; (* not used yet *) );
+1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:
+   (   fileaddress  : hifirstinteger; (* sector in PCD file *)
+       initflags    : byte;
+       workarea     : ARRAY[1..5] OF byte;)
+!
+
+By convention bytes 3,  4, 5 of workarea are used to store optional values for
+tunevalue  and codespace.   Eventually initflags will be able to describe
+segments not to be swapped out and machine language segments.
+In operation this byte also holds segment usage history.
+
+The  remainder of the PCD file holds segments organized as the single  segment
+PCD  file above,  but always filling complete sectors.   Thus the  fileaddress
+value can address 128 * 65536 bytes of code.   This is an absolute  limitation
+on  the  total size of a code file.   Similarly no segment can reference  more
+than 127 procedures (sum of internal and external),  and no segment can exceed
+32K.
+
+Data  segments are entirely separate,  and are addressed via  base
+registers.   The heap and stack areas must be contiguous,  but can range up to
+64K total size.
+
+.hl 2 The transfer vector.
+The last byte of each segment (located by the segment length descriptor)
+holds a count of transfer points.  0 means that only the main program entry
+is present.  This final byte is preceded by n (where n is the contents of
+the count byte + 1) HIBYTEFIRST 16 bit transfer vectors.  They may be of
+two types (and a code listing will show the type - See appendix C):
+
+.hl 3 PCD transfers.
+These vectors are used by the CUP (call user procedure) (and its variants,
+CLP and CGP call local and call global) P-codes.
+If the value is negative, it is a self-relative pointer to the code within
+the segment.  If the value is positive, it contains two one byte fields,
+holding the segment number and entry number within the external segment.
+
+.hl 3 Intrinsic transfers.
+These vectors are used solely by the CIP (call intrinsic procedure) P-code.
+It contains the absolute machine address of an external procedure.  Note
+that the external procedure is called with NO stack marker, but with the
+appropriate parameters (and possible function return value space) allocated
+on the stack.  The intrinsic is responsible for clean-up.
+
+The zeroth transfer is only used for entry to the main program.  In other
+segments it will normally point to a CSP STP (halt) instruction.
+	[

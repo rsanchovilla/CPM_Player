@@ -1,0 +1,133 @@
+
+Instructions for Installing the ConIX Pull-Down Menu System:
+============================================================
+
+Simply  described,  MENU  is a user-friendly  front-end  to  many 
+rather  complex  ConIX functions.   Through the use of  different 
+levels  of  menus  and built-in help,  the user  will  be  guided 
+through many tedious operations with great ease and  reassurance.  
+
+The  goal  of  the  Pull-Down Menu System  is  to  eliminate  the 
+inconvenience  of  constantly  having to  refer  to  the  printed 
+documentation  in  order  to perform  every-day  tasks,  such  as 
+enabling   the   Print  Spooler, or  setting  a  Disk   Variable.  
+
+Additionally,  the  Menu System interfaces to the  ConIX  PROFILE 
+start-up  program  to configure very basic operating  parameters, 
+such  as the character sequence used to clear the console  screen 
+and   the  directories  used  when  searching  for   a   command.  
+Previously,  to  set  these kinds of features,  the user  had  to 
+manually  edit his own customized PROFILE and then preprocess  it 
+with XCC and install it.  This is now done by MENU automatically.
+
+The  source  code  to  the PROFILE that interacts  with  MENU  is 
+provided in the ConIX distribution.  The preprocessed PROFILE.COM 
+is  also supplied on disk.   PROFILE itself remains the  same  in 
+that  changing  a  default setting does not change  the  physical 
+PROFILE.COM file.  Instead, MENU manipulates an intermediate file 
+PROFILE.SET which contains the configurations.  This file is read 
+by  PROFILE when the system is first started and the commands  in 
+it executed automatically.
+
+Installing  the  Menu  System  is merely a  matter  of  correctly 
+positioning  the  files in the  disk  directory.   MENU.COM,  the 
+program  executed  to change  system  configurations,  should  be 
+accessible  from all disk directories.   In other words,  whether 
+you  are working on drive A user area 10 or drive B user  area  5 
+you should be able to execute this program. The way to do this is 
+to  place MENU.COM in a Search Path directory.   For the  moment, 
+drive  A:  user  area  0 is good location since the  Search  Path 
+defaults to include this directory.  You can change this later as 
+you reorganize your disks to your own preference.
+
+More   crucial  is  the  positioning  of  the   PROFILE.COM   and 
+PROFILE.SET programs.  In order for these programs to be executed 
+automatically,  they  must  be present on the same disk and  user 
+area from which ConIX was initially loaded into your system.  For 
+example,  if you load ConIX from drive A user area 0, the PROFILE 
+files should be stored there.
+
+You will of course note that we have not supplied the PROFILE.SET 
+file on your ConIX Distribution.  The reason is that  PROFILE.COM 
+will create this file automatically the first time it is executed 
+by  ConIX.   Therefore,  after  positioning  PROFILE.COM,  simply 
+cold  boot  your  system (hit RESET or turn it off  and  on)  and 
+PROFILE  should  sign  on  with  a  message  saying  it   created 
+PROFILE.SET.   This  message should never appear again unless the 
+settings file was deleted somehow.
+
+Once  all  the  files  are positioned,  you  can  load  MENU  and 
+configure your system as desired.   MENU itself does not give you 
+particular  steps  to perform for initial  system  configuration.  
+You must first read the ConIX documentation to see what you  want 
+to  configure  and  then  use MENU to do  it.   MENU  is  not  an 
+installation program, but rather a tool to be used at any time.
+
+Invoking  MENU brings us into a little definition of why we  call 
+this  a  "Pull-Down"  Menu System.   The reason is  the  way  you 
+execute MENU is similar to many modern systems of requesting help 
+menus.   ConIX  comes  configured to execute the MENU program  by 
+typing a single keystroke - CTRL-B.  Hitting CTRL-B at the system 
+prompt  (in the same place you'd hit CTRL-C to reset  the  disks) 
+will  cause  MENU to be pulled-down or booted.   Of  course,  you 
+could manually enter M+E+N+U+<RETURN>, but hitting CTRL-B is more 
+convenient.
+
+The  first  time  you execute MENU,  you will be  asked  for  the 
+setting of the Clear Screen Sequence,  which is the ASCII control 
+string  used to clear the screen and position the cursor  at  the 
+top  left  corner  of your terminal.   Since  every  terminal  is 
+different,  MENU  must ask you for your particular configuration.  
+You do not have to set it here,  but it is preferable that you do 
+since MENU would like to clear the screen at certain points if it 
+knew how.
+
+Consult  the operation manuals for your computer/terminal if  you 
+don't know the clear screen sequence.   Most terminals use either 
+CTRL-L or CTRL-Z to clear the screen.  In either case, to enter a 
+control  character,  type  the `^' and then  the  control  letter 
+rather than the actual CTRL-x sequence.  
+
+When you finally enter the control sequence,  have MENU set it as 
+the  startup default in PROFILE.SET.   This way,  the  next  time 
+ConIX is loaded you won't have to reset the CLS sequence.
+
+Once all this initial toil is behind you, you will be given quick 
+access  to the main menu screen of MENU.   From this menu you can 
+select  various  MENU operations.   All choices should  be  self-
+explanatory  after reading the ConIX documentation,  as  MENU  is 
+just a supplement to ConIX itself.   However, there are a few new 
+additons that MENU was able to bring to your system.
+
+The  first  is  called ConIX Auto-Load.   It's described  in  the 
+manual,  but implemented through MENU and PROFILE.  Briefly, this 
+feature  when  set  will cause ConIX to  be  loaded  into  memory 
+automatically whenever your system is cold booted.   This is done 
+by  placing a $$$.SUB submit file in the boot directory  (usually 
+drive A user 0, the directory which you are placed into when your 
+system  is first booted.)  This SUB file contains an  instruction 
+to  load ConIX,  and then ConIX executes the PROFILE which resets 
+this file to Auto-Load the next time you boot.   This feature  is 
+rather  convenient,  except the BYE command won't work  properly. 
+Use the new replacement for BYE, BYEBYE.COM as provided.
+
+Another new MENU feature is that PROFILE can be set to execute or 
+chain to another program each time your system is cold booted.  A 
+possible  use  for this is to execute a program that  prints  the 
+time  and  date  if  your  system  has  a  built-in  clock.   The 
+possibilities  are  endless,  and  entirely at  your  discretion.  
+Currently,  the  startup  command  feature is  used  to  print  a 
+friendly  welcome message,  which you receive whenever PROFILE is 
+executed.
+
+If you are not familiar with any other terms/features handled  by 
+MENU,  refer to the ConIX documentation.   Be reassured, however, 
+that   MENU  will  not  change  any  configurations  unless   you 
+explicitly  tell  it to.   So,  you can explore all of  the  menu 
+features,  read  the short help messages,  and still not make any 
+configuration changes.
+
+In  total,  the  Pull-Down Menu System should prove to be a  very 
+useful and convenient tool for painlessly integrating ConIX  into 
+your system.
+

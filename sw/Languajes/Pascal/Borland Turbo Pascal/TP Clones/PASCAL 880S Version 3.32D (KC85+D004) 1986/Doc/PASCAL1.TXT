@@ -1,0 +1,708 @@
+
+                        PASCAL-SYNTAXBESCHREIBUNG
+                        =========================
+
+                            1.1.  Vorbereitungen
+                            ~~~~~~~~~~~~~~~~~~~~
+†††††††††MorpheÌ† ∫† kleinstÂ† selbststaendigÂ EinheiÙ iÓ† eineÚ† hoehereÓ  ç
+†††††††††Programmiersprache
+          - Spezialsymbole     z.B.  +  ,  (  ;
+          - Wortsymbole        z.B.  END   DO   PROCEDURE
+          - Bezeichner         z.B.  ARCTAN   MAXI
+          - Zahlen             z.B.  173   2.559
+
+†††††††††Menge der PASCAL-Morpheme zerfaellt in fuenf Teilmengen :
+†††††††††1) Wortsymbole
+ †††††††† 
+                     AND     DOWNTO     GOTO   OR          THEN
+†††††††††            ARRAY   ELSE       IF     PACKED      TO
+†††††††††            BEGIN   END        IN     PROCEDURE   TYPE
+†††††††††            CASE    FILE       LABEL  PROGRAM     UNTIL
+†††††††††            CONST   FOR        MOD    RECORD      VAR
+†††††††††            DIV     FORWARD    NOT    REPEAT      WHILE
+†††††††††            DO      FUNCTION   OF     SET         WITH
+††††††††† 
+†††††††††2) Spezialsymbole
+†††††††††
+                       + - * / = < > ( ) [ ] { } . , ; : ' @
+†††††††††   ausserdem zusammengesetzt :  :=  ..  <=  >=  <>
+†††††††††
+†††††††††3)  Bezeichner
+†                                   |<-- buchstabe <-----|
+              ------> buchstabe ----|--------------------|--------->
+†††††††††                           |<-- ziffer <--------|
+††††††††† 
+†††††††††4)  Vorzeichenlose Zahlen- und Zeichenkettenkonstanten
+†††††††††
+†††††††††5)  Trennzeichen       wie  ,  ; oder Leerzeichen
+†††††††††
+†††††††††
+†††††††††
+                                       SYNTAX
+†††††††††                              ~~~~~~
+†††††††††(1) bezeichner
+†††††††††    ~~~~~~~~~~
+†††††††††                         |<-- buchstabe <-----|
+               ---> buchstabe ----|--------------------|------------>
+†††††††††                         |<-- ziffer <--------|
+†††††††††
+†††††††††
+†††††††††(2) ziffern
+†††††††††    ~~~~~~~ 
+                            ------|-> ziffer ---|------>
+    †††††††††                     |<------------|
+
+
+†††††††††(3) natuerliche Zahl
+†††††††††    ~~~~~~~~~~~~~~~~
+                                ---> ziffern ------>
+.pa†††††††††ä†††††††††(4) reelle zahl
+†††††††††    ~~~~~~~~~~~
+†††††††††              |------------------>|      |-> + ->|
+†††††††††--> ziffern --|--> . --> ziffern -|-> E -|-------|--> ziffern -|->
+                                           |      |-> - ->|             |
+                                           |--------------------------->|
+†††††††††
+†††††††††(5) zeichenketten
+†††††††††    ~~~~~~~~~~~~~
+                   -------> ' --|--> zeichen --|--> ' ------>
+                                |<-------------|
+†††††††††
+†††††††††- innerhalb einer Zeichenkette darf kein Zeilenwechsel erfolgen
+†††††††††- eiÓ† ApostropË† musÛ† iÓ eineÚ ZeichenkettÂ† immeÚ† doppelÙ† ge-ç
+†††††††††† schrieben werden
+†††††††††
+†††††††††
+†††††††††(6) kommentar
+†††††††††    ~~~~~~~~~
+                        ---> { --|--> zeichen --|--> } --->
+                                 |<-------------|
+†††††††††
+†††††††††- Zeichen darf keine schliessende geschwungene Klammer sein
+†††††††††
+†††††††††
+                                   1.2.  Bloecke
+                                   ~~~~~~~~~~~~~
+†††††††††
+†††††††††VieÚ† Aktionen¨† diÂ beÈ deÚ InformationsverarbeitunÁ† einÂ† RollÂ ç
+†††††††††spielen :
+†††††††††
+†††††††††     - Bildung "neuer" Variablen aus "alten"  durch Ausdruecke
+†††††††††
+†††††††††     - BelegunÁ† eineÚ† VariableÓ miÙ eineÌ WerÙ  durcË† Ergibtan-ç
+†††††††††       weisungen
+†††††††††
+†††††††††     - SteuerunÁ† deÚ ReihenfolgÂ voÓ AktioneÓ  durcË† Prozeduran-ç
+†††††††††       weisungen¨† Funktionsaufrufe und strukturierte Anweisungen
+†††††††††
+†††††††††     - Kommunikation mit externen Geraeten
+†††††††††
+†††††††††
+†††††††††
+†††††††††(7) bezeichnerliste
+†††††††††    ~~~~~~~~~~~~~~~
+                         -----|-> bezeichner ---|----->
+                              |<---- , <--------|
+†††††††††
+
+
+†††††††††
+†††††††††(8) programm
+†††††††††    ~~~~~~~~
+                  ---> programmkopf ---> ; ---> block ---> . ---->
+†††††††††
+†††††††††
+†††††††††(9) programmkopf
+†††††††††    ~~~~~~~~~~~~
+         ---> PROGRAM ---> bezeichner ---> ( ---> bezeichnerliste --> ) -->
+
+†††††††††z.B.   PROGRAM NORM (INPUT,OUTPUT);ä†††††††††
+†††††††††
+†††††††††(10) block 
+    †††††     ~~~~~
+                    -----|--> markendeklarationsteil ------>|
+  †††††††                |<---------------------------------|
+  †††††††                |
+  †††††††                |--> konstantendefinitionsteil --->|
+  †††††††                |<---------------------------------|
+  †††††††                |
+  †††††††                |--> typendefinitionsteil -------->|
+  †††††††                |<---------------------------------|
+  †††††††                |
+  †††††††                |--> variablendeklarationsteil --->|
+  †††††††                |<---------------------------------|
+  †††††††                |  
+  †††††††                |--> routinendeklarationsteil ---->|
+  †††††††                |<---------------------------------|
+  †††††††                | 
+  †††††††                |--> verbundanweisung ------------------------->
+††††††††† 
+†††††††††Markendeklarationsteil siehe Syntaxdiagramm (61)
+††††††††† 
+†††††††††(11) konstantendefinitionsteil
+    †††††     ~~~~~~~~~~~~~~~~~~~~~~~~~  |--> + -->|
+†††††††††--> CONST -|-> bezeichner -> = -|-------->|-> konstante -> ; --|->
+                    |                    |--> - -->|                    |
+                    |<--------------------------------------------------|
+
+†††††††††(12) konstante
+    †††††     ~~~~~~~~~
+                    --|--> aufzaehlungskonstante --->|--------->
+  †††††††             |--> reelle zahl ------------->|
+  †††††††             |--> zeichenkette ------------>|
+  †††††††             |--> bezeichner -------------->|
+
+†††††††††"bezeichner¢† musÛ vorheÚ iÌ TexÙ innerhal‚ eineÛ† Konstantendefi-ç
+†††††††††nitionsteilÛ† odeÚ beÈ deÚ DefinitioÓ eineÛ† expliziteÓ† Aufzaehl-ç
+†††††††††ungstypÛ† (siehÂ† SyntsxdiagramÌ† (21)©† aufgetreteÓ† sein¨†† odeÚ ç
+†††††††††Standardkonstantenbezeichner sein.
+
+
+
+
+
+†††††††††(13) variablendeklarationsteil
+    †††††     ~~~~~~~~~~~~~~~~~~~~~~~~~
+          ---> VAR --|--> bezeichnerliste ---> : ---> typ ---> ; -->|---->
+††                   |<---------------------------------------------|
+
+††††††††† - typ ist hier Wertmenge
+
+†††††††††(14) typendefinitionsteil
+    †††††     ~~~~~~~~~~~~~~~~~~~~
+             ---> TYPE --|--> bezeichner ---> = ---> ; ---|---------->
+                         |<-------------------------------|
+
+†††††††††TypbezeichneÚ† koenneÓ† iÓ weitereÓ TypdefinitioneÓ un‰ iÌ† Varia-ç
+†††††††††blendeklarationsteiÏ† verwendeÙ werdenÆ† BeÈ deÓ iÓ† Prozedur- un‰ ç
+†††††††††FunktionskoepfeÓ auftretendeÓ TypangabeÓ fueÚ PararmeteÚ un‰ Funk-ç
+†††††††††tionsresultat muessen Typbezeichner notiert werden.  ä
+
+†††††††††(15) routinendeklarationsteil
+    †††††     ~~~~~~~~~~~~~~~~~~~~~~~~
+   ††††††   |<-------------------------------------------------------|
+         ---|--> prozedurkopf -->|--> ; --|--> block ---->|--> ; --->|--->
+   ††††††   |--> funktionskopf-->|        |--> FORWARD -->|
+
+†††††††††(16) prozedurkopf
+    †††††     ~~~~~~~~~~~~
+          ---> PROCEDURE ---> bezeichner --|--> fparameterliste --|----->
+                                           |--------------------->|
+
+†††††††††(17) funktionskopf
+    †††††     ~~~~~~~~~~~~~
+         ->FUNCTION->bezeichner-|-|->fparameterliste-|-> : ->bezeichner-|->
+                                | |----------------->|                  |
+                                |-------------------------------------->|
+
+†††††††††(18) fparameterliste
+    †††††     ~~~~~~~~~~~~~~~
+†††††††††        |<------------------------- ; <-------------------|
+         --> ( --|-> bezeichnerliste --> : --> bezeichner -------->|-> ) ->
+                 |-> VAR --> bezeichnerliste -> : -> bezeichner -->|
+                 |--> formale routine ---------------------------->|
+
+†††††††††"bezeichner" muss ein Typbezeichner sein
+
+†††††††††Es treten drei Faelle auf:
+†††††††††
+†††††††††1. Wertparameter
+
+†††††††††   Es fehlt VAR. Aktuelle Parameter koennen Ausdruecke sein.
+†††††††††   Parametervermittlung∫† VoÚ† deÚ† UnterprogrammabarbeitunÁ† wir‰ ç
+†††††††††                          einmaliÁ deÚ WerÙ deÛ aktuelleÓ† Parame-ç
+†††††††††   terÛ ermittelÙ un‰ eineÌ nuÚ innerhal‚ deÛ UnterprogrammÛ exis-ç
+†††††††††   tierendeÓ† ObjekÙ zugewiesenÆ† AllÂ iÓ deÚ RoutinÂ† erfolgendeÓ ç
+†††††††††   BezugnameÓ auÊ deÓ formaleÓ ParameteÚ sin‰ danÓ ZugrifÂ zı die-   ç
+†††††††††   seÌ lokaleÓ ParameterobjektÆ MiÙ HilfÂ voÓ WertparameterÓ koen-ç
+†††††††††   neÓ lediglicË WertÂ auÛ deÚ UmgebunÁ aÓ diÂ RoutiÂ uebermittelÙ ç
+†††††††††   werdenÆ† SolleÓ iÓ umgekehrteÚ RichtunÁ WertÂ auÛ eineÚ RoutinÂ ç
+†††††††††   aÓ diÂ UmgebunÁ vermittelÙ werden¨† danÓ musÛ maÓ Referenzpara-ç
+†††††††††   meter benutzen.
+
+†††††††††2. Referenzparameter
+
+†††††††††   EÛ wir‰ VA“ vorangestelltÆ AktuellÂ ParameteÚ duerfeÓ nuÚ Vari-ç
+†††††††††   ablen und keine Ausdruecke sein.
+†††††††††   Parametervermittlung∫† VoÚ† UnterprogrammabarbeitunÁ wir‰† ein-ç
+†††††††††                          maliÁ† daÛ voÌ entsprechendeÓ† aktuelleÓ ç
+†††††††††   ParameteÚ† bezeichnetÂ† ObjekÙ† bestimmÙ† un‰†† fixiertÆ†† AllÂ ç
+††††††††††††waehren‰† deÚ AbarbeitunÁ deÚ RoutienÂ erfolgendeÓ† BezugnahmeÓ ç
+††††††††††††auÊ† deÓ† formaleÓ† ParameteÚ† betreffeÓ† danÓ† dieseÛ† ObjektÆ ç
+††††††††††††DemzufolgÂ† koenneÓ† miÙ† HilfÂ† voÓ† ReferenzparameterÓ† WertÂ ç
+††††††††††††zwischeÓ UmgebunÁ un‰ UnterprogramÌ iÓ beideÓ RichtungeÓ ueber-ç
+††††††††††††mittelt werden.
+
+†††††††††3. Formale Routinen
+†††††††††   siehe Abschnitt 1.8.3.ç
+ 
+ä†††††††††(19) verbundanweisung
+    †††††     ~~~~~~~~~~~~~~~~
+                ----> BEGIN ---|---> anweisung ---|---> END ------>
+                               |<------- ; <------|
+
+                        GUELTIGKEITSBEREICH VON BEZEICHNERN
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+†††††††††Def∫† 1Æ AllÂ iÓ deÚ Formalparameterliste¨ allÂ iÌ Konstanten- un‰ ç
+†††††††††         TypdefinitionsteiÏ† sowiÂ† allÂ iÌ Variablen- un‰† Routi-ç
+†††††††††         nendeklarationsteil¨† hieÚ nuÚ diÂ† Routinennamen¨† eineÛ ç
+†††††††††         BlockÛ† eingefuehrteÓ BezeichneÚ heisseÓ lokaÏ zı† dieseÌ ç
+†††††††††        †Block definiert.
+†††††††††         DiÂ† RoutineÓ† iÌ RoutinendeklarationsteiÏ eineÛ† BlockeÛ ç
+†††††††††         un‰† ihrÂ KoerpeÚ (Bloecke© nennÙ maÓ ebenfallÛ lokaÏ† zı ç
+†††††††††        †dieseÌ†† BlocÎ definiert.
+
+†††††††††      2Æ EiÓ lokaÏ zı eineÌ  BlocÎ miÙ deÚ VerschachtelungstiefÂ Ó ç
+†††††††††         definierteÚ† BlocÎ† haÙ† diÂ† VerschachtelungstiefÂ† n+1Æ ç
+†††††††††       † DeÚ HauptprogrammblocÎ haÙ die Verschachtelungstiefe 0.
+
+†††††††††      3Æ EiÓ lokaÏ zı eineÌ  BlocÎ miÙ deÚ VerschachtelungstiefÂ Ó ç
+†††††††††         definierteÚ BezeichneÚ haÙ deÓ DeklarationspegeÏ n+1Æ†  
+†††††††††         DiÂ PASCAL-StandardbezeichneÚ besitzeÓ deÓ† Deklarations-ç
+†††††††††         pegel 0.
+
+†††††††††FueÚ† diÂ† VergabÂ un‰ BenutzunÁ voÓ BezeichnerÓ† gelteÓ† folgendÂ ç
+†††††††††Saetze:
+
+†††††††††Sat˙ ±∫ AllÂ lokaÏ zı eineÌ  BlocÎ definierteÓ BezeichneÚ muesseÓ  ç
+†††††††††         voneinander verschieden sein.
+
+†††††††††Sat˙ ≤∫†GueltigkeitsbereicË † eineÛ  jedeÓ  BezeichnerÛ† isÙ† deÚ ç
+†††††††††         Block¨† iÓ deÌ deÚ BezeichneÚ lokaÏ definierÙ istÆ 
+†††††††††         HierbeÈ  gilÙ ∫   ç
+†††††††††         BezeichneÚ gelteÓ ersÙ a‚ deÚ Programmstelle¨†aÓ deÚ† siÂ ç
+††††††††††††††††††eingefuehrÙ werdenÆ ç
+†††††††††         Einzige Ausnahme bei dynamischen Variablen.
+
+†††††††††Sat˙†≥ ∫†WenÓ eiÓ gemaesÛ Sat˙ ±  un‰ Sat˙ ≤  gueltigeÚ BezeichneÚ ç
+†††††††††         sowohÏ† miÙ deÌ DeklarationspegeÏ Í alÛ aucË miÙ deÌ† De-ç
+†††††††††         klarationspegeÏ† È† auftritÙ (i<j)¨† danÓ gilÙ fueÚ† allÂ  ç
+†††††††††         BezugnahmeÓ auÊ ihÓ diÂ DefinitioÓ miÙ deÌ† Deklarations-ç
+†††††††††         pegel j.
+
+†††††††††Bemerkung : auch Standardbezeichner koennen also neu definiert werden
+
+.pa††††††††† ä                       1.3.    Einfache Typen und Ausdruecke
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+†††††††††Ein Datentyp in PASCAL ist eine definierte Menge von Werten.
+†††††††††Man unterscheidet 3 Typenarten :
+
+†††††††††1. Einfache Typen
+   ††††††   IhrÂ† ElementÂ werdeÓ alÛ kleinstÂ unteilbarÂ EinheiteÓ angese-ç
+†††††††††   hen.
+
+†††††††††2. Strukturierte Typen
+   ††††††   IhrÂ ElementÂ sin‰ sogenanntÂ strukturiertÂ Werte¨ diÂ nacË be-ç
+†††††††††   stimmteÓ StrukturierungsmethodeÓ auÛ† anderen¨† moeglicherweisÂ ç
+†††††††††   selbsÙ†† strukturierten¨ WerteÓ zusammengesetzÙ werdenÆ 
+†††††††††   EÛ† gibÙ† OperationeÓ fueÚ strukturiertÂ Werte¨† abeÚ maÓ† kanÓ ç
+†††††††††   aucË KomponenteÓ strukturierteÚ WertÂ auswaehleÓ un‰ miÙ† ihneÓ ç
+†††††††††   operieren.
+
+†††††††††3. Pointertypen
+†††††††††   IhrÂ ElementÂ sin‰ PointeÚ (Adressen)¨ diÂ auÊ spezielÏ erzeug-ç
+†††††††††  †tÂ Variablen verweisen.
+
+††††††††† (20) typ
+    †††††      ~~~
+††††††††† ---|---------------------> aufzaehlungstyp -------->|----------->
+   ††††††    |---------------------> REAL ------------------->|
+   ††††††    |-|--------------->|--> settyp ----------------->|
+   ††††††    | |---> PACKED --->|                             |
+†††††††††    |                                                |
+   ††††††    |-|--------------->|--> recordtyp -------------->|
+   ††††††    | |---> PACKED --->|                             |
+   ††††††    |                                                |
+†††††††††    |-|--------------->|--> arraytyp --------------->|
+   ††††††    | |---> PACKED --->|                             |
+   ††††††    |                                                |
+   ††††††    |-|--------------->|--> filetyp ---------------->|
+   ††††††    | |---> PACKED --->|                             |
+   ††††††    |---------------------> pointertyp ------------->|
+   ††††††    |---------------------> bezeichner ------------->|
+††††††††† 
+                               1.3.1.  Einfache Typen
+                               ~~~~~~~~~~~~~~~~~~~~~~
+†††††††††Aufzaehlungstypen sind endliche geordnete Mengen von Werten.
+
+†††††††††(21) aufzaehlungstyp
+    †††††     ~~~~~~~~~~~~~~~
+†††††††††---|---> ( ---> bezeichnerliste ---> ) ------------>|--------->
+   ††††††   |----------> BOOLEAN --------------------------->|
+   ††††††   |----------> INTEGER --------------------------->|
+   ††††††   |----------> CHAR ------------------------------>|
+   ††††††   |---> konstante ---> .. ---> konstante --------->|
+
+†††††††††DiÂ† letztÂ ZeilÂ voÓ (21© beschreibÙ diÂ DefinitioÓ† voÓ† Teilbe-ç
+†††††††††reichstypenÆ ç
+†††††††††BeidÂ KonstanteÓ muesseÓ voÌ selbeÓ Aufzaehlungsty seinÆ 
+
+†††††††††AusserdeÌ musÛ diÂ erstÂ KonstantÂ kleineÚ odeÚ gleicË deÚ zweiteÓ ç
+†††††††††seinÆ† WenÓ† ¡ un‰ ¬ zweÈ dieseÓ BedingungeÓ genuegendÂ KonstanteÓ ç
+†††††††††sind¨† danÓ beschreibÙ    A..¬   diÂ MengÂ alleÚ WertÂ x¨† diÂ zuÌ ç
+†††††††††gleicheÓ Ty wiÂ ¡ un‰ ¬ gehoereÓ un‰ fueÚ die gilt : A <= x <= B.
+
+†††††††††FolgendÂ OperatoreÓ koenneÓ auÊ allÂ WertÂ alleÚ AufzaehlungstypeÓ çä†††††††††angewendet werden :
+†††††††††1. :=                               Wertzuweisung an Variable
+†††††††††2. = , <> , < , > , <= , >=         Wertvergleiche
+
+†††††††††DreÈ StandardfunktioneÓ koenneÓ auÊ WertÂ alleÚ† AufzaehlungstypeÓ ç
+†††††††††angewendeÙ werden :
+          PRED (x)           liefert den Vorgaenger von x
+          SUCC (x)           liefert den Nachfolger von x
+          ORƒ  (x©           lieferÙ eiÓ ResultaÙ voÌ Ty INTEGER¨ diÂ "Po-ç
+†††††††††                    sition des Argumentwertes im Typ"
+
+†††††††††(22) aufzaehlungskonstante
+    †††††     ~~~~~~~~~~~~~~~~~~~~~
+             ---|---> bezeichner ------------------------>|----------->
+   ††††††       |---> boolean-konstante ----------------->|
+†††††††††       |---> natuerliche zahl ------------------>|
+   ††††††       |---> char-konstante -------------------->|
+
+†††††††††bezeichneÚ† isÙ auÛ deÚ DefinitioÓ eineÛ expliziteÓ† Aufzaehlungs-ç
+†††††††††typÛ† (AufzaehlunÁ deÚ BezeichneÚ deÚ TypelementÂ iÓ aufsteigendeÚ ç
+†††††††††Reihenfolge)
+
+†††††††††(23) boolean-konstante
+†††††††††     ~~~~~~~~~~~~~~~~~
+                              --|--> FALSE --->|---->
+†††††††††                       |--> TRUE ---->|
+
+†††††††††Es existieren drei Operatoren :  NOT      Verneinung
+†††††††††                                 AND      log. Und
+†††††††††                                 OR       log. Oder
+
+†††††††††FueÚ INTEGER-WertÂ gibÙ eÛ zusaetzlicË µ zweistelligÂ† Operatoren¨ ç
+†††††††††die INTEGER-Resultate liefern : + - * DIV MOD .
+†††††††††Seien p,q INTEGER mit q<>0, so gilt
+†††††††††p DIV q = sign (p/q) * [|p/q|]
+†††††††††p MOD q = p - (p DIV q)*q             mit
+†††††††††                                      sign bedeutet Signum
+†††††††††                                      [z›†isÙ†diÂ groesstÂ†ganzÂ
+†††††††††                                          Zahl, die nicht groesser
+ ††††††††                                          als z ist.
+†††††††††ABS (x) = |x|
+†††††††††SQR (x) =  Quadrat von x
+†††††††††ODD (x) =  ergibt TRUE, falls x ungerade und FALSE falls x gerade
+
+†††††††††(24) char-konstante
+†††††††††     ~~~~~~~~~~~~~~
+                          ---> ' ---> zeichen ---> ' ---->
+†††††††††
+†††††††††     "zeichen" ist aus CHAR
+†††††††††Die "CHAR-Konstanten" sind gerade die Zeichenketten der Laenge 1.
+†††††††††StandardfunktioÓ CH“ zuÚ UmwandlunÁ voÓ INTEGER-WerteÓ iÓ ElementÂ ç
+†††††††††des Typs CHAR.
+†††††††††Es gilt fuer alle ch aus CHAR : CHR(ORD(ch)) = ch
+
+                                  Standardtyp REAL
+†††††††††folgende Operatoren sind definiert :
+†††††††††:=                         Wertzuweisung
+†††††††††=,<>,<,>,<=,>=             Wertvergleich, Resultat BOOLEAN
+†††††††††+,-,*,/                    Add., Subtr., Mult., Div. Resultat REAL
+
+†††††††††folgende Standardfunktionen sind definiert :ä†††††††††ABS (x)                       |x|
+†††††††††SQR (x)                       Quadrat von x
+†††††††††SQRT (x)                      Wurzel von x
+†††††††††SIN (x)                       sinus x
+†††††††††COS (x)                       cosinus x
+†††††††††ARCTAN (x)                    arcustangens x
+†††††††††LN (x)                        ln x      x>0
+†††††††††EXP (x)                       e hoch x
+ 
+†††††††††Fuer die Umwandlung von REAL-Argumenten in Integer-Resultate
+†††††††††TRUNC (x)                     schneidet Nachkommastellen ab
+†††††††††ROUND (x)                     rundet ab ,5 aufwaerts
+
+†††††††††FueÚ† UmwandlunÁ† voÓ INTEGE“  iÓ REAÃ durcË† automatischÂ† Typan-ç
+†††††††††passung.
+
+                                 1.3.2.  Ausdruecke
+†††††††††                        ~~~~~~~~~~~~~~~~~~
+†††††††††(25) relop
+†††††††††     ~~~~~
+                   -----|--------->  =  ---------->|----------->
+                        |--------->  <> ---------->|
+                        |--------->  <  ---------->|
+                        |--------->  >  ---------->|
+                        |--------->  <= ---------->|
+                        |--------->  >= ---------->|
+                        |--------->  IN ---------->|
+
+†††††††††                      "IN" Element in einer Menge
+†††††††††
+†††††††††(26) addop
+†††††††††     ~~~~~
+                   -----|--------->  +  ---------->|----------->
+                        |--------->  -  ---------->|
+                        |--------->  OR ---------->|
+
+†††††††††(27) multop
+†††††††††     ~~~~~~
+                   -----|---------> AND ---------->|----------->
+                        |--------->  *  ---------->|
+                        |---------> DIV ---------->|
+                        |---------> MOD ---------->|
+                        |--------->  /  ---------->|
+†††††††††(28) ausdruck
+†††††††††     ~~~~~~~~
+†††††††††---> einfacher ausdruck -|-> relop --> einfacher ausdruck --|--->
+†††††††††                         |--------------------------------->|
+
+†††††††††(29) einfacher ausdruck
+†††††††††     ~~~~~~~~~~~~~~~~~~
+††††††††   |--> - -->|
+†††††††††--|-------->|--> term -->|------------------------>|---------->
+†††††††††  |--> + -->|            |<-- term <-- addop <-----|
+
+†††††††††(30) term
+†††††††††     ~~~~
+†††††††††----> faktor ---->|----------------------------->|---------->
+.pa†††††††††                  |<--- faktor <--- multop <-----|ä†††††††††(31) faktor
+†††††††††     ~~~~~~
+                     ---|---> konstante ------------>|------->
+                        |---> variable ------------->|
+                        |---> funktionsaufruf ------>|
+                        |---> ( --> ausdruck --> )-->|
+                        |---> NOT ---> faktor ------>|
+                        |---> mengenkonstruktion --->|
+†††††††††
+††††††††† konstante darf nicht mit "+" oder "-" beginnen
+†††††††††(32) variable
+†††††††††     ~~~~~~~~
+                      ---|---> bezeichner ------------>|-------->
+†††††††††                |---> record-komponente ----->|
+                         |---> array-komponente ------>|
+                         |---> file- puffer ---------->|
+                         |---> dynamische variable---->|
+
+†††††††††bezeichner ist Variablen- oder Parametername
+
+†††††††††(33) funktionsaufruf
+†††††††††     ~~~~~~~~~~~~~~~
+†††††††††---> bezeichner --|-> ( --> aktparameterliste --> ) --|------>
+†††††††††                  |---------------------------------->|
+
+†††††††††bezeichner ist Funktionsname
+
+†††††††††(34) aktparameterliste
+†††††††††     ~~~~~~~~~~~~~~~~~
+                     --|--|--> ausdruck ---->|---->|--------->
+                       |  |--> variable ---->|     |
+                       |  |--> bezeichner -->|     |
+                       |<--------- , <-------------|
+
+†††††††††DiÂ dreÈ moeglicheÓ VarianteÓ fueÚ ElementÂ eineÚ ListÂ† aktuelleÚ ç
+†††††††††ParameteÚ† entsprecheÓ iÓ dieseÚ ReihenfolgÂ deÓ Wert-¨† Referenz- ç
+†††††††††un‰† deÓ† RoutinenparameterÓ iÓ deÚ† zugehoerigeÓ† ListÂ† formaleÚ ç
+†††††††††ParameterÆ† DiÂ† ParameteÚ alleÚ StandardfunktioneÓ sin‰ Wertpara-ç
+†††††††††meterÆ† AlÛ† aktuellÂ ParameteÚ duereÓ deshal‚ AusdrueckÂ† notierÙ ç
+†††††††††werden.
+                      Operationen zwischen verschiedenen Typen
+†††††††††             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+†††††††††EinÂ† OperatioÓ miÙ zweÈ OperandeÓ isÙ nuÚ ausfuehrbar¨† wenÓ† diÂ ç
+†††††††††Typen der Operanden entweder
+†††††††††1. vertraeglich sind oder
+†††††††††2. fuer sie eine Typanpassung definiert ist. 
+†††††††††ZweÈ TypeÓ sin‰ vertraeglich¨† wenÓ einÂ deÚ folgendeÓ BedingungeÓ ç
+†††††††††erfuellt ist :
+†††††††††1Æ BeidÂ† TypeÓ  sin‰ iÓ derselbeÓ TypdefinitioÓ odeÚ Variablende-ç
+†††††††††   klaration eingefuehrt.
+†††††††††2. Beide Typen sind Teilbereiche desselben Aufzaehlungstyps.
+†††††††††3Æ EiÓ† Ty isÙ  eiÓ Aufzaehlungstyp¨† deÚ anderÂ isÙ eiÓ† Teilbe-ç
+†††††††††   reich davon.
+
+†††††††††Fuer die Operanden der Operationen 
+†††††††††+ - * / = <> < > <= >=
+†††††††††ist eine automatische Typanpassung INTEGER --> REAL definiert.
+
+†††††††††Folgende Faelle werden behandelt :
+†††††††††1. + - * / = <> < > <= >=
+†††††††††   EiÓ Operan‰ isÙ voÌ Ty REAL¨† eiÓ Operan‰ isÙ vertraeglicË miÙ çä†††††††††   INTEGERÆ† DeÚ† miÙ INTEGE“ vertraeglichÂ Operan‰ wir‰† zı† REAÃ ç
+††††††††††††konvertiert, anschliessend wird die Opration ausgefuehrt.
+†††††††††2. /
+†††††††††   BeidÂ OperatoreÓ sin‰ vertraeglicË miÙ INTEGERÆ† SiÂ werdeÓ voÚ ç
+††††††††††††Ausfuehrung der Division in REAL-Werte umgeformt.
+
+                                 1.4.   Anweisungenç
+†††††††††                        ~~~~~~~~~~~~~~~~~~
+†††††††††Anweisungen definieren Aktionen mit Variablen und Konstanten.
+
+†††††††††(35) anweisung
+†††††††††     ~~~~~~~~~
+                    --->|--------------------------->|--------->
+                        |---> ergibtanweisung ------>|
+                        |---> prozeduranweisung ---->|
+                        |---> verbundanweisung ----->|
+                        |---> caseanweisung -------->|
+                        |---> ifanweisung ---------->|
+                        |---> whileanweisung ------->|
+                        |---> repeatanweisung ------>|
+                        |---> foranweisung --------->|
+                        |---> withanweisung -------->|
+
+                               1.4.1. Ergibtanweisung
+†††††††††                      ~~~~~~~~~~~~~~~~~~~~~~
+†††††††††(36) ergibtanweisung
+†††††††††     ~~~~~~~~~~~~~~~
+                      ---> variable ---> := ---> ausdruck --->
+
+†††††††††viel mit Teilbereichstypen arbeiten, gut fuer Fehlersuche
+
+
+
+
+                            1.4.2.  Prozeduranweisungen
+†††††††††                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+†††††††††(37) prozeduranweisung
+†††††††††     ~~~~~~~~~~~~~~~~~
+†††††††††---> bezeichner --|--> ( --> aktparameterliste --> ) ---|----->
+†††††††††                  |------------------------------------>|
+
+†††††††††ZwischeÓ† deÚ† AbarbeitunÁ voÓ ProzeduranweisungeÓ un‰† Funktions-ç
+†††††††††aufrufeÓ† gibÙ eÛ keinÂ wesentlicheÓ UnterschiedeÆ† MaÓ kanÓ† zweÈ ç
+†††††††††oder drei Etappen erkennen :
+†††††††††1. Parametervermittlung
+†††††††††2Æ†AbarbeitunÁ† deÚ VerbundanweisunÁ deÛ iÓ deÚ† Routinendeklara-ç
+†††††††††   tion notierten Blockes
+†††††††††3. beÈ† FunktioneÓ erfolgÙ einÂ UebergabÂ deÛ durcË† einÂ† Wertzu-ç
+††††††††††††weisunÁ† aÓ deÓ FunktionsbezeichneÚ bereitgestellteÓ† ResultatÛ ç
+††††††††††††alÛ† FaktoÚ† zuÚ WeiterfuehrunÁ deÚ AusdrucksberechnunÁ iÓ† deÚ ç
+††††††††††††aufrufenden Routine.
+†††††††††DiÂ† ListÂ† deÚ aktuelleÓ ParameteÚ musÛ  deÚ ListÂ† deÚ† formaleÓ ç
+†††††††††Parameter entsprechen, das heisst :
+†††††††††1. Parameteranzahl muss stimmen
+†††††††††2. auÊ† deÚ† PositioÓ eineÛ WertparameterÛ isÙ eiÓ AusdrucÎ† moeg-ç
+††††††††††††lich
+†††††††††   Referenzparameter ist eine Variable
+†††††††††   formale Routine verlangt Routinennamen
+†††††††††3. TypvertraeglichkeiÙ†† formaler¨††† aktuelleÚ†† ParameteÚ†† musÛ ç
+††††††††††††gesicherÙ seinÆ† BeÈ WertparameterÓ AnpassunÁ† moeglich¨† nichÙ ç
+††††††††††††bei Referenzparametern.ä
+                   1.4.3.  Auswahl einer von mehreren Anweisungen
+†††††††††          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+†††††††††IÓ deÚ CASE-AnweisunÁ wir‰ abhaengiÁ voÌ WerÙ eineÛ AusdruckÛ einÂ ç
+†††††††††von mehreren Anweisungen ausgefuehrt.
+
+†††††††††(38) caseanweisung
+†††††††††     ~~~~~~~~~~~~~
+†††††††††--> CASE --> ausdruck --> OF -|-> markierte anweisung -|-> END -->
+†††††††††                              |<---------- ; <---------|
+
+†††††††††"ausdruck" liefert Wert aus einem Aufzaehlungstyp.
+
+†††††††††(39) markierte anweisung
+†††††††††     ~~~~~~~~~~~~~~~~~~~
+            --|-> aufzaehlungskonstante --|--> : --> anweisung ------->
+†††††††††     |<---------- , <------------|
+
+†††††††††DeÚ† WerÙ† eineÛ† AusdruckÛ un‰ diÂ notiertÂ† KonstantÂ† innerhal‚ ç
+†††††††††einer CASE-Anweisung muessen vom Typ her vertraeglich sein.
+†††††††††DiÂ†† AbarbeitunÁ† deÚ† CASE-AnweisunÁ† vollziehÙ† sicË† iÓ†† dreÈ ç
+†††††††††Schritten :
+†††††††††1. Berechnung des Ausdrucks
+†††††††††2Æ AuswahÏ deÚ  Anweisung¨† diÂ miÙ deÌ berechneteÓ WerÙ† markierÙ ç
+†††††††††   ist
+†††††††††3. Abarbeitung der ausgewaehlten Anweisung
+†††††††††IsÙ† keinÂ† AnweisunÁ miÙ deÌ errechneteÓ AusdruckswerÙ† markiert¨ ç
+†††††††††dann ist der Effekt undefiniert. (oft Leeranweisung )
+†††††††††(40) ifanweisung
+†††††††††     ~~~~~~~~~~~
+†††††††††-->IF-->ausdruck-->THEN-->anweisung--|-->ELSE-->anweisung-->|-->
+†††††††††                                     |--------------------->|   
+
+†††††††††"ausdruck" ist vom Typ BOOLEAN.
+†††††††††Gleichwertig sind :
+†††††††††IF A THEN S1 ELSE S2  <==> CASE A OF TRUE:S1;FALSE:S2 END
+†††††††††IF A THEN S1          <==> CASE A OF TRUE:S1;FALSE:   END
+†††††††††IF A THEN IF B THEN S1 ELSE S2        <==>
+†††††††††IF A THEN BEGIN IF B THEN S1 ELSE S2 END
+
+                              1.4.4. Zyklenanweisungen
+†††††††††                     ~~~~~~~~~~~~~~~~~~~~~~~~
+†††††††††Es gibt drei verschiedene Zyklenanweisungen :
+†††††††††1. WHILE-Anweisung, Boolscher Ausdruck jeweils vor Ausfuehrung
+†††††††††2. REPEAT-Anweisung, Boolscher Ausdruck jeweils nach Ausfuerung
+†††††††††3. FOR-Anweisung, Bestimmung der Anzahl der Schritte vorher
+
+†††††††††(41) whileanweisung
+†††††††††     ~~~~~~~~~~~~~~
+†††††††††---> WHILE ---> ausdruck ---> DO ---> anweisung ----->
+
+†††††††††"ausdruck" ist vom Typ BOOLEAN
+
+†††††††††DiÂ AnweisunÁ wir‰ ausgefuehrt,solangÂ deÚ AusdrucÎ deÓ WerÙ† TRU≈ ç
+†††††††††liefertÆ† InsbesonderÂ† kanÓ eÛ vorkommen¨† dasÛ diÂ AnweisunÁ gaÚ ç
+†††††††††nicht ausgefuehrt wird.
+†††††††††Hinter DO darf nur eine Anweisung stehen. (Verbundanweisung)
+.paä†††††††††(42) repeatanweisung
+†††††††††     ~~~~~~~~~~~~~~~
+†††††††††---> REPEAT --|-> anweisung --|-> UNTIL ---> ausdruck --->
+†††††††††              |<----- ; <-----|
+
+†††††††††"ausdruck" ist vom Typ BOOLEAN
+
+†††††††††DiÂ† AnweisungsfolgÂ wir‰ ausgefuehrt¨† biÛ deÚ AusdrucÎ deÓ† WerÙ ç
+†††††††††TruÂ† liefertÆ† DaÛ heisst¨† diÂ AnweisungsfolgÂ† wir‰† mindestenÛ ç
+†††††††††einmal ausgefuehrt.
+
+†††††††††(43) foranweisung
+†††††††††     ~~~~~~~~~~~~
+†††††††††-æ FO“ -æ bezeichneÚ -æ :Ω -æ ausdrucÎ -|--æ Tœ -->|-æ ausdrucÎ -æ ç
+†††††††††††††††††                                |->DOWNTO->|    
+†††††††††-> DO -> anweisung --->
+
+†††††††††"bezeichner" ist Name einer Variablen von einem Aufzaehlunstyp
+
+†††††††††DiÂ† nacË FO“ notiertÂ VariablÂ nennÙ maÓ LaufvariableÆ† DiÂ† Aus-ç
+†††††††††druecke muessen Werte aus dem Typ der Laufvariablen liefern.
+†††††††††BeidÂ† AusdrueckÂ† werdeÓ einmaliÁ aÌ BeginÓ deÚ† AusfuehrunÁ† deÚ ç
+†††††††††FOR-AnweisunÁ berechnetÆ† SiÂ lieferÓ deÓ Anfangs- un‰ deÓ EndwerÙ ç
+†††††††††fueÚ† diÂ LaufvariableÆ† DeÚ LaufvariableÓ werdeÓ schrittweisÂ diÂ ç
+†††††††††WertÂ voÌ Anfang- biÛ zuÌ EndwerÙ erteiltÆ† IÓ jedeÌ SchritÙ† wir‰ ç
+†††††††††diÂ† AnweisunÁ genaı einmaÏ ausgefuehrtÆ† AlÛ neueÚ WerÙ deÚ Lauf-ç
+†††††††††variableÓ wir‰ jeweilÛ entwedeÚ deÚ NachfolgeÚ (FOR-TO-NEXT©† odeÚ ç
+†††††††††der Vorgaenger (FOR-DOWNTO-DO) des alten Wertes benutzt.
+†††††††††Wichtig :
+††††††††† 1Æ† LaufvariablÂ† musÛ† lokaÏ zı deÌ kleinsteÓ diÂ† FOR-AnweisunÁ ç
+†††††††††     enthaltenden Block deklariert sein.
+††††††††† 2Æ† DeÚ† WerÙ deÚ LaufvariableÓ isÙ aÌ EndÂ deÚ† AusfuehrunÁ† deÚ ç
+†††††††††     FOR-Anweisung undefiniert. 
+
+                          1.5. Eingabe/Ausgabeoperationen
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+†††††††††Grundlage von Eingabe/Ausgabeoperationen in PASCAL sind Files.
+
+†††††††††(44) file-typ
+†††††††††     ~~~~~~~~
+                     ------> FILE -----> OF ------> typ ----->
+†††††††††ty† darÊ keiÓ Filety un‰ keiÓ strukturierteÚ Ty sein¨† deÚ† auÊ ç
+†††††††††irgendeineÚ VerschachtelungstiefÂ eineÓ Filety alÛ KomponentÂ be-ç
+†††††††††sitztÆ† DeÓ† hinteÚ O∆ notiertÂ Ty bezeichneÙ maÓ alÛ Grund- odeÚ ç
+†††††††††Basisty† deÛ FiletypsÆ† AuÛ deÚ SichÙ deÛ† PASCAL-TypkonzepÙ† be-ç
+†††††††††schreibt ein Filetyp 
+†††††††††                     FILE OF T
+†††††††††diÂ WortmengÂ T™ uebeÚ T¨† dÆ† hÆ diÂ MengeÓ alleÚ FolgeÓ voÓ Ele-ç
+†††††††††menteÓ† deÛ TypÛ ‘ einschliesslicË deÚ leereÓ FolgeÆ† AuÛ deÚ† Be-ç
+†††††††††triebssystemsicht handelt es sich bei einer Variablen
+†††††††††                    VAR F:FILE OF T;
+†††††††††uÌ einÂ sequentielÏ organisiertÂ DatenmengeÆ EÛ gibÙ nuÓ iÓ PASCAÃ ç
+†††††††††keinÂ† Moeglichkeit¨† miÙ eineÌ FilÂ alÛ GanzeÌ zı operierenÆ† MaÓ ç
+†††††††††kanÓ† stetÛ nuÚ miÙ deÚ sogenannteÓ aktuelleÓ† FilepositioÓ† - daÛ ç
+†††††††††isÙ† eiÓ† ElemenÙ deÚ daÛ FilÂ darstellendeÓ FolgÂ - arbeiteÓ† un‰ ç
+†††††††††diÂ FilepositioÓ schrittweisÂ "verschieben¢ bzwÆ† auÊ deÓ† Filean-ç
+†††††††††fang setzen.
+†††††††††FueÚ† BzugnahmeÓ auÊ diÂ aktuellÂ FilepositioÓ wir‰ miÙ deÚ Dekla-ç
+†††††††††ration einer Filevariablen
+†††††††††                   VAR X:FILE OF T;ä†††††††††automatiscË†† einÂ†† PuffervariablÂ†† voÌ†† Grundty†† deÛ†† FileÛ ç
+†††††††††eingefuehrt.
+†††††††††
+†††††††††(45) file-puffer
+†††††††††     ~~~~~~~~~~~
+                          ------> variable -----> ^ ----->
+
+†††††††††"variable" ist eine Filevariable (bzw. ein File)
+
+

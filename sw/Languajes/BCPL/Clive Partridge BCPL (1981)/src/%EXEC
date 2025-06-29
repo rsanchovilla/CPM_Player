@@ -1,0 +1,56 @@
+// version of execute not needing string package.
+
+GET "LIBHDR"
+
+LET execute(prog,args) BE
+$(
+   LET T,TFIB,FIB = ?,?,?
+   LET X,I,P = ?,?,?
+   LET arg1,arg2 = VEC 8, VEC 8
+   upcase(prog)
+   upcase(args)
+   I := args%0
+   args%(I+1) := 0    // end with null byte
+   args%0 +:= 1
+   I := 1
+   P := prog%0+1
+   WHILE  I < prog%0 DO
+      TEST prog%I = '.' THEN
+          $( P := I
+             BREAK
+          $)
+      ELSE I +:= 1
+   prog%P :=     '.'
+   prog%(P+1) := 'C'
+   prog%(P+2) := 'O'
+   prog%(P+3) := 'M'
+   prog%0 := P+3
+   FIB := findinput(prog)
+   IF FIB = 0 THEN
+      $( writef("*nCan't open %s *n",prog)
+         RETURN
+      $)
+
+        /* now find safe storage place */
+
+   X := (filesize(FIB)*128 + 256)/bytesperword
+   T := max( stackbase, X+2)
+   TFIB := T+64
+
+	/* copy args to safety, parse first two space-delimited
+           words and make two fcbs - keep these in safety too.
+	 */
+
+   FOR I = 0 TO args%0 DO T%I := args%I
+   P := 1
+   getstr(args,arg1,@P)
+   getstr(args,arg2,@P)
+   makefcb(TFIB,arg1)
+   makefcb(TFIB+16,arg2)
+
+   chain(z80(T),z80(TFIB),FIB)   //  no return from this
+$)
+
+// needs %XTRA  %FILES  %CHAIN
+
+

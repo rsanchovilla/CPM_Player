@@ -1,0 +1,138 @@
+** CIS COBOL V4.5                   stock2.CBL                    PAGE: 0001
+**
+       IDENTIFICATION DIVISION.                                         0118
+       PROGRAM-ID. GOODS-IN.                                            0118
+       AUTHOR. MICRO FOCUS LTD.                                         0118
+       ENVIRONMENT DIVISION.                                            0118
+       CONFIGURATION SECTION.                                           0118
+       SOURCE-COMPUTER.                                                 0118
+       OBJECT-COMPUTER.                                                 0118
+       SPECIAL-NAMES. CONSOLE IS CRT.                                   0118
+       INPUT-OUTPUT SECTION.                                            0118
+       FILE-CONTROL.                                                    0118
+           SELECT STOCK-FILE ASSIGN "STOCK.IT"                          0184
+           ORGANIZATION INDEXED                                         0186
+           ACCESS DYNAMIC                                               0186
+           RECORD KEY STOCK-CODE.                                       0186
+           SELECT TRANS-FILE                                            01BE
+           ASSIGN "STOCK.TRS"                                           01C0
+           ORGANIZATION SEQUENTIAL.                                     01C0
+** CIS COBOL V4.5                   stock2.CBL                    PAGE: 0002
+**
+      /                                                                 01F9
+       DATA DIVISION.                                                   01F9
+       FILE SECTION.                                                    01F9
+       FD  STOCK-FILE; RECORD 28.                                       01F9
+       01  STOCK-ITEM.                                                  01F9
+           02  STOCK-CODE PIC X(4).                                     01F9
+           02  STOCK-DESCRIPT PIC X(20).                                01FD
+           02  UNIT-SIZE PIC 9(4).                                      0211
+       FD  TRANS-FILE; RECORD 30.                                       0217
+       01  TRANS-RECORD.                                                0217
+           02  TRAN-NO PIC 9(4).                                        0217
+           02  TF-STOCK-CODE PIC X(4).                                  021B
+           02  TF-QUANTITY PIC 9(8).                                    021F
+           02  TF-ORDER-NO PIC X(6).                                    0227
+           02  TF-DATE PIC X(8).                                        022D
+       WORKING-STORAGE SECTION.                                         0237
+       01  STOCK-INWARD-FORM.                                           0237 00
+           02  PRG-TITLE PIC X(20) VALUE "       GOODS INWARD".         0237 00
+           02  FILLER PIC X(140).                                       024B 14
+           02  CODE-HDNG PIC X(23) VALUE "STOCK CODE       <    >".     02D7 A0
+           02  FILLER PIC X(57).                                        02EE B7
+           02  ORDER-NO-HDNG PIC X(23) VALUE "ORDER NO       <      >". 0327 F0
+           02  FILLER PIC X(57).                                        033E
+           02  DATE-HDNG PIC X(24) VALUE "DELIVERY DATE  MM/DD/YY".     0377
+           02  FILLER PIC X(56).                                        038F
+           02  UNITS-HDNG PIC X(23) VALUE "NO OF UNITS      <    >".    03C7
+       01  STOCK-RECEIPT REDEFINES STOCK-INWARD-FORM.                   0237 00
+           02  FILLER PIC X(178).                                       0237 00
+           02  SR-STOCK-CODE PIC X(4).                                  02E9 B2
+           02  FILLER PIC X(74).                                        02ED B6
+           02  SR-ORDER-NO PIC X(6).                                    0337
+           02  FILLER PIC X(73).                                        033D
+           02  SR-DATE.                                                 0386
+               04  SR-MM PIC 99.                                        0386
+               04  FILLER PIC X.                                        0388
+               04  SR-DD PIC 99.                                        0389
+               04  FILLER PIC X.                                        038B
+               04  SR-YY PIC 99.                                        038C
+           02  FILLER PIC X(75).                                        038E
+           02  SR-NO-OF-UNITS PIC 9(4).                                 03D9
+       01  CONFIRM-MSG REDEFINES STOCK-INWARD-FORM.                     0237 00
+           02  FILLER PIC X(184).                                       0237 00
+           02  CM-STOCK-DESCRIPT PIC X(20).                             02EF B8
+           02  FILLER PIC X(356).                                       0303 CC
+           02  UNIT-SIZE-HDNG PIC X(18).                                0467
+           02  CM-UNIT-SIZE PIC 9(4).                                   0479
+           02  FILLER PIC X(58).                                        047D
+           02  QUANTITY-HDNG PIC X(14).                                 04B7
+           02  CM-QUANTITY PIC 9(8).                                    04C5
+           02  FILLER PIC X(58).                                        04CD
+           02  OK-HDNG PIC X(5).                                        0507
+       01 CM-Y-OR-N-MSG REDEFINES STOCK-INWARD-FORM.                    0237 00
+           02  FILLER PIC X(724).                                       0237 00
+           02  CM-Y-OR-N PIC X.                                         050B
+       01  ERROR-MSG REDEFINES STOCK-INWARD-FORM.                       0237 00
+           02 FILLER PIC X(184).                                        0237 00
+           02 ERR-TXT PIC X(20).                                        02EF B8
+** CIS COBOL V4.5                   stock2.CBL                    PAGE: 0003
+**
+      /                                                                 0303 CC
+       PROCEDURE DIVISION.                                              0000
+       START-PROC.                                                      0025 00
+           OPEN I-O STOCK-FILE.                                         0026
+           OPEN OUTPUT TRANS-FILE.                                      002A
+           DISPLAY SPACE.                                               002E
+           MOVE 0 TO TRAN-NO.                                           0031
+           DISPLAY STOCK-INWARD-FORM.                                   0039
+       GET-INPUT.                                                       0056 00
+           ACCEPT STOCK-RECEIPT.                                        0057
+           IF SR-STOCK-CODE = SPACE GO TO END-IT.                       007D
+           IF SR-NO-OF-UNITS NOT NUMERIC GO TO INVALID-ENTRY.           0087
+           MOVE SR-STOCK-CODE TO STOCK-CODE.                            0091
+           READ STOCK-FILE; INVALID GO TO INVALID-CODE.                 0097
+      *VALID ENTRY, CALCULATE AND DISPLAY TOTAL QUANTITY IN TO CONFIRM
+           MOVE STOCK-DESCRIPT TO CM-STOCK-DESCRIPT.                    00A3
+           MOVE "UNIT SIZE" TO UNIT-SIZE-HDNG.                          00A9
+           MOVE UNIT-SIZE TO CM-UNIT-SIZE.                              00B7
+           MOVE "QUANTITY IN" TO QUANTITY-HDNG.                         00C0
+           MOVE UNIT-SIZE TO TF-QUANTITY.                               00D0
+           MULTIPLY SR-NO-OF-UNITS BY TF-QUANTITY.                      00D9
+           MOVE TF-QUANTITY TO CM-QUANTITY.                             00EA
+           MOVE "OK?" TO OK-HDNG.                                       00F3
+           DISPLAY CONFIRM-MSG.                                         00FB
+           ACCEPT CM-Y-OR-N-MSG.                                        011B
+           IF CM-Y-OR-N = "Y" PERFORM WRITE-TRANS.                      0123
+      *CLEAR INPUT DATA ON SCREEN
+           MOVE SPACE TO CONFIRM-MSG.                                   012E
+           MOVE "MM/DD/YY" TO SR-DATE.                                  0134
+           DISPLAY STOCK-RECEIPT.                                       0142
+           DISPLAY CONFIRM-MSG.                                         0168
+           GO TO GET-INPUT.                                             0188
+       WRITE-TRANS.                                                     018B 00
+           ADD 1 TO TRAN-NO.                                            018C
+           MOVE STOCK-CODE TO TF-STOCK-CODE.                            019C
+           MOVE SR-ORDER-NO TO TF-ORDER-NO.                             01A3
+           MOVE GET-INPUT TO TF-DATE.                                   01AA
+**103********************                                               *******
+**    Data-item has wrong data-type or is not declared                  *******
+           WRITE TRANS-RECORD.                                          01B2
+       INVALID-ENTRY.                                                   01B5 00
+           MOVE "NO UNITS NOT NUM" TO ERR-TXT.                          01B6
+           DISPLAY ERROR-MSG.                                           01CA
+           GO TO GET-INPUT.                                             01D2
+       INVALID-CODE.                                                    01D5 00
+           MOVE "INVALID CODE" TO ERR-TXT.                              01D6
+           DISPLAY ERROR-MSG.                                           01E6
+           GO TO GET-INPUT.                                             01EE
+       END-IT.                                                          01F1 00
+           CLOSE STOCK-FILE.                                            01F2
+           CLOSE TRANS-FILE.                                            01F6
+           DISPLAY SPACE.                                               01FA
+           DISPLAY "END OF PROGRAM".                                    01FD
+           STOP RUN.                                                    020E
+** CIS COBOL V4.5 REVISION 6                                  URN BQ/3261/BC
+** COMPILER COPYRIGHT (C) 1978,1982 MICRO FOCUS LTD
+** ERRORS=00001 DATA=01408 CODE=00640 DICT=00999:26016/27015 GSA FLAGS=  OFF
+ Qm

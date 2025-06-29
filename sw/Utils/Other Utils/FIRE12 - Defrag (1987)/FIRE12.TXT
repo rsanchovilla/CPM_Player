@@ -1,0 +1,195 @@
+		'FiRe - File Restoral Utility Program'
+
+	    FIRE    v12  by George F Reding	 08/10/87
+
+Utility program to restore disk files to like-new condition, where the
+file allocations for each file are in a sequential order rather than
+being scattered all over the disk (such as after a file/program has been
+modified).  Usable on any CP/M 2.2 or 3.0 system which has a Z80 CPU.
+Can be used regardless of TPA memory and/or if the system directory max-
+imum capacity is too large.
+
+Version 10 clobbered the DE registerd in the XBIOS2 routine which would
+make the sectran for CP/M 2.2 to not work properly.
+
+------------------------------------------------------------------------
+
+Created from:	RESTORE v12
+	by:	Steve Dirickson
+		21145 Raintree Place NW
+		Poulsbo, WA  98370-9726
+Other credits:
+		CPM22E by Mike Griswold
+		SYSLIB by Richard Conn
+
+------------------------------------------------------------------------
+			    CONFIGURATION
+
+There's very little (if any) configuration required in order to use this
+program. The following bytes may be changed with DDT, SID, or SZAP:
+
+   103	byte	Disk change wait.
+		   set non-zero for no waiting.
+   104	byte	File relocation linefeed character.
+		   set 0Ah for scrolling of file names,
+		   0 for no scrolling (updates 1 line),
+		   as each file is worked on.
+   105	word	For CP/M 3.0 only.
+		   value of your largest sector size.
+		   (Morrow hard-disk systems is 1024)
+
+------------------------------------------------------------------------
+		     NOTES FROM THE SOURCE CODE
+
+DPB offset and table lengths for CP/M 2.2 are different from those for
+CP/M 3.3.  They are now automatically set by the program, and the BIOS
+access is performed differently, eliminating the need to copy BIOS vec-
+tors into the program.	Much 8080 code is changed to Z80 which conserves
+memory space and increases the speed of the program.  You may use the
+program even if available (TPA) memory falls short of the capability to
+handle your system maximum directory entry capacity (BSH, BLM, DRM, and
+AL0 and AL1 values are all factors).  Either your TPA may be too low, or
+your system directory capacity (DRM) is too large (eg., 2048 or more?
+maximum entries capacity).  If the situation does arise, a message is
+given of the MAXIMUM ACTIVE entries that you may have to be able to con-
+tinue, and you may abort if you desire not to continue.  The user should
+ensure that there are LESS active directory entries by using DU, after
+using SAP. >>
+
+	 WARNING <<  To CONTINUE with MORE entries ACTIVE than
+	 the figure shown WILL TRASH both files and directory.
+	 Because of the memory limitation and differences among
+	 among systems, no warranties are expressed or implied
+	 and a user of this program shall assume any and all re-
+	 sponsibility for results arising from usage of the program.
+
+
+adjust maximum directory number (DRM) to a smaller/fake value for cases
+where the directory has a capacity to hold 2048 (or more??) entries, or
+in cases where the tpa may fall short of of capability to handle all of
+the directory entries.	Adjust the directory group count (AL0 and AL1)
+which varies with BLM (block size BLS) so that it matches with the smal-
+ler/fake DRM value.  In order to use the program in such cases of too
+many directory entries and/or of too little tpa space the TOTAL of
+ACTIVE directory entries will have to be verified by the user with "DU"
+or some equivilent program (after using "CLEANDIR", "SAP", "SAPP", etc).
+A warning message and the maximum number of active entries that the pro-
+gram can handle is given, with opportunity for the user to abort. Faking
+of the DRM value is similar to that which "SAPP" (for CP/M 3.0) is capa-
+ble of (an assembly time option).  The way I have implemented it here is
+an improvement though and "SAPP" will subsequently be updated to imple-
+ment this means of "auto-faking".
+;
+;
+	CALL	DOCOLL		; Get group count and 1st group
+				;   don't save real group count
+	LD	A,(NEWGRP)	; Get our fake group count
+	LD	(DIRGRP),A	; Save fake number of groups instead
+	JR	FAKGRP		; Save real start/search group
+;
+; If enough memory, set up variables (see above about faking)
+;
+CKDRBF: CALL	DOCOLL		; Get group count and 1st group
+	LD	(DIRGRP),A	; Save number of groups in directory
+;
+FAKGRP: LD	(STRTGP),HL	; Starting group in case faked
+	LD	(SRCHGP),HL	; Save 1st group after directory
+;
+
+------------------------------------------------------------------------
+			     CP/M 3 TEST
+
+CP/M 3.0 tests made on a Morrow MD-11 with two 20 Mb CMI hard disk
+drives, formatted capacity is 22,004k each, block size of 4k, and a
+maximum capacity of 2048 directory entries.  In my test, 2,488k of
+files were present on the test hard drive.
+
+In performing the test I newly formatted one hard drive then randomly
+PIP'ed some files to it eg., *.MAC, *.BIN, *.TXT, *.ASM.. etc., which
+didn't make things totally scrambled, but it was a start.  Then, I ran-
+domly PIP'ed some more files to another user area.  But that still was
+not random enough for my test.
+
+Then I edited a few of those files in conjustion, along with erasing,
+etc.  That broke things up just enough for the test to soon begin.
+
+I used SAPP (for CP/M 3.0) as the directory MUST BE sorted with any un-
+used or erased entries set to 0E5H's.  Then used DU to list the active
+directory entries to my printer to see where the allocations for each
+file were now at, before use of this program.
+
+Then came the big test with the program.
+
+The Morrow can have up to 2048 maximum directory entries, so I was given
+the warning message and shown the maximum number of active entries that
+I could have (1536 for my system).
+
+I already knew that I had MUCH less than that amount active, so I con-
+tinued.  In a moment, I was given the statistics of the drive which was
+displayed as follows:
+
+	Statistics
+
+		Active dir  entries: 94
+		Tot grps  allocated: 372
+		Group swaps  needed: 156
+		Group reads  needed: 312
+		Group writes needed: 312
+		Dir rewrites needed: 61
+
+	Press 'Y' to continue, else aborts:
+
+And I chose to continue at the prompt, after those stats.
+
+The program was roughly halfway through listing the files as it works on
+each one takes a bit of time when it just zipped through the remaining
+file names and said completed.	I then used DU to inspect and everything
+is fine. CRC check of the those files that were just relocated compared
+to the CRC of their originals resulted in an exact match.
+
+Final test was made on the other hard disk drive where there were 5,824k
+of files present.  The statistics were:
+
+	Statistics
+
+		Active directory  entries: 427
+		Total  groups	allocated: 1456
+		Group	 swaps	   needed: 1449
+		Group	 reads	   needed: 2889
+		Group	 writes    needed: 2889
+		Directory rewrites needed: 424
+
+The final test took approximately 3.5 hours for the program to complete
+its task.  Most definitely the program does take quite a bit of time to
+do its work, but in comparison to the act of copying files to floppy or
+other drive, then erasing or reformatting the source drive, and copying
+the files back to the source drive, this program is a labor saving de-
+vice.
+
+Result:  TEST SUCCESSFUL FOR CP/M 3.0.
+
+------------------------------------------------------------------------
+			     FINAL NOTES
+
+Definitely the wear and tear that this program may save on a drive will
+justify its periodic usage.
+
+Much of the original source code is still intact, although I did change
+labels to a limit of 6 characters and removed the 8080 code which was in
+the program for conditional assembly.
+
+Plus some minor changes were made, replacing some 8080 code with Z80 eg.,
+usage of direct load of DE, etc), addition of my own code for compati-
+bility with CP/M 3.0 utilizing routines from CPM22E, and accomodation
+for low TPA systems and/or any systems with too large of a directory
+entry capability.
+
+The author of RESTORE from which this program has developed, should have
+a field day figuring out where all of the mods have been made.	Much
+credit should be given to him, for his work.  Thanks much to Steve Dir-
+ickson.
+
+------------------------------------------------------------------------
+
+					- George Reding
+

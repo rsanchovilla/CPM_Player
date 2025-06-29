@@ -1,0 +1,26 @@
+; done2 -- done with a two operand operation
+;
+	NAME DONE2
+	ENTRY DONE2
+	EXT FNORM
+	INCLUDE FPINIT.SRC
+	INCLUDE FPMAC.SRC
+;
+done2:	normfp	1		;first normalize result
+	push	x		;restore de as stack index
+	pop	d
+	xra	a		;clear acc, carry
+	cmp	intflg(x)	;check internal op flag
+	rnz			;return if operation is internal
+	pop	d		;de <- return address
+	pop	y		;restore iy....
+	pop	x		;...and ix
+;remove op2, 2 scratch bytes and extra byte of op1 from stack
+	lxi	h,nbytes+3
+	dad	s
+	sphl			;fix stack pointer
+	xchg			;return addr -> hl
+	xra	a		;clear accumulator
+	pchl			;return
+;
+

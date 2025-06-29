@@ -1,0 +1,322 @@
+
+/* * * * * * * * * * * * * * * * * * * * * *
+/* BINARY TREE DEMO
+/*
+/* tree.tc - Copyright (c) 2/23/1979
+/*      Les Hancock
+/*
+/* { Ref: Knuth 2.3.1, 6.2.2 }
+/*
+/* implemented 10/24,25/2007 - Lee Bradley
+/* * * * * * * * * * * * * * * * * * * * * *
+
+int mxp, mxc, n, root
+int lf, rt, text, nu
+int base(1), av(16 - 1)
+char tr((16 * 64) - 1)
+
+co char st1(0), st2(0)
+  int n [
+  int ctr
+  while (n - ctr) [
+    if (st1(ctr) < st2(ctr)) return -1
+    if (st1(ctr) > st2(ctr)) return +1
+    ctr = ctr + 1
+  ] 
+  return nu
+]
+
+delete [
+  int ptr(0), k, pp(0), pr(0), res, np, cl
+  char st(mxc - 3)
+  pl "-> Del <-"
+  while (n) [
+    pl ""
+    k = getst(st)
+    if (k == nu) return
+    res = sniff(st, ptr, k, pp, pr)
+    if (res) pl "Not found."
+    else [
+      np = rub (ptr(0))
+      cl = mxc + 1
+      while (cl = cl - 1) [
+        tr(sb(ptr(0), cl)) = nu
+      ]
+      if (pp(0)) [
+        tr(sb(pp(0), ((pr(0) + 3) / 2))) = np
+      ]
+      else root = np
+      push ptr(0)
+      pl "Record"
+      pn ptr(0)
+      ps " deleted."
+    ]
+  ]
+  pl "";pl "Empty";pl ""
+  init
+]
+
+menu [
+  char ch
+  init
+  pl ""
+  pl "DEMO: BINARY TREE"
+  pl ""
+  while ((ch = getch()) != 'x') [
+    if (ch == 'i') insert
+    else if (ch == 'd') delete
+    else if (ch == 's') search
+    else if (ch == 'l') list
+    else if (ch == 'w') write
+    else if (ch == 'r') read
+    else if (ch == 'h') help
+  ]
+]
+
+format int nm [
+  int spaces
+  pn nm
+  if (nm < 10) spaces = 8
+  else if (nm < 100) spaces = 7
+  else if (nm < 1000) spaces = 6
+  while (spaces = spaces - 1) ps " "
+]
+
+getch [
+ pl "Routine (h for help) : "
+ return getchar
+]
+
+getname char fname(13) [
+  int k
+  k = gs(fname)
+  if (k > 14) [
+    pl "Name too long."
+    return 1
+  ]
+  return nu
+]
+
+getst char st(0) [
+  int k
+  pl ""
+  ps "Enter string: "
+  k = gs(st)
+  while (k > (mxc - 2)) [
+    pl "String exceeds max length of "
+    pn mxc - 2
+    ps " re-enter."
+    pl ""
+    k = gs(st)
+  ]
+  return k
+]
+
+help [
+  char yn
+  pl ""
+  pl "e(x)it (i)nsert (d)elete (s)earch (l)ist (w)rite (r)ead (h)elp"
+  pl "Want more help? "
+  if ((yn=getchar())=='y') printmenu
+]
+
+init [
+  nu = 0
+  root = 1
+  lf = 1
+  rt = 2
+  text = 3
+  mxp = 16
+  mxc = 64
+  av = base + (2 * 2)
+  tr = base + (2 * 2) + (2 * mxp)
+  n = mxp + 1
+  while (n = n - 1) av(n - 1) = n
+]
+
+insert [
+  int k, ptr(0), res, dummy(0), np
+  char st(mxc - 3)
+  pl "-> Insertion <-"
+  while (n < mxp) [
+    pl ""
+    k = getst(st)
+    if (k == nu) return
+    res = sniff(st, ptr, k, dummy, dummy)
+    if (res == nu) pl "Record exists."
+    else [
+      np = pop
+      if (np != root) [
+        tr(sb(ptr(0), ((res + 3) / 2))) = np
+      ]
+      move (st, tr + sb(np,text))
+      pl "Key ="
+      pn np
+    ]
+  ]  
+  pl ""
+  pl "Table full."
+  pl ""
+]
+
+list [
+  int index(0), ptr(0), stack(mxp - 1)
+  pl ""
+  if (n) [
+  pl "Key     Text"
+  pl ""
+  index(0) = -1
+  ptr(0) = root
+  traverse(index, ptr, stack)
+  pl ""
+  ]
+  else [
+    pl "Nothing to list."
+    pl ""
+  ]
+]  
+
+pop [
+  int nextptr
+  nextptr = av(n)
+  n = n + 1
+  return nextptr
+]
+
+push int oldptr [
+  n = n - 1
+  av(n) = oldptr
+  return n
+]
+
+read [
+  pl ""
+  pl "-> Read <-"
+  pl ""
+  char fname(13)
+  pl "Input file: "
+  if (getname(fname)) return
+  readfile(fname, base, tr + sb(mxp, mxc), 1)
+  n = base(0)
+  root = base(1)
+]
+
+rub int ptr [
+  int r, s, t
+  t = ptr
+  if (tr(sb(t, rt)) == nu) return tr(sb(t, lf))
+  if (tr(sb(t, lf)) == nu) return tr(sb(t, rt))
+  r = tr(sb(t, rt))
+  if (tr(sb(r, lf)) == nu) [
+    tr(sb(r, lf)) = tr(sb(t, lf))
+    return r
+  ]
+  s = tr(sb(r, lf))
+  while (tr(sb(s, lf))) [
+    r = s
+    s = tr(sb(r, lf))
+  ]
+  tr(sb(s, lf)) = tr(sb(t, lf))
+  tr(sb(r, lf)) = tr(sb(s, rt))
+  tr(sb(s, rt)) = tr(sb(t, rt))
+  return s
+]
+
+search [
+  int res, k, ptr(0), dummy(0)
+  char st(mxc - 3)
+  pl "-> Search <-"
+  while (1) [
+    pl ""
+    k = getst(st)
+    if (k == nu) return
+    res = sniff(st, ptr, k, dummy, dummy)
+    if (res) pl "Not found."
+    else [
+      pl "Found at "
+      pn ptr(0)
+      ps " : "
+      ps tr + sb(ptr(0), text)
+    ]
+  ]
+]
+
+sniff char st(0)
+  int ptr(0), k, pp(0), pr(0) [
+  int temp, res
+  pp(0) = nu
+  pr(0) = nu
+  ptr(0) = root
+  while (1) [
+    res = co(st, (tr + sb(ptr(0), text)), k)
+    if (res == nu) return res
+    temp = tr(sb(ptr(0), ((res + 3) /2)))
+    if (temp == nu) return res
+    pp(0) = ptr(0)
+    pr(0) = res
+    ptr(0) = temp
+  ] 
+]
+
+sb int row, col [
+  return (col - 1) + (mxc * (row - 1))
+]
+
+traverse int index(0), ptr(0), stack(mxp - 1) [
+  index(0) = index(0) + 1
+  stack(index(0)) = ptr(0)
+  if (tr(sb(ptr(0), lf))) [
+    ptr(0) = tr(sb(ptr(0),lf))
+    traverse(index, ptr, stack)
+  ]
+  pl ""
+  format(ptr(0))
+  ps tr + sb(ptr(0), text)
+  if (tr(sb (ptr(0), rt))) [
+    ptr(0) = tr(sb(ptr(0), rt))
+    traverse(index, ptr, stack)
+  ]
+  if (index(0) == 0) return
+  index(0) = index(0) - 1
+  ptr(0) = stack(index(0))
+]
+
+write [
+  char fname(13)
+  pl "-> Write <-"
+  pl ""
+  pl "Output file: "
+  if (getname(fname)) return
+  base(0) = n
+  base(1) = root
+  writefile (fname, base, tr + sb(mxp, mxc), 1)
+]
+
+printmenu [
+  pl ""
+  pl "Routines i, d, and s"
+  pl "prompt for strings,"
+  pl "which mustn't exceed"
+  pn mxc - 2
+  ps " characters."
+  pl ""
+  pl "Routine i inserts new"
+  pl "strings into the tree,"
+  pl "refusing any that are"
+  pl "already there."
+  pl ""
+  pl "Routine d deletes records"
+  pl "which begin with"
+  pl "the string entered."
+  pl ""
+  pl "Routine s searches the tree for a match to"
+  pl "the text you enter."
+  pl ""
+  pl "To quit any of those routines, do a carriage"
+  pl "return without entering any text."
+  pl ""
+  pl "At present the tree's contents cannot exceed"
+  pn mxp
+  pl "records."
+  pl ""
+]

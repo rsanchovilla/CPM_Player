@@ -1,0 +1,121 @@
+//  This is the module of compulsory standard routines that are written in
+//  BCPL for the run time system. These routines do depend in part on the way
+//  in which division and the REM operator works on negative numbers, so is
+//  totally transportable.
+
+GET "LIBHDR"
+
+LET stop() BE FINISH
+
+//  String handling.
+
+LET getbyte(v,n)=v%n
+
+LET putbyte(v,n,b) BE v%n := b
+
+LET packstring(v,s)=VALOF
+ $( LET length=!v
+    FOR x=0 TO length DO s%x := v!x
+    RESULTIS length/bytesperword
+ $)
+
+LET unpackstring(s,v) BE FOR x=0 TO s%0 DO v!x := s%x
+
+//  I/O routines.
+
+LET writen(n) BE
+ $( TEST -9<=n<=9 THEN IF n<0 THEN wrch('-') ELSE writen(n/10)
+    wrch(ABS (n REM 10)+'0')
+ $)
+
+LET writed(n,d) BE
+ $( TEST -9<=n<=9 THEN
+     $( FOR x=1 TO n<0->d-2,d-1 DO wrch(' ')
+        IF n<0 THEN wrch('-')
+     $)
+    ELSE writed(n/10,d-1)
+    wrch(ABS (n REM 10)+'0')
+ $)
+
+LET readn()=VALOF
+ $( LET x,ch,sign=0,0,1
+    ch := rdch() REPEATWHILE ch=' '|ch='*n'|ch='*p'|ch='*t'
+    TEST ch='-' THEN
+     $( ch := rdch()
+        sign := -1
+     $)
+    ELSE IF ch='+' THEN ch := rdch()
+    WHILE '0'<=ch<='9' DO
+     $( x := x*10+(ch-'0')*sign
+        ch := rdch()
+     $)
+    unrdch()
+    RESULTIS x
+ $)
+
+LET writes(string) BE FOR x=1 TO string%0 DO wrch(string%x)
+
+LET newline() BE wrch('*n')
+
+LET newpage() BE wrch('*p')
+
+LET writehex(n,d) BE FOR x=1 TO d DO
+ $( LET y=(n>>((d-x)<<2))&15
+    wrch(y<10->y+'0',y-10+'A')
+ $)
+
+LET writeoct(n,d) BE FOR x=1 TO d DO wrch(((n>>(d-x)*3)&7)+'0')
+
+LET writef(format,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) BE
+ $( LET args,y,z,function=@a0,?,?,?
+    FOR x=1 TO format%0 DO TEST format%x~='%' THEN wrch(format%x) ELSE
+     $( x +:= 1
+        z := format%x
+        y := FALSE
+        IF 'a'<=z<='z' THEN z +:= 'A'-'a'
+        SWITCHON z INTO
+         $( CASE '%' : wrch('%')
+            DEFAULT : LOOP
+            CASE '$' : args +:= 1
+                LOOP
+            CASE 'N' : function := writen
+                ENDCASE
+            CASE 'C' : function := wrch
+                ENDCASE
+            CASE 'S' : function := writes
+                ENDCASE
+            CASE 'I' : function := writed
+                y :=  TRUE
+                ENDCASE
+            CASE 'X' : function := writehex
+                y :=  TRUE
+                ENDCASE
+            CASE 'O' : function := writeoct
+                y :=  TRUE
+         $)
+        IF y THEN
+         $( x +:= 1
+            z := format%x
+            IF 'a'<=z<='z' THEN z +:= 'A'-'a'
+            z := '0'<=z<='9'->z-'0',z-'A'+10
+         $)
+        function(!args,z)
+        args +:= 1
+     $)
+ $)
+
+// READLINE - read in up to N chars or up to a newline, or eof
+// and return number of chars read. Maximum possible is 255.
+
+LET readline(S,N) = VALOF
+$( LET I,CH = 0,?
+   IF N > maxstrlength THEN N := maxstrlength
+   CH := RDCH()
+   WHILE CH \= endstreamch & CH \= '*N' & N > 0 DO
+     $( I +:= 1  N -:= 1
+        S%I := CH
+        CH := RDCH()
+     $)
+   S%0 := I
+   RESULTIS I     // return length read.
+$)

@@ -1,0 +1,111 @@
+
+TOPIC:  FIND50
+
+DATE :	01 SEPT 84
+
+FROM :	IRV HOFF
+
+
+     FIND50 locates strings of characters in a file, then displays the
+entire line(s) that string was found.  It can be used with wildcards to
+look through numerous files automatically, searching for a particular
+combination of characters.  It is especially useful with MAST.CAT or
+MAST.LST catalog programs to see what disk(s) a program might be on.
+It would show how many copies of that file were available, permitting
+"housecleaning" of extra programs.  It is very convenient to use when
+updating newer versions of files, to erase those no longer needed that
+have similar names.  It has some advantages over using a normal editor
+"search" since it displays each line, rather than merely stopping each
+time the combination appears.  (Some editors would not conveniently al-
+low hard copy printing of "search" results.)  FIND50 can optionally make
+a disk file for later printing, etc.  Using a program like LISTT with
+such a disk file would then permit a paginated listing of the results,
+with page numbers, date, heading, etc..
+
+     You will likely wish to keep FIND50.COM on an archive disk, then
+rename to FIND.COM on your catalog and utility disks to simplify typing
+the complete name (or even remembering the current version).  Examples:
+
+ 1)	B>FIND
+ 2)	B>FIND ?
+ 3)	B>FIND HELLO.ASM
+ 4)	B>FIND MAST.LST MODEM
+ 5)	B>FIND MAST.CAT _MODEM
+ 6)	B>FIND MAST.CAT MOD|BYE
+ 7)	B>FIND *.ASM HELLO
+ 8)	B>FIND MAST.LST .A?M
+ 9)	B>FIND HELLO.DOC MDM712[N]       or [N or [n] or [n
+10)	B>FIND MAST.LST MDM7 (CTL-P)     control-P to operate printer
+11)	B>FIND MAST.CAT .COM >NEW.CAT
+12)	B>FIND HELLO.DOC process the file >FILE.TYP[n]
+
+ 	1)  Displays a short "built in" instruction guide.
+	2)  Same as 1).
+	3)  Prompts for a string to find.  If string is in lower-case it
+		will display lines only with the same lower-case chars.
+		If string is upper-case, will show all lines having the
+		string, whether upper-case or lower-case or mixed case.
+	4)  Typical use of the program.  Display all lines with the
+		sequential characters MODEM or modem.
+	5)  Using the "_" (underline) character fakes a tab key.  Just
+		those lines with "(TAB)MODEM" or "(TAB)modem" are shown.
+	6)  Using the "|" (vertical bar) character permits concurrent
+		search/display of several strings of characters.  In
+		this case, all lines containing either MOD or BYE (or
+		same strings in lower case) will be displayed.
+	7)  Wildcards may be used.  In this case, the name of each file
+		is printed prior to being searched.
+	8)  '?' may be used as a wildcard in the search field.
+	9) If [N] is included, line numbers will be added.  This is
+		similar to using PIP.COM and including the [N] option,
+		except the line numbers shown here are those containing
+		the requested string. 
+	10) Turns the printer on to make a quick hard copy of results.
+		If pagination is needed/preferred, make a disk copy and
+		use a normal paginating program like LISTT.
+	11) A disk file can be made, using the '>' character.  (This is
+		needed to isolate the string area, permitting spaces to
+		be used in the string.
+	12) Strings can be used with spaces between words.  Shows a disk
+		file will be made, with line numbers.
+
+
+GENERAL COMMENTS:
+----------------
+     This program is especially useful with the MAST.CAT catalog program
+as it can find files where only a few characters are used.  For instance
+the user knows he has some modem programs called MODEM7 or MDM7 or some-
+thing, so he looks for:
+
+		A>FIND MAST.CAT DEM7|DM7|MOD
+
+     He may also want to find all files with .ASM, .AQM and .COM so he
+can make a new disk file:
+ 
+		A>FIND MAST.CAT .ASM|.AQM|.COM >CAT.NEW
+
+     He could then use XCAT to make a cross-reference listing, although
+it will be a small nuisance:
+ 
+	1) Rename the existing MAST.CAT temporarily to ZMAST.CAT
+	2) Rename CAT.NEW (or whatever name was used) to MAST.CAT
+	3) Use the editor to put at least () for an "ignore file" at
+	      the start (XCAT cannot work otherwise).
+	4) Use XCAT which makes a file named MAST.LST.
+	5) Rename all files involved to whatever the user prefers,
+	      restoring the original MAST.CAT file.
+
+     Adding line numbers is occasionally beneficial since it shows where
+in the file that line is located.  This can be useful for finding errors
+in assembly level source code that are hard to find with an editor, or
+to show the conentration of certain groups of characters in a file.
+	
+     FIND50 may also be used with address files or large message banks,
+to find all occurrences of similar names, or similar streets, or similar
+cities, purchase dates, product names, etc. etc. etc.
+
+     The ability to make a disk file (plus concurrent searching for a
+variety of different strings separated by a '|' character), gives FIND50
+a very powerful feature.
+					- Irv Hoff
+

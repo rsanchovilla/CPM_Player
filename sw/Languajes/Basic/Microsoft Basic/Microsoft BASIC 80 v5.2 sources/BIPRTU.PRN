@@ -1,0 +1,515 @@
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	BIPRTU	BASIC Interpreter PRINT USING Driver/WHG
+                                	SUBTTL	PRINT USING DRIVER
+                                ;
+                                ; COME HERE AFTER THE "USING" CLAUSE IN A PRINT STATEMENT
+                                ; IS RECOGNIZED. THE IDEA IS TO SCAN THE USING STRING UNTIL
+                                ; THE VALUE LIST IS EXHAUSTED, FINDING STRING AND NUMERIC
+                                ; FIELDS TO PRINT VALUES OUT OF THE LIST IN,
+                                ; AND JUST OUTPUTING ANY CHARACTERS THAT AREN'T PART OF
+                                ; A PRINT FIELD.
+                                ;
+                                	EXTRN	CHRGTR,SYNCHR
+                                	EXTRN	CHKSTR,CRDO,FACLO,FCERR,FRETM2,FRMCHK,FRMEVL
+                                	EXTRN	OUTDO,PUFOUT,SNERR,STROUT,STRPRT,USFLG
+                                	EXTRN	LEFTUS
+                                	PUBLIC	PRINUS
+  005C                          CSTRNG	SET	134O
+  0024                          CURNCY	SET	44O			;USE DOLLAR SIGN AS DEFAULT
+                                
+  0000'   CD 0000*              PRINUS:	CALL	FRMCHK			;EVALUATE THE "USING" STRING
+  0003'   CD 0000*              	CALL	CHKSTR			;MAKE SURE IT IS A STRING
+  0006'   CD 0000*              	CALL	SYNCHR
+  0009'   3B                    	DB	73O			;MUST BE DELIMITED BY A SEMI-COLON
+  000A'   EB                    	XCHG				;[D,E]=TEXT POINTER
+  000B'   2A 0000*              	LHLD	FACLO			;GET POINTER TO "USING" STRING DESCRIPTOR
+  000E'   C3 001A'              	JMP	INIUS			;DONT POP OFF OR LOOK AT USFLG
+  0011'   3A 0000*              REUSST:	LDA	USFLG			;DID WE PRINT OUT A VALUE LAST SCAN?
+  0014'   B7                    	ORA	A			;SET CC'S
+  0015'   CA 0024'              	JZ	FCERR3			;NO, GIVE ERROR
+  0018'   D1                    	POP	D			;[D,E]=POINTER TO "USING" STRING DESCRIPTOR
+  0019'   EB                    	XCHG				;[D,E]=TEXT POINTER
+  001A'   E5                    INIUS:	PUSH	H			;SAVE THE POINTER TO "USING" STRING DESCRIPTOR
+  001B'   AF                    	XRA	A			;INITIALLY INDICATE THERE ARE MORE
+                                					;VALUES IN THE VALUE LIST
+  001C'   32 0000*              	STA	USFLG			;RESET THE FLAG THAT SAYS VALUES PRINTED
+  001F'   BA                    	CMP	D			;TURN THE ZERO FLAG OFF
+                                					;TO INDICATE THE VALUE LIST HASN'T ENDED
+  0020'   F5                    	PUSH	PSW			;SAVE FLAG INDICATING WHETHER THE VALUE
+                                					;LIST HAS ENDED
+  0021'   D5                    	PUSH	D			;SAVE THE TEXT POINTER INTO THE VALUE LIST
+  0022'   46                    	MOV	B,M			;[B]=LENGTH OF THE "USING" STRING
+  0023'   B0                    	ORA	B			;SEE IF ITS ZERO
+  0024'   CA 0000*              FCERR3:	JZ	FCERR			;IF SO, "ILLEGAL FUNCTION CALL"
+  0027'   23                    	INX	H			;[H,L]=POINTER AT THE "USING" STRING'S
+  0028'   4E                    	MOV	C,M			;DATA
+  0029'   23                    	INX	H
+  002A'   66                    	MOV	H,M
+  002B'   69                    	MOV	L,C
+  002C'   C3 004E'              	JMP	PRCCHR			;GO INTO THE LOOP TO SCAN
+                                					;THE "USING" STRING
+  002F'   58                    BGSTRF:	MOV	E,B			;SAVE THE "USING" STRING CHARACTER COUNT
+  0030'   E5                    	PUSH	H			;SAVE THE POINTER INTO THE "USING" STRING
+  0031'   0E 02                 	MVI	C,2			;THE \\ STRING FIELD HAS 2 PLUS
+                                					;NUMBER OF ENCLOSED SPACES WIDTH
+  0033'   7E                    LPSTRF:	MOV	A,M			;GET THE NEXT CHARACTER
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+PRINT USING DRIVER
+
+  0034'   23                    	INX	H			;ADVANCE THE POINTER AT THE "USING" STRING
+                                					;DATA
+  0035'   FE 5C                 	CPI	CSTRNG			;THE FIELD TERMINATOR?
+  0037'   CA 019A'              	JZ	ISSTRF			;GO EVALUATE A STRING AND PRINT
+  003A'   FE 20                 	CPI	' '			;A FIELD EXTENDER?
+  003C'   C2 0044'              	JNZ	NOSTRF			;IF NOT, ITS NOT A STRING FIELD
+  003F'   0C                    	INR	C			;INCREMENT THE FIELD WIDTH
+                                					;SEE IF THERE ARE MORE CHARACTERS
+  0040'   05                    	DCR	B
+  0041'   C2 0033'              	JNZ	LPSTRF			;KEEP SCANNING FOR THE FIELD TERMINATOR
+                                ;
+                                ; SINCE  STRING FIELD WASN'T FOUND, THE "USING" STRING 
+                                ; CHARACTER COUNT AND THE POINTER INTO IT'S DATA MUST
+                                ; BE RESTORED AND THE "\" PRINTED
+                                ;
+  0044'   E1                    NOSTRF:	POP	H			;RESTORE THE POINTER INTO "USING" STRING'S DATA
+  0045'   43                    	MOV	B,E			;RESTORE THE "USING" STRING CHARACTER COUNT
+  0046'   3E 5C                 	MVI	A,CSTRNG		;RESTORE THE CHARACTER
+                                ;
+                                ; HERE TO PRINT THE CHARACTER IN [A] SINCE IT WASN'T PART OF ANY FIELD
+                                ;
+  0048'   CD 01D3'              NEWUCH:	CALL	PLSPRT			;IF A "+" CAME BEFORE THIS CHARACTER
+                                					;MAKE SURE IT GETS PRINTED
+  004B'   CD 0000*              	CALL	OUTDO			;PRINT THE CHARACTER THAT WASN'T
+                                					;PART OF A FIELD
+  004E'   AF                    PRCCHR:	XRA	A			;SET [D,E]=0 SO IF WE DISPATCH
+  004F'   5F                    	MOV	E,A			;SOME FLAGS ARE ALREADY ZEROED
+  0050'   57                    	MOV	D,A			;DON'T PRINT "+" TWICE
+  0051'   CD 01D3'              PLSFIN:	CALL	PLSPRT			;ALLOW FOR MULTIPLE PLUSES
+                                					;IN A ROW
+  0054'   57                    	MOV	D,A			;SET "+" FLAG
+  0055'   7E                    	MOV	A,M			;GET A NEW CHARACTER
+  0056'   23                    	INX	H
+  0057'   FE 21                 	CPI	'!'			;CHECK FOR A SINGLE CHARACTER
+  0059'   CA 0197'              	JZ	SMSTRF			;STRING FIELD
+  005C'   FE 23                 	CPI	'#'			;CHECK FOR THE START OF A NUMERIC FIELD 
+  005E'   CA 00AA'              	JZ	NUMNUM			;GO SCAN IT
+  0061'   FE 26                 	CPI	'&'			;SEE IF ITS A VARIABLE LENGTH STRING FIELD
+  0063'   CA 0192'              	JZ	VARSTR			;GO PRINT ENTIRE STRING
+  0066'   05                    	DCR	B			;ALL THE OTHER POSSIBILITIES
+                                					;REQUIRE AT LEAST 2 CHARACTERS
+  0067'   CA 0170'              	JZ	REUSIN			;IF THE VALUE LIST IS NOT EXHAUSTED
+                                					;GO REUSE "USING" STRING
+  006A'   FE 2B                 	CPI	'+'			;A LEADING "+" ?
+  006C'   3E 08                 	MVI	A,8			;SETUP [D] WITH THE PLUS-FLAG ON IN
+  006E'   CA 0051'              	JZ	PLSFIN			;CASE A NUMERIC FIELD STARTS
+  0071'   2B                    	DCX	H			;POINTER HAS ALREADY BEEN INCREMENTED
+  0072'   7E                    	MOV	A,M			;GET BACK THE CURRENT CHARACTER
+  0073'   23                    	INX	H			;REINCREMENT THE POINTER
+  0074'   FE 2E                 	CPI	'.'			;NUMERIC FIELD WITH TRAILING DIGITS
+  0076'   CA 00C9'              	JZ	DOTNUM			;IF SO GO SCAN WITH [E]=
+                                					;NUMBER OF DIGITS BEFORE THE "."=0
+  0079'   FE 5F                 	CPI	'_'			;CHECK FOR LITERAL CHARACTER DECLARATION
+  007B'   CA 0186'              	JZ	LITCHR
+  007E'   FE 5C                 	CPI	CSTRNG			;CHECK FOR A BIG STRING FIELD STARTER
+  0080'   CA 002F'              	JZ	BGSTRF			;GO SEE IF IT REALLY IS A STRING FIELD
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+PRINT USING DRIVER
+
+  0083'   BE                    	CMP	M			;SEE IF THE NEXT CHARACTER MATCHES THE
+                                					;CURRENT ONE
+  0084'   C2 0048'              	JNZ	NEWUCH			;IF NOT, CAN'T HAVE $$ OR ** SO ALL THE
+                                					;POSSIBILITIES ARE EXHAUSTED
+  0087'   FE 24                 	CPI	CURNCY			;IS IT $$ ?
+  0089'   CA 00A3'              	JZ	DOLRNM			;GO SET UP THE FLAG BIT
+  008C'   FE 2A                 	CPI	'*'			;IS IT ** ?
+  008E'   C2 0048'              	JNZ	NEWUCH			;IF NOT, ITS NOT PART
+                                					;OF A FIELD SINCE ALL THE POSSIBILITIES
+                                					;HAVE BEEN TRIED
+  0091'   78                    	MOV	A,B			;SEE IF THE "USING" STRING IS LONG
+  0092'   23                    	INX	H			;CHECK FOR $
+  0093'   FE 02                 	CPI	2			;ENOUGH FOR THE SPECIAL CASE OF
+  0095'   DA 009B'              	JC	NOTSPC			; **$
+  0098'   7E                    	MOV	A,M
+  0099'   FE 24                 	CPI	CURNCY			;IS THE NEXT CHARACTER $ ?
+  009B'   3E 20                 NOTSPC:	MVI	A,32			;SET THE ASTERISK BIT
+  009D'   C2 00A7'              	JNZ	SPCNUM			;IF IT NOT THE SPECIAL CASE, DON'T
+                                					;SET THE DOLLAR SIGN FLAG
+  00A0'   05                    	DCR	B			;DECREMENT THE "USING" STRING CHARACTER COUNT
+                                					;TO TAKE THE $ INTO CONSIDERATION
+  00A1'   1C                    	INR	E			;INCREMENT THE FIELD WIDTH FOR THE
+                                					;FLOATING DOLLAR SIGN
+  00A2'   FE                    	DB	376Q			;"CPI" OVER THE NEXT BYTE
+                                					;MVI SI,  IN 8086
+  00A3'   AF                    DOLRNM:	XRA	A			;CLEAR [A]
+  00A4'   C6 10                 	ADI	16			;SET BIT FOR FLOATING DOLLAR SIGN FLAG
+  00A6'   23                    	INX	H			;POINT BEYOND THE SPECIAL CHARACTERS
+  00A7'   1C                    SPCNUM:	INR	E			;SINCE TWO CHARACTERS SPECIFY
+                                					;THE FIELD SIZE, INITIALIZE [E]=1
+  00A8'   82                    	ADD	D			;PUT NEW FLAG BITS IN [A]
+  00A9'   57                    	MOV	D,A			;INTO [D]. THE PLUS FLAG MAY HAVE
+                                					;ALREADY BEEN SET
+  00AA'   1C                    NUMNUM:	INR	E			;INCREMENT THE NUMBER OF DIGITS BEFORE
+                                					;THE DECIMAL POINT
+  00AB'   0E 00                 	MVI	C,0			;SET THE NUMBER OF DIGITS AFTER
+                                					;THE DECIMAL POINT = 0
+  00AD'   05                    	DCR	B			;SEE IF THERE ARE MORE CHARACTERS
+  00AE'   CA 00FF'              	JZ	ENDNUS			;IF NOT, WE ARE DONE SCANNING THIS
+                                					;NUMERIC FIELD
+  00B1'   7E                    	MOV	A,M			;GET THE NEW CHARACTER
+  00B2'   23                    	INX	H			;ADVANCE THE POINTER AT THE "USING" STRING DATA
+  00B3'   FE 2E                 	CPI	'.'			;DO WE HAVE TRAILING DIGITS?
+  00B5'   CA 00D4'              	JZ	AFTDOT			;IF SO, USE SPECIAL SCAN LOOP
+  00B8'   FE 23                 	CPI	'#'			;MORE LEADING DIGITS ?
+  00BA'   CA 00AA'              	JZ	NUMNUM			;INCREMENT THE COUNT AND KEEP SCANNING
+  00BD'   FE 2C                 	CPI	54O			;DOES HE WANT A COMMA
+                                					;EVERY THREE DIGITS?
+  00BF'   C2 00E0'              	JNZ	FINNUM			;NO MORE LEADING DIGITS, CHECK FOR ^^^
+  00C2'   7A                    	MOV	A,D			;TURN ON THE COMMA BIT
+  00C3'   F6 40                 	ORI	64
+  00C5'   57                    	MOV	D,A
+  00C6'   C3 00AA'              	JMP	NUMNUM			;GO SCAN SOME MORE
+                                ;
+                                ; HERE WHEN A "." IS SEEN IN THE "USING" STRING
+                                ; IT STARTS A NUMERIC FIELD IF AND ONLY IF
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+PRINT USING DRIVER
+
+                                ; IT IS FOLLOWED BY A "#"
+                                ;
+  00C9'   7E                    DOTNUM:	MOV	A,M			;GET THE CHARACTER THAT FOLLOWS
+  00CA'   FE 23                 	CPI	'#'			;IS THIS A NUMERIC FIELD?
+  00CC'   3E 2E                 	MVI	A,'.'			;IF NOT, GO BACK AND PRINT "."
+  00CE'   C2 0048'              	JNZ	NEWUCH
+  00D1'   0E 01                 	MVI	C,1			;INITIALIZE THE NUMBER OF
+                                					;DIGITS AFTER THE DECIMAL POINT
+  00D3'   23                    	INX	H
+  00D4'   0C                    AFTDOT:	INR	C			;INCREMENT THE NUMBER OF DIGITS
+                                					;AFTER THE DECIMAL POINT
+  00D5'   05                    	DCR	B			;SEE IF THE "USING" STRING HAS MORE
+  00D6'   CA 00FF'              	JZ	ENDNUS			;CHARACTERS, AND IF NOT, STOP SCANNING
+  00D9'   7E                    	MOV	A,M			;GET THE NEXT CHARACTER
+  00DA'   23                    	INX	H
+  00DB'   FE 23                 	CPI	'#'			;MORE DIGITS AFTER THE DECIMAL POINT?
+  00DD'   CA 00D4'              	JZ	AFTDOT			;IF SO, INCREMENT THE COUNT AND KEEP
+                                					;SCANNING
+                                ;
+                                ; CHECK FOR THE "^^^^" THAT INDICATES SCIENTIFIC NOTATION
+                                ;
+  00E0'   D5                    FINNUM:	PUSH	D			;SAVE [D]=FLAGS AND [E]=LEADING DIGITS
+  00E1'   11 00FD'              	LXI	D,NOTSCI		;PLACE TO GO IF ITS NOT SCIENTIFIC
+  00E4'   D5                    	PUSH	D			;NOTATION
+  00E5'   54                    	MOV	D,H			;REMEMBER [H,L] IN CASE
+  00E6'   5D                    	MOV	E,L			;ITS NOT SCIENTIFIC NOTATION
+  00E7'   FE 5E                 	CPI	'^'			;IS THE FIRST CHARACTER "^" ?
+  00E9'   C0                    	RNZ	
+  00EA'   BE                    	CMP	M			;IS THE SECOND CHARACTER "^" ?
+  00EB'   C0                    	RNZ	
+  00EC'   23                    	INX	H
+  00ED'   BE                    	CMP	M			;IS THE THIRD CHARACTER "^" ?
+  00EE'   C0                    	RNZ	
+  00EF'   23                    	INX	H
+  00F0'   BE                    	CMP	M			;IS THE FOURTH CHARACTER "^" ?
+  00F1'   C0                    	RNZ	
+  00F2'   23                    	INX	H
+  00F3'   78                    	MOV	A,B			;WERE THERE ENOUGH CHARACTERS FOR "^^^^"
+  00F4'   D6 04                 	SUI	4			;IT TAKES FOUR
+  00F6'   D8                    	RC	
+  00F7'   D1                    	POP	D			;POP OFF THE NOTSCI RETURN ADDRESS
+  00F8'   D1                    	POP	D			;GET BACK [D]=FLAGS [E]=LEADING DIGITS
+  00F9'   47                    	MOV	B,A			;MAKE [B]=NEW CHARACTER COUNT
+  00FA'   14                    	INR	D			;TURN ON THE SCIENTIFIC NOTATION FLAG
+  00FB'   23                    	INX	H
+  00FC'   CA                    	DB	312O			;SKIP THE NEXT TWO BYTES WITH "JZ"
+  00FD'   EB                    NOTSCI:	XCHG				;RESTORE THE OLD [H,L]
+  00FE'   D1                    	POP	D			;GET BACK [D]=FLAGS [E]=LEADING DIGITS
+  00FF'   7A                    ENDNUS:	MOV	A,D			;IF THE LEADING PLUS FLAG IS ON
+  0100'   2B                    	DCX	H
+  0101'   1C                    	INR	E			;INCLUDE LEADING "+" IN NUMBER OF DIGITS
+  0102'   E6 08                 	ANI	8			;DON'T CHECK FOR A TRAILING SIGN
+  0104'   C2 011F'              	JNZ	ENDNUM			;ALL DONE WITH THE FIELD IF SO
+                                					;IF THERE IS A LEADING PLUS
+  0107'   1D                    	DCR	E			;NO LEADING PLUS SO DON'T INCREMENT THE
+                                					;NUMBER OF DIGITS BEFORE THE DECIMAL POINT
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+PRINT USING DRIVER
+
+  0108'   78                    	MOV	A,B
+  0109'   B7                    	ORA	A			;SEE IF THERE ARE MORE CHARACTERS
+  010A'   CA 011F'              	JZ	ENDNUM			;IF NOT, STOP SCANNING
+  010D'   7E                    	MOV	A,M			;GET THE CURRENT CHARACTER
+  010E'   D6 2D                 	SUI	'-'			;TRAIL MINUS?
+  0110'   CA 011A'              	JZ	SGNTRL			;SET THE TRAILING SIGN FLAG
+  0113'   FE FE                 	CPI	'+'-'-'			;A TRAILING PLUS?
+  0115'   C2 011F'              	JNZ	ENDNUM			;IF NOT, WE ARE DONE SCANNING
+  0118'   3E 08                 	MVI	A,8			;TURN ON THE POSITIVE="+" FLAG
+  011A'   C6 04                 SGNTRL:	ADI	4			;TURN ON THE TRAILING SIGN FLAG
+  011C'   82                    	ADD	D			;INCLUDE WITH OLD FLAGS
+  011D'   57                    	MOV	D,A
+  011E'   05                    	DCR	B			;DECREMENT THE "USING" STRING CHARACTER
+                                					;COUNT TO ACCOUNT FOR THE TRAILING SIGN
+  011F'   E1                    ENDNUM:	POP	H			;[H,L]=THE OLD TEXT POINTER
+  0120'   F1                    	POP	PSW			;POP OFF FLAG THAT SAYS WHETHER THERE
+                                					;ARE MORE VALUES IN THE VALUE LIST
+  0121'   CA 017B'              	JZ	FLDFIN			;IF NOT, WE ARE DONE WITH THE "PRINT"
+  0124'   C5                    	PUSH	B			;SAVE [B]=# OF CHARACTERS REMAINING IN
+                                					;"USING" STRING AND [C]=TRAILING DIGITS
+  0125'   D5                    	PUSH	D			;SAVE [D]=FLAGS AND [E]=LEADING DIGITS
+  0126'   CD 0000*              	CALL	FRMEVL			;READ A VALUE FROM THE VALUE LIST
+  0129'   D1                    	POP	D			;[D]=FLAGS & [E]=# OF LEADING DIGITS
+  012A'   C1                    	POP	B			;[B]=# CHARACTER LEFT IN "USING" STRING
+                                					;[C]=NUMBER OF TRAILING DIGITS
+  012B'   C5                    	PUSH	B			;SAVE [B] FOR ENTERING SCAN AGAIN
+  012C'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  012D'   43                    	MOV	B,E			;[B]=# OF LEADING DIGITS
+  012E'   78                    	MOV	A,B			;MAKE SURE THE TOTAL NUMBER OF DIGITS
+  012F'   81                    	ADD	C			;DOES NOT EXCEED TWENTY-FOUR
+  0130'   FE 19                 	CPI	25
+  0132'   D2 0000*              	JNC	FCERR			;IF SO, "ILLEGAL FUNCTION CALL"
+  0135'   7A                    	MOV	A,D			;[A]=FLAG BITS
+  0136'   F6 80                 	ORI	128			;TURN ON THE "USING" BIT
+  0138'   CD 0000*              	CALL	PUFOUT			;PRINT THE VALUE
+  013B'   CD 0000*              	CALL	STROUT			;ACTUALLY PRINT IT
+  013E'   E1                    FNSTRF:	POP	H			;GET BACK THE TEXT POINTER
+  013F'   2B                    	DCX	H			;SEE WHAT THE TERMINATOR WAS
+  0140'   CD 0000*              	CALL	CHRGTR
+  0143'   37                    	STC				;SET FLAG THAT CRLF IS DESIRED
+  0144'   CA 0157'              	JZ	CRDNUS			;IF IT WAS A END-OF-STATEMENT
+                                					;FLAG THAT THE VALUE LIST ENDED
+                                					;AND THAT  CRLF SHOULD BE PRINTED
+  0147'   32 0000*              	STA	USFLG			;FLAG THAT VALUE HAS BEEN PRINTED.
+                                					;DOESNT MATTER IF ZERO SET, [A]
+                                					;MUST BE NON-ZERO OTHERWISE
+  014A'   FE 3B                 	CPI	73O			;A SEMI-COLON?
+  014C'   CA 0154'              	JZ	SEMUSN			;A LEGAL DELIMITER
+  014F'   FE 2C                 	CPI	54O			;A COMMA ?
+  0151'   C2 0000*              	JNZ	SNERR			;THE DELIMETER WAS ILLEGAL
+  0154'   CD 0000*              SEMUSN:	CALL	CHRGTR			;IS THERE ANOTHER VALUE?
+  0157'   C1                    CRDNUS:	POP	B			;[B]=CHARACTERS REMAINING IN "USING" STRING
+  0158'   EB                    	XCHG				;[D,E]=TEXT POINTER
+  0159'   E1                    	POP	H			;[H,L]=POINT AT THE "USING" STRING
+  015A'   E5                    	PUSH	H			;DESCRIPTOR. RESAVE IT.
+  015B'   F5                    	PUSH	PSW			;SAVE THE FLAG THAT INDICATES
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+PRINT USING DRIVER
+
+                                					;WHETHER OR NOT THE VALUE LIST TERMINATED
+  015C'   D5                    	PUSH	D			;SAVE THE TEXT POINTER
+                                ;
+                                ; SINCE FRMEVL MAY HAVE FORCED GARBAGE COLLECTION
+                                ; WE HAVE TO USE THE NUMBER OF CHARACTERS ALREADY SCANNED
+                                ; AS AN OFFSET TO THE POINTER TO THE "USING" STRING'S DATA
+                                ; TO GET A NEW POINTER TO THE REST OF THE CHARACTERS TO
+                                ; BE SCANNED
+                                ;
+  015D'   7E                    	MOV	A,M			;GET THE "USING" STRING'S LENGTH
+  015E'   90                    	SUB	B			;SUBTRACT THE NUMBER OF CHARACTERS
+                                					;ALREADY SCANNED
+  015F'   23                    	INX	H			;[H,L]=POINTER AT
+  0160'   4E                    	MOV	C,M			;THE "USING" STRING'S
+  0161'   23                    	INX	H			;STRING DATA
+  0162'   66                    	MOV	H,M
+  0163'   69                    	MOV	L,C
+  0164'   16 00                 	MVI	D,0			;SETUP [D,E] AS A DOUBLE BYTE OFFSET
+  0166'   5F                    	MOV	E,A
+  0167'   19                    	DAD	D			;ADD ON THE OFFSET TO GET
+                                					;THE NEW POINTER
+  0168'   78                    CHKUSI:	MOV	A,B			;[A]=THE NUMBER OF CHARACTERS LEFT TO SCAN
+  0169'   B7                    	ORA	A			;SEE IF THERE ARE ANY LEFT
+  016A'   C2 004E'              	JNZ	PRCCHR			;IF SO, KEEP SCANNING
+  016D'   C3 0176'              	JMP	FINUSI			;SEE IF THERE ARE MORE VALUES
+  0170'   CD 01D3'              REUSIN:	CALL	PLSPRT			;PRINT A "+" IF NECESSARY
+  0173'   CD 0000*              	CALL	OUTDO			;PRINT THE FINAL CHARACTER
+  0176'   E1                    FINUSI:	POP	H			;POP OFF THE TEXT POINTER
+  0177'   F1                    	POP	PSW			;POP OFF THE INDICATOR OF WHETHER OR NOT
+                                					;THE VALUE LIST HAS ENDED
+  0178'   C2 0011'              	JNZ	REUSST			;IF NOT, REUSE THE "USING" STRING
+  017B'   DC 0000*              FLDFIN:	CC	CRDO			;IF NOT COMMA OR SEMI-COLON
+                                					;ENDED THE VALUE LIST
+                                					;PRINT A CRLF
+  017E'   E3                    	XTHL				;SAVE THE TEXT POINTER
+                                					;[H,L]=POINT AT THE "USING" STRING'S
+                                					;DESCRIPTOR
+  017F'   CD 0000*              	CALL	FRETM2			;FINALLY FREE IT UP
+  0182'   E1                    	POP	H			;GET BACK THE TEXT POINTER
+                                	EXTRN	FINPRT
+  0183'   C3 0000*              	JMP	FINPRT			;ZERO [PTRFIL]
+                                ;
+                                ; HERE TO HANDLE A LITERAL CHARACTER IN THE USING STRING PRECEDED
+                                ; BY "_"
+                                ;
+  0186'   CD 01D3'              LITCHR:	CALL	PLSPRT			;PRINT PREVIOUS "+" IF ANY
+  0189'   05                    	DCR	B			;DECREMENT COUNT FOR ACTUAL CHARACTER
+  018A'   7E                    	MOV	A,M			;FETCH LITERAL CHARACTER
+  018B'   23                    	INX	H
+  018C'   CD 0000*              	CALL	OUTDO			;OUTPUT LITERAL CHARACTER
+  018F'   C3 0168'              	JMP	CHKUSI			;GO SEE IF USING STRING ENDED
+                                ;
+                                ; HERE TO HANDLE VARIABLE LENGTH STRING FIELD SPECIFIED WITH "&"
+                                ;
+  0192'   0E FF                 VARSTR:	MVI	C,255			;SET LENGTH TO MAXIMUM POSSIBLE
+  0194'   C3 019B'              	JMP	ISSTR1
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+PRINT USING DRIVER
+
+                                ;
+                                ; HERE WHEN THE "!" INDICATING A SINGLE CHARACTER
+                                ; STRING FIELD HAS BEEN SCANNED
+                                ;
+  0197'   0E 01                 SMSTRF:	MVI	C,1			;SET THE FIELD WIDTH TO 1
+  0199'   3E                    	DB	76Q			;SKIP NEXT BYTE WITH A "MVI A,"
+  019A'   F1                    ISSTRF:	POP	PSW			;GET RID OF THE [H,L] THAT WAS BEING
+                                					;SAVED IN CASE THIS WASN'T A STRING FIELD
+  019B'   05                    ISSTR1:	DCR	B			;DECREMENT THE "USING" STRING CHARACTER COUNT
+  019C'   CD 01D3'              	CALL	PLSPRT			;PRINT A "+" IF ONE CAME BEFORE THE FIELD
+  019F'   E1                    	POP	H			;TAKE OFF THE TEXT POINTER
+  01A0'   F1                    	POP	PSW			;TAKE OF THE FLAG WHICH SAYS
+                                					;WHETHER THERE ARE MORE VALUES IN THE
+                                					;VALUE LIST
+  01A1'   CA 017B'              	JZ	FLDFIN			;IF THERE ARE NO MORE VALUES
+                                					;THEN WE ARE DONE
+  01A4'   C5                    	PUSH	B			;SAVE [B]=NUMBER OF CHARACTERS YET TO
+                                					;BE SCANNED IN "USING" STRING
+  01A5'   CD 0000*              	CALL	FRMEVL			;READ A VALUE
+  01A8'   CD 0000*              	CALL	CHKSTR			;MAKE SURE ITS A STRING
+  01AB'   C1                    	POP	B			;[C]=FIELD WIDTH
+  01AC'   C5                    	PUSH	B			;RESAVE [B]
+  01AD'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  01AE'   2A 0000*              	LHLD	FACLO			;GET A POINTER TO THE DESCRIPTOR
+  01B1'   41                    	MOV	B,C			;[B]=FIELD WIDTH
+  01B2'   0E 00                 	MVI	C,0			;SET UP FOR "LEFT$"
+  01B4'   C5                    	PUSH	B			;SAVE THE FIELD WIDTH FOR SPACE PADDING
+  01B5'   CD 0000*              	CALL	LEFTUS			;TRUNCATE THE STRING TO [B] CHARACTERS
+  01B8'   CD 0000*              	CALL	STRPRT			;PRINT THE STRING
+  01BB'   2A 0000*              	LHLD	FACLO			;SEE IF IT NEEDS TO BE PADDED
+  01BE'   F1                    	POP	PSW			;[A]=FIELD WIDTH
+  01BF'   3C                    	INR	A			;IF FIELD LENGTH IS 255 MUST BE "&" SO
+  01C0'   CA 013E'              	JZ	FNSTRF			;DONT PRINT ANY TRAILING SPACES
+  01C3'   3D                    	DCR	A
+  01C4'   96                    	SUB	M			;[A]=AMOUNT OF PADDING NEEDED
+  01C5'   47                    	MOV	B,A
+  01C6'   3E 20                 	MVI	A,' '			;SETUP THE PRINT CHARACTER
+  01C8'   04                    	INR	B			;DUMMY INCREMENT OF NUMBER OF SPACES
+  01C9'   05                    UPRTSP:	DCR	B			;SEE IF MORE SPACES
+  01CA'   CA 013E'              	JZ	FNSTRF			;NO, GO SEE IF THE VALUE LIST ENDED AND
+                                					;RESUME SCANNING
+  01CD'   CD 0000*              	CALL	OUTDO			;PRINT A SPACE
+  01D0'   C3 01C9'              	JMP	UPRTSP			;AND LOOP PRINTING THEM
+                                ;
+                                ; WHEN A "+" IS DETECTED IN THE "USING" STRING
+                                ; IF A NUMERIC FIELD FOLLOWS A BIT IN [D] SHOULD
+                                ; BE SET, OTHERWISE "+" SHOULD BE PRINTED.
+                                ; SINCE DECIDING WHETHER A NUMERIC FIELD FOLLOWS IS VERY
+                                ; DIFFICULT, THE BIT IS ALWAYS SET IN [D].
+                                ; AT THE POINT IT IS DECIDED A CHARACTER IS NOT PART
+                                ; OF A NUMERIC FIELD, THIS ROUTINE IS CALLED TO SEE
+                                ; IF THE BIT IN [D] IS SET, WHICH MEANS
+                                ; A PLUS PRECEDED THE CHARACTER AND SHOULD BE
+                                ; PRINTED.
+                                ;
+  01D3'   F5                    PLSPRT:	PUSH	PSW			;SAVE THE CURRENT CHARACTER
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+PRINT USING DRIVER
+
+  01D4'   7A                    	MOV	A,D			;CHECK THE PLUS BIT
+  01D5'   B7                    	ORA	A			;SINCE IT IS THE ONLY THING THAT COULD
+                                					;BE TURNED ON
+  01D6'   3E 2B                 	MVI	A,'+'			;SETUP TO PRINT THE PLUS
+  01D8'   C4 0000*              	CNZ	OUTDO			;PRINT IT IF THE BIT WAS SET
+  01DB'   F1                    	POP	PSW			;GET BACK THE CURRENT CHARACTER
+  01DC'   C9                    	RET	
+                                	END	
+BIPRTU	BASIC Interpreter PRINT USING Driver/WHG	MACRO-80 3.44	09-Dec-81	PAGE	S
+PRINT USING DRIVER
+
+Macros:
+
+Symbols:
+00D4'	AFTDOT          002F'	BGSTRF          00FF 	BUFLEN          
+01A9*	CHKSTR          0168'	CHKUSI          0155*	CHRGTR          
+000E 	CLMWID          000F 	CONTO           0005 	CPMENT          
+0000 	CPMWRM          0157'	CRDNUS          017C*	CRDO            
+005C 	CSTRNG          0024 	CURNCY          0080 	DATPSC          
+0000 	DBLTRN          00A3'	DOLRNM          00C9'	DOTNUM          
+011F'	ENDNUM          00FF'	ENDNUS          01BC*	FACLO           
+0133*	FCERR           0024'	FCERR3          00E0'	FINNUM          
+0184*	FINPRT          0176'	FINUSI          017B'	FLDFIN          
+013E'	FNSTRF          0180*	FRETM2          0001*	FRMCHK          
+01A6*	FRMEVL          001A'	INIUS           019B'	ISSTR1          
+019A'	ISSTRF          01B6*	LEFTUS          0050 	LINLN           
+0186'	LITCHR          0033'	LPSTRF          0084 	LPTLEN          
+0003 	MD.RND          0001 	MD.SQI          0002 	MD.SQO          
+0028 	NAMLEN          0048'	NEWUCH          0044'	NOSTRF          
+00FD'	NOTSCI          009B'	NOTSPC          001D 	NUMLEV          
+00AA'	NUMNUM          000A 	NUMTMP          01D9*	OUTDO           
+0051'	PLSFIN          01D3'	PLSPRT          004E'	PRCCHR          
+0000I'	PRINUS          0139*	PUFOUT          0170'	REUSIN          
+0011'	REUSST          0154'	SEMUSN          011A'	SGNTRL          
+0197'	SMSTRF          0152*	SNERR           00A7'	SPCNUM          
+013C*	STROUT          01B9*	STRPRT          0003 	STRSIZ          
+0007*	SYNCHR          0000 	TRUROM          01C9'	UPRTSP          
+0148*	USFLG           0192'	VARSTR          
+
+
+
+No Fatal error(s)
+
+
+   01D9*	OUTDO           
+0051'	PLSFIN          01D3'	PLSPRT          004E'	PRCCHR    

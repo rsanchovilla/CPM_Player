@@ -1,0 +1,413 @@
+	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                	.z80
+                                	.list
+  0000'                         	aseg
+                                	org	100h
+                                
+                                ;	Loader for GSX-80 driver for GrafTalk
+                                ;	Copyright (C) 2024 by Roberto Sancho
+                                
+  0100                          main:	; copy PRL file from [VPROG] to top of TPA
+                                	; Start of PRL is stored at addr [PRLstart+1]
+                                	; adjust SP to be below this address
+                                	; do not modify (0006) top of ram
+                                
+  0100    2A 0006               	ld 	hl,(0006)	; get end fo TPA
+  0103    2B                    	dec	hl
+  0104    ED 5B 0501            	ld	de,(VPROG+1)	; GTPLTGSX.PRL length
+  0108    B7                    	or	a		; force clear carry 
+  0109    ED 52                 	sbc	hl,de
+  010B    2E 00                 	ld	l,0		; HL=addr where to place GTPLTGSX.PRL = PRL entry point
+  010D    22 0184               	ld	(PRLstart+1),hl	; save PRL entry point at its new addr
+  0110    EB                    	ex	de,hl
+  0111    21 0600               	ld	hl,VPROG+100h	; now HL=GTPLTGSX.PRL source addr into .COM file, DE=destination addr, where to store it
+  0114    ED 4B 0501            	ld	bc, (VPROG+1)	; GTPLTGSX.PRL length
+  0118    ED B0                 	ldir			; copy GTPLTGSX.PRL to top of ram
+  011A    2A 0184               	ld	hl,(PRLstart+1)	; get new top of TPA
+  011D    2B                    	dec	hl
+  011E    F9                    	ld	sp,hl		; set new stack, so it get not overwritten by PRL loaded on top of TPA
+                                	
+                                	; relocate PRL file
+                                	
+  011F    21 0600               	ld	hl,VPROG+100h	; HL=GTPLTGSX.PRL start addr
+  0122    ED 5B 0501            	ld	de, (VPROG+1)	; GTPLTGSX.PRL length
+  0126    ED 53 018E            	ld 	(len),de	; len=bytes remaining to be relocated
+  012A    19                    	add	hl,de		; HL=start of relocation bitmap
+  012B    22 0190               	ld	(relocbmp),hl	; relocbmp=addr of reloc bitmap
+  012E    2A 0184               	ld	hl, (PRLstart+1) ; addr of prog to relocate
+  0131    22 0192               	ld	(relocaddr),hl
+  0134    3E 08                 	ld	a,8
+  0136    32 0194               	ld	(cnt8),a	; init counter to 8
+  0139    3A 0185               	ld	a,(PRLstart+2)	; calc relocation offset using destination addr
+  013C    D6 01                 	sub	1
+  013E    32 0195               	ld	(offset),a
+                                		
+  0141    2A 0190               reloc1:	ld	hl,(relocbmp)	; get reloc bitmap byte
+  0144    7E                      	ld	a,(hl)		; get reloc bitmap byte
+  0145    3F                    	ccf			
+  0146    CB 27                 	sla	a		; shift left, bit7 to carry. CF=1 if byte needs to be relocated
+  0148    77                    	ld	(hl),a		; save back reloc bitmap byte
+  0149    D2 0156               	jp	nc,relocok	; if bit7=carry=0 -> do not reloc this byte
+                                	
+  014C    2A 0192               reloc2:	ld	hl,(relocaddr)	; get addr of prog to be relocated
+  014F    7E                    	ld	a,(hl)		; get byte to be relocated
+  0150    47                    	ld	b,a
+  0151    3A 0195               	ld	a,(offset)
+  0154    80                    	add	a,b		; addr relocation offset
+  0155    77                    	ld	(hl),a		; save back
+	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+                                	
+  0156                          relocok:	
+  0156    2A 018E               	ld	hl,(len)	; decr bytes remaining to be relocated
+  0159    2B                    	dec	hl		; when zero, jp end reloc
+  015A    7D                    	ld	a,l
+  015B    B4                    	or	h
+  015C    CA 0183               	jp	z,endreloc
+  015F    22 018E               	ld	(len),hl
+                                	
+  0162    2A 0192               	ld	hl,(relocaddr)	; incr addr of prog to be relocated
+  0165    23                    	inc 	hl
+  0166    22 0192               	ld	(relocaddr),hl
+                                	
+  0169    3A 0194               	ld	a,(cnt8)	; dect count 8
+  016C    3D                    	dec	a
+  016D    32 0194               	ld	(cnt8),a
+  0170    B7                    	or	a
+  0171    C2 0180               	jp	nz, cnt8ok
+  0174    3E 08                 	ld	a,8		; counter 8 reachs zero ->
+  0176    32 0194               	ld	(cnt8),a	; init counter back to 8
+  0179    2A 0190               	ld	hl,(relocbmp)	; and incr reloc bitmap pointer
+  017C    23                    	inc	hl
+  017D    22 0190               	ld	(relocbmp),hl		
+  0180    C3 0141               cnt8ok: jp	reloc1
+  0183                          endreloc:	
+                                
+                                	; PRL file has been relocated
+                                	; now call one-time PRL initialization
+                                	; is PRL program task to adjust (0006) end of TPA
+                                	
+  0183    CD 0000               PRLstart: call	0000
+                                
+  0186    2A 0006               	ld	hl,(0006)	; get new top of TPA
+  0189    2B                    	dec	hl
+  018A    F9                    	ld	sp,hl		; set new stack, according to end ot TPA set by RPL initialization code
+  018B    C3 0196               	jp	StartUp
+                                	
+  018E    0000                  len:		DW 	0
+  0190    0000                  relocbmp:	DW	0
+  0192    0000                  relocaddr:	DW 	0
+  0194    00                    cnt8:		DB	0
+  0195    00                    offset:		DB 	0
+                                	
+                                	
+  0196                          StartUp:
+                                	; now call GSX OpenWorkStation to init GSX driver
+                                	; and show the GSX driver welcome message
+                                	
+  0196    21 0001               	ld	hl,1		; gsx func 1 = OpenWorkstation
+  0199    22 0213               	ld	(gsxfunc),hl
+  019C    21 0000               	ld	hl,0		
+  019F    22 0215               	ld	(Nptsin),hl	; num pts in = 0
+  01A2    21 000A               	ld	hl,10		
+  01A5    22 0219               	ld	(Nintin),hl	; num int in = 10
+  01A8    21 0001               	ld	hl,1
+  01AB    22 021D               	ld	(INTIN + 0*2),hl	; open device number = 1
+	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  01AE    21 0000               	ld	hl,0
+  01B1    22 021F               	ld	(INTIN + 1*2),hl	; line style
+  01B4    21 0001               	ld	hl,1
+  01B7    22 0221               	ld	(INTIN + 2*2),hl	; line color (0=black, 1=white)
+  01BA    21 0000               	ld	hl,0
+  01BD    22 0223               	ld	(INTIN + 3*2),hl	; marker style
+  01C0    21 0001               	ld	hl,1
+  01C3    22 0225               	ld	(INTIN + 4*2),hl	; marker color
+  01C6    21 0000               	ld	hl,0
+  01C9    22 0227               	ld	(INTIN + 5*2),hl	; text style
+  01CC    21 0001               	ld	hl,1
+  01CF    22 0229               	ld	(INTIN + 6*2),hl	; text color
+  01D2    21 0000               	ld	hl,0
+  01D5    22 022B               	ld	(INTIN + 7*2),hl	; fill style
+  01D8    21 0000               	ld	hl,0
+  01DB    22 022D               	ld	(INTIN + 8*2),hl	; fill index (0=solid)
+  01DE    21 0001               	ld	hl,1
+  01E1    22 022F               	ld	(INTIN + 9*2),hl	; fill color
+  01E4    11 0209               	ld	de,pblock
+  01E7    0E 73                 	ld	c,115
+  01E9    CD 0005               	call	0005
+                                
+                                	; now call GSX CloseWorkStation 
+  01EC    21 0002               	ld	hl,2		; gsx func 2 = CloseWorkstation
+  01EF    22 0213               	ld	(gsxfunc),hl
+  01F2    21 0000               	ld	hl,0		
+  01F5    22 0215               	ld	(Nptsin),hl	; num pts in = 0
+  01F8    21 0000               	ld	hl,0		
+  01FB    22 0219               	ld	(Nintin),hl	; num int in = 0
+  01FE    11 0209               	ld	de,pblock
+  0201    0E 73                 	ld	c,115
+  0203    CD 0005               	call	0005
+                                
+  0206    C3 02C7                       jp      loader          ; now proceed to load main prog an start it
+                                
+  0209    0213                  pblock:	DW	CONTRL		; Address of control array
+  020B    021D                  	DW	INTIN		; Address of integer input array
+  020D    023D                  	DW	PTSIN		; Address of pixel input array
+  020F    025D                  	DW	INTOUT		; Address of integer output array
+  0211    029D                  	DW	PTSOUT		; Address of pixel output array	
+  0213                          CONTRL:	
+  0213    0000                  gsxfunc:	DW	0	; Input:  GSX function to call, 1-33
+  0215    0000                  Nptsin:		DW   	0	; Input:  Number of points in PTSIN array.
+  0217    0000                  Nptsout:	DW   	0	; Output: Number of points in PTSOUT array.
+  0219    0000                  Nintin:		DW   	0	; Input:  Number of integers in INTIN array.
+  021B    0000                  Nintout:	DW   	0	; Output: Number of integers in INTOUT array.	
+  021D                          INTIN:	DS	32		; room for 16 input words
+  023D                          PTSIN:	DS	32		; room for 16 input coords (8 points)
+  025D                          INTOUT:	DS	64		; room for 32 output words
+  029D                          PTSOUT:	DS	32		; room for 16 output coords (8 points)
+                                	
+  02BD    47 52 41 46           COMPRG: DB      "GRAFTALK"      ; program name to load (must be 8 chars long)
+  02C1    54 41 4C 4B           
+  A600                          COMLEN  equ     42496           ; length of program to load
+  0800                          COMFRE  equ     2048            ; program need at least this free mem
+                                
+	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+  02C5                          COMsize: DS     2               ; calculated minimal TPA needed by COM program
+                                
+  02C7    01 0100               loader: ld      bc,0100h         
+  02CA    21 A600                       ld      hl,COMLEN       ; check if TPA is big enough for COM program + GSX driver + free ram + stack
+  02CD    09                            add     hl,bc           ; prog starts at $0100
+  02CE    09                            add     hl,bc           ; add additional 256 bytes for stack. Now hl=high mem addr needed
+  02CF    01 0800                       ld      bc,COMFRE 
+  02D2    09                            add     hl,bc           ; add min free ram needed by prog
+  02D3    22 02C5                       ld      (COMsize),hl    ; COMsize = minimal TPA needed by COM program
+                                
+  02D6    11 032C                       ld      de,tpam1        ; print "Min required TPA size" message
+  02D9    CD 0307               	call 	PrtTxt
+  02DC    2A 02C5                       ld      hl,(COMsize)    ; COMsize = minimal TPA needed by COM program
+  02DF    CD 030C                       call    PrtHL           ; print HL in hex (4 digits)
+  02E2    CD 0304                       call    PrtCR
+                                
+  02E5    11 0341                       ld      de,tpam2        ; print "Available TPA size" message
+  02E8    CD 0307               	call 	PrtTxt
+  02EB    2A 0006                       ld      hl,(0006)       ; TPA size
+  02EE    CD 030C                       call    PrtHL           ; print HL in hex (4 digits)
+  02F1    CD 0304                       call    PrtCR
+                                
+  02F4    2A 02C5                       ld      hl,(COMsize)    ; COMsize = minimal TPA needed by COM program
+  02F7    ED 4B 0006            	ld	bc,(0006)	; get top of TPA
+  02FB    B7                    	or	a		; clear carry
+  02FC    ED 42                 	sbc	hl,bc    	; if >=0 -> out of mem (hl=ram needed)
+  02FE    D2 0356                       jp      nc,outofmem
+  0301    C3 036F                       jp      load1           ; jp to load preparation
+                                
+  0304    11 036C               PrtCR:  ld      de,crlfm        ; print CR LF
+  0307    0E 09                 PrtTxt: ld      c,9             ; print text message pinted by in DE ('$' terminated)
+  0309    C3 0005                       jp      0005
+                                
+  030C    E5                    PrtHL:  push    hl
+  030D    4C                            ld      c,h
+  030E    CD 0313                       call    PrtH8
+  0311    E1                            pop     hl
+  0312    4D                            ld      c,l
+  0313    C5                    PrtH8:  push    bc
+  0314    79                            ld      a,c
+  0315    1F                            rra
+  0316    1F                            rra
+  0317    1F                            rra
+  0318    1F                            rra
+  0319    CD 031E                       call    PrtH4
+  031C    C1                            pop     bc
+  031D    79                            ld      a,c
+  031E    E6 0F                 PrtH4:  and     0fh
+  0320    C6 90                         add     a,90h
+  0322    27                            daa
+  0323    CE 40                         adc     a,40h
+  0325    27                            daa
+  0326    0E 02                         ld      c,2
+  0328    5F                            ld      e,a
+  0329    C3 0005                       jp      0005            ; BDOS: print char in E
+                                
+	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+  032C    4D 69 6E 20           tpam1:  DB      "Min required TPA: 0x"
+  0330    72 65 71 75           
+  0334    69 72 65 64           
+  0338    20 54 50 41           
+  033C    3A 20 30 78           
+  0340    24                            DB      "$"
+  0341    43 75 72 72           tpam2:  DB      "Current TPA     : 0x"
+  0345    65 6E 74 20           
+  0349    54 50 41 20           
+  034D    20 20 20 20           
+  0351    3A 20 30 78           
+  0355    24                            DB      "$"
+                                
+                                
+  0356                          outofmem: 
+  0356    11 035F               	ld 	de,oommsg	; print out of mem message
+  0359    CD 0307               	call 	PrtTxt
+  035C    C3 0000               	jp      0000            ; reset system, cold start, back to CP/M
+                                
+  035F    54 50 41 20           oommsg: DB      "TPA too small"
+  0363    74 6F 6F 20           
+  0367    73 6D 61 6C           
+  036B    6C                    
+  036C    0D 0A                 crlfm:  DB      13,10
+  036E    24                            DB      "$"
+                                
+                                
+  036F                          load1:                          ; load preparation
+  036F    21 03C7                       ld      hl,load2org+1   ; copy load2 to its destination address
+  0372    11 A803                       ld      de,load2
+  0375    06 6B                         ld      b,load2end-load2
+  0377                          ld1loop:
+  0377    7E                            ld      a,(hl)
+  0378    12                            ld      (de),a
+  0379    23                            inc     hl
+  037A    13                            inc     de
+  037B    10 FA                         djnz    ld1loop
+                                
+  037D    2A 02BD                       ld      hl,(COMPRG+0)   ; copy filename to FCB
+  0380    22 A84B                       ld      (FCB+1),hl
+  0383    2A 02BF                       ld      hl,(COMPRG+2)     
+  0386    22 A84D                       ld      (FCB+3),hl
+  0389    2A 02C1                       ld      hl,(COMPRG+4)     
+  038C    22 A84F                       ld      (FCB+5),hl
+  038F    2A 02C3                       ld      hl,(COMPRG+6)     
+  0392    22 A851                       ld      (FCB+7),hl
+  0395    11 A84A               	ld	de,FCB
+  0398    0E 0F                 	ld	c,15
+  039A    CD 0005                       call    0005            ; open file
+  039D    FE FF                         cp      255
+  039F    CA 03A5                       jp      z,openerr
+  03A2    C3 A803                       jp      load2           ; jp to load prog to mem
+                                
+  03A5                          openerr:
+  03A5    11 03B9               	ld 	de,opnerm	; print open error message
+  03A8    CD 0307               	call 	PrtTxt
+	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+  03AB    3E 24                         ld      a,'$'
+  03AD    32 A856                       ld      (FCB+12),a
+  03B0    11 A84B               	ld 	de,FCB+1	; print FCB filename
+  03B3    CD 0307               	call 	PrtTxt
+  03B6    C3 0000               	jp      0000            ; reset system, cold start, back to CP/M
+                                
+  03B9    43 61 6E 6E           opnerm: DB      "Cannot open "
+  03BD    6F 74 20 6F           
+  03C1    70 65 6E 20           
+  03C5    24                            DB      "$"
+                                
+                                
+  03C6    00                    load2org:       nop
+                                
+                                	.phase	(COMLEN or 255) + 260
+                                
+  A803                          load2:                          ; load prog to mem
+                                
+  A803    21 0100               	ld	hl,0100h	; store the COM program starting at $0100.
+  A806    E5                    ldloop:	push	hl
+  A807    EB                    	ex	de,hl
+  A808    CD A82D               	call	dmaset		; set DMA transfer address.
+  A80B    11 A84A               	ld	de,FCB		; and read the next record.
+  A80E    0E 14                 	ld      c,20
+  A810    CD 0005               	call    0005            ; BDOS read record
+  A813    B7                            or      a
+  A814    C2 A81F               	jp	nz,ldend	; end of file or read error?
+  A817    E1                    	pop	hl		; nope, bump pointer for next sector.
+  A818    11 0080               	ld	de,128
+  A81B    19                    	add	hl,de
+  A81C    C3 A806               	jp	ldloop
+  A81F    E1                    ldend:	pop	hl              ; finished reading
+  A820    3D                    	dec	a		; normal end of file?
+  A821    C2 A832               	jp	nz,rderr
+  A824    CD A82A               	call	stddma		; set standard transfer address.
+                                                                ; on cp/m there is not necessary to close files only being read
+  A827    C3 0100               	jp      0100h		; and execute the program.
+                                
+  A82A    11 0080               stddma:	ld	de,80h          ; set the standard dma addr
+  A82D    0E 1A                 dmaset:	ld	c,26            ; Routine to set the dma address to (DE).
+  A82F    C3 0005               	JP	0005
+                                
+  A832                          rderr: 
+  A832    0E 09                 	ld	c,9
+  A834    11 A83D               	ld 	de,rderrm	; print text message
+  A837    CD 0005               	call 	0005
+  A83A    C3 0000               	jp      0000            ; reset system, cold start, back to CP/M
+                                
+  A83D    52 65 61 64           rderrm: DB      "Read error",13,10
+  A841    20 65 72 72           
+  A845    6F 72 0D 0A           
+  A849    24                            DB      "$"
+                                
+                                                                ; FCB Layout
+                                                                ; DR F1 F2 F3 F4 F5 F6 F7 F8 T1 T2 T3 EX S1 S2 RC  .FILENAMETYP....
+                                                                ; AL AL AL AL AL AL AL AL AL AL AL AL AL AL AL AL  ................
+	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+                                                                ; CR R0 R1 R2                                      ....
+                                
+  A84A    00 00 00 00           FCB:    DB      0,  0,0,0,0,0,0,0,0, "COM",0,0,0,0 
+  A84E    00 00 00 00           
+  A852    00 43 4F 4D           
+  A856    00 00 00 00           
+  A85A    00 00 00 00                   DB      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0
+  A85E    00 00 00 00           
+  A862    00 00 00 00           
+  A866    00 00 00 00           
+  A86A    00 00 00 00                   DB      0,0,0,0
+                                  
+  A86E    00                    load2end:       nop
+                                
+                                	.dephase
+                                
+                                		org 	($ or 255)
+  04FF    00                    EndOfLoader:	nop
+                                
+  0500                          VPROG		equ	EndOfLoader + 1
+                                
+                                		; here comes the PRL prog to be relocated
+                                   
+                                   END 
+	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+0194 	CNT8            0180 	CNT8OK          0800 	COMFRE          
+A600 	COMLEN          02BD 	COMPRG          02C5 	COMSIZE         
+0213 	CONTRL          036C 	CRLFM           A82D 	DMASET          
+04FF 	ENDOFLOADER     0183 	ENDRELOC        A84A 	FCB             
+0213 	GSXFUNC         021D 	INTIN           025D 	INTOUT          
+0377 	LD1LOOP         A81F 	LDEND           A806 	LDLOOP          
+018E 	LEN             036F 	LOAD1           A803 	LOAD2           
+A86E 	LOAD2END        03C6 	LOAD2ORG        02C7 	LOADER          
+0100 	MAIN            0219 	NINTIN          021B 	NINTOUT         
+0215 	NPTSIN          0217 	NPTSOUT         0195 	OFFSET          
+035F 	OOMMSG          03A5 	OPENERR         03B9 	OPNERM          
+0356 	OUTOFMEM        0209 	PBLOCK          0183 	PRLSTART        
+0304 	PRTCR           031E 	PRTH4           0313 	PRTH8           
+030C 	PRTHL           0307 	PRTTXT          023D 	PTSIN           
+029D 	PTSOUT          A832 	RDERR           A83D 	RDERRM          
+0141 	RELOC1          014C 	RELOC2          0192 	RELOCADDR       
+0190 	RELOCBMP        0156 	RELOCOK         0196 	STARTUP         
+A82A 	STDDMA          032C 	TPAM1           0341 	TPAM2           
+0500 	VPROG           
+
+
+
+No Fatal error(s)
+
+
+    0209 	PBLOCK          0183 	PRLSTART       

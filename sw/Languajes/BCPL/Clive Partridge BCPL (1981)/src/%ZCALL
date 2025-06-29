@@ -1,0 +1,70 @@
+*  Zcalls and static variables for registers
+
+	GLOBAL	XRET
+
+CPMZCALL EQU    0F4FBH
+DPUSH	 EQU	38H		;Ycode
+
+BASE	DEFW	ENDMOD-$
+
+REGVEC  EQU	$
+AX:	DEFB	00   
+BX:	DEFW	0000
+DX:	DEFW	0000
+HX:	DEFW	0000
+
+
+REGIST:	DEFW	2
+	DEFB	0
+	PUSH	HL
+	LD	HL,REGVEC 
+	JP	XRET
+
+ZCALL:	DEFW	3
+	DEFB	DPUSH,2
+	DEFB	0
+	PUSH	HL
+	PUSH	BC
+	LD	A,L
+	LD	(ZBYTE),A
+	LD	A,(AX)
+	LD	BC,(BX)
+	LD	DE,(DX)
+	LD	HL,(HX)
+	CALL	CPMZCALL
+ZBYTE: 	DEFB	0
+	LD	(AX),A
+	LD	(BX),BC
+	LD	(DX),DE
+	LD	(HX),HL
+	POP	BC
+	JR	C,ERR
+        XOR	A
+ERR:	LD	(OSRESLT),A     ;0 if no error
+	LD	L,A
+	LD      H,0
+	JP	XRET
+
+OSRESLT:
+	DEFB	0
+
+RESULT: DEFW	2
+	DEFB	0
+	PUSH	HL
+	LD	A,(OSRESLT)
+	LD	L,A
+	LD	H,0
+	JP	XRET
+
+	IF	($.AND.1)=1
+	DEFB	0
+	ENDIF
+
+	DEFW	173,RESULT-BASE
+	DEFW	172,REGIST-BASE
+	DEFW	171,ZCALL-BASE
+	DEFW	3
+ENDMOD:	DEFW	173
+
+* EOF *
+

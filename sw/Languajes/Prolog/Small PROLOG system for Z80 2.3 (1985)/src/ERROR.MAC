@@ -1,0 +1,65 @@
+
+; ===========================================================
+;ERROR.Z80
+;	error routines for E-Prolog
+;	May 20, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+;errmsg(s)
+;  char * s;
+;  {
+;  if (outfile != stdout && outfile != null)
+;    {
+;    fclose(outfile);
+;    }
+;  outfile == stdout;
+;  msg(s);
+;  }
+ERRMSG::
+ERROR::
+	PUSH	HL
+	LD	A,(OUTF##)
+	OR	A
+	JR	Z,ERR1
+	INC	A
+	JR	Z,ERR1
+	CALL	CLOSE##
+ERR1:	XOR	A
+	LD	(OUTF##),A
+	POP	HL
+	CALL	MSG##
+	RET
+
+;fatal(s)
+;  char * s;
+FATAL::
+	CALL	ERROR
+	JP	CPM
+
+;imperr()
+IMPERR::
+	LD	HL,MSG1
+	JR	FATAL
+	DSEG
+MSG1:	DB	  CR,LF,"IMPLEMENTATION ERROR.",0
+	CSEG
+
+	END
+
+

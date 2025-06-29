@@ -1,0 +1,22 @@
+   10 REM Set up for degree-calculations and short floating variables
+   20 DEG : SHORT A,S,T,X,Y : ON ESC GOTO 200
+   30 REM Open the DG (Dazzler Graphics) driver which turns on Dazzler
+   40 OPEN\1\"$DG"
+   50 REM Clear screen, Position cursor, and set for Blue in Color mode
+   60 PUT\1,0,0\"KPSZHB"
+   70 REM Draw the four Lines which outline the playing field
+   80 PUT\1,0,255\"L" : PUT\1,255,255\"L" : PUT\1,255,0\"L" : PUT\1,0,0\"L"
+   90 REM Position the cursor just inside the border and ask for an angle
+  100 X=4 : Y=4 : PUT\1,X,Y\"P" : INPUT"ANGLE? ",A
+  110 REM Calculate X and Y increments from the angle given; 16 is speed factor
+  120 S=16*COS(A) : T=16*SIN(A)
+  130 REM Compute new (X,Y); if ball hits, sound "plop" and negate direction
+  140 X=X+S : Y=Y+T : IF X>251 OR X<4 THEN S=-S : X=X+S : GOSUB 190
+  150 IF Y>251 OR Y<4 THEN T=-T : Y=Y+T : GOSUB 190
+  160 REM Plot in No color at old cursor; Position and plot ball in Red at new
+  170 PUT\1,X,Y\"NDPRD" : GOTO 140
+  180 REM Subroutine to produce 2-cycle square wave "plop" noise from Joystick
+  190 OUT 25,127 : OUT 25,128 : OUT 25,127 : OUT 25,128 : RETURN
+  200 REM Close the DG driver (turn off the Dazzler) and stop
+  210 CLOSE\1\ : END
+

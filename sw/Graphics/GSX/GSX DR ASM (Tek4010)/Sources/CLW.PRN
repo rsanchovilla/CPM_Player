@@ -1,0 +1,105 @@
+
+
+                ;
+                ;	GSX-80 ASSEMBLER PROGRAM TO CLEAR WORKSTATION
+                ;
+                ;	TEKTRONIX TERMINALS HAVE A STORAGE TUBE THAT
+                ;	KEEPS THE DISPLAY. THIS PROGRAM CAN BE USED
+                ;	TO CLEAR THE WORKSTATION.
+                ;
+                ;	OCTOBER 2014, UDO MUNK
+                ;
+                ;	BUILD WITH:
+                ;	    ASM CLW
+                ;	    LOAD CLW
+                ;	    GENGRAF CLW
+                ;
+ 0000 =         WBOOT	EQU	0
+ 0005 =         BDOS	EQU	5
+ 0073 =         GSX	EQU	115			;GSX BDOS function
+                
+ 0100           	ORG	0100H
+                
+ 0100 0E73      	MVI	C,GSX			;BDOS function for GSX
+ 0102 111B01    	LXI	D,PBLOCK1		;pointer to parameter block
+ 0105 CD0500    	CALL	BDOS			;open workstation
+                
+ 0108 0E73      	MVI	C,GSX			;BDOS function for GSX
+ 010A 114301    	LXI	D,PBLOCK2		;pointer to parameter block
+ 010D CD0500    	CALL	BDOS			;clear workstation
+                
+ 0110 0E73      	MVI	C,GSX			;BDOS function GSX
+ 0112 115901    	LXI	D,PBLOCK3		;pointer to parameter block
+ 0115 CD0500    	CALL	BDOS			;close workstation
+                
+ 0118 C30000    	JMP	WBOOT
+                
+                ;
+                ;	parameter block 1: Open Workstation
+                ;
+ 011B 2501      PBLOCK1:DW	CNTRL1			;pointer to cntrl
+ 011D 2F01      	DW	INTIN1			;pointer to intin
+ 011F 6F01      	DW	PTSIN			;pointer to ptsin
+ 0121 D301      	DW	INTOUT			;pointer to intout
+ 0123 3702      	DW	PTSOUT			;pointer to ptsout
+                
+ 0125 0100      CNTRL1:	DW	1			;GDOS function 1, Open Workstation
+ 0127 0000      	DW	0
+ 0129 0000      	DW	0
+ 012B 0A00      	DW	10			;size of intin
+ 012D 0000      	DW	0
+                
+ 012F 0100      INTIN1:	DW	1			;device number 1
+ 0131 0100      	DW	1			;initial defaults
+ 0133 0100      	DW	1
+ 0135 0100      	DW	1
+ 0137 0100      	DW	1
+ 0139 0100      	DW	1
+ 013B 0100      	DW	1
+ 013D 0100      	DW	1
+ 013F 0100      	DW	1
+ 0141 0100      	DW	1
+                
+                ;
+                ;	parameter block 2: Clear Workstation
+                ;
+ 0143 4D01      PBLOCK2:DW	CNTRL2			;pointer to cntrl
+ 0145 5701      	DW	INTIN2			;pointer to intin
+ 0147 6F01      	DW	PTSIN			;pointer to ptsin
+ 0149 D301      	DW	INTOUT			;pointer to intout
+ 014B 3702      	DW	PTSOUT			;pointer to ptsout
+                
+ 014D 0300      CNTRL2:	DW	3			;GDOS function 3, Clear Workstation
+ 014F 0000      	DW	0
+ 0151 0000      	DW	0
+ 0153 0000      	DW	0
+ 0155 0000      	DW	0
+                
+ 0157 0000      INTIN2:	DW	0
+                
+                ;
+                ;	parameter block 3: Close Workstation
+                ;
+ 0159 6301      PBLOCK3:DW	CNTRL3			;pointer to cntrl
+ 015B 6D01      	DW	INTIN3			;pointer to intin
+ 015D 6F01      	DW	PTSIN			;pointer to ptsin
+ 015F D301      	DW	INTOUT			;pointer to intout
+ 0161 3702      	DW	PTSOUT			;pointer to ptsout
+                
+ 0163 0200      CNTRL3:	DW	2			;GDOS function 2, Close Workstation
+ 0165 0000      	DW	0
+ 0167 0000      	DW	0
+ 0169 0000      	DW	0
+ 016B 0000      	DW	0
+                
+ 016D 0000      INTIN3:	DW	0
+                
+                ;
+                ;	keep the large uninitialized arrays at the end of the program
+                ;	makes the executable smaller
+                ;
+ 016F           PTSIN:	DS	100
+ 01D3           INTOUT:	DS	100
+ 0237           PTSOUT:	DS	100
+                
+ 029B           	END

@@ -1,0 +1,85 @@
+***** NEVADA Fortran 3.3 (Mod 3) ** Compiling File: GRAPH.FOR *****
+
+0001 OPTIONS X
+     C
+     C GRAPH SINE FUNCTION FROM -PI TO PI IN INCREMENT OF .12
+     C
+0002         DIMENSION LINE(70)
+0003         INTEGER WHERE
+     C
+     C OPEN UNIT 6 TO WRITE TO CONSOLE
+     C
+0004         CALL OPEN (6,'CON:')
+     C
+     C WRITE TITLE
+     C
+0005         WRITE (6,2)
+0006 2       FORMAT (28X,'GRAPH OF SIN')
+0007         TYPE
+0008         TYPE
+     C
+     C SET PI AND -PI
+     C
+0009         PI=3.1415926
+0010         MPI=-PI
+     C
+     C MAIN LOOP
+     C
+0011         DO 100 ANGLE=MPI,PI,.12
+     C
+     C FIGURE OUT WHICH ELEMENT IN ARRAY SHOULD BE SET TO *,
+     C SIN RETURNS -1 TO 1 WHICH IS CONVERTED TO -35 TO 35
+     C AND THEN OFFSET SO FINAL RANGE IS 1 TO 70
+     C
+0012         WHERE=SIN(ANGLE)*35+35
+     C
+     C FIGURE OUT HOW MUCH TO BLANK IN THE OUTPUT ARRAY
+     C
+0013         IBLANK=MAX0(35,WHERE)
+     C
+     C AND BLANK IT
+     C
+0014         DO 15 I=1,IBLANK
+0015 15      LINE(I)=' '
+     C
+     C HMM... WHICH SIDE OF ZERO ARE WE ON?
+     C
+0016         IF (WHERE .GT. 35)  THEN
+     C
+     C RIGHT SIDE
+     C
+0017                         DO 20 I=36,WHERE
+0018 20                      LINE(I)='*'
+0019                             ELSE
+     C
+     C LEFT SIDE
+     C
+0020                         DO 30 I=WHERE,35
+0021 30                      LINE(I)='*'
+0022                             ENDIF
+     C
+     C SET "ZERO"
+     C
+0023         LINE(35)='+'
+     C
+     C AND THE SIN VALUE
+     C
+0024         LINE(WHERE)='*'
+     C
+     C IF THIS VALUE IS < 35, SET SO WE OUTPUT TO ZERO LINE
+     C
+0025         IF (WHERE .LE. 35)WHERE=35
+     C
+     C AND FINALLY OUTPUT THE LINE
+     C
+0026         WRITE (6,21) (LINE(I),I=1,WHERE)
+0027 21      FORMAT (70A1)
+0028 100     CONTINUE
+0029         CALL EXIT
+0030         END
+** Generated Code =   688 (Decimal), 02B0 (Hex) Bytes
+** Array Area     =   420 (Decimal), 01A4 (Hex) Bytes
+
+
+       No Compile errors
+

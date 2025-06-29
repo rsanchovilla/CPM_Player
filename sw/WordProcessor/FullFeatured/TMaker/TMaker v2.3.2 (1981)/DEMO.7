@@ -1,0 +1,62 @@
+wait 11 wait 35 wait  43 load demo.7s compute clean wait get demo.8 do
+You may not always want to keep your data in a  table,   because you
+might want to make many tables from one set of data.  T/Maker allows
+you to have data files from which the data can be extracted and  put
+into tables.  Such a file is edited using the normal  editor.  Lines
+which do not have an equal sign are just comments,  so you can  make
+your data file look like a table.  The point of a data  file  is  to
+associate values with names that you make up yourself.
+
+An example data file is shown below.
+
+name   = 'Acme Glass Company'
+street = '1245 North Town Street'
+city   = 'Falls Church'
+state  = 'Virginia'
+zip    = '22042'
+
+emloyee data                76          77         78         79
+----------------------------------------------------------------
+staff.76   =                 21          23         25         24
+
+sales   data
+-----------------------------------------------------------------
+sales.76  =               213450     224560   258790    327810
+
+cost    data
+-----------------------------------------------------------------
+costs.76   =               153450     186546   182132    221753
+
+
+
+
+
+
+
+You may put the same names in tables creating a mask or template  of
+a table.  The example below shows such a mask. The braces show where
+the data is to be placed.  Special symbols are used to say  how  you
+want the data placed.  Then the data can be loaded into the template
+using T/Maker's Load function.  We will  now  do  that  as  well  as
+the Compute and Clean Functions to show how a complete table can  be
+derived from a data base.
+
+       {<name                                                                }
+       {<street                                                 }
+       {!city                      }, {!state                   } {!zip       }
+
+
+                                Profit Per Salaried Employee
+
+                               1976     1977     1978     1979
+
+ex                       999,999,999  999,999  999,999  999,999
+
++      Sales             {>sales.76}  {     }  {     }  {     }
+-      Costs             { costs.76}  {     }  {     }  {     }
+
+=+     Net
+
+ /     Staff             { staff.76}  {     }  {     }  {     }
+ =     Net Per Employee
+

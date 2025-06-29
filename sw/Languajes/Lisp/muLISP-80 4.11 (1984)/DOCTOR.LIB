@@ -1,0 +1,306 @@
+%File:  DOCTOR.LIB		12/03/83	The Soft Warehouse %
+
+% To load this file in a muLISP system without muSTAR, use the 
+  command:  (RDS DOCTOR LIB).  The file SCRIPT.LIB must also be
+  on the logged drive or drive A:. %
+
+(SETQ ECHO T)
+
+% The Doctor is reviewing your records
+  right now.  Please relax and he will
+  be ready to serve you in a minute...
+
+              - The Doctor's secretary
+
+% (SETQ ECHO)
+
+(LOOP (PRIN1 (QUOTE *)) (EVAL (READ)) ((NULL RDS)) )
+
+(PUTD (QUOTE DEFUN) (QUOTE (NLAMBDA (NAM$ EXP$)
+  (PUTD NAM$ EXP$)
+  NAM$ )))
+
+(DEFUN SETQQ (NLAMBDA (NAM$ EXP$)
+  (SET NAM$ EXP$)
+  NAM$ ))
+
+
+(DEFUN DOCTOR (LAMBDA (FILE
+    SENTENCE KEYSTACK MEMSTACK FLIPFLOP)
+  ( ((NULL FILE))
+    (WRS (CAR FILE) (CADR FILE) (CADDR FILE))
+    (SETQ ECHO T) )
+  (TERPRI 2)
+  (PRTSENT (QUOTE (I AM AT YOUR SERVICE ";" JUST TELL ME
+    ANYTHING THAT TROUBLES OR CONCERNS YOU ".")))
+  (SPACES 2)
+  (PRTSENT (QUOTE (PLEASE END YOUR SENTENCES WITH A """."""
+    """?""" OR """!""" AND THEN HIT THE """RETURN""" KEY ".")))
+  (SPACES 2)
+  (PRTSENT (QUOTE (JUST SAY """GOODBYE""" WHEN YOU WANT TO LEAVE ".")))
+  (TERPRI)
+  (SETNONE)
+  (LOOP
+    (PRIN1 (QUOTE "P: "))
+    (SETQ SENTENCE (MAKSEN (READSENT)))
+    (SETQ KEYSTACK (CDR SENTENCE))
+    (SETQ SENTENCE (CAR SENTENCE))
+    ((MEMBER (QUOTE GOODBYE) SENTENCE)
+      (TERPRI)
+      (PRIN1 (QUOTE "D: "))
+      (PRTSENT (QUOTE (I HOPE I HAVE BEEN OF SOME SERVICE ";"
+        "LET'S" GET TOGETHER AGAIN ".")))
+      (QUOTE "") )
+    (TERPRI)
+    (PRIN1 (QUOTE "D: "))
+    (PRTSENT (ANALYZE))
+    (TERPRI)
+    (MEMORY) ) ))
+
+(DEFUN MAKSEN (LAMBDA (SENTENCE WORD FLAG RULE KEYSTACK)
+  (SETQ KEYSTACK (CONS))
+  (LOOP
+    ((NULL SENTENCE)
+      (CONS (REVERSE RULE) KEYSTACK) )
+    (SETQ WORD (CAR SENTENCE))
+    ( ((NUMBERP WORD)
+	(SETQ WORD (COND
+	  ((ZEROP WORD) ZERO)
+	  ((EQ WORD 1) ONE)
+	  ((EQ WORD 2) TWO)
+	  (NUMBER) )) ) )
+    ((MEMBER WORD PCTLIS)
+      (SETQ FLAG (MAKSEN (CDR SENTENCE)))
+      ((NULL (CDR KEYSTACK)) FLAG)
+      ((AND (CDDR FLAG) (NOT (GREATERP
+	  (GETP (CDR KEYSTACK) (QUOTE PRIORITY))
+	  (GETP (CDDR FLAG) (QUOTE PRIORITY)) )))
+	FLAG )
+      (CONS (REVERSE RULE) KEYSTACK) )
+    ( ((GETP WORD (QUOTE MEMR))
+	(SETQ MEMSTACK (APPEND (GETP WORD (QUOTE MEMR)) MEMSTACK)) ) )
+    ( ((GETP WORD (QUOTE PRIORITY))
+        ((AND (CDR KEYSTACK) (GREATERP
+ 	    (GETP WORD (QUOTE PRIORITY))
+	    (GETP (CDR KEYSTACK) (QUOTE PRIORITY)) ))
+	  (RPLACD KEYSTACK (CONS (CDR KEYSTACK) (CDR WORD))) )
+	(BCONC (CDR WORD) KEYSTACK) ) )
+    (SETQ WORD (COND 
+        ((GETP WORD (QUOTE TRANSLATION)))
+        (WORD) ))
+    (PUSH WORD RULE)
+    (POP SENTENCE) ) ))
+
+(DEFUN ANALYZE (LAMBDA (RULES PARSLST CR EXIT)
+  (SETQ FLIPFLOP (NOT FLIPFLOP))
+  (BCONC (GETP (QUOTE NONE) (COND
+      ((NULL FLIPFLOP)
+        (QUOTE MEM) )
+      ((QUOTE LASTRESORT)) ))
+    KEYSTACK )
+  (POP KEYSTACK)
+  (SETQ RULES (GETP KEYSTACK (QUOTE RULES)))
+  (LOOP
+    (SETQ EXIT NIL)
+    ( ((OR (NULL RULES) (EQ (CAR RULES) (QUOTE NEWKEY)))
+        (SETQ KEYSTACK (CAR KEYSTACK)) 
+        (SETQ RULES (GETP KEYSTACK (QUOTE RULES))) )
+      ((ATOM (CAR RULES))
+        (SETQ RULES (GETP (CAR RULES) (QUOTE RULES))) )
+      (SETQ PARSLST (CONS))
+      ((NOT (TEST (CAAR RULES) SENTENCE))
+        (POP RULES) )
+      (SETQ RULES (CAR (ADVANCE RULES)))
+      (SETQ CR (CAR RULES))
+      ((ATOM CR))
+      ((EQ (CAR CR) (QUOTE PRE))
+        (SETQ SENTENCE (RECONSTRUCT (CADR CR) PARSLST))
+        (SETQ RULES (CDDR CR)) )
+      (SETQ EXIT T) )
+    ((EVAL EXIT)
+      (RECONSTRUCT CR PARSLST) ) ) ))
+
+(DEFUN MEMORY (LAMBDA (PARSLST X)
+  (LOOP
+    ((NULL MEMSTACK))
+    (SETQ PARSLST (CONS))
+    ( ((TEST (CAAR MEMSTACK) SENTENCE)
+	(SETQ X (CDAR (CADR (GETP (QUOTE NONE) (QUOTE MEM)))))
+	(RPLACA X (CONS (CAR X) (CONS
+	  (RECONSTRUCT (CAAR (ADVANCE MEMSTACK)) PARSLST)
+ 	  (CDAR X) ))) ) )
+    (POP MEMSTACK) ) ))
+
+(DEFUN ADVANCE (LAMBDA (RULES)
+  (RPLACA (CDAR RULES) (COND
+    ((NULL (CDAR (CDAR RULES)))
+      (CDDAR RULES) )
+    ((CDAR (CDAR RULES))) )) ))
+
+(DEFUN RECONSTRUCT (LAMBDA (RULE PARSLST WORD SENTENCE V1)
+  (LOOP
+    ((NULL RULE)
+      (REVERSE SENTENCE) )
+    (SETQ WORD (CAR RULE))
+    ( ((NUMBERP WORD)
+	(SETQ WORD (NTH PARSLST WORD))
+	(SETQ V1 (CAR WORD))
+	(LOOP
+	  ((EQ V1 (CADR WORD)))
+          (PUSH (POP V1) SENTENCE) ) )
+      (PUSH WORD SENTENCE) )
+    (POP RULE) ) ))
+
+(DEFUN TEST (LAMBDA (D S CD PSV)
+  (SETQ PSV (CDR PARSLST))
+  (LOOP
+    ((NULL D)
+      ((NOT S)
+	(SETQ PARSLST (CAR PARSLST))
+	T )
+      (RN) )
+    (SETQ CD (CAR D))
+    ((ZEROP CD)
+      (TCONC PARSLST S)
+      (POP D)
+      ((NULL D)
+	(SETQ PARSLST (CAR PARSLST))
+	T )
+      (LOOP
+	((TEST D S) T)
+	(POP S)
+	((NULL S)
+	  (RN) ) ) )
+    ((NOT (RNP))
+      (RN) )
+    (POP S)
+    (POP D) ) ))
+
+(DEFUN RN (LAMBDA ()
+  (RPLACD PARSLST (COND
+    ((NOT PSV) NIL)
+    ((RPLACD PSV NIL)) )) NIL))
+
+(DEFUN RNP (LAMBDA ()
+  ((NULL S) NIL)
+  ((NUMBERP CD)
+    (TCONC PARSLST S)
+    (SETQ S (NTH S CD)) )
+  ((COND
+    ((ATOM CD)
+      (EQ CD (CAR S)) )
+    ((CAR CD)
+      (MEMBER (CAR S) CD) )
+    ((TEST4 (CAR S) (CDR CD))) )
+      (TCONC PARSLST S) T ) ))
+
+(DEFUN TEST4 (LAMBDA (CS L)
+  (LOOP
+    ((GETP CS (POP L)))
+    ((NULL L) NIL) ) ))
+
+(DEFUN BCONC (LAMBDA (X Y)
+  (SETQ X (CONS NIL X))
+  ((NULL Y)
+    (CONS X X) )
+  ((NULL (CAR Y))
+    (RPLACD Y X)
+    (RPLACA Y X) )
+  (RPLACA (CAR Y) X)
+  (RPLACA Y (CAAR Y)) ))
+
+(DEFUN GETP (LAMBDA (X Y)
+  (LOOP
+    (SETQ X (CDR X))
+    ((NULL X) NIL)
+    ((EQ (CAR X) Y)
+      (CADR X) )
+    (POP X) ) ))
+
+(DEFUN PUTP (LAMBDA (X Y Z XX)
+  (SETQ XX X)
+  (LOOP
+    ((NULL (CDR X))
+      (RPLACD X (LIST Y Z)) )
+    ((EQ (CADR X) Y)
+      (RPLACA (CDDR X) Z) )
+    (SETQ X (CDDR X))
+    ((NULL X)
+      (RPLACD XX (CONS Y (CONS Z (CDR XX)))) ) )
+  Z ))
+
+(SETQQ XXXX XXXX)
+
+(DEFUN SETNONE (LAMBDA (A)
+  (SETQ A XXXX)
+  (RPLACD A (GETP (QUOTE NONE) (QUOTE LASTRESORT)))
+  (PUTP (QUOTE NONE) (QUOTE MEM)
+    (LIST (QUOTE RULES) (LIST (LIST (LIST 0) (LIST NIL) A))) ) ))
+
+(DEFUN NTH (LAMBDA (X Y)
+  ((ZEROP Y)
+    (CONS NIL X) )
+  (LOOP
+    (SETQ Y (DIFFERENCE Y 1))
+    ((ZEROP Y) X)
+    (POP X) ) ))
+
+
+% * * *   C O N S O L E   I N T E R F A C E   R O U T I N E S   * * * %
+
+(DEFUN READSENT (LAMBDA (SENTENCE
+    WORD)
+  (LOOP
+    ( ((MEMBER (RATOM) SEPLIS)
+	(SETQ WORD (PACK (LIST WORD RATOM (RATOM))))
+	(POP SENTENCE) )
+      (SETQ WORD RATOM) )
+    ((MEMBER WORD TRMLIS)
+      (REVERSE SENTENCE) )
+    (PUSH WORD SENTENCE) ) ))
+
+(DEFUN PRTSENT (LAMBDA (SENTENCE
+    WORD)
+  (SETQ PRINT)
+  (PRTCAP (POP SENTENCE))
+  (LOOP
+    ((NULL SENTENCE)
+      (PRIN1 (QUOTE ?)) )
+    (SETQ WORD (POP SENTENCE))
+    ((MEMBER WORD TRMLIS)
+      (PRIN1 WORD) )
+    ( ((OR (NULL SENTENCE) (MEMBER (CAR SENTENCE) TRMLIS)
+	(MEMBER (CAR SENTENCE) PCTLIS) )
+	  (PRETERPRI WORD) ) )
+    ( ((MEMBER WORD PCTLIS))
+      (SPACES 1) )
+    ( ((MEMBER WORD CAPLIS)
+	(PRTCAP WORD) )
+      (PRIN1 WORD) ) )
+  (SETQ PRINT T) ))
+
+(DEFUN PRTCAP (LAMBDA (WORD)
+  ((NUMBERP WORD)
+    (PRIN1 WORD) )
+  (PRETERPRI WORD)
+  (SETQ WORD (UNPACK WORD))
+  (SETQ PRINT T)  (PRIN1 (CAR WORD))  (SETQ PRINT)
+  (LOOP
+    (POP WORD)
+    ((NULL WORD))
+    (PRIN1 (CAR WORD)) ) ))
+
+(DEFUN PRETERPRI (LAMBDA (WORD)
+  ((GREATERP (PLUS (SPACES) (LENGTH WORD)) (LINELENGTH))
+    (TERPRI) ) ))
+
+(SETQQ CAPLIS (I HAWAII))
+(SETQQ TRMLIS ("." ! ?))
+(SETQQ PCTLIS ("," ";" "(" ")" ":"))
+(SETQQ SEPLIS ("'" "-"))
+
+(SETQQ READ NIL)
+
+(OR (RDS (QUOTE SCRIPT) (QUOTE LIB))
+    (RDS (QUOTE SCRIPT) (QUOTE LIB) (QUOTE A)))
+

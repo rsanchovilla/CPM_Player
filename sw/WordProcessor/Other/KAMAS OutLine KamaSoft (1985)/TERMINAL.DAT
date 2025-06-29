@@ -1,0 +1,300 @@
+; Terminal Definitions for the Terminal Installation Program
+;-----------------------------------------------------------
+;  Last Revision: 26_Jun_84
+;
+;----------------------------------------------------------------------
+; Definition Format
+;------------------
+;	1) Any given line in this file is a Comment, a Terminal Title
+;	   or a Terminal Definition.
+;
+;	2) Comment Lines Start with a Semi-Colon (;) or an Astrisk (*). These
+;	   lines are for your benefit and are ignored by the translator.
+;
+;	3) Terminal Definition Lines start with a function identifier and
+;	   are followed by an argument (ie  Clr = *). The Function Identifier
+;	   MUST BE seperated from the Argument by an equal sign (=) even if
+;	   the argument is non-existant (ie Hi = ).
+;
+;	4) Terminal Title Lines MUST NOT contain an equal sign.
+;
+;	5) The minimum Terminal Definition contains the terminal title and
+;	   the terminal level definition. Only those Functions which differ
+;	   from the Defaults must be specified (see the table following this
+;	   section).
+;
+;	6) In the Argument Field:
+;		-Any characters between two single quotes are taken
+;		 literally (ie without any translation)
+;		-Two Single quotes together are translated as one single quote.
+;		-Control characters are preceeded by an Up-Arrow (^).
+;		-Numbers that are not enclosed in single quotes are translated
+;		 to their value in base 10.
+;		-The term Esc can be used to represent the character Escape
+;		-The term Sp can be used to represent the character Space.
+;
+;	7) In Cursor Position Definitions:
+;		-the terms R+ and C+ are used to specify the row and column
+;		 offsets. Additionally, The order in which these two terms
+;		 appear determines the order in which the row/column addresses
+;		 will be sent.
+;		-The word Ascii is used to indicate that the row/column
+;		 addresses should be sent to the terminal in ascii format
+;		 instead of the default binary.
+;
+;	8) TERMINAL.DAT is the Default Terminal Definition File; However,
+;	   An alternate file may be specified in the command tail. The
+;	   default extent for the alternate file is DAT unless otherwise
+;	   specified.
+;
+;	9) If an Astrisk (*) appears as the first character of the command
+;	   tail then the final message line (Push Reset to Make Changes
+;	   Immediately Effective) is suppressed.
+;
+;----------------------------------------------------------------------
+; ProtoType Default Definitions
+;------------------------------
+;
+; Cursor for All Levels
+;		Cursor	= Esc = R+32 C+32
+;
+; Level 1 .....	Clr	^Z (1Ah) or Esc '*'
+;		Home	^^ (1Eh)
+;		Left	^H (08h)
+;		Right	^L (0Ch)
+;		Up	^K (0Bh)
+;		Down	^J (0Ah)
+;
+; Level 2 .....	Hi	Esc (
+;		Lo	Esc )
+;		CeoL	Esc T
+;		CeoS	Esc Y
+;
+; Level 3 .....	InsLine Esc W
+;		InsChar Esc Q
+;		DelLine Esc R
+;		DelChar Esc E
+;
+; Level 4 .....	Screen attributes: Under_Lined Dim and Reverse
+;
+;----------------------------------------------------------------------
+
+Morrow 20
+	Level	= 3
+	Cursor	= Esc = C+32 R+32
+	Clr	= ^Z
+
+Morrow 50 (Freedom)
+	Level	= 3
+
+Morrow 60
+	Level	= 4
+
+Morrow 70
+	Level	= 4
+
+ACT 5A
+	Level	= 2
+	Cursor	= ^T R+0 C+0
+	Clr	= ^L
+	Home	= ^]
+	Right	= ^X
+	Up	= ^Z
+	Hi	= Esc B
+	Lo	= Esc C
+	CeoL	= Esc I
+	CeoS	= Esc K
+
+ADDS Viewpoint
+	Level	= 2
+	Cursor	= Esc Y R+32 C+32
+	Clr	= ^L
+	Home	= Esc Y SP SP
+	Right	= ^F
+	Up	= ^Z
+	Hi	= ^O Esc '0' A
+	Lo	= ^N
+	CeoL	= Esc K
+	CeoS	= Esc k
+
+ADDS Viewpoint 3A+
+	Level	= 1
+	Clr	= ^Z
+	Hi	=
+	Lo	=
+
+ADM 3A or 5
+	Level	= 1
+	Clr	= ^Z
+	Hi	=
+	Lo	=
+
+ADM 22
+	Level	= 3
+	Clr	= ^Z
+
+ADM 31
+	Level	= 3
+	Clr	= ^Z
+
+ANSI
+	Level	= 1
+	Cursor	= Esc [ R+1 ; C+1 H Ascii
+	Clr	= Esc [ H Esc [ J
+	Home	= Esc [ H
+	Left	= Esc [ D
+	Right	= Esc [ C
+	Up	= Esc [ A
+	Hi	=
+	Lo	=
+	CeoL	= Esc [ K
+	CeoS	= Esc [ J
+
+Hazeltine 1420/1500
+	Level	= 2
+	Cursor	= ~ ^Q C+0 R+0
+	Clr	= ~ ^\
+	Home	= ~ ^R
+	Right	= ^P
+	Up	= ~ ^L
+	Hi	= ~ ^_
+	Lo	= ~ ^Y
+	CeoL	= ~ ^O
+	CeoS	= ~ ^X
+
+Hazeltine Esprit
+	Level	= 2
+	Cursor	= ~ ^Q C+0 R+0
+	Clr	= ~ ^\
+	Home	= ~ ^R
+	Right	= ^P
+	Up	= ~ ^L
+	Hi	= ~ ^_
+	Lo	= ~ ^Y
+	CeoL	= ~ ^O
+	CeoS	= ~ ^X
+
+; Honeywell
+;	Level	= 3
+;	Cursor	= Esc f C+32 R+32
+;	Clr	= Esc `
+;	Home	= Esc H
+;	Right	= Esc C
+;	Up	= Esc A
+;	Hi	= Esc '3'
+;	Lo	= Esc '4'
+;	CeoL	= Esc K
+;	CeoS	= Esc J
+;	InsLine	= Esc [ L
+;	InsChar	= Esc [ I SP Esc [ J ^H
+;	DelLine	= Esc [ M
+;	DelChar	= Esc [ P
+
+Heath H19
+	Level	= 1
+	Cursor	= Esc Y R+32 C+32
+	Clr	= Esc E
+	Home	= Esc H
+	Left	= Esc D
+	Right	= Esc C
+	Up	= Esc A
+	Hi	=
+	Lo	=
+
+IBM 3101
+	Level	= 1
+	Cursor  = Esc Y R+32 C+32
+	Clr     = Esc L
+	Home    = Esc H
+	Left    = Esc D
+	Right   = Esc C
+	Up      = Esc A
+	Hi	= 
+	Lo	= 
+
+Qume 102
+	Level	= 3
+	Clr	= ^Z
+
+Soroc 120
+	Level	= 2
+	Clr	= Esc *
+	CeoL	= Esc T
+	CeoS	= Esc Y
+
+Televideo 910
+	Level	= 2
+	Clr	= Esc *
+	CeoL	= Esc T
+	CeoS	= Esc Y
+
+Televideo 912C/920
+	Level	= 3
+	Clr	= Esc *
+
+Televideo 925/950
+	Level	= 3
+	Clr	= Esc *
+
+Teleray 
+	Level   = 3
+	Cursor  = Esc Y R+32 C+32
+	Clr     = ^L
+	Home    = Esc H
+	Right   = Esc C
+	Up      = Esc A
+	Hi	= Esc R @
+	Lo	= Esc R B
+	CeoL    = Esc K
+	CeoS    = Esc J
+
+	InsLine = Esc L
+	InsChar = Esc P
+	DelLine = Esc M
+	DelChar = Esc Q
+
+Visual 200
+	Level	= 2
+	Cursor	= Esc Y R+32 C+32
+	Clr	= ^L
+	Home	= ^A
+	Left	= ^G
+	Right	= ^F
+	Up	= ^Z
+	Hi	= Esc '3'
+	Lo	= Esc '4'	
+	CeoL	= Esc x
+	CeoS	= Esc y
+
+VT52
+	Level	= 1
+	Cursor	= Esc Y R+32 C+32
+	Clr	= Esc H Esc J
+	Home	= Esc H
+	Left    = Esc D
+	Right	= Esc C
+	Up	= Esc A
+	Hi	= 
+	Lo	= 
+
+VT100
+	Level	= 2
+	Cursor	= Esc [ R+1 ; C+1 H Ascii
+	Clr	= Esc [ H Esc [ J
+	Home	= Esc [ H
+	Left	= Esc [ D
+	Right	= Esc [ C
+	Up	= Esc [ A
+	Hi	= Esc [ '1' m
+	Lo	= Esc [ '0' m
+	CeoL	= Esc [ K
+	CeoS	= Esc [ J
+
+Wyse
+	Level 	= 3
+	Clr	= ^Z
+
+None of the above
+	Level	= 0
+
+

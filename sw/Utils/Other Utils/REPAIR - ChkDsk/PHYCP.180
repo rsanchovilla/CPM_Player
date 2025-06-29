@@ -1,0 +1,773 @@
+	title	PHYCP (PHYsical CoPy) disk utility 
+; Program:  PHYCP
+; Author:   Malcom Kemp
+; Date:     December 27, 1987
+; Version:  1.0
+;
+vers	equ	1		; Version number 
+
+ctrl_c	equ	3
+lf	equ	10
+cr	equ	13
+no	equ	0
+yes	equ	not no
+
+wboot	equ	0		; Warm boot
+bdos	equ	5		; BDOS entry 
+dfcb	equ	5Ch		; Default FCB
+dfcb2	equ	6Ch		; Second file
+dbuf	equ	80h		; Default buffer
+llrec	    equ	128		; Length of logical record
+
+wrty_dw	equ	1		; Directory write
+wrty_un	equ	2		; Unallocated write
+
+	public	$memry
+	extrn	print,pstr,pa2hc,padc,phl4hc,phldc,cout,pafdc,phlfdc
+	extrn	retud,logud
+	extrn	z3vinit,tinit
+	extrn	cin,caps
+	extrn	cls,ereol,gxymsg,at,gotoxy,vprint
+	extrn	bbline,zfname,eval10
+
+	maclib	xcpm
+	maclib	xsys
+
+test	equ	no
+
+
+
+; Start of routine
+;
+; Environment Definition
+;
+z3env 	equ	0FE00h		; Environment descriptor
+;
+; External ZCPR3 Environment Descriptor
+;
+	jp	start
+	db	'Z3ENV'		; This is a zcpr3 utility
+	db	1		; External environment descriptor
+z3eadr:
+	dw	z3env
+
+start:
+	ld	hl,(z3eadr)	; Hl -> zcpr3 environment
+
+	call	z3vinit
+	call	tinit
+
+; Get our home user/disk
+
+	call	retud
+	ld	(home_ud),bc
+	ld	(dos_ud),bc	; Initialize parameter
+
+	ld	hl,(bdos+1)	; Get protect address
+	ld	l,0		; Make page aligned
+	dec	h		; Leave room for stack
+	ld	(top),hl	; And save for memory allocator
+	ld	sp,(bdos+1)	; Set stack
+	ld	hl,($memry)
+	ld	(bottom),hl	; Set bottom of memory
+	ld	(group_buf),hl	; Just use this memory
+
+	ld	a,(dfcb)	; Get input disk
+	or	a,a		; See if we have one
+	jp	z,baddisk
+	dec	a
+	cp	a,'P'-'A'+1
+	jp	nc,baddisk
+	ld	(ifp+disk),a	; save
+
+	ld	a,(dfcb2)	; Get output disk
+	or	a,a		; See if we have one
+	jp	z,baddisk
+	dec	a
+	cp	a,'P'-'A'+1
+	jp	nc,baddisk
+	ld	(ofp+disk),a	; Save for i/o
+
+	 if	test
+ 	 call	print
+	 db	cr,lf,'PHYCP drive ',0
+	 push	af
+	 add	a,'A'
+	 call	cout
+	 pop	af
+	 endif
+
+	ld	ix,ifp
+	call	getdpb		; Initialize input DPB structure
+	ld	ix,ofp
+	call	getdpb		; Initialize output DPB structure
+
+; Test for compatibility
+
+	ld	a,(ifp+dpb+dpb_bs)
+	ld	b,a
+	ld	a,(ofp+dpb+dpb_bs)
+	cp	a,b
+	jp	nz,bserr
+	ld	a,(ifp+dpb+dpb_bm)
+	ld	b,a
+	ld	a,(ofp+dpb+dpb_bm)
+	cp	a,b
+	jp	nz,bmerr
+	ld	a,(ifp+dpb+dpb_em)
+	ld	b,a
+	ld	a,(ofp+dpb+dpb_em)
+	cp	a,b
+	jp	nz,emerr
+	ld	hl,(ifp+dpb+dpb_maxb)
+	ld	de,(ofp+dpb+dpb_maxb)
+	or	a,a
+	sbc	hl,de
+	jp	nz,maxberr
+	ld	hl,(ifp+dpb+dpb_dire)
+	ld	de,(ofp+dpb+dpb_dire)
+	or	a,a
+	sbc	hl,de
+	jp	nz,direerr
+	ld	hl,(ifp+dpb+dpb_allblk)
+	ld	de,(ofp+dpb+dpb_allblk)
+	or	a,a
+	sbc	hl,de
+	jp	nz,allblkerr
+
+do_copy	.new
+	call	print
+	db	cr,lf,lf,'Physical Copy Disk "',0
+	ld	a,(ifp+disk)
+	add	a,'A'
+	call	cout
+	call	print
+	db	'" to Disk "',0
+	ld	a,(ofp+disk)
+	add	a,'A'
+	call	cout
+	call	print
+	db	'", Destroying Disk "',0
+	call	cout
+	call	print
+	db	'".  Continue (Y or N)?',0
+	call	cin_cc
+	cp	a,'Y'
+	jp	nz,exit
+
+	ld	bc,0		; Load counter
+1$:
+	ld	hl,(ifp+dpb+dpb_maxb)
+	or	a,a		; Clear carry
+	sbc	hl,bc		; Test for end
+	jr	c,do_copy_end
+	push	bc
+	pop	hl
+	call	print
+	db	cr,lf,'Group ',0
+	call	phlfdc
+
+	push	bc
+	call	readgr
+	pop	bc
+	jr	nz,2$
+	push	bc
+	call	writegr
+	pop	bc
+	jr	nz,3$
+	inc	bc
+	jr	1$		; Do next one
+
+msg1:	db	'read group',0
+msg2:	db	'write group',0
+
+2$:
+	ld	hl,msg1
+	jr	4$
+3$:
+	ld	hl,msg2
+4$:
+	call	print
+	db	cr,lf,'Error: ',0
+	call	pstr
+
+do_copy_end:
+	ld	hl,(home_ud)
+	ld	(dos_ud),hl	; Set to default UD
+	call	log_default
+	call	print
+	db	cr,lf,'Copy complete.',0
+	jp	exit
+	
+;
+; Read group
+;  Input:
+;	BC = group number
+;
+readgr:	.new
+	ld	hl,(group_buf)		; Get buffer address
+	ld	(curdma),hl		; And save
+
+	ld	hl,(ifp+dpb+dpb_maxb)	; Get maximum block
+	inc	hl			; +1
+	or	a,0FFh			; Clear carry, set return error status
+	sbc	hl,bc
+	ret	c			; Bad block number
+
+	push	bc
+	pop	hl			; Get Group number in HL
+
+	 if	test
+	 call	print
+	 db	cr,lf,' grp:',0
+	 call	phl4hc
+	 endif
+
+	ld	a,(ifp+sec_grp)		; Sectors/group
+	ld	e,a			; Into E
+	call	mlt16x8			; Find sector number
+	ld	a,(ifp+dpb+dpb_spt)	; Sectors per track
+	ld	e,a			; Into E
+	call	div16x8			; Assume sectors < 16 bits
+					; HL = track, E = Sector
+	ld	a,e
+	ld	(cursec),a		; Save sector
+	ld	de,(ifp+dpb+dpb_tbfdir)	; Add in tracks before directory
+	add	hl,de
+	ld	(curtrk),hl		; Save track
+	ld	a,(ifp+disk)		; Get our target disk
+	ld	c,a
+	ld	b,0			; Load BC with disk
+	ld	e,1			; Show no new mount
+	ld	hl,(wboot+1)
+	ld	l,b_seldsk		; Get bios entry
+	call	callhl			; And go there
+
+	ld	a,(ifp+sec_grp)		; Get number of sectors to be read
+	ld	b,a			; Into counter
+1$:
+
+	 if	test
+	 call	print
+	 db	' trk:',0
+	 ld	hl,(curtrk)
+	 call	phl4hc
+	 call	print
+	 db	' sec:',0
+	 ld	a,(cursec)
+	 call	pa2hc
+	 endif
+
+	push	bc			; Save counter
+	ld	bc,(curtrk)
+	ld	hl,(wboot+1)
+	ld	l,b_settrk
+	call	callhl			; Set track
+
+	ld	bc,(cursec)		; Get logical sector
+	ld	b,0			; Sector is only one byte
+	ld	de,(ifp+skew)		; Get skew
+	ld	hl,(wboot+1)
+	ld	l,b_sectran		; Get entry
+	call	callhl			; Get our physical sector
+
+	ld	b,h
+	ld	c,l			; Put physical sector in BC
+	ld	hl,(wboot+1)
+	ld	l,b_setsec		; Get entry
+	call	callhl			; And set sector
+
+	ld	bc,(curdma)		; Get DMA
+	ld	hl,(wboot+1)
+	ld	l,b_setdma		; Get entry
+	call	callhl			; And set DMA
+
+
+	ld	hl,(wboot+1)
+	ld	l,b_read		; Get entry
+	call	callhl			; And read record
+	or	a,a			; Check status
+	ret	nz			; Had a problem
+
+	ld	hl,(curdma)
+	ld	de,llrec
+	add	hl,de
+	ld	(curdma),hl		; Bump up DMA
+
+	ld	a,(ifp+dpb+dpb_spt)	; Get sectors per track
+	ld	b,a			; Into B
+	ld	a,(cursec)
+	inc	a			; Bump up sector
+	ld	(cursec),a
+	cp	a,b
+	jr	c,2$			; O.K., go on
+
+	xor	a,a			; Get zero
+	ld	(cursec),a		; And set sector to zero
+	ld	hl,(curtrk)
+	inc	hl
+	ld	(curtrk),hl		; Bump track
+
+2$:
+	pop	bc			; Get our counter
+
+	 if	test
+	dec	b
+	jp	nz,1$
+	 else
+	djnz	1$			; Loop through again
+	 endif
+
+	xor	a,a			; Set good status
+	ret
+;
+; Write group
+;  Input:
+;	IY -> Window index
+;	dfcb is set to file and opened
+;	dos_ud is set to output UD
+;
+writegr:	.new
+	ld	hl,(group_buf)		; Get buffer address
+	ld	(curdma),hl		; And save
+
+	ld	hl,(ofp+dpb+dpb_maxb)	; Get maximum block
+	inc	hl			; +1
+	or	a,0FFh			; Clear carry, set return error status
+	sbc	hl,bc
+	ret	c			; Bad block number
+
+	push	bc
+	pop	hl			; Get Group number in HL
+
+	 if	test
+	 call	print
+	 db	cr,lf,' grp:',0
+	 call	phl4hc
+	 endif
+
+	ld	a,(ofp+sec_grp)		; Sectors/group
+	ld	e,a			; Into E
+	call	mlt16x8			; Find sector number
+	ld	a,(ofp+dpb+dpb_spt)	; Sectors per track
+	ld	e,a			; Into E
+	call	div16x8			; Assume sectors < 16 bits
+					; HL = track, E = Sector
+	ld	a,e
+	ld	(cursec),a		; Save sector
+	ld	de,(ofp+dpb+dpb_tbfdir)	; Add in tracks before directory
+	add	hl,de
+	ld	(curtrk),hl		; Save track
+	ld	a,(ofp+disk)		; Get our target disk
+	ld	c,a
+	ld	b,0			; Load BC with disk
+	ld	e,1			; Show no new mount
+	ld	hl,(wboot+1)
+	ld	l,b_seldsk		; Get bios entry
+	call	callhl			; And go there
+
+	ld	a,(ofp+sec_grp)		; Get number of sectors to be read
+	ld	b,a			; Into counter
+1$:
+
+	 if	test
+	 call	print
+	 db	' trk:',0
+	 ld	hl,(curtrk)
+	 call	phl4hc
+	 call	print
+	 db	' sec:',0
+	 ld	a,(cursec)
+	 call	pa2hc
+	 endif
+
+	push	bc			; Save counter
+	ld	bc,(curtrk)
+	ld	hl,(wboot+1)
+	ld	l,b_settrk
+	call	callhl			; Set track
+
+	ld	bc,(cursec)		; Get logical sector
+	ld	b,0			; Sector is only one byte
+	ld	de,(ofp+skew)		; Get skew
+	ld	hl,(wboot+1)
+	ld	l,b_sectran		; Get entry
+	call	callhl			; Get our physical sector
+
+	ld	b,h
+	ld	c,l			; Put physical sector in BC
+	ld	hl,(wboot+1)
+	ld	l,b_setsec		; Get entry
+	call	callhl			; And set sector
+
+	ld	bc,(curdma)		; Get DMA
+	ld	hl,(wboot+1)
+	ld	l,b_setdma		; Get entry
+	call	callhl			; And set DMA
+
+
+	ld	hl,(wboot+1)
+	ld	l,b_write		; Get entry
+	pop	bc
+	push	bc			; Get count
+	ld	c,wrty_un
+	djnz	2$			; See if this is last one
+	ld	c,wrty_dw		; Yes, make it a directory write
+2$:
+	call	callhl			; And write record
+	or	a,a			; Check status
+	ret	nz			; Had a problem
+
+	ld	hl,(curdma)
+	ld	de,llrec
+	add	hl,de
+	ld	(curdma),hl		; Bump up DMA
+
+	ld	a,(ofp+dpb+dpb_spt)	; Get sectors per track
+	ld	b,a			; Into B
+	ld	a,(cursec)
+	inc	a			; Bump up sector
+	ld	(cursec),a
+	cp	a,b
+	jr	c,3$			; O.K., go on
+
+	xor	a,a			; Get zero
+	ld	(cursec),a		; And set sector to zero
+	ld	hl,(curtrk)
+	inc	hl
+	ld	(curtrk),hl		; Bump track
+
+3$:
+	pop	bc			; Get our counter
+
+	 if	test
+	dec	b
+	jp	nz,1$
+	call	cin_cc
+	 else
+	djnz	1$			; Loop through again
+	 endif
+
+	xor	a,a			; Set good status
+	ret
+
+;
+; Get disk parameter block--fill in skew, dpb structure
+;  Call:
+;	IX -> file parameters
+;  Destroys all registers
+;
+getdpb:	.new
+	ld	a,(ix+disk)		; Get disk
+	ld	c,a
+	ld	b,0			; Into BC
+	ld	hl,(wboot+1)
+	ld	l,b_seldsk		; Get entry
+	call	callhl			; And do select
+	ld	a,h
+	or	a,l
+	jp	z,getdpberr		; Disk not legal
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)			; Get skew
+	ld	(ix+skew+1),b
+	ld	(ix+skew),c		; And save
+
+	 if	test
+	push	hl
+	push	bc
+	pop	hl
+	call	print
+	db	' skew ',0
+	call	phl4hc
+	pop	hl
+	 endif
+
+	ld	de,dhb_dpbp-1		; Offset to dpb pointer
+	add	hl,de
+	ld	e,(hl)
+	inc	hl
+	ld	d,(hl)			; Get pointer to bios structure
+	push	ix
+	pop	hl			; Parameter pointer
+	ld	bc,dpb			; Offset to DPB
+	add	hl,bc			; HL -> our copy of DPB
+	ex	de,hl			; DE -> our copy, HL -> real DPB
+	ld	bc,dpb_length		; And length
+	ldir				; Move into place
+
+	 if	test
+	 call	print
+	 db	cr,lf,'DPB ',0
+	 push	ix
+	 pop	hl
+	 ld	bc,dpb
+	 add	hl,bc
+	 ld	b,15
+xxx:
+	 ld	a,(hl)
+	 call	pa2hc
+	 call	print
+	 db	' ',0
+	 inc	hl
+	 djnz	xxx
+	 endif
+
+
+	ld	a,(ix+dpb+dpb_bs) ; Get block shift
+	ld	b,a		; Into B
+	ld	a,1		; Base (2^0)
+1$:
+	add	a,a		; * 2
+	djnz	1$		; Loop
+	ld	(ix+sec_grp),a	; Save sectors per group
+
+	 if	test
+	 call	print
+	 db	' sec/grp ',0
+	 call	pa2hc
+	 endif
+
+	ld	b,a
+	ld	c,llrec
+	mlt	bc		; Get length of group
+	ld	(ix+grp_len+1),b
+	ld	(ix+grp_len),c	; And save
+
+	ret			; Return
+
+getdpberr:
+	call	print
+	db	cr,lf,'Illegal drive in select.',0
+	jp	exit
+
+;
+; Routine to multiply HL by E (16bit X 8bit)
+;	Return:
+;	    A = MSB
+;	    HL = lower two bytes
+; Destroys DE
+;
+mlt16x8:
+	ld	d,h		; Save upper byte
+	ld	h,e		; Get multiplier
+	mlt	hl		; First product
+	mlt	de		; And second
+	ld	a,d		; High byte of product
+	ld	d,e		; Move middle byte into position for add
+	ld	e,0		; This product has zero lower byte
+	add	hl,de		; Add for middle and lower byte
+	adc	a,0		; Adjust high byte
+	ret
+;
+; Routine to divide HL by E (16bit / 8bit)
+;	Return:
+;	    HL = Integer quotient
+;	    E = Remainder
+; Destroys D
+;
+div16x8:
+	push	af
+	push	bc		; Save registers
+
+	push	hl
+	pop	bc		; Get dividend in BC
+	ld	a,e		; Check divisor
+	or	a,a
+	jr	nz,dv16x8	; O. K., go on
+	ld	c,0		; Simulate divide by 1
+	jr	dv16x8r	
+dv16x8:
+	ld	hl,0		; Clear quotient
+dv16x8l:
+	inc	hl		; Count in dividend
+	ld	a,c		; Lower byte
+	sub	a,e		; Subtract divisor
+	ld	c,a		; Back to byte
+	ld	a,b		; Get upper byte
+	sbc	a,0		; Get the whole thing
+	ld	b,a
+	jr	nc,dv16x8l	; Do next one
+	ld	a,c		; One too many, get it back
+	add	a,e
+	ld	c,a
+	ld	a,b
+	adc	a,0
+	ld	b,a
+	dec	hl		; And take off count
+dv16x8r:
+	push	bc
+	pop	de		; Get remainder
+
+	pop	bc
+	pop	af		; Restore registers
+	ret
+;
+; Call service to simulate call (hl)
+;
+callhl:
+	jp	(hl)
+
+;
+; Allocate memory
+;  Call:
+;	BC = requested length
+;  Return:
+;	HL -> beginning of block (HL = 0 means no allocation made)
+;  All registers destroyed
+;
+alloc:
+	ld	hl,(top)
+	ld	de,(bottom)
+	or	a,a		; Clear carry
+	sbc	hl,de		; Get available memory
+	sbc	hl,bc		; And see if we have enough
+	ld	hl,0		; Get error ready
+	ret	c		; No room
+	ld	hl,(bottom)	; Get current bottom
+	push	hl		; Save for return
+	add	hl,bc		; Add requested
+	ld	(bottom),hl	; Bump up
+	pop	hl		; Get pointer
+	ret
+
+; Edited cin with ctrl_c check
+cin_cc:
+	call	cin_e
+	cp	a,ctrl_c
+	jp	z,exit
+	ret
+; Edited cin
+cin_e:
+	call	cin
+	call	caps
+	ret
+sak:
+	call	print
+	db	cr,lf,'Strike any key to continue.',0
+	jr	cin_cc
+; Error reporting
+bserrmsg
+	db	'BS not same.',0
+bserr:
+	ld	hl,bserrmsg
+	jr	error
+bmerrmsg
+	db	'BM not same.',0
+bmerr:
+	ld	hl,bmerrmsg
+	jr	error
+emerrmsg
+	db	'EM not same.',0
+emerr:
+	ld	hl,emerrmsg
+	jr	error
+maxberrmsg
+	db	'Max group not same.',0
+maxberr:
+	ld	hl,maxberrmsg
+	jr	error
+direerrmsg
+	db	'Num dir entries not same.',0
+direerr:
+	ld	hl,direerrmsg
+	jr	error
+allblkerrmsg
+	db	'Directory groups not same.',0
+allblkerr:
+	ld	hl,allblkerrmsg
+	jr	error
+
+error:
+	call	print
+	db	cr,lf,'Error: ',0
+	call	pstr
+	jp	exit
+
+ds_alloc_err:
+overflow:
+
+baddisk:
+help:
+	call	print
+	db	cr,lf,'Usage:'
+	db	cr,lf,'  PHYCP <source>: <target>:'
+
+	db	0
+
+	jp	exit
+exit:
+	call	log_default		; Sync DOS, BIOS-- log in default
+	jp	wboot
+;
+; Force sync of DOS, BIOS selected disk. Log in default DU
+;  Destroys all registers
+;
+log_default:
+
+	 if	test
+	call	print
+	db	'LD ',0
+	ld	a,(dos_ud+1)		; Get disk
+	add	a,'A'
+	call	cout
+	ld	a,(dos_ud)
+	call	pafdc
+	ld	a,':'
+	call	cout
+	 endif
+
+	ld	a,(dos_ud+1)		; Get DOS current disk
+	ld	c,a
+	ld	b,0			; Into BC
+	ld	e,1			; Show no new mount
+	ld	hl,(wboot+1)
+	ld	l,b_seldsk
+	call	callhl			; And Select at BIOS
+	ld	bc,(dos_ud)
+	call	logud
+	ret
+
+; Memory management
+;  Map:
+;	$memry       - bottom       -- structure allocations (gs_ and fs_)
+;	bottom       - top          -- empty
+;	top          - gr1buf       -- window2 group buffer
+;	gr1buf       - protect-106h -- window1 group buffer
+;	protect-106h - protect      -- stack
+;
+;	bottom      - gr1buf        -- Used by initialize for directory buffer
+;
+$memry	ds	2
+bottom	ds	2			; Bottom of unallocated memory
+top	ds	2			; Top of unallocated memory
+
+; Read and Write group working storage
+
+home_ud	ds	2			; Home user/disk
+dos_ud	ds	2			; Current BDOS user, disk
+curdma	ds	2			; Current DMA address
+curtrk	ds	2			; Current track
+cursec	ds	1			; Current sector
+group_buf  ds	2			; Group buffer
+
+; File parameters
+
+disk	equ	0			; Disk (A = 0)
+skew	equ	1			; Skew word
+sec_grp	equ	3			; Sectors per group
+grp_len equ	4			; Length of group in bytes
+dpb	equ	6			; Disk parameter block
+
+  ; Input file parameters
+
+ifp:
+	ds	dpb_length+6
+
+  ; Output file parameters
+
+ofp:
+	ds	dpb_length+6
+
+	end
+

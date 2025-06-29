@@ -1,0 +1,57 @@
+***** NEVADA Fortran 3.3 (Mod 3) ** Compiling File: B:SIEVE.FOR *****
+
+0001 C THIS PROGRAM IS USUALLY RUN FOR ALL
+     C PRIME NUMBERS LESS THAN 8000, BECAUSE
+     C OF MEMORY RESTRICTIONS IN THE
+     C COMPILER THIS NUMBER IS REDUCED
+     C HERE TO 2000
+     C
+     C COMPUTING WITH THE AMSTRAD
+     C NOVEMBER 1986
+     C
+0002       LOGICAL PRIME
+0003       COMMON NP, PRIME(2000)
+0004       NOUT=6
+0005       CALL OPEN (NOUT,'CON:')
+0006       NP=2000
+0007       NTRY=1
+0008       WRITE (NOUT,101)
+0009 101   FORMAT (' STARTED &G')
+0010       DO 1 I=1,NTRY
+0011       CALL SIEVE
+0012 1     CONTINUE
+0013       WRITE (NOUT,102)
+0014 102   FORMAT (' FIN &G')
+0015       CALL EXIT
+0016       END
+     C
+** Common block //     requires 12006 (Decimal), 2EE6 (Hex) Bytes
+** Generated Code =   218 (Decimal), 00DA (Hex) Bytes
+     
+0001       SUBROUTINE SIEVE
+0002       INTEGER MAXTRY
+0003       LOGICAL PRIME
+0004       COMMON NP, PRIME(2000)
+     C
+0005       DO 1 I=1,NP
+0006       PRIME (I)=.TRUE.
+0007 1     CONTINUE
+     C
+0008       MAXTRY = NP - 1
+0009       DO 2 I=2,MAXTRY
+0010       IF (.NOT.PRIME(I)) GO TO 2
+0011       IPI=I+I
+     C
+0012       IF (IPI.GT.NP) GO TO 2
+0013       DO 3 J=IPI,NP,I
+0014       PRIME(J)=.FALSE.
+0015 3     CONTINUE
+0016 2     CONTINUE
+0017       RETURN
+0018       END
+** Common block //     requires 12006 (Decimal), 2EE6 (Hex) Bytes
+** Generated Code =   274 (Decimal), 0112 (Hex) Bytes
+
+
+       No Compile errors
+

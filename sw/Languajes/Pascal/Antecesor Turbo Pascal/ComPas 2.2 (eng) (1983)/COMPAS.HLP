@@ -1,0 +1,199 @@
+%*COMPAS ON-LINE HELP: Editor Commands.
+
+Upper commands valid in MOVE mode, lower commands in EDIT mode.
+
+&A  Enter EDIT mode.                    &C  Cursor Left.
+SPACE     Cursor Right.                 &H  Cursor Left.                 
+&I  Cursor Right.                 &B  Cursor Right 8 characters.   
+&D  Move to start of new line.    &E  Move to start of line.  
+&F  Switch autotab.               &J  Cursor Up.       
+&K  Cursor Down.                  &L  Page Up.        
+&M  Page Down.                    &N  Move to beggining of text.
+&O  Move to end of text.          &P  Find string.     
+&Q  Continue search.              &R  Replace string.    
+&S  Replace and continue.         &T  Set End of block Mark
+&U  Delete block.                 &W  Insert edit-buffer.
+&V  Print block.                  &X  Exit editor.                
+
+&A  Enter MOVE mode.              &C  Delete left character.
+&H  Delete left character.        &I  ?????                  
+&B  Tab 8 characters.             &D  Start new line.
+&E  Delete up to line start.      &F  Switch autotab.      
+% COMPAS ON-LINE HELP: Line Commands.
+
+COMPAS is ready to receive commands on the '>>' prompt.                        
+Available comands are:                                           
+
+LOAD     Load program from disk.       SAVE      Save program to disk.  
+EDIT     Start editor.                 COMPILE   Compile source program.
+RUN      Execute program.              PROGRAM   Compile to disk.               
+OBJECT   Compile to .OBJ file.         FIND      Find run-time error in source
+WHERE    Find compile error in source  DIR       Display disk directory.   
+NEW      Log new inserted disk.        MEMORY    Display memory status. 
+ZAP      Delete source code.           HELP      Display help.         
+QUIT     Return to CP/M.   
+
+Note: all commands can be abreviated to the first letter.       
+
+More help on commands by typeing 'HELP' or 'H' followed by the command (or
+commands first letter). 'HELP *' display editor help screen. When inside the
+editor, use @G to show the help screen.                                      
+             .
+%ECOMPAS ON-LINE HELP: EDIT command.   
+
+EDIT command start the editor. There are two working modes: MOVE mode and    
+EDIT mode. In MOVE mode marked blocks can be moved around the text. In       
+EDIT mode characters can be inserted and deleted. Editior starts in            
+MOVE mode. Use @A to switch between MOVE and EDIT mode.              
+
+When in EDIT mode, deleted characters are stored in an edit-buffer. Press      
+@W in MOVE mode to insert the edit-buffer al any place.                   
+use @G to show the help screen
+%LCOMPAS ON-LINE HELP: LOAD command.
+
+LOAD command is used to load source code form a disk file. Command format
+is:
+
+        LOAD <filename>
+
+The extension '.PAS' is added is non is given
+If the file does not exist, COMPAS prints 'No such file'.
+If there is no space for the file in the working memory, 'File too big '
+is printed
+%SCOMPAS ON-LINE HELP: SAVE command.
+
+SAVE command is used to store source code to a disk file. Command format
+is:
+
+        SAVE <filename>
+
+The extension '.PAS' is added is non is given. If the file already exists it
+is renamed with '.BAK' extension prior to creating new .PAS version.
+If the disk's directory is full, COMPAS display 'Directory is full' . Id 
+the disk is full, COMPAS shows 'Disk is full'. If a new disk is inserted,
+use the 'NEW' command to log it before isuing SAVE again.
+%CCOMPAS ON-LINE HELP: COMPILE command.
+
+The compiler is launched with the COMPILE command. Objecto code generated is
+stored directly in working memory, immediately after the source code text. 
+If there is no compile error, the compiler displays the size of the object 
+code and data area and the number of unused free bytes:
+
+        Code: rrrrr bytes (aaaa-bbbb)
+        Free: sssss bytes (cccc-dddd)
+        Data: ttttt bytes (eeee-ffff)
+
+The start and end address are shown in hexadecimal
+
+Note: when the editor is used, the object code is erased.
+%RCOMPAS ON-LINE HELP: RUN command.
+
+RUN command used to start the program. If object code does not exists, 
+the compiler is launched. 
+
+If there is a run-time error, the following message will be printed: 
+
+         EXECUTION ERROR 04 AT PC = 054E 
+         Program terminated 
+
+The FIND command can then be used to find the error in source code
+(see 'HELP FIND')
+%PCOMPAS ON-LINE HELP: PROGRAM command.
+
+Starts the compiler, but stores the object code in a file rather than in
+memory. Posible parameters:
+
+        PROGRAM <filename>
+        PROGRAM <filename>,<start>
+        PROGRAM <filename>,<start>,<end>
+        PROGRAM <filename>,,<end>
+
+where <start> and <slut> are 4 digitis hex-address. Sistem append '.COM' 
+extension if none given. (op til fire hexcifre). Systemet v{lger
+automatisk '.COM' hvis filtypen udelades.
+
+<start> indicates the object code start address. If <start> omitted, the 
+end address is automatically set. <End> indicates the address of top of 
+the program's working storage. If <End> omitted the top of available memory
+declared by CP/M Operating System is used. The program will not  run in a 
+computer with less available memory. 
+
+The program generated includes a copy of the COMPAS run-time. the program 
+can be started from the CP/M command line only by typing its name.
+%OCOMPAS ON-LINE HELP: OBJECT command.
+
+OBJECT command is similar to the PROGRAM command, except that the runtime
+program section is not included in the disk file generated by the compiler. 
+Also the extension is not '.COM' but '.OBJ'. 
+
+Object files can only be started by a call with the standard procedure 
+from another COMPAS program file. 
+%FCOMPAS ON-LINE HELP: FIND command.
+
+FIND command is used to find the position in source code that corresponds to 
+a given address in the object code. Possible command line is: 
+
+         FIND 
+         FIND <offset> 
+
+where <offset> is the relative address in object code.
+The address must be specified in 4 hexadecimal digits. If offset is 
+not given, the last run-time error address will be used. Just typing 'FIND' 
+after a run-time error will show the source code responsible for 
+the failure. 
+
+If the compiler finds the address indicated, it stops and prints' 
+Target address found. Press <space>'. When <space> is pressed the editor 
+starts and cursor automatically moves to the location in the source 
+code found. Otherwise the compiler shows 'Target address not found' 
+and returns to the command prompt.
+%WCOMPAS ON-LINE HELP: WHERE command.
+
+WHERE command starts the editor and move the cursor to a given position in
+source text. Possible command line is :
+
+        WHERE
+        WHERE <offset>
+
+where <offset> indicates the relative address in the source code.
+If <offset> is not specified, the last compile error is used.
+
+%DCOMPAS ON-LINE HELP: DIR command.
+
+DIR command is used to print a floppy disk directory: 
+
+         DIR <FFN> 
+
+where <FFN> is an ambiguous filename with same format as that used by 
+CP/M system DIR command, ie. a filename which ? or * characters
+
+%NCOMPAS ON-LINE HELP: NEW command.
+
+NEW command is used to activate a newly inserted disk.
+Possible command line is: 
+
+         NEW 
+         NEW <drive>: 
+
+<drive> is a drive-identifier (A-P). A NEW command must be performed each 
+time you change floppy in the floppy drive. Otherwise you risk 
+the CP/M generates a R/O error when writing the diskette. 
+%MCOMPAS ON-LINE HELP: MEMORY command:
+
+MEMORY command prints the size of the source code and the unused memory:
+
+         Text: rrrrr bytes (aaaa-bbbb) 
+         Free: sssss bytes (cccc-dddd) 
+
+where the numbers in parentheses are the starting and ending addresses (in hexn) 
+%ZCOMPAS ON-LINE HELP: ZAP command.
+
+ZAP command deletes the current source code program. As a security measure 
+the command asks 'Are you sure (Y / N)?'. The text is deleted only if 
+answer is 'Y' or 'y'. 
+%QCOMPAS ON-LINE HELP: QUIT command.
+
+QUIT command exits COMPAS and return to CP/M. COMPAS can later 
+warm started with command line 'COMPAS *'. This of course if no 
+other program has overwritten parts of working memory
+

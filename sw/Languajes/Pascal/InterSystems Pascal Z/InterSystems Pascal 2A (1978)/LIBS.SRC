@@ -1,0 +1,5607 @@
+; PASCAL RUN-TIME SUPPORT LIBRARY
+;
+; COPYRIGHT 1978 BY JEFF MOSKOW
+;	11/07/79
+R	SET	0FFFFH
+C	SET	0FFFFH
+M	SET	0FFFFH
+S	SET	0FFFFH
+E	SET	0
+F	SET	0FFFFH
+T	SET	0
+VALID	SET	0
+MAXOUT	EQU	3
+CR	EQU	13
+LF	EQU	10
+EOFMRK	EQU	1AH
+BUFLEN	EQU	80
+OUTLST	EQU	4
+TOPFRM	EQU	OUTLST+MAXOUT+MAXOUT+BUFLEN+3
+MARGIN	EQU	50
+COMPILER EQU	0
+MAXDRV	EQU	16
+	ORG	100H
+START	MVI	C,25
+	CALL	CPM
+	LHLD	6
+	DCX	H
+	MOV	M,A
+	LXI	B,0
+	LXI	H,LAST
+	EXX
+	LHLD	6
+	LXI	D,0-TOPFRM-1
+	DAD	D
+	PUSH	H
+	PUSH	H
+	POP	X
+	POP	Y
+	SPHL
+	MVI	B,MAXOUT*2+OUTLST
+	XRA	A
+CLRSTK	MOV	M,A
+	INX	H
+	DJNZ	CLRSTK
+	INX	H
+	MOV	M,A
+	LXI	H,80H
+	CMP	M
+	JRZ	NOCOM
+	MOV	B,M
+	DCR	B
+	INX	H
+INITLP	INX	H
+	MOV	C,M
+	CALL	TOUT
+	DJNZ	INITLP
+NOCOM	MVI	C,CR
+	CALL	TOUT
+	JMP	L9999
+	IF COMPILER
+	DB	'Copyright 1978 by Jeff Moscow. 2a   '
+	ENDIF
+	NLIST
+RESTRT	EQU	0
+CPM	EQU	5
+CSTS	PUSH	B
+	PUSH	D
+	PUSH	H
+	MVI	C,11
+	CALL	CPM
+	ORA	A
+	JRZ	POPHDB
+	MVI	A,0FFH
+	JMPR	POPHDB
+CI	PUSH	B
+	PUSH	D
+	PUSH	H
+	MVI	C,1
+	CALL	CPM
+	JMPR	POPHDB
+CO	PUSH	B
+	PUSH	D
+	PUSH	H
+	MOV	E,C
+	MVI	C,2
+	CALL	CPM
+	JMPR	POPHDB
+FCB	EQU	0
+DEVNUM	EQU	33
+BYTPT	EQU	34
+LSBYT	EQU	35
+DATAB	EQU	36
+SELDSK	PUSH	B
+	PUSH	D
+	PUSH	H
+	PUSH	H
+	LXI	D,80H
+	MVI	C,26
+	CALL	CPM
+	POP	H
+	LXI	D,DEVNUM
+	DAD	D
+	MOV	E,M
+	MVI	C,14
+	CALL	CPM
+	JMPR	POPHDB
+DELETE	PUSH	B
+	PUSH	D
+	PUSH	H
+	PUSH	PSW
+	CALL	SELDSK
+	XCHG
+	MVI	C,19
+	CALL	CPM
+	POP	PSW
+POPHDB	POP	H
+	POP	D
+	POP	B
+	RET
+OPNOT	PUSH	B
+	PUSH	D
+	PUSH	H
+	PUSH	PSW
+	CALL	SELDSK
+	XCHG
+	MVI	C,22
+	CALL	CPM
+	CPI	255
+	JZ	DERR
+	POP	PSW
+	POP	H
+	POP	D
+	POP	B
+OPNIN	PUSH	B
+	PUSH	D
+	PUSH	H
+	PUSH	PSW
+	PUSH	H
+	LXI	D,BYTPT
+	DAD	D
+	MVI	M,0FFH
+	INX	H
+	MVI	M,0FFH
+	POP	H
+	CALL	SELDSK
+	XCHG
+	MVI	C,15
+	CALL	CPM
+	ADI	1
+	POP	B
+	MOV	A,B
+	JMPR	POPHDB
+BYTIN	PUSH	B
+	PUSH	D
+	PUSH	H
+	LXI	D,BYTPT
+	DAD	D
+	MOV	A,M
+	INX	H
+	CMP	M
+	CMC
+	JRNZ	NTEMPT
+	PUSH	PSW
+	PUSH	H
+	MOV	A,M
+	ADI	1
+	JNC	BEOF
+	LXI	D,FCB-LSBYT
+	DAD	D
+	CALL	SELDSK
+	POP	D
+	PUSH	D
+	INX	D
+	MVI	C,26
+	CALL	CPM
+	POP	H
+	PUSH	H
+	LXI	D,FCB-LSBYT
+	DAD	D
+	XCHG
+	MVI	C,20
+	CALL	CPM
+	ORA	A
+	JRNZ	EOF99
+	POP	H
+	PUSH	H
+	LXI	D,128+DATAB-LSBYT
+	DAD	D
+	XCHG
+	MVI	C,26
+	CALL	CPM
+	POP	H
+	PUSH	H
+	LXI	D,FCB-LSBYT
+	DAD	D
+	XCHG
+	MVI	C,20
+	CALL	CPM
+	ORA	A
+	JRNZ	EOF360
+	POP	H
+	POP	PSW
+	ORA	A
+	JMPR	NTEMPT
+EOF99
+BEOF	POP	H
+	POP	PSW
+	STC
+	JMPR	NTEMPT
+EOF360	POP	H
+	MVI	M,7FH
+	POP	PSW
+	ORA	A
+NTEMPT	PUSH	PSW
+	INR	A
+	DCX	H
+	MOV	M,A
+	MOV	E,A
+	MVI	D,0
+	INX	H
+	INX	H
+	DAD	D
+	POP	PSW
+	MOV	A,M
+	JMP	POPHDB
+BYTOT	PUSH	B
+	PUSH	D
+	PUSH	H
+	MOV	A,C
+	LXI	D,BYTPT
+	DAD	D
+	INR	M
+	JRNZ	NTFULL
+BLKOT	PUSH	PSW
+	PUSH	H
+	INX	H
+	MOV	A,M
+	MVI	M,0
+	INR	A
+	JRZ	FIRSTC
+	LXI	D,FCB-LSBYT
+	DAD	D
+	CALL	SELDSK
+	PUSH	H
+	LXI	D,DATAB
+	DAD	D
+	XCHG
+	MVI	C,26
+	CALL	CPM
+	POP	H
+	PUSH	H
+	XCHG
+	MVI	C,21
+	CALL	CPM
+	ORA	A
+	JRNZ	DERR
+	POP	H
+	PUSH	H
+	LXI	D,128+DATAB
+	DAD	D
+	XCHG
+	MVI	C,26
+	CALL	CPM
+	POP	H
+	XCHG
+	MVI	C,21
+	CALL	CPM
+	ORA	A
+	JRNZ	DERR
+FIRSTC	POP	H
+	POP	PSW
+NTFULL	MOV	E,M
+	MVI	D,0
+	DAD	D
+	INX	H
+	INX	H
+	MOV	M,A
+	JMP	POPHDB
+DERR	LXI	H,UNKERR
+	CPI	1
+	JRNZ	NTEXTR
+	LXI	H,EXTERR
+NTEXTR	CPI	2
+	JRNZ	NTDFUL
+	LXI	H,FULERR
+NTDFUL	CPI	255
+	JRNZ	NTDIRF
+	LXI	H,DIRERR
+NTDIRF	JMP	PERROR
+UNKERR	DB	'Disk erro','r'+80H
+EXTERR	DB	'Error in extending fil','e'+80H
+FULERR	DB	'Disk ful','l'+80H
+DIRERR	DB	'Directory ful','l'+80H
+NAMERR	DB	'Bad filename',CR,LF+80H
+FILCHR	EQU	EOFMRK
+CLSOT	PUSH	B
+	PUSH	D
+	PUSH	H
+	PUSH	PSW
+	PUSH	H
+	LXI	D,BYTPT
+	DAD	D
+	XCHG
+	POP	H
+EOFILL	MVI	C,FILCHR
+	CALL	BYTOT
+	LDAX	D
+	ORA	A
+	JZ	FILLED
+	JMP	EOFILL
+FILLED	XCHG
+	MVI	C,16
+	CALL	CPM
+	POP	PSW
+	JMP	POPHDB
+	LIST
+FILNAM	PUSH	B
+	PUSH	D
+	PUSH	H
+	PUSH	PSW
+	MVI	M,0
+	INX	H
+	PUSH	H
+	MVI	B,11
+DEFSP	MVI	M,' '
+	INX	H
+	DJNZ	DEFSP
+	MVI	B,33-11-1
+ZEROLP	MVI	M,0
+	INX	H
+	DJNZ	ZEROLP
+SKIPSP	CALL	TIN
+	JRZ	SKIPSP
+	JRC	FILNER
+	SUI	'A'
+	MOV	B,A
+	CALL	TIN
+	JRC	FILNER
+	CPI	':'
+	JRZ	DRVSP
+	PUSH	H
+	LHLD	6
+	LXI	D,-GETP
+	DAD	D
+	DCR	M
+	DCR	M
+	LHLD	6
+	DCX	H
+	MOV	B,M
+	POP	H
+DRVSP	MOV	A,B
+	CPI	MAXDRV
+	JRC	DRVOK
+FILNER	POP	H
+NAMER	LXI	H,NAMERR
+	CALL	TXTYP
+	POP	PSW
+	STC
+	JMP	POPHDB
+DRVOK	MOV	M,A
+	POP	H
+	MVI	B,9
+SKSP	CALL	TIN
+	JRC	NOMORE
+	JRZ	SKSP
+	CPI	'.'
+	JRZ	NXTPT
+	MOV	M,A
+	INX	H
+	DJNZ	SKSP
+	JMPR	NAMER
+NXTPT	MOV	C,B
+	MVI	B,4
+NOIMAG	DCR	C
+	JRZ	SKSP
+	INX	H
+	JMPR	NOIMAG
+NOMORE	POP	PSW
+	ORA	A
+	JMP	POPHDB
+TXTBUF	EQU	BUFLEN+2+1+1
+GETP	EQU	TXTBUF
+PUTP	EQU	TXTBUF-1
+TIN	PUSH	B
+	PUSH	D
+	PUSH	H
+	LHLD	6
+	LXI	D,-GETP
+	DAD	D
+	PUSH	H
+	MOV	E,M
+	MVI	D,0
+	DAD	D
+	INX	H
+	MOV	A,M
+	POP	H
+	CPI	' '
+	JRC	ENDL
+	INR	M
+	CPI	' '
+EN	JMP	POPHDB
+ENDL	INX	H
+	MVI	M,0
+	JMPR	EN
+TXTIN	PUSH	B
+	PUSH	D
+	PUSH	H
+	LHLD	6
+	LXI	D,-GETP
+	DAD	D
+	MVI	M,BUFLEN-1
+	XCHG
+	MVI	C,10
+	CALL	CPM
+	MVI	C,CR
+	CALL	TOUT
+	MVI	C,LF
+	CALL	CO
+	JMP	POPHDB
+TOUT	PUSH	B
+	PUSH	D
+	PUSH	H
+	PUSH	PSW
+	LHLD	6
+	LXI	D,-GETP
+	DAD	D
+	MVI	M,1
+	INX	H
+	MOV	A,M
+	CPI	BUFLEN
+	JRZ	BFULL
+	INR	M
+	MOV	E,M
+	MVI	D,0
+	DAD	D
+	MOV	M,C
+	POP	PSW
+	ORA	A
+	JMP	POPHDB
+BFULL	DCR	M
+	MVI	C,CR
+	CALL	TOUT
+	POP	PSW
+	STC
+	JMP	POPHDB
+TXTYP	MOV	A,M
+	ORA	A
+	RZ
+	PUSH	PSW
+	ANI	7FH
+	MOV	C,A
+	CALL	CO
+	POP	PSW
+	RM
+	INX	H
+	JMPR	TXTYP
+CHAIN	LXI	H,5CH
+	CALL	FILNAM
+	CALL	OPNIN
+	JRC	CHERR
+	LXI	D,100H
+KEEPRD	PUSH	D
+	MVI	C,26
+	CALL	CPM
+	LXI	D,5CH
+	MVI	C,20
+	CALL	CPM
+	POP	D
+	LXI	H,128
+	DAD	D
+	XCHG
+	ORA	A
+	JRZ	KEEPRD
+	XRA	A
+	JMP	L9999+14
+CHERR	LXI	H,CHMSG
+	JMP	PERROR
+CHMSG	DB	'Unable to chai','n'+80H
+	NLIST
+ILOD	MACRO	Q,SIZE,OFST
+	IF	SIZE&8000H
+	IF	OFST
+	LXI	B,OFST-2
+	CALL	ILVNZ
+	ELSE
+	CALL	ILOADV
+	ENDIF
+	ELSE
+	IF	SIZE-1
+	IF	OFST
+	LXI	B,OFST
+	CALL	IL2NZ
+	ELSE
+	CALL	ILOAD2
+	ENDIF
+	ELSE
+	IF	OFST
+	LXI	B,OFST
+	CALL	IL1NZ
+	ELSE
+	CALL	ILOAD1
+	ENDIF
+	ENDIF
+	ENDIF
+	ENDMAC
+ILOAD1	LXI	B,0
+IL1NZ	PUSH	B
+	PUSH	X
+	POP	B
+	DAD	B
+	MOV	B,M
+	DCX	H
+	MOV	C,M
+IL1V	POP	H
+	DAD	B
+	MOV	L,M
+	MOV	H,A
+	RET
+ILOAD2	LXI	B,0
+IL2NZ	PUSH	B
+	PUSH	X
+	POP	B
+	DAD	B
+	MOV	B,M
+	DCX	H
+	MOV	C,M
+IL2V	POP	H
+	DAD	B
+	MOV	B,M
+	DCX	H
+	MOV	L,M
+	MOV	H,B
+	RET
+ILOADV	LXI	B,0
+ILVNZ	PUSH	B
+	PUSH	X
+	POP	B
+	DAD	B
+	MOV	B,M
+	DCX	H
+	MOV	C,M
+	DCX	H
+	MOV	A,M
+	DCR	A
+	JRZ	IL1V
+	XRA	A
+	JR	IL2V
+ISTR	MACRO	Q,SIZE,OFST
+	IF	OFST
+	LXI	B,OFST
+	CALL	ISTRNZ
+	ELSE
+	CALL	ISTORE
+	IF	R
+	JC	REFERR
+	ENDIF
+	ENDIF
+	ENDMAC
+ISTORE	LXI	B,0
+ISTRNZ	PUSH	B
+	PUSH	X
+	POP	B
+	DAD	B
+	MOV	B,M
+	DCX	H
+	MOV	C,M
+	DCX	H
+	MOV	A,M
+	POP	H
+	DAD	B
+	DCR	A
+	JRZ	ISTR1
+	XRA	A
+	MOV	M,D
+	MOV	D,A
+	DCX	H
+ISTR1	MOV	M,E
+	CMP	D
+	RET
+LPOP	MACRO	REG,DISTANCE
+	IF	DISTANCE
+	PUSH	H
+	LXI	H,DISTANCE+2
+	DAD	S
+	MOV	E,M
+	INX	H
+	MOV	D,M
+	PUSH	D
+	MOV	D,H
+	MOV	E,L
+	DCX	H
+	DCX	H
+	LXI	B,DISTANCE
+	LDDR
+	POP	D
+	POP	H
+	POP	B
+	ELSE
+	POP	D
+	ENDIF
+	ENDMAC
+ADDR	MACRO	Q
+TEMP	SET	'Q'-'IY'
+	IF	'Q'-'Y'*TEMP
+	CALL	XADDR
+	ELSE
+	CALL	YADDR
+	ENDIF
+	ENDMAC
+MIDL	MACRO	REG,LEVEL
+	PUSH	X
+	MVI	A,LEVEL
+MIDL1	SET	$
+	MOV	C,6(X)
+	MOV	B,7(X)
+	PUSH	B
+	POP	X
+	CMP	1(X)
+	JRNZ	MIDL1
+	XRA	A
+	ENDMAC
+DSUB	MACRO	Q,SIZE
+	IF	0!SIZE&8000H
+	CALL	FSUB
+	IF	F
+	JC	FLTERR
+	ENDIF
+	ELSE
+	XRA	A
+	DSBC	Q D
+	ENDIF
+	ENDMAC
+DADD	MACRO	Q,SIZE
+	IF	0!SIZE&8000H
+	CALL	FADD
+	IF	F
+	JC	FLTERR
+	ENDIF
+	ELSE
+	DAD	Q D
+	ENDIF
+	ENDMAC
+XADDR	DSUB
+	PUSH	X
+	POP	D
+	DAD	D
+	RET
+YADDR	DSUB
+	PUSH	Y
+	POP	D
+	DAD	D
+	RET
+ENTR	MACRO	Q,LVL,VSIZ
+	IF	LVL-1
+	MVI	B,LVL
+	LXI	D,-VSIZ
+	IF	S
+	CALL	ENTRSC
+	ELSE
+	CALL	ENTER
+	ENDIF
+	ELSE
+	LXI	H,1-VSIZ
+	DAD	S
+	SPHL
+	LXI	D,LAST+MARGIN
+	DSUB	D
+	JC	STKERR
+CHAIN$:
+	ENDIF
+	ENDMAC
+ENTRSC	INR	A
+ENTER	XTIX
+	LXI	H,0
+	PUSH	H
+	PUSH	H
+	PUSH	B
+	DAD	S
+	INX	S
+	PUSH	H
+	XTIX
+	DAD	D
+	POP	D
+	SPHL
+	PUSH	D
+	ORA	A
+	RZ
+	XRA	A
+	EXX
+	MOV	B,A
+	MOV	C,A
+	PUSH	H
+	EXX
+	LXI	D,MARGIN
+	DSUB	D
+	POP	D
+	DSUB	D
+	JC	STKERR
+	RET
+EXIT	MACRO	Q,SSIZ
+	LXI	H,SSIZ+6
+	JMP	EXITF
+	ENDMAC
+	LIST
+EXITF	SPIX
+	POP	B
+	POP	B
+	DAD	S
+	PUSH	Y
+	LXI	B,OUTLST
+	DADY	B
+	MVI	B,MAXOUT
+	XCHG
+SFLT	MOV	H,1(Y)
+	MOV	L,0(Y)
+	MOV	A,H
+	ORA	L
+	JRZ	FGT
+	PUSH	H
+	DSBC	D
+	POP	H
+	JRNC	FGT
+	INX	H
+	INX	H
+	INX	H
+	CALL	CLSOT
+	XRA	A
+	MOV	0(Y),A
+	MOV	1(Y),A
+FGT	INX	Y
+	INX	Y
+	DJNZ	SFLT
+	XRA	A
+	POP	Y
+	XCHG
+	POP	D
+	POP	X
+	POP	B
+	SPHL
+	MOV	H,B
+	MOV	L,C
+	CMP	E
+	EXX
+	MOV	B,A
+	MOV	C,A
+	EXX
+	PCHL
+ERROR	EXX
+	MOV	A,B
+	ORA	C
+	CNZ	PSTAT
+ERR1	CALL	TIN
+	JRNC	ERR1
+L0	LXI	B,OUTLST
+	DADY	B
+	MVI	B,MAXOUT
+L0A	MOV	H,1(Y)
+	MOV	L,0(Y)
+	INX	Y
+	INX	Y
+	MOV	A,H
+	ORA	L
+	INX	H
+	INX	H
+	INX	H
+	CNZ	CLSOT
+	DJNZ	L0A
+	JMP	RESTRT
+	NLIST
+EQUL	MACRO	Q,SIZE
+	IF	SIZE
+	IF	SIZE&8000H
+	CALL	FPEQ
+	ELSE
+	LXI	B,SIZE
+	CALL	SEQUL
+	ENDIF
+	ELSE
+	CALL	IEQUL
+	ENDIF
+	ENDMAC
+NEQL	MACRO	Q,SIZE
+	IF	SIZE
+	IF	SIZE&8000H
+	CALL	FPNEQ
+	ELSE
+	LXI	B,SIZE
+	CALL	SNE
+	ENDIF
+	ELSE
+	CALL	INE
+	ENDIF
+	ENDMAC
+LE	MACRO	Q,SIZE
+	IF	SIZE
+	IF	SIZE&8000H
+	CALL	FPLTE
+	ELSE
+	LXI	B,SIZE
+	CALL	SLE
+	ENDIF
+	ELSE
+	CALL	ILE
+	ENDIF
+	ENDMAC
+LESS	MACRO	Q,SIZE
+	IF	SIZE
+	IF	SIZE&8000H
+	CALL	FPLT
+	ELSE
+	LXI	B,SIZE
+	CALL	SLT
+	ENDIF
+	ELSE
+	CALL	ILT
+	ENDIF
+	ENDMAC
+GE	MACRO	Q,SIZE
+	IF	SIZE
+	IF	SIZE&8000H
+	CALL	FPGTE
+	ELSE
+	LXI	B,SIZE
+	CALL	SGE
+	ENDIF
+	ELSE
+	CALL	IGE
+	ENDIF
+	ENDMAC
+GRET	MACRO	Q,SIZE
+	IF	SIZE
+	IF	SIZE&8000H
+	CALL	FPGT
+	ELSE
+	LXI	B,SIZE
+	CALL	SGT
+	ENDIF
+	ELSE
+	CALL	IGT
+	ENDIF
+	ENDMAC
+FDVD	MACRO	Q,SIZE
+	CALL	FDIVD
+	IF	F
+	JC	DIVERR
+	ENDIF
+	ENDMAC
+MULT	MACRO	Q,SIZE
+	IF	0!SIZE&8000H
+	CALL	FMULT
+	IF	F
+	JC	MLTERR
+	ENDIF
+	ELSE
+	IF	M
+	CALL	IMULT
+	ELSE
+	CALL	QMULT
+	ENDIF
+	ENDIF
+	ENDMAC
+DIVD	MACRO
+	CALL	IDIVD
+	IF	M
+	JC	DIVERR
+	ENDIF
+	ENDMAC
+MMOD	MACRO
+	CALL	IMOD
+	IF	M
+	JC	DIVERR
+	ENDIF
+	ENDMAC
+NEGT	MACRO	REG
+	IF	'REG'-'H'
+	IF	'REG'-'D'
+	POP	H
+	POP	D
+	MVI	A,80H
+	XRA	E
+	MOV	E,A
+	PUSH	D
+	PUSH	H
+	ELSE
+	MOV	A,E
+	CMA
+	MOV	E,A
+	MOV	A,REG
+	CMA
+	MOV	REG,A
+	INX	REG
+	ENDIF
+	ELSE
+	MOV	A,L
+	CMA
+	MOV	L,A
+	MOV	A,REG
+	CMA
+	MOV	REG,A
+	INX	REG
+	ENDIF
+	XRA	A
+	ENDMAC
+CTRL	MACRO
+	IF	C
+	CALL	CSTS
+	JRZ	$+16
+	CALL	CI
+	CPI	'C'&3FH
+	JZ	ERROR
+	MVI	C,7
+	CALL	CO
+	XRA	A
+	ENDIF
+	ENDMAC
+RCHK	MACRO	REG,LBND,HBND
+	IF	R
+	LXI	B,LBND
+	IF	'REG'-'H'
+	PUSH	H
+	LXI	H,HBND
+	CALL	CHKDE
+	POP	H
+	ELSE
+	PUSH	D
+	LXI	D,HBND
+	CALL	CHKHL
+	POP	D
+	ENDIF
+	ENDIF
+	ENDMAC
+CHKDE	CALL	IGE
+	JRNC	RNGERR
+	MOV	H,B
+	MOV	L,C
+	CALL	ILE
+	RC
+	JR	RNGERR
+CHKHL	CALL	ILE
+	JRNC	RNGERR
+	MOV	D,B
+	MOV	E,C
+	CALL	IGE
+	RC
+	JR	RNGERR
+STMT	MACRO	Q,NUMBER
+	IF	T+E
+VALID	SET	0FFFFH
+	EXX
+	LXI	B,NUMBER
+	IF	T
+	IF	'M'-'Q'
+	CALL	PSTAT
+	ENDIF
+	ENDIF
+	EXX
+	ELSE
+	IF	VALID
+	EXX
+	MOV	B,A
+	MOV	C,A
+	EXX
+VALID	SET	0
+	ENDIF
+	ENDIF
+	ENDMAC
+PSTAT	PUSH	H
+	LXI	H,STMTMSG
+	PUSH	B
+	CALL	TXTYP
+	POP	H
+	PUSH	H
+	LXI	D,1000
+	CALL	DIGIT
+	LXI	D,100
+	CALL	DIGIT
+	LXI	D,10
+	CALL	DIGIT
+	LXI	D,1
+	CALL	DIGIT
+	LXI	H,CRLF
+	CALL	TXTYP
+	POP	B
+	POP	H
+	XRA	A
+	RET
+DIGIT	MVI	C,'0'-1
+	XRA	A
+DIG1	INR	C
+	DSBC	D
+	JRNC	DIG1
+	DAD	D
+	JMP	CO
+FLTERR	LXI	H,FLTMSG
+	JR	PERROR
+HPERR	LXI	H,HPMSG
+	JR	PERROR
+REFERR	LXI	H,REFMSG
+	JR	PERROR
+STKERR	LXI	H,STKMSG
+	JR	PERROR
+RNGERR	LXI	H,RNGMSG
+	JR	PERROR
+DIVERR	LXI	H,OUMSG
+	JR	PERROR
+MLTERR	LXI	H,MLTMSG
+PERROR	CALL	TXTYP
+	JMP	ERROR
+REFMSG	DB	'Call by reference precision erro','r'+80H
+RNGMSG	DB	'Index or value out of rang','e'+80H
+OUMSG	DB	'Attempted divide by zer','o'+80H
+MLTMSG	DB	'Multiply overflo','w'+80H
+STKMSG	DB	'Stack overflo','w'+80H
+STMTMSG	DB	' -- statement',' '+80H
+HPMSG	DB	'Heap overflo','w'+80H
+FLTMSG	DB	'Floating point overflow/underflo','w'+80H
+CRLF	DB	CR,LF+80H
+QMULT	MVI	B,17
+	CMP	D
+	JRZ	OPT
+	CMP	H
+	JRNZ	NOOPT
+	XCHG
+OPT	MVI	B,9
+	MOV	D,E
+NOOPT	MOV	A,B
+	MOV	B,H
+	MOV	C,L
+	LXI	H,0
+MLOOP	DCR	A
+	RZ
+	DAD	H
+	XCHG
+	DAD	H
+	XCHG
+	JRNC	MLOOP
+	DAD	B
+	JR	MLOOP
+IMULT	PUSH	D
+	PUSH	H
+	BIT	7,D
+	JRZ	CANDP
+	PUSH	H
+	MOV	H,A
+	MOV	L,A
+	XRA	A
+	DSBC	D
+	XCHG
+	POP	H
+CANDP	BIT	7,H
+	JRZ	CAND0
+	PUSH	D
+	XCHG
+	XRA	A
+	MOV	H,A
+	MOV	L,A
+	DSBC	D
+	POP	D
+CAND0	CMP	H
+	JRNZ	SETUP
+	CMP	L
+	JRNZ	OP2ONE
+	POP	H
+	POP	D
+	XRA	A
+	RET
+OP2ONE	DCR	L
+	INX	H
+	JRNZ	SETUP
+	XRA	A
+	POP	D
+	POP	H
+	BIT	7,D
+	RZ
+	JR	CSIGN
+SETUP	MOV	B,D
+	MOV	C,E
+	XCHG
+	MOV	H,A
+	MOV	L,A
+MCONT	SRAR	B
+	RRAR	C
+	JRNC	MTEST
+	DAD	D
+	BIT	7,H
+	JNZ	MLTERR
+MTEST	SLAR	E
+	RLAR	D
+	MOV	A,B
+	ORA	C
+	JRNZ	MCONT
+	POP	B
+	POP	D
+	MOV	A,D
+	XRA	B
+	BIT	7,A
+	JRZ	POS
+CSIGN	XCHG
+	XRA	A   
+	MOV	H,A
+	MOV	L,A
+	DSBC	D
+POS	XRA	A
+	RET
+ABS	BIT	7,H
+	RZ
+	XCHG
+	MOV	H,A
+	MOV	L,A
+	XRA	A
+	DSBC	D
+	RET
+FPABS	POP	H
+	POP	D
+	POP	B
+	RES	SIGN,C
+	PUSH	B
+	PUSH	D
+	PCHL
+SQR	MOV	D,H
+	MOV	E,L
+	JMP	IMULT
+FPSQR	POP	H
+	POP	D
+	POP	B
+	PUSH	B
+	PUSH	D
+	PUSH	B
+	PUSH	D
+	PUSH	H
+	JMP	FMULT
+IDIVD	PUSH	D
+	PUSH	H
+	XRA	A
+	BIT	7,D
+	JRZ	DIVSPO
+	MOV	H,A
+	MOV	L,A
+	DSBC	D
+	XCHG
+	POP	H
+	PUSH	H
+DIVSPO	BIT	7,H
+	JRZ	DIVDPO
+	PUSH	D
+	XCHG
+	XRA	A
+	MOV	H,A
+	MOV	L,A
+	DSBC	D
+	POP	D
+DIVDPO	CMP	D
+	JRNZ	CKNM
+	ORA	E
+	JRZ	ZERO
+	DCR	A
+	JRNZ	NOTONE
+	POP	H
+	POP	D
+	BIT	7,D
+	JRZ	ONEDON
+	XCHG
+	XRA	A
+	MOV	H,A
+	MOV	L,A
+	DSBC	D
+ONEDON	MOV	D,A
+	MOV	E,A
+	XRA	A
+	RET
+NOTONE	DCR	A
+	JRNZ	NOTTWO
+	MOV	B,H
+	MOV	C,L
+	SRAR	B
+	RRAR	C
+	MOV	H,A
+	MOV	L,A
+	RLAR	L
+	JR	SIGNS
+ZERO	POP	H
+	POP	D
+	STC
+	RET
+NOTTWO	XRA	A
+CKNM	BIT	6,D
+	JRNZ	NORM
+	INR	A
+	SLAR	E
+	RLAR	D
+	JMPR	CKNM
+NORM	LXI	B,0H
+	INR	A
+DIVLOP	ORA	A
+	DSBC	D
+	JRC	FAIL
+	STC
+	RLAR	C
+	RLAR	B
+	JMPR	TEST
+FAIL	DAD	D
+	SLAR	C
+	RLAR	B
+TEST	SRAR	D
+	RRAR	E
+	DCR	A
+	JRNZ	DIVLOP
+SIGNS	POP	PSW
+	POP	D
+	XCHG
+	XRA	H
+	LXI	H,0H
+	JP	LIKE
+	DSBC	B
+	XRA	A
+	RET
+LIKE	DAD	B
+	XRA	A
+	RET
+IMOD	BIT	7,H
+	JRZ	POSRSLT
+	CALL	IDIVD
+	RC
+	MOV	H,A
+	MOV	L,A
+	DSBC	D
+	XRA	A
+	RET
+POSRSLT	CALL	IDIVD
+	XCHG
+	RET
+	LIST
+RESET	PUSH	B
+	PUSH	Y
+	CALL	SCAN
+	JRNC	SKIP
+	PUSH	H
+	INX	H
+	INX	H
+	INX	H
+	CALL	CLSOT
+	XRA	A
+	STAX	B
+	DCX	B
+	STAX	B
+	POP	H
+SKIP	POP	Y
+	POP	B
+	POP	D
+	INX	H
+	INX	H
+	INX	H
+	CALL	MOVNAM
+	JRC	YEOF
+	CALL	OPNIN
+	JRC	YEOF
+	CALL	BYTIN
+	MOV	C,A
+	JRC	YEOF
+	CPI	CR
+	JRZ	YEOLN
+	CPI	LF
+	JRZ	YEOLN
+	DCX	H
+	XRA	A
+	MOV	M,A
+	DCX	H
+	MOV	M,C
+	DCX	H
+	MOV	M,A
+	XCHG
+	PCHL
+YEOF	DCX 	H
+	DCX	H
+	DCX	H
+	MVI	M,1
+	JMPR	YCONT
+YEOLN	XRA	A
+	DCX	H
+	DCX	H
+	DCX	H
+	MOV	M,A
+YCONT	INX	H
+	MOV	M,C
+	INX	H
+	MVI	M,1
+	XCHG
+	XRA	A
+	PCHL
+REWRITE:POP	D
+	PUSH	B
+	CALL	CHKLST
+	POP	B
+	INX	H
+	INX	H
+	INX	H
+	CALL 	MOVNAM
+	JRC	BADWRT
+	CALL	DELETE
+	CALL	OPNOT
+	XRA	A
+	DCX	H
+	MVI	M,1
+	DCX	H
+	MOV	M,A
+	DCX	H
+	MVI	M,1
+	XCHG
+	PCHL
+CHKLST	PUSH	Y
+	CALL	SCAN
+	JRNC	NOTFND
+	INX	H
+	INX	H
+	INX	H
+	CALL	CLSOT
+	DCX	H
+	DCX	H
+	DCX	H
+	POP	Y
+	RET
+NOTFND	POP	Y
+	PUSH	Y
+	PUSH	H
+	MOV	H,A
+	MOV	L,A
+	CALL	SCAN
+	JRNC	ERRTMF
+	POP	H
+	MOV	A,H
+	STAX	B
+	DCX	B
+	MOV	A,L
+	STAX	B
+	POP	Y
+	RET
+ERRTMF	LXI	H,ERRMES
+	JMP	PERROR
+ERRMES	DB	'Too many open output file','s'+80H
+BADWRT	LXI	H,BNAM
+	JMP	PERROR
+BNAM	DB	'Bad output file nam','e'+80H
+SCAN	LXI	B,OUTLST
+	DADY	B
+	MOV	A,L
+	MVI	B,MAXOUT*2
+CONTLK	CMP	0(Y)
+	JRZ	FNDLOW
+	INX	Y
+	INX	Y
+	DCR	B
+	DJNZ	CONTLK
+	XRA	A
+	RET
+FNDLOW	MOV	A,H
+	INX	Y
+	DCR	B
+	CMP	0(Y)
+	JRZ	FNDIT
+	MOV	A,L
+	INX	Y
+	DJNZ	CONTLK
+	XRA	A
+	RET
+FNDIT	PUSH	Y
+	POP	B
+	XRA	A
+	STC
+	RET
+STAKSP	EQU	3
+MOVNAM	CALL	TIN
+	JRNC	MOVNAM
+	PUSH	H
+	LXI	H,STAKSP
+	DAD	S
+	XRA	A
+	MOV	B,A
+	DAD	B
+	PUSH	H
+	MOV	B,C
+TOTI	MOV	C,M
+	CALL	TOUT
+	DCX	H
+	DJNZ	TOTI
+	MVI	C,CR
+	CALL	TOUT
+	POP	B
+	POP	H
+	CALL	FILNAM
+	EXAF
+EMPBUF	CALL	TIN
+	CPI	CR
+	JRNZ	EMPBUF
+	EXAF
+	PUSH	B
+	XTHL
+	POP	B
+	XTHL
+	MOV	A,L
+	XTHL
+	MOV	M,D
+	DCX	H
+	MOV	M,E
+	MOV	D,B
+	MOV	E,C
+	POP	B
+	MOV	C,A
+	SPHL
+	XCHG
+	POP	D
+	PUSH	B
+	MVI	A,0
+	RET
+SYSLOC	EQU	5
+WRITEL	PUSH	X
+	CALL	PNTR
+	PUSH	X
+	MOV	B,0(X) 
+	CMP	B
+	JRNZ	CONSOL
+	CALL	BUFADR
+	MVI	M,1
+	INX	H
+	MVI	M,1
+	INX	H
+	MVI	M,1
+	INX	H
+	JMPR	TEXT
+CONSOL	MOV	H,A
+	MOV	L,A
+TEXT	CALL	TXTFIL
+ADDCR	MVI	C,CR
+	CALL	PRINT
+	MVI	C,LF
+	CALL	PRINT
+CLEAN	POP	H
+	INX	H
+	POP	X
+	POP	D
+	SPHL
+	XCHG
+	PCHL
+WRITE	PUSH	X
+	CALL	PNTR
+	PUSH	X
+	MOV	B,0(X)
+	CMP	B
+	JRNZ	CONSO2
+	CALL	BUFADR
+	MVI	M,1
+	INX	H
+	MVI	M,1
+	INX	H
+	MOV	M,A
+	INX	H
+	CMP	B
+	JNZ	NONTXT
+	JMPR	TEXT2
+CONSO2	MOV	H,A
+	MOV	L,A
+TEXT2	CALL	TXTFIL
+	JR	CLEAN
+PNTR	LXI	X,SYSLOC
+	DADX	S
+	DADX	B
+	MOV	D,B
+	MOV	E,C
+	RET
+BUFADR	DCX	D
+	DCX	X
+	MOV	B,0(X)
+	DCX	D
+	DCX	X
+	MOV	H,0(X)
+	DCX	D
+	DCX	X
+	MOV	L,0(X)
+	DCX	X
+	DCX	D
+	RET
+TXTFIL	MOV	A,D
+	ORA	E
+	RZ
+NXTPAR	XRA	A
+	MOV	B,0(X)
+	DCX	X
+	DCX	D
+	DCR	B
+	CZ	BOOL
+	DCR	B
+	CZ	INTEG
+	DCR	B
+	CZ	CHAR
+	DCR	B
+	CZ	SCALAR
+	JMPR	TXTFIL
+SCALAR	LXI	B,-4
+	DADX	B
+	XCHG
+	DAD	B
+	PUSH	H
+	PUSH	D
+	MOV	B,4(X)
+	MOV	L,3(X)
+	MOV	H,A
+	DAD	H
+	DAD	H
+	DAD	H
+	MOV	D,2(X)
+	MOV	E,1(X)
+	DAD	D
+	MVI	D,8
+SCLR1	MOV	C,M
+	MOV	A,C
+	CPI	' '
+	JRZ	SCLR2
+	INX	H
+	XTHL
+	CALL	PRINT
+	XTHL
+	DCR	D
+	JRZ	SCLR2
+	DJNZ	SCLR1
+	INR	B
+	JR	SCLR1
+SCLR2	POP	H
+	POP	D
+	MVI	C,' '
+SCLR2A	DCR	B
+	RZ
+	CALL	PRINT
+	JR	SCLR2A
+CHAR	MOV	B,-2(X)
+	MOV	A,0(X)
+	SUB	B
+	EXAF
+	DCX	X
+	DCX	X
+	DCX	D
+	DCX	D
+CHAR1	DCX	X
+	DCX	D
+	MOV	C,0(X)
+	CALL	PRINT
+	DJNZ	CHAR1
+	EXAF
+	DCX	X
+	DCX	D
+	RM
+	RZ
+	MOV	B,A
+	MVI	C,' '
+CHAR2	CALL	PRINT
+	DJNZ	CHAR2
+	RET
+BOOL:
+	IF	NOT COMPILER
+	DCX	X
+	DCX	X
+	DCX	D
+	DCX	D
+	PUSH	D
+	CMP	1(X)
+	MOV	A,2(X)
+	LXI	B,4
+	LXI	D,TRUE
+	JRC	ISTRUE
+	XCHG
+	DAD	B
+	XCHG
+	INR	C
+ISTRUE	SUB	C
+	EXAF
+	MOV	B,C
+FIT1A	LDAX	D
+	MOV	C,A
+	CALL	PRINT
+	INX	D
+	DJNZ	FIT1A
+	POP	D
+	EXAF
+	RC
+	RZ
+	MOV	B,A
+	MVI	C,' '
+BLANKS	CALL	PRINT
+	DJNZ	BLANKS
+	RET
+TRUE	DB	'TRUE'
+	DB	'FALSE'
+	ENDIF
+INTEG	DCX	D
+	DCX	D
+	DCX	D
+	PUSH	D
+	MOV	D,-1(X)
+	MOV	E,-2(X)
+	PUSH	X
+	POP	B
+	LXI	X,-6
+	DADX	S
+	SPIX
+	PUSH	H
+	PUSH	B
+	LXI	B,5
+	DADX	B
+	BIT	7,D
+	JRZ	POSNUM
+	MVI	0(X),'-'
+	DCX	X
+	XRA	A
+	MOV	H,A
+	MOV	L,A
+	MOV	B,A
+	DSBC	D
+	JMPR	NUM
+POSNUM	XCHG
+	MOV	0(X),A
+	DCX	X
+NUM	MOV	C,A
+	LXI	D,10000
+	CALL	FIGURE
+	LXI	D,1000
+	CALL	FIGURE
+	LXI	D,100
+	CALL	FIGURE
+	LXI	D,10
+	CALL	FIGURE
+	MOV	B,L
+	CALL	ADIGIT
+	MOV	B,A
+	DADX	B
+	INX	X
+	MOV	A,0(X)
+	CPI	'-'
+	JRNZ	CHK0
+	INR	C
+	JMPR	NEGA
+CHK0	CMP	C
+	JRNZ	POSN
+	MVI	0(X),'0'
+	INR	C
+	JMPR	NEGA
+POSN	DCX	X
+NEGA	MOV	B,C
+	POP	H
+	MOV	A,M
+	XTHL
+	SUB	B
+	JRC	PERFIT
+	JRZ	PERFIT
+	MOV	D,A
+	MVI	C,' '
+PAD	CALL	PRINT
+	DCR	D
+	JRNZ	PAD
+PERFIT	MOV	C,0(X)
+	CALL	PRINT
+	DCX	X
+	DJNZ	PERFIT
+	POP	X
+	DCX	X
+	DCX	X
+	DCX	X
+	XCHG
+	LXI	H,6
+	DAD	S
+	SPHL
+	XCHG
+	POP	D
+	XRA	A
+	RET
+FIGURE	XRA	A
+	DCR	B
+CONT	INR	B
+	DSBC	D
+	JRNC	CONT
+TOOFAR	DAD	D
+ADIGIT	CMP	B
+	JRNZ	NUDIG
+	CMP	C
+	RZ
+NUDIG	MVI	A,30H
+	ADD	B
+	MOV	0(X),A
+	DCX	X
+	INR	C
+	XRA	A
+	MOV	B,A
+	RET
+NONTXT:
+	IF	NOT COMPILER
+	PUSH	H
+NONTX1	LXI	B,-4
+	DADX	B
+	XCHG
+	DAD	B
+	XCHG
+	MOV	H,2(X)
+	MOV	L,1(X)
+NTLP	MOV	C,0(X)
+	DCX	X
+	DCX	H
+	DCX	D
+	XTHL
+	CALL	DIS
+	XTHL
+	MOV	A,H
+	ORA	L
+	JRNZ	NTLP
+	MOV	A,D
+	ORA	E
+	JRNZ	NONTX1
+	POP	H
+	JMP	CLEAN
+	ENDIF
+PRINT	XRA	A
+	CMP	H
+	JRNZ	DIS
+	CMP	L
+	JRNZ	DIS
+	CALL	CO
+	XRA	A
+	RET
+DIS	CALL	BYTOT
+	XRA	A
+	RET
+	NLIST
+EQBIT	EQU	1
+LTBIT	EQU	2
+GTBIT	EQU	4
+INE	MOV	A,D
+	CMP	H
+	JRNZ	MTRUE
+	MOV	A,E
+	SUB	L
+	JR	FINREL
+IEQUL	MOV	A,D
+	CMP	H
+	JRNZ	FALSE
+	MOV	A,E
+	CMP	L
+	JRZ	MTRUE
+	JR	FALSE
+IGE	CALL	CMPINT
+	ANI	GTBIT+EQBIT
+	JR	FINREL
+ILE	CALL	CMPINT
+	ANI	LTBIT+EQBIT
+	JR	FINREL
+IGT	CALL	CMPINT
+	ANI	GTBIT
+	JR	FINREL
+ILT	CALL	CMPINT
+	ANI	LTBIT
+	JR	FINREL
+CMPINT	MOV	A,D
+	XRA	H
+	MOV	A,D
+	JM	DFSN
+	CMP	H
+	JRNZ	CMPDN1
+	MOV	A,E
+	CMP	L
+	MVI	A,EQBIT
+	RZ
+CMPDN1	MVI	A,LTBIT
+	RNC
+	MVI	A,GTBIT
+	RET
+DFSN	ADD	A
+	JR	CMPDN1
+FINREL	RZ
+MTRUE	XRA	A
+	STC
+	RET
+	LIST
+MTRUE1	POP	D
+	POP	H
+	JR	MTRUE
+FALSE	XRA	A
+	RET
+EOLN	XRA	A
+	PUSH	H
+	CMP	H
+	JRNZ	FEOLN
+	PUSH	D
+	LHLD	6
+	LXI	D,-PUTP
+	DAD	D
+	MOV	A,M
+	DCX	H
+	CMP	M
+	JRC	MTRUE1
+	MOV	E,M
+	MVI	D,0
+	DAD	D
+	INX	H
+	MOV	A,M
+	CPI	CR
+	JRZ	MTRUE1
+	POP	D
+	POP	H
+	JR	FALSE
+FEOLN	INX	H
+	INX	H
+	CMP	M
+	POP	H
+	JRZ	FALSE
+	JMPR	MTRUE
+EOF	XRA	A
+	CMP	H
+	JRZ	FALSE
+	CMP	M
+	JRNZ	MTRUE
+	JMPR	FALSE
+FTXTIN	MOV	H,A
+	MOV	L,C
+	INX	H
+	DAD	SP
+	PUSH	H
+	MOV	B,C
+FTXT2	CALL	TIN
+	CPI	CR
+	JRNZ	FTXT2
+FTXT3	MOV	C,M
+	CALL	TOUT
+	DCX	H
+	DJNZ	FTXT3
+	MVI	C,CR
+	CALL	TOUT
+	POP	H
+	POP	D
+	INX	H
+	SPHL
+	XRA	A
+	XCHG
+	PCHL
+Z0012	EQU	 6
+SEQUL	CALL	Z0009
+	RET
+SNE	CALL	Z0009
+	CMC
+	RET
+SGT	CALL	Z0010
+	RET
+SLE	CALL	Z0010
+	CMC
+	RET
+SLT	CALL	Z0011
+	RET
+SGE	CALL	Z0011
+	CMC
+	RET
+Z0009	PUSH	X
+	LXI	X,Z0012
+	DADX	S
+	PUSH	X
+	POP	H
+	DADX	B
+Z0001	MOV	A,0(X)
+	INX	X
+	CCI 
+	JRNZ	Z0008
+	JV	Z0001
+Z0014	XTIX
+	POP	H
+	POP	D
+	POP	B
+	SPHL
+	PUSH	B
+	XCHG
+	XRA	A
+	STC
+	PCHL
+Z0008	DADX	B
+Z0013	XTIX
+	POP	H
+	POP	D
+	POP	B
+	SPHL
+	PUSH	B
+	XCHG
+	XRA	A
+	PCHL
+Z0010	PUSH	X
+	LXI	X,Z0012-1
+	DADX	S
+	DADX	B
+	PUSH	X
+	POP	H
+	DADX	B
+	PUSH	X
+Z0002	MOV	A,M
+	CMP	0(X)
+	DCX	X
+	DCX	H
+	JRC	Z0004
+	JRNZ	Z0006
+	DCX	B    
+	XRA	A
+	CMP	B
+	JRNZ	Z0002
+	CMP	C
+	JRNZ	Z0002
+Z0006	POP	X
+	INX	X
+	JMPR	Z0013
+Z0004	POP	X
+	INX	X
+	JMPR	Z0014
+Z0011	PUSH	X
+	LXI	X,Z0012-1
+	DADX	S
+	DADX	B
+	PUSH	X
+	POP	H
+	DADX	B
+	PUSH	X
+Z0003	MOV	A,M
+	CMP	0(X)
+	DCX	X
+	DCX	H
+	JRC	Z0006
+	JRNZ	Z0004
+	DCX	B    
+	XRA	A
+	CMP	B
+	JRNZ	Z0003
+	CMP	C
+	JRNZ	Z0003
+	JR	Z0006
+READ	CALL	READIT
+	RET
+READLN	CALL	READIT
+SKCR	CALL	EOLN
+	RC
+	CALL	INPUT
+	JR	SKCR
+INPUT	MOV	A,H
+	ORA	A
+	JRNZ	NCONS
+	CALL	TIN
+	JM	LSTCR
+	MVI	L,0
+	RET
+LSTCR	CPI	'C'&3FH
+	JZ	ERROR
+	DCR	L
+	CZ	TXTIN
+	CALL	TIN
+	CPI	'C'&3FH
+	JZ	ERROR
+	CPI	LF
+	RNZ
+	MVI	A,CR
+	RET
+NCONS	PUSH	B
+	PUSH	D
+	XRA	A
+	CMP	M
+	JRNZ	RBEOF
+	MOV	D,H
+	MOV	E,L
+	INX	H
+	INX	H
+	INX	H
+	CALL	BYTIN
+	JRC	GEOF
+	CPI	EOFMRK
+	JRZ	GEOF
+	MOV	B,A
+	CPI	CR
+	JRZ	NCR
+	CPI	LF
+	JRZ	NLF
+FIN	XRA	A
+	DCX	H
+	MOV	M,A
+FIN1	DCX	H
+	MOV	C,M
+	MOV	M,B
+	DCX	H
+	MOV	M,A
+	MOV	A,C
+NTXIT	CPI	CR
+	JRZ	MAKBLK
+	CPI	LF
+	JRNZ	NOBLK
+MAKBLK	MVI	A,' '
+NOBLK	POP	D
+	POP	B
+	CPI	' '
+	RET
+NCR	XCHG
+	INX	H
+	MOV	A,M
+	CPI	CR
+	JRZ	SKIPCH
+	CPI	LF
+	JRZ	SKIPCH
+	XCHG
+SETEL	DCX	H
+	MVI	M,1
+	XRA	A
+	JR	FIN1
+SKIPCH	XCHG
+	CALL	BYTIN
+	JRC	GEOF
+	MOV	B,A
+	CPI	CR
+	JRZ	SETEL
+	CPI	LF
+	JRZ	SETEL
+	JR	FIN
+NLF	XCHG
+	INX	H
+	MOV	A,M
+	CPI	CR
+	JRZ	SKIPCH
+	XCHG
+	CPI	LF
+	JRZ	SETEL
+	JMPR	FIN
+GEOF	DCX	H
+	MVI	M,1
+	DCX	H
+	MOV	C,M
+	MOV	M,A
+	MOV	A,C
+	DCX	H
+	MVI	M,1
+	JR	NTXIT
+RBEOF	LXI	H,EOFMES
+	JMP	PERROR
+EOFMES	DB	'Read beyond EO','F'+80H
+RSSLOC	EQU	5
+READIT	PUSH	X
+	LXI	X,RSSLOC
+	MOV	D,B
+	MOV	E,C
+	DADX	SP
+	DADX	D
+	DADX	D
+	DADX	D
+	DADX	D
+	PUSH	X
+	MOV	H,A
+	MOV	L,A
+	CMP	-2(X)
+	JRNZ	BEGIN
+	MOV	H,0(X)
+	DCX	X
+	DCX	D
+	MOV	L,0(X)
+	DCX	X
+	DCX	X
+	DCX	X
+	CMP	1(X)
+	JNZ	NTXT
+BEGIN	MOV	A,D
+	ORA	E
+	JRZ	THREW
+NEWPAR	XRA	A
+	CMP	H
+	JRNZ	NEWP1
+	INR	L
+NEWP1	MOV	B,-2(X)
+	DCR	B
+	CZ	BOOLE
+	DCR	B
+	CZ	RINTEG
+	DCR	B
+	CZ	CHARA
+	DCR	B
+	DCR	B
+	DCR	B
+	CZ	FLTIN
+	DCX	D
+	LXI	B,-4
+	DADX	B
+	JR	BEGIN
+THREW	XCHG
+	POP	H
+	MOV	M,D
+	DCX	H
+	MOV	M,E
+	POP	X
+	POP	D
+	POP	B
+	SPHL
+	POP	H
+	PUSH	B
+	PUSH	D
+	RET
+CHARA	MOV	B,-3(X)
+	PUSH	H
+	MOV	H,0(X)
+	MOV	L,-1(X)
+	XTHL
+	JR	CHST
+STRIN	XTHL
+	CALL	EOF
+	JRC	FILLIN
+	CALL	EOLN
+	JRC	FILLIN
+CHST	CALL	INPUT
+	CPI	CR
+	JRZ	FILLIN
+	XTHL
+	MOV	M,A
+	DCX	H
+	DJNZ	STRIN
+	POP	H
+	RET
+FILLIN	XTHL
+FILLN1	MVI	M,' '
+	DCX	H
+	DJNZ	FILLN1
+	POP	H
+	RET
+BOOLE:
+	IF	NOT COMPILER
+	CALL	INPUT
+	CPI	'T'
+	JRZ	TRUIN
+	CPI	'F'
+	JRZ	FALIN
+	CPI	' '
+	JRZ	BOOLE
+	JMP	ERRTYP
+TRUIN	MVI	B,3
+	CALL	SKIM
+	MVI	B,1
+	JMPR	STOBOO
+FALIN	MVI	B,4
+	CALL	SKIM
+	MVI	B,0
+STOBOO	PUSH	H
+	MOV	H,0(X)
+	MOV	L,-1(X)
+	MOV	M,B
+	XRA	A
+	MOV	B,A
+	POP	H
+	RET
+SKIM	CALL	INPUT
+	CPI	'E'
+	RZ
+	CPI	' '
+	RZ
+	CPI	','
+	RZ
+	CALL	EOF
+	RC
+	DJNZ	SKIM
+	RET
+	ENDIF
+RINTEG:
+	IF	NOT COMPILER
+	MOV	B,-3(X)
+	DCR	B
+	JRNZ	INT2
+INT1	CALL	CONV
+	CMP	B
+	JRZ	SMPOS
+	CMP	H
+	JNZ	ERRTYP
+	PUSH	H
+	LXI	H,REPROM
+	CALL	TXTYP
+	POP	H
+	JMPR	INT1
+SMPOS	PUSH	H
+	MOV	H,0(X)
+	MOV	L,-1(X)
+	MOV	M,C
+	POP	H
+	XRA	A
+	MOV	B,A
+	RET
+INT2	CALL	CONV
+	PUSH	H
+	MOV	H,0(X)
+	MOV	L,-1(X)
+	MOV	M,B
+	DCX	H
+	MOV	M,C
+	POP	H
+	XRA	A
+	MOV	B,A
+	RET
+CONV	PUSH	D
+	PUSH	H
+	LXI	H,0
+	MOV	B,H
+	XTHL
+BLNK1	CALL	INPUT
+	CPI	' '
+	JRZ	BLNK1
+	CPI	'-'
+	JRNZ	NMINUS
+	INR	B
+	JR	GETDIG
+NMINUS	CPI	'+'
+	JRNZ	CHKDIG
+GETDIG	CALL	INPUT
+CHKDIG	CPI	'9'+1
+	JRNC	OVFMSG
+	SUI	'0'
+	JRC	OVFMSG
+VALDIG	XTHL
+	CALL	TIMES10
+	XTHL
+	JV	OVFMSG
+	XRA	A
+	CMP	H
+	JRZ	FCONS
+	INX	H
+	MOV	A,M
+	DCX	H
+	JR	CHKCHR
+FCONS	LHLD	6
+	LXI	D,-GETP
+	DAD	D
+	MOV	E,M
+	MVI	D,0
+	DAD	D
+	INX	H
+	MOV	A,M
+	LXI	H,0
+CHKCHR	CPI	'9'+1
+	JRNC	NOTDIG
+	SUI	'0'
+	JRNC	GETDIG
+NOTDIG	XRA	A
+	CMP	B
+	POP	B
+	POP	D
+	RZ
+	MOV	A,B
+	CMA
+	MOV	B,A
+	MOV	A,C
+	CMA
+	MOV	C,A
+	INX	B
+	XRA	A
+	RET
+OVFMSG	XRA	A
+	CMP	H
+	JRNZ	ERRTYP
+	POP	B
+	POP	D
+	LXI	H,REPROM
+	CALL	TXTYP
+OVF1	CALL	TIN
+	CPI	CR
+	JRNZ	OVF1
+	LXI	H,1
+	JR	CONV
+TIMES10	MOV	D,H
+	MOV	E,L
+	ORA	A
+	DADC	H
+	RV
+	DADC	H
+	RV
+	DADC	D
+	RV
+	DADC	H
+	RV
+	MOV	E,A
+	MVI	D,0
+	DADC	D
+	RET
+	ENDIF
+NTXT:
+	IF	NOT COMPILER
+	PUSH	D
+	PUSH	H
+	MOV	H,0(X)
+	MOV	L,-1(X)
+	MOV	D,-2(X)
+	MOV	E,-3(X)
+TXLP	XTHL
+	CALL	EOF
+	JC	RBEOF
+	INX	H
+	INX	H
+	INX	H
+	CALL	BYTIN
+	DCX	H
+	DCX	H
+	MOV	B,M
+	MOV	M,A
+	MOV	A,B
+	DCX	H
+	JRNC	NTCONT
+	MVI	M,1
+NTCONT	XTHL
+	MOV	M,A
+	DCX	H
+	DCX	D
+	MOV	A,D
+	ORA	E
+	JRNZ	TXLP
+	LXI	B,-4
+	DADX	B
+	POP	H
+	POP	D
+	DCX	D
+	MOV	A,D
+	ORA	E
+	JRNZ	NTXT
+	JMP	THREW
+	ENDIF
+ERRTYP	LXI	H,TYPMES
+	JMP	PERROR
+TYPMES	DB	'Type error on inpu','t'+80H
+REPROM	DB	'Error in number, try again',CR,LF+80H
+	IF	NOT COMPILER
+CSET	MACRO	Q,OFF1,OFF2
+	IF	OFF1
+	LXI	H,OFF1
+	CALL	CONSET
+	ELSE
+	LXI	H,-OFF2
+	DAD	S
+	SPHL
+	MVI	B,OFF2
+CSETCL	SET	$
+	MOV	M,A
+	INX	H
+	DJNZ	CSETCL
+	ENDIF
+	ENDMAC
+CONSET:
+	INR	C
+	DCR	C
+	JRZ	LEGRNG
+	RC
+LEGRNG	DAD	S
+	PUSH	B
+	PUSH	D
+	SRLR	E
+	SRLR	E
+	SRLR	E
+	DSUB	D
+	POP	B
+	MOV	A,C
+	ANI	7
+	MVI	E,1
+	JRZ	SINIT
+	MOV	B,A
+SETBIT	SLAR	E
+	DJNZ	SETBIT
+SINIT	POP	B
+	MOV	B,C
+	INR	B
+	MOV	A,M
+RANGE	ORA	E
+	SLAR	E
+	JRNC	NOOVER
+	MOV	M,A
+	MVI	E,1
+	DCX	H
+	MOV	A,M
+NOOVER	DJNZ	RANGE
+	MOV	M,A
+	XRA	A
+	RET
+UNIN	MACRO	Q,OFFSET,OFF1
+	LXI	H,OFF1
+	LXI	D,OFFSET
+	CALL	UNION
+	ENDMAC
+UNION:
+	CALL	SAVREG
+ORBIT	MOV	A,M
+	XCHG
+	ORA	M
+	MOV	M,A
+	XCHG
+	DCX	H
+	DCX	D
+	DJNZ	ORBIT
+	POP	H
+	POP	D
+	DADD	S
+	SPHL
+	XCHG
+	XRA	A
+	PCHL
+MEMB	MACRO	Q,OFFSET,OFF2
+	LXI	D,OFF2
+	LXI	H,OFFSET
+	CALL	INN
+	ENDMAC
+INN:
+	DADD	S
+	PUSH	H
+	MOV	C,M
+	MOV	A,C
+	DCX	H
+	DAD	D
+	SRLR	C
+	SRLR	C
+	SRLR	C
+	ORA	A
+	DSBC	B
+	ANI	7
+	MOV	B,A
+	MVI	A,1
+	JRZ	SET2
+SET1	ADD	A
+	DJNZ	SET1
+SET2	ANA	M
+	POP	H
+	POP	D
+	SPHL
+	XCHG
+	INX	S
+	INX	S
+	JRZ	NOTIN
+	STC
+NOTIN	MVI	A,0
+	PCHL
+INCL	MACRO	Q,OFFSET,OFF1
+	LXI	H,OFF1
+	LXI	D,OFFSET
+	CALL	LTEQ
+	ENDMAC
+LTEQ:
+	CALL	SAVREG
+	XCHG
+	JR	LTGTEQ
+SBST	MACRO	Q,OFFSET,OFF1
+	LXI	H,OFF1
+	LXI	D,OFFSET
+	CALL	GTEQ
+	ENDMAC
+GTEQ:
+	CALL	SAVREG
+LTGTEQ:
+	MOV	A,M
+	XCHG
+	ORA	M
+	XRA	M
+	JRNZ	NO
+	DCX	H
+	DCX	D
+	XCHG
+	DJNZ	LTGTEQ
+	POP	H
+	POP	D
+	DADD	S
+	SPHL
+	XCHG
+	MVI	A,80H
+	PCHL
+NO:
+	POP	H
+	POP	D
+	DADD	S
+	SPHL
+	XCHG
+	XRA	A
+	PCHL
+INTR	MACRO	Q,OFFSET,OFF1
+	LXI	H,OFF1
+	LXI	D,OFFSET
+	CALL	INSECT
+	ENDMAC
+INSECT:
+	CALL	SAVREG
+ANDBIT:
+	LDAX	D
+	ANA	M
+	STAX	D
+	DCX	H
+	DCX	D
+	DJNZ	ANDBIT
+	POP	H
+	POP	D
+	DADD	S
+	SPHL
+	XCHG
+	XRA	A
+	PCHL
+DIFF	MACRO	Q,OFFSET,OFF1
+	LXI	H,OFF1
+	LXI	D,OFFSET
+	CALL	ORGAN
+	ENDMAC
+ORGAN:
+	CALL	SAVREG
+SETDIF:
+	MOV	A,M
+	XCHG
+	ANA	M
+	XRA	M
+	MOV	M,A
+	DCX	H
+	DCX	D
+	XCHG
+	DJNZ	SETDIF
+	POP	H
+	POP	D
+	DADD	S
+	SPHL
+	XCHG
+	XRA	A
+	PCHL
+MTCH	MACRO	Q,OFFSET,OFF1
+	LXI	H,OFF1
+	LXI	D,OFFSET
+	CALL	COMP
+	ENDMAC
+COMP:
+	CALL	SAVREG
+	MVI	C,1
+QUERY:
+	LDAX	D
+	XRA	M
+	JRNZ	NOTEQ
+	DCX	H
+	DCX	D
+	DJNZ	QUERY
+	CMP	C
+	JRZ	NEQTST
+EQTST	POP	H
+	POP	D
+	DADD	S
+	SPHL
+	XCHG
+	MVI	A,80H
+	PCHL
+NOTEQ:
+	XRA	A
+	CMP	C
+	JRZ	EQTST
+NEQTST	POP	H
+	POP	D
+	DADD	S
+	SPHL
+	XCHG
+	PCHL
+NOMT	MACRO	Q,OFFSET,OFF1
+	LXI	H,OFF1
+	LXI	D,OFFSET
+	CALL	FUSS
+	ENDMAC
+FUSS:
+	CALL	SAVREG
+	MOV	C,A
+	JR	QUERY
+SAVREG:
+	POP	B
+	PUSH	H
+	PUSH	B
+	MOV	B,L
+	DADD	S
+	INX	H
+	INX	H
+	INX	H
+	INX	H
+	INX	H
+	XCHG
+	DADD	D
+	XCHG
+	RET
+	ENDIF
+NEW:
+	IF	NOT COMPILER
+	PUSH	B
+	EXX
+	POP	D
+	DAD	D
+	PUSH	H
+	EXX
+	POP	D
+	MOV	M,D
+	DCX	H
+	MOV	M,E
+	LXI	H,-MARGIN
+	DAD	S
+	DSUB	D
+	JC	HPERR
+	RET
+	ENDIF
+MARK:
+	IF	NOT COMPILER
+	EXX
+	PUSH	H
+	EXX
+	POP	D
+	MOV	M,D
+	DCX	H
+	MOV	M,E
+	RET
+	ENDIF
+RELEASE:
+	IF	NOT COMPILER
+	MOV	D,M
+	DCX	H
+	MOV	E,M
+	PUSH	D
+	EXX
+	POP	H
+	EXX
+	RET
+	ENDIF
+nbytes	equ	5
+explen	equ	1
+fracln	equ	nbytes-explen
+sign	equ	7
+op1	equ	17
+op2	equ	11
+scr1	equ	op2-nbytes
+intflg	equ	op2+1
+dc1	equ	op1+1
+dc2	equ	op1+2
+exp	equ	0
+msb	equ	exp-explen
+lsb	equ	exp-fracln
+ftable:
+	db	0,40h,42h,0fh
+	db	0,0a0h,86h,1h
+	db	0,10h,27h,0
+	db	0,0e8h,03,0
+	db	0,64h,0,0
+	db	0,0ah,0,0
+	db	0,01,0,0
+bcd:
+	db	00,00,00,01h
+	db	00,00,10h,00
+	db	00,00,01h,00
+	db	00,10h,00,00
+	db	00,01h,00,00
+	db	10h,00,00,00
+	db	01h,00,00,00
+	db	0,0,0,50h
+tentop	db	4
+rotate	macro	arg,direction
+	if	'arg'-'y'
+	lxi	h,op!arg+msb
+	call	rotat!direction
+	else
+	push	y
+	pop	h
+	dcx	h
+	ora	a
+	call	rot!direction
+	endif
+	endmac
+shift	macro	arg,direction
+	if	'arg'-'l'
+	if	'arg'-'y'
+	lxi	h,op!arg+exp
+	dad	d
+	else
+	push	y
+	pop	h
+	endif
+	inr	m
+	jv	fperr
+	dcx	h
+	mov	a,m
+	ral
+	call	rotright
+	else
+	call	rotatel
+	mvi	a,0
+	rar
+	xra	m
+	mov	m,a
+	endif
+	endmac
+cmplmt	macro	arg
+	if	'arg'-'y'
+	lxi	h,op!arg+lsb
+	call	compop
+	else
+	push	y
+	pop	h
+	lxi	b,lsb
+	dad	b
+	call	comp1
+	endif
+	endmac
+zchk	macro	arg
+	if	'arg'-'y'
+	lxi	h,op!arg+msb
+	call	zerchk
+	else
+	push	y
+	pop	h
+	dcx	h
+	call	zerck1
+	endif
+	endmac
+normfp	macro	arg
+	if	'arg'-'y'
+	lxi	b,op!arg
+	push	x
+	xtiy
+	dady	b
+	call	fnorm
+	pop	y
+	else
+	call	fnorm
+	endmac
+setupf	macro
+	pop	b
+	pop	d
+	pop	h
+	push	psw
+	push	h
+	push	d
+	push	psw
+	push	x
+	push	y
+	push	b
+	lxi	h,0
+	dad	s
+	push	h
+	pop	ix
+	xchg
+	xra	a
+	mov	intflg(x),a
+	endmac
+xcfp	macro
+	pop	d
+	pop	h
+	pop	b
+	xthl
+	push	d
+	push	h
+	push	b
+	endmac
+cvtf	macro	where,value
+	if	'A'-'where'
+	if	'B'-'where'
+	if	'C'-'where'
+	if	'D'-'where'
+	if	'H'-'where'
+	if	value-4
+	mov	a,l
+	pop	b
+	pop	d
+	pop	h
+	mov	h,a
+	push	h
+	push	d
+	push	b
+	xra	a
+	call	fout
+	lxi	h,13
+	dad	s
+	push	h
+	call	fxdcvt
+	else
+	call	fout
+	endif
+	else
+	call	cvtflt
+	endif
+	else
+	xchg
+	call	cvtflt
+	endif
+	else
+	pop	b
+	pop	d
+	pop	h
+	push	d
+	push	b
+	call	cvtflt
+	xcfp
+	endif
+	else
+	pop	h
+	call	cvtflt
+	endif
+	else
+	lxi	h,value
+	call	cvtflt
+	endif
+	endmac
+cvtflt	mov	b,h
+	call	abs
+	mov	a,b
+	ani	80h
+	ora	h
+	mov	h,a
+	pop	b
+	mvi	d,15
+	push	d
+	inx	s
+	push	h
+	lxi	h,0
+	push	h
+	push	h
+	inx	s
+	push	x
+	push	y
+	push	b
+	dad	s
+	push	h
+	pop	x
+	xchg
+	normfp	2
+	pop	h
+	pop	y
+	pop	x
+	pop	d
+	xra	a
+	pchl
+compop	dad	d
+comp1	mvi	b,fracln
+	mov	a,m
+	cma
+	adi	1
+compl	mov	m,a
+	inx	h
+	mov	a,m
+	cma
+	aci	0
+	djnz	compl
+	ret
+zerchk	dad	d
+zerck1	mvi	b,fracln
+	xra	a
+zchka	ora	m
+	dcx	h
+	djnz	zchka
+	ret
+rotatright
+	dad	d
+	ora	a
+rotright
+	push	b
+	mvi	b,fracln
+rotr	mov	a,m
+	rar
+	mov	m,a
+	dcx	h
+	djnz	rotr
+	pop	b
+	ret
+rotatleft
+	dad	d
+	ora	a
+rotleft
+	rar
+	push	b
+	lxi	b,lsb-msb-1
+	dad	b
+	ral
+	mvi	b,fracln
+rotl	inx	h
+	mov	a,m
+	ral
+	mov	m,a
+	djnz	rotl
+	pop	b
+	ret
+mpadd	xra	a
+	push	b
+	mvi	b,fracln
+mpadd1	ldax	d
+	adc	m
+	stax	d
+	inx	h
+	inx	d
+	djnz	mpadd1
+	pop	b
+	ret
+mpsub	xra	a
+	push	b
+	mvi	b,fracln
+mpsub1	ldax	d
+	sbb	m
+	stax	d
+	inx	h
+	inx	d
+	djnz	mpsub1
+	pop	b
+	ret
+fnorm	xra	a
+	mov	scr1(x),a
+	bit	sign,msb(y)
+	jrz	posit
+	inr	scr1(x)
+	res	sign,msb(y)
+posit	zchk	y
+	jrnz	fpanz
+	mvi	exp(y),0
+	ret
+fpanz	bit	sign-1,msb(y)
+	jrnz	allrot
+	rotate	y,left
+	dcr	exp(y)
+	jv	fperr
+	jr	fpanz
+allrot	dcr	scr1(x)
+	rnz
+	bset	sign,msb(y)
+	ret
+fsub	setupf
+	mvi	a,80h
+	xra	op2+msb(x)
+	mov	op2+msb(x),a
+	jr	fadd1
+fadd	setupf
+fadd1	zchk	1
+	jrz	copdon
+	zchk	2
+	jz	done2
+	bit	sign,op1+msb(x)
+	jrz	op1pos
+	res	sign,op1+msb(x)
+	cmplmt	1
+op1pos	bit	sign,op2+msb(x)
+	jrz	op2pos
+	res	sign,op2+msb(x)
+	cmplmt	2
+op2pos	mov	a,op1(x)
+	sub	op2(x)
+	jrz	shadd
+	mov	c,a
+	jp	posrlt
+	xra	a
+	sub	c
+posrlt	cpi	fracln-1*8
+	jrc	align
+	bit	sign,c
+	jz	done2
+copdon	lxi	h,op1
+	dad	d
+	xchg
+	lxi	b,op2
+	dad	b
+	lxi	b,4
+	lddr
+	jmp	done2
+align	bit	sign,c
+	mov	b,a
+	jrz	shop2
+shop1	shift	1,r
+	djnz	shop1
+	jr	shadd
+shop2	shift	2,r
+	djnz	shop2
+shadd	shift	1,r
+	shift	2,r
+	lxi	h,op1+lsb
+	dad	d
+	xchg
+	push	h
+	lxi	b,op2+lsb
+	dad	b
+	call	mpadd
+	pop	d
+	bit	sign,a
+	jz	done2
+	cmplmt	1
+	bset	sign,op1+msb(x)
+	jmp	done2
+fmult:
+	if	not compiler
+	setupf
+fmult1	mov	a,op1+msb(x)
+	xra	op2+msb(x)
+	mov	scr1(x),a
+	res	sign,op1+msb(x)
+	res	sign,op2+msb(x)
+	mov	a,op1(x)
+	add	op2(x)
+	jv	fperr
+	mov	op1(x),a
+	lxi	h,-nbytes
+	dad	s
+	sphl
+	push	x
+	lxi	b,op2+lsb
+	dadx	b
+	xtix
+	push	h
+	xra	a
+	mvi	b,nbytes
+zerlop:	mov	m,a
+	inx	h
+	djnz	zerlop
+	dcx	h
+	push	h
+	pop	y
+	mvi	b,fracln*8-1
+muloop:	rotate	1,right
+	jrnc	mult1
+	pop	d
+	pop	h
+	push	h
+	push	d
+	push	b
+	call	mpadd
+	pop	b
+	push	ix
+	pop	d
+mult1:	rotate	y,right
+	djnz	muloop
+	pop	d
+	pop	h
+	lxi	b,op1-op2
+	dad	b
+	mvi	b,fracln
+coplop:	ldax	d
+	mov	m,a
+	inx	h
+	inx	d
+	djnz	coplop
+	lxi	h,nbytes
+	dad	s
+	sphl
+	bit	sign,scr1(x)
+	jz	done2
+	bset	sign,op1+msb(x)
+	jmp	done2
+	endif
+fdivd:	setupf
+fdivd1:	zchk	2
+	jz	fperr
+	mov	a,op1+msb(x)
+	xra	op2+msb(x)
+	mov	scr1(x),a
+	mov	a,op1(x)
+	inr	a
+	sub	op2(x)
+	jv	fperr
+	mov	op1(x),a
+	res	sign,op1+msb(x)
+	res	sign,op2+msb(x)
+	lxi	h,-nbytes
+	dad	s
+	sphl
+	push	h
+	xra	a
+	mvi	b,nbytes
+zerlp:	mov	m,a
+	inx	h
+	djnz	zerlp
+	dcx	h
+	push	h
+	pop	y
+	mvi	b,fracln*8-1
+divlp:
+	push	d
+	push	b
+	lxi	h,op1
+	dad	d
+	xchg
+	lxi	b,op2
+	dad	b
+	mvi	b,fracln
+divd1:	dcx	h
+	dcx	d
+	ldax	d
+	cmp	m
+	jrc	divd2
+	jrnz	divd1a
+	djnz	divd1
+	inr	b
+divd1a:	dcx	h
+	dcx	d
+	djnz	divd1a
+	inx	h
+	inx	d
+divd1b:	call	mpsub
+	ora	a
+divd2:	pop	b
+	pop	d
+	push	psw
+	rotate	y,left
+	pop	psw
+	jrc	divd3
+	bset	0,lsb(y)
+divd3:	rotate	1,left
+	djnz	divlp
+	lxi	h,op1+lsb
+	dad	d
+	pop	d
+	mvi	b,fracln
+coplp:	ldax	d
+	mov	m,a
+	inx	h
+	inx	d
+	djnz	coplp
+	lxi	h,nbytes
+	dad	s
+	sphl
+	bit	sign,scr1(x)
+	jz	done2
+	bset	sign,op1+msb(x)
+	jmp	done2
+fout:
+	if	not compiler
+	pop	b
+	pop	d
+	pop	h
+	push	psw
+	push	h
+	push	d
+	push	psw
+	push	h
+	push	d
+	push	psw
+	push	x
+	push	y
+	push	b
+	lxi	h,0
+	dad	s
+	push	h
+	pop	ix
+	xchg
+	xra	a
+	mvi	c,' '
+	bit	sign,op1+msb(x)
+	jrz	notneg
+	mvi	c,'-'
+	res	sign,op1+msb(x)
+notneg:	mov	intflg(x),c
+	lxi	h,-5
+	dad	s
+	sphl
+	xra	a
+	mvi	b,4
+zerstr:	mov	m,a
+	inx	h
+	djnz	zerstr
+	mov	m,a
+	push	h
+	zchk	1
+	pop	h
+	jz	bcdout
+	mvi	m,6
+declop:	push	h
+	bit	sign,op1(x)
+	jrnz	less1
+	mvi	a,23
+	cmp	op1(x)
+	jrc	gret1
+less1:	call	fptten		
+	pop	h		
+	dcr	m		
+	jr	declop		
+gret1:	call	fpdten		
+	pop	h		
+	inr	m		
+	push	h		
+	mov	a,op1(x)	
+	cpi	24
+	jrnc	gret1		
+frcout:	mov	c,a		
+frc1:	mov	a,c		
+	cpi	23		
+	jrz	frc2		
+	rotate	1,right		
+	inr	c
+	jr	frc1		
+frc2:	lxi	h,op1+msb	
+	dad	d
+	push	d		
+	lxi	d,ftable+3	
+	mvi	b,nbytes-1	
+frc2a:	ldax	d		
+	cmp	m		
+	jrc	frc2c		
+	jrnz	frc2b		
+	dcx	h
+	dcx	d
+	djnz	frc2a
+	jr	frc2c		
+frc2b:	pop	d		
+	call	fptten		
+	rotate	1,left		
+	pop	h		
+	dcr	m		
+	jr	frc3a
+frc2c:	pop	d		
+frc3:	pop	h		
+frc3a:	lxi	b,-4		
+	dad	b		
+	push	d		
+	lxi	b,bcd		
+	push	b
+	push	h		
+	lxi	h,op1+lsb	
+	dad	d
+	xchg			
+	lxi	h,ftable	
+	mvi	b,7		
+conlop:	mvi	c,0		
+conv1:	push	d		
+	push	h
+	inr	c		
+	call	mpsub		
+	pop	h		
+	pop	d
+	jrnc	conv1		
+	push	d		
+	call	mpadd		
+	pop	y
+	pop	d
+	xthl
+	push	b
+conv2	dcr	c
+	jrz	conv4
+	ora	a
+	mvi	b,4
+	push	d
+	push	h
+conv3	ldax	d
+	adc	m
+	daa
+	stax	d
+	inx	h
+	inx	d
+	djnz	conv3
+	pop	h
+	pop	d
+	jr	conv2
+conv4	lxi	b,4
+	dad	b
+	pop	b
+	xthl
+	push	d
+	push	y
+	pop	d
+	djnz	conlop
+	pop	d
+	lxi	h,4
+	dad	d
+	pop	b
+	pop	b
+bcdout	push	x
+	pop	y
+	lxi	b,op1-2
+	xra	a
+	dady	b
+	mov	e,intflg(x)
+	mvi	4(y),' '
+	mov	3(y),e
+	mov	e,m
+	dcx	h
+	mvi	a,30h
+	add	m
+	mov	2(y),a
+	mvi	1(y),'.'
+	mvi	b,6
+outlp	bit	0,b
+	jrnz	outlp1
+	dcx	h
+outlp1	rld
+	mov	0(y),a
+	dcx	y
+	djnz	outlp
+	mov	b,e
+	mvi	0(y),'E'
+	mvi	c,'+'
+	bit	7,b
+	jrz	posexp
+	mvi	c,'-'
+	mov	a,b
+	neg
+	mov	b,a
+posexp	mov	-1(y),c
+	xra	a
+	cmp	b
+	jrz	conxp1
+	xra	a
+conexp	inr	a
+	daa
+	djnz	conexp
+conxp1	mov	m,a
+	mvi	a,30h
+	rld
+	mov	-2(y),a
+	rld
+	mov	-3(y),a
+	lxi	h,5
+	dad	s
+	sphl
+	pop	h
+	pop	y
+	pop	x
+	xra	a
+	pchl
+	endif
+fpp	equ	0
+fps	equ	1
+fppb	equ	1
+fpsb	equ	2
+fltin
+	if	not compiler
+	push	d
+	push	h
+	lxi	d,-2
+	xchg
+	dad	s
+	xchg
+	mvi	b,0
+fp1	call	input
+	cpi	' '
+	jrz	fp1
+	cpi	'-'
+	jrz	ngflt
+	cpi	'+'
+	cz	input
+	inr	b
+ngflt	dcr	b
+	push	b
+	cnz	input
+	inx	s
+	mvi	b,0
+	jr	ckdg1
+ckdg	call	input
+ckdg1	cpi	'0'
+	jc	errtyp
+	cpi	10+'0'
+	jnc	errtyp
+	jr	fpch1
+fpchrs	call	input
+fpch1	push	psw
+	inx	s
+	call	look
+	cpi	'.'
+	jrz	fpoint
+	cpi	'e'
+	jrz	fpscal
+	cpi	'E'
+	jrz	fpscal
+	cpi	'0'
+	jrc	fpdn
+	cpi	10+'0'
+	jrc	fpchrs
+fpdn	mvi	a,' '
+	push	psw
+	xchg
+	push	h
+	call	cvtsfp
+	mov	b,h
+	mov	c,l
+	pop	h
+	push	h
+	inx	h
+	inr	m
+	jrnz	fppos
+	bset	sign,e
+fppos	mov	h,0(x)
+	mov	l,-1(x)
+	mov	m,d
+	dcx	h
+	mov	m,e
+	dcx	h
+	mov	m,b
+	dcx	h
+	mov	m,c
+	pop	h
+	sphl
+	pop	h
+	pop	h
+	pop	d
+	mvi	b,0
+	ret
+fpoint	bit	fpp,b
+	jrnz	fpdn
+	mvi	b,fppb
+	jr	fpchrs
+fpscal	bit	fps,b
+	jrnz	fpdn
+	mvi	b,fpsb+fppb
+	call	input
+	push	psw
+	inx	s
+	call	look
+	cpi	'-'
+	jrz	scalsn
+	cpi	'+'
+	jrnz	ckdg
+scalsn	call	input
+	push	psw
+	inx	s
+	jr	ckdg
+	endif
+look
+	if	not compiler
+	xra	a
+	cmp	h
+	jrnz	ntcns
+	push	d
+	lhld	6
+	lxi	d,-getp
+	dad	d
+	mov	e,m
+	mvi	d,0
+	dad	d
+	inx	h
+	mov	a,m
+	lxi	h,0
+	pop	d
+	ret
+ntcns	inx	h
+	mov	a,m
+	dcx	h
+	ret
+	endif
+fpdten	lxi	h,op2
+	dad	d
+	push	d
+	xchg
+	lxi	h,tentop
+	lxi	b,nbytes
+	lddr
+	pop	d
+	jmp	fdivd1
+fptten	lxi	h,op2
+	dad	d
+	push	d
+	xchg
+	lxi	b,op1
+	dad	b
+	lxi	b,nbytes
+	lddr
+	pop	d
+	inr	exp+op1(x)
+	jv	fperr
+	inr	exp+op1(x)
+	jv	fperr
+	call	fadd1
+	inr	exp+op1(x)
+	rnv
+fperr	xra	a
+	cmp	intflg(x)
+	jc	flterr
+	spix
+	pop	d
+	pop	y
+	pop	x
+	lxi	h,nbytes+7
+	dad	s
+	sphl
+	lxi	h,0
+	push	h
+	push	h
+	xchg
+	xra	a
+	stc
+	pchl
+cvtsfp	lxi	d,0
+	mvi	b,7
+addzer	push	d
+	djnz	addzer
+	push	x
+	push	y
+	push	h
+	xchg
+	dad	s
+	push	h
+	pop	x
+	inr	intflg(x)
+	xchg
+nxtdig	pop	h
+	mov	a,m
+	dcx	h
+	push	h
+	cpi	'.'
+	jrz	fractn
+	cpi	'e'
+	jrz	scale
+	cpi	'E'
+	jrz	scale
+	cpi	' '
+	jrz	eofpn
+	dcr	dc1(x)
+	call	fptten
+	pop	h
+	push	h
+	inx	h
+	mov	a,m
+	sui	'0'
+	lxi	h,op2
+	dad	d
+	mvi	m,7
+	dcx	h
+	mov	m,a
+	xra	a
+	dcx	h
+	mov	m,a
+	dcx	h
+	mov	m,a
+	dcx	h
+	mov	m,a
+	normfp	2
+	call	fadd1
+	jr	nxtdig
+fractn	mvi	dc1(x),0
+	mvi	dc2(x),0ffh
+	jr	nxtdig
+eofpn	xra	a
+	pop	h
+	jr	scal6
+scale	pop	h
+	xra	a
+	mov	c,a
+	mov	a,m
+	cpi	'-'
+	jrnz	scal2
+	mov	c,a
+	jr	scal3
+scal2	cpi	'+'
+	jrnz	scal4
+scal3	dcx	h
+scal4	mov	a,m
+	sui	'0'
+	jc	fperr
+	cpi	10
+	jnc	fperr
+	mov	b,a
+	dcx	h
+	mov	a,m
+	cpi	' '
+	jrz	scal5
+	sui	'0'
+	jc	fperr
+	cpi	10
+	jnc	fperr
+	push	d
+	mov	d,a
+	mov	a,b
+	add	a
+	add	a
+	add	b
+	add	a
+	add	d
+	pop	d
+	mov	b,a
+scal5	mov	a,b
+	bit	0,c
+	jrz	scal6
+	neg
+scal6	mov	b,a
+	mov	a,dc1(x)
+	ana	dc2(x)
+	add	b
+	jm	dcnst
+	jrz	cvtdn
+	mov	b,a
+mcnst	push	b
+	call	fptten
+	pop	b
+	djnz	mcnst
+	jr	cvtdn
+dcnst	neg
+	mov	b,a
+dcnst2	push	b
+	call	fpdten
+	pop	b
+	djnz	dcnst2
+cvtdn	pop	y
+	pop	x
+	lxi	h,8
+	dad	s
+	sphl
+	pop	h
+	pop	d
+	pop	b
+	xra	a
+	ret
+$cvth	call	cvtsfp
+	ret
+$cvtl	call	cvtsfp
+	xchg
+	ret
+round	pop	h
+	pop	d
+	xthl
+	push	h
+	push	d
+	mov	d,a
+	mov	e,a
+	mov	h,a
+	mvi	a,80h
+	ana	l
+	ori	40h
+	mov	l,a
+	push	h
+	push	d
+	call	fadd
+	pop	d
+	pop	h
+	jr	trunc2
+trunc	pop	h
+	pop	d
+	xthl
+trunc2	mov	e,d
+	mov	d,l
+	bit	sign,h
+	jrnz	zeroi
+	mvi	a,15
+	sub	h
+	jrc	zeroi
+	jrz	dones
+	res	sign,d
+	mov	b,a
+shft	srlr	d
+	rrar	e
+	djnz	shft
+dones	xra	a
+	bit	sign,l
+	rz
+	lxi	h,0
+	dsbc	d
+dntngt	xchg
+	ret
+zeroi	lxi	d,0
+	xra	a
+	ret
+done2	normfp	1
+	push	x
+	pop	d
+	xra	a
+	cmp	intflg(x)
+	rnz
+	pop	d
+	pop	y
+	pop	x
+	lxi	h,nbytes+3
+	dad	s
+	sphl
+	xchg
+	xra	a
+	pchl
+frelop	macro	flags
+	call	cmpops
+	ani	flags
+	jr	relfin
+	endmac
+fpgt	frelop	gtbit
+fpgte	frelop	gtbit+eqbit
+fplt	frelop	ltbit
+fplte	frelop	ltbit+eqbit
+fpeq	frelop	eqbit
+fpneq	frelop	ltbit+gtbit
+relfin	mvi	a,0
+	rz
+	stc
+	ret
+cmpops	push	x
+	lxi	x,6
+	xra	a
+	dadx	s
+	mov	c,6(x)
+	mov	e,2(x)
+	mov	a,c
+	xra	e
+	jm	dfsgns
+	mov	a,7(x)
+	xri	80h
+	mov	b,a
+	mov	a,3(x)
+	xri	80h
+	cmp	b
+	jrnz	fpdiff
+	mov	a,e
+	cmp	c
+	jrnz	fpdiff
+	mov	a,1(x)
+	cmp	5(x)
+	jrnz	fpdiff
+	mov	a,0(x)
+	cmp	4(x)
+	jrnz	fpdiff
+	mvi	a,eqbit
+	jr	cmpdon
+dfsgns	slar	e
+	jr	fpdf1
+fpdiff	bit	sign,c
+	jrz	fpdf1
+	cmc
+fpdf1	jrc	obig
+	mvi	a,ltbit
+	jr	cmpdon
+obig	mvi	a,gtbit
+cmpdon	pop	x
+	pop	d
+	pop	h
+	pop	b
+	pop	b
+	pop	b
+	xthl
+	xchg
+	pchl
+	if	not compiler
+FXD037
+FXDCVT
+	ENTR	D,2,29
+	MOV	-6(IX),A
+	LXI	H,11
+	ILOD	H,1,-1
+	RCHK	H,0,127
+	MOV	-5(IX),L
+	MVI	0(IX),255
+	MVI	-1(IX),255
+R	SET	         0
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	RCHK	H,1,14
+	XCHG
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MOV	D,A
+	MOV	E,M
+	RCHK	D,0,255
+	MOV	-4(IX),E
+R	SET	         1
+	LXI	H,11
+	ILOD	H,1,-12
+	LXI	D,10
+	MULT	D,0
+	PUSH	H
+	LXI	H,11
+	ILOD	H,1,-13
+	POP	D
+	DADD	D,0
+	PUSH	H
+	LXI	H,48
+	LXI	D,11
+	MULT	D,0
+	POP	D
+	XCHG
+	DSUB	D,0
+	MOV	0(IX),H
+	MOV	-1(IX),L
+	LXI	H,11
+	ILOD	H,1,-11
+	LXI	D,45
+	EQUL	D,0
+	JNC	FXD120
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	NEGT	H
+	MOV	0(IX),H
+	MOV	-1(IX),L
+FXD120
+	MVI	-3(IX),1
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	LXI	H,22
+	XTHL
+FXD148
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD149
+	MOV	H,A
+	MOV	L,-3(IX)
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	MVI	M,48
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD148
+FXD149
+	POP	D
+FXD168
+	POP	D
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	MOV	D,A
+	MOV	E,A
+	GE	D,0
+	JNC	FXD173
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	INX	H
+	INX	H
+	MOV	D,A
+	MOV	E,-4(IX)
+	DADD	D,0
+	LXI	D,12
+	LE	D,0
+	JNC	FXD170
+	MVI	-6(IX),1
+	LXI	H,11
+	ILOD	H,1,-2
+	RCHK	H,0,127
+	MOV	-7(IX),L
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	LXI	D,6
+	GRET	D,0
+	JNC	FXD216
+	MVI	-3(IX),5
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	LXI	H,10
+	XTHL
+FXD233
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD234
+	MOV	H,A
+	MOV	L,-3(IX)
+	DCX	H
+	DCX	H
+	DCX	H
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	MOV	D,A
+	MOV	E,-3(IX)
+	RCHK	D,1,14
+	PUSH	H
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MOV	D,A
+	MOV	E,M
+	RCHK	D,0,127
+	POP	H
+	MOV	M,E
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD233
+FXD234
+	POP	D
+FXD260
+	POP	D
+	MVI	-3(IX),7
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	XTHL
+FXD269
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD270
+	MOV	H,A
+	MOV	L,-3(IX)
+	INX	H
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	MVI	M,48
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD269
+FXD270
+	POP	D
+FXD290
+	POP	D
+	JMP	FXD293
+FXD216
+	MVI	-3(IX),2
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	INX	H
+	XTHL
+FXD304
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD305
+	MOV	H,A
+	MOV	L,-3(IX)
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	MOV	D,A
+	MOV	E,-3(IX)
+	INX	D
+	INX	D
+	INX	D
+	RCHK	D,1,14
+	PUSH	H
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MOV	D,A
+	MOV	E,M
+	RCHK	D,0,127
+	POP	H
+	MOV	M,E
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD304
+FXD305
+	POP	D
+FXD332
+	POP	D
+	MVI	-3(IX),3
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	LXI	D,8
+	XCHG
+	DSUB	D,0
+	XTHL
+FXD341
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD342
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	MOV	D,A
+	MOV	E,-3(IX)
+	DADD	D,0
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	MOV	D,A
+	MOV	E,-3(IX)
+	INX	D
+	INX	D
+	PUSH	H
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	DADD	D,0
+	RCHK	H,1,14
+	XCHG
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MOV	D,A
+	MOV	E,M
+	RCHK	D,0,127
+	POP	H
+	MOV	M,E
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD341
+FXD342
+	POP	D
+FXD371
+	POP	D
+FXD293
+FXD170
+FXD172	EQU  FXD170
+FXD173	EQU  FXD172
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	MOV	D,A
+	MOV	E,A
+	LESS	D,0
+	JNC	FXD380
+	MOV	H,A
+	MOV	L,-4(IX)
+	INX	H
+	INX	H
+	LXI	D,12
+	LE	D,0
+	JNC	FXD377
+	MVI	-6(IX),1
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	CALL	L10015
+	INX	H
+	INX	H
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	XCHG
+	LXI	H,11
+	ILOD	H,1,-2
+	RCHK	H,0,127
+	XCHG
+	MOV	M,E
+	MVI	-3(IX),3
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	LXI	H,8
+	XTHL
+FXD436
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD437
+	MOV	H,A
+	MOV	L,-3(IX)
+	PUSH	H
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	CALL	L10015
+	POP	D
+	DADD	D,0
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	MOV	D,A
+	MOV	E,-3(IX)
+	INX	D
+	INX	D
+	RCHK	D,1,14
+	PUSH	H
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MOV	D,A
+	MOV	E,M
+	RCHK	D,0,127
+	POP	H
+	MOV	M,E
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD436
+FXD437
+	POP	D
+FXD470
+	POP	D
+	MOV	0(IX),A
+	MOV	-1(IX),A
+FXD377
+FXD379	EQU  FXD377
+FXD380	EQU  FXD379
+	CMP	-6(IX)
+	JNC	FXD480
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	INX	H
+	INX	H
+	RCHK	H,1,22
+	XCHG
+	LXI	H,-6
+	ADDR	IX
+	MVI	M,46
+	MVI	-3(IX),1
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	LXI	H,14
+	XTHL
+FXD508
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD509
+	MOV	H,A
+	MOV	L,-3(IX)
+	RCHK	H,1,14
+	XCHG
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MVI	M,32
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD508
+FXD509
+	POP	D
+FXD528
+	POP	D
+	MOV	L,-1(IX)
+	MOV	H,0(IX)
+	INX	H
+	INX	H
+	MOV	D,A
+	MOV	E,-4(IX)
+	DADD	D,0
+	RCHK	H,0,255
+	MOV	-2(IX),L
+	MVI	-3(IX),1
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	PUSH	H
+	MOV	H,A
+	MOV	L,-2(IX)
+	XTHL
+FXD545
+	MOV	D,A
+	MOV	E,M
+	XTHL
+	PUSH	H
+	GE	D,0
+	JNC	FXD546
+	MOV	H,A
+	MOV	L,-3(IX)
+	MOV	D,A
+	MOV	E,-2(IX)
+	PUSH	H
+	LXI	H,12
+	DSUB	D,0
+	INX	H
+	INX	H
+	POP	D
+	DADD	D,0
+	RCHK	H,1,14
+	XCHG
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MOV	D,A
+	MOV	E,-3(IX)
+	RCHK	D,1,22
+	PUSH	H
+	LXI	H,-6
+	ADDR	IX
+	MOV	D,A
+	MOV	E,M
+	RCHK	D,0,127
+	POP	H
+	MOV	M,E
+	CTRL
+	POP	H
+	XTHL
+	INR	M
+	JNZ	FXD545
+FXD546
+	POP	D
+FXD578
+	POP	D
+	MOV	H,A
+	MOV	L,-2(IX)
+	LXI	D,12
+	XCHG
+	DSUB	D,0
+	INX	H
+	INX	H
+	RCHK	H,1,14
+	XCHG
+	MOV	H,11(IX)
+	MOV	L,10(IX)
+	DSUB
+	INX	H
+	MOV	D,A
+	MOV	E,-5(IX)
+	RCHK	D,0,127
+	MOV	M,E
+FXD480
+	EXIT	D,2
+F	SET	         0
+arctan
+FCT037
+	ENTR	D,2,13
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-9
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	MOV	-8(IX),A
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LESS	D,-4
+	JNC	FCT051
+	MVI	-8(IX),1
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	NEGT	E
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT051
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,320
+	MOV	D,A
+	MOV	E,A
+	PUSH	H
+	PUSH	D
+	GRET	D,-4
+	JNC	FCT073
+	CMP	-8(IX)
+	JRC	FCT083
+FCT082
+FCT084	EQU  FCT082
+FCT087	EQU  FCT084
+	INR	A
+FCT083
+	MOV	L,A
+	XRA	A
+	MOV	H,A
+	RCHK	H,0,1
+	MOV	-8(IX),L
+	LXI	H,356
+	LXI	D,-30739
+	PUSH	H
+	PUSH	D
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-9
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,320
+	MOV	D,A
+	MOV	E,A
+	PUSH	H
+	PUSH	D
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	FDVD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT073
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-423
+	LXI	D,27760
+	PUSH	H
+	PUSH	D
+	LXI	H,630
+	LXI	D,-19911
+	PUSH	H
+	PUSH	D
+	LXI	H,876
+	LXI	D,12728
+	PUSH	H
+	PUSH	D
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	DADD	D,-4
+	LXI	H,1009
+	LXI	D,-19127
+	PUSH	H
+	PUSH	D
+	LXI	H,618
+	LXI	D,8043
+	PUSH	H
+	PUSH	D
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	DADD	D,-4
+	LXI	H,-61
+	LXI	D,-14368
+	PUSH	H
+	PUSH	D
+	LXI	H,348
+	LXI	D,-18848
+	PUSH	H
+	PUSH	D
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	DADD	D,-4
+	FDVD	D,-4
+	DADD	D,-4
+	FDVD	D,-4
+	DADD	D,-4
+	FDVD	D,-4
+	DADD	D,-4
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	CMP	-8(IX)
+	JNC	FCT135
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	NEGT	E
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT135
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-12
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	DADD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,17
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	EXIT	D,4
+ln
+FCT153
+	ENTR	D,2,14
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LESS	D,-4
+	JNC	FCT155
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	CALL	FPABS
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT155
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,320
+	MOV	D,A
+	MOV	E,A
+	PUSH	H
+	PUSH	D
+	DSUB	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,320
+	MOV	D,A
+	MOV	E,A
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	FDVD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-8
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	MOV	-12(IX),A
+	MVI	-13(IX),1
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT209
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MOV	L,-13(IX)
+	MOV	H,-12(IX)
+	PUSH	H
+	CVTF	B
+	FDVD	D,-4
+	DADD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	MOV	L,-13(IX)
+	MOV	H,-12(IX)
+	INX	H
+	INX	H
+	MOV	-12(IX),H
+	MOV	-13(IX),L
+	CTRL
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	EQUL	D,-4
+	JNC	FCT209
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	xchg
+	inr	m
+	xchg
+	PUSH	IX
+	POP	H
+	LXI	B,17
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	EXIT	D,4
+FCT256
+expfct
+	ENTR	D,2,13
+	CVTF	A,1
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-8
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	MOV	-12(IX),A
+	CVTF	A,1
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT276
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	MOV	H,A
+	MOV	L,-12(IX)
+	INX	H
+	RCHK	H,0,255
+	MOV	-12(IX),L
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	MOV	H,A
+	MOV	L,-12(IX)
+	PUSH	H
+	CVTF	B
+	FDVD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-8
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	DADD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	CTRL
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	EQUL	D,-4
+	JNC	FCT276
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	LXI	B,17
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	EXIT	D,4
+FCT321
+sin
+	ENTR	D,2,5
+FCC321
+	MOV	-4(IX),A
+FCT330
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,356
+	LXI	D,-30739
+	PUSH	H
+	PUSH	D
+	GRET	D,-4
+	JNC	FCT329
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,612
+	LXI	D,-30739
+	PUSH	H
+	PUSH	D
+	DSUB	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	CMP	-4(IX)
+	JRC	FCT347
+FCT346
+FCT348	EQU  FCT346
+FCT351	EQU  FCT348
+	INR	A
+FCT347
+	MOV	L,A
+	XRA	A
+	MOV	H,A
+	RCHK	H,0,1
+	MOV	-4(IX),L
+	CTRL
+	JMP	FCT330
+FCT329
+FCT354
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,356
+	LXI	D,-30739
+	PUSH	H
+	PUSH	D
+	NEGT	E
+	LE	D,-4
+	JNC	FCT353
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,612
+	LXI	D,-30739
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	CMP	-4(IX)
+	JRC	FCT371
+FCT370
+FCT372	EQU  FCT370
+FCT375	EQU  FCT372
+	INR	A
+FCT371
+	MOV	L,A
+	XRA	A
+	MOV	H,A
+	RCHK	H,0,1
+	MOV	-4(IX),L
+	CTRL
+	JMP	FCT354
+FCT353
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,81
+	LXI	D,31937
+	PUSH	H
+	PUSH	D
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-1593
+	LXI	D,31116
+	PUSH	H
+	PUSH	D
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,-687
+	LXI	D,25910
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,210
+	LXI	D,-21111
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,356
+	LXI	D,-30745
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MULT	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	CMP	-4(IX)
+	JNC	FCT410
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	NEGT	E
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT410
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	LXI	B,17
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	EXIT	D,4
+FCT429
+cos
+	ENTR	D,2,5
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,356
+	LXI	D,-30739
+	PUSH	H
+	PUSH	D
+	DADD	D,-4
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	JMP	FCC321
+FCT443
+sqrt
+	ENTR	D,2,12
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	LESS	D,-4
+	JNC	FCT451
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	ldir
+	CALL	FPABS
+	LXI	H,3
+	DADD	S
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,13
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+FCT451
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	xchg
+	dcr	m
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-8
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	MOV	H,A
+	MOV	L,A
+	PUSH	H
+	PUSH	H
+	NEQL	D,-4
+	JNC	FCT477
+FCT485
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	LXI	B,-4
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,10
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	FDVD	D,-4
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	DADD	D,-4
+	LXI	H,3
+	DADD	S
+	dcr	m
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-8
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	POP	H
+	POP	H
+	CTRL
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-7
+	DADD	B
+	LXI	B,4
+	LDIR
+	EQUL	D,-4
+	JC	FCT511
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	DCX	H
+	DCX	H
+	DCX	H
+	LXI	B,4
+	LDIR
+	EQUL	D,-4
+	JNC	FCT485
+FCT484
+FCT511	EQU  FCT484
+FCT477
+	LXI	H,-4
+	DADD	S
+	SPHL
+	XCHG
+	PUSH	IX
+	POP	H
+	LXI	B,-11
+	DADD	B
+	LXI	B,4
+	LDIR
+	dcx	d
+	PUSH	IX
+	POP	H
+	LXI	B,17
+	DADD	B
+	XCHG
+	LXI	B,4
+	LDDR
+	EXIT	D,4
+F	SET	         1
+	else
+arctan
+cos
+expfct
+ln
+sqrt
+sin
+fxdcvt
+	endif
+L10009	EQU	WRITELN
+L10010	EQU	READLN
+L10011	EQU	WRITE
+L10012	EQU	READ
+L10015	EQU	ABS
+L10016	EQU	FPABS
+L10017	EQU	SQR
+L10018	EQU	FPSQR
+L10020	EQU	EOLN
+L10021	EQU	EOF
+L10022	EQU	RESET
+L10023	EQU	REWRITE
+L10024	EQU	FTXTIN
+L10025	EQU	CHAIN
+L10026	EQU	NEW
+L10027	EQU	MARK
+L10028	EQU	RELEASE
+L10029	EQU	TRUNC
+L10030	EQU	ROUND
+L10031	EQU	ARCTAN
+L10032	EQU	COS
+L10033	EQU	EXPFCT
+L10034	EQU	LN
+L10035	EQU	SQRT
+L10036	EQU	SIN
+

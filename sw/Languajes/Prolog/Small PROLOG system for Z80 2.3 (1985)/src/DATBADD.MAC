@@ -1,0 +1,102 @@
+
+; ===========================================================
+; DATBADD.Z80
+;	add to the database in E-Prolog
+;	May 26, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+	DSEG
+;PAIR alldb;
+ALLDB::	DS	2
+;PAIR * alldbe;
+ALLDBE:: DS	2
+	CSEG
+
+;datbadd(relname,clause)
+;  SYMBOL * relname;
+;  EXPR clause;
+;  {
+;  static PAIR * ptr;
+	DSEG
+CLAUSE:	DW	0
+PTR:	DW	0
+	CSEG
+DBADD::
+;
+	LD	(CLAUSE),DE
+;  ptr = &relname->addr;
+	LD	(PTR),HL
+;  if (numbp(*ptr))
+	CALL	INDIR##
+	CALL	NUMBP##
+	JR	Z,DB1
+;    {
+;    errmsg(" Cannot change built-in commands.\r\n");
+;    return;
+	LD	HL,DB1MSG
+	JP	ERRMSG##
+	DSEG
+DB1MSG:	DB	' Cannot change built-in commands.',CR,LF,0 
+	CSEG
+;    }
+DB1:
+;  for ( ; *ptr != (PAIR)empty ; ptr = &(*ptr)->right.list)
+;    ;
+	LD	HL,(PTR)
+	CALL	INDIR##
+	LD	DE,EMPTY
+	CALL	CPHL##
+	JR	Z,DB2
+	INC	HL
+	INC	HL
+	LD	(PTR),HL
+	JR	DB1
+DB2:
+;  *ptr = makepair(clause,empty);
+	LD	HL,(CLAUSE)
+	LD	DE,EMPTY
+	CALL	MKPAIR##
+	EX	DE,HL
+	LD	HL,(PTR)
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;  *alldbe = makepair(clause,empty);
+	LD	HL,(CLAUSE)
+	LD	DE,EMPTY
+	CALL	MKPAIR##
+	EX	DE,HL
+	LD	HL,(ALLDBE)
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+;  alldbe = &((*alldbe)->right.list);
+	DEC	HL
+	CALL	INDIR##
+	INC	HL
+	INC	HL
+	LD	(ALLDBE),HL
+;  datbtop = hfree;
+	LD	HL,(HFREE##)
+	LD	(DBTOP##),HL
+;  }
+	RET
+
+	END
+

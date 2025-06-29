@@ -1,0 +1,264 @@
+; File:  LESSONS.LIB  (c)	02/28/84	The Soft Warehouse
+
+;		muLISP Lesson File Driver Routine
+
+
+(PROG1  (PRIN1 (ASCII 8))
+	(PRIN1 (ASCII 8))
+	(SPACES 2)
+	(TERPRI)
+	(PRIN1 "Loading the muLISP Tutorial System: ")
+	(LOOP
+	  ((EQ (EVAL (READ)) 'STOP))
+	  (PRIN1 '*) ) )
+
+(PUTD 'DEFUN '(NLAMBDA EXP$
+  ((OR (ATOM EXP$) (ATOM (CDR EXP$)) (NOT (ATOM (CAR EXP$)))) NIL)
+  ( ((NAME (CADR EXP$))
+      ((OR (EQ (CADR EXP$) 'LAMBDA) (EQ (CADR EXP$) 'NLAMBDA)))
+      (SETQ EXP$ (CONS (CAR EXP$) (CONS 'LAMBDA (CDR EXP$)))) )
+    ((OR (NUMBERP (CADR EXP$))
+	 (EQ (CAADR EXP$) 'LAMBDA)
+	 (EQ (CAADR EXP$) 'NLAMBDA) )
+      (SETQ EXP$ (CONS (CAR EXP$) (CADR EXP$))) )
+    (SETQ EXP$ (CONS (CAR EXP$) (CONS 'LAMBDA (CDR EXP$)))) )
+  ((EQUAL (GETD (CAR EXP$)) (CDR EXP$)))
+  (PUTD (CAR EXP$) (CDR EXP$))
+  (CAR EXP$) ))
+
+(DEFUN LESSONS (LAMBDA (
+    % Local: % LST1 LST2 NUM APPDEF )
+  (WRS)
+  (SETQ APPDEF (GETD 'APPEND))
+  ( ((PLUSP DFTLES))
+    (SETQ DFTLES 1) )
+  (LOOP
+    (PUTD 'APPEND APPDEF)
+    (RDS)
+    (TERPRI)
+    (CLRSCRN)
+    (CENTER "m u L I S P - 8 3")
+    (TERPRI)
+    (CENTER "T U T O R I A L   S Y S T E M")
+    (TERPRI 2)
+    (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) 46) 2))
+    (PRINT "Lesson		   Subject")
+    (TERPRI)
+    (SETQ LST1 CHAPLST)
+    (SETQ LST2)
+    (SETQ NUM 1)
+    (LOOP
+      ((EQ LST1))
+      (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) 43) 2))
+      (PUSH (PRIN1 NUM) LST2)
+      (SETQ NUM (PLUS NUM 1))
+      (SPACES 1)
+      ( ((LESSP (LINELENGTH) 50))
+	(SPACES 3) )
+      (PRINT (POP LST1)) )
+    (TERPRI 2)
+    (PRTMSG '(When presented with a list of options by the muLISP Tutorial
+	System and you are not sure which one to "select," press the SPACE
+	BAR for the default "option."))
+    (TERPRI 2)
+    (PRTMSG '(Enter lesson number or Q to quit the lessons and return to
+	"DOS: "))
+    (SETQ DFTLES (QUERY (CONS DFTLES (CONS 'Q LST2))))
+    ((EQ DFTLES 'Q)
+	(SYSTEM) )
+    (READFILE (PACK (LIST 'MULISP DFTLES)))
+    (SETQ DFTLES (COND
+      ((EQ DFTLES (LENGTH CHAPLST))
+	(SETQ DFTLES Q) )
+      ((SETQ DFTLES (PLUS DFTLES 1))) )) ) ))
+
+(SETQ CHAPLST '(
+  "Data objects and primitive functions"
+  "Defining functions using recursion"
+  "Names, numbers, and nodes"
+  "List processing & iterative functions"
+  "Numerical programming techniques"
+  "Implementing turtle graphics routines"
+))
+
+(DEFUN READFILE (LAMBDA (FILENAME DRVNUM
+    % Local: % EXPN ECHO PTRLST BRKFLG)
+  ((EQ (RDS FILENAME 'LES DRVNUM))
+    ((EQ DRVNUM 'A)
+      (TERPRI)
+      (PRTMSG (APPEND
+	'(Enter the drive that contains the file)
+	(LIST (PACK (LIST FILENAME ".LES: ")))))
+      (SETQ DRVNUM (QUERY '(Q A B C D E F G H I J K)))
+      ((EQ DRVNUM 'Q))
+      (READFILE FILENAME DRVNUM) )
+    (READFILE FILENAME 'A) )
+  (CLRSCRN)
+  (LOOP
+    ((EQ RDS))
+    (SETQ EXPN (RATOM))
+    ( ((EQ EXPN 'CONTINUE)
+	((EQ (CDR PTRLST))
+	  (LBREAK '("Continue lesson" "Abort lesson"))
+	  (PUSH (READPTR) PTRLST)
+	  (READCH) (READCH)
+	  (CLRSCRN) )
+	((EQ BRKFLG)
+	  (LBREAK '("Continue lesson" "Abort lesson" "Previous screen"))
+	  (PUSH (READPTR) PTRLST)
+	  (READCH) (READCH)
+	  (CLRSCRN) )
+	((LBREAK '("Continue lesson" "Break lesson" "Abort lesson"
+		"Previous screen"))
+	  (PUSH (READPTR) PTRLST)
+	  (READCH) (READCH)
+	  (CLRSCRN) )
+	(POP PTRLST)
+	(READPTR (CAR PTRLST))
+	(READCH) (READCH)
+	(CLRSCRN) )
+      ((AND (EQ EXPN 'BREAK) (EQ (READCH) (ASCII 13)))
+	(SETQ BRKFLG T)
+	((LBREAK '("Break lesson" "Continue lesson" "Abort lesson"
+		"Previous screen")) )
+	(POP PTRLST)
+	(READPTR (CAR PTRLST))
+	(READCH)
+	(CLRSCRN) )
+      ((AND (EQ EXPN 'CLRSCRN) (EQ (READCH) (ASCII 13)))
+	(SETQ ECHO T)
+	(PUSH (DIFFERENCE (READPTR) 1) PTRLST)
+	(READCH)
+	(CLRSCRN) )
+      ((EQ EXPN '$)
+	(SETQ EXPN (READ))
+	((EQ (CAR EXPN) 'DEFUN)
+	  (EVAL EXPN) )
+	(TERPRI)
+	(PRIN1 (EVAL EXPN)) ) ) ) ))
+
+(DEFUN LBREAK (LAMBDA (LST
+    % Local: % CHAR RDS WRS READCH)
+  (SETQ CHAR (OPTIONS LST))
+  ((EQ CHAR 'A)
+    (THROW) )
+  ((EQ CHAR 'C))
+  ((EQ CHAR 'P) NIL)
+  ((EQ CHAR 'B)
+    (SETQ READCH 'READCH)
+    (SETQ ECHO)
+    (LOOP
+      ( ((EQ RDS)
+	  (TERPRI)
+	  (PRIN1 '$)
+	  (SPACES 1)
+	  (SETQ EXPN (READ))
+	  (PRINT (CATCH NIL (EVAL EXPN))) )
+	(CATCH NIL (EVAL (READ))) )
+      ((EQ EXPN 'RETURN)) )
+    (RDS FILENAME 'LES DRVNUM)
+    (SETQ ECHO 'T) )
+  ((EQ CHAR 'S)
+    (SYSTEM) ) ))
+
+(DEFUN OPTIONS (LAMBDA (LST1
+    % Local: % LST2 PRIN1 PRINT WRS)
+  (SETQ PRIN1 (SETQ PRINT T))
+  (PRIN1 (ASCII 13))
+  (LOOP
+    (PUSH (CAR (UNPACK (PRIN1 (POP LST1)))) LST2)
+    ((EQ LST1))
+    (PRIN1 '",")
+    (SPACES 1) )
+  (SPACES 1)
+  (PRIN1 '"(")
+  (SETQ LST2 (REV# LST2))
+  (SETQ LST1 LST2)
+  (LOOP
+    (PRIN1 (POP LST1))
+    ((EQ LST1))
+    (PRIN1 '/) )
+  (PRIN1 '")")
+  (PRIN1 '?)
+  (SPACES 1)
+  (QUERY LST2) ))
+
+(DEFUN QUERY (LAMBDA (LST
+    % Local: % RDS READCH READ)
+  (LOOP
+    ((EQ (READP)))
+    (READCH) )
+  (LOOP
+    ((MBR# (READCH) LST)
+      (PRINT RATOM) )
+    ((EQ RATOM '" ")
+      (PRINT (CAR LST)) )
+    ( ((EQ RATOM (ASCII 10)))
+      (BELL) ) ) ))
+
+(DEFUN BELL (LAMBDA ()
+  ((EQ BELL))
+  (PRIN1 (ASCII 7)) ))
+
+(DEFUN CENTER (LAMBDA (MSG)
+  (SPACES (QUOTIENT (DIFFERENCE (LINELENGTH) (LENGTH MSG)) 2))
+  (PRINT MSG) ))
+
+(DEFUN PRTMSG (LAMBDA (LST)
+  (LOOP
+    (PRIN1 (POP LST))
+    ((NULL LST))
+    ( ((LESSP (SPACES) (LINELENGTH))
+        (SPACES 1) ) ) ) ))
+
+(MOVD 'REVERSE 'REV#)
+(MOVD 'MEMBER 'MBR#)
+
+(COND
+  ((NUMBERP (GETD 'DRIVER))
+    (MOVD 'DRIVER 'DRIVER-AUX) ) )
+
+(DEFUN DRIVER (LAMBDA ()
+  (RDS)
+  (LOOP
+    ((CATCH NIL (LESSONS))) )
+  (DRIVER-AUX) ))
+
+(PROG1
+  (TERPRI 2)
+  (PRIN1 "Are you using a ")
+  (PRIN1 (PLUS (LINELENGTH) 1))
+  (SPACES 1)
+  (PRIN1 "column screen (Y/N)? ")
+  (COND ((EQ (QUERY '(Y N)) 'Y))
+	((GREATERP (LINELENGTH) 40)
+	  (LINELENGTH 39) )
+	((LINELENGTH 79)) )
+
+(COND 
+  ((AND (GETD CLRSCRN) (CLRSCRN)))
+  ((EQ (SETQ RDS NIL))
+    (SETQ READCH NIL)
+    (LOOP
+      ((EQ (READP)))
+      (READCH) )
+    (TERPRI 2)
+    (PRTMSG '(Enter the sequence of control characters that will clear
+	your console screen and press "<RETURN>. " If you do not know the
+	clear screen "characters," just press "<RETURN>: "))
+    (SETQ CLRSCRN '"")
+    (LOOP
+      ((EQ (READCH) (ASCII 13)))
+      (SETQ CLRSCRN (PACK (LIST CLRSCRN RATOM))) )
+    ((EQ CLRSCRN '"")
+      (PUTD 'CLRSCRN '(LAMBDA () (TERPRI 3) ))
+      (SETQ READCH T)
+      (SETQ RDS T) )
+    (PUTD 'CLRSCRN '(LAMBDA () (PRIN1 CLRSCRN) ))
+    (SETQ READCH T)
+    (SETQ RDS T) ) ) )
+
+STOP
+
+(DRIVER)
+

@@ -1,0 +1,84 @@
+#####
+.rem ## print with "runpcd rnf (master.man, lst)"               ##
+.rem ## By changing the arguments to $halfwidth= and $halfpage= ##
+.rem ## you can re-format this manual to the page size you need.##
+.rem ## Suggested values are:               halfwidth  halfpage ##
+.rem ##   8 1/2 x 11, 6 lpi, 80 char wide       34       33     ##
+.rem ##   8 1/2 x 11, 8 lpi, 96 char wide       42       44     ##
+.rem ##   (special) 144 lines, 132 char wide    60       72     ##
+.rem ## The last format may be generated on an EPSON RX80 by    ##
+.rem ## uncommenting the ".lines144 .subscr ...."  call below.  ##
+.macro subscr = .fmt 5 27 .x .fmt 5 83 .x .fmt 5 1
+.macro lines144 = .fmt 5 27 .x .fmt 5 51 .x .fmt 5 16 .x
+.macro condensed = .fmt 5 15 .x .fmt 5 27 .x .fmt 5 80 .x
+.rem UNCOMMENT the following line for the special format
+.rem .lines144 .subscr .condensed .fmt 5 13
+.rem Pagesize control
+.var $halfwidth
+.rem halfwidth for controlling page headers. defines rm
+$halfwidth=34;
+.var $halfpage
+.rem halfpage for controlling page height.
+$halfpage=33;
+.rem
+.bar .nonmp
+.rem page headings
+.var $chpag
+.macro inpag  = .sav .respag .s 3
+.macro outpag = .s 2 .res
+.macro lrpag  = .chttl .t .chpage .rt .mainame
+.macro ch *   = .nextch .page .respag .br # .br .s 4 .cha .b .chb .s 3
+.macro nextch = $$ch=$$ch+1; $chpag=0; $$hl=0;
+.macro cha    = .c Chapter $$ch .br
+.macro chb    = .c .ch1 .br
+.rem
+.rem page numbering with shift to appendices
+.macro chpaga = .if #$apndx Ch.# .x $$ch
+.macro chpagb = .if $apndx .fmt 1 $apndx+64
+.macro chpage = .chpaga .chpagb .x - .x $chpag=$chpag+1 $$page=$$page+1;
+.rem
+.rem Page headings for appendices
+.var $apndx
+.macro ahd *  = .nxta .page .respag .b 2 .axhda .b .axhdb .s 2
+.macro nxta   = $apndx=$apndx+1; $$hl=0; $chpag=0;
+.macro axhda  = .c Appendix .fmt 1 $apndx+64
+.macro axhdb  = .c .ahd1
+.rem
+.rem dotting macros
+.macro bdot   = .sav .p -2 1 5 .lm +5 .rm -5
+.macro dotit  = .pp _.# .x
+.macro edot   = .res .s 1
+.rem
+.rem handy macro for inserting notes
+.rem end .note with .res. The parameter is the header word.
+.macro note * = .b .sav .tp 5 .rm $$rm-10; .lm $$lm+10; .c .note1 .b
+.rem
+.rem manual name
+.macro mainame = Pascal-P#Manual#v3.1.9
+.rem
+.rem chapters begin with .macro chttl=???, then .ch
+.macro chttl  = #
+.p +0 1 5
+.right 3
+.rem
+.rm $halfwidth+$halfwidth;
+.tabs $halfwidth-3; $$rm;
+.sp 1
+.pagesize $halfpage+$halfpage-6 $$rm .lines $halfpage+$halfpage
+.rem
+.rem generate cover page
+.fig $halfpage-8
+.u
+.c Pascal-P and PCD System
+.b
+.c Referance##Manual .nou
+.b
+.c Version#3.1.9
+.b
+.c Last modified##(87/01/26)
+.rem
+.rem setup numbering system and do the whole thing.
+.savpag
+.macro frcpage = .top .inpag .lrpag .outpag .mid
+.include chapters.man
+€‘

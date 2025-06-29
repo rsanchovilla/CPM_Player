@@ -1,0 +1,191 @@
+! May 6, 1983
+! MENUS FOR INTEGRATED SCREEN GRAPHICS VERSION
+!
+NO ECHO
+VARIABLE MEN0, MC, ME
+@1
+RECOVER 1
+CLEARSCREEN
+!!==================================================
+!!	MAIN MENU
+!!==================================================
+!!1  .. HELP .......................................
+!!2  .. ERASE SCREEN ...............................
+!!3  .. EXIT .......................................
+!!4  .. CLEAR TEXT FROM SCREEN (CR BRINGS IT BACK) .
+!!
+!!5  .. TAKE DATA FROM A FILE ......................
+!!6  .. ENTER DATA AT KEYBOARD......................
+!!
+!!7  .. BAR CHART MENU .............................
+!!8  .. PIE CHART MENU .............................
+!!9  .. LINE AND SYMBOL CHART MENU .................
+!!10 .. DATA ENTRY MENU ............................
+!!11 .. LEGENDS, TITLES AND NAMES MENU .............
+!!12 .. COLOR AND SHADING MENU .....................
+!!13 .. AXIS LABELING MENU .........................
+!!14 .. DRAW A PIE CHART ...........................
+!!15 .. DRAW A BAR CHART ...........................
+!!16 .. DRAW A PLOT ................................
+!!17 .. CHANGE TO ANOTHER GRAPHICS DEVICE ..........
+!!==================================================
+!!ENTER YOUR CHOICE >
+MENU MEN0 17 1 ^
+COMPARE MEN0 1
+IF YES JUMP 2
+COMPARE MEN0 4
+IF YES JUMP 40
+COMPARE MEN0 5
+IF YES JUMP 6
+COMPARE MEN0 6
+IF YES JUMP 7
+COMPARE MEN0 7
+IF YES RUN MENU.002
+COMPARE MEN0 8
+IF YES RUN MENU.003
+COMPARE MEN0 9
+IF YES RUN MENU.004
+COMPARE MEN0 10
+IF YES RUN MENU.007
+COMPARE MEN0 11
+IF YES RUN MENU.005
+COMPARE MEN0 12
+IF YES RUN MENU.006
+COMPARE MEN0 13
+IF YES RUN MENU.008
+COMPARE MEN0 14
+IF YES JUMP 3
+COMPARE MEN0 15
+IF YES JUMP 4
+COMPARE MEN0 16
+IF YES JUMP 5
+COMPARE MEN0 17
+IF YES JUMP 16
+COMPARE MEN0 2
+IF YES ERASE
+COMPARE MEN0 3
+IF YES JUMP 8
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+
+@3
+!!ENTER ROW OR COLUMN FOR PIE CHART >
+PIE ^
+!!ENTER	 1 TO DUMP TO PRINTER  or   2 TO ERASE >
+MENU MC 2 3 ^
+COMPARE MC 1
+IF YES DUMP
+ERASE
+JUMP 1
+
+@4
+!!ENTER ROWS OR COLUMNS FOR BAR CHART >
+BAR ^
+!!ENTER	 1 TO DUMP TO PRINTER  OR   2 TO ERASE >
+MENU MC 2 4 ^
+COMPARE MC 1
+IF YES DUMP
+ERASE
+JUMP 1
+
+@5
+!!ENTER ROWS OR COLUMNS FOR PLOT >
+PLOT ^
+!!ENTER	 1 TO DUMP TO PRINTER  OR   2 TO ERASE >
+MENU MC 2 5 ^
+COMPARE MC 1
+IF YES DUMP
+ERASE
+JUMP 1
+END
+
+@6
+!!ENTER drive:filename >
+DATAFILE ^
+JUMP 1
+
+@2
+CLEARSCREEN
+!!HELP FOR THE MAIN MENU
+!!===========================================================
+!!
+!!To use  GrafTalk in  menu mode, simply type the number that
+!!corresponds to your choice.
+!!
+!!You will be prompted with the character >.
+!!
+!!
+!!Notice that menu choices exist  to, for example, draw a bar
+!!chart or  to give you access	to the	Bar Chart Menu.	 Thus,
+!!you  can draw a bar  chart from the  Main Menu,  but if you
+!!want to  change anything  about it,  you must	 use  the bar
+!!chart menu.  The same is true of pie charts and of line and
+!!symbol charts.
+!!
+!!For help with Pie Charts, Bar Charts, Line and Symbol Plots,
+!!or Data Entry, see the appropriate menus.
+!!
+!!
+!!
+!!To write your own menus, see the Reference Manual, Part XIV.
+!!
+!!ENTER <cr> TO RETURN TO MAIN MENU >
+STOP
+JUMP 1
+
+
+@7
+CLEARSCREEN
+!!=========================================================
+!!DATA ENTRY
+!!
+!!Enter data  as lines	of numbers  with an equal number of
+!!entries in  each row.	 Separate  numbers from one another
+!!by one or more spaces.   When you are through, type  @END
+!!instead of a line of numbers.
+!!
+!!GrafTalk names rows  R1,  R2 etc and columns	C1,  C2 etc.
+!!You may refer	 to the rows  and columns  of data by these
+!!names.  You may also assign names to the rows and columns
+!!with the NAME comands or in VIEW mode.
+!!
+!!=========================================================
+@DATA
+^
+@END
+CLEARSCREEN
+JUMP 1
+
+@16
+!!CHOOSE ONE OF THESE DEVICES:
+!!	1:  SCREEN
+!!	2:  PLOTTER
+!!	3:  PRINTER
+!!ENTER YOUR CHOICE >
+MENU MEN0 3 16 ^
+COMPARE MEN0 1
+IF YES DEVICE SCREEN
+COMPARE MEN0 2
+IF YES DEVICE PLOTTER
+COMPARE MEN0 3
+IF YES DEVICE PRINTER
+JUMP 1
+
+
+@8
+!!TYPE
+!!	1    TO EXIT MENU MODE ONLY
+!!	2    TO EXIT GrafTalk
+!!	ENTER >
+MENU ME 2 8 ^
+COMPARE ME 1
+IF YES END
+EXIT
+
+!!TYPE
+!!	1    TO EXIT MENU MODE ONLY
+!!	2    TO EXI

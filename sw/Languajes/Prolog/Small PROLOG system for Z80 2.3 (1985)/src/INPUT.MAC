@@ -1,0 +1,232 @@
+
+; ===========================================================
+;INPUT.Z80
+;	input routines for E-Prolog
+;	June 19, 1985
+
+	.Z80
+
+FALSE	EQU	0
+TRUE	EQU	1
+EMPTY	EQU	-1
+UNDEF	EQU	-2
+
+CTLC	EQU	3
+HT	EQU	9
+LF	EQU	10
+CR	EQU	13
+CTLZ	EQU	26
+
+CPM	EQU	    0000H
+BDOS	EQU	CPM+0005H
+CDMA	EQU	CPM+0080H
+TPA	EQU	CPM+0100H
+
+; compare with given value
+;
+?CPHL	MACRO	?VALUE
+	PUSH	DE
+	LD	DE,?VALUE
+	CALL	CPHL##
+	POP	DE
+	ENDM
+
+	DSEG
+;int		character;	/* input character */
+CHR::	DB	' '
+
+; input file: 0 = console, 1 = disk
+INF::	DB	0
+
+; file control block for input file
+INFCB::
+	DB	0
+	DB	'        '
+	DB	'   '
+	DB	0,0,0,0
+	DS	20
+
+; buffer for input
+RDBUFF::
+	DB	128,0
+INDMA::
+	DB	0
+	DS	127
+INE::
+INP::	DW	INDMA
+
+	CSEG
+
+; fill with one character
+;
+; all registers destroyed
+?FILL	MACRO	?ADDR,?COUNT,?VAL
+	LD	HL,?ADDR
+	PUSH	HL
+	POP	DE
+	INC	DE
+	LD	BC,?COUNT-1
+	LD	(HL),?VAL
+	LDIR
+	ENDM
+
+; copy string
+;
+; input:
+;	HL -> source
+; all registers destroyed
+?COPY	MACRO	?ADDR
+	LD	DE,?ADDR
+	CALL	COPY##
+	ENDM
+
+; create FCB for input file.
+;
+; input:
+;	HL = list (rest of atom)
+;	DE = lsub (substitutions for HL)
+	DSEG
+PEXP:	DW	0
+PLSUB:	DW	0
+	CSEG
+DOIN::
+	LD	(PEXP),HL
+	LD	(PLSUB),DE
+	XOR	A
+	LD	(INF),A
+	?FILL	INFCB,36,0
+	?FILL	INFCB+1,11,' '
+DOIN1:	LD	HL,PEXP
+	LD	DE,PLSUB
+	CALL	VNEXT##
+	CALL	SYMBP##
+	JR	Z,DOIN3
+	?CPHL	ACON##
+	JR	Z,DOIN3
+	LD	A,1
+	LD	(INF),A
+	?COPY	INFCB+1
+	LD	HL,PEXP
+	LD	DE,PLSUB
+	CALL	VNEXT##
+	CALL	SYMBP##
+	JR	Z,DOIN3
+	?CPHL	ACOLON##
+	JR	NZ,DOIN2
+	LD	A,(INFCB+1)
+	SUB	'A'-1
+	LD	(INFCB),A
+	?FILL	INFCB+1,11,' '
+	JR	DOIN1
+DOIN2:	?CPHL	ADOT##
+	JR	NZ,DOIN3
+	LD	HL,PEXP
+	LD	DE,PLSUB
+	CALL	VNEXT##
+	CALL	SYMBP##
+	JR	Z,DOIN3
+	?COPY	INFCB+9
+DOIN3:
+	RET
+
+; read into buffer
+;
+; abort program upon reading ^C
+; output:
+;	console - line read (CR, 0 terminated) in RDBUFF
+;	disk - 128 byte block in RDBUFF
+; all registers destroyed
+RDBUF::
+	LD	A,(INF)		; input device
+	OR	A
+	JR	NZ,RDF
+RDF1:	LD	A,(OUTF##)	; current output device
+	PUSH	AF
+	XOR	A		; prompt to the conole
+	LD	(OUTF##),A
+	LD	A,(OPAR##)	; number of open parentheses
+	OR	A
+	JR	Z,RDB3
+	LD	L,A
+	LD	H,0
+	CALL	PRDEC##
+RDB3:	LD	HL,PRMSG
+	DSEG
+PRMSG:	DB	'> ',0
+	CSEG
+	CALL	MSG##
+	LD	DE,RDBUFF
+	LD	C,10		; read console buffer
+	CALL	BDOS
+	LD	A,LF		; standard BDOS doesn't echo
+	CALL	CHROUT##	;    the line feed (DRI bug)
+	POP	AF		; restore output device
+	LD	(OUTF##),A
+INIX::	LD	HL,RDBUFF+1
+	LD	A,(HL)		; count
+	INC	HL
+	LD	(INP),HL	; pointer
+	LD	E,A
+	LD	D,0
+	ADD	HL,DE		; end
+	LD	(HL),CR
+	INC	HL
+	LD	(HL),0
+	LD	A,(INDMA)
+	CP	CTLC
+	JP	Z,CPM
+	RET
+RDF:
+	LD	DE,INDMA
+	LD	C,26		; set DMA
+	CALL	BDOS
+	LD	DE,INFCB
+	LD	C,20		; read sequential
+	CALL	BDOS
+	LD	HL,INDMA
+	LD	(INP),HL	; pointer
+	OR	A		; successful read?
+	RET	Z		; yes, return
+	XOR	A		; no data (EOF)
+	LD	(INF),A		; revert to console
+	JR	RDF1
+
+; read character
+;
+; output:
+;	CHR = character
+RDCHAR::
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+RDB0:	LD	HL,(INP)
+	LD	DE,INE
+	CALL	CPHL##
+	JR	Z,RDB2
+	LD	A,(HL)
+	OR	A
+	JR	Z,RDB1
+	CP	1AH
+	JR	Z,RDB1
+	LD	(CHR),A
+	INC	HL
+	LD	(INP),HL
+	POP	HL
+	POP	DE
+	POP	BC
+	RET
+RDB1:	XOR	A		; on EOF, input device ..
+	LD	(INF),A		;  .. reverts to console
+RDB2:	CALL	RDBUF
+	JP	RDB0
+
+; un-read character
+UNRDCH::	LD	HL,(INP)
+	DEC	HL
+	LD	(INP),HL
+	LD	A,(CHR)
+	LD	(HL),A
+	RET
+
+	END
+

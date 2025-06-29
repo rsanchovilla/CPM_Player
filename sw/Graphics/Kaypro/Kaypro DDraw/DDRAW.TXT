@@ -1,0 +1,152 @@
+                                    DDraw
+                            copyright (c) 1984 by
+                                 D. Griffith
+
+   DDraw is a general purpose graphics/text utility designed for Kaypro'84
+models.  DDraw can be described as a 'McPaint' for the Kaypro.  I want to
+say that DDraw (and this documentation) is not nearly in its final form,
+so please do not compare it unfavorably to some of the drawing programs
+available for more graphicly oriented systems.
+
+   The source to DDraw will be released (probably) into the public domain
+as soon as I feel it is complete.  Any suggestions for features, improvements,
+etc., can be directed to:
+               D. Griffith
+               912 Terra Mar Dr.
+               Tampa, Fla.,  33612
+or a message can be sent via modem on the Pro-Com 1 or 2 systems
+(813) 937-3608, (813) 937-6829.
+
+
+Drawing
+
+   To draw something, simply type DDRAW at the CP/M prompt and press <RETURN>.
+The screen will clear and a graphic cursor will appear.  Typing a '?' or 'H'
+for help will bring up a menu of commands.
+   The numbers 1-9, not including 5, move the cursor in the direction
+relative to the 5 on the keypad.  The 5 will toggle draw/erase mode.  If you
+wish to position the cursor without drawing or erasing, press the B key to
+enter Browse mode, move the cursor as though you were drawing, then press
+B again to leave browse mode.
+   To avoid having to hold down keys to move the cursor, a Repeat mode was
+added.  By pressing the R key, all movement commands automatically repeat
+until either a key is pressed or the edge of the screen is reached (in non-
+wrap-around mode).  Pressing R again puts the cursor back into a manual
+repeat mode.
+   The cursor will default to stopping when the edge of the screen is reached.
+This can be changed by pressing the W key (to stop or start).  At that time,
+when the edge is reached, the cursor wraps around to the opposite side.
+   The screen can be entirely cleared by pressing ^C (hold down the CTRL key
+at the edge of the keyboard and press the C).  If the screen was not saved,
+it is lost.
+   Two features that make drawing a little easier is a line and circle drawing
+command.  To draw a line, move the cursor to one end of the proposed line,
+press the L key, move the cursor to the other end and press L again.  To draw
+a circle, move the cursor to the center of the proposed circle, press the C,
+move to a point on the edge and press C again.  Either command may be aborted
+before it is drawn by pressing the space bar before pressing the command key
+the second time.  Note that if you are in erase mode, a line or circle is
+erased at the indicated positions.
+   Another useful feature is the status line.  By pressing the S key, a
+status line indicating the cursor position will appear at the lower left
+of the screen.  The first Y and X is a character position that can be used
+in programs.  The second set, gY and gX are a graphics position that ranges
+from 0-99 for gY and 0-159 for gX.
+   Yet another useful feature is the Text entry command.  By pressing the
+letter T while in graphics mode, a letter-size cursor appears at the same
+(approximate) position of the graphics cursor.  At this time, typing of
+text is allowed.  The arrow keys (set up for WordStar or Kaypro) will move
+the cursor around th screen.  The RETURN key will move the cursor to the
+beginning of the next line.  To exit the text entry mode, press the ESCape
+key.  Text (but not spaces) will overwrite graphics.  This is not to say
+that any graphics you type over are lost;  it is just that the text has
+priority.  By typing spaces over text, any covered graphics will appear.
+  One last command.  ^U (hold down the CTRL key and press U) will refresh
+the screen.  This is used whenever you have typed in the 80th column of
+the 24th line (the screen scrolls automatically) or when spaces have been
+typed over text to reveal covered graphics (they do not appear immediately).
+
+
+Subpictures
+
+   It is often convenient to save a portion of a disply in a buffer and
+redisplay it at a different position.  The subpicture commands allow this.
+I admit the commands are hardly mnemonic of their function, but I did not
+want to use multiple control codes at the time.  That will probably change
+in later versions for ease of use.  Regardless, the subpicture entry procedure
+is: move the cursor to the upper left corner of the block you wish to save,
+type ^B (hold CTRL key and press the letter B) begins subpicture entry.
+Follow it immediately my the number 0, 1, or 2 to tell which buffer you wish
+the image stored.  Move the cursor to the lower right corner and press ^B
+again.  The image will be stored.  You may now continue with any editing.
+   To recall an entered subpicture simply move the cursor to the upper left
+corner of where you wish it displayed and type ^R followed by the number 0,
+1, or 2 depending on which picture you wish displayed.
+   At the present time, the subpicture commands actually save a from the
+current character position (the YX in the status line) not the graphic
+cursor position (gYgX).  This means that usually a little more will be
+stored and that the display may not start at precisely where the cursor is
+when the ^R command is entered.  That will be remedied soon.
+   Subpictures may be saved to disk for use in a later session by
+typing ^D and entering a filename.  To reload a set, press the letter D
+and enter the filename you wish to restore.  Note that executing a clear
+screen command (^C) does not destroy the subpictures stored in memory.
+   A final note on redisplaying the subpictures:  if the cursor is in erase
+mode, the subpicture will overwrite whatever is 'under' it.  If the cursor
+is not in erase mode, the subpicture will me 'merged' with the graphics.
+Either way, any text will be overwritten and a screen refresh (^U) command
+should be issued.
+
+
+Printing
+
+   Two methods are provided for displaying screen images on the printer.
+The first is solely for graphics.  It prints (on a Gemini/Epson printer)
+a bit image of the graphic screen.  To produce this print, type ^P.  The
+other print will also copy any text to the printer.  I know it works on
+the Gemini printers (not so sure about Epson).  The command is ^O.
+
+
+Saving and Loading Screens
+
+   To save a screen (graphics and text), type ^S followed by a filename.
+If the disk is read only, full, or the directory is full, an error will
+occur and the screen will be lost.  To load a screen, type ^L followed
+by the filename.  If the file does not exist, an error will occur.
+Provisions will be made in a revision to allow separate saving of text
+and graphics screens.  This will allow text screens to be produced by
+other methods (word processors) then merged into the graphic screens.
+
+
+Miscellaneous
+
+   A final command ^Q will exit DDraw without saving screens.
+If when asked for a filename (loading and saving), you wish to abort the
+command, simply press RETURN without entering anything.
+
+
+Note
+
+   I believe I have covered all of the commands available as of
+December 1984.
+
+
+                      DDRAW.COM
+
+The file DDRAW.COM was compiled by Turbo v2.0 with an
+ending address of B000h.  This should allow it to run
+on anything with a 64k (to start) CP/M 2.2 system.
+
+It compiled and runs fine on my KP10 with a very crowded
+high memory area (ZCPR3, screen dumper, etc.) and a 51k
+TPA.
+
+As Dan states in the DOC, this program is not finished yet.
+He has a planned improved pattern fill routine and a few
+other things to do (make it work with a printer other then
+a Gemini/Epson I hope...)
+
+
+		Steve Sanders (Sysop)
+		DataCOM Network RCP/M #1 & #2
+		(813) 937-3608  300/1200

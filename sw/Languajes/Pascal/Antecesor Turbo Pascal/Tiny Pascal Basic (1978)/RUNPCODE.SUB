@@ -1,0 +1,24 @@
+; Do not include .PAS extension in param source file name
+; Compile, Interpret (generate pcode code in PROG.P), rename and run interpreter debug 
+XSUB
+NS5BAS
+;expect "READY"
+MEMSET 45056
+;expect "READY"
+LOAD PASCOMP
+RUN
+;expect "CLEAR P-CODE AREA?"
+Y
+;expect "WANT CODE PRINTED?"
+Y
+;expect "0 "
+$$1.PAS
+$$1.PAS
+;expect "EXIT (E), INTERPRET (I) OR TRANSLATE (T)?"
+I
+ERA $1.P
+REN $1.P=PROG.P
+PASRUN1A $1.P
+;expect ">"
+G
+

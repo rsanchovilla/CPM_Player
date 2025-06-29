@@ -1,0 +1,23 @@
+;
+; SUBMIT job to build the library GSXLIB.REL
+; Must be submitted from A:
+; l80 links example program gsx.for
+
+xsub
+E:
+;
+m80 =gsxcal
+f80 =gsxwk
+f80 =gsxln
+f80 =gsxmk
+f80 =gsxtx
+; --- build library, gsxcal must be last!
+lib80
+gsxlib=gsxwk,gsxln,gsxmk,gsxtx,gsxcal
+/E
+; --- example
+f80 =gsx
+l80 gsx/N,gsx,gsxlib/S,forlib/S,/E
+gengraf gsx
+; --- done --- last line must end with CR!
+

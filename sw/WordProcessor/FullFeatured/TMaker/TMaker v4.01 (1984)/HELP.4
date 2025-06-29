@@ -1,0 +1,169 @@
++ 1 LP
+                   **  List Processing Help TOPIC Menu  **
+ 
+                 List Processing manipulates "lists" of text.
+ 
+     * Commands *
+    ..............
+    :            :
+    :   SORT     :  Order lines according to column criteria.
+    :   TALLY    :  Create summary of a list based on like fields.
+    :   FIND     :  Find a word or string in the workfile.
+    :  REPLACE   :  Replace all occurences of a string with another string.
+    :   DROP     :  Remove any lines which contain a specified string.
+    :   KEEP     :  Keep only those lines which contain a specified string.
+    :  ARRANGE   :  Re-order columns or a range of columns.
+    :            :
+    :............:
++ 1 SORT
+1/1 WHAT NEXT?  SORT
+                ----
+       SORT orders designated lines alphabetically or numerically in either
+ascending or descending order using the left through right column positions
+as the key. You must specify the LEFT POSITION and RIGHT POSITION of the
+Column you wish to sort.
+ 
+     ............
+O    :    a     :  Sort in ASCENDING order
+P    :    d     :  Sort in DESCENDING order
+T    :    c     :  Sort CHARACTERS  (use for Alphabetical Ordering)
+I    :    n     :  Sort in NUMERICAL order
+O    :   all    :  Sort ALL lines in work file
+N    :    s     :  Sort only SOME lines, those within blocks of consecutive
+S    :          :     lines that HAVE A  +  SIGN in the first position
+     :    p     :  Sort only PARTIAL lines, those within blocks of consecutive
+     :..........:     lines that have some entry in the key positions.
+ 
+ -----------------------------------------------------------------------------
+              EXAMPLE:  1/1 WHAT NEXT?    SORT a n all 1 10
++ 1 TALLY
+1/1 WHAT NEXT?  TALLY
+                -----
+     TALLY generates a summary tabulation of like elements in a list.
+       May also provide a sum of numerical values of like elements.
+ 
+ 
+ *  You MUST give file name (or IT for current work file)
+ *  You MUST also specify the Left Column Number and the Right Column Number
+      of the LIST you want TALLY-ed.
+ *  You MUST end the TALLY Command with an   END
+ 
+ 
+     Options:
+   ...........
+   :   ALL   : Normally, TALLY will only operate on lines starting with   +
+   :         :   If ALL Option is used, TALLY will consider ALL Lines.
+   :         :
+   :   SUM   : You can find the SUM of additional variables by typing SUM
+   :         :   and indicating the position boundaries of the columns to
+   :.........:   be SUMmed.
++
+                                 EXAMPLE:
+ 
+     Suppose we wanted to find how many Males and Females we had, and how
+           many marbles each group had, from the list below.
+ 
+          1         2         3         4         5         6         7
+ 1234567890123456789012345678901234567890123456789012345678901234567890123456
+        Sex             Eye-Color         Marbles
+ +       M                Brown              2
+ +       F                Blue               5
+ +       F                Blue               3
+ +       M                Blue               4
+ +       F                Brown              1
+ 
+           1/1 WHAT NEXT?   TALLY IT 8 10 SUM 43 47 END
+                            ---------------------------
+  F  =     3              9
+  M  =     2              6
+ 
+     The TALLY Result: 3 Females having 9 Marbles; 2 Males having 6 Marbles.
++ 1 FIND
+   1/1 WHAT NEXT?   FIND
+                    ----
+ 
+ 
+         FIND will find the first occurrence of the String and bring it to
+   the Top Line of the Screen.
+ 
+ 
+           EXAMPLE:  FIND the last name KUPTZ in the following text.
+ 
+                       1/1 WHAT NEXT? FIND KUPTZ
+                                      ----------
++ 1 REPLACE
+   1/1 WHAT NEXT?   REPLACE
+                    -------
+ 
+ 
+      REPLACE will replace all occurrences of a String.
+ 
+ 
+           EXAMPLE:  REPLACE the last name Zirn with Herring.
+ 
+                 1/1 WHAT NEXT? REPLACE Zirn
+                                ------------
+           T/Maker will ask you what you want to replace it with.
+ 
+                  WITH WHAT STRING?  Herring
+                                     -------
++ 1 DROP
+1/1 WHAT NEXT?  DROP
+                ----
+ 
+   DROP removes all lines in the work-file that contain a specific string.
+ 
+ 
+ 
+   A  "string"  is any EXACT series of characters.
+ 
+          EX:    Lino    and     LINO    are two different strings.
+                 ----            ----
+ 
+   If the string has a blank anywhere in it, the entire string must be
+   surrounded in quotes.
+ 
+          EX:    To DROP all occurences of Mr. Guslani, type:
+ 
+          1/1 WHAT NEXT?  DROP "Mr. Guslani"
++ 1 KEEP
+1/1 WHAT NEXT?  KEEP
+                ----
+ 
+ KEEP "keeps" only those lines in the work-file than contain a specific string.
+ 
+ 
+ 
+ A  "string"  is any EXACT series of characters.
+ 
+          EX:    BIGMAN  and   Bigman   are two different strings.
+                 ------        ------
+ 
+   If the string has a blank anywhere in it, it must be surrounded in quotes.
+ 
+          EX:    To KEEP all occurences of    MUST INVOICE   , type:
+ 
+              1/1 WHAT NEXT?  KEEP "MUST INVOICE"
++ 1 RPF
+    RPF
+4 JUNE 1984 !
++ 1 ARRANGE
+1/1 WHAT NEXT?  ARRANGE
+                -------
+ 
+    ARRANGE reorders the sequence of columns for lines in the work-file.
+       The columns to be reordered are identified by number-pairs.
+ 
+    The first number marks the left boundary and the second marks the
+       right boundary.
+ 
+    The new order of columns is determined by the sequence of the number-pairs.
+ 
+    Print design commands are not affected by the ARRANGE command.
+ 
+EX:   1/1 WHAT NEXT?   ARRANGE 11 20  1 10  21 300 END
+                       -------------------------------
+ 
+     Columns 11 20 will be the leftmost columns, followed by
+     columns 1 10 and then the remainder of the line.
+

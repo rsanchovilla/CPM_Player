@@ -1,0 +1,554 @@
+-----------------------------------------------------------------
+
+                          WDRAW  v1.00
+                            07/28/85
+               Copyright (c) 1985 Bruce R. Childers
+
+                THIS FILE AND ALL ASSOCIATED FILES
+                MAY BE  FREELY  DISTRIBUTED IN THE
+                PUBLIC  DOMAIN; HOWEVER, THEY  MAY
+                NOT BE  USED  FOR  COMMERCIAL  USE 
+                WITHOUT THE  WRITTEN PERMISSION OF
+                THE AUTHOR.
+
+-----------------------------------------------------------------
+
+=================================================================
+                 Introduction and Theory Section
+=================================================================
+
+
+Introduction
+------------
+
+  WDRAW  is a program that allows graphic displays to be  created 
+on  the  Wyse 50 terminal (and others  with  modification).   The  
+program was written for two reasons.   First, I was challenged by 
+a friend to make a graphics program for a "nongraphic  terminal". 
+Secondly,  I  have always wanted a program like DDraw and  others 
+that  have been floating around for the Kaypro.   Alas,  I  don't 
+have  a  graphic Kaypro (got the ol' timer II) so those  programs 
+wouldn't do me any good, hence:  creation of WDRAW.
+
+Installation of WDRAW
+---------------------
+
+  Ha!   Nothing  needs to be installed (don't ya love it when you 
+don't  have  to install something?!),  but if you are  running  a 
+terminal  other  than  a Wyse 50,  you'll  need  to  install  the 
+program,  oh well...   To install the system,  two things must be 
+done.   First,  run  the program WDINST1 to install your terminal 
+type  from the menu (just like installing Turbo  Pascal).   Next, 
+run  the  program WDINST2.  This program  installs  some  special 
+functions of your terminal which are not supported through TINST. 
+The functions are Graphics On, Graphics Off, Cursor On and Cursor 
+Off.   Those  four  things  must be installed in  order  for  the 
+program to work correctly.   Usually,  they will be a sequence of 
+about 3-5 bytes.   When prompted to enter the values,  enter them 
+in  ASCII decimal,  press a "." to end the entry of a  particular 
+field.
+
+Running WDRAW
+-------------
+
+  To  run  the  program,  make  sure  all  files  (WDRAW.COM  and 
+WDRAW.DAT)  are on the logged in disk/user.   Type "WDRAW" at the 
+A0> prompt ("0A}" for TurboDOS folks) and press a <Return>.   The 
+first thing that comes up is a screen telling a little bit  about 
+WDRAW  and  giving  the copyright notice.   Press a  <Return>  to 
+continue  beyond  this  point.   What  appears  is  the  "Drawing 
+Screen". The screen is broken up into several sections.
+
+  The first is in the lower left corner of the screen.   This  is 
+the "Function Status" line.  It tells what command is being used, 
+gives  the  (x,y)  coordinates  of the current  location  of  the 
+cursor, the current buffer (CBx), and the switched buffer (Bx).
+
+  Following the Function Status line is the "Toggle Status" line. 
+This  part is also on the same line as the Function Status  line, 
+but it tells the current state of various drawing toggles.  Refer 
+to  lower  in this document for more information on  the  drawing 
+toggles.   Collectively,  these  two sections make up the "Status 
+Line".
+
+  The  lower  right corner is the "Prompt  Area".   Whenever  the 
+program needs to prompt for some input, the prompt will appear in 
+this area.
+
+  The  upper right corner is the "Drawing  Character  Area".   It 
+tells what the current drawing character is (see below).
+
+  Right  below  the Drawing Character Area and above  the  Prompt 
+area  is the "Menu Area".   This area has a help menu in case you 
+forget some command.
+
+  There  are also axes running along the sides of the screen (top 
+line  = X Axis,  right hand line = Y Axis),  these are the  "Axis 
+Lines".
+
+  The  rest of the screen is the "Drawing Screen".   The  Drawing 
+Screen is where all of the displays will be created.
+
+
+Drawing Cursor
+-------------
+
+  The  Drawing  Cursor  is  the  location  at  which  the  cursor 
+currently  is  in the Drawing Screen (noted by the (x,y)  on  the 
+Status Line).   This location is where the drawing character will 
+be placed when the cursor is moved.
+
+Pointing Cursor
+---------------
+
+  The  Pointing  Cursor  is the location at which the  cursor  is 
+currently  located.   The  Pointing  Cursor  will  not  draw  the 
+drawing character at its location.   The Pointing Cursor is  used 
+by certain commands (Copy, Move, etc).
+
+Screen Buffers
+--------------
+
+  The  screen  is buffered in memory.   There  are  three  screen 
+buffers,  so three display screens can be active at any one time. 
+There is a fourth buffer,  but this is a temporary buffer used to 
+store  parts of the graphics display in memory for a short period 
+of  time.   Up to three display screens may be edited at any  one 
+time,  all of which have their own screen buffers (above).   This 
+allows  for three different graphs (or displays) to be worked  on 
+at the same time.
+
+Current & Passive Buffer
+------------------------
+
+  The current buffer is the screen buffer that is currently being 
+displayed  on  the screen.   The current buffer is  the  "active" 
+buffer and is where all command operations take place.  The other 
+two  screen buffers are "passive" and are still stored in memory, 
+but  can  not  be worked with unless they are  made  the  current 
+buffer (see below).
+
+Display Blocks
+--------------
+
+  A  display block is a block of the current screen  buffer  that 
+has been marked off with one of the copy commands.   This display 
+block is copied into the temporary screen buffer.
+
+Merge vs. Overlay
+-----------------
+
+  A  Merge  is the combining of two display blocks (or  a  screen 
+buffer  and  a file) to form one image.   An Overlay is taking  a 
+display block and placing it within a screen buffer, over writing 
+what ever may be in the locations that the display block fills.
+
+Drawing Character
+-----------------
+  
+  The  drawing  character  is the character to be placed  on  the 
+screen.   As the cursor is moved about on the screen (the drawing 
+cursor),  the drawing character will be placed in the (x,y) point 
+passed through.
+
+
+=================================================================
+                         Command Section
+=================================================================
+
+Cursor Movement Commands
+------------------------
+
+1  --  Moves the cursor diagonally down to the lower left.
+2  --  Moves the cursor horizontally down.
+3  --  Moves the cursor diagonally down to the lower right.
+4  --  Moves the cursor vertically to the left.
+6  --  Moves the cursor vertically to the right.
+7  --  Moves the cursor diagonally up to the upper left.
+8  --  Moves the cursor horizontally up.
+9  --  Moves the cursor diagonally up to the upper right.
+
+5  --  Goto a coordinate pair (input)
+
+  These  commands cause the drawing or pointing cursor to move in 
+the  specified direction.   The commands only effect the  current 
+screen buffer.   If the blank mode is off,  then the cursor  will 
+place the drawing character at each location passed through.   If 
+the  blank  mode  is on,  the cursor will not place  the  drawing 
+character at each location.   If the erase mode is on, the cursor 
+will  erase  any  character that  occupies  the  location  passed 
+through.
+
+Control Toggles
+---------------
+
+V  --  Toggle between Overlay and Merge mode
+G  --  Toggle between Graphics on/off
+,  --  Toggle the erase mode on/off
+-  --  Toggle the blank mode on/off
+#  --  Toggle the displaying of a cursor on/off
+
+  These  toggle  commands  change the specified  action  of  some 
+commands.   The Overlay and Merge toggle command toggles  between 
+whether  a block copied (or moved) into a position in the display 
+screen  is to be Merged (when Merge On) or Overlayed (when  Merge 
+Off).
+
+  The erase toggle toggles between whether the cursor will  erase 
+or  draw.   When Erase On,  any character the cursor passes  over 
+will  be erased (functions only for drawing cursor) otherwise,  a 
+character  will be written in the point (depending on  the  blank 
+mode).
+
+  The  graphics command will cause the graphic representation  of 
+the current drawing character to be displayed.   It will make the 
+graphic  representation of the drawing character the new  drawing 
+character.   Remember,  the graphic representation is used.  That 
+means to use this program, your terminal must display graphics by 
+issuing the graphics on sequence,  then a typable character, then 
+graphics  off  command (graphics above 127 are not allowed).
+
+  The  blank  mode toggles between whether the drawing  character 
+will  be placed in the passed through coordinate (and whether  if 
+erase  mode is on,  if the character is erased) or if it will not 
+placed a character and allow "browsing" of the display.
+
+  The cursor on/off toggle allows going between whether an actual 
+cursor is displayed or not.   It is wise to have the cursor on at 
+all  times.   If you lose the cursor for some  reason,  use  this 
+command until it reappears.
+
+File Functions
+--------------
+
+L  --  Loads a file into the current screen buffer
+I  --  Loads a file into a specified screen buffer
+S  --  Saves the current screen buffer
+W  --  Saves all screen buffers
+A  --  Writes  the current screen  buffer to disk in  ASCII  file
+       format.
+
+  The "L" command allows loading a previously saved display to be 
+either merged or overlayed (depending on the Merge mode) into the 
+current  screen  buffer.   The  image is loaded into  the  buffer 
+starting at point (1,1).
+
+  The  "I"  command  loads a previously saved  display  into  any 
+specified screen buffer (excluding the temporary  buffer).   This 
+command  will  prompt for the buffer into which the display  file 
+will be loaded.   The image is loaded at (1,1) into the specified 
+buffer.
+
+  The  "S"  command  saves  the current  screen  buffer  to  disk 
+starting  at point (1,1) and ending at point (60,20).   The  file 
+saved  is  in a special data format and can only  be  decoded  by 
+WDRAW,  therefore  for interchange of a display use the "A" ASCII 
+save command (see below).
+
+  The  "W" command saves all the screen buffers  to  disk.   Each 
+buffer is saved into a separate special format data file.  
+
+  The "A" ASCII save command saves the current screen buffer into 
+a  standard ASCII file.   Graphics and text are saved.   The file 
+may be displayed on most terminals.  This command is handy if you 
+need to create a "logon screen" for another program.   The  other 
+program  can read in the file and display it as is to the screen. 
+No  special  decoding of the data is needed,  as would  be  if  a 
+standard  graph  data  file were used.   It also  allows  a  word 
+processor to work with the data.   Note:   ASCII files may not be 
+reread into the screen buffer.
+
+Display Block Operations
+------------------------
+
+M  --  Move a block to another location (deleting original)
+O  --  Copy a block to another location (leaving original)
+D  --  Delete a block
+U  --  Write a block into the temporary buffer
+Y  --  Yank (or recall) the temporary buffer
+/  --  Fill a block with drawing character
+
+
+  Blocks are areas of the screen in a rectangular shape marked by 
+marking the upper right coordinate and the lower left coordinate. 
+To  mark  a coordinate,  move (using the cursor commands) to  the 
+upper right edge of the block and press the "." (Point)  command, 
+this  marks the first edge of the block.   Move to the lower left 
+edge to mark the second coordinate.   Press the Point command key 
+to do this.
+
+  The Move a block command moves a marked block to another marked 
+(x,y)  position.   The  command is used by marking the  block  to 
+move,  then  move to the position at which to place the block and 
+press the Point command key.  The image will now be moved to this 
+new  location  (upper right edge is placed at the  marked  point) 
+with the original being erased from memory.
+
+  The  Copy  a  block command copies a marked  block  to  another 
+marked (x,y) position.   The command is used by marking the block 
+to copy,  then move to the upper right edge of where the block is 
+to be copied and press the Point command key.   An exact copy  of 
+the  marked image will be moved to this new location leaving  the 
+original.
+
+  The  Delete  block  command deletes a block  from  the  current 
+screen  buffer.   The command is used by marking the block to  be 
+deleted.   After the last edge has been marked, the image will be 
+deleted.   If  a  mistake was made and you didn't really want  to 
+erase that image,  the Yank back command may be used to recall it 
+(see below).
+
+  The  Save block command saves a block to the temporary  buffer. 
+The command is used by marking the block to be copied.  After the 
+last  point  has  been  marked,  the block  is  copied  into  the 
+temporary  buffer  over  writing whatever  may  have  been  there 
+before.   This  command  is handy to move blocks  between  screen 
+buffers.
+
+  The Yank back command recalls the block in the temporary buffer 
+back to the current cursor position.  The upper right edge starts 
+where the cursor is located.
+
+  Note:   On all of the commands a "Q" may be entered at any time 
+before the end of the command to abort it.   All commands (except 
+Y)  will  save the block into the temporary buffer  over  writing 
+anything already in it.  
+
+  The  Fill  block  command will fill a  marked  block  with  the 
+drawing  character  over  writing any characters already  in  the 
+block (does not follow note above).
+
+Misc Commands
+-------------
+
+N  --  New drawing character
+P  --  Next menu page
+Q  --  Quit program
+0  --  Print image in text on printer
+B  --  Switch screen buffers
+T  --  Enter text
+C  --  Clear current buffer (new graph)
+R  --  Redraw current screen
+F  --  Find and replace character
+
+  The New drawing character will allow you to change the  drawing 
+character  to a different one.   The program prompts for the  new 
+character.   Enter  it at the prompt and it will then become  the 
+new drawing character.   If graphics mode is on, then the graphic 
+representation of the character is used (see above).
+
+  The  Next menu page command will cause the menu to advance  one 
+page forward.   When at the last page,  pressing the command will 
+make it loop around to the first page.
+
+  The Quit command causes the program to terminate.   All data in 
+memory is lost and may not be recovered.   WARNING:   You are not 
+prompted to save the screen buffers, it is assumed by the program 
+that you know exactly what you want to do.
+
+  The  Print  command  causes the current screen  display  to  be 
+printed on the printer.   It prints only the text  representation 
+of any graphics that may be in the screen buffer.
+
+  The  Switch Buffer command allows you to switch between  screen 
+buffers.   After switching, the buffer to which you just switched 
+becomes the current buffer.  There are three buffers available to 
+switch to.
+
+  The Text command allows entry of free handed text.  The text is 
+entered at the current location.   You may type in the text.   To 
+exit  Text entry,  press either <Return> or reach the end of  the 
+line.
+
+  The Clear buffer command causes the current screen buffer to be 
+cleared.   WARNING:   There  is no confirmation before using this 
+command and after the buffer has been cleared, it is lost.
+
+  The Redraw  command will  redraw the screen.  It is a good idea
+to use this command whenever reading in a file so the latest data
+can be displayed.
+
+  The Find and  Replace command allows  a single  character to be
+replaced  by another.  You will be prompted  for the character to
+find and the  character to replace  it with.  If graphics on, the
+program will  replace all characters with that characters graphic
+representation  with the  graphic representation  of  the replace
+character.
+
+=================================================================
+                         Keyboard Layout
+=================================================================
+
+  The  cursor  movement  commands and a few  others  were  chosen 
+because of their locations on the keyboard.   Below is a  drawing 
+of the numeric keypad with each key's function marked.
+
+
+           Numeric Key Pad Commands
+
+    ---------------------------------
+    |7      |8      |9      |-      |
+    |  Up   |  Up   |  Up   | Blank |
+    | Left  |       | Right | OnOff |
+    |-------+-------+-------+-------|
+    |4      |5      |6      |,      |
+    |  Left | Goto  | Right | Erase |
+    |       | (x,y) |       | OnOff |
+    |-------+-------+-------+-------+
+    |1      |2      |3      |enter  |
+    | Down  |  Down | Down  |       |
+    | Left  |       | Right |  Not  |
+    |-------+-------+-------+  Used +
+    |0              |.      |       |
+    |   Print       | Point |       |
+    |               |       |       |
+    ---------------------------------
+
+  It  might be a good idea to cut this diagram out and post  near 
+the terminal for easy reference.
+
+=================================================================
+                    Hints and Other Nonsense
+=================================================================
+
+Hints
+-----
+
+  Here are some ideas and pointers for using the program:
+  
+  o   To move a block into a different screen,  the D command  to 
+delete  it  out of the current screen can be used.   Then  switch 
+into the screen into which you want to move the block.   Position 
+the  cursor at the upper right edge of where the block is  to  go 
+and  use the Y command to yank it back.   This works to "move" it 
+from one place to another.
+
+  o  To merge two screen buffers, go to the one to merge into the 
+current screen buffer.   Mark the edges of the screen,  use the U 
+command  to save to the buffer.   Then switch back to  the  other 
+buffer and position at (1,1).  Then use the Y command to yank the 
+screen in.
+
+  o   Keep in mind that the cursor after being turned to nonblank 
+will not place a character in the current coordinate, so move one 
+less  than the one where you want the point to go  after  turning 
+the  blank  mode  off.   Then  move to  the  position  where  the 
+character is to be placed.
+
+  o    The  third  screen buffer makes a great place  to  have  a 
+"symbol  table".   Place into the buffer the "symbols",  and then 
+mark them and move them into the other screens.   I have displays 
+saved  that  are nothing but "symbols" and when I first  run  the 
+program,  I read them into the third screen buffer.   Then when I 
+need  a  box,  I move to the third screen buffer,  mark  the  box 
+already in that buffer,  move to the destination buffer and  yank 
+it in.
+
+  o  Run your terminal as fast as your computer can handle.   The 
+Wyse is capable of running at 38.4 kilobaud.   I run my  terminal 
+on  my  ICM computer at 38.4 KBaud and it  works  great.   Redraw 
+times  are  faster  and so are every other  function!   For  best 
+results run at, at least 9600 baud (or higher if possible).
+  
+  o  Run with the most tpa you can get.  I run my machine with at 
+least  51K tpa under TurboDOS and 56K under CP/M.   This is  just 
+enough for the program to operate.   If running ZCPR3, use a very 
+basic installation to run the program.   It might be a good  idea 
+to  have  a special version of Z3 to run with the program so  you 
+can get as much tpa as possible.
+
+  o   To  get graphic output on my printer,  I save the  graphics 
+display  as a text file.   Then I run a public domain  program  I 
+found  that  will  read  in  the  file,  and  print  the  graphic 
+characters out on the printer.   This works fine,  hopefully, the 
+next version will have the graphics print built in.
+
+Other Comments
+--------------
+
+  If  you  are running a 16 bit CP/M-86 or MP/M-86  computer  and 
+wish to use this program, you may contact me at the below address 
+or bulletin board to get the 16 bit version of the program.   The 
+16 bit version is a lot faster and allows up to 5 screen buffers.
+
+  This  program  was  written  in  Turbo  Pascal  (copyright  and 
+trademark  of  Borland  International)  3.0.    The  program  has 
+execution  speeds  to  close that of what  an  assembly  language 
+program would have!
+
+  If  you  wish a copy of the source code,  it  is  available  on 
+special request only through the bulletin board listed below.   I 
+will  not mail a copy of the source nor will I "accept"  requests 
+that  come through the mail.   Leave a message while leaving  the 
+board asking for the source and the reason why you want it.  Call 
+back  in between 3-7 days and you will be told how to get  access 
+to the source code.
+
+Future Features
+---------------
+
+  I  hope I put in the most useful features this go  around,  but 
+there are some things I would really like to have in the program.
+
+  o  Printing of graphics on an Epson and Okidata printers
+  o  A real symbol table system
+  o  Split screen drawing for two graphs at the same time
+  o  An online help facility
+  o  ASCII file format save with graphics stripped out
+  o  Ability to read in an ASCII format file
+  o  Faster redrawing
+  o  More temporary buffers (two or three oughta do it)
+  o  More flexible installation for other terminals
+  o  Command redefinition (alas,  some of the commands don't  make 
+     sense to other people [or me])
+  o  Bug Free and wonderful 
+
+User Supported Software
+-----------------------
+
+  This program took a lot of time to develop.   It took many many 
+long hours to write, debug, test and otherwise work with.  If you 
+find  the program useful,  fun,  interesting or otherwise "good", 
+then  send  a suggested contribution of $10.00 to  the  following 
+address....
+
+               Bruce R. Childers
+               P.O.  Box 3033
+               Oakton, Va. 22124
+
+  The  contribution will help keep the development of the program 
+from falling to the back burner while I do stuff for a living. If 
+you contribute, you will be notified of all new updates (via U.S. 
+Mail)  and will get the new updated version on disk for the  cost 
+of the disk and postage.
+
+Ah...Final Closing
+------------------
+
+  As you may have noticed,  I'm not a writer and I do not pretend 
+to be,  therefore,  this documentation may not be the best in the 
+world.  
+
+  I can not be held reliable for any damage, or other destructive 
+means occurs by using this program.   You use the program at your 
+own risk, I am not liable for the out come of this program!
+
+  If you have any bug problems (in the program,  not the termites 
+in your house), suggestions, or comments, send them to either the 
+above address or drop a call by my bulletin board at:
+
+    The COMPUTER INFORMATION TRANSFER
+    703-281-7907 300/1200 bps 24hrs daily
+    Address all mail to Sysop
+
+  I am really interested in user feed back about the program.  If 
+you  find you hate,  like or whatever about the program,  do  not 
+hesitate to let me know.
+
+  (Susan, I meet your challenge.  You owe me a buck, Ha!)
+
+                         End of Document                                 
+
+meet your challenge.  You owe me a buck, Ha!)
+
+                         End of Document            

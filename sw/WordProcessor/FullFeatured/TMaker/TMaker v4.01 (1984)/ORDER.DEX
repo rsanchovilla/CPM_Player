@@ -1,0 +1,174 @@
+	              	                     	                                                                                                                                                                                                                                                                                                                                                                          
+ORDER ASCENDING NUMBERS tot PRINT IT
+ 
+Order Example---
+ 
+The ORDER command is used to sort record data on any field, character or
+numeric, in ascending or desceding order.  The above command line will
+sort this file in ascending order based on the field "tot."
+ 
+------------------------------------------------------------------------------
+ 
+<form>
+ 
+Customer:      Last Name:    {lname                }
+               Address:      {address              }
+               City:         {city                 }
+               State:        {state                }
+ 
+ 
+Product:       Product:      {prod                 }
+               Description:  {desc                 }
+               Part Number:  {pnum      }
+               Price:        {price     }
+ 
+Order:         Quantity:     {quan      }
+ 
+               Amount:       {am        }
+               Discount:     {dis       }
+               Tax:          {tax       }
+               Shipping:     {ship      }
+               ==========================
+               Total:        {tot       }
+<end>
+ 
+<rules>
+am    9,999.99 = quan * price
+dis   9,999.99 = quan * 0.10 when am <= 200
+dis   9,999.99 = quan * 0.15 when am > 200
+tax   9,999.99 = am * 0.065 when state = CA
+tax   = "No tax" when not state = CA
+ship  9,999.99 = quan * 0.05 when state = CA
+ship  9,999.99 = quan * 0.10 when state <> CA
+tot  99,999.99 = am - dis + tax + ship
+<end>
+ 
+ 
+<record>
+a {lname               <}
+b {address             <}
+c {city                <}
+d {state               <}
+e {prod                <}
+f {desc                <}
+g {pnum     >}
+h {price    >}
+i {quan     >}
+j {am       >}
+k {dis      >}
+l {tax      >}
+m {ship     >}
+n {tot      >}
+<end>
+a Joel
+b 2121 42nd Street
+c New York
+d NY
+e GLUE
+f 8 oz. Bottle
+g          101
+h        45.65
+i          200
+j     9,130.00
+k        30.00
+l       No tax
+m        20.00
+n     9,120.00
+a Five
+b 23 Greenbury Drive
+c Greenbury
+d CA
+e PAPER
+f 50 sheets white bond
+g          205
+h        25.75
+i          150
+j     3,862.50
+k        22.50
+l       251.06
+m         7.50
+n     4,098.56
+a Franks
+b Perfect Lane
+c Softland
+d PR
+e GLUE
+f 8 oz. Bottle
+g          101
+h        45.65
+i          205
+j     9,358.25
+k        30.75
+l       No tax
+m        20.50
+n     9,348.00
+a Marvins
+b 1020 Blake St.
+c Bluebrass
+d PN
+e PAPER
+f 50 sheets white bond
+g          205
+h        25.75
+i          125
+j     3,218.75
+k        18.75
+l       No tax
+m        12.50
+n     3,212.50
+a Green
+b Mean Joe Lane
+c Greenbay
+d MI
+e GLUE
+f 8 oz. Bottle
+g          101
+h        45.65
+i          126
+j     5,751.90
+k        18.90
+l       No tax
+m        12.60
+n     5,745.60
+a Barker
+b 1225 Johnson Lane
+c Fredville
+d CA
+e GLUE
+f 8 oz. Bottle
+g          101
+h        45.65
+i            9
+j       410.85
+k         1.35
+l        26.71
+m         0.45
+n       436.66
+a Coyne
+b Lomita Drive
+c Stanford
+d CA
+e GLUE
+f 8 oz. Bottle
+g          101
+h        45.65
+i           45
+j     2,054.25
+k         6.75
+l       133.53
+m         2.25
+n     2,183.28
+rches through the file until it encounters a "form definition"
+and then uses the form to present the data.  In the absence of a
+form definition, the "record definition" is used to present the data.
+ 
+This file contains simple card-file-type name and address data.
+It contains a form definition for data presentation and a record
+definition for data storage.
+ 
+------------------------------------------------------------------------------
+ 
+<form>
+ 
+ 
+Name:          {fname                } {lname  

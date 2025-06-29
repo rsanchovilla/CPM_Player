@@ -1,0 +1,925 @@
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen
+                                	.SALL	
+                                	EXTRN	CHRGTR,SYNCHR,DCOMPR
+                                	EXTRN	GETYPR
+                                	EXTRN	SNERR,GETSTK,PTRGET,SUBFLG,TEMP,CRDO
+                                	EXTRN	VMOVFM,FRCINT
+                                	PAGE
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+Common file for BASIC interpreter
+
+                                
+                                	SUBTTL	WHILE, WEND
+                                	PUBLIC	WHILE,WEND
+                                	EXTRN	ENDFOR,ERROR,FRMEVL,$FOR,$WHILE,WNDSCN
+                                	EXTRN	SAVSTK,NEWSTT,NXTLIN,CURLIN,FORSZC,ERRWE
+                                ;
+                                ; THIS CODE HANDLES THE STATEMENTS WHILE/WEND
+                                ; THE 8080 STACK IS USED TO PUT AN ENTRY ON FOR EACH ACTIVE WHILE
+                                ; THE SAME WAY ACTIVE GOSUB AND FOR ENTRIES ARE MADE.
+                                ; THE FORMAT IS AS FOLLOWS:
+                                ;	$WHILE - THE TOKEN IDENTIFYING THE ENTRY (1 BYTE)
+                                ;	A TEXT POINTER AT THE CHARACTER AFTER THE WEND OF THE WHILE BODY (2 BYTES)
+                                ;	A TEXT POINTER AT THE CHARACTER AFTER THE WHILE OF THE WHILE BODY (2 BYTES)
+                                ;	THE LINE NUMBER OF THE LINE THAT THE WHILE IS ON (2 BYTES)
+                                ;
+                                ;	TOTAL	7 BYTES
+                                ;
+  0000'   22 0000*              WHILE:	SHLD	ENDFOR			;KEEP THE WHILE TEXT POINTER HERE
+  0003'   CD 0000*              	CALL	WNDSCN			;SCAN FOR THE MATCHING WEND
+                                					;CAUSE AN ERRWH IF NO WEND TO MATCH
+  0006'   CD 0000*              	CALL	CHRGTR			;POINT AT CHARACTWER AFTER WEND
+  0009'   EB                    	XCHG				;[D,E]= POSITION OF MATCHING WEND
+  000A'   CD 0067'              	CALL	FNDWND			;SEE IF THERE IS A STACK ENTRY FOR THIS WHILE
+  000D'   33                    	INX	SP			;GET RID OF THE NEWSTT ADDRESS ON THE STACK
+  000E'   33                    	INX	SP
+  000F'   C2 0017'              	JNZ	WNOTOL			;IF NO MATCH NO NEED TO TRUNCATE THE STACK
+  0012'   09                    	DAD	B			;ELIMINATE EVERYTHING UP TO AND INCLUDING
+                                					;THE MATCHING WHILE ENTRY
+  0013'   F9                    	SPHL	
+  0014'   22 0000*              	SHLD	SAVSTK
+  0017'   2A 0000*              WNOTOL:	LHLD	CURLIN			;MAKE THE STACK ENTRY
+  001A'   E5                    	PUSH	H
+  001B'   2A 0000*              	LHLD	ENDFOR			;GET TEXT POINTER FOR WHILE BACK
+  001E'   E5                    	PUSH	H
+  001F'   D5                    	PUSH	D			;SAVE THE WEND TEXT POINTER
+  0020'   C3 0047'              	JMP	FNWEND			;FINISH USING WEND CODE
+                                
+  0023'   C2 0000*              WEND:	JNZ	SNERR			;STATEMENT HAS NO ARGUMENTS
+  0026'   EB                    	XCHG				;FIND MATCHING WHILE ENTRY ON STACK
+  0027'   CD 0067'              	CALL	FNDWND
+  002A'   C2 0092'              	JNZ	WEERR			;MUST MATCH OR ELSE ERROR
+  002D'   F9                    	SPHL				;TRUNCATE STACK AT MATCH POINT
+  002E'   22 0000*              	SHLD	SAVSTK
+  0031'   EB                    	XCHG				;SAVE [H,L] POINTING INTO STACK ENTRY
+  0032'   2A 0000*              	LHLD	CURLIN			;REMEMBER WEND LINE #
+  0035'   22 0000*              	SHLD	NXTLIN			;IN NXTLIN
+  0038'   EB                    	XCHG	
+  0039'   23                    	INX	H			;INDEX INTO STACK ENTRY TO GET VALUES
+  003A'   23                    	INX	H			;SKIP OVER TEXT POINTER OF WEND
+  003B'   5E                    	MOV	E,M			;SET [D,E]=TEXT POINTER OF WHILE
+  003C'   23                    	INX	H
+  003D'   56                    	MOV	D,M
+  003E'   23                    	INX	H
+  003F'   7E                    	MOV	A,M			;[H,L]=LINE NUMBER OF WHILE
+  0040'   23                    	INX	H
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+WHILE, WEND
+
+  0041'   66                    	MOV	H,M
+  0042'   6F                    	MOV	L,A
+  0043'   22 0000*              	SHLD	CURLIN			;IN CASE OF ERROR OR CONTINUATION FIX CURLIN
+  0046'   EB                    	XCHG				;GET TEXT POINTER OF WHILE FORMULA INTO [H,L]
+  0047'   CD 0000*              FNWEND:	CALL	FRMEVL			;EVALUATE FORMULA
+                                	EXTRN	VSIGN
+  004A'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  004B'   CD 0000*              	CALL	VSIGN			;GET IF TRUE OR FALSE
+  004E'   E1                    	POP	H			;GET BACK WHILE TEXT POINTER
+  004F'   CA 005B'              	JZ	FLSWHL			;GO BACK AT WEND IF FALSE
+  0052'   01 0000*              	LXI	B,0+$WHILE		;COMPLETE WHILE ENTRY
+  0055'   41                    	MOV	B,C			;NEED IT IN THE HIGH BYTE
+  0056'   C5                    	PUSH	B
+  0057'   33                    	INX	SP			;ONLY USE ONE BYTE
+  0058'   C3 0000*              	JMP	NEWSTT
+                                
+  005B'   2A 0000*              FLSWHL:	LHLD	NXTLIN			;SETUP CURLIN FOR WEND
+  005E'   22 0000*              	SHLD	CURLIN
+  0061'   E1                    	POP	H			;TAKE OFF TEXT OF WEND AS NEW TEXT POINTER
+  0062'   F1                    	POP	PSW			;GET RID OF TEXT POINTER OF WHILE
+  0063'   F1                    	POP	PSW			;TAKE OFF LINE NUMBER OF WHILE
+  0064'   C3 0000*              	JMP	NEWSTT
+                                ;
+                                ; THIS SUBROUTINE SEARCHES THE STACK FOR AN WHILE ENTRY
+                                ; WHOSE WEND TEXT POINTER MATCHES [D,E]. IT RETURNS WITH ZERO TRUE
+                                ; IF A MATCH IS FOUND AND ZERO FALSE OTHERWISE. FOR ENTRIES
+                                ; ARE SKIPPED OVER, BUT GOSUB ENTRIES ARE NOT.
+                                ;
+  0006                          WHLSIZ	SET	6
+  0067'   21 0004               FNDWND:	LXI	H,0+4			;SKIP OVER RETURN ADDRESS AND NEWSTT
+  006A'   39                    	DAD	SP
+  006B'                         FNDWN2:
+  006B'   7E                    	MOV	A,M			;GET THE ENTRY TYPE
+  006C'   23                    	INX	H
+  006D'   01 0000*              	LXI	B,0+$FOR
+  0070'   B9                    	CMP	C			;SEE IF ITS $FOR
+  0071'   C2 007B'              	JNZ	FNDWN3
+  0074'   01 0000*              	LXI	B,FORSZC
+  0077'   09                    	DAD	B
+  0078'   C3 006B'              	JMP	FNDWN2
+  007B'   01 0000*              FNDWN3:	LXI	B,0+$WHILE
+  007E'   B9                    	CMP	C
+  007F'   C0                    	RNZ	
+  0080'   E5                    	PUSH	H
+  0081'   4E                    	MOV	C,M			;PICK UP THE WEND TEXT POINTER
+  0082'   23                    	INX	H
+  0083'   46                    	MOV	B,M
+  0084'   60                    	MOV	H,B
+  0085'   69                    	MOV	L,C
+  0086'   CD 0000*              	CALL	DCOMPR
+  0089'   E1                    	POP	H
+  008A'   01 0006               	LXI	B,0+WHLSIZ
+  008D'   C8                    	RZ				;RETURN IF ENTRY MATCHES
+  008E'   09                    	DAD	B
+  008F'   C3 006B'              	JMP	FNDWN2
+                                
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+WHILE, WEND
+
+  0092'   11 0000*              WEERR:	LXI	D,0+ERRWE
+  0095'   C3 0000*              	JMP	ERROR
+                                	PAGE
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+WHILE, WEND
+
+                                
+                                	SUBTTL	CALL statement
+                                	PUBLIC	CALLS
+                                ; This is the CALL <simple var>[(<simple var>[,<simple var>]..)]
+                                ; Stragegy:
+                                ;
+                                ; 1.) Make sure suboutine name is simple var, get value & save it
+                                ;
+                                ; 2.) Allocate space on stack for param adresses
+                                ;
+                                ; 3.) Evaluate params & stuff pointers on stack
+                                ;
+                                ; 3.) POP off pointers ala calling convention
+                                ;
+                                ; 4.) CALL suboutine with return address on stack
+  0020                          MAXPRM	SET	32			;MAX # OF PARAMS TO ASSEMBLY LANGUAGE SUBROUTINE
+                                	EXTRN	TEMPA
+  0098'                         CALLS:
+  0098'   3E 80                 	MVI	A,200O			;Flag PTRGET not to allow arrays
+  009A'   32 0000*              	STA	SUBFLG
+  009D'   CD 0000*              	CALL	PTRGET			;Evaluate var pointer
+  00A0'   E5                    	PUSH	H			;Save text pointer
+  00A1'   EB                    	XCHG				;Var pointer to [H,L]
+  00A2'   CD 0000*              	CALL	GETYPR			;Get type of var
+  00A5'   CD 0000*              	CALL	VMOVFM			;Store value in FAC
+  00A8'   CD 0000*              	CALL	FRCINT			;Evaluate var
+  00AB'   22 0000*              	SHLD	TEMPA			;Save it
+  00AE'   0E 20                 	MVI	C,MAXPRM		;Check to see if we have space for max parm block
+  00B0'   CD 0000*              	CALL	GETSTK
+  00B3'   D1                    	POP	D			;Get text pointer off stack
+  00B4'   21 FFC0               	LXI	H,0-2*MAXPRM		;Get space on stack for parms
+  00B7'   39                    	DAD	SP
+  00B8'   F9                    	SPHL				;Adjust stack
+  00B9'   EB                    	XCHG				;Put text pointer in [H,L], stack pointer in [D,E]
+  00BA'   0E 20                 	MVI	C,MAXPRM		;Get # of params again
+  00BC'   2B                    	DCX	H			;Back up text pointer
+  00BD'   CD 0000*              	CALL	CHRGTR			;Get char
+  00C0'   22 0000*              	SHLD	TEMP			;Save text pointer
+  00C3'   CA 0106'              	JZ	CALLST			;If end of line, GO!
+  00C6'   CD 0000*              	CALL	SYNCHR
+  00C9'   28                    	DB	'('			;Eat left paren
+  00CA'   C5                    GETPAR:	PUSH	B			;Save count
+  00CB'   D5                    	PUSH	D			;Save pointer into stack
+  00CC'   CD 0000*              	CALL	PTRGET			;Evaluate param address
+  00CF'   E3                    	XTHL				;Save text pointer get pointer into stack
+  00D0'   73                    	MOV	M,E			;Save var address on stack
+  00D1'   23                    	INX	H
+  00D2'   72                    	MOV	M,D
+  00D3'   23                    	INX	H
+  00D4'   E3                    	XTHL				;Save back var pointer, get text pointer
+  00D5'   D1                    	POP	D
+  00D6'   C1                    	POP	B
+  00D7'   7E                    	MOV	A,M			;Look at terminator
+  00D8'   FE 2C                 	CPI	54O			;Comma?
+  00DA'   C2 00E4'              	JNZ	ENDPAR			;Test
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+CALL statement
+
+  00DD'   0D                    	DCR	C			;Decrement count of params
+  00DE'   CD 0000*              	CALL	CHRGTR			;Get next char
+  00E1'   C3 00CA'              	JMP	GETPAR			;Back for more
+  00E4'   CD 0000*              ENDPAR:	CALL	SYNCHR
+  00E7'   29                    	DB	')'			;Should have left paren
+  00E8'   22 0000*              	SHLD	TEMP			;Save text pointer
+  00EB'   3E 21                 	MVI	A,MAXPRM+1		;Calc # of params
+  00ED'   91                    	SUB	C
+  00EE'   E1                    	POP	H			;At least one, get its address in [H,L]
+  00EF'   3D                    	DCR	A			;Was it one?
+  00F0'   CA 0106'              	JZ	CALLST			;Yes
+  00F3'   D1                    	POP	D			;Next address in [D,E]
+  00F4'   3D                    	DCR	A			;Two?
+  00F5'   CA 0106'              	JZ	CALLST			;Yes
+  00F8'   C1                    	POP	B			;Final in [B,C]
+  00F9'   3D                    	DCR	A			;Three?
+  00FA'   CA 0106'              	JZ	CALLST			;Yes
+  00FD'   C5                    	PUSH	B			;Save back third parm
+  00FE'   E5                    	PUSH	H			;Save back first
+  00FF'   21 0002               	LXI	H,0+2			;Point to rest of parm list
+  0102'   39                    	DAD	SP
+  0103'   44                    	MOV	B,H			;Get into [B,C]
+  0104'   4D                    	MOV	C,L
+  0105'   E1                    	POP	H			;Restore parm three
+  0106'   E5                    CALLST:	PUSH	H			;Save parm three
+  0107'   21 0111'              	LXI	H,CALLRT		;Where subroutines return
+  010A'   E3                    	XTHL				;Put it on stack, get back parm three
+  010B'   E5                    	PUSH	H			;Save parm three
+  010C'   2A 0000*              	LHLD	TEMPA			;Get subroutine address
+  010F'   E3                    	XTHL				;Save, get back parm three
+  0110'   C9                    	RET				;Dispatch to subroutine
+                                
+  0111'   2A 0000*              CALLRT:	LHLD	SAVSTK			;Restore stack to former state
+  0114'   F9                    	SPHL	
+  0115'   2A 0000*              	LHLD	TEMP			;Get back text poiner
+  0118'   C3 0000*              	JMP	NEWSTT			;Get next statement
+                                	PAGE
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+CALL statement
+
+                                
+                                	SUBTTL	CHAIN
+                                	EXTRN	TXTTAB,FRMEVL,$COMMO,OMERR,SCRTCH,VALTYP,$MERGE,LINGET
+                                	EXTRN	$DELETE
+                                	PUBLIC	CHAIN,COMPTR,COMPT2,COMMON
+                                	EXTRN	GARBA2,FRETOP,MOVE1,NEWSTT,PTRGET,STRCPY
+                                	EXTRN	SAVFRE
+                                	EXTRN	IADAHL
+                                	EXTRN	SUBFLG,TEMP3,TEMP9,VARTAB,ARYTAB,BLTUC,CHNFLG,CHNLIN,DATA
+                                	EXTRN	FNDLIN,STREND,USERR,CURLIN,ERSFIN,FCERR,NOARYS,SAVSTK,ENDBUF
+                                	EXTRN	DEL,CMEPTR,CMSPTR,MRGFLG,MDLFLG,LINKER,SCNLIN,FRQINT
+                                ; This is the code for the CHAIN statement
+                                ; The syntax is:
+                                ; CHAIN [MERGE]<file name>[,[<line number>][,ALL][,DELETE <range>]]
+                                ; The steps required to execute a CHAIN are:
+                                ;
+                                ; 1.) Scan arguments
+                                ;
+                                ; 2.) Scan program for all COMMON statements and 
+                                ;	mark specified variables.
+                                ;
+                                ; 3.) Squeeze unmarked entries from symbol table.
+                                ;
+                                ; 4.) Copy string literals to string space
+                                ;
+                                ; 5.) Move all simple variables and arrays into the
+                                ;	bottom of string space.
+                                ;
+                                ; 6.) Load new program
+                                ;
+                                ; 7.) Move variables back down positioned after program.
+                                ;
+                                ; 8.) Run program
+  011B'                         CHAIN:
+  011B'   AF                    	XRA	A			;Assume no MERGE
+  011C'   32 0000*              	STA	MRGFLG
+  011F'   32 0000*              	STA	MDLFLG			;Also no MERGE w/ DELETE option
+  0122'   7E                    	MOV	A,M			;Get current char
+  0123'   11 0000*              	LXI	D,0+$MERGE		;Is it MERGE?
+  0126'   BB                    	CMP	E			;Test
+  0127'   C2 012E'              	JNZ	NTCHNM			;NO
+  012A'   32 0000*              	STA	MRGFLG			;Set MERGE flag
+  012D'   23                    	INX	H
+  012E'   2B                    NTCHNM:	DCX	H			;Rescan file name
+  012F'   CD 0000*              	CALL	CHRGTR
+                                	EXTRN	PRGFLI
+  0132'   CD 0000*              	CALL	PRGFLI			;Evaluate file name and OPEN it
+  0135'   E5                    	PUSH	H			;Save text pointer
+  0136'   21 0000               	LXI	H,0			;Get zero
+  0139'   22 0000*              	SHLD	CHNLIN			;Assume no CHAIN line #
+  013C'   E1                    	POP	H			;Restore text pointer
+  013D'   2B                    	DCX	H			;Back up pointer
+  013E'   CD 0000*              	CALL	CHRGTR			;Scan char
+  0141'   CA 01AE'              	JZ	NTCHAL			;No line number etc.
+  0144'   CD 0000*              	CALL	SYNCHR
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+CHAIN
+
+  0147'   2C                    	DB	54O			;Must be comma
+  0148'   FE 2C                 	CPI	54O			;Ommit line # (Use ALL for instance)
+  014A'   CA 015F'              	JZ	NTLINF			;YES
+  014D'   CD 0000*              	CALL	FRMEVL			;Evaluate line # formula
+  0150'   E5                    	PUSH	H			;Save text poiner
+  0151'   CD 0000*              	CALL	FRQINT			;Force to int in [H,L]
+  0154'   22 0000*              	SHLD	CHNLIN			;Save it for later
+  0157'   E1                    	POP	H			;Restore text poiner
+  0158'   2B                    	DCX	H			;Rescan last char
+  0159'   CD 0000*              	CALL	CHRGTR
+  015C'   CA 01AE'              	JZ	NTCHAL			;No ALL i.e. preserve all vars across CHAIN
+  015F'   CD 0000*              NTLINF:	CALL	SYNCHR
+  0162'   2C                    	DB	54O			;Should be comma here
+  0163'   11 0000*              	LXI	D,0+$DELETE		;Test for DELETE option
+  0166'   BB                    	CMP	E			;Is it?
+  0167'   CA 0182'              	JZ	CHMWDL			;Yes
+  016A'   CD 0000*              	CALL	SYNCHR
+  016D'   41                    	DB	'A'			;Check for "ALL"
+  016E'   CD 0000*              	CALL	SYNCHR
+  0171'   4C                    	DB	'L'
+  0172'   CD 0000*              	CALL	SYNCHR
+  0175'   4C                    	DB	'L'
+  0176'   CA 02E3'              	JZ	DNCMDA			;Goto step 3
+  0179'   CD 0000*              	CALL	SYNCHR
+  017C'   2C                    	DB	54O			;Force comma to appear
+  017D'   BB                    	CMP	E			;Must be DELETE
+  017E'   C2 0000*              	JNZ	SNERR			;No, give error
+  0181'   B7                    	ORA	A			;Flag to goto DNCMDA
+  0182'   F5                    CHMWDL:	PUSH	PSW			;Save ALL flag
+  0183'   32 0000*              	STA	MDLFLG			;Set MERGE w/ DELETE
+  0186'   CD 0000*              	CALL	CHRGTR			;Get char after comma
+  0189'   CD 0000*              	CALL	SCNLIN			;Scan line range
+                                	EXTRN	DEPTR
+  018C'   C5                    	PUSH	B
+  018D'   CD 0000*              	CALL	DEPTR			;Change pointers back to numbers
+  0190'   C1                    	POP	B
+  0191'   D1                    	POP	D			;Pop max line off stack
+  0192'   C5                    	PUSH	B			;Save pointer to start of 1st line
+  0193'   60                    	MOV	H,B			;Save pointer to start line
+  0194'   69                    	MOV	L,C
+  0195'   22 0000*              	SHLD	CMSPTR
+  0198'   CD 0000*              	CALL	FNDLIN			;Find the last line
+  019B'   D2 01A7'              	JNC	FCERRG			;Must have exact match on end of range
+  019E'   54                    	MOV	D,H			;[D,E] =  pointer at the start of the line
+  019F'   5D                    	MOV	E,L			;beyond the last line in the range
+  01A0'   22 0000*              	SHLD	CMEPTR			;Save pointer to end line
+  01A3'   E1                    	POP	H			;Get back pointer to start of range
+  01A4'   CD 0000*              	CALL	DCOMPR			;Make sure the start comes before the end
+  01A7'   D2 0000*              FCERRG:	JNC	FCERR			;If not, "Illegal function call"
+  01AA'   F1                    	POP	PSW			;Flag that says whether to go to DNCMDA
+  01AB'   C2 02E3'              	JNZ	DNCMDA			;"ALL" option was present
+  01AE'   2A 0000*              NTCHAL:	LHLD	TXTTAB			;Start searching for COMMONs at program start
+  01B1'   2B                    	DCX	H			;Compensate for next instr
+  01B2'   23                    CLPSC1:	INX	H			;Look at first char of next line
+  01B3'   7E                    CLPSCN:	MOV	A,M			;Get char from program
+  01B4'   23                    	INX	H
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+CHAIN
+
+  01B5'   B6                    	ORA	M			;Are we pointing to program end?
+  01B6'   CA 026A'              	JZ	CLPFIN			;Yes
+  01B9'   23                    	INX	H
+  01BA'   5E                    	MOV	E,M			;Get line # in [D,E]
+  01BB'   23                    	INX	H
+  01BC'   56                    	MOV	D,M
+  01BD'   EB                    	XCHG				;Save current line # in CURLIN for errors
+  01BE'   22 0000*              	SHLD	CURLIN
+  01C1'   EB                    	XCHG	
+  01C2'   CD 0000*              CSTSCN:	CALL	CHRGTR			;Get statment type
+  01C5'   B7                    AFTCOM:	ORA	A
+  01C6'   CA 01B2'              	JZ	CLPSC1			;EOL Scan next one
+  01C9'   FE 3A                 	CPI	':'			;Are we looking at colon
+  01CB'   CA 01C2'              	JZ	CSTSCN			;Yes, get next statement
+  01CE'   11 0000*              	LXI	D,0+$COMMO		;Test for COMMON, avoid byte externals
+  01D1'   BB                    	CMP	E			;Is it a COMMON?
+  01D2'   CA 01DF'              	JZ	DOCOMM			;Yes, handle it
+  01D5'   CD 0000*              	CALL	CHRGTR			;Get first char of statement
+  01D8'   CD 0000*              	CALL	DATA			;Skip over statement
+  01DB'   2B                    	DCX	H			;Back up to rescan terminator
+  01DC'   C3 01C2'              	JMP	CSTSCN			;Scan next one
+  01DF'   CD 0000*              DOCOMM:	CALL	CHRGTR			;Get thing after COMMON
+  01E2'   CA 01C5'              	JZ	AFTCOM			;Get next thing
+  01E5'   E5                    NXTCOM:	PUSH	H			;Save text pointer
+  01E6'   3E 01                 	MVI	A,1			;Call PTRGET to search for array
+  01E8'   32 0000*              	STA	SUBFLG
+  01EB'   CD 0000*              	CALL	PTRGET			;This subroutine in F3 scans variables
+  01EE'   CA 023D'              	JZ	FNDAAY			;Found array
+  01F1'   78                    	MOV	A,B			;Try finding array with COMMON bit set
+  01F2'   F6 80                 	ORI	128
+  01F4'   47                    	MOV	B,A
+  01F5'   AF                    	XRA	A			;Set zero CC
+  01F6'   CD 0000*              	CALL	ERSFIN			;Search array table
+  01F9'   3E 00                 	MVI	A,0			;Clear SUBFLG in all cases
+  01FB'   32 0000*              	STA	SUBFLG
+  01FE'   C2 020B'              	JNZ	NTFN2T			;Not found, try simple
+  0201'   7E                    	MOV	A,M			;Get terminator, should be "("
+  0202'   FE 28                 	CPI	'('			;Test
+  0204'   C2 0211'              	JNZ	SCNSMP			;Must be simple then
+  0207'   F1                    	POP	PSW			;Get rid of saved text pointer
+  0208'   C3 0259'              	JMP	COMADY			;Already was COMMON, ignore it
+  020B'   7E                    NTFN2T:	MOV	A,M			;Get terminator
+  020C'   FE 28                 	CPI	'('			;Array specifier?
+  020E'   CA 0000*              	JZ	FCERR			;No such animal, give "Function call" error
+  0211'   E1                    SCNSMP:	POP	H			;Rescan variable name for start
+  0212'   CD 0000*              	CALL	PTRGET			;Evaluate as simple
+  0215'   7A                    COMPTR:	MOV	A,D			;If var not found, [D,E]=0
+  0216'   B3                    	ORA	E
+  0217'   C2 022A'              	JNZ	COMFNS			;Found it
+  021A'   78                    	MOV	A,B			;Try to find in COMMON
+  021B'   F6 80                 	ORI	128			;Set COMMON bit
+  021D'   47                    	MOV	B,A
+  021E'   3A 0000*              	LDA	VALTYP			;Must have VALTYP in [D]
+  0221'   57                    	MOV	D,A
+  0222'   CD 0000*              	CALL	NOARYS			;Search symbol table
+  0225'   7A                    COMPT2:	MOV	A,D			;Found?
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+CHAIN
+
+  0226'   B3                    	ORA	E
+  0227'   CA 0000*              	JZ	FCERR			;No, who is this guy?
+  022A'   E5                    COMFNS:	PUSH	H			;Save text pointer
+  022B'   42                    	MOV	B,D			;Get pointer to var in [B,C]
+  022C'   4B                    	MOV	C,E
+  022D'   21 024C'              	LXI	H,BCKUCM		;Loop back here
+  0230'   E5                    	PUSH	H
+  0231'   0B                    CBAKBL:	DCX	B			;Point at first char of rest
+  0232'   0A                    LPBKNC:	LDAX	B			;Back up until plus byte
+  0233'   0B                    	DCX	B
+  0234'   B7                    	ORA	A
+  0235'   FA 0232'              	JM	LPBKNC
+                                					;Now point to 2nd char of var name
+  0238'   0A                    	LDAX	B			;set COMMON bit
+  0239'   F6 80                 	ORI	128
+  023B'   02                    	STAX	B
+  023C'   C9                    	RET				;done
+  023D'   32 0000*              FNDAAY:	STA	SUBFLG			;Array found, clear SUBFLG
+  0240'   7E                    	MOV	A,M			;Make sure really array spec
+  0241'   FE 28                 	CPI	'('			;Really an array?
+  0243'   C2 0211'              	JNZ	SCNSMP			;No, scan as simp
+  0246'   E3                    	XTHL				;Save text pointer, get rid of saved text pointer
+  0247'   0B                    BAKCOM:	DCX	B			;Point at last char of name extension
+  0248'   0B                    	DCX	B
+  0249'   CD 0231'              	CALL	CBAKBL			;Back up before variable and mark as COMMON
+  024C'   E1                    BCKUCM:	POP	H			;Restore text pointer
+  024D'   2B                    	DCX	H			;Rescan terminator
+  024E'   CD 0000*              	CALL	CHRGTR
+  0251'   CA 01C5'              	JZ	AFTCOM			;End of COMMON statement
+  0254'   FE 28                 	CPI	'('			;End of COMMON array spec?
+  0256'   C2 0263'              	JNZ	CHKCST			;No, should be comma
+  0259'   CD 0000*              COMADY:	CALL	CHRGTR			;Fetch char after paren
+  025C'   CD 0000*              	CALL	SYNCHR
+  025F'   29                    	DB	')'			;Right paren should follow
+  0260'   CA 01C5'              	JZ	AFTCOM			;End of COMMON
+  0263'   CD 0000*              CHKCST:	CALL	SYNCHR
+  0266'   2C                    	DB	54O			;Force comma to appear here
+  0267'   C3 01E5'              	JMP	NXTCOM			;Get next COMMON variable
+                                ; Step 3 - Squeeze..
+  026A'   2A 0000*              CLPFIN:	LHLD	ARYTAB			;End of simple var squeeze
+  026D'   EB                    	XCHG				;To [D,E]
+  026E'   2A 0000*              	LHLD	VARTAB			;Start of simps
+  0271'   CD 0000*              CLPSLP:	CALL	DCOMPR			;Are we done?
+  0274'   CA 02B9'              	JZ	DNCMDS			;Yes done, with simps
+  0277'   E5                    	PUSH	H			;Save where this simp is
+  0278'   4E                    	MOV	C,M			;Get VALTYP
+  0279'   23                    	INX	H
+  027A'   23                    	INX	H
+  027B'   7E                    	MOV	A,M			;Get COMMON bit
+  027C'   B7                    	ORA	A			;Set minus if COMMON
+  027D'   F5                    	PUSH	PSW			;Save indicator
+  027E'   E6 7F                 	ANI	177O			;Clear COMMON bit
+  0280'   77                    	MOV	M,A			;Save back
+  0281'   23                    	INX	H
+  0282'   CD 0000*              	CALL	IADAHL			;Skip over rest of var name
+  0285'   06 00                 	MVI	B,0			;Skip VALTYP bytes
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+CHAIN
+
+  0287'   09                    	DAD	B
+  0288'   F1                    	POP	PSW			;Get indicator whether to delete
+  0289'   C1                    	POP	B			;Pointer to where var started
+  028A'   FA 0271'              	JM	CLPSLP
+  028D'   C5                    	PUSH	B			;This is where we will resume scanning vars later
+  028E'   CD 029D'              	CALL	VARDLS			;Delete variable
+  0291'   2A 0000*              	LHLD	ARYTAB			;Now correct ARYTAB by # of bytes deleted
+  0294'   19                    	DAD	D			;Add negative difference between old and new
+  0295'   22 0000*              	SHLD	ARYTAB			;Save new ARYTAB
+  0298'   EB                    	XCHG				;To [D,E]
+  0299'   E1                    	POP	H			;Get current place back in [H,L]
+  029A'   C3 0271'              	JMP	CLPSLP
+  029D'   EB                    VARDLS:	XCHG				;Point to where var ends
+  029E'   2A 0000*              	LHLD	STREND			;One beyond last byte to move
+  02A1'   CD 0000*              DLSVLP:	CALL	DCOMPR			;Done?
+  02A4'   1A                    	LDAX	D			;Grab byte
+  02A5'   02                    	STAX	B			;Move down
+  02A6'   13                    	INX	D			;Increment pointers
+  02A7'   03                    	INX	B
+  02A8'   C2 02A1'              	JNZ	DLSVLP
+  02AB'   79                    	MOV	A,C			;Get difference between old and new
+  02AC'   95                    	SUB	L			;Into [D,E] ([D,E]=[B,C]-[H,L])
+  02AD'   5F                    	MOV	E,A
+  02AE'   78                    	MOV	A,B
+  02AF'   9C                    	SBB	H
+  02B0'   57                    	MOV	D,A
+  02B1'   1B                    	DCX	D			;Correct # of bytes
+  02B2'   0B                    	DCX	B			;Moved one too far
+  02B3'   60                    	MOV	H,B			;Get new STREND [H,L]
+  02B4'   69                    	MOV	L,C
+  02B5'   22 0000*              	SHLD	STREND			;Store it
+  02B8'   C9                    	RET	
+  02B9'   2A 0000*              DNCMDS:	LHLD	STREND			;Limit of array search
+  02BC'   EB                    	XCHG				;To [D,E]
+  02BD'   CD 0000*              CLPAKP:	CALL	DCOMPR			;Done?
+  02C0'   CA 02E3'              	JZ	DNCMDA			;Yes
+  02C3'   E5                    	PUSH	H			;Save pointer to VALTYP
+  02C4'   23                    	INX	H			;Move down to COMMON bit
+  02C5'   23                    	INX	H
+  02C6'   7E                    	MOV	A,M			;Get it
+  02C7'   B7                    	ORA	A			;Set CC's
+  02C8'   F5                    	PUSH	PSW			;Save COMMON indicator
+  02C9'   E6 7F                 	ANI	177O			;Clear COMMON bit
+  02CB'   77                    	MOV	M,A			;Save back
+  02CC'   23                    	INX	H			;Point to length of array
+  02CD'   CD 0000*              	CALL	IADAHL			;Add length of var name
+  02D0'   4E                    	MOV	C,M			;Get length of array in [B,C]
+  02D1'   23                    	INX	H
+  02D2'   46                    	MOV	B,M
+  02D3'   23                    	INX	H
+  02D4'   09                    	DAD	B			;[H,L] now points after array
+  02D5'   F1                    	POP	PSW			;Get back COMMON indicator
+  02D6'   C1                    	POP	B			;Get pointer to start of array
+  02D7'   FA 02BD'              	JM	CLPAKP			;COMMON, dont delete!
+  02DA'   C5                    	PUSH	B			;Save so we can resume
+  02DB'   CD 029D'              	CALL	VARDLS			;Delete variable
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+CHAIN
+
+  02DE'   EB                    	XCHG				;Put STREND in [D,E]
+  02DF'   E1                    	POP	H			;Point to next var
+  02E0'   C3 02BD'              	JMP	CLPAKP			;Look at next array
+                                ; Step 4 - Copy literals into string space
+                                ; This code is very smilar to the string garbage collect code
+  02E3'   2A 0000*              DNCMDA:	LHLD	VARTAB			;Look at simple strings
+  02E6'   EB                    CSVAR:	XCHG				;Into [D,E]
+  02E7'   2A 0000*              	LHLD	ARYTAB			;Limit of search
+  02EA'   EB                    	XCHG				;Start in [H,L], limit in [D,E]
+  02EB'   CD 0000*              	CALL	DCOMPR			;Done?
+  02EE'   CA 030B'              	JZ	CAYVAR			;Yes
+  02F1'   7E                    	MOV	A,M			;Get VALTYP
+  02F2'   23                    	INX	H			;Point to length of long var name
+  02F3'   23                    	INX	H
+  02F4'   23                    	INX	H
+  02F5'   F5                    	PUSH	PSW			;Save VALTYP
+  02F6'   CD 0000*              	CALL	IADAHL			;Move past long variable name
+  02F9'   F1                    	POP	PSW			;Ge back VALTYP
+  02FA'   FE 03                 	CPI	3			;String?
+  02FC'   C2 0303'              	JNZ	CSKPVA			;Skip this var, not string
+  02FF'   CD 0343'              	CALL	CDVARS			;Copy this guy into string space if nesc
+  0302'   AF                    	XRA	A			;CDVARS has already incremented [H,L]
+  0303'   5F                    CSKPVA:	MOV	E,A
+  0304'   16 00                 	MVI	D,0			;Add length of VALTYP
+  0306'   19                    	DAD	D
+  0307'   C3 02E6'              	JMP	CSVAR
+  030A'   C1                    CAYVA2:	POP	B			;Adjust stack
+  030B'   EB                    CAYVAR:	XCHG				;Save where we are
+  030C'   2A 0000*              	LHLD	STREND			;New limit of search
+  030F'   EB                    	XCHG				;In [D,E], limit in [H,L]
+  0310'   CD 0000*              	CALL	DCOMPR			;Done?
+  0313'   CA 036D'              	JZ	DNCCLS			;Yes
+  0316'   7E                    	MOV	A,M			;Get VALTYP of array
+  0317'   23                    	INX	H
+  0318'   23                    	INX	H
+  0319'   F5                    	PUSH	PSW			;Save VALTYP
+  031A'   23                    	INX	H
+  031B'   CD 0000*              	CALL	IADAHL			;Skip over rest of array name
+  031E'   4E                    	MOV	C,M			;Get length of array
+  031F'   23                    	INX	H
+  0320'   46                    	MOV	B,M			;Into [B,C]
+  0321'   23                    	INX	H
+  0322'   F1                    	POP	PSW			;Get back VALTYP
+  0323'   E5                    	PUSH	H			;Save pointer to array element
+  0324'   09                    	DAD	B			;Point after array
+  0325'   FE 03                 	CPI	3			;String array?
+  0327'   C2 030A'              	JNZ	CAYVA2			;No, look at next one
+  032A'   22 0000*              	SHLD	TEMP3			;Save pointer to end of array
+  032D'   E1                    	POP	H			;Get back pointer to array start
+  032E'   4E                    	MOV	C,M			;Pick up number of DIMs
+  032F'   06 00                 	MVI	B,0			;Make double with high zero
+  0331'   09                    	DAD	B			;Go past DIMS
+  0332'   09                    	DAD	B
+  0333'   23                    	INX	H			;One more to account for # of DIMs
+  0334'   EB                    CAYSTR:	XCHG				;Save current position in [D,E]
+  0335'   2A 0000*              	LHLD	TEMP3			;Get end of array
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+CHAIN
+
+  0338'   EB                    	XCHG	
+  0339'   CD 0000*              	CALL	DCOMPR			;See if at end of array
+  033C'   CA 030B'              	JZ	CAYVAR			;Get next array
+  033F'   01 0334'              	LXI	B,CAYSTR		;Do next str in array
+  0342'   C5                    	PUSH	B			;Save branch address on stack
+  0343'   AF                    CDVARS:	XRA	A			;Get length of array and
+  0344'   B6                    	ORA	M			;Set CC's on VALTYP
+  0345'   23                    	INX	H			;Also pick up pointer into [D,E]
+  0346'   5E                    	MOV	E,M
+  0347'   23                    	INX	H
+  0348'   56                    	MOV	D,M
+  0349'   23                    	INX	H			;[H,L] points after descriptor
+  034A'   C8                    	RZ				;Ignore null strings
+  034B'   E5                    	PUSH	H			;Save where we are
+  034C'   2A 0000*              	LHLD	VARTAB			;Is string in program text or disk buffers?
+  034F'   CD 0000*              	CALL	DCOMPR			;Compare
+  0352'   E1                    	POP	H			;Restore where we are
+  0353'   D8                    	RC				;No, must be in string space
+  0354'   E5                    	PUSH	H			;save where we are again.
+  0355'   2A 0000*              	LHLD	TXTTAB			;is it in buffers?
+  0358'   CD 0000*              	CALL	DCOMPR			;test
+  035B'   E1                    	POP	H			;Restore where we are
+  035C'   D0                    	RNC				;in buffers, do nothing
+  035D'   E5                    	PUSH	H			;Save where we are for nth time
+  035E'   2B                    	DCX	H			;Point to start of descriptor
+  035F'   2B                    	DCX	H
+  0360'   2B                    	DCX	H
+  0361'   E5                    	PUSH	H			;Save pointer to start
+  0362'   CD 0000*              	CALL	STRCPY			;Copy string into DSCTMP
+  0365'   E1                    	POP	H			;Destination in [H,L], source in [D,E]
+  0366'   06 03                 	MVI	B,3			;# of bytes to move
+  0368'   CD 0000*              	CALL	MOVE1			;Move em
+  036B'   E1                    	POP	H			;Where we are
+  036C'   C9                    	RET	
+                                ; Step 5 - Move stuff up into string space!
+  036D'   CD 0000*              DNCCLS:	CALL	GARBA2			;Get rid of unused strings
+  0370'   2A 0000*              	LHLD	STREND			;Load end of vars
+  0373'   44                    	MOV	B,H			;Into [B,C]
+  0374'   4D                    	MOV	C,L
+  0375'   2A 0000*              	LHLD	VARTAB			;Start of simps into [D,E]
+  0378'   EB                    	XCHG	
+  0379'   2A 0000*              	LHLD	ARYTAB
+  037C'   7D                    	MOV	A,L			;Get length of simps in [H,L]
+  037D'   93                    	SUB	E
+  037E'   6F                    	MOV	L,A
+  037F'   7C                    	MOV	A,H
+  0380'   9A                    	SBB	D
+  0381'   67                    	MOV	H,A
+  0382'   22 0000*              	SHLD	TEMP9			;Save here
+  0385'   2A 0000*              	LHLD	FRETOP			;Destination of high byte
+  0388'   22 0000*              	SHLD	SAVFRE			;Save FRETOP to restore later
+  038B'   CD 0000*              	CALL	BLTUC			;Move stuff up
+  038E'   60                    	MOV	H,B			;Now adjust top of memory below saved vars
+  038F'   69                    	MOV	L,C
+  0390'   2B                    	DCX	H			;One lower to be sure
+  0391'   22 0000*              	SHLD	FRETOP			;Update FRETOP to reflect new value
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+CHAIN
+
+  0394'   3A 0000*              	LDA	MDLFLG			;MERGE w/ DELETE?
+  0397'   B7                    	ORA	A			;Test
+  0398'   CA 03A9'              	JZ	NTMDLT			;No
+  039B'   2A 0000*              	LHLD	CMSPTR			;Start of lines to delete
+  039E'   44                    	MOV	B,H			;Into [B,C]
+  039F'   4D                    	MOV	C,L
+  03A0'   2A 0000*              	LHLD	CMEPTR			;End of lines to delete
+  03A3'   CD 0000*              	CALL	DEL			;Delete the lines
+  03A6'   CD 0000*              	CALL	LINKER			;Re-link lines just in case
+                                ; Step 6 - load new program
+  03A9'   3E 01                 NTMDLT:	MVI	A,1			;Set CHAIN flag
+  03AB'   32 0000*              	STA	CHNFLG
+                                	EXTRN	CHNENT,MAXFIL,LSTFRE,OKGETM
+  03AE'   3A 0000*              	LDA	MRGFLG			;MERGEing?
+  03B1'   B7                    	ORA	A			;Set cc'S
+  03B2'   C2 0000*              	JNZ	OKGETM			;Do MERGE
+  03B5'   3A 0000*              	LDA	MAXFIL			;Save the number of files
+  03B8'   32 0001*              	STA	LSTFRE+1		;Since we make it look like zero
+  03BB'   C3 0000*              	JMP	CHNENT			;Jump to LOAD code
+                                ; Step 7 - Move stuff back down
+                                	PUBLIC	CHNRET
+  03BE'   AF                    CHNRET:	XRA	A			;Clear CHAIN, MERGE flags
+  03BF'   32 0000*              	STA	CHNFLG
+  03C2'   32 0000*              	STA	MRGFLG
+  03C5'   2A 0000*              	LHLD	VARTAB			;Get current VARTAB
+  03C8'   44                    	MOV	B,H			;Into [B,C]
+  03C9'   4D                    	MOV	C,L
+  03CA'   2A 0000*              	LHLD	TEMP9			;Get length of simps
+  03CD'   09                    	DAD	B			;Add to present VARTAB to get new ARYTAB
+  03CE'   22 0000*              	SHLD	ARYTAB
+  03D1'   2A 0000*              	LHLD	FRETOP			;Where to start moving
+  03D4'   23                    	INX	H			;One higher
+  03D5'   EB                    	XCHG				;Into [D,E]
+  03D6'   2A 0000*              	LHLD	SAVFRE			;Last byte to move
+  03D9'   22 0000*              	SHLD	FRETOP			;Restore FRETOP from this
+  03DC'   CD 0000*              MVBKVR:	CALL	DCOMPR			;Done?
+  03DF'   1A                    	LDAX	D			;Move byte down
+  03E0'   02                    	STAX	B
+  03E1'   13                    	INX	D			;Increment pointers
+  03E2'   03                    	INX	B
+  03E3'   C2 03DC'              	JNZ	MVBKVR
+  03E6'   0B                    	DCX	B			;Point to last var byte
+  03E7'   60                    	MOV	H,B			;[H,L]=last var byte
+  03E8'   69                    	MOV	L,C
+  03E9'   22 0000*              	SHLD	STREND			;This is new end
+  03EC'   2A 0000*              	LHLD	CHNLIN			;Get CHAIN line #
+  03EF'   7C                    	MOV	A,H			;Test for zero
+  03F0'   B5                    	ORA	L
+  03F1'   EB                    	XCHG				;Put in [D,E]
+  03F2'   2A 0000*              	LHLD	TXTTAB			;Get prog start in [H,L]
+  03F5'   2B                    	DCX	H			;Point at zero before program
+  03F6'   CA 0000*              	JZ	NEWSTT			;line #=0, go...
+  03F9'   CD 0000*              	CALL	FNDLIN			;Try to find destination line
+  03FC'   D2 0000*              	JNC	USERR			;Not there...
+  03FF'   0B                    	DCX	B			;Point to zero on previous line
+  0400'   60                    	MOV	H,B			;Make text pointer for NEWSTT
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+CHAIN
+
+  0401'   69                    	MOV	L,C
+  0402'   C3 0000*              	JMP	NEWSTT			;Bye...
+  0405'   C3 0000*              COMMON:	JMP	DATA
+                                	PAGE
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+CHAIN
+
+                                
+                                	SUBTTL	WRITE
+                                	EXTRN	FINPRT
+                                	EXTRN	FOUT,STRLIT,STRPRT,OUTDO,FACLO
+                                	PUBLIC	WRITE
+  0408'                         WRITE:
+                                	EXTRN	FILGET
+  0408'   0E 02                 	MVI	C,MD.SQO		;Setup output file
+  040A'   CD 0000*              	CALL	FILGET
+  040D'   2B                    WRTCHR:	DCX	H
+  040E'   CD 0000*              	CALL	CHRGTR			;Get another character
+  0411'   CA 0467'              	JZ	WRTFIN			;Done with WRITE
+  0414'   CD 0000*              WRTMLP:	CALL	FRMEVL			;Evaluate formula
+  0417'   E5                    	PUSH	H			;Save the text pointer
+  0418'   CD 0000*              	CALL	GETYPR			;See if we have a string
+  041B'   CA 0457'              	JZ	WRTSTR			;We do
+  041E'   CD 0000*              	CALL	FOUT			;Convert to a string
+  0421'   CD 0000*              	CALL	STRLIT			;Literalize string
+  0424'   2A 0000*              	LHLD	FACLO			;Get pointer to string
+  0427'   23                    	INX	H			;Point to address field
+  0428'   5E                    	MOV	E,M
+  0429'   23                    	INX	H
+  042A'   56                    	MOV	D,M
+  042B'   1A                    	LDAX	D			;Is number positive?
+  042C'   FE 20                 	CPI	' '			;Test
+  042E'   C2 0437'              	JNZ	WRTNEG			;No, must be negative
+  0431'   13                    	INX	D
+  0432'   72                    	MOV	M,D
+  0433'   2B                    	DCX	H
+  0434'   73                    	MOV	M,E
+  0435'   2B                    	DCX	H
+  0436'   35                    	DCR	M			;Adjust length of string
+  0437'   CD 0000*              WRTNEG:	CALL	STRPRT			;Print the number
+  043A'   E1                    NXTWRV:	POP	H			;Get back text pointer
+  043B'   2B                    	DCX	H			;Back up pointer
+  043C'   CD 0000*              	CALL	CHRGTR			;Get next char
+  043F'   CA 0467'              	JZ	WRTFIN			;end
+  0442'   FE 3B                 	CPI	59			;Semicolon?
+  0444'   CA 044C'              	JZ	WASEMI			;Was one
+  0447'   CD 0000*              	CALL	SYNCHR
+  044A'   2C                    	DB	54O			;Only possib left is comma
+  044B'   2B                    	DCX	H			;to compensate for later CHRGET
+  044C'   CD 0000*              WASEMI:	CALL	CHRGTR			;Fetch next char
+  044F'   3E 2C                 	MVI	A,54O			;put out comma
+  0451'   CD 0000*              	CALL	OUTDO
+  0454'   C3 0414'              	JMP	WRTMLP			;Back for more
+  0457'   3E 22                 WRTSTR:	MVI	A,34			;put out double quote
+  0459'   CD 0000*              	CALL	OUTDO			;Send it
+  045C'   CD 0000*              	CALL	STRPRT			;print the string
+  045F'   3E 22                 	MVI	A,34			;Put out another double quote
+  0461'   CD 0000*              	CALL	OUTDO			;Send it
+  0464'   C3 043A'              	JMP	NXTWRV			;Get next value
+  0467'                         WRTFIN:
+                                	EXTRN	CMPFBC,CRDO,PTRFIL
+  0467'   E5                    	PUSH	H			;Save text pointer
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+WRITE
+
+  0468'   2A 0000*              	LHLD	PTRFIL			;See if disk file
+  046B'   7C                    	MOV	A,H
+  046C'   B5                    	ORA	L
+  046D'   CA 0491'              	JZ	NTRNDW			;No
+  0470'   7E                    	MOV	A,M			;Get file mode
+  0471'   FE 03                 	CPI	MD.RND			;Random?
+  0473'   C2 0491'              	JNZ	NTRNDW			;NO
+  0476'   CD 0000*              	CALL	CMPFBC			;See how many bytes left
+  0479'   7D                    	MOV	A,L			;do subtract
+  047A'   93                    	SUB	E
+  047B'   6F                    	MOV	L,A
+  047C'   7C                    	MOV	A,H
+  047D'   9A                    	SBB	D
+  047E'   67                    	MOV	H,A
+  0002                          CRLFSQ	SET	2			;Number of bytes in CR/LF sequence
+  047F'   11 FFFE               	LXI	D,0-CRLFSQ		;Subtract bytes in <cr>
+  0482'   19                    	DAD	D
+  0483'   D2 0491'              	JNC	NTRNDW			;Not enough, give error eventually
+  0486'   3E 20                 NXTWSP:	MVI	A,' '			;Put out spaces
+  0488'   CD 0000*              	CALL	OUTDO			;Send space
+  048B'   2B                    	DCX	H			;Count down
+  048C'   7C                    	MOV	A,H			;Count down
+  048D'   B5                    	ORA	L
+  048E'   C2 0486'              	JNZ	NXTWSP
+  0491'   E1                    NTRNDW:	POP	H			;Restore [H,L]
+  0492'   CD 0000*              	CALL	CRDO			;Do crlf
+  0495'   C3 0000*              	JMP	FINPRT
+                                	END	
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	S
+WRITE
+
+Macros:
+
+Symbols:
+01CF*	$COMMO          0164*	$DELETE         006E*	$FOR            
+0124*	$MERGE          007C*	$WHILE          01C5'	AFTCOM          
+03CF*	ARYTAB          0247'	BAKCOM          024C'	BCKUCM          
+038C*	BLTUC           00FF 	BUFLEN          0111'	CALLRT          
+0098I'	CALLS           0106'	CALLST          0334'	CAYSTR          
+030A'	CAYVA2          030B'	CAYVAR          0231'	CBAKBL          
+0343'	CDVARS          011BI'	CHAIN           0263'	CHKCST          
+0182'	CHMWDL          03BC*	CHNENT          03C0*	CHNFLG          
+03ED*	CHNLIN          03BEI'	CHNRET          044D*	CHRGTR          
+000E 	CLMWID          02BD'	CLPAKP          026A'	CLPFIN          
+01B2'	CLPSC1          01B3'	CLPSCN          0271'	CLPSLP          
+03A1*	CMEPTR          0477*	CMPFBC          039C*	CMSPTR          
+0259'	COMADY          022A'	COMFNS          0405I'	COMMON          
+0225I'	COMPT2          0215I'	COMPTR          000F 	CONTO           
+0005 	CPMENT          0000 	CPMWRM          0493*	CRDO            
+0002 	CRLFSQ          0303'	CSKPVA          01C2'	CSTSCN          
+02E6'	CSVAR           01BF*	CURLIN          0406*	DATA            
+0080 	DATPSC          0000 	DBLTRN          03DD*	DCOMPR          
+03A4*	DEL             018E*	DEPTR           02A1'	DLSVLP          
+036D'	DNCCLS          02E3'	DNCMDA          02B9'	DNCMDS          
+01DF'	DOCOMM          0000*	ENDBUF          001C*	ENDFOR          
+00E4'	ENDPAR          0096*	ERROR           0093*	ERRWE           
+01F7*	ERSFIN          0425*	FACLO           0228*	FCERR           
+01A7'	FCERRG          040B*	FILGET          0496*	FINPRT          
+005B'	FLSWHL          023D'	FNDAAY          03FA*	FNDLIN          
+006B'	FNDWN2          007B'	FNDWN3          0067'	FNDWND          
+0047'	FNWEND          0075*	FORSZC          041F*	FOUT            
+00A9*	FRCINT          03DA*	FRETOP          0415*	FRMEVL          
+0152*	FRQINT          036E*	GARBA2          00CA'	GETPAR          
+00B1*	GETSTK          0419*	GETYPR          031C*	IADAHL          
+0000*	LINGET          03A7*	LINKER          0050 	LINLN           
+0232'	LPBKNC          0084 	LPTLEN          03B9*	LSTFRE          
+03B6*	MAXFIL          0020 	MAXPRM          0003 	MD.RND          
+0001 	MD.SQI          0002 	MD.SQO          0395*	MDLFLG          
+0369*	MOVE1           03C3*	MRGFLG          03DC'	MVBKVR          
+0028 	NAMLEN          0403*	NEWSTT          0223*	NOARYS          
+01AE'	NTCHAL          012E'	NTCHNM          020B'	NTFN2T          
+015F'	NTLINF          03A9'	NTMDLT          0491'	NTRNDW          
+001D 	NUMLEV          000A 	NUMTMP          01E5'	NXTCOM          
+005C*	NXTLIN          043A'	NXTWRV          0486'	NXTWSP          
+03B3*	OKGETM          0000*	OMERR           0489*	OUTDO           
+0133*	PRGFLI          0469*	PTRFIL          0213*	PTRGET          
+03D7*	SAVFRE          0112*	SAVSTK          018A*	SCNLIN          
+0211'	SCNSMP          0000*	SCRTCH          017F*	SNERR           
+0363*	STRCPY          03EA*	STREND          0422*	STRLIT          
+045D*	STRPRT          0003 	STRSIZ          023E*	SUBFLG          
+0448*	SYNCHR          0116*	TEMP            0336*	TEMP3           
+03CB*	TEMP9           010D*	TEMPA           0000 	TRUROM          
+03F3*	TXTTAB          03FD*	USERR           021F*	VALTYP          
+029D'	VARDLS          03C6*	VARTAB          00A6*	VMOVFM          
+004C*	VSIGN           044C'	WASEMI          0092'	WEERR           
+0023I'	WEND            0000I'	WHILE           0006 	WHLSIZ          
+FIVEO 5.0 Features -WHILE/WEND, CALL, CHAIN, WRITE /P. Allen	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+WRITE
+
+0004*	WNDSCN          0017'	WNOTOL          0408I'	WRITE           
+040D'	WRTCHR          0467'	WRTFIN          0414'	WRTMLP          
+0437'	WRTNEG          0457'	WRTSTR          
+
+
+
+No Fatal error(s)
+
+
+          03C6*	VARTAB          00A6*	VMOVFM          
+004C*	VSIGN           044C'	WASEMI          0092'	W

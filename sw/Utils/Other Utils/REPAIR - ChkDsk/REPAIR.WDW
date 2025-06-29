@@ -1,0 +1,1407 @@
+; Display window
+;  Call:
+;	IY -> window control
+;  Destroys all registers
+;
+disp_wind: .new
+	ld	a,(iy+wcg_ptr+1)
+	ld	(iy+wcg_cptr+1),a
+	ld	a,(iy+wcg_ptr)
+	ld	(iy+wcg_cptr),a		; Reset current ptr
+
+	ld	h,(iy+wc_fl)		; Initialize row
+	ld	l,6			; And column
+	call	gotoxy
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)		; Set pointer to structure
+
+	 if	test
+	call	vprint
+	db	1,0
+	db	'[',0
+	call	phl4hc
+	call	print
+	db	'] ',0
+	 endif
+
+	call	pgsfname
+	call	vprint
+	db	1,'(',0
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)		; Set pointer to structure
+	ld	a,(hl)			; Get file index
+	call	pafdc
+	call	vprint
+	db	')',2,' Grp ',0
+	ld	h,(iy+wc_gnm+1)
+	ld	l,(iy+wc_gnm)
+	call	phlfdc
+	call	vprint
+	db	1,'[',0
+	call	phl4hc
+	call	vprint
+	db	'] FB "',2,0
+	ld	h,(iy+wc_buf+1)
+	ld	l,(iy+wc_buf)
+	ld	a,(hl)
+	call	prbyte
+	call	vprint
+	db	1,'"[',0
+	call	pa2hc
+	call	vprint
+	db	']  LB "',2,0
+	ld	de,(grp_len)
+	dec	de
+	add	hl,de
+	ld	a,(hl)
+	call	prbyte
+	call	vprint
+	db	1,'"[',0
+	call	pa2hc
+	call	vprint
+	db	'] CRC ',2,0
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)
+	ld	de,gs_crc
+	add	hl,de
+	ld	a,(hl)
+	inc	hl
+	ld	h,(hl)
+	ld	l,a
+	call	phl4hc
+	ld	a,(iy+wc_eof)		; Do we have an end of file (^Z)
+	or	a,a
+	jr	z,0$			; No, go on
+	call	vprint
+	db	1,' EOF',2,'(^Z)',0
+0$:
+	ld	h,(iy+wc_fl)		; Initialize row
+	ld	l,1			; And column
+	inc	h			; Bump up to next line
+	ld	a,(iy+wc_df)		; Get display format
+	or	a,a
+	jr	nz,2$			; Display in hex
+
+1$:
+	call	gotoxy
+	push	hl			; Save screen location
+	call	prline			; Print line
+	pop	hl
+	inc	h			; Next row
+	ld	a,(iy+wc_ll)
+	cp	a,h			; See if we are there
+	jr	nc,1$
+	ret
+2$:					; Hex display
+	call	gotoxy
+	push	hl			; Save screen location
+	call	prlineh
+	pop	hl
+	inc	h			; Next row
+	ld	a,(iy+wc_ll)
+	cp	a,h			; See if we are there
+	jr	nc,2$
+	ret
+; Display files window
+;  Call:
+;	IY -> window control
+;  Destroys all registers
+;
+disp_fl_wind: .new
+
+	ld	h,(iy+wcf_ff)		; Get floor
+	ld	l,fs_length		; And length
+	mlt	hl			; Offset
+	ld	de,(fs_list)		; Base
+	add	hl,de			; Pointer to first
+	ld	b,(iy+wcf_ff)		; Set counter
+	ld	d,(iy+wc_fl)
+	ld	e,5			; Prime screen location
+1$:
+	ld	a,(hl)
+	inc	a
+	ret	z			; All done
+	ex	de,hl			; Get screen location
+	call	gotoxy
+	ex	de,hl
+	ld	a,b
+	call	vprint
+	db	1,0
+	call	padc
+	call	vprint
+	db	'.  ',2,0
+	
+	push	bc
+	push	hl
+	call	pfsfname		; Print it
+	pop	hl
+	ld	bc,fs_length
+	add	hl,bc			; Bump up
+	pop	bc
+	push	hl
+	ld	hl,25
+	add	hl,de			; Get new screen location
+	ld	a,l
+	cp	a,70
+	jr	c,2$
+	inc	h
+	ld	l,5
+2$:
+	ex	de,hl			; Get screen location in de
+	pop	hl			; Get pointer back
+	ld	a,(iy+wc_ll)
+	cp	a,d			; Are we past last line
+	ret	c			; Yes
+	inc	b			; Bump counter
+	jr	1$			; And get next one
+
+
+;
+; Window control -- Set window cursors, prompt
+wind_cont:
+	ld	h,(iy+wc_afl)
+	ld	l,1
+	call	gotoxy
+	call	print
+	db	'   ',0			; Clear pointer
+	ld	h,(iy+wc_fl)
+	call	gotoxy
+	call	print
+	db	' =>',0
+	ld	hl,(currest)
+	call	gotoxy
+	ret
+
+
+; Set windows
+;  Destroys all registers
+;
+set_wind: .new
+	call	cls
+	call	at
+	db	3,1
+	call	border
+	call	at
+	db	14,1
+	call	border
+	call	gxymsg
+	db	3,25
+	db	'REPAIR => ?',0
+	ret
+border:	.new
+	ld	b,80
+	ld	a,'-'
+1$:
+	call	cout
+	djnz	1$
+	ret
+;
+; Manage window -- after it is initially set
+;  Call:
+;	IY -> window control
+;  Return:
+;	A = status, 0 = done, 1 = switch screens
+;  Destroys all registers
+;
+mg_window
+	call	cin_e		; Get character
+mg_window1:
+	cp	a,'A'
+	jp	z,add_file
+	cp	a,'D'
+	jp	z,w_disp	
+	cp	a,ctrl_n
+	jp	z,w_filen_men
+	cp	a,'G'
+	jp	z,w_go		; Go to group
+	cp	a,'+'
+	jp	z,w_plus	; Next group
+	cp	a,'-'
+	jp	z,w_minus	; Previous group
+	cp	a,'F'
+	jp	z,w_file
+	cp	a,'N'
+	jp	z,w_name	; Add name to group
+	cp	a,'P'
+	jp	z,w_peruse
+	cp	a,'S'
+	jp	z,mg_w_s	; Switch windows
+	cp	a,'X'
+	jp	z,mg_w_x	; Done
+	cp	a,ctrl_a
+	jp	z,w_prev
+	cp	a,ctrl_c
+	jp	z,w_bd
+	cp	a,ctrl_f
+	jp	z,w_next
+	cp	a,ctrl_q
+	jp	z,w_ctrl_q_menu
+	cp	a,ctrl_r
+	jp	z,w_bu
+	cp	a,ctrl_w
+	jp	z,w_write
+	cp	a,'?'
+	jp	z,w_?
+	call	huh
+	jr	mg_window1
+
+w_?:
+	call	clear_wind	; Clear the window
+	ld	hl,comm_?
+	call	pstr
+	call	vprint
+	db	cr,lf,lf,1,' N  ',2,'Add name to this group        ',1,' G  ',2,'Goto Group           ',1,' F  ',2,'goto File'
+	db	cr,lf,1,'^C  ',2,'Page down one screen          ',1,' +  ',2,'Next Group (number)  ',1,'^F  ',2,'Next Group'
+	db	cr,lf,1,'^R  ',2,'Page up one screen            ',1,' -  ',2,'Prev Group (number)  ',1,'^A  ',2,'Prev Group'
+	db	cr,lf,1,'^QC ',2,'Page to bottom of buffer      '
+	db	cr,lf,1,'^QR ',2,'Page to top of buffer'
+	db	0
+	ld	a,(function)
+	or	a,a		; Do we have create
+	jr	z,2$		; No
+	call	vprint
+	db	cr,lf,1,' A  ',2,'Add group 2 following group 1 ',1,' P  ',2,'Peruse file          ',1,'^N  ',2,'File Name disp'
+	db	0
+2$:
+	call	vprint
+	db	cr,lf,1,' D  ',2,'toggle Display                ',1,'^W  ',2,'Write file group'
+	db	cr,lf,1,' S  ',2,'Switch to alternate screen    ',1,' X  ',2,'Return to main menu'
+	db	0
+	call	cin
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window
+
+comm_?:			; Common help header
+	db	' Available commands (strike any key to continue):',0
+
+
+add_file: .new
+	ld	hl,(window1+wc_gs) ; Get pointer to base entry
+	ld	a,(hl)		; Get file name index
+	ld	hl,(window2+wc_gs) ; Get pointer to target entry
+	ld	(hl),a		; And set file name index
+	ld	hl,(window1+wc_gs) ; HL -> base entry
+	ld	de,gs_length
+	add	hl,de		; Pointer to group following
+	ex	de,hl		; DE -> entry new one will be placed in front of
+	ld	hl,(window2+wc_gs) ; HL -> entry to be moved
+	call	move_ent
+	call	ver_window
+	call	clear_wind
+	call	disp_wind	; Redisplay to pick up new name
+	call	wind_cont
+	jp	mg_window
+
+w_disp:
+	ld	a,(iy+wc_df)
+	xor	a,0FFh
+	ld	(iy+wc_df),a	; Toggle display
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window	
+
+w_filen_men: .new
+	ld	a,(function)
+	or	a,a		; See if we have create
+	jr	nz,1$		; Yes, go do it
+	call	huh
+	jp	mg_window1
+1$:
+	call	clear_wind
+	call	disp_fl_wind
+	call	wind_cont
+	call	mg_fwindow
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window
+
+w_go:
+	call	prompt
+	db	'Go To Group',0
+	call	eval10		; Get number input
+	ld	b,d
+	ld	c,e
+	jr	w_gogrp			; Go to group
+
+w_plus:	.new
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)		; Get pointer to structure
+	ld	de,gs_gn		; Group number
+	add	hl,de			; Pointer to group number
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)
+	inc	bc
+	call	at
+	db	1,1			; Simulate prompt call
+	jr	w_gogrp			; Go to group
+
+w_minus:
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)		; Get pointer to structure
+	ld	de,gs_gn		; Group number
+	add	hl,de			; Pointer to group number
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)
+	dec	bc
+	call	at
+	db	1,1			; Simulate prompt call
+;	jr	w_gogrp			; Go to group
+
+w_gogrp: .new
+	ld	ix,(gs_list)		; Point to list
+	ld	de,gs_length
+1$:
+	ld	a,(ix)
+	inc	a
+	jr	z,rng_err		; Not in list, report error
+	call	ereol			; Erase input
+	ld	h,(ix+gs_gn+1)
+	ld	l,(ix+gs_gn)		; Get this number
+	or	a,a			; Clear carry
+	sbc	hl,bc			; Compare
+	jr	z,2$			; This is it
+	add	ix,de			; Bump up
+	jr	1$			; Try next one	
+2$:
+	push	ix
+	pop	hl			; Get pointer
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l		; And put in structure
+	call	readgr			; Read in the group
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window	
+rng_err:
+	call	w_error
+	db	'Group out of range',0
+	jp	mg_window
+
+w_prev:	.new
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)		; Get group pointer
+	ld	de,gs_length
+	or	a,a
+	sbc	hl,de			; Back up
+	ex	de,hl			; Put address in DE
+	ld	hl,(gs_list)		; Get beginning
+	sbc	hl,de			; Compare (carry clear from above)
+	jr	z,1$
+	jr	nc,rng_err		; Bad stuff
+1$:
+	ex	de,hl			; Put gs pointer in HL
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l		; Put new pointer in structure
+	ld	de,gs_gn
+	add	hl,de
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)			; Get in BC for read
+	call	readgr			; Read in the group
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window	
+	
+w_next:	.new
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)		; Get group pointer
+	ld	de,gs_length
+	add	hl,de			; Back up
+	ld	a,(hl)			; Get byte
+	inc	a			; Test for end
+	jr	z,rng_err		; Bad stuff
+1$:
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l		; Put new pointer in structure
+	ld	de,gs_gn
+	add	hl,de
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)			; Get in BC for read
+	call	readgr			; Read in the group
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window	
+w_file: .new
+	call	prompt
+	db	'Go To File number',0
+	call	eval10
+	ld	a,(fs_num)	; Get upper limit
+	cp	a,e		; And compare
+	jr	z,0$		; Error
+	jr	nc,1$		; O.K., go on
+0$:
+	call	w_error
+	db	'File out of range',0
+	jp	mg_window
+1$:
+
+	ld	ix,(gs_list)	; Search list
+	ld	bc,gs_length
+2$:
+	ld	a,(ix)		; Is this the end
+	inc	a
+	jr	z,4$		; Yes
+; we have file index
+	dec	a		; File index
+	cp	a,e
+	jr	z,3$		; We have it
+	add	ix,bc		; Bump up
+	jr	2$
+3$:
+	call	ereol		; Get rid of input
+	push	ix
+	pop	hl		; Get pointer
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l	; Put in window control
+	ld	b,(ix+gs_gn+1)
+	ld	c,(ix+gs_gn)	; Get group number for read
+	call	readgr			; Read in the group
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window	
+4$:
+	call	w_error
+	db	'File has no assigned groups',0
+	jp	mg_window
+
+w_name:	.new
+	call	prompt
+	db	'Add to File number',0
+	call	eval10		; Get number input
+	ld	a,(fs_num)	; Get upper limit
+	cp	a,e		; And compare
+	jr	z,0$		; Error
+	jr	nc,1$		; O.K., go on
+0$:
+	call	w_error
+	db	'File out of range',0
+	jp	mg_window
+1$:
+	call	ereol		; Get rid of input
+	ld	a,e		; Get file number
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)	; Get structure pointer
+	push	hl		; Save for sort
+	ld	de,gs_fi
+	add	hl,de
+	ld	(hl),a		; And set in structure
+	pop	hl
+	call	ins_ent		; And resort list
+	ld	a,(function)	; Get function
+	or	a,a		; See if create
+	jr	nz,2$		; Yes, go do it
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)	; Get current structure ptr
+	ld	de,gs_gn
+	add	hl,de
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)
+	call	readgr
+	call	clear_wind
+	call	disp_wind	; Set header
+	call	wind_cont	; And cursor
+	jp	mg_window	; Get next command
+2$:
+	ld	b,(iy+wc_gnm+1)
+	ld	c,(iy+wc_gnm)	; Get target block number
+	call	ver_window
+	call	wind_cont	; Set cursor
+	jp	mg_window	; Get next command
+
+;
+; Verify window -- Set structure pointers and redisplay
+;  Call:
+;	BC = Block number being moved
+;  Destroys all registers
+;
+ver_window: .new
+	push	iy
+	ld	iy,window1
+	call	1$
+	ld	iy,window2
+	call	1$
+	pop	iy
+	ret
+1$:
+	ld	(4$),bc		; Save target block number
+	ld	ix,(gs_list)	; IX -> structure
+	ld	b,(iy+wc_gnm+1)
+	ld	c,(iy+wc_gnm)	; BC = our group number
+	ld	de,gs_length	; Entry length
+2$:
+	ld	a,(ix)
+	inc	a		; Are we at end
+	ret	z		; Yes, not much we can do
+	ld	h,(ix+gs_gn+1)
+	ld	l,(ix+gs_gn)	; Get this group number
+	or	a,a		; Clear carry
+	sbc	hl,bc		; Test
+	jr	z,3$		; This is it
+	add	ix,de		; Bump up
+	jr	2$
+3$:
+	push	ix
+	pop	hl
+	ld	(iy+wc_gs+1),h
+	ld	(iy+wc_gs),l	; Save structure pointer
+	ld	hl,(4$)		; Get the target block
+	or	a,a
+	sbc	hl,bc		; And test
+	ld	bc,(4$)		; Get target block for return
+	ret	nz
+	call	clear_wind
+	call	disp_wind	; Set header
+	ld	bc,(4$)		; Get target block for return
+	ret
+4$:	ds	2		; Temp storage for target block number
+
+w_peruse: .new
+	push	iy		; Save window pointer
+	ld	iy,window1	; IY -> window 1
+	ld	hl,(window2+wc_buf)	; Get source address
+	ld	de,(window1+wc_buf)	; Get destination address
+	ld	bc,(grp_len)	; And length of group
+	ldir			; Move data
+
+	ld	hl,(window2+wc_gs)
+	ld	(window1+wc_gs),hl	; Set group pointer
+	ld	hl,(window2+wc_gnm)
+	ld	(window1+wc_gnm),hl	; And set group number
+	ld	a,(window2+wc_eof)
+	ld	(window1+wc_eof),a	; Set eof flag
+	call	w_q_c_do	; Set to end of group
+
+	ld	iy,window2	; Point to window 2
+	ld	hl,(window2+wc_gs)	; Get group pointer
+	ld	de,gs_length
+	add	hl,de		; And bump
+	ld	a,(hl)
+	inc	a
+	jr	z,1$		; At end, just reset cursor
+	ld	(window2+wc_gs),hl	; Set group pointer
+	ld	de,gs_gn	; Offset to group number
+	add	hl,de		; Pointer to group number
+	ld	c,(hl)
+	inc	hl
+	ld	b,(hl)		; Get group number in BC
+	call	readgr		; And read it in
+	call	w_q_r_do
+1$:
+	pop	iy		; Rest window pointer
+	call	wind_cont
+	jp	mg_window
+
+w_write: .new
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)	; Get our group control
+	ld	a,(hl)
+	ld	(curfi),a	; Save
+	cp	a,2		; Make sure we have valid file
+	jr	nc,1$		; Valid file, go on
+	call	w_error
+	db	'File not valid',0
+	jp	mg_window
+1$:
+	call	clear_wind
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)	; Get our group control
+	call	vprint
+	db	1,' Write file ',2,0
+	call	pgsfname	; Print file name
+	call	vprint
+	db	1,' made of groups:',2,cr,lf,0
+
+	ld	a,(hl)		; Get file index
+	ld	b,a		; Into B
+	ld	ix,(gs_list)	; Start at beginning
+	ld	de,gs_length	; Increment
+2$:
+	ld	a,(ix)		; Are we at end
+	inc	a
+	jr	z,4$		; Yes
+	dec	a		; File index
+	cp	a,b		; Test for ours
+	jr	nz,3$
+	ld	h,(ix+gs_gn+1)
+	ld	l,(ix+gs_gn)
+	call	phldc
+	call	print
+	db	' ',0
+3$:
+	add	ix,de		; Bump up
+	jr	2$		; Do next
+4$:
+	call	vprint
+	db	cr,lf,1,'W',2,' to write file, else abort',0
+	call	cin_e
+	cp	a,'W'
+	jp	nz,10$
+	call	clear_wind
+	call	print
+	db	' Writing ...',0
+	ld	a,(tardsk)
+	ld	(dos_ud+1),a	; Set target in du
+	ld	h,(iy+wc_gs+1)
+	ld	l,(iy+wc_gs)	; Get our group control
+	ld	b,(hl)		; And file name index
+	ld	c,fs_length	; And length
+	mlt	bc		; Offset to file structure entry
+	ld	hl,(fs_list)
+	add	hl,bc		; HL -> file name entry
+	ld	a,(hl)		; Get user number
+	ld	(dos_ud),a	; And set for logging in
+	inc	hl		; HL -> file name
+	ld	de,dfcb+1
+	ld	bc,11
+	ldir			; Move name, type to FCB
+	call	log_default
+	ld	de,dfcb
+	call	initfcb		; Clear fcb
+	call	f$open		; Try to open the file
+	jr	nz,5$
+	call	f$close		; Close it for mopen
+	call	print
+	db	'File exists, delete (Y or N)?',0
+	call	cin_e
+	cp	a,'Y'
+	jp	nz,10$
+5$:
+	call	f$mopen		; Open the file
+	jr	z,6$
+	call	w_error
+	db	'Cannot create file.',0
+	jp	10$		; Get out
+6$:
+	ld	ix,(gs_list)	; Start at beginning
+7$:
+	ld	a,(ix)		; Are we at end
+	inc	a
+	jr	z,9$		; Yes
+	dec	a		; File index
+	ld	b,a		; Into B
+	ld	a,(curfi)	; Get file index
+	cp	a,b		; Test for ours
+	jr	nz,8$
+	ld	h,(ix+gs_gn+1)
+	ld	l,(ix+gs_gn)
+	call	phldc
+	call	print
+	db	' ',0
+	ld	b,(ix+gs_gn+1)
+	ld	c,(ix+gs_gn)
+	call	readgr		; Read it in
+	call	writegr		; And write it out
+	jr	z,8$
+	call	print
+	db	' Write error, hit any key to continue',0
+	call	cin
+8$:
+	ld	de,gs_length	; Increment
+	add	ix,de		; Bump up
+	jr	7$		; Do next
+9$:
+	call	log_default
+	ld	de,dfcb
+	call	f$close
+10$:
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window	; Get next command
+
+w_bu:
+	ld	h,(iy+wcg_ptr+1)
+	ld	l,(iy+wcg_ptr)	; Pointer to buffer
+	call	bu_scr		; Back up one screen
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window
+
+w_bd:
+	ld	a,(iy+wcg_cptr+1)
+	ld	(iy+wcg_ptr+1),a
+	ld	a,(iy+wcg_cptr)
+	ld	(iy+wcg_ptr),a		; Set pointer to current
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	jp	mg_window
+
+
+w_ctrl_q_menu: .new
+	call	cin_ctrl
+	db	'^Q',0
+	cp	a,'R'
+	jr	z,w_q_r		; Go to top
+	cp	a,'C'
+	jr	z,w_q_c		; Go to bottom
+	call	huh
+	jp	mg_window1	; Unknown
+w_q_r:
+	call	w_q_r_do
+	jp	mg_window
+w_q_r_do:
+	ld	a,(iy+wc_buf+1)
+	ld	(iy+wcg_ptr+1),a
+	ld	a,(iy+wc_buf)
+	ld	(iy+wcg_ptr),a	; Set current pointer to top of buffer
+	call	clear_wind
+	call	disp_wind	; Redisplay
+	call	wind_cont
+	ret
+w_q_c:
+	call	w_q_c_do
+	jp	mg_window
+w_q_c_do:
+	ld	bc,(grp_len)	; Get buffer length
+	ld	h,(iy+wc_buf+1)
+	ld	l,(iy+wc_buf)	; Pointer to buffer
+	add	hl,bc
+	inc	hl		; Pointer two bytes past buffer (sim. cr,lf)
+	call	bu_scr		; Back up one screen
+	call	clear_wind
+	call	disp_wind
+	call	wind_cont
+	ret
+;
+; Back up one screen
+;  Call:
+;	IY -> window control
+;	HL -> current pointer
+bu_scr:	.new
+	dec	hl
+	dec	hl		; Back over cr,lf
+	ld	a,(iy+wc_df)	; Get our display format
+	or	a,a
+	jr	nz,2$		; Hex display
+	ld	d,wind_len-1	; length of window - header
+	push	hl		; Save pointer
+	ld	b,(iy+wc_buf+1)
+	ld	c,(iy+wc_buf)	; Get start of buffer
+	sbc	hl,bc		; Accr clear, get length of data
+	jr	nc,0$
+	pop	hl		; Get our pointer
+	inc	hl
+	inc	hl		; Set to beginning
+	push	hl		; And put back on stack
+	ld	hl,0		; Set to beginning
+0$: 
+	inc	hl		; +1
+	push	hl
+	pop	bc		; Into bc
+	pop	hl		; And get pointer back
+1$:
+	ld	a,lf		; Search for lf
+	cpdr			; Do search
+	jr	nz,3$		; All done, use beginning
+	ld	a,(hl)		; Get next (previous) char
+	cp	a,cr		; Is it a cr
+	jr	nz,1$		; No, continue search
+	cpd			; Yes, just use this to skip over
+	dec	d		; bump counter
+	jr	nz,1$		; and find next one
+	inc	hl		; Bump to cr
+	inc	hl		; Bump to lf
+	jr	3$		; Wrap up
+2$:				; Hex display
+	ld	de,(wind_len-1)*16+1 ; Number of characters on screen + 1
+	or	a,a		; Clear carry
+	sbc	hl,de		; One byte before display area
+	push	hl		; Save for a moment
+	ld	d,(iy+wc_buf+1)
+	ld	e,(iy+wc_buf)	; Get beginning of buffer
+	sbc	hl,de		; Compare
+	pop	hl		; Get our address back
+	jr	nc,3$		; Use what we have
+	ex	de,hl		; Use beginning of buffer
+	dec	hl		; And adjust for display
+3$:
+	inc	hl		; Bump over lf (or to beginning of buffer)
+	ld	(iy+wcg_ptr+1),h
+	ld	(iy+wcg_ptr),l	; And set in screen pointer
+	ret
+;
+; Manage file window -- after it is initially set
+;  Call:
+;	IY -> window control
+;  Return:
+;	A = status, 0 = done, 1 = switch screens
+;  Destroys all registers
+;
+mg_fwindow .new
+	call	cin_e		; Get character
+1$:
+	cp	a,'S'
+	jp	z,mg_w_s	; Switch windows
+	cp	a,'X'
+	jp	z,mg_w_x	; Done
+	cp	a,'R'
+	jp	z,wf_remove
+	cp	a,'N'
+	jp	z,wf_name
+	cp	a,ctrl_c
+	jp	z,wf_next
+	cp	a,ctrl_r
+	jp	z,wf_prev
+	cp	a,ctrl_q
+	jp	z,wf_ctrl_q_menu
+	cp	a,'?'
+	jp	z,wf_?
+	call	huh
+	jr	1$
+
+wf_?:
+	call	clear_wind	; Clear the window
+	ld	hl,comm_?
+	call	pstr
+	call	vprint
+	db	cr,lf,lf,1,' N  ',2,'Add file name                 ',1,' R  ',2,'Remove file name'
+	db	cr,lf,1,'^C  ',2,'Page down'
+	db	cr,lf,1,'^R  ',2,'Page up'
+	db	cr,lf,1,'^QC ',2,'Page to last file'
+	db	cr,lf,1,'^QR ',2,'Page to first file'
+	db	cr,lf,1,' X  ',2,'eXit                          '
+	db	0
+	ld	a,(function)
+	or	a,a		; Do we have create
+	jr	nz,2$		; Yes
+	call	vprint
+	db	1,' S  ',2,'Switch to alternate screen'
+	db	0
+2$:
+	call	cin
+	call	clear_wind
+	call	disp_fl_wind
+	call	wind_cont
+	jp	mg_fwindow
+
+wf_next: .new
+	ld	a,(fs_num)	; Get number defined
+	dec	a		; Minus 1
+	ld	c,a		; And save
+	ld	a,(iy+wcf_ff)
+	add	a,30		; Bump up
+	cp	a,c		; Test for end
+	jr	c,1$		; OK, use this one
+	ld	a,c		; Use max
+1$:
+	ld	(iy+wcf_ff),a	; Set in control
+	call	clear_wind
+	call	disp_fl_wind
+	call	wind_cont
+	jp	mg_fwindow
+wf_prev: .new
+	ld	a,(iy+wcf_ff)
+	sub	a,30		; Bump down
+	jr	nc,1$		; OK, use this one
+	xor	a,a		; Get a zero
+1$:
+	ld	(iy+wcf_ff),a	; Set in control
+	call	clear_wind
+	call	disp_fl_wind
+	call	wind_cont
+	jp	mg_fwindow
+
+; Remove file name from list
+
+	.list
+
+wf_remove: .new
+	call	prompt
+	db	'File number',0
+	call	eval10		; Get number input
+	ld	a,(fs_num)	; Get upper limit
+	cp	a,e		; And compare
+	jr	z,1$		; Error
+	jr	nc,2$		; O.K., go on
+1$:
+	call	w_error
+	db	'File out of range',0
+	jp	mg_fwindow
+2$:
+	ld	b,e		; Save file index in E
+	ld	ix,(gs_list)	; Point to structure
+	ld	de,gs_length	; Increment
+3$:
+	ld	a,(ix)
+	inc	a
+	jr	z,4$		; End of list, go on with remove
+	ld	a,(ix+gs_fi)	; Get file index from structure
+	cp	a,b		; Is it ours
+	jr	z,5$		; Yes, report error
+	add	ix,de		; Bump up
+	jr	3$		; And try next one
+4$:
+	push	bc		; Save index for gs adjustment
+	ld	e,b		; Get index back
+	ld	d,fs_length	; And length
+	mlt	de		; Offset to start of move
+	ld	hl,fs_length
+	add	hl,de		; HL -> next entry
+	push	hl
+	pop	bc		; Into BC
+	ld	a,(fs_num)	; Get number in list
+	ld	h,a		; Into H
+	ld	l,fs_length
+	mlt	hl		; Length of table
+	inc	hl		; Including end sentinal
+	or	a,a		; Reset carry
+	sbc	hl,bc		; Length of move
+	push	hl
+	pop	bc		; Into BC
+	ld	hl,(fs_list)	; Get base
+	add	hl,de		; Pointer to our slot
+	ex	de,hl		; Into DE
+	ld	hl,fs_length	; Length of entry
+	add	hl,de		; Pointer to one above us
+	ldir			; Move it
+
+	call	ereol		; Get rid of input
+	pop	bc		; Get our index back
+	ld	c,b		; Into C
+	ld	b,-1		; Show we bump down
+	call	adj_file	; And adjust the file number
+	ld	a,(fs_num)
+	dec	a
+	ld	(fs_num),a	; Bump file count
+	call	clear_wind
+	call	disp_fl_wind
+	ld	hl,(currest)
+	call	gotoxy
+	jp	mg_fwindow
+5$:
+	call	w_error
+	db	'File has assigned groups.',0
+	jp	mg_fwindow
+
+.xlist
+
+; Add name to file list
+
+wf_name: .new
+	call	prompt
+	db	'File description',0
+	ld	de,dfcb		; Use default fcb
+	call	zfname
+	or	a,a		; Check for ??
+	jr	z,2$
+1$:
+	call	w_error
+	db	'File name not legal.',0
+	jp	mg_fwindow
+2$:
+	ld	a,(dfcb+1)	; Get first character of file name
+	cp	a,' '		; Is it blank
+	jr	z,1$
+	ld	a,(dfcb+13)	; Get user number
+	ld	(dfcb),a	; And set to make our string (uffffffffttt)
+	ld	hl,(fs_list)
+	ld	b,0FEh		; Cannot use last one
+3$:
+	ld	de,dfcb		; Our string
+	call	cp_file		; Compare file names
+	jr	z,1$		; Duplicate
+	jr	c,4$		; Use this one
+	ld	de,fs_length
+	add	hl,de		; Bump pointer
+	djnz	3$
+	call	w_error
+	db	'File name table full',0
+	jp	mg_fwindow
+4$:
+	push	bc		; Save residual count
+	push	hl		; Save pointer
+	ld	c,fs_length	; Get length of entry
+	inc	b		; Move one more than indicated
+	mlt	bc		; Length of move in bytes
+	ld	hl,(fs_list)
+	ld	de,256*fs_length
+	add	hl,de		; Pointer to end + 1
+	dec	hl		; End of structure
+	push	hl		; Save
+	ld	de,fs_length
+	sbc	hl,de		; One entry before it
+	pop	de		; Get destination
+	lddr			; Move structure up in memory
+	pop	de		; Get destination of new entry
+	ld	hl,dfcb		; And source
+	ld	bc,fs_length	; And length of move
+	ldir			; And move it
+	call	ereol		; Get rid of input
+	pop	bc		; Get residual count
+	ld	a,0FEh		; Total available
+	sub	a,b		; Our new file number
+	ld	c,a		; Into C
+	ld	b,1		; Show we bump up
+	call	adj_file	; And adjust the file number
+	ld	a,(fs_num)
+	inc	a
+	ld	(fs_num),a	; Bump file count
+	call	clear_wind
+	call	disp_fl_wind
+	ld	hl,(currest)
+	call	gotoxy
+	jp	mg_fwindow
+
+cp_file: .new
+
+	 if	test
+	call	print
+	db	'%',0
+	 endif
+
+	push	bc
+	push	de
+	push	hl
+
+	ld	b,fs_length	; Length of compare
+1$:
+	ld	a,(de)
+	cp	a,(hl)
+	jr	nz,2$
+	inc	hl
+	inc	de
+	djnz	1$
+2$:
+	pop	hl
+	pop	de
+	pop	bc
+	ret
+
+wf_ctrl_q_menu: .new
+	call	cin_ctrl
+	db	'^Q',0
+	cp	a,'R'
+	jr	z,wf_q_r	; Go to top
+	cp	a,'C'
+	jr	z,wf_q_c	; Go to bottom
+	call	huh
+	jp	mg_fwindow	; Unknown
+wf_q_r:
+	xor	a,a		; Get a zero
+	ld	(iy+wcf_ff),a	; Set first file to 0
+	call	clear_wind
+	call	disp_fl_wind	; Redisplay
+	call	wind_cont
+	jp	mg_fwindow
+wf_q_c:	.new
+	ld	a,(fs_num)
+	sub	a,29		; 30 will fit
+	jr	nc,1$		; Use what we have
+	xor	a,a		; Start from zero
+1$:
+	ld	(iy+wcf_ff),a	; Set in control
+	call	clear_wind
+	call	disp_fl_wind
+	call	wind_cont
+	jp	mg_fwindow
+
+; Common routines and returns for window managers
+prompt:
+	call	at
+	db	1,1
+	ex	(sp),hl
+	call	pstr
+	ex	(sp),hl
+	call	print
+	db	' => ',0
+	or	a,0FFh			; Capitalize
+	call	bbline
+	call	at
+	db	1,1
+;	call	ereol
+	ret	
+cin_ctrl: .new
+	call	at
+	db	1,1
+	ex	(sp),hl
+	call	pstr
+	ex	(sp),hl
+	call	cin
+	or	a,40h			; Elevate control characters
+	and	a,5Fh			; And make cap, destroying #'s, etc
+	push	af
+	call	at
+	db	1,1
+	call	ereol
+	ld	hl,(currest)
+	call	gotoxy
+	pop	af
+	ret	
+
+huh:
+	call	gxymsg
+	db	1,1
+	db	'huh?',0
+	ld	hl,(currest)
+	call	gotoxy
+	call	cin_e
+	push	af
+	call	at
+	db	1,1
+	call	ereol
+	ld	hl,(currest)
+	call	gotoxy
+	pop	af
+	ret
+; Clear window and position in first row after =>
+clear_wind: .new
+	ld	h,(iy+wc_fl)
+	ld	l,1		; Set pointer
+1$:
+	call	gotoxy		; Position
+	call	ereol		; Get rid of data
+	inc	h
+	ld	a,(iy+wc_ll)	; Get limit
+	cp	a,h
+	jr	nc,1$
+	ld	h,(iy+wc_fl)
+	call	gotoxy
+	call	print
+	db	' =>',0
+	ret
+
+w_error:
+	call	gxymsg
+	db	2,1
+	db	'Error: ',0
+	ex	(sp),hl
+	call	pstr
+	ex	(sp),hl
+	call	print
+	db	'.',0
+	call	cin
+	call	at
+	db	1,1
+	call	ereol
+	call	at
+	db	2,1
+	call	ereol
+	ld	hl,(currest)
+	call	gotoxy
+	ret
+mg_w_s:
+	ld	a,1
+	ret
+mg_w_x:
+	xor	a,a
+	ret
+;
+; Print line -- Starts with pointer in buffer structure and will output up to <cr><lf> combination
+;  or to B characters, whichever comes first.  In any case, it will scan to 
+;  <cr><lf> or end of buffer.
+;
+;  Destroys all registers
+;
+prline:	.new
+	ld	b,79
+	or	a,0FFh
+	ld	(sksw),a	; Set skip switch off
+	ld	h,(iy+wcg_cptr+1)
+	ld	l,(iy+wcg_cptr)	; Get our pointer
+prl_loop:
+	ld	a,(iy+wc_bpl)	; Get our limit
+	cp	a,h		; See if we are too far
+	jr	c,prl_ret	; Yes, we are at end of buffer
+	ld	a,(hl)
+	inc	hl		; Bump up pointer
+	and	a,07Fh		; Get rid of high bit
+	cp	a,cr
+	jr	z,prl_cr	; Process return
+	cp	a,tab
+	jr	z,prl_tab	; Process tab
+	cp	a,del
+	jr	z,prl_del
+	cp	a,' '		; Is it printable
+	jr	c,prl_ctr	; No, go fix it
+ 	call	prl_cout	; Print it
+	jp	prl_loop
+prl_ctr:
+	push	af		; Save character
+	ld	a,'^'
+	call	prl_cout
+	pop	af		; Get it back
+	or	a,40h		; Make into printable char 
+	call	prl_cout
+	jp	prl_loop
+prl_del:
+	ld	a,'D'
+	call	prl_cout
+	jp	prl_loop
+prl_tab:
+	ld	a,b		; Get count
+	and	a,7		; Get lower bits (mod 8)
+	inc	a		; Bump up
+	ld	e,a		; And put in counter
+	ld	a,' '		; Get filler
+prl_tab1:
+	call	prl_cout
+	dec	e
+	jr	nz,prl_tab1
+	jp	prl_loop
+prl_cr:
+	ld	a,(hl)
+	and	a,07Fh		; Strip high bit
+	cp	a,lf		; Is it line feed
+	ld	a,cr		; Get return in case
+	jr	nz,prl_ctr	; Not <cr><lf> pair, treat as control char
+	inc	hl		; Bump pointer
+	xor	a,a		; Clear status
+prl_ret:
+	ld	(iy+wcg_cptr+1),h	
+	ld	(iy+wcg_cptr),l	; Save pointer
+	ret
+
+prl_cout:
+	ld	c,a		; Save character a moment
+	ld	a,(sksw)	; Get skip switch
+	or	a,a		; Set flags
+	ret	z		; We are skipping
+	ld	a,c		; Get character
+	call	cout
+	dec	b
+	ret	nz
+	xor	a,a		; Get zero
+	ld	(sksw),a
+	call	vprint
+	db	bs,bs,bs,bs,bs,bs,bs,1,' [more]',2,0
+	ret
+;
+; print line in hex
+;  Call:
+;	IY -> window control
+;
+prlineh: .new
+	ex	de,hl		; Save screen location
+	ld	h,(iy+wcg_cptr+1)
+	ld	l,(iy+wcg_cptr)	; Get our pointer
+	ld	bc,15
+	add	hl,bc
+	ld	a,l
+	and	a,0F0h
+	ld	l,a		; Round off
+	ld	(iy+wcg_cptr+1),h
+	ld	(iy+wcg_cptr),l	; Set in control
+	ld	a,(iy+wc_bpl)	; Get our limit
+	cp	a,h		; See if we are too far
+	ret	c		; Yes, just ignore request
+	push	de		; Save screen location
+	ld	d,(iy+wc_buf+1)	; Get our buffer page
+	ld	e,0
+	sbc	hl,de		; Get our offset
+	call	vprint
+	db	1,' ',0
+	call	phl4hc
+	call	vprint
+	db	2,' ',0
+	ld	h,(iy+wcg_cptr+1)
+	ld	l,(iy+wcg_cptr)	; Get our pointer
+	ld	b,16		; Count of bytes to display
+1$:
+	ld	a,(iy+wc_bpl)	; Get our limit
+	cp	a,h		; See if we are too far
+	jr	c,2$		; Yes, finish off
+	ld	a,(hl)
+	inc	hl
+	call	pa2hc
+	call	print
+	db	' ',0
+	djnz	1$		; do next one
+2$:
+	pop	hl		; Get screen position
+	ld	l,60		; Start ascii in column 60
+	call	gotoxy
+	ld	h,(iy+wcg_cptr+1)
+	ld	l,(iy+wcg_cptr)	; Get our pointer
+	ld	b,16		; counter
+3$:
+	ld	a,(iy+wc_bpl)	; Get our limit
+	cp	a,h		; See if we are too far
+	jr	c,6$		; Yes, finish off
+	ld	a,(hl)
+	inc	hl
+	cp	a,' '		; See if printable
+	jr	nc,4$
+	ld	a,'.'		; Show non-printable
+4$:
+	cp	a,07Fh		; See if delete or above
+	jr	c,5$		; No, go on
+	ld	a,'.'
+5$:
+	call	cout
+	djnz	3$		; And do next one
+6$:
+	ld	(iy+wcg_cptr+1),h
+	ld	(iy+wcg_cptr),l	; Save our ptr
+	ret
+;
+; Print file name from group structure
+;  Call:
+;	HL -> structure entry
+;  Destroys AF
+;
+pgsfname:
+	push	bc
+	push	hl
+
+	ld	a,(hl)		; Get file index
+	ld	l,a		; L = index
+	ld	h,fs_length	; H = length of entry
+	mlt	hl		; HL = offset
+	ld	bc,(fs_list)	; Get base of table
+	add	hl,bc		; And address
+	call	pfsfname	; Print the entry
+
+	pop	hl
+	pop	bc
+	ret
+
+;
+; Print filename from file table
+;  Call:
+;	HL -> entry
+;  Uses A, HL, BC
+pfsfname: .new
+
+	ld	a,(hl)
+	call	pafdc
+	ld	a,':'
+	call	cout
+	inc	hl
+	ld	b,8
+2$:
+	ld	a,(hl)
+	call	cout
+	inc	hl
+	djnz	2$
+	ld	a,(hl)
+	cp	a,' '		; Do we have a type
+	jr	nz,4$		; Yes go ahead
+	ld	b,4
+3$:
+	call	cout
+	djnz	3$
+	ret
+4$:				; Process type
+	ld	a,'.'
+	call	cout
+	ld	b,3
+5$:
+	ld	a,(hl)
+	call	cout
+	inc	hl
+	djnz	5$
+	ret
+

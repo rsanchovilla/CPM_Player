@@ -1,0 +1,320 @@
+;
+; System constant definition for the XBIOS system
+;
+; Version: 1
+; Date:    September 27, 1987
+;
+; This file is compatable with release 2 *except* for:
+; dss_dp	equ	30 which in release 2 will be:
+; dss_dp	equ	50
+;
+; This should cause no problems, because you should not need this data
+;
+mvers	equ	1
+;
+; Definition of entry points in BIOS and the banked BIOS modules.
+;	These represent the entry points relative to the beginning of the module.
+;	Only the first group are entry points to the TPA based BIOS module.
+;
+b_boot	    equ	0*3		; Cold boot
+b_wboot	    equ	1*3		; Warm boot
+b_const	    equ	2*3		; Console status
+b_conin	    equ	3*3		; Console character in
+b_conout    equ	4*3		; Console character out
+b_list	    equ	5*3		; List character out
+b_punch	    equ	6*3		; Punch character out
+b_reader    equ	7*3		; Reader character in
+b_home	    equ	8*3		; Move head to home position
+b_seldsk    equ	9*3		; Select disk
+b_settrk    equ	10*3		; Set track number
+b_setsec    equ	11*3		; Set sector number
+b_setdma    equ	12*3		; Set dma address
+b_read	    equ	13*3		; Read disk
+b_write	    equ	14*3		; Write disk
+b_listst    equ	15*3		; Return list status
+b_sectran   equ	16*3		; Sector translate
+b_ioinit    equ	17*3		; Initialize i/o system
+b_time	    equ	18*3		; Return/set time
+b_config    equ	19*3		; Return/set configuration
+b_allocmem  equ	20*3		; Allocate memory to application
+b_latchval  equ	21*3		; Return/set control latch values
+b_dirio	    equ	22*3		; Direct disk i/o
+b_filstruct equ 23*3		; Fill disk structure from disk information block
+b_chario    equ	24*3		; Character stream i/o
+b_bsxload   equ	25*3		; Banked system extension loader interface	 
+b_dos	    equ	26*3		; Dos entry trap
+
+; The following entries are available only in the "OS" memory bank, and
+;	have no TPA equivalent
+
+b_doio	equ	27*3		; Bank initiated i/o request
+b_move	equ	28*3		; Move data from one memory map to another
+
+; The following entries are entries to interupt service routines,  available
+;	only in the "OS" memory bank, and should not be disturbed.
+
+b_intfdd  equ	29*3		; Floppy disk interupt
+b_inttim0  equ	30*3		; Timer 0 interupt
+b_inttim1  equ	31*3		; Timer 1 interupt
+b_intasci0 equ	32*3		; HD64180 ASCI 0 interupt
+b_intasci1 equ	33*3		; HD64180 ASCI 1 interupt
+b_intsbcen equ	34*3		; SB180 Centronics interupt
+b_intets   equ	35*3		; ETS IO Plus interupt
+
+; The following are status return constants for bios calls.
+
+b_stat1    equ	1		; Status 1
+b_stat2	   equ	2		; Status 2
+b_stat10   equ	10		; Status 10
+b_statff   equ	0FFh		; Status FF
+
+
+os_index   equ	0		; OS bank index
+tpa_index  equ	1		; TPA bank index
+
+;
+; Time buffer (b_time)
+;
+
+;	tmb_cy	(byte)	Real time clock year   (bcd)
+;	tmb_cm	(byte)	Real time clock month  (bcd)
+;	tmb_cd	(byte)	Real time clock day    (bcd)
+;	tmb_ch	(byte)	Real time clock hour   (bcd)
+;	tmb_cmn	(byte)	Real time clock minute (bcd)
+;	tmb_cs	(byte)	Real time clock second (bcd)
+;	tmb_cts	(byte)	Real time clock 1/10 s (bin)
+;	tmb_chs (byte)	Real time clock 1/100s (bin)
+;	tmb_dow	(byte)	Real time clock day of week
+;	tmb_sy	(byte)	Save buffer year       (bcd)
+;	tmb_sm	(byte)	Save buffer month      (bcd)
+;	tmb_sd	(byte)	Save buffer day        (bcd)
+;	tmb_sh	(byte)	Save buffer hour       (bcd)
+;	tmb_smn	(byte)	Save buffer minute     (bcd)
+;	tmb_ss	(byte)	Save buffer second     (bcd)
+;	tmb_sts (byte)	Save buffer 1/10 sec   (bin)
+;	tmb_shs (byte)	Save buffer 1/100sec   (bin)
+tmb_cy	equ	0
+tmb_cm	equ	1
+tmb_cd	equ	2
+tmb_ch	equ	3
+tmb_cmn	equ	4
+tmb_cs	equ	5
+tmb_cts equ	6
+tmb_chs equ	7
+tmb_dow	equ	8
+tmb_sy	equ	9
+tmb_sm	equ	10
+tmb_sd	equ	11
+tmb_sh	equ	12
+tmb_smn	equ	13
+tmb_ss	equ	14
+tmb_sts equ	15
+tmb_shs equ	16
+tmb_length equ	17
+
+
+;
+; System information entry (b_config)
+;	Entry:	DE -> 128 byte buffer.
+;		C = function code
+;
+; Function	Action					Buffer Definition
+;
+;   0		Return system version			---
+;   1		Return system information		SIB
+;   2		Set system parameters			Not yet defined
+;   3		Return disk information (general)	DSG
+;   4		Return disk information (specific)	DSS
+;
+b_cnfg_rvi equ	0
+b_cnfg_rsi equ	1
+b_cnfg_ssi equ	2
+b_cnfg_dig equ	3
+b_cnfg_rdi equ	4
+;
+;
+; System Information Buffer				 (SIB)
+sib_iotab  equ	0		; Io table
+;sib_next:   equ	sib_iotab+iot_length
+
+; I/O table
+	; iot_syscfg1	(byte)	system configuration byte 1
+	  ; iot_fx	(bit 7) SB180FX board
+	  ; iot_ets	(bit 6) ETSIOPLUS board
+	  ; iot_fxs	(bit 5) Use SB180FX SCSI address
+	; iot_syscfg2	(byte)	system configuration byte 2
+	; iot_hd0c	(byte)	asci ch0 configuration byte (stat)
+	; iot_hd1c	(byte)	asci ch1 configuratioon byte (stat)
+	; iot_cntla0	(byte)	asci control register a ch 0
+	; iot_cntla1	(byte)	asci control register a ch 1
+	; iot_cntlb0	(byte)	asci control register b ch 0
+	; iot_cntlb1	(byte)	asci control register b ch 1
+	; iot_stat0	(byte)	asci status register ch 0
+	; iot_stat1	(byte)	asci status register ch 1
+	; iot_dcntl	(byte)	dma/ wait control register
+	; iot_rldr0	(word)	reload register timer 0
+	; iot_etac	(byte)	ets ch a configuration byte (stat)
+	; iot_mr1a	(byte)	mode register 1 for A
+	; iot_mr2a	(byte)	mode register 2 for A
+	; iot_csrba	(byte)	clock select register for A
+	; iot_xba	(byte)	extended bit rate generator bit ch A
+	  ; iot_xbrgrx	(bit 4) BRG for receiver
+	  ; iot_xbrgtx	(bit 0) BRG for transmitter
+	; iot_etbc	(byte)	ets ch b configuration byte (stat)
+	; iot_mr1b	(byte)	mode register 1 for B
+	; iot_mr2b	(byte)	mode register 2 for B
+	; iot_csrbb	(byte)	clock select register for B
+	; iot_xbb	(byte)	extended bit rate generator bit ch B
+	; iot_ctur	(byte)	counter/timer upper register
+	; iot_ctlr	(byte)	counter/timer lower register
+	; iot_sbcc	(byte)	Centronics configuration byte (stat)
+	; iot_rtc	(word)	real time clock module
+
+iot_syscfg1 equ	0
+iot_fx	    equ	10000000b
+iot_ets	    equ	01000000b
+iot_fxs	    equ	00100000b
+iot_syscfg2 equ 1
+iot_hd0c    equ	2
+iot_hd1c    equ	3		
+iot_cntla0  equ	4
+iot_cntla1  equ	5
+iot_cntlb0  equ	6
+iot_cntlb1  equ	7
+iot_stat0   equ	8
+iot_stat1   equ	9
+iot_dcntl   equ	10
+iot_rldr0   equ	11
+iot_etc     equ	0
+iot_mr1     equ	1
+iot_mr2     equ	2
+iot_csrb    equ	3
+iot_xb      equ	4
+iot_xbrgrx  equ	00010000b
+iot_xbrgtx  equ	00000001b
+iot_etac    equ	13
+iot_mr1a    equ	14
+iot_mr2a    equ	15
+iot_csrba   equ	16
+iot_xba     equ	17
+iot_etbc    equ	18
+iot_mr1b    equ	19
+iot_mr2b    equ	20
+iot_csrbb   equ	21
+iot_xbb     equ	22
+iot_ctur    equ	23
+iot_ctlr    equ	24
+iot_sbcc    equ 25
+iot_rtc	    equ	26
+iot_length  equ	28
+
+; Disk summary					(DSG)
+				; Dsg_name	(byte)	name of disk (a - p)
+				; Dsg_type	(byte)	type of disk (ftype,htype,mtype)
+				; Dsg_dhbp	(word)	disk header block pointer
+
+dsg_name equ	0
+dsg_type equ	1
+dsg_dhbp equ	2
+dsg_length equ	4
+
+; Disk specific 				(DSS)
+				; Dss_disk	(byte)	disk number (0-15)
+				; Dss_dt	(29 bytes) disk table entry
+				; Dss_dp	(20 bytes) disk physical block
+dss_disk equ	0
+dss_dt	equ	1
+dss_dp	equ	30
+
+;
+; Control structure for Direct I/O entry (b_dirio)
+;
+				; Dir_type	(byte)	type of disk (ftype,htype)
+				; Dir_disk	(byte)	disk number (0-15)
+				; Dir_status	(byte)	return status
+				; 0 = command accepted
+				; 1 = device type not same as selected device
+				; Dir_cmdlen	(byte)	length of command (number of bytes)
+				; Dir_comm	(10 bytes) device command
+				; Dir_return	(10 bytes) device status
+				; Dir_dma	(word)	dma address
+				; Dir_dmal	(word)	dma length
+				; Dir_dmar	(byte)	dma read (non-zero = read, 0 = write)
+dir_type equ	0
+dir_disk equ	1
+dir_status equ	2
+dir_cmdlen equ	3
+dir_comm equ	4
+dir_return equ	14
+dir_dma	equ	24
+dir_dmal equ	26
+dir_dmar equ	28
+dir_length equ	29
+
+; Structure for character stream buffer
+
+	; csb_dev	(byte)	cpm device index
+	; csb_name	(4 byte) stream name (zero terminated)
+csb_dev	   equ	0
+csb_name   equ	1
+csb_length equ	5
+; CP/M device index values
+
+cpm_conin  equ	1		; Console input
+cpm_conout equ	2		; Console output
+cpm_lst    equ	3		; List (LST:)
+cpm_rdr    equ	4		; Reader (RDR:)
+cpm_pun    equ	5		; Punch (PUN:)
+
+; BSX entry structure
+
+	; bsxh_entry	(JP)	Jump module main routine
+	; bsxh_nxt	(JP)	Jump to next module in chain
+	; bsxh_int	(word)	Offset to initialization routine
+	;			After loading, this word contains length of module
+	; bsxh_dnt	(word)	Offset to de-initialize routine
+	; bsxh_id	(3 bytes) Id string "BSX"
+	; bsxh_name	(string) Name of module (zero terminated)
+bsxh_entry equ	0
+bsxh_nxt   equ	3
+bsxh_int   equ	6
+bsxh_dnt   equ	8
+bsxh_id	   equ	10
+bsxh_name  equ	13
+
+; Structure for bsx load
+	; bsx_imga	(word)	image address
+	; bsx_imgb	(byte)	image bank
+	; bsx_lda	(word)	load address
+	; bsx_ldb	(byte)	load bank
+	; bsx_ldl	(word)	load length
+	; bsx_name	(bytes) name of module (not used for all calls)
+bsx_imga   equ	0
+bsx_imgb   equ	2
+bsx_lda	   equ	3
+bsx_ldb	   equ	5
+bsx_ldl	   equ	6
+bsx_length equ	8		; Does not include name
+bsx_name   equ	8
+
+; Structure for DOIO
+
+doi_dev	   equ	0
+doi_trk	   equ	1
+doi_sec	   equ	3
+doi_nsec   equ	5
+doi_dmab   equ	6
+doi_dmaa   equ	7
+doi_nm	   equ	9
+doi_wt	   equ	10
+doi_length equ	11
+
+dois_io	   equ	1		; Bad I/O
+dois_dsk   equ	2		; Bad disk number
+dois_trk   equ	3		; Bad track number
+dois_sec   equ	4		; Bad sector number
+dois_dma   equ	5		; DMA address does not exist in bank
+dois_bnk   equ	6		; Bad bank number
+dois_eod   equ	7		; End of physical disk
+dois_wp	   equ	8		; Write protected disk
+

@@ -1,0 +1,171 @@
+
+DX-Forth Multitasker                                   97-12-28
+--------------------
+
+A co-operative multitasker is provided with DX-Forth.  It allows 
+several independent tasks to run concurrently within an 
+application.
+
+Each task has its own PAD, parameter and return stacks and user 
+variable area.  Task switching is co-operative and under complete 
+control of the programmer.
+
+Tasks are linked in a 'round-robin' loop with switching occuring 
+each time PAUSE is encountered.  In DX-Forth all the input/output 
+words and disk read/write have PAUSE built-in.  In most cases, 
+the applications programmer will need to include additional 
+PAUSEs at key points within the program.
+
+
+Multitasking considerations
+---------------------------
+- Each task must PAUSE periodically otherwise other tasks will 
+  never have a chance to execute.  In DX-Forth, PAUSE is 
+  automatically executed by KEY? KEY EMIT TYPE and during disk 
+  read or write.  Thus, if a task does not perform input/output, 
+  PAUSE must be explicitly included.
+
+- Tasks are typically defined as an infinite loop e.g. within a 
+  BEGIN AGAIN construct.  If a task needs to terminate, use STOP 
+  or SLEEP.  This removes it from the task list and passes 
+  control to the next task.
+
+- Only one task is permitted to access the disk - no exceptions!  
+  If several tasks need disk access, arrange for one task to do 
+  all disk I/O and have the other tasks communicate using a 
+  message scheme.
+
+- Before compiling a multitasking application, reset the task 
+  links as follows:
+
+     1 ENTRY !  ENTRY LINK !  LINK (LINK) !
+
+  (A better way is to simply include the screens from MULTI.SCR 
+  within your application screens.)
+
+- During testing, do not FORGET tasks.  Instead use COLD and 
+  reload the application.
+
+- Do not use SAVE or TURNKEY while the multitasker is active.
+
+Multitasking words
+------------------
+
+ TASK:  ( u1 u2 -- )   compiling                       S
+        ( -- t-addr )  run-time
+
+     Used in the form:
+
+          u1 u2 TASK: ccc  ...  ;
+
+     Define a task named ccc.  u1 and u2 is the size in bytes 
+     reserved for the task's parameter and return stacks 
+     respectively.  If the task requires space at PAD, this needs 
+     to be included in u1.  Task action is defined by the forth 
+     words between ccc and ;.  Initially the task is set to 
+     SLEEP.
+
+     When ccc is subsequently executed, the task block address 
+     t-addr is left on the stack.  See ACTIVATE.
+
+ TASKER  ( -- )
+
+     Initialise and run the multitasker.  TASKER need be executed 
+     only once at the start of the application.
+
+ PAUSE  ( -- )
+
+     Save the state of the current task and switch to the next 
+     active task.
+
+ ACTIVATE  ( t-addr -- )
+
+     Initialise the task stacks and execute WAKE.
+
+ WAKE  ( t-addr -- )
+
+     Resume another task.
+
+ SLEEP  ( t-addr -- )
+
+     Suspend another task.
+
+ STOP  ( -- )
+
+     Suspend the current task and switch to next active task.
+
+ SINGLE  ( -- )
+
+     Suspend multitasking - only the current task remains active.
+
+ MULTI  ( -- )
+
+     Resume multitasking.
+
+     Note: MULTI does not enable the individual tasks.  See 
+     ACTIVATE.
+
+ SIGNAL  ( s-addr -- )
+
+     Signal the resource identified by semaphore s-addr is 
+     available.
+
+ WAIT  ( s-addr -- )
+
+     Wait until the resource identified by semaphore s-addr is 
+     available.
+
+
+Semaphores
+----------
+Semaphores are used to prevent conflicts that may arise when 
+several tasks attempt to access a resource.
+
+Consider the case when two tasks send output to the screen.  
+Normally this would result in a jumbled display due to the PAUSE 
+which is built into EMIT.  One solution is to enclose the display 
+routine by SINGLE and MULTI.  However, this has the disadvantage 
+of disabling the multitasker albeit temporarily.
+
+A better way is with semaphores.  A semaphore is simply a flag 
+which indicates whether a resource is available.  In the example 
+shown below the multitasker does not stop - only other tasks 
+which access the screen will be paused while the current task is 
+displaying.
+
+     VARIABLE SCREEN    \ create a semaphore for the screen
+     SCREEN SIGNAL      \ signal screen is available
+
+     \ TASK1
+       SCREEN WAIT
+       10 10 AT-XY  ." Task 1"
+       SCREEN SIGNAL
+
+     \ TASK2
+       SCREEN WAIT
+       50 10 AT-XY  ." Task 2"
+       SCREEN SIGNAL
+
+
+Messages
+--------
+Messages (also known as mailboxes) provide a way of passing data 
+between tasks.  The following is an example of a simple message 
+system.  While 16 bit data is assumed, the concept can be 
+expanded to pass data of any type or size - strings, CP/M records 
+etc.
+
+     \ Define a message variable
+     CREATE <name>  ( -- m-addr )
+       0 ,               \ empty flag
+       2 ALLOT           \ storage space
+
+     \ Send message
+     : SEND  ( n m-addr -- )
+       BEGIN PAUSE DUP @ 0= UNTIL  1 OVER !  2+ ! ;
+
+     \ Receive message
+     : RECEIVE  ( m-addr -- n )
+       BEGIN PAUSE DUP @ UNTIL  0 OVER !  2+ @ ;
+
+

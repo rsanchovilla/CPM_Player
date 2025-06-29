@@ -1,0 +1,2441 @@
+;************************************************************************
+;*									*
+;*			COMMON.LIB for LZH v2.0				*
+;*									*
+;*	This is an "include" file used in both CRLZH and UNCRLZH.	*
+;*	Occasional differences are handled by conditional assembly	*
+;*	(i.e., "CRUNCH" is TRUE if CRLZH is being assembled, but	*
+;*	FALSE if UNCRLZH is being assembled).				*
+;*									*
+;*		 Copyright (c) 1987 by Steven Greenberg			*
+;*									*
+;*	This file has been released with the permission of Steven	*
+;*	Greenberg, the original author, who owns the copyright.		*
+;*	You can distribute it AS IS or modify it for your OWN use,	*
+;*	but public release of modified versions (source or object	*
+;*	files) without permission is prohibited, nor can it be sold.	*
+;*									*
+;************************************************************************
+
+; Copy (pip) routine. All files are assumed closed on entry. The name
+; of the input file should be in place in INFCB. No other assumptions
+; are made. This is a no frills byte by byte copy; the main objective
+; was to keep this simple by using existing routines.
+
+COPY:	CALL	INTRAM		; Mostly to init the i/o pointers
+	LD	A,(DIFDU)	; Do not copy a file onto itself
+	ADD	A,0FFH
+	CCF
+	RET	C		; If input du: = output du:, rtn w/ c set
+
+	LD	DE,MSGCPY	; "Copying..."
+	CALL	MESAG2
+	LD	HL,INFCB
+	CALL	PRNFIL		; Type the filename being copied
+
+	LD	DE,INFCB+12	; Zero out the input fcb except d: & filename
+	CALL	CLRFC2
+	CALL	OPNIN		; Open the input file
+	RET	C		; Failed to open, forget it (** add msg why?)
+
+	LD	DE,OUTFCB	; Set up the output fcb
+	CALL	CLRFCB		; First clr it
+	CALL	CPYNAM		; Now copy the name from the input fcb
+	CALL	OPNOUT		; Open the output file
+	JR	NC,IOOK		; Br if all's ok so far
+	CALL	CLSIN		; Else close the input file and return
+	SCF			; (indicates no copy took place)
+	RET
+
+IOOK:	LD	A,'$'		; Set this flag to "$" (convenient later)
+	LD	(DIRFLG),A	; (non-zero val indicates doing "direct" copy)
+	LD	A,(QUIFM)
+	OR	A
+	CALL	Z,CRLF		; Do an extra CRLF in "quiet" mode here
+
+XFERLP:	CALL	GETBYT		; }
+	JR	C,XFRDUN	; } Main copying loop.
+	CALL	OUTB		; } Get bytes and output them till done.
+	JR	XFERLP		; }
+
+XFRDUN:	CALL	DONE		; Flush the output buffer
+	CALL	CLSOUT		; Close input and output files
+	CALL	CLSIN
+
+	AND	A		; Guarantee clr carry for successful return
+	RET
+
+;................................
+
+CPYNAM:	LD	HL,INFCB+1	; Copies filename from input fcb to output fcb
+	LD	DE,OUTFCB+1
+	LD	B,11		; Char count
+
+LDRLP2:	LD	A,(HL)		; }
+	AND	7FH		; }
+	LD	(DE),A		; } Like LDIR, but strip hi-bit
+	INC	HL		; }
+	INC	DE		; }
+	DJNZ	LDRLP2		; }
+
+	RET
+
+;-----------------------------------------------------------------------
+;
+; Tag (sweep) mode code. Go thru the expanded wildcard filname list,l
+; allowing the user to tag individual files.
+
+TAG:	LD	DE,MSGTAG	; Instructions for tagging files
+
+RESTRT:	CALL	MESAGE		; Come back here if he wants to try again
+
+	LD	HL,0
+	LD	(FILNUM),HL	; Which file number we're on. Init to zero.
+	LD	HL,FNBUFF	; Buffer containing all the filenames
+
+TAGLP:	PUSH	HL
+	LD	HL,(FILNUM)	; Incr file number each time thru loop
+	INC	HL
+	LD	(FILNUM),HL	; (a maximum of 255 filnames are allowed)
+	POP	HL
+
+	LD	D,H		; Keep a copy of ptr to this filename in DE
+	LD	E,L
+	LD	A,(HL)		; The first byte is a flag, next 11 are chars
+	OR	A		; Get the files status (tagged / untagged)
+	JP	M,TDUN		; If msb set, must be "FF" (end of list flag)
+	PUSH	AF		; Else save zero / non-zero status
+
+;...............................
+
+	PUSH	BC		; Type out the filename's number,
+	PUSH	DE		; Followed by a period & space.
+	PUSH	HL
+	LD	HL,(FILNUM)
+	CALL	DECOUT
+	LD	A,'.'
+	CALL	TYPE
+	LD	A,' '
+	CALL	TYPE
+	POP	HL		; (DECOUT wrecks all the registers)
+	POP	DE
+	POP	BC
+
+;...............................
+
+	INC	HL		; Move to first filename char position
+	LD	B,8		; Spec 8 chars to be typed
+	CALL	PCHRS		; Do that
+	LD	A,'.'		; Follow that w/ a period
+	CALL	TYPE
+	LD	B,3
+	CALL	PCHRS		; Now type the three ext chars of the filename
+	LD	A,":"		; Follow that with a colon.
+	CALL	TYPE
+	POP	AF		; Get stat back
+	JR	Z,NOSTAR	; Br if not already tagged
+
+;.......................................................................
+;
+; Get user response. This code for a filename which is already tagged
+
+	LD	A,'*'		; Already tagged, so type a "*"
+	CALL	TYPE
+	CALL	RESPT		; Get user's response
+	CP	'U'		; Untag?
+	JR	NZ,CKBACK	; If not, leave it alone (but go check for 'b')
+
+;................................
+				; "Untag" a filename. Overwrite the "*",
+	LD	A,BS		; Already on the screen, with
+	CALL	TYPE		; Destructive backspace.
+	LD	A,' '
+	CALL	TYPE
+	XOR	A
+	JR	PUTTAG		; And go zero out the tag
+
+;.......................................................................
+;
+; Get user response. This code for a filename which is NOT already tagged
+
+NOSTAR:	CALL	RESPT		; Get user response
+	CP	'T'		; Tag it?
+	JR	NZ,CKBACK	; No, leave it (but go check for 'b')
+	LD	A,'*'		; Yes, tag the file
+	CALL	TYPE
+	LD	A,01H		; "01" for tagged files ("00" = untagged)
+
+PUTTAG:	LD	(DE),A		; Set the flag byte as "tagged" or "untagged"
+LEAVIT:	CALL	CRLF		; (entry here leaves it the way it was)
+	JR	TAGLP		; Loop to next file
+
+;.......................................................................
+;
+; Check if user issued the "B" ("back one file") command and process it
+; if so
+
+CKBACK:	CP	'B'		; Did he type "B"?
+	JR	NZ,LEAVIT	; No, leave file the way it was and move on
+
+	PUSH	HL
+	LD	HL,(FILNUM)	; Yes, move back one file
+	DEC	HL		; Decrement the file number counter
+	LD	A,L
+	LD	D,H
+	OR	D
+	JR	NZ,BKUPOK	; We will not allow backing up past file #1
+	POP	HL		; clean up stack
+	LD	DE,MSGBEL	; So beep if he tries that
+	JP	RESTRT
+
+BKUPOK:	DEC	HL		; Decr again to make up for the upcoming incr
+	LD	(FILNUM),HL
+	POP	HL
+	LD	DE,-24		; Also decr the filname pointer "twice"
+	ADD	HL,DE		; (ie 2 x 12 bytes per filename w/ flag byte)
+	CALL	CRLF
+	JR	LEAVIT		; And continue...
+
+;.......................................................................
+;
+; Done with tagging process for all files (hopefully, but we will allow the
+; user to reconsider). If he's happy, then return.
+
+TDUN:	LD	DE,MSGOK	; "Selections OK? (Y/N):"
+	CALL	MESAGE
+
+TRYAGN:	CALL	RESPT		; Get his response
+	LD	DE,MSGCLF	; CR/LF/LF
+	CP	'N'		; Was it "no"?
+	JP	Z,RESTRT	; If so, restart
+	CP	'Y'		; Was it "Yes"?
+	JR	Z,ALRITE	; Br if so.
+	LD	A,BELL		; He must answer "Y "or "N" to this; no default
+	CALL	TYPE		; So beep at him and let him answer again
+	JR	TRYAGN
+
+ALRITE:	LD	A,'Y'		; Simulated "Y" echo
+	CALL	TYPE		; That's all. Return to main code with "flag"
+	CALL	CRLF
+	RET			; Bytes for filenames appropriately set.
+
+;...............................
+
+PCHRS:	LD	A,(HL)		; Aux routine to type "B" chars from (HL)
+	AND	7FH
+	INC	HL
+	CALL	TYPE
+	DJNZ	PCHRS
+	RET
+
+;-----------------------------------------------------------------------
+;
+; Get a user response using direct BIOS to avoid echoing the character.
+; Check for and process a ^C if one is detected.
+
+RESPT:	CALL	DIRCIO		; Direct console i/o via bios, no echo
+	AND	7FH		; Just in case
+	CP	CTRLC		; ^C ?
+	JR	NZ,NCTC		; Br if not
+	LD	DE,ABORT	; If so, det up "aborted" message
+	JP	FATAL		; And abort
+
+NCTC:	AND	0DFH		; Else perform a cheap and dirty upcase
+	RET			; On his response and return it in A.
+
+;-----------------------------------------------------------------------
+
+DIRCIO:	PUSH	BC		; Routine does a direct BIOS console input
+	PUSH	DE		; Call, and returns w/ registers intact.
+	PUSH	HL
+	LD	HL,(0001)	; Get addr of bios jump table (+3)
+	LD	DE,6		; Additional offset to function 3, conin
+	ADD	HL,DE
+	CALL	JPHL
+	POP	HL
+	POP	DE
+	POP	BC
+	RET
+
+JPHL:	JP	(HL)		; Jump to it, return direct from there to
+				; The POP HL instruction above.
+
+;-----------------------------------------------------------------------
+;	Command tail parsing, Wildcard expansion, other startup stuff
+;-----------------------------------------------------------------------
+
+STRTUP:	LD	A,(BDOS+2)	; Size up the tpa
+	SUB	ENDHI+11	; (includes 2k+ for the ccp)
+	JR	C,INSUFF	; Not enough memory at all
+	CP	4		; Chk if reasonable additional amt for out bfr
+	JR	NC,ENOUGH	; Ok, go compute an output buffer size
+INSUFF:	LD	DE,LAKMEM	; "not enough memory..."
+	LD	HL,0		; zero-out number of files processed
+	LD	(NFP),HL
+	JP	FATAL		; (fatal error)
+
+;.......................................................................
+
+ENOUGH:	CP	64		; Clamp output bfr size to 64 page (16k) max
+	JR	C,NOCLMP
+	LD	A,64		;
+NOCLMP:	LD	(OBSZ),A	; Output buffer size, in pages
+	ADD	A,OBUFHI	; Add ofset to beg of output bfr, hi
+	LD	(EOBHI),A	; And save that here
+
+;.......................................................................
+;
+; If this is ZCPR3, we can get the name we call ourself from the external
+; file control block.  If COMNAM is not spaces, we must be running from
+; the GO command, so we've already got the name.
+
+	LD	HL,(Z3ED)	; print program name
+	LD	A,L
+	OR	H		; is there an environment address?
+	JR	Z,SKPNAM	; (no, so forget it)
+	EX	DE,HL		; save env address in DE
+	LD	HL,COMNAM	; point to COMNAM storage
+	LD	A,(HL)
+	CP	' '		; anything there?
+	JR	NZ,SKPNAM	; (yes, don't do it again)
+	LD	HL,36		; offset to address of external FCB
+	ADD	HL,DE
+	LD	E,(HL)		; get address into DE
+	INC	HL
+	LD	D,(HL)
+	LD	A,E
+	OR	D
+	JR	Z,SKPNAM	; (no address, no external FCB)
+	EX	DE,HL
+	INC	HL
+	LD	DE,COMNAM	; point to COMNAM storage
+	LD	BC,8
+	LDIR			; move name
+
+;.......................................................................
+
+SKPNAM:	LD	A,(QUIFL)	; Move patches to data area for flag use
+	LD	(QUIFM),A	; (allows the program to be re-executable
+	LD	A,(NPROFL)	; - even if the patch corresponds to a
+	LD	(NPROFM),A	; - command line option)
+	LD	A,(TRBOFL)
+	LD	(NOMSFM),A
+	LD	A,(CNFRFL)
+	LD	(CNFRFM),A
+	LD	A,(SYSFL)
+	LD	(SYSFM),A
+
+  IF CRUNCH	; (this patch / flag only applicable to CRUNCH)
+	LD	A,(ARCHIV)
+	LD	(ARCHVM),A
+  ENDIF	; CRUNCH
+
+	XOR	A		; Make sure the "stamp" defaults to a leading 0
+	LD	(STAMP+0),A
+	LD	(NFP),A		; Init # of files processed to zero
+	LD	(NFP+1),A
+
+;.......................................................................
+;
+; Four user # variables are used:  USERNO is the original, saved for re-
+; storation before exit.  CURUSR is the currently "logged" user, INUSR
+; contains the input file's user code; OUTUSR is the output's.	Both are
+; defaulted to USERNO.	Routines LOGIN and LOGOUT log to appropriate user
+; areas when called.  Unnecessary BDOS 'set user area' calls are inhibi-
+; ted at all times, for what it's worth.
+
+	CALL	GETUSR		; Get user # guy started with
+	LD	A,(USERNO)	; (above routine put the number here)
+	LD	(CURUSR),A	; Define this as the "current" user #
+	LD	(INUSR),A	; And the default user for both input & output
+	LD	(OUTUSR),A
+
+  IF NOT ZSYS
+
+; If the ZCPR environment descriptor address is non-zero, go use
+; ZCPR-specific command tail processing, else use regular
+
+	LD	HL,(Z3ED)	; Get the environment descriptor
+	LD	A,H
+	OR	L		; If 0000, program was not installed by Z3INS
+	JR	NZ,ZCPR		; ..or loaded by Z33+ CPR
+
+;.......................................................................
+;
+; Non-ZCPR command tail processing.  Here we are limited by PARSEFCB
+; to users 0 to 15.
+
+	CALL	GTOPTS		; Get & process any "slash" options
+
+	LD	HL,2000H	; Init outfcb to default drive & 1 blank char
+	LD	(OUTFCB+0),HL
+
+	LD	DE,DDMA+1	; Beg of string to be parsed
+	LD	HL,INFCB	; 37 byte fcb, where fcb-1 will have user #
+	CALL	PARSEU		; Parse. (note- 'fcb'-1 is 'inusr')
+
+	PUSH	HL		; Save command line pointer
+	LD	IX,INFCB	; Spec fcb for "CHKVLD" call below.
+	CALL	CHKVLD		; Check validity of drive / user (saves HL)
+	LD	A,(INFCB+1)	; Make sure we have a non-blank filename
+	CP	' '
+	JP	Z,GIVUSG	; Give usage & exit
+	CALL	AUX1		; Aux processing handles special delimiters
+	POP	DE		; Get back command line pointer, pushed as HL
+	JR	C,DONE1		; Aux1 rtns w/ carry set if cmnd tail is dun
+
+	LD	HL,OUTFCB	; New fcb to be filled
+	CALL	PARSEU		; Do it.
+	LD	IX,OUTFCB	; Spec for "chkvld"
+	CALL	CHKVLD		; Check validity of "OUTFCB"
+	CALL	AUX1		; As above
+
+	LD	A,(OUTFCB+1)	; Additional check- 2nd filename should be blnk
+	CP	' '
+	JR	Z,DONE1
+
+	LD	DE,PRSER5	; Error if not
+	JP	FATALU
+
+  ENDIF	; NOT ZSYS
+
+;.......................................................................
+;
+; ZCPR3 command tail processing.
+
+ZCPR:	LD	HL,DFCB+1	; Input file spec will come from default fcb1
+	LD	A,(HL)		; But first check for zcpr help invocation
+	CP	'/'
+	JP	Z,GIVUSG	; If so, give usage and exit
+	CP	' '		; No filename spec'd req's help also
+	JP	Z,GIVUSG
+
+	DEC	HL		; Else set to beg of dfcb1
+	LD	DE,INFCB	; The input fcb
+	CALL	CLRFCB		; Init it to blanks and zeroes
+	LD	BC,16		; Copy drive, filename, user, et al
+	LDIR			; Now the input fcb is set up, but...
+
+	LD	A,(DFCB+13)	; Get the system supplied user # into the
+	LD	(INUSR),A	; - byte where the program expects it
+	LD	A,(DFCB+15)	; check for invalid directory
+	OR	A
+	JP	NZ,RETER9	; (yep)
+
+	LD	A,(DFCB2+13)	; Similarly for the output file
+	LD	(OUTUSR),A	; Goes there
+	LD	A,(DFCB2+15)	; check for invalid directory
+	OR	A
+	JP	NZ,RETER9	; (it is)
+
+	LD	A,(DFCB2+0)	; Output drive spec stays here.
+	LD	(OUTFCB+0),A	; Rest of fcb filled in later, for each file.
+
+	LD	HL,DDMA		; Look for "[...]" stamp
+	LD	C,(HL)
+	LD	B,0		; # of chars to search
+	LD	A,'['		; Char to search for
+	CPIR
+	DEC	HL		; Move back to match point, if any
+	LD	A,B		; Was there a match?
+	OR	C
+	CALL	NZ,PRCSTM	; (misses if "[" was last char, but that's ok)
+
+	CALL	GTOPTS		; Get and process any "slash options"
+
+; Continue w/ "DONE1" below...
+;
+;.......................................................................
+;
+; More preliminaries. Set the "difdu" flag (clear IFF input drive AND
+; user are identical, else set).  Determine if multi-sector I/O is in-
+; dicated; type program intro to console; expand ambiguous wildcard
+; filespecs.
+
+DONE1:	LD	A,(INFCB+0)	; Input drive
+	OR	A
+	JR	NZ,NTDEF1	; Br if not default
+	LD	A,(DEFDRV)	; If default, use the default drive spec
+NTDEF1:	LD	(IDSPEC),A	; Actual input drive spec, for later ref
+	LD	B,A		; Put that there
+	LD	A,(OUTFCB+0)	; As above for output drive
+	OR	A
+	JR	NZ,NTDEF2
+	LD	A,(DEFDRV)
+NTDEF2:	LD	(ODSPEC),A
+	CALL	CNVEC		; (cnv to a vec, in "odrvec"  for later use)
+	XOR	B		; B now non-zero if drives are different
+	LD	(DIFD),A	; Save that flag for possible later use
+	LD	B,A		; Put a copy aside for a sec
+	LD	A,(INUSR)	; Input user #
+	LD	C,A
+	LD	A,(OUTUSR)	; Output user #
+	XOR	C		; Non zero if different
+	OR	B		; A now zero iff drives and user #'s identical
+	LD	(DIFDU),A	; Goes there for possible future reference
+
+	LD	A,'?'		; Set wldflg if prgm invoked w/ any wildcards
+	LD	HL,INFCB+1
+	LD	BC,11
+	CPIR
+	JR	Z,YESWLD	; Br if "?" found in any of the filename chars
+	XOR	A		; Else zero A
+YESWLD:	LD	(WLDFLG),A	; Flag now either 0 or '?' (arbitrary non-0 #)
+
+	XOR	A
+	LD	(ZSDSFL),A	; default to non-ZSDOS, no date stamp
+	LD	A,(NOMSFM)	; set multi-sec i/o default
+	CPL			; ..according to flag
+	LD	(CPM3FL),A
+
+	LD	C,GETVER	; Get CP/M version #
+	CALL	BDOS		; Will return result in l
+	LD	A,30H-1
+	CP	L		; 3.0 or greater?
+	JR	C,NODSTP	; Yes, don't reset flag
+	XOR	A
+	LD	(CPM3FL),A	; Else reset it
+	LD	C,EXDOSV	; get extended DOS version, if any
+	CALL	BDOS
+	LD	A,H		; ZSDOS?
+	CP	'S'
+	JR	Z,DODSTP	; (yes)
+	CP	'D'
+	JR	NZ,NODSTP	; (no, no date stamp)
+DODSTP:	LD	(ZSDSFL),A
+NODSTP:	LD	DE,INTRO	; Version #, etc.
+	CALL	MESAG2		; Type that to console
+
+	CALL	LOGIN		; Log to the input files's user area
+
+  IF NOT CRUNCH
+	CALL	FIXFCB		; Uncr may convert ? in middle of ext to "Z"
+  ENDIF	; NOT CRUNCH
+
+	LD	DE,INFCB	; Spec input fcb for below call
+	CALL	WILDEX		; Perform wildcard expansion
+	JR	NZ,SOME		; Br if any matches at all (subr set z flag)
+
+	LD	DE,ERR1		; No matches- "Input file not found"
+	JP	FATAL
+
+SOME:	CALL	SORT		; Sort the file list
+	LD	A,(CNFRFM)	; Confirm flag set?
+	OR	A
+	CALL	NZ,TAG		; If so, go thru the tagging procedure
+	CALL	EXCLUD		; In any event, "exclude" designated filetypes
+
+	LD	HL,FNBUFF	; Init this pointer to 1st matching filename
+	LD	(BUFPTR),HL	; (advances as we work on each file)
+	RET			; This completes all the common preliminaries
+
+;-----------------------------------------------------------------------
+;	Support subroutines for above
+;-----------------------------------------------------------------------
+
+;.......................................................................
+;
+; Get and process one or two options.  The options are the last item in
+; the command tail, and must be preceded by a space and slash i.e., al-
+; low slashes in filenames.  If found, zero out the slash so it becomes
+; the effective end of the command tail before doing the real parsing.
+
+GTOPTS:	LD	A,(DDMA)	; Get # of chars in command tail
+	OR	A		; None?
+	RET	Z		; Return if so
+
+	LD	B,A		; (will be used as loop limiter below)
+	ADD	A,DDMA		; Add offset to beg of command tail
+	LD	L,A		; Put result in HL
+	LD	H,0		;
+	LD	A,' '		; Now eliminate trailing blanks
+
+BLNKLP:	CP	(HL)		; Blank?
+	JR	NZ,LSTCHR	; Br out at last real char
+	DEC	HL		;
+	DJNZ	BLNKLP		; ("B" still has length of cmnd tail)
+	RET			;
+
+LSTCHR:	LD	C,1		; # of options to process counter (increments)
+
+;...............................
+
+SLSHLP:	DEC	HL		; Next to last char (1st loop)
+	LD	A,(HL)
+	CP	'/'		; Slash?
+	JR	NZ,NSLASH	; Br if not
+
+	DEC	HL
+	LD	A,(HL)
+	CP	' '
+	INC	HL
+	JR	Z,DOWOPS
+
+NSLASH:	INC	C		; Incr # of options counter
+	LD	A,C
+	CP	5+1		; Past max # of options supported?
+	RET	NC		; If so, forget it
+	DJNZ	SLSHLP		; Else keep checking, if there's still chars
+
+;...............................
+
+	RET			; Return on loop fall thru
+
+DOWOPS:	LD	B,C		; # of options to process
+	LD	(HL),0		; First, zero out the slash
+
+WOPLP:	INC	HL		; Now pointing to first (or only) option
+	CALL	PRCOPT		; Process it
+	DJNZ	WOPLP		; Possibly process more options
+	RET
+
+;.......................................................................
+;
+; Process a single letter option pointed to by HL.  The existance of a
+; switch on the command always toggles the user defined default for that
+; option.  In the distribution version of the program, all default to
+; zero.
+
+PRCOPT:	LD	A,(HL)		; Get the letter
+	EX	DE,HL		; Save HL in DE
+	AND	0DFH		; Upcase it
+	CP	'S'
+	JR	Z,SYSFIL	; flip system file inclusion
+	CP	'Q'
+	JR	Z,QUIET		; Flip quiet mode
+	CP	'I'
+	JR	Z,CNFRM		; flip tag mode
+	CP	'T'
+	JR	Z,CNFRM		; allow T instead of I for tag mode
+	CP	'C'
+	JR	Z,CNFRM		; allow C instead of I for tag mode
+	CP	'E'
+	JR	Z,OVRWRT	; flip overwrite without prompt mode
+	CP	'O'
+	JR	Z,OVRWRT	; allow O instead of E for overwrite mode
+
+  IF CRUNCH	; Archive mode option only supported by CRUNCH
+	CP	'A'
+	JR	Z,ARCH		; Flip archive bit mode
+  ENDIF	; CRUNCH
+
+	LD	DE,PRSER4	; Else option is bad, guy needs help
+	JP	FATALU
+
+SYSFIL:	LD	HL,SYSFM	; point to system file inclusion flag
+	JR	FLPOPT		; flip it
+
+QUIET:	LD	HL,QUIFM	; Point to quiet mode flag
+	JR	FLPOPT		; Go flip option
+
+CNFRM:	LD	HL,CNFRFM	; Likewise, confirm (tag) mode flag
+	JR	FLPOPT
+
+  IF CRUNCH
+ARCH:	LD	HL,ARCHVM	; Likewise, confirm (tag) mode flag
+	JR	FLPOPT
+  ENDIF	; CRUNCH
+
+OVRWRT:	LD	HL,NPROFM	; Prompt before overwrite flag
+
+;...............................
+				; Toggle the option pointed to by HL and rtn
+FLPOPT:	XOR	A		; (does not assume the non-zero vals are FF)
+	OR	(HL)		; Is flag now zero?
+	JR	Z,FIS0		; Br if so
+	LD	(HL),0		; Else zero it now
+	EX	DE,HL		; Restore HL from DE (was saved there on entry)
+	RET			; (HL points to option letter again)
+
+FIS0:	LD	(HL),0FFH	; Put ff in it if it was zero
+	EX	DE,HL		; Restore HL from DE (points to option letter)
+	RET
+
+;.......................................................................
+  IF NOT ZSYS
+;
+; Check the validity of the drive and user specified.  This routine also
+; a user code of "FF", returned by "PARSEFCB" when none is specified, to
+; the actual value of the current user area.  Called with IX pointing to
+; the FCB in question.
+
+CHKVLD:	PUSH	HL		; Don't clobber command line pointer
+	LD	A,H		; First check for HL=ffff, the generic error
+	AND	L		; - return from parsefcb
+	INC	A		;
+	JR	Z,RETER1	; Br if that is the case
+
+	LD	A,(IX-1)	; Else get the user # generated by parsefcb
+	CP	0FFH		; (at fcb-1). "FF" means current user
+	JR	NZ,NTDEFU	; Br if user is not "default"
+
+	LD	A,(USERNO)	; Else convert "FF" to actual current user #
+	LD	(IX-1),A	; And stick it
+
+NTDEFU:	LD	HL,(MAXUSR)	; L=maximum user, H=maximum drive
+	INC	L		; compare user to MAXUSR+1
+	CP	L
+	JR	NC,RETER2	; Br if invalid
+
+	LD	A,(IX+0)	; user ok, now get the drive spec
+	INC	H		; compare drive to MAXDRV+1
+	CP	H
+
+	POP	HL		; Restore command line pointer
+	RET	C		; return if okay
+
+	LD	DE,PRSER3	; "invalid drive" (fatal error)
+	JP	FATALU
+
+RETER2:	LD	DE,PRSER2	; "invalid user" (nothing personal..)
+	JP	FATALU
+
+RETER1:	LD	DE,PRSER1	; "invalid argument" (illogical...)
+	JP	FATALU
+
+  ENDIF	; NOT ZSYS
+
+;.......................................................................
+
+RETER9:	LD	DE,PRSER9	; "invalid directory" (ZCPR3 only...)
+	JP	FATALU
+
+;.......................................................................
+  IF NOT ZSYS
+;
+; This routine analyzes what "PARSEFCB" stopped at.  If its the end of
+; the command tail, indicate that and return.  If its a "[...]" stamp,
+; process that and return.  If its just the end of the (first) filename,
+; indicate that.
+
+AUX1:	LD	A,H		; See if "parseu" says tail is done
+	OR	L		; (it does that by returning zero)
+	JR	Z,RTNDUN	; Rtn w/ carry set if that is the case.
+
+	LD	A,(HL)		; Delim; else beg of blanks foll last filename
+	CP	'['		; "stamp"?
+	JR	NZ,NTSTMP	; Br if not
+	CALL	PRCSTM		; If so, process stamp & rtn. we are done.
+
+RTNDUN:	SCF			; Flag that we are done
+	RET
+
+NTSTMP:	INC	HL		; Skip past delimiter or 1 blank & rtn
+	AND	A		; (indicates 'might not be done')
+	RET
+
+  ENDIF	; NOT ZSYS
+
+;.......................................................................
+;
+; Convert the drive specified in "A" to a "drive vector" in ODRVEC.  The
+; vector may be used should a disk reset become necessary.
+
+CNVEC:	PUSH	AF		; Save everything
+	PUSH	BC
+	PUSH	DE
+	LD	DE,0000H	; Init to all zeroes
+	DEC	A		; Normalize to a=0, b=1, etc
+	LD	B,16		; Loop counter
+
+VECLP:	SUB	1		; Decr
+	RR	D
+	RR	E		; Shift in the result of any carry
+	DJNZ	VECLP
+
+	LD	(ODRVEC),DE
+	POP	DE		; Restore all regs and rtn
+	POP	BC
+	POP	AF
+	RET
+
+;-----------------------------------------------------------------------
+;	File I/O subroutines:  Input
+;-----------------------------------------------------------------------
+
+;.......................................................................
+;
+; Open the input file whose fcb is "INFCB"
+
+OPNIN:	CALL	LOGIN		; Log to the input file's user area
+  IF CRUNCH
+	LD	A,(ZSDSFL)	; is this ZSDOS?
+	OR	A
+	JR	Z,OPNIN2	; (no, skip date stamp)
+	LD	DE,INFCB
+	LD	HL,DDMA
+	CALL	GETSTP		; get date stamp
+	JR	NZ,OPNIN2
+	LD	DE,DATBUF	; store stamp for later
+	LD	BC,15
+	LDIR
+	LD	A,0FFh		; set embedded date stamp flag
+	LD	(DATFLG),A
+	LD	DE,INFCB+12
+	CALL	CLRFC2		; re-initialize FCB
+  ENDIF	; CRUNCH
+OPNIN2:	LD	DE,INFCB	; open input file
+	LD	C,OPEN
+	CALL	BDOSAV
+	INC	A
+	AND	A		; (clr carry for successful return)
+	RET	NZ		; Return if successful
+
+	SCF			; Return, indicating failure
+	RET
+
+;.......................................................................
+;
+; Close the input file whose fcb is "INFCB".
+
+CLSIN:	CALL	LOGIN		; Log to the input file's user area
+	LD	DE,INFCB
+	LD	C,CLOSE
+	CALL	BDOSAV		; And close it
+	RET
+
+;.......................................................................
+;
+; Set the input file ("INFCB") to "archived", if in the option was selected
+
+  IF CRUNCH	; (this routine used by CRUNCH only)
+ARCIT:	LD	A,(ARCHVM)	; Check if the option was selected
+	OR	A
+	RET	Z		; If not, just return
+
+	LD	DE,INFCB	; Set for bdos call
+	LD	HL,INFCB+11	; Byte containing archive status
+	SET	7,(HL)		; Set it
+	LD	C,SETATR	; Bdos "set attribute" function
+	CALL	BDOSAV
+	RET
+  ENDIF	; CRUNCH
+
+;.......................................................................
+;
+; "A" <-- Next byte from ("physical") input stream.
+;	  Returns with carry set on EOF.
+
+GETCHR:
+GETBYT:	EXX			; Switch to i/o regs
+	LD	A,L		; Pointer to next avail char
+	SLA	A		; See if 00h or 80h
+	OR	A		; (init carry flag [rtn stat] to clear)
+	CALL	Z,POSRLD	; "possibly reload" the buffer if 00 or 80H
+	LD	A,(HL)		; Get byte to return (garbage if eof)
+	INC	HL		; Advance input pointer
+	EXX			; Back to normal regs & rtn
+	RET
+
+;................................
+
+POSRLD:				; "possibly reload" the input buffer
+				; I/o regs are active
+	LD	A,(SECNT)	; Decr sector count (for this buffer)
+	DEC	A
+	LD	(SECNT),A
+	AND	A		; (clr carry)
+	CALL	Z,RELOAD	; Reload buffer if empty (resets HL)
+	RET	C		; (also sets carry if eof is encountered)
+	CALL	PROGI		; Incr # of recs read
+	AND	A		; Guarantee clr carry if not eof yet
+	RET
+
+;.......................................................................
+;
+; Reload  the input buffer, & reset HL' to point to the beginning of
+; it.  Assumes input BFR starts page boundary and is of page multiple
+; length.  The I/O registers are active.
+
+RELOAD:	PUSH	BC
+	PUSH	DE
+
+	CALL	LOGIN		; Log to the input file user area
+
+	LD	B,IBUFSZ	; Loop counter, buffer length in pages
+	LD	DE,IBUF		; Beg of buffer
+	LD	L,0		; Will count sectors actually read
+
+	LD	A,(CPM3FL)	; See if multi-sector i/o is desired
+	OR	A
+	JP	NZ,MSECI	; Br if so, else continue w/ conventional
+
+RLDLP:	LD	E,0		; Lo byte of current dma
+	CALL	RDSEC		; Read in 128 bytes (1/2 page)
+	JR	NZ,RLDRTN	; (return if eof enecountered)
+	INC	L		; Incr "sectors read" count
+	LD	E,80H		; To read in the next half page
+	CALL	RDSEC		; Do that
+	JR	NZ,RLDRTN	; As above
+	INC	L
+	INC	D		; Next page
+	DJNZ	RLDLP		; Loop till done
+
+RLDRTN:	LD	A,L		; Put count of sectors read into "secnt"
+
+RLDRT2:	LD	(SECNT),A
+	POP	DE		; Restore regs
+	POP	BC		;
+	AND	A		; Return w/ clr carry
+	JR	Z,ZEREAD	; Br if # of sectors read was zero
+
+	LD	HL,IBUF		; Reset input pointer to beg of input buffer
+	RET			; Rtn with carry clr (from "and" instr)
+
+ZEREAD:	SCF			; Set flg indicating no sectors were read (eof)
+	RET
+
+;.......................................................................
+;
+; Multi sector I/O refill buffer routine.  Fills whole buffer at once.
+
+MSECI:	LD	C,SETDMA	; De already contains pntr to beg of input bfr
+	CALL	BDOSAV		;
+
+	LD	E,IBUFSZ*2	; Spec multi sector count (secs = 2 x pages)
+	LD	C,SETMS		; Bdos func #
+	CALL	BDOSAV		;
+
+	LD	DE,INFCB	; Input file fcb
+	LD	C,READ		;
+	CALL	BDOSAV		; Fill it up!
+	OR	A		; Did it fill all the way up?
+	JR	NZ,DIDNOT	; Br if it didn't
+
+	LD	A,IBUFSZ*2	; If it did, then put the full # here & cont.
+	JR	RLDRT2		; (rest is same as above)
+
+DIDNOT:	LD	A,(BDOSHL+1)	; Get the value bdos returned in h (# read)
+	JR	RLDRT2		; (rest is same as above)
+
+;.......................................................................
+;
+; Subr for [ non multi-] reload, reads 128 bytes to memory starting at DE
+
+RDSEC:	PUSH	DE		; Save DE before clobbering it with fcb
+	LD	C,SETDMA	; Set dma to val in DE
+	CALL	BDOSAV
+	LD	DE,INFCB	; Input fcb
+	LD	C,READ
+	CALL	BDOSAV		; Read a record
+	POP	DE		; Restore DE to value on entry
+	OR	A		; Set zero flag based on error val rtn'd in "a"
+	RET			; & rtn
+
+;-----------------------------------------------------------------------
+;	File I/O subroutines:  Output
+;-----------------------------------------------------------------------
+
+;.......................................................................
+;
+; Open the output file.  Also type an arrow, followed by it's name.
+
+OPNOUT:	CALL	LOGOUT		; Log to the output user #
+	LD	DE,ARROW	; Print " ---> "
+	LD	A,(CPM3FL)	; But use a different arrow for ms i/o
+	OR	A
+	JR	Z,REGARW
+	LD	DE,ARROW3
+
+REGARW:	CALL	MESAG2		; (Prints without a leading cr/lf)
+	LD	HL,OUTFCB
+	CALL	PRNFIL		; Print output filename
+	LD	A,(NPROFM)	; See if "no prompt" flag set
+	OR	A
+	JR	NZ,ERASIT	; If so, go perf a "blind erase"
+
+CHK4IT:	LD	C,SETDMA	; (re-direct the crap from the below call)
+	LD	DE,DDMA		; Def dma is a good unused area
+	CALL	BDOSAV		;
+	LD	C,SFIRST	; Else see if output filename exists
+	LD	DE,OUTFCB
+	CALL	BDOSAV
+	INC	A		; Now zero if file does not already exist
+	JR	Z,MAKFIL	; If that is the case, just go make the file
+
+	LD	DE,PROMPT	; File exist, prompt the user
+	CALL	MESAG2
+	CALL	RSPNSE		; Get response
+	JR	Z,ERASIT	; Erase it if response is positive
+
+NOPE:	CALL	CRLF		; Extra cr/lf for file skip
+	SCF			; Set flag: "mission not accomplished"
+	RET			;
+
+ERASIT:	LD	A,(QUIFM)	; For aesthetics, must do an extra crlf if
+	OR	A		; - in quiet mode & a prompt was asked
+	JR	Z,NOAEST	; (br if not in quiet mode)
+	LD	A,(NPROFM)
+	OR	A
+	JR	NZ,NOAEST	; Br if no prompt was asked
+
+	CALL	CRLF		; Else do it
+
+NOAEST:	LD	DE,OUTFCB	; Erase existing file w/ same name
+	LD	C,ERASE		; (if erase fails, "make" below will, too)
+	CALL	BDOSAV
+
+MAKFIL:	LD	C,MAKE		; Make the new file
+	CALL	BDOSAV
+	INC	A
+	JR	NZ,OUTOK	; Err cond check
+
+	LD	DE,ERR2A	; "file creation error"
+	JP	FATAL		; (this is fatal)
+
+OUTOK:	AND	A		; Guarantee clr carry
+	RET
+
+;.......................................................................
+;
+; Close the output file whose fcb is "OUTFCB".
+
+CLSOUT:	CALL	LOGOUT		; Log to the output file's user area
+	LD	DE,OUTFCB
+	LD	C,CLOSE
+	CALL	BDOSAV		; And close it
+	RET
+
+;.......................................................................
+;
+; DATSTP -- Get create and modify stamps from original file, if 
+; available, and transfer them to new file.
+
+DATSTP:	LD	A,(ZSDSFL)	; check for ZSDOS
+	OR	A
+	RET	Z		; (it's not, so forget it)
+	CALL	LOGIN		; setup for input file
+	LD	DE,INFCB+12
+	CALL	CLRFC2		; initialize FCB
+	LD	DE,INFCB
+	LD	HL,DDMA		; point to DMA buffer
+	CALL	GETSTP		; get ZSDOS file stamp
+	RET	NZ		; (error, must be no date stamping)
+  IF NOT CRUNCH
+	LD	A,(DATFLG)	; do we have an embedded date?
+	OR	A
+	JR	Z,DATST1	; (no)
+	LD	HL,DATBUF	; move embedded create date
+	LD	DE,DDMA
+	LD	BC,5
+	LDIR
+	LD	HL,DATBUF+10	; move embedded modify date
+	LD	DE,DDMA+10
+	LD	BC,5
+	LDIR
+  ENDIF	; NOT CRUNCH
+DATST1:	LD	DE,DDMA+11	; point to modify date month
+	LD	A,(DE)
+	DEC	DE		; point back to modify date
+	OR	A		; do we have one?
+	JR	NZ,DATST2	; (yes, so continue)
+	LD	HL,DDMA		; no, move create date to modify date
+	LD	BC,5		; move create date to modify date
+	LDIR			; DE -> modify date
+DATST2:	CALL	LOGOUT		; setup for output file
+	LD	DE,OUTFCB+12
+	CALL	CLRFC2		; initialize FCB
+	LD	DE,OUTFCB
+	LD	HL,DDMA		; point to DMA buffer
+	CALL	SETSTP		; set file stamp
+	RET
+
+;------------------------------------------------------------------------
+; GETSTP and SETSTP are much modified from Carson Wilson's ZSLIB routines
+; of the same name.
+;------------------------------------------------------------------------
+
+;........................................................................
+;
+; GETSTP - Get file datestamp.  On entry DE points to file's FCB, which
+; must be initialized, and HL points to 128-byte datestamp buffer.
+; Returns zero flag set if okay, non-zero if error.
+
+GETSTP:	PUSH	BC
+	PUSH	DE		; DE -> user's FCB
+	PUSH	HL		; HL -> user's buffer
+	LD	A,GETFSTP	; BDOS get stamp function
+	JR	GETSET
+;........................................................................
+;
+; SETSTP - Set file datestamp.  On entry DE points to file's FCB, which
+; must be initialized, and HL points to 128-byte datestamp buffer.
+; Returns zero flag set if okay, non-zero if error.
+
+SETSTP:	PUSH	BC
+	PUSH	DE		; DE -> user's FCB
+	PUSH	HL		; HL -> user's buffer
+	LD	A,SETFSTP	; BDOS set stamp function
+GETSET:	POP	DE		; DE -> user's buffer
+	PUSH	DE
+	LD	C,SETDMA
+	PUSH	AF		; save stamp function
+	CALL	BDOSAV
+	POP	AF		; recover stamp function
+	POP	HL
+	POP	DE		; DE -> user's FCB
+	LD	C,A		; get or set stamp function in C
+	CALL	BDOSAV		; ..to/from user's buffer
+	DEC	A		; 1 -> 0 means get/set okay
+	POP	BC
+	RET
+
+;.......................................................................
+;
+; Output char in 'A' to the output buffer.
+
+OUTB:	EXX			; Switch to i/o regs
+	PUSH	AF		; Save caller's char
+	LD	(DE),A		; Put byte into the next avail position
+	INC	E		; Increment pointer
+	LD	A,E		; See if on a 128 byte boundary
+	SLA	A
+	JR	NZ,RETOUT	; Return if not
+	CALL	PROGO		; If so, update output record count
+	JR	C,RETOUT	; Return if it wasn't a full page boundary
+	INC	D		; Incr pointer high byte
+	LD	A,(EOBHI)	; Limit
+	CP	D		; Check
+	JR	NZ,RETOUT	; Ret if limit not reached
+	PUSH	BC		; If so, write the output buffer to disk
+	LD	A,(OBSZ)	; Get output buffer size
+	SLA	A		; Double pages for # of 128 byte records
+	LD	B,A		; Number of records to write goes into b
+	CALL	WRTOUT		; Writes out 'b' 128 byte records
+	POP	BC
+	LD	DE,OBUF		; Reset pointer to beginning of bfr & rtn.
+
+RETOUT:	POP	AF		; Restore caller's char, flip regs & rtn
+	EXX
+	RET
+
+;.......................................................................
+;
+; Write partial or full output buffer to disk.	The # of records to be
+; written is specified in "B".
+
+WRTOUT:	CALL	LOGOUT		; Log to the output file user area
+	LD	A,B		; See if zero sectors spec'd
+	OR	A
+	RET	Z		; Simply return if so
+
+	LD	DE,OBUF		; Init dma addr to beg of output bfr
+	LD	A,(CPM3FL)
+	OR	A
+	JP	NZ,MSECO	; Br for multi-sector output
+
+WRTLP:	CALL	WRSEC		; Write 128 bytes
+	DEC	B
+	RET	Z		; Return if done
+	LD	E,80H		; Else incr by 1/2 page
+	CALL	WRSEC
+	INC	D		; Inc hi-byte, 0 the lo to effect
+	LD	E,0		; Another 80h incr
+	DJNZ	WRTLP		; Loop till done
+	RET
+
+;.......................................................................
+
+MSECO:	LD	C,SETDMA	; De already points to the output buffer
+	CALL	BDOSAV
+	LD	E,B		; Put # of secs to write here, still in b
+	LD	C,SETMS		; Bdos func #
+	CALL	BDOSAV
+	LD	DE,OUTFCB	; Output file fcb
+	LD	C,WRITE		; Bdos func #
+	CALL	BDOSAV		; Write out the whole buffer
+	OR	A
+	RET	Z		; Ret if no error, else fall thru to
+				; "wrterr" below & then thru to "fatal"
+
+;.......................................................................
+
+WRTERR:	CP	2		; Disk full?
+	JR	NZ,NOTFUL
+	LD	DE,ERR2B	; "+++ Disk Full +++"
+	CALL	MESAGE
+	CALL	ERACE		; Close / erase output file w/message.
+				; (also closes input file)
+	LD	A,(DIFD)
+	OR	A
+	JR	NZ,TRYCHG	; The foll is only possible for 2 diff drvs
+	CALL	CRLF
+	JP	RETCCP		; Forget it, the guy's out of luck
+
+TRYCHG:	LD	DE,MSGCH	; Does he want to change diskettes?
+	CALL	MESAGE
+	CALL	RSPNSE		; Get any key press. ^C will cancel.
+	CALL	CRLF
+
+;.......................................................................
+;
+; Now prepare to do a disk reset.  First perform a "select disk" func-
+; tion on the drive which is NOT being changed, namely the input drive.
+; Then perform a "reset drive" on the output drive (the user has already
+; changed diskettes).  Then set the default drive back the way it was.
+
+	LD	A,(IDSPEC)	; Input drive spec, a=1, etc.
+	DEC	A		; Convert to "A=0" format
+	LD	E,A		; Where bdos wants it
+	LD	C,SELDSK	; Bdos select disk function
+	CALL	BDOSAV
+	LD	C,RSTDRV	; Perform a disk reset
+	LD	DE,(ODRVEC)
+	CALL	BDOSAV
+	LD	A,(DEFDRV)	; Now restore the default drive
+	DEC	A
+	LD	E,A
+	LD	C,SELDSK
+	CALL	BDOSAV
+	LD	HL,(BUFPTR)	; Set things up so last file gets re-processed
+	LD	DE,-12
+	ADD	HL,DE
+	LD	(BUFPTR),HL
+	JP	NXTFIL		; Start all over (resets stack there)
+
+NOTFUL:	LD	DE,ERR2C	; "output error." (other than disk full)
+	JP	FATAL		; (this is fatal)
+
+;.......................................................................
+;
+; Auxiliary subr for above.  Writes 128 bytes from current val of DE.
+
+WRSEC:	LD	C,SETDMA	; Set dma as spec'd
+	CALL	BDOSAV
+	PUSH	DE		; Save that val
+	LD	DE,OUTFCB	; Spec the output file
+	LD	C,WRITE
+	CALL	BDOSAV		; Do it
+	OR	A
+	POP	DE		; Restore to same value as before
+	RET	Z		; Rtn, assuming no error
+	JR	WRTERR
+
+;.......................................................................
+;
+; Output the partial output buffer through the current pointer (DE'). If
+; not on a sector boundary, fill the remainder with "1A"'s.  Close files
+; and see if there are any more of them.
+
+DONE:	EXX			; Determine where nearest record boundary is
+	LD	A,E		; Get low byte of output pointer
+	EXX
+	CPL			; Compute how far to next page boundary
+	INC	A
+	AND	7FH		; Convert to distance to next half-page bndry
+	JR	Z,ONBNDY	; If there already (should be the case on uncr)
+
+	LD	B,A		; Else set up to fill rest of sector w/ eof's
+	LD	A,1AH
+
+FILLP:	CALL	OUTB		; Do that
+	DJNZ	FILLP
+
+ONBNDY:	EXX			; Compute # of sectors to write to disk
+
+	EX	DE,HL		; Put output pointer in HL
+	LD	BC,OBUF		; (ok to clobber BC' now, uncr is done w/ it)
+	AND	A		; (clr carry)
+	SBC	HL,BC		; How far into the buffer we are
+	SLA	L		; Effectively divide difference by 128
+	RL	H
+	LD	B,H		; "b" now has # of recs to be written
+
+	CALL	WRTOUT		; Do that
+	CALL	PROGI2		; Output the final count
+	CALL	PROGF		; Last pass: print values in "k" also
+
+	EXX
+	RET
+
+;-----------------------------------------------------------------------
+;	File I/O subroutines:  Input and/or Output
+;-----------------------------------------------------------------------
+
+;.......................................................................
+;
+; "Log" to the input, output, or the default user area.
+
+LOGDEF:	PUSH	BC
+	PUSH	DE
+	LD	A,(USERNO)	; Log to the original user area, if necessary
+	JR	LOGX
+
+LOGOUT:	PUSH	BC
+	PUSH	DE
+	LD	A,(OUTUSR)	; Log to the output user area, if necessary
+	JR	LOGX
+
+LOGIN:	PUSH	BC
+	PUSH	DE
+	LD	A,(INUSR)	; Log to the input user area, if necessary
+
+LOGX:	LD	E,A		; Common code for either of above
+	LD	A,(CURUSR)
+	CP	E
+	JR	Z,SKIPU		; Filter out unnecessary user # changes
+
+	LD	A,E		; Back to "A" for updating "curusr"
+	LD	(CURUSR),A	; Do that
+	LD	C,GSUSER	; Now actually change user #'s
+	CALL	BDOSAV
+
+SKIPU:	POP	DE
+	POP	BC
+	RET
+
+;.......................................................................
+;
+; Get the current (called on program entry) user #. Put it in "USERNO".
+; Get the default drive and put its adjusted value in "DEFDRV"
+
+GETUSR:	PUSH	BC
+	PUSH	DE
+	LD	C,GSUSER
+	LD	E,0FFH		; Spec "get" as opposed to "set"
+	CALL	BDOSAV
+	LD	(USERNO),A	; Put that there
+	LD	C,GETDSK	; Get current disk function
+	CALL	BDOSAV
+	INC	A		; Adjust so it is normal (ie a=1, not zero)
+	LD	(DEFDRV),A	; Put that there
+	POP	DE
+	POP	BC
+	RET
+
+;.......................................................................
+;
+; Add the value in A to the current running checksum.  Regular registers
+; active.
+
+CKSUM:	LD	HL,(CHKSUM)	; Get current checksum
+	LD	C,A
+	LD	B,0		; New val in BC
+	ADD	HL,BC		; Add to running checksum
+	LD	(CHKSUM),HL	; And save
+	RET			; Return with 'A'still intact
+
+;.......................................................................
+;
+; Initialize the FCB pointed to by DE.	Leave the drive spec alone.
+
+CLRFCB:	PUSH	DE		; Save caller's pointer to fcb
+	INC	DE		; Skip past drive spec
+	LD	B,11		; # of blanks for filename area
+	LD	A,' '		; A blank, obviously
+
+ZLP1:	LD	(DE),A		; Put in the blanks
+	INC	DE
+	DJNZ	ZLP1
+
+CLREST:	LD	B,24		; # of zeroes for the rest
+	XOR	A		; A zero, obviously
+
+ZLP2:	LD	(DE),A		; Put those in
+	INC	DE
+	DJNZ	ZLP2
+
+	POP	DE		; Restore pointer to FCB and return
+	RET
+
+;...............................
+
+CLRFC2:	PUSH	DE		; Clear FCB starting after the filename field
+	JR	CLREST		; (DE supplied pointing to fcb+12)
+
+;.......................................................................
+;
+; Erase the output file, with message.
+
+ERACE:	CALL	CLSOUT		; (entry here if files are still open)
+	CALL	CLSIN
+
+ERAOUT:	LD	DE,MSGERA	; "erasing..."
+	CALL	MESAG2
+	LD	HL,OUTFCB
+	CALL	PRNFIL
+	CALL	LOGOUT		; Log to appropriate user # first !
+	LD	DE,OUTFCB
+	LD	C,ERASE
+	CALL	BDOSAV
+	RET
+
+;-----------------------------------------------------------------------
+;	Miscellaneous subroutines
+;-----------------------------------------------------------------------
+
+;.......................................................................
+;
+; Get a user Y/N response. Abort on ^C, return zero stat on "yes"
+
+RSPNSE:	LD	C,CONIN		; Console input
+	CALL	BDOSAV		; Wait for response
+	CP	CTRLC		; ^c ?
+	JR	NZ,NCTRLC	; Br if not
+	LD	DE,ABORT	; Abort w/ appropriate message
+	JP	FATAL
+
+NCTRLC:	CP	'Y'
+	RET	Z
+	CP	'y'
+	RET			; Rtns zero response if guy answered "Yes"
+
+;.......................................................................
+;
+; 4 x 2 divide- hlde / BC for result in DE (remainder in HL)
+
+DIVIDE:	LD	A,B		; }
+	CPL			; }
+	LD	B,A		; }
+	LD	A,C		; } negate divisor in BC
+	CPL			; }
+	LD	C,A		; }
+	INC	BC		; }
+
+DV10:	LD	A,11H		; Iterations, 17 req. to get all the DE bits
+	JR	UM1
+UM0:	ADC	HL,HL
+
+UM1:	ADD	HL,BC		; Divide hlde by -BC
+	JR	C,UM2		; If it fit
+	SBC	HL,BC		; Else restore it
+	OR	A		; Make sure carry is 0
+
+UM2:	RL	E		; Result bit to DE
+	RL	D
+	DEC	A
+	JR	NZ,UM0		; Continue
+	RET
+
+;...............................
+
+DIV10:	EX	DE,HL		; Divide 16 bit value in HL by 10
+	LD	HL,0		; Zero the low byte
+	LD	BC,-10		; We can skip the negation code
+	JR	DV10
+
+;.......................................................................
+;
+; BDOS call with all registers and alternates saved except "A"
+
+BDOSAV:	EX	AF,AF'
+	PUSH	AF
+	EX	AF,AF'
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	EXX
+	PUSH	BC
+	PUSH	DE
+	PUSH	HL
+	PUSH	IX
+	PUSH	IY
+	EXX
+	CALL	BDOS
+	LD	(BDOSHL),HL	; Some routines may want to analyze HL
+	EXX
+	POP	IY
+	POP	IX
+	POP	HL
+	POP	DE
+	POP	BC
+	EXX
+	POP	HL
+	POP	DE
+	POP	BC
+	EX	AF,AF'
+	POP	AF
+	EX	AF,AF'
+	RET
+
+;.......................................................................
+;
+; Type the string pointed to by DE to the console.
+
+MESAGE:	CALL	CRLF		; Precede all messages with cr, lf
+
+MESAG2:	PUSH	BC		; (entry here for no cr/lf)
+	LD	C,PRTSTR	; Print string
+	CALL	BDOSAV
+	POP	BC
+	RET
+
+;.......................................................................
+;
+; Non-Z80 fatal error special "emergency exit".  This routine to be
+; JUMPED to.
+
+MESS80:	LD	C,PRTSTR	; Can't use "MESAGE" beause can't use "BDOSAV"
+	CALL	BDOS
+	RET			; Rtn to ccp. (os's stack still intact)
+
+;.......................................................................
+;
+; Print a carriage return / linefeed sequence.
+
+CRLF:	LD	A,CR
+	CALL	TYPE
+	LD	A,LF
+	CALL	TYPE
+	RET
+
+;.......................................................................
+;
+; Type the character in A to the console device.  Saves all registers.
+
+TYPE:	PUSH	AF
+	PUSH	BC
+	PUSH	DE
+	LD	E,A		; Where bdos wants it
+	LD	C,CONOUT	; Bdos "console output" function
+	CALL	BDOSAV		; Do it
+	POP	DE
+	POP	BC
+	POP	AF
+	RET
+
+;.......................................................................
+;
+; Print fatal error messages.  Jump to this routine -- not a call!
+
+FATALU:	CALL	MESAG2		; Entry here if usage instructions desired.
+GIVUSG:	LD	DE,CPYRT	; version and copyright notice
+	CALL	MESAG2
+	LD	DE,USAGE
+	CALL	MESAG2
+	CALL	PRTNAM		; program name
+	LD	DE,SYNTX1	; syntax line...
+	CALL	MESAG2
+	CALL	DUDIR		; DU or DIR
+	LD	DE,SYNTX2
+	CALL	MESAG2
+	CALL	DUDIR
+	LD	DE,USAGE1	; Q option
+	CALL	MESAG2
+	LD	A,(QUIFL)
+	OR	A
+	CALL	NZ,PRTOFF
+	CALL	Z,PRTON
+	LD	DE,USAGE2	; C option
+	CALL	MESAG2
+	LD	A,(CNFRFL)
+	OR	A
+	CALL	NZ,PRTOFF
+	CALL	Z,PRTON
+	LD	DE,USAGE3	; T and E options
+	CALL	MESAG2
+	LD	A,(NPROFL)
+	OR	A
+	CALL	NZ,PRDONT
+	LD	DE,USAGE4	; more E option, and A option if CRUNCH
+	CALL	MESAG2
+  IF CRUNCH
+	LD	A,(ARCHIV)
+	OR	A
+	CALL	NZ,PRTOFF
+	CALL	Z,PRTON	
+  ENDIF	; CRUNCH
+	LD	DE,USAGE5	; S option
+	CALL	MESAG2
+	LD	A,(SYSFL)
+	OR	A
+	CALL	Z,PRTINC
+	CALL	NZ,PRTEXC
+	LD	DE,USAGE6	; more S option
+	CALL	MESAG2
+	JR	LOGOFF		; Skip the "0 files processed" business
+
+FATAL:	CALL	MESAG2		; Print any final message.
+
+RETCCP:	LD	A,(QUIFM)
+	OR	A
+	CALL	Z,CRLF
+	LD	HL,(NFP)	; get # of files processed
+	CALL	DECOUT		; Output that number
+	LD	DE,FINMSG	; "file(s) processed"
+	CALL	MESAG2
+	LD	HL,(NFP)
+	DEC	HL
+	LD	A,L
+	OR	H
+	LD	A,'s'
+	CALL	NZ,TYPE
+	LD	DE,FINMS2
+	CALL	MESAG2
+
+LOGOFF:	CALL	LOGDEF		; Restore user number from original prog entry
+
+	LD	SP,(OLDSTK)	; Restore to system stack
+	LD	A,(WRMFLG)	; Warm boot flag set?
+	OR	A
+	JP	NZ,0000		; If so, perf a warm boot
+	RET			; Else return to system ccp
+
+;.......................................................................
+;
+; Print "on", "off", "Don't", "Ex", "In", etc., and return to caller.
+
+PRTON:	LD	A,'n'
+	JP	TYPE
+
+PRTOFF:	LD	A,'f'
+	CALL	TYPE
+	JP	TYPE
+
+PRDONT:	LD	DE,MSGDNT
+	JP	MESAG2
+
+PRTINC:	LD	A,'I'
+	CALL	TYPE
+	LD	A,'n'
+	JP	TYPE
+
+PRTEXC:	LD	A,'E'
+	CALL	TYPE
+	LD	A,'x'
+	JP	TYPE
+
+DUDIR:	LD	HL,(Z3ED)	; print DU
+	LD	A,L
+	OR	H
+	LD	A,'u'
+	JP	Z,TYPE
+	LD	A,'i'		; or if ZCPR, DIR
+	CALL	TYPE
+	LD	A,'r'
+	JP	TYPE
+
+PRTNAM:	LD	HL,COMNAM	; use actual COM filename, if available
+	LD	A,(HL)
+	CP	' '		; anything there?
+	JR	NZ,PRTNM2	; (yes, use it)
+	LD	HL,PRGNAM	; no, use default program name
+PRTNM2:	LD	B,8		; print 8 characters
+PRTNLP:	LD	A,(HL)
+	CP	' '		; or until finding a space
+	RET	Z
+	CALL	TYPE
+	INC	HL
+	DJNZ	PRTNLP
+	RET
+
+;.......................................................................
+;
+; Print the filename whose FCB is pointed to by HL.
+
+PRNFIL:	DEC	HL		; Slide back to user # at fcb-1
+	LD	B,(HL)		; Put that here for now
+	INC	HL		; Back to drive spec
+	LD	A,(HL)		; Get drive spec
+	INC	HL		; Move to 1st char of filename
+	OR	A		; Drive = default?
+	JR	NZ,NOTDEF	; Br if not
+	LD	A,(DEFDRV)	; If so, get the default drive
+
+NOTDEF:	ADD	A,'A'-1		; Convert to a letter
+	CALL	TYPE
+	LD	C,11+2		; Total spaces to fill for fn and ft + 1
+				; (will be used later)
+	LD	A,B		; Get user # we picked up above
+	CP	10		; 2 digits?
+	JR	C,ONEDIG	; Br if not
+	DEC	C		; adjust number of spaces by one
+	LD	B,0		; zero counter
+TENSLP:	INC	B		; increment 10's
+	SUB	10		; subtract 10
+	CP	10
+	JR	NC,TENSLP	; ..until less than 10
+	PUSH	AF
+	LD	A,B		; get 10's
+	ADD	A,'0'		; make printable
+	CALL	TYPE		; type 10's digit
+	POP	AF		; get back remainder
+ONEDIG:	ADD	A,'0'		; make printable
+	CALL	TYPE		; Type 1's digit
+	LD	A,':'		; Follow drive spec with a ":"
+	CALL	TYPE
+	LD	B,8+1		; Max chars in file name plus 1
+	CALL	PRNFNT		; Print file name
+	LD	A,'.'		; Print dot
+	CALL	TYPE
+	LD	B,3+1		; Max chars in file type plus 1
+	CALL	PRNFNT		; Print file type
+
+PRNSP:	LD	A,' '		; Fill out with spaces
+	DEC	C
+	RET	Z
+	CALL	TYPE
+	JR	PRNSP
+
+;...............................
+
+PRNFNT:	DEC	B		; Aux routine for abv; print file name or type
+	RET	Z		; Return if no more
+	LD	A,(HL)		; Else get character
+	AND	7Fh		; reset high bit
+	INC	HL		; Point to next character
+	CP	' '		; Is it a space?
+	JR	Z,PRNFNT	; If so, loop back for more
+	DEC	C		; Else, decrement count of printed chars
+	CALL	TYPE		; Print the character
+	JR	PRNFNT		; Back for more
+
+;.......................................................................
+;
+; Wildcard expansion.  All filenames matching INFCB will be packed into
+; FNBUFF, twelve bytes per filename.  The first byte is used as a
+; "tag/flag", the following eleven bytes in each entry contain the file-
+; name.  The tag/flag is set to 00 if the file is NOT to be processed,
+; 01 indicates file IS to be processed.  The initial state of this byte
+; is defined here, but may be manually modified if "confirm mode" is
+; selected. The initial value is determined as follows:
+;
+; 1. If confirm and archive modes are OFF, files are flagged for proces-
+;    sing (01).
+;
+; 2. If "archive bit" mode is on, all "un-archived" files are tagged to
+;    processed (01), others are not (00). This can be overidden either
+;    way later "confirm" mode was selected as well.
+;
+; 3. If confirm mode only was selected, files are flagged as NOT to be
+;    processed (00).  They can be manually tagged by the user later.
+;
+;    (Note that certain circumstances may cause the files to be flagged
+;    later as (02) "perform a direct copy", but this is not our concern
+;    now.  Also note that a flag byte of "FF" means "no more files in
+;     list".)
+
+WILDEX:	LD	HL,0		; Init "# of files" to zero
+	LD	(NFILES),HL
+	LD	DE,DDMA		; Explicitly set the dma to 80h
+	LD	C,SETDMA
+	CALL	BDOSAV
+	LD	DE,INFCB	; Fcb to be expanded
+	LD	C,SFIRST	; Look for 1st match
+	CALL	BDOSAV		; Bdos "Search for first" call
+	CP	0FFH		; Any match?
+	RET	Z		; Error- no matches- rtn w/ zero stat
+	LD	DE,FNBUFF	; From now on, DE is buffer dest pointer
+	CALL	MOVNAM		; Move first filename into buffer
+
+EXPLP:	PUSH	DE		; } (save bfr dest pntr)
+	LD	DE,INFCB	; }
+	LD	C,SNEXT		; }
+	CALL	BDOSAV		; }
+	POP	DE		; } process all additional matches
+	CP	0FFH		; }
+	JR	Z,DONEX		; }
+	CALL	MOVNAM		; }
+	JR	EXPLP		; }
+
+DONEX:	LD	(DE),A		; Flag the last [non-] entry with ff
+	LD	HL,(NFILES)	; Number of files found
+	LD	A,H
+	OR	L		; Rtn with non-zero status if any files found
+	RET
+
+;................................
+				; Move filename to next position in FNBUFF
+MOVNAM:	ADD	A,A		; (pointed to by DE). Initialize the first
+	ADD	A,A		;  byte, the tag/flag byte, appropriately
+	ADD	A,A		;  depending on operating mode)
+	ADD	A,A
+	ADD	A,A		; Bdos suplies directory entry at dma + 32*a
+	ADD	A,DDMA		; Namely 80h
+	LD	L,A		; Set up HL as source pointer
+	LD	H,0		; Hi-byte of ddma, namely zero
+
+	LD	A,(SYSFM)	; include system files?
+	OR	A
+	JR	NZ,MOVNM2	; (yes)
+	PUSH	HL
+	LD	BC,10		; no, so check for one
+	ADD	HL,BC
+	BIT	7,(HL)
+	POP	HL
+	RET	NZ		; (don't find it or count it)
+
+MOVNM2:	LD	A,(CNFRFM)	; Default each file to "tagged" or "untagged"
+	LD	B,A		; If /C or /A options, default to untagged
+
+  IF CRUNCH
+	LD	A,(ARCHVM)	; Archive bit mode only exists in CRUNCH
+	 ELSE
+	XOR	A		; (inherently "off")
+  ENDIF	; CRUNCH
+
+	OR	B		; See if either mode is active
+	JR	Z,CF0		; Br if not
+	LD	A,01H
+CF0:	XOR	01H		; Now A=00 if either flag set, else A=01
+	LD	B,12		; Byte count +1 (11 filename characters)
+
+	PUSH	DE		; Save a copy of pntr to status byte
+	JR	MIDLP		; Transfer the tag/flag byte and 11 characters
+
+;...............................
+
+LDIRLP:	LD	A,(HL)		; Loop like ldir but "ands" with 7Fh
+	LD	C,A		; (to grab the val of A on last loop, used below)
+	AND	7FH		; Get rid of status bits
+
+MIDLP:	LD	(DE),A		; <== entry for first loop
+	INC	HL
+	INC	DE
+	DJNZ	LDIRLP		; Transfer 12 bytes
+
+;...............................
+
+	POP	HL		; (pushed as DE above)
+
+  IF CRUNCH
+	LD	A,(ARCHVM)	; Archive mode?
+	OR	A
+	JR	Z,SKPSTF	; Skip this code if not
+
+	LD	A,C		; Get the archive bit, from the last char
+	AND	80H		; Isolate it
+	XOR	80H		; Flip it
+	RLCA			; And convert it into a possible 01h
+	OR	(HL)
+	LD	(HL),A		; "stuff" it into the tag/flag byte.
+  ENDIF	; CRUNCH
+
+SKPSTF:	LD	HL,(NFILES)	; Incr # of files counter
+	INC	HL
+	LD	(NFILES),HL
+	OR	A		; reset carry
+	LD	BC,MAXFLS
+	SBC	HL,BC
+	RET	C		; Normal return
+
+;...............................
+
+	LD	DE,ERR3		; Too many files, fatal error
+	JP	FATAL
+
+;-----------------------------------------------------------------------
+;
+; Update the running count of # of records output (add one to it).
+
+PROGO:	PUSH	AF		; Save everything
+	PUSH	BC
+	PUSH	HL
+	LD	HL,(OUTCTR)	; Update binary count
+	INC	HL
+	LD	(OUTCTR),HL
+	LD	HL,PROGBF+11	; Point to ascii string version of count
+	CALL	BCDINC		; Incr that, too
+	POP	HL		; Restore regs & return
+	POP	BC
+	POP	AF
+	RET
+
+;.......................................................................
+;
+; Update  # of records read on input.  Every 2 or 4 calls to this rou-
+; tine, actually update the display.  Monitor the console for ^C.
+
+PROGI:	PUSH	AF		; Save everything
+	PUSH	BC
+	PUSH	HL
+
+	LD	C,CONST		; Get console status
+	CALL	BDOSAV
+	OR	A
+	JR	Z,CONTIN	; Continue if no character
+	LD	C,CONIN
+	CALL	BDOSAV		; Get the char for analysis
+	CP	CTRLC		; ^c?
+	JR	NZ,CONTIN	; Continue if not
+	CALL	CRLF
+	CALL	ERACE		; erase output file
+	LD	DE,ABORT	; Else abort
+	JP	FATAL
+
+CONTIN:	LD	A,(QUIFM)
+	OR	A
+	JR	NZ,PERFIN	; Skip the stuff below in quiet mode
+	LD	A,(INCTR+0)	; Mask ls bits to determine whether this call
+	DEC	A		; - is an 'active' one (updates the console)
+	LD	B,A
+	LD	A,(DIRFLG)	; "direct copy flag" - different screen dsply
+	OR	B
+	AND	SCRUPT2		; Screen update speed control #2
+	JR	Z,FULUPD
+	AND	SCRUPT1		; Screen update speed control #1
+	CALL	Z,PRTUPD	; If zero, actually do a typeout
+	JR	PERFIN
+
+FULUPD:	CALL	PRNFIN		; Perf "full" update.
+
+PERFIN	EQU	$
+
+  IF CRUNCH
+	LD	A,(FULFLG)	; If table not full, skip below check
+	OR	A
+	JR	Z,SKIPW4
+
+	LD	A,(INCTR+0)	; This controls checking for adaptive reset
+	DEC	A
+	AND	SCRUPT1		; CHLRST may initiate an adaptive reset by
+	CALL	Z,CHKRST	; Setting a flag
+
+  ENDIF	; CRUNCH
+
+SKIPW4:	LD	HL,(INCTR)	; In any event, perform the increments
+	INC	HL		; First, incrment the binary version
+	LD	(INCTR),HL
+
+	LD	HL,PROGBF+5	; Increment ascii string representing same
+	CALL	BCDINC
+	POP	HL		; Restore regs & rtn
+	POP	BC
+	POP	AF
+	RET
+
+;.......................................................................
+
+PRTUPD:	PUSH	DE		; Type a "short-form" update update
+	LD	A,'$'		; To the screen (ie "records in" only)
+	LD	(PROGBF+6),A	; Effectively truncate the update text
+	LD	DE,PROGBF
+	CALL	MESAG2		; Type to screen until the "$" terminator
+	LD	A,' '		; Restore that byte to it's natural state
+	LD	(PROGBF+6),A
+	POP	DE
+	RET			; And return
+
+;.......................................................................
+;
+; Routine  like  "PROGI", but does NOT increment and  WILL  update  the
+; console on any call. Basically used as a final screen update.
+
+PROGI2:	PUSH	AF
+	LD	A,(QUIFM)	; Still, don't type if in "quiet" mode
+	OR	A
+	JR	NZ,QUIET2
+	PUSH	BC		; Else print up the final tally
+	PUSH	HL
+	CALL	PRNFIN
+	POP	HL
+	POP	BC
+
+QUIET2:	POP	AF
+	RET
+
+;.......................................................................
+;
+; Perform a full screen update (recs in / out, compression ratio, etc.)
+
+PRNFIN:	PUSH	DE
+	PUSH	IX
+	LD	DE,PROGBF	; This buffer contains most of the stuff,
+	CALL	MESAG2		; - ready to be typed
+
+	LD	A,(DIRFLG)
+	OR	A
+	JR	NZ,SKIPW2
+
+	LD	DE,(OUTCTR)	; Compression ratio must be computed, however
+	PUSH	DE
+	POP	IX		; Get # of output recs into ix
+
+	LD	HL,(INCTR)	; Spec the divisor for the subroutine call
+	LD	(DIVISR),HL
+	CALL	COMRAT		; Compute ratio. result, in %, returned in HL
+	LD	A,' '		; Need an extra space here to make it look good
+	CALL	TYPE
+	CALL	DECOUT		; Type to screen in decimal
+	LD	DE,PERCNT	; A "%" char, basicly
+	CALL	MESAG2		; Type that
+	LD	A,(OLDFLG)	; Skip rest for old style (v1.x) files
+	OR	A
+	JR	NZ,SKIPW2
+	LD	HL,4096		; Display this value whenever table is full
+	LD	A,(FULFLG)	; Is it?
+	OR	A
+	JR	NZ,NOFUD	; Br if so
+	LD	HL,(ENTRY)	; Type "Codes Assigned" to the screen
+
+  IF CRUNCH
+	DEC	HL		; Adjust for a 2 count "skew" due to
+	DEC	HL		; - inherent nature of uncr to be "behind"
+  ENDIF	; CRUNCH
+
+NOFUD:	CALL	DECOUT		; The "ca" count
+	LD	A,' '		; Some more aesthetics
+	CALL	TYPE
+	CALL	TYPE
+
+	LD	HL,(TTOTAL)	; Get "Codes Reassigned"
+	CALL	DECOUT		; The "cr" count
+
+SKIPW2:	POP	IX		; Restore regs and return
+	POP	DE
+	RET
+
+;.......................................................................
+;
+; "Incremental compression ratio" computation.	For analysis of the
+; possibility of setting the adaptive reset flag, compute the compres-
+; sion ratio since the last reset (not necessarily the beginning of the
+; file).  This is significantly preferable to analyzing the ratio since
+; the beginning (the one displayed on the console) because that number
+; gets very "stable" as one gets further and further into a large file.
+; Sudden structural variations will not get picked up quickly that way.
+;
+; INCTR0 and OUTCT0 contain the # of records at the time of the last re-
+; set (or zero).  The offset from them (to the current values) are the
+; numbers divided to compute the ratio.
+
+  IF CRUNCH
+CHKRST:	PUSH	DE
+	PUSH	IX
+	LD	HL,(INCTR)	; As described above
+	LD	DE,(INCTR0)
+	AND	A
+	SBC	HL,DE
+	LD	(DIVISR),HL	; Adjusted input rec count will be the divisor
+	LD	HL,(OUTCTR)
+	LD	DE,(OUTCT0)
+	AND	A
+	SBC	HL,DE		; Adjusted output record count is dividend
+	EX	DE,HL
+	PUSH	DE
+	POP	IX		; Put it in ix for the subr call
+	CALL	COMRAT		; Returns a compression ration in "HL"
+
+; The criteria for adaptive reset is when the current "incremental"
+; ratio goes "up".  "Up" is defined as higher the limit, which is equal
+; to the lowest incremental ratio achieved so far (not necessarily the
+; last computed ratio).  ["So far" means since the last adaptive reset,
+; if any.]
+;
+; Computationsbelow are single byte precision.	If the "compression"
+; ratio (during crunching) actually ever got higher than 256%, then this
+;  analysis is really quite irrelevant.. that would really be a lost
+; cause...
+
+	LD	A,(LOWPER)	; Get "target" value
+	SUB	L		; Compare to current
+	JR	C,CHK4RS	; If current is higher, reset may be indicated
+	LD	A,L		; If new ratio is lower, it is the new target
+	LD	(LOWPER),A
+	JR	SKIPW3		; That's all
+
+; If new value is higher, a reset may be indicated.  The exact criteria
+; is that the value be one full percentage point, besides the +/-1 nor-
+; mal roundoff wavering, above the target value.
+
+CHK4RS:	INC	A		; Adjust the difference computed by one
+	JP	P,SKIPW3	; If that is not negative, no reset now
+
+	LD	A,80H		; Else set the adaptive reset flag. full
+	LD	(RSTFLG),A	; - processing occurs back at the main loop
+
+	PUSH	HL		; However, take care of updating these now
+	LD	HL,(INCTR)	; Inctr0 <-- inctr
+	LD	(INCTR0),HL
+	LD	HL,(OUTCTR)	; Outct0 <-- outctr
+	LD	(OUTCT0),HL
+	POP	HL
+
+SKIPW3:	POP	IX		; Restore regs and return
+	POP	DE
+	RET
+  ENDIF	; CRUNCH
+
+;.......................................................................
+;
+; Compute a compression ratio, in percent.  Calculates IX/("divisr").
+; When called, DE must have a a copy of the dividend as well as IX.
+
+COMRAT:	LD	HL,0		; Prepare for 32 bit multiply by 100
+	LD	B,H		; [ ratio = (100 * out) / in ]
+	LD	C,L
+	ADD	IX,IX
+	ADC	HL,HL		; 2x
+	ADD	IX,DE
+	ADC	HL,BC		; 3x
+	ADD	IX,IX
+	ADC	HL,HL		; 6x
+	ADD	IX,IX
+	ADC	HL,HL		; 12x
+	ADD	IX,IX
+	ADC	HL,HL		; 24x
+	ADD	IX,DE
+	ADC	HL,BC		; 25x
+	ADD	IX,IX
+	ADC	HL,HL		; 50x
+	ADD	IX,IX
+	ADC	HL,HL		; 100x
+	ADD	IX,IX
+	ADC	HL,HL		; 200x
+	PUSH	IX		; Get result into HL DE for dividing
+	POP	DE		;
+	LD	BC,(DIVISR)	; Get divisor
+	CALL	DIVIDE		; Divides (HL DE) / BC
+	EX	DE,HL		; Put result into HL
+	SRL	H		; Divide it by 2
+	RR	L		;
+	RET	NC		; & return if no need to round up
+	INC	HL		; Else round up
+	RET
+
+;.......................................................................
+;
+; Increment a 4 character ASCII unpacked BCD string, pointed to by HL.
+
+BCDINC:	LD	B,4		; Loop counter
+
+DIGLP:	LD	A,(HL)		; HL points to string
+	OR	10H		; Blank to zero conversion (init'd to blank)
+	INC	A		; Incr
+	LD	(HL),A		; Re-store
+	CP	'9'+1		; Carry?
+	RET	NZ		; Rtn if not
+	LD	(HL),'0'	; Else zero & loop to next char
+	DEC	HL		;
+	DJNZ	DIGLP		; (But not past limit)
+	RET			; And return
+
+;.......................................................................
+;
+; Convert records to "k" and print same.  Called at end of process.
+
+PROGF:	PUSH	DE		; Save regs
+	PUSH	BC
+	LD	DE,SPCPAR	; Spaces, parenthesis
+	CALL	MESAG2
+	LD	HL,(INCTR)	; Input recs
+	CALL	AUXSUB		; Div by 8 and type
+	LD	DE,ARROW2	; " --->"
+	CALL	MESAG2
+	LD	A,' '
+	CALL	TYPE
+	LD	HL,(OUTCTR)	; Similarly for output recs
+	CALL	AUXSUB
+	LD	A,')'
+	CALL	TYPE
+	CALL	CRLF
+	POP	BC		; Restore & rtn
+	POP	DE
+	RET
+
+;...............................
+				; Aux routine for above calculates (HL)/8
+AUXSUB:	LD	DE,7		; With upward rounding, & types it.
+	ADD	HL,DE		; [ie compute (# of recs+7) / 8 ]
+	SRL	H		; }
+	RR	L		; }
+	SRL	H		; } div by 8
+	RR	L		; }
+	SRL	H		; }
+	RR	L		; }
+	CALL	DECOUT		; Type HL in decimal
+	LD	A,'k'
+	CALL	TYPE
+	RET
+
+;.......................................................................
+;
+; Convert a binary number to four chars ASCII & type them, right justified.
+
+DECOUT:	CALL	DIV10		; Divide orig # (in HL), by 10
+	LD	A,L		; Get remainder from l, (0-9)
+	PUSH	AF		; Save in reverse order retrieval later
+	EX	DE,HL		; Old dividend becomes new divisor
+	CALL	DIV10		; Repeat 3 more times
+	LD	A,L
+	PUSH	AF
+	EX	DE,HL
+	CALL	DIV10
+	LD	A,L
+	PUSH	AF
+	EX	DE,HL
+	CALL	DIV10
+	LD	A,L
+	PUSH	AF
+	EX	DE,HL
+	LD	B,3		; Becomes loop counter
+	LD	C,0EFH		; Mask to convert zeroes to blanks
+
+DECLP:	POP	AF		; Type the 4 digits, with leading 0 suppression
+	OR	A		; Is it zero?
+	JR	Z,LVMASK	; Lv mask set if so
+	LD	C,0FFH		; Else cancel masking (of zeroes to blanks)
+LVMASK:	ADD	A,'0'		; Convert to ascii
+	AND	C		; Possibly blank a zero
+	CALL	TYPE		; Output the char
+	DJNZ	DECLP		; Do the first 3 digits
+	POP	AF		; Last digit is easy. never blank it.
+	ADD	A,'0'		; Convert to acsii
+	CALL	TYPE		; Type it & rtn
+	RET
+
+;.......................................................................
+;
+; (Re-)initialize all necessary ram locs.  Called once for each file to
+; be processed.  This routine gets its info from an initialization block
+; called "SHADOW" which is copied into the working memory.  Routine also
+; performs alternate register initialization.
+
+INTRAM:	LD	HL,SHADOW	; Contains a copy of all relevant init values
+	LD	DE,RAM		; Target
+	LD	BC,EOSHAD-SHADOW
+	LDIR			; Do it
+	EXX			; Routine performs register initialization too
+	LD	HL,IBUF		; Reset input buffer pointer
+	LD	DE,OBUF		; Reset output buffer pointer
+	LD	BC,0		; Zero this
+	EXX			; Back to primary registers
+	RET
+
+;.......................................................................
+;
+; Exchange the 12 byte entries at (HL) and (DE). [ Used by SORT below ]
+
+SWAP:	PUSH	DE
+	PUSH	HL
+	LD	B,12		; Loop counter
+
+SWAPLP:	LD	A,(DE)		; Get a corresponding byte from each
+	LD	C,(HL)
+	EX	DE,HL		; Exchange the pointers
+	LD	(DE),A		; And re-store the pair of bytes
+	LD	(HL),C
+	INC	HL
+	INC	DE
+	DJNZ	SWAPLP		; Loop; (note- another ex DE,HL not needed)
+	POP	HL
+	POP	DE
+	RET
+
+;.......................................................................
+;
+; Compare the 11 byte entries at (HL+1) and (DE+1) [ Used by SORT below]
+
+COMP:	PUSH	DE
+	PUSH	HL
+	LD	B,11		; Limit max # of comparisons
+
+COMPLP:	INC	HL		; Pre-incr pointers
+	INC	DE
+	LD	A,(DE)
+	CP	(HL)
+	JR	NZ,CMPRTN	; If not equal, rtn with appropriate carry stat
+	DJNZ	COMPLP		; Loop up to eleven times
+	SCF			; Set for equal avoids unecessary equal swaps
+
+CMPRTN:	POP	HL
+	POP	DE
+	RET
+
+;.......................................................................
+;
+; Sort all of the 12 byte filename entries in FNBUFF. Sleazy bubble sort.
+
+SORT:
+	LD	BC,(NFILES)	; init inner (BC) loop counter
+	LD	(SOCNT),BC	; init outer (SOCNT) loop counter
+	LD	DE,FNBUFF	; Init "outer loop" pointer
+
+;...............................
+
+OUTRLP:	LD	H,D		; Reset inner loop pointer and counter
+	LD	L,E		; HL <-- DE
+
+;...............................
+
+INRLP:	PUSH	BC		; Save inner loop counter
+	CALL	COMP		; Compare two entries
+	CALL	NC,SWAP		; Swap if necessary
+	LD	BC,12		; Incr inner pointer by 12
+	ADD	HL,BC
+	POP	BC		; Restore inner loop counter
+	DEC	BC
+	LD	A,B
+	OR	C
+	JP	NZ,INRLP
+
+;...............................
+
+	LD	A,E		; Incr DE by 12
+	ADD	A,12
+	LD	E,A
+	LD	A,D
+	ADC	A,0
+	LD	D,A
+	LD	BC,(SOCNT)
+	DEC	BC
+	LD	(SOCNT),BC
+	LD	A,B
+	OR	C
+	JR	NZ,OUTRLP	; Loop till done
+	RET
+
+;-----------------------------------------------------------------------
+;	Text, data, etc.
+;-----------------------------------------------------------------------
+
+PRSER5	EQU	$		; (Destination filename supplied)
+PRSER1	EQU	$		; (Error from "parseu")
+	DB	BELL,'++ Invalid argument ++',CR,LF,'$'  ; (generic for above)
+PRSER2	EQU	$		; (Invalid user #)
+PRSER3	EQU	$		; (Invalid drive)
+PRSER9:	DB	BELL,'++ Invalid directory ++',CR,LF,'$' ; (for ZCPR3 only)
+PRSER4:	DB	BELL,'++ Invalid option ++',CR,LF,'$'
+PRSER8:	DB	BELL,'++ [text] to long ++',CR,LF,'$'
+
+MSGERA:	DB	' Erasing: $'
+MSGCPY:	DB	'   Copying...',CR,LF,' $'
+ERR0:	DB	' [ File empty ]$'
+ERR1:	DB	'File not found.$'
+ERR2A:	DB	'File creation error.$'
+ERR2B:	DB	CR,LF,'++ Disk Full ++   ',BELL,'$'
+ERR2C:	DB	'Output error.$'
+ERR3:	DB	'Too many files.$'
+LAKMEM:	DB	'Not enough memory.  $'
+  IF ZSYS
+WRNGUP:	DB	'ZCPR3 required.$'
+  ELSE	; ZSYS
+WRNGUP:	DB	'Z-80 CPU required.$'
+  ENDIF	; ZSYS
+ARROW:	DB	' --> $'
+ARROW2:	DB	' -->$'
+ARROW3:	DB	' ==> $'
+PERCNT:	DB	'%  $'
+SPCPAR:	DB	' ($'
+DASHES:	DB	'----',CR,LF,'$'
+MSGDNT:	DB	'Don''t $'
+MSGTAG:	DB	' T to Tag files for processing, RETURN to skip.',CR,LF
+	DB	' B = Back one       U = Untag       ^C = Abort',CR,LF,'$'
+MSGOK:	DB	'Selections OK (Y/N)? $'
+MSGBEL:	DB	BELL		; (cont. below)
+MSGCLF:	DB	CR,LF,LF,'$'
+
+MSGCH:	DB	'Change output disk and press RETURN to continue (^C aborts). $'
+ABORT:	DB	CR,LF,'   ++ Aborted ++$'
+PROMPT:	DB	' Erase existing file (Y/[N])? ',BELL,'$'
+HEADNG:
+  IF NOT CRUNCH	; (this patch / flag only applicable to CRUNCH)
+	DB	'  in    out   rat   ca    cr',CR,LF ; (cont)
+	DB	' ====  ====  ====  ====  ====',CR,LF,'$'
+HEADNY:
+  ENDIF ;  NOT CRUNCH 
+	DB	'  in    out   rat',CR,LF ; (cont)
+	DB	' ====  ====  ====',CR,LF,'$'
+
+FINMSG:	DB	' file$'
+FINMS2:	DB	' processed.$'
+
+;-----------------------------------------------------------------------
+
+SHADOW	EQU	$		; (for description, see immediately below)
+				;
+	DB	00		; "fulflg"
+	DW	0000		; "chksum"
+	DB	01		; "secnt"
+	DW	0000		; "inctr"
+	DW	0000		; "outctr"
+	DW	0000		; "inctr0"
+	DW	0000		; "outct0"
+	DW	0000H		; "entry"
+	DB	09		; "codlen"
+	DB	02H		; "trgmsk"
+	DB	09H		; "codle0"
+	DB	00H		; "rstflg"
+	DW	0000H		; "ttotal"
+	DB	0FFH		; "lowper"
+	DW	NOPRED		; "lastpr"
+	DB	01H		; "entflg"
+	DB	00H		; "oldflg"
+	DB	00H		; "dirflg"
+	DB	00H		; "sqzflg"
+	DB	CR,'    0 /   0$' ; "progbf"
+
+;-----	PROGBF + 0  12345678901 ; (offsets into above)
+;			 ^
+EOSHAD	EQU	$
+;_______________________________________________________________________
+
+	DSEG
+
+; The following RAM locations must be re-initialized each time the pro-
+; gram is executed (for each file when wildcards are used).  The area
+; called "SHADOW" (above) is used to accomplish this.
+
+RAM	EQU	$
+
+FULFLG:	DS	1		; Becomes "FF" when table is full
+CHKSUM:	DS	2		; Checksum accumulated here
+SECNT:	DS	1		; Count of sectors read per "reload" call
+INCTR:	DS	2		; Count of total sectors read from input
+OUTCTR:	DS	2		; Likewise for output
+INCTR0:	DS	2		; Value of "inctr" at last reset
+OUTCT0:	DS	2		; Value of "outctr" at last reset
+ENTRY:	DS	2		; Current entry (code) number.
+CODLEN:	DS	1		; Current code length, in bits.
+TRGMSK:	DS	1		; Mask contains "1" bit in pos of next code len
+CODLE0:	DS	1		; "delayed" value of "codlen"
+RSTFLG:	DS	1		; Will cause an adaptive reset when set
+TTOTAL:	DS	2		; "codes reassigned" (for display purposes)
+LOWPER:	DS	1		; Lowest incremental compr. ratio achieved
+LASTPR:	DS	2		; "last pred"
+ENTFLG:	DS	1		; Flag prevents duplicating entries
+OLDFLG:	DS	1		;
+DIRFLG:	DS	1		; "direct flag", set when doing plain file copy
+SQZFLG:	DS	1		;
+PROGBF:	DS	20		; Alphanumeric ASCII to go to console
+
+;.......................................................................
+
+INUSR:	DS	1		; Must immediately precede the input fcb
+INFCB:	DS	36		; Input file fcb.
+
+OUTUSR:	DS	1		; Must immediately precede the output fcb
+OUTFCB:	DS	36		; Output fcb
+
+DATFLG:	DS	1		; file has embedded date if non-zero
+DATBUF:	DS	15		; date stamp storage
+
+;.......................................................................
+;
+; The flags below are analogous to some of patches at the beginning of
+; the program.	Those default values are copied into the data area here
+; each program execution, since some can be changed if an appropriate
+; command line option is processed.  This keeps the prgrm re-executable.
+
+QUIFM:	DS	1		; Verbose mode flag
+NPROFM:	DS	1		; No prompt before overwrite flag
+NOMSFM:	DS	1		; Defeat multi-sector i/o flag
+CNFRFM:	DS	1		; Confirm every file flag
+ARCHVM:	DS	1		; Archive bit mode flag (used by crunch only)
+SYSFM:	DS	1		; Include system files flag
+BUFPTR:	DS	2		; Used for indexing
+OLDSTK:	DS	2		; Operating system stack pointer saved here
+DISP:	DS	2		; A displacement
+DIVISR:	DS	2		; A divisor
+BDOSHL:	DS	2		; HL returned by BDOS calls saved here
+CPM3FL:	DS	1		; CP/M Plus flag
+ZSDSFL:	DS	1		; ZSDOS flag
+CURUSR:	DS	1		; The "current" user area
+USERNO:	DS	1		; The default user area
+DEFDRV:	DS	1		; The default drive
+IDSPEC:	DS	1		; Input drive spec (A=1, B=2,...)
+ODSPEC:	DS	1		; Output drive spec
+OBSZ:	DS	1		; Output buffer size, pages
+EOBHI:	DS	1		; End of output buffer, hi-byte
+NFILES:	DS	2		; # of files (from wildcard expander)
+FILNUM:	DS	2		; File counter for tag mode
+DIFDU:	DS	1		; Set if input DU: different than output DU:
+DIFD:	DS	1		; Set if input D: is different than output D:
+WLDFLG:	DS	1		; Set if program invoked with wildcard(s)
+ODRVEC:	DS	2		; "drive vector" corresponding to output drv
+NFP:	DS	2		; # of files processed
+SOCNT:	DS	2		; Sort outer loop counter
+
+;		   (end of COMMON.LIB include)
+;=======================================================================
+

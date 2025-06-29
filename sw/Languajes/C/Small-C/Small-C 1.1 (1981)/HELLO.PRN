@@ -1,0 +1,1159 @@
+
+
+                ;* * *  Small-C  V1.1  * * *
+                ;CP/M Version N: April 1, 1981
+                ;       By Ron Cain
+                ;
+ 0100           	ORG 100H
+ 0100 2A0600    	LHLD 6
+ 0103 F9        	SPHL
+ 0104 CD0D01    	CALL CCGO
+ 0107 CD8409    	CALL QZMAIN
+ 010A CD5402    	CALL QZEXIT
+                ;#define NULL	0
+                ;#define TAB	9
+                ;#define NL	13
+                ;#include c80lib
+                ;#asm
+                ;
+                ;------------------------------------------------------------------
+                ;	Small-C  Run-time Library
+                ;
+                ;	V4d	As of July 16, 1980 (gtf)
+                ;		   Added EXIT() function
+                ;------------------------------------------------------------------
+                ;
+                ; Runtime library initialization.  Set up default drive for CP/M.
+ 010D 0E19      CCGO:	MVI	C,QUERY 	;get logged-in disk
+ 010F CD0500    	CALL	BDOS
+ 0112 3C        	INR	A		;make it so it will work in fcb
+ 0113 324102    	STA	DFLTDSK
+ 0116 C9        	RET
+                ;Fetch a single byte from the address in HL and sign extend into HL
+ 0117 7E        CCGCHAR: MOV	A,M
+ 0118 6F        CCSXT:	MOV	L,A
+ 0119 07        	RLC
+ 011A 9F        	SBB	A
+ 011B 67        	MOV	H,A
+ 011C C9        	RET
+                ;Fetch a full 16-bit integer from the address in HL
+ 011D 7E        CCGINT: MOV	A,M
+ 011E 23        	INX	H
+ 011F 66        	MOV	H,M
+ 0120 6F        	MOV	L,A
+ 0121 C9        	RET
+                ;Store a single byte from HL at the address in DE
+ 0122 7D        CCPCHAR: MOV	A,L
+ 0123 12        	STAX	D
+ 0124 C9        	RET
+                ;Store a 16-bit integer in HL at the address in DE
+ 0125 7D        CCPINT: MOV	A,L
+ 0126 12        	STAX	D
+ 0127 13        	INX	D
+ 0128 7C        	MOV	A,H
+ 0129 12        	STAX	D
+ 012A C9        	RET
+                ;Inclusive "or" HL and DE into HL
+ 012B 7D        CCOR:	MOV	A,L
+ 012C B3        	ORA	E
+ 012D 6F        	MOV	L,A
+ 012E 7C        	MOV	A,H
+ 012F B2        	ORA	D
+ 0130 67        	MOV	H,A
+ 0131 C9        	RET
+                ;Exclusive "or" HL and DE into HL
+ 0132 7D        CCXOR:	MOV	A,L
+ 0133 AB        	XRA	E
+ 0134 6F        	MOV	L,A
+ 0135 7C        	MOV	A,H
+ 0136 AA        	XRA	D
+ 0137 67        	MOV	H,A
+ 0138 C9        	RET
+                ;"And" HL and DE into HL
+ 0139 7D        CCAND:	MOV	A,L
+ 013A A3        	ANA	E
+ 013B 6F        	MOV	L,A
+ 013C 7C        	MOV	A,H
+ 013D A2        	ANA	D
+ 013E 67        	MOV	H,A
+ 013F C9        	RET
+                ;Test if HL = DE and set HL = 1 if true else 0
+ 0140 CD6601    CCEQ:	CALL	CCCMP
+ 0143 C8        	RZ
+ 0144 2B        	DCX	H
+ 0145 C9        	RET
+                ;Test if DE ~= HL
+ 0146 CD6601    CCNE:	CALL	CCCMP
+ 0149 C0        	RNZ
+ 014A 2B        	DCX	H
+ 014B C9        	RET
+                ;Test if DE > HL (signed)
+ 014C EB        CCGT:	XCHG
+ 014D CD6601    	CALL	CCCMP
+ 0150 D8        	RC
+ 0151 2B        	DCX	H
+ 0152 C9        	RET
+                ;Test if DE <= HL (signed)
+ 0153 CD6601    CCLE:	CALL	CCCMP
+ 0156 C8        	RZ
+ 0157 D8        	RC
+ 0158 2B        	DCX	H
+ 0159 C9        	RET
+                ;Test if DE >= HL (signed)
+ 015A CD6601    CCGE:	CALL	CCCMP
+ 015D D0        	RNC
+ 015E 2B        	DCX	H
+ 015F C9        	RET
+                ;Test if DE < HL (signed)
+ 0160 CD6601    CCLT:	CALL	CCCMP
+ 0163 D8        	RC
+ 0164 2B        	DCX	H
+ 0165 C9        	RET
+                ; Signed compare of DE and HL
+                ; Performs DE - HL and sets the conditions:
+                ;	Carry reflects sign of difference (set means DE < HL)
+                ;	Zero/non-zero set according to equality.
+ 0166 7B        CCCMP:	MOV	A,E
+ 0167 95        	SUB	L
+ 0168 5F        	MOV	E,A
+ 0169 7A        	MOV	A,D
+ 016A 9C        	SBB	H
+ 016B 210100    	LXI	H,1
+ 016E FA7301    	JM	CCCMP1
+ 0171 B3        	ORA	E	;"OR" resets carry
+ 0172 C9        	RET
+ 0173 B3        CCCMP1: ORA	E
+ 0174 37        	STC		;set carry to signal minus
+ 0175 C9        	RET
+                ;Test if DE >= HL (unsigned)
+ 0176 CD9001    CCUGE:	CALL	CCUCMP
+ 0179 D0        	RNC
+ 017A 2B        	DCX	H
+ 017B C9        	RET	
+                ;Test if DE < HL (unsigned)
+ 017C CD9001    CCULT:	CALL	CCUCMP
+ 017F D8        	RC
+ 0180 2B        	DCX	H
+ 0181 C9        	RET
+                ;Test if DE > HL (unsigned)
+ 0182 EB        CCUGT:	XCHG
+ 0183 CD9001    	CALL	CCUCMP
+ 0186 D8        	RC
+ 0187 2B        	DCX	H
+ 0188 C9        	RET
+                ;Test if DE <= HL (unsigned)
+ 0189 CD9001    CCULE:	CALL	CCUCMP
+ 018C C8        	RZ
+ 018D D8        	RC
+ 018E 2B        	DCX	H
+ 018F C9        	RET
+                ;Routine to perform unsigned compare
+                ;carry set if DE < HL
+                ;zero/nonzero set accordingly
+ 0190 7A        CCUCMP: MOV	A,D
+ 0191 BC        	CMP	H
+ 0192 C29701    	JNZ	$+5
+ 0195 7B        	MOV	A,E
+ 0196 BD        	CMP	L
+ 0197 210100    	LXI	H,1
+ 019A C9        	RET
+                ;Shift DE arithmetically right by HL and return in HL
+ 019B EB        CCASR:	XCHG
+ 019C 7C        	MOV	A,H
+ 019D 17        	RAL
+ 019E 7C        	MOV	A,H
+ 019F 1F        	RAR
+ 01A0 67        	MOV	H,A
+ 01A1 7D        	MOV	A,L
+ 01A2 1F        	RAR
+ 01A3 6F        	MOV	L,A
+ 01A4 1D        	DCR	E
+ 01A5 C29C01    	JNZ	CCASR+1
+ 01A8 C9        	RET
+                ;Shift DE arithmetically left by HL and return in HL
+ 01A9 EB        CCASL:	XCHG
+ 01AA 29        	DAD	H
+ 01AB 1D        	DCR	E
+ 01AC C2AA01    	JNZ	CCASL+1
+ 01AF C9        	RET
+                ;Subtract HL from DE and return in HL
+ 01B0 7B        CCSUB:	MOV	A,E
+ 01B1 95        	SUB	L
+ 01B2 6F        	MOV	L,A
+ 01B3 7A        	MOV	A,D
+ 01B4 9C        	SBB	H
+ 01B5 67        	MOV	H,A
+ 01B6 C9        	RET
+                ;Form the two's complement of HL
+ 01B7 CDBC01    CCNEG:	CALL	CCCOM
+ 01BA 23        	INX	H
+ 01BB C9        	RET
+                ;Form the one's complement of HL
+ 01BC 7C        CCCOM:	MOV	A,H
+ 01BD 2F        	CMA
+ 01BE 67        	MOV	H,A
+ 01BF 7D        	MOV	A,L
+ 01C0 2F        	CMA
+ 01C1 6F        	MOV	L,A
+ 01C2 C9        	RET
+                ;Multiply DE by HL and return in HL
+ 01C3 44        CCMULT: MOV	B,H
+ 01C4 4D        	MOV	C,L
+ 01C5 210000    	LXI	H,0
+ 01C8 79        CCMULT1: MOV	A,C
+ 01C9 0F        	RRC
+ 01CA D2CE01    	JNC	$+4
+ 01CD 19        	DAD	D
+ 01CE AF        	XRA	A
+ 01CF 78        	MOV	A,B
+ 01D0 1F        	RAR
+ 01D1 47        	MOV	B,A
+ 01D2 79        	MOV	A,C
+ 01D3 1F        	RAR
+ 01D4 4F        	MOV	C,A
+ 01D5 B0        	ORA	B
+ 01D6 C8        	RZ
+ 01D7 AF        	XRA	A
+ 01D8 7B        	MOV	A,E
+ 01D9 17        	RAL
+ 01DA 5F        	MOV	E,A
+ 01DB 7A        	MOV	A,D
+ 01DC 17        	RAL
+ 01DD 57        	MOV	D,A
+ 01DE B3        	ORA	E
+ 01DF C8        	RZ
+ 01E0 C3C801    	JMP	CCMULT1
+                ;Divide DE by HL and return quotient in HL, remainder in DE
+ 01E3 44        CCDIV:	MOV	B,H
+ 01E4 4D        	MOV	C,L
+ 01E5 7A        	MOV	A,D
+ 01E6 A8        	XRA	B
+ 01E7 F5        	PUSH	PSW
+ 01E8 7A        	MOV	A,D
+ 01E9 B7        	ORA	A
+ 01EA FC2402    	CM	CCDENEG
+ 01ED 78        	MOV	A,B
+ 01EE B7        	ORA	A
+ 01EF FC2C02    	CM	CCBCNEG
+ 01F2 3E10      	MVI	A,16
+ 01F4 F5        	PUSH	PSW
+ 01F5 EB        	XCHG
+ 01F6 110000    	LXI	D,0
+ 01F9 29        CCDIV1: DAD	H
+ 01FA CD3402    	CALL	CCRDEL
+ 01FD CA1002    	JZ	CCDIV2
+ 0200 CD3C02    	CALL	CCCMPBCDE
+ 0203 FA1002    	JM	CCDIV2
+ 0206 7D        	MOV	A,L
+ 0207 F601      	ORI	1
+ 0209 6F        	MOV	L,A
+ 020A 7B        	MOV	A,E
+ 020B 91        	SUB	C
+ 020C 5F        	MOV	E,A
+ 020D 7A        	MOV	A,D
+ 020E 98        	SBB	B
+ 020F 57        	MOV	D,A
+ 0210 F1        CCDIV2: POP	PSW
+ 0211 3D        	DCR	A
+ 0212 CA1902    	JZ	CCDIV3
+ 0215 F5        	PUSH	PSW
+ 0216 C3F901    	JMP	CCDIV1
+ 0219 F1        CCDIV3: POP	PSW
+ 021A F0        	RP
+ 021B CD2402    	CALL	CCDENEG
+ 021E EB        	XCHG
+ 021F CD2402    	CALL	CCDENEG
+ 0222 EB        	XCHG
+ 0223 C9        	RET
+ 0224 7A        CCDENEG: MOV	A,D
+ 0225 2F        	CMA
+ 0226 57        	MOV	D,A
+ 0227 7B        	MOV	A,E
+ 0228 2F        	CMA
+ 0229 5F        	MOV	E,A
+ 022A 13        	INX	D
+ 022B C9        	RET
+ 022C 78        CCBCNEG: MOV	A,B
+ 022D 2F        	CMA
+ 022E 47        	MOV	B,A
+ 022F 79        	MOV	A,C
+ 0230 2F        	CMA
+ 0231 4F        	MOV	C,A
+ 0232 03        	INX	B
+ 0233 C9        	RET
+ 0234 7B        CCRDEL: MOV	A,E
+ 0235 17        	RAL
+ 0236 5F        	MOV	E,A
+ 0237 7A        	MOV	A,D
+ 0238 17        	RAL
+ 0239 57        	MOV	D,A
+ 023A B3        	ORA	E
+ 023B C9        	RET
+ 023C 7B        CCCMPBCDE: MOV	A,E
+ 023D 91        	SUB	C
+ 023E 7A        	MOV	A,D
+ 023F 98        	SBB	B
+ 0240 C9        	RET
+                ;
+                ; ========================================
+                ;  I/O subroutines for CP/M
+                ;	Author: Glen Fisher
+                ;
+                ;	Copyright (c) 1980
+                ;	The Code Works(tm)
+                ;	Box 550, Goleta, CA 93116
+                ;	All rights reserved
+                ; ========================================
+ 0000 =         NULL	EQU	0	;pointer to nothing
+ 0024 =         FCBSIZE EQU	36	;size, in bytes, of an FCB
+ 0000 =         NEXTP	EQU	0	;offset to next-character pointer in I/O structure
+ 0002 =         UNUSED	EQU	2	;offset to unused-positions-count in I/O structure
+ 0004 =         BUFFER	EQU	4	;offset to disk sector buffer in I/O structure
+ 0021 =         FLAG	EQU	33	;file-type flag byte (in unused part of FCB)
+ 0080 =         FREEFLG EQU	128	;This I/O structure is available for the taking
+ 0002 =         EOFFLG	EQU	2	;The end of this file has been hit
+ 0001 =         WRTFLG	EQU	1	;This file open for writing
+ 0080 =         BUFSIZ	EQU	128	;how long the sector buffer is
+ 0004 =         NBUFS	EQU	4	;number of I/O buffers (change buffer declarations, too)
+                	; CP/M system call codes
+ 0010 =         CLOSE	EQU	16	;close a file
+ 0016 =         CREATE	EQU	22	;make a file
+ 001A =         DMA	EQU	26	;set DMA (I/O address)
+ 0013 =         DELETE	EQU	19	;delete a file
+ 0001 =         GETCH	EQU	1	;read character from console
+ 000A =         GETSTR	EQU	10	;read string from console
+ 000F =         OPEN	EQU	15	;open a file
+ 0002 =         PUTCH	EQU	2	;write character to console
+ 0019 =         QUERY	EQU	25	;get logged-in drive id
+ 0014 =         READ	EQU	20	;read a sector
+ 000E =         SELECT	EQU	14	;log-in a drive
+ 0015 =         WRITE	EQU	21	;write a sector
+ 000A =         LF	EQU	10	;line feed
+ 000D =         EOL	EQU	13	;end-of-line character (=carriage return)
+ 001A =         CTRLZ	EQU	26	;end-of-file mark for text files
+ 0080 =         TBUFF	EQU	80H	;address of default I/O address
+ 0241           DFLTDSK DS	1	;drive to use if no drive is named
+ 0242           UNIT	DS	2	;I/O structure address to act on
+ 0244           IP	DS	2	;int *ip;
+ 0246           CHP	DS	2	;char *chp;
+ 0248           DP	DS	2	;char *dp;
+ 024A           FILE	DS	2	;file name
+ 024C           MODE	DS	2	;char *mode;(read or write)
+ 024E           ZCH	DS	2	;char ch;
+ 0250           ZT	DS	2	;int t;
+ 0252           FN	DS	2	;int fn;	i/o function (for cpmio)
+                ;
+                ;	exit()
+                ;
+                ;	Stop execution of the program,
+                ;	restore the logged-in drive,
+                ;	and re-boot CP/M
+                ;
+                QZEXIT:
+ 0254 3A4102    	LDA	DFLTDSK 	; Grab orig. logged-in disk
+ 0257 5F        	MOV	E,A
+ 0258 1D        	DCR	E		; (cvt. back to 0-n)
+ 0259 0E0E      	MVI	C,SELECT	; and log it in again
+ 025B CD0500    	CALL	BDOS
+ 025E C30000    	JMP	0		; Our work is complete.
+                ;
+                ;	cpm(bc,de)
+                ;
+                ;	fill BC and DE, and then call CP/M
+                ;
+                ;	return whatever is in A
+                ;
+ 0005 =         BDOS	EQU	5
+                QZCPM:
+ 0261 E1        	POP	H	;grab the arguments
+ 0262 D1        	POP	D
+ 0263 C1        	POP	B
+ 0264 C5        	PUSH	B	;restore the size of the stack
+ 0265 D5        	PUSH	D
+ 0266 E5        	PUSH	H
+ 0267 CD0500    	CALL	BDOS	;go to daddy
+ 026A C31801    	JMP	CCSXT	;hand the answer back
+                ;
+                ;	grabio()
+                ;
+                ;	find an input buffer, and return its address.
+                ;	if there isn't one, return a NULL.
+                ;
+                GRABIO:
+ 026D 0604      	MVI	B,NBUFS
+ 026F 21BA02    	LXI	H,IOBUFS+FLAG
+ 0272 11A800    	LXI	D,FCBSIZE+BUFFER+BUFSIZ
+ 0275 3E80      	MVI	A,FREEFLG
+ 0277 BE        GRAB2:	CMP	M			;flag byte == freeflg?
+ 0278 CA8402    	JZ	GRAB3			;if so, found a free buffer
+ 027B 19        	DAD	D			;on to next buffer
+ 027C 05        	DCR	B
+ 027D C27702    	JNZ	GRAB2			;if there is one...
+ 0280 210000    	LXI	H,NULL			;there ain't
+ 0283 C9        	RET				;give up
+ 0284 3600      GRAB3:	MVI	M,0			;mark buffer as taken
+ 0286 11DFFF    	LXI	D,-FLAG 		;back up to buffer start
+ 0289 19        	DAD	D	
+ 028A C9        	RET				;and hand it back
+                ;
+                ;	freeio(unit)
+                ;
+                ;	mark a buffer as free.
+                ;
+                FREEIO:
+ 028B C1        	POP	B			;save rtn addr
+ 028C E1        	POP	H			;get buffer addr
+ 028D E5        	PUSH	H			;put the stack back together
+ 028E C5        	PUSH	B
+ 028F 112100    	LXI	D,FLAG			;find flag byte
+ 0292 19        	DAD	D
+ 0293 3680      	MVI	M,FREEFLG		;mark buffer as 'free'
+ 0295 210000    	LXI	H,NULL			;return something
+ 0298 C9        	RET
+                IOBUFS:
+ 0299           	DS	FCBSIZE-3
+ 02BA 800000    	DB	FREEFLG,0,0
+ 02BD           	DS	BUFFER+BUFSIZ
+ 0341           	DS	FCBSIZE-3
+ 0362 800000    	DB	FREEFLG,0,0
+ 0365           	DS	BUFFER+BUFSIZ
+ 03E9           	DS	FCBSIZE-3
+ 040A 800000    	DB	FREEFLG,0,0
+ 040D           	DS	BUFFER+BUFSIZ
+ 0491           	DS	FCBSIZE-3
+ 04B2 800000    	DB	FREEFLG,0,0
+ 04B5           	DS	BUFFER+BUFSIZ
+                ;
+                ;	fopen(name,mode)
+                ;
+                QZFOPEN:
+ 0539 C1        	POP	B			;get args
+ 053A E1        	POP	H			;mode
+ 053B 224C02    	SHLD	MODE
+ 053E D1        	POP	D
+ 053F EB        	XCHG
+ 0540 224A02    	SHLD	FILE
+ 0543 E5        	PUSH	H
+ 0544 D5        	PUSH	D
+ 0545 C5        	PUSH	B
+ 0546 CD6D02    	CALL	GRABIO			; unit = grabio();
+ 0549 224202    	SHLD	UNIT
+ 054C 7C        	MOV	A,H			; if(unit==NULL)
+ 054D B5        	ORA	L			;	return(NULL);
+ 054E C8        	RZ
+ 054F 112400    	LXI	D,FCBSIZE		; ip = unit+FCBSIZE;
+ 0552 19        	DAD	D
+ 0553 224402    	SHLD	IP
+ 0556 2A4402    	LHLD	IP			; ip[NEXTP] = &ip[BUFFER];
+ 0559 110400    	LXI	D,BUFFER
+ 055C 19        	DAD	D
+ 055D EB        	XCHG
+ 055E 2A4402    	LHLD	IP
+ 0561 010000    	LXI	B,NEXTP
+ 0564 09        	DAD	B
+ 0565 73        	MOV	M,E
+ 0566 23        	INX	H
+ 0567 72        	MOV	M,D
+ 0568 2A4202    	LHLD	UNIT			; fcb(unit,name);
+ 056B E5        	PUSH	H
+ 056C 2A4A02    	LHLD	FILE
+ 056F E5        	PUSH	H
+ 0570 CDB206    	CALL	FCB
+ 0573 E1        	POP	H
+ 0574 E1        	POP	H
+ 0575 2A4202    	LHLD	UNIT			; cpmdisk(*unit);
+ 0578 6E        	MOV	L,M
+ 0579 2600      	MVI	H,0
+ 057B E5        	PUSH	H
+ 057C CD7309    	CALL	CPMDISK
+ 057F E1        	POP	H
+ 0580 2A4C02    	LHLD	MODE			; if(*mode=='r'  || *mode=='R'){
+ 0583 7E        	MOV	A,M
+ 0584 FE72      	CPI	72H
+ 0586 CA8E05    	JZ	FOPIF0
+ 0589 FE52      	CPI	52H
+ 058B C2B705    	JNZ	FOPIF1
+                FOPIF0:
+ 058E 0E0F      	MVI	C,OPEN			;	if(cpm(OPEN,unit)<0){
+ 0590 2A4202    	LHLD	UNIT
+ 0593 EB        	XCHG
+ 0594 CD0500    	CALL	BDOS
+ 0597 B7        	ORA	A
+ 0598 F2A705    	JP	FOPIF2
+ 059B 2A4202    	LHLD	UNIT			;		freeio(unit);
+ 059E E5        	PUSH	H
+ 059F CD8B02    	CALL	FREEIO
+ 05A2 E1        	POP	H
+ 05A3 210000    	LXI	H,NULL			;		return(NULL);
+ 05A6 C9        	RET
+                					;		}
+                FOPIF2:
+ 05A7 2A4402    	LHLD	IP			;	ip[UNUSED] = 0;
+ 05AA 110200    	LXI	D,UNUSED
+ 05AD 19        	DAD	D
+ 05AE 110000    	LXI	D,0
+ 05B1 73        	MOV	M,E
+ 05B2 23        	INX	H
+ 05B3 72        	MOV	M,D
+                					;	}
+ 05B4 C30E06    	JMP	FOPIF4
+                FOPIF1: 				; else if(*mode=='w' || *mode=='W'){
+ 05B7 2A4C02    	LHLD	MODE	
+ 05BA 7E        	MOV	A,M
+ 05BB FE77      	CPI	77H
+ 05BD CAC505    	JZ	FOPIF1A
+ 05C0 FE57      	CPI	57H
+ 05C2 C20206    	JNZ	FOPIF5
+                FOPIF1A:
+ 05C5 0E13      	MVI	C,DELETE		;	cpm(DELETE,unit);
+ 05C7 2A4202    	LHLD	UNIT
+ 05CA EB        	XCHG
+ 05CB CD0500    	CALL	BDOS
+ 05CE 0E16      	MVI	C,CREATE		;	if(cpm(CREATE,unit)<0){
+ 05D0 2A4202    	LHLD	UNIT
+ 05D3 EB        	XCHG
+ 05D4 CD0500    	CALL	BDOS
+ 05D7 B7        	ORA	A
+ 05D8 F2E705    	JP	FOPIF3
+ 05DB 2A4202    	LHLD	UNIT			;		freeio(unit);
+ 05DE E5        	PUSH	H
+ 05DF CD8B02    	CALL	FREEIO
+ 05E2 E1        	POP	H
+ 05E3 210000    	LXI	H,NULL			;		return(NULL);
+ 05E6 C9        	RET
+                					;		}
+                FOPIF3:
+ 05E7 2A4402    	LHLD	IP			;	ip[UNUSED] = BUFSIZ;
+ 05EA 110200    	LXI	D,UNUSED
+ 05ED 19        	DAD	D
+ 05EE 118000    	LXI	D,BUFSIZ
+ 05F1 73        	MOV	M,E
+ 05F2 23        	INX	H
+ 05F3 72        	MOV	M,D
+ 05F4 2A4202    	LHLD	UNIT			;	unit[FLAG] = WRITE_FL;
+ 05F7 112100    	LXI	D,FLAG
+ 05FA 19        	DAD	D
+ 05FB 3E01      	MVI	A,WRTFLG
+ 05FD B6        	ORA	M
+ 05FE 77        	MOV	M,A
+ 05FF C30E06    	JMP	FOPIF4
+                					;	}
+                FOPIF5:
+ 0602 2A4202    	LHLD	UNIT			; else{ freeio(unit);
+ 0605 E5        	PUSH	H
+ 0606 CD8B02    	CALL	FREEIO
+ 0609 E1        	POP	H
+ 060A 210000    	LXI	H,NULL			;	return(NULL);
+ 060D C9        	RET
+                					;	}
+                FOPIF4:
+ 060E 2A4202    	LHLD	UNIT			; return(unit);
+ 0611 C9        	RET
+                ;
+                ;	fclose(unit)
+                ;
+                QZFCLOSE:
+ 0612 C1        	POP	B
+ 0613 E1        	POP	H
+ 0614 224202    	SHLD	UNIT
+ 0617 E5        	PUSH	H
+ 0618 C5        	PUSH	B
+ 0619 210100    	LXI	H,1			; t = 1;
+ 061C 225002    	SHLD	ZT
+ 061F 2A4202    	LHLD	UNIT			; if(unit[FLAG] & WRITE_FL){
+ 0622 112100    	LXI	D,FLAG
+ 0625 19        	DAD	D
+ 0626 7E        	MOV	A,M
+ 0627 E601      	ANI	WRTFLG
+ 0629 CA9306    	JZ	FCLIF1
+ 062C 211A00    	LXI	H,CTRLZ 		;	putc(CTRL_Z,unit);	
+ 062F E5        	PUSH	H
+ 0630 2A4202    	LHLD	UNIT
+ 0633 E5        	PUSH	H
+ 0634 CDE707    	CALL	QZPUTC
+ 0637 E1        	POP	H
+ 0638 E1        	POP	H
+ 0639 2A4202    	LHLD	UNIT			;	ip = unit + FCBSIZE;
+ 063C 112400    	LXI	D,FCBSIZE
+ 063F 19        	DAD	D
+ 0640 224402    	SHLD	IP
+ 0643 2A4402    	LHLD	IP			;		cp = ip[NEXTP];
+ 0646 110000    	LXI	D,NEXTP
+ 0649 19        	DAD	D
+ 064A 5E        	MOV	E,M
+ 064B 23        	INX	H
+ 064C 56        	MOV	D,M
+ 064D EB        	XCHG
+ 064E 224602    	SHLD	CHP
+ 0651 2A4402    	LHLD	IP			;		dp = &ip[BUFFER]+BUFSIZ;
+ 0654 118400    	LXI	D,BUFFER+BUFSIZ
+ 0657 19        	DAD	D
+ 0658 224802    	SHLD	DP
+                FCLWH1: 				;		while(cp<dp)
+ 065B 2A4602    	LHLD	CHP
+ 065E EB        	XCHG
+ 065F 2A4802    	LHLD	DP
+ 0662 7A        	MOV	A,D
+ 0663 BC        	CMP	H
+ 0664 DA6F06    	JC	FCLWH2
+ 0667 C27B06    	JNZ	FCLWH3
+ 066A 7B        	MOV	A,E
+ 066B BD        	CMP	L
+ 066C D27B06    	JNC	FCLWH3
+                FCLWH2: 				;			*cp++ = CTRL_Z;
+ 066F 2A4602    	LHLD	CHP
+ 0672 361A      	MVI	M,CTRLZ
+ 0674 23        	INX	H
+ 0675 224602    	SHLD	CHP
+ 0678 C35B06    	JMP	FCLWH1
+                FCLWH3:
+ 067B 211500    	LXI	H,WRITE 		;		if(cpmio(WRITE,unit)<0)
+ 067E E5        	PUSH	H
+ 067F 2A4202    	LHLD	UNIT
+ 0682 E5        	PUSH	H
+ 0683 CD1F09    	CALL	CPMIO
+ 0686 D1        	POP	D
+ 0687 D1        	POP	D
+ 0688 7C        	MOV	A,H
+ 0689 B7        	ORA	A
+ 068A F29306    	JP	FCLIF4
+ 068D 210000    	LXI	H,0			;			t = 0;
+ 0690 225002    	SHLD	ZT
+                FCLIF4:
+                					;		}
+                FCLIF3:
+                					;	}
+                FCLIF1:
+ 0693 0E10      	MVI	C,CLOSE 		; if(cpm(CLOSE,unit)<0)
+ 0695 2A4202    	LHLD	UNIT
+ 0698 EB        	XCHG
+ 0699 CD0500    	CALL	BDOS
+ 069C B7        	ORA	A
+ 069D F2A606    	JP	FCLIF5
+ 06A0 210000    	LXI	H,0			;	t = 0;
+ 06A3 225002    	SHLD	ZT
+                FCLIF5:
+ 06A6 2A4202    	LHLD	UNIT			; freeio(unit);
+ 06A9 E5        	PUSH	H
+ 06AA CD8B02    	CALL	FREEIO
+ 06AD E1        	POP	H
+ 06AE 2A5002    	LHLD	ZT			; return(NULL+t);
+ 06B1 C9        	RET
+                ;
+                ;	fcb(fp,name)
+                ;
+                FCB:
+ 06B2 E1        	POP	H			;get args
+ 06B3 D1        	POP	D			;name
+ 06B4 C1        	POP	B			;fp
+ 06B5 C5        	PUSH	B
+ 06B6 D5        	PUSH	D
+ 06B7 E5        	PUSH	H
+ 06B8 13        	INX	D			; if(name[1]==':'){
+ 06B9 1A        	LDAX	D
+ 06BA 1B        	DCX	D
+ 06BB FE3A      	CPI	':'
+ 06BD C2CF06    	JNZ	FCBIF1
+ 06C0 1A        	LDAX	D			;	A = *name - '@';
+ 06C1 D640      	SUI	40H
+ 06C3 13        	INX	D			;	name += 2;
+ 06C4 13        	INX	D
+ 06C5 FE20      	CPI	61H-41H 
+ 06C7 DAD206    	JC	FCBIF2
+ 06CA D620      	SUI	61H-41H
+ 06CC C3D206    	JMP	FCBIF2			;	}
+                FCBIF1:
+ 06CF 3A4102    	LDA	DFLTDSK 		; else	A = default_drive;
+                FCBIF2:
+ 06D2 02        	STAX	B			; *fp++ = A;
+ 06D3 03        	INX	B
+ 06D4 2620      	MVI	H,' '			; fp = fcbfill(fp,name,' ',8);
+ 06D6 2E08      	MVI	L,8
+ 06D8 CDEE06    	CALL	FCBFILL
+ 06DB 2E03      	MVI	L,3			; fp = fcbfill(fp,name,' ',3);
+ 06DD CDEE06    	CALL	FCBFILL
+ 06E0 2600      	MVI	H,0			; fp = fcbpad(fp,0,4);
+ 06E2 2E04      	MVI	L,4
+ 06E4 CD2607    	CALL	FCBPAD
+ 06E7 211000    	LXI	H,16			; fp[16] = 0;
+ 06EA 09        	DAD	B
+ 06EB 3600      	MVI	M,0
+ 06ED C9        	RET				; return;
+                ;
+                ;	fcbfill(dest,name,pad,size)
+                ;		B    D	  H   L
+                ;
+                FCBFILL:
+ 06EE 7D        	MOV	A,L			; while(L>0 && (A= *D)~='.' && A~=0){
+ 06EF B7        	ORA	A
+ 06F0 CA1107    	JZ	FILL2
+ 06F3 1A        	LDAX	D
+ 06F4 FE2E      	CPI	'.'
+ 06F6 CA1107    	JZ	FILL2
+ 06F9 FE00      	CPI	0
+ 06FB CA1107    	JZ	FILL2
+ 06FE FE61      	CPI	61H			;	if(A>='a' && A<='z')
+ 0700 DA0A07    	JC	FILL1
+ 0703 FE7B      	CPI	7AH+1			; 'z' 9 Jun 80 rj
+ 0705 D20A07    	JNC	FILL1
+ 0708 D620      	SUI	61H-41H 		;		A = A - 'a' + 'A';
+                FILL1:
+ 070A 02        	STAX	B			;	*B++ = A;
+ 070B 03        	INX	B
+ 070C 13        	INX	D			;	D++;
+ 070D 2D        	DCR	L			;	L--;
+ 070E C3EE06    	JMP	FCBFILL 		;	}
+                FILL2:
+ 0711 1A        	LDAX	D			; while(*D~='.' && *D~=0)	
+ 0712 FE2E      	CPI	'.'
+ 0714 CA2007    	JZ	FILL3
+ 0717 FE00      	CPI	0
+ 0719 CA2007    	JZ	FILL3
+ 071C 13        	INX	D			;	D++;
+ 071D C31107    	JMP	FILL2
+                FILL3:
+ 0720 FE2E      	CPI	'.'			; if(*D=='.')
+ 0722 C22607    	JNZ	FILL4
+ 0725 13        	INX	D			;	D++;
+                FILL4:
+                ;	fall into...
+                ;
+                ;	fcbpad(dest,pad,size)
+                ;		B   H	L
+                ;
+                FCBPAD:
+ 0726 7D        	MOV	A,L			; while(L>0){
+ 0727 B7        	ORA	A
+ 0728 CA3207    	JZ	PAD2
+ 072B 7C        	MOV	A,H			;	*B++ = H;
+ 072C 02        	STAX	B
+ 072D 03        	INX	B
+ 072E 2D        	DCR	L			;	L--;
+ 072F C32607    	JMP	FCBPAD			;	}
+                PAD2:
+ 0732 C9        	RET				; return;
+                ;
+                ;	getc(unit)
+                ;
+                QZGETC:
+ 0733 C1        	POP	B
+ 0734 E1        	POP	H			; get args
+ 0735 E5        	PUSH	H
+ 0736 C5        	PUSH	B
+                					; c=cget(unit);
+ 0737 E5        	PUSH	H
+ 0738 CD4A07    	CALL	CGET
+ 073B D1        	POP	D
+ 073C 7D        	MOV	A,L			; if(c=='\r')	
+ 073D FE0D      	CPI	EOL
+ 073F C24907    	JNZ	GETCRET
+ 0742 E5        	PUSH	H			;	cget(unit)
+ 0743 D5        	PUSH	D			;		/* to absorb LF */
+ 0744 CD4A07    	CALL	CGET
+ 0747 E1        	POP	H
+ 0748 E1        	POP	H
+                GETCRET:
+ 0749 C9        	RET
+                ;
+                ;	cget(unit)
+                ;
+                CGET:
+ 074A D1        	POP	D
+ 074B E1        	POP	H
+ 074C 224202    	SHLD	UNIT
+ 074F E5        	PUSH	H
+ 0750 D5        	PUSH	D
+ 0751 112100    	LXI	D,FLAG			; if(unit[FLAG] & EOF_FL)
+ 0754 19        	DAD	D
+ 0755 7E        	MOV	A,M
+ 0756 E602      	ANI	EOFFLG
+ 0758 CA5F07    	JZ	GETCIF1
+ 075B 21FFFF    	LXI	H,-1			;	return(-1);
+ 075E C9        	RET
+                GETCIF1:
+ 075F 2A4202    	LHLD	UNIT			; ip = unit + FCBSIZE;
+ 0762 112400    	LXI	D,FCBSIZE
+ 0765 19        	DAD	D
+ 0766 224402    	SHLD	IP
+ 0769 110000    	LXI	D,NEXTP 		; cp = ip[NEXTP];
+ 076C 19        	DAD	D
+ 076D 5E        	MOV	E,M
+ 076E 23        	INX	H
+ 076F 56        	MOV	D,M
+ 0770 EB        	XCHG
+ 0771 224602    	SHLD	CHP
+ 0774 2A4402    	LHLD	IP			; if(ip[UNUSED]==0){
+ 0777 110200    	LXI	D,UNUSED
+ 077A 19        	DAD	D
+ 077B 7E        	MOV	A,M
+ 077C 23        	INX	H
+ 077D B6        	ORA	M
+ 077E C2AE07    	JNZ	GETCIF2
+ 0781 211400    	LXI	H,READ			;	if(cpmio(READ,unit)~=0)
+ 0784 E5        	PUSH	H
+ 0785 2A4202    	LHLD	UNIT
+ 0788 E5        	PUSH	H
+ 0789 CD1F09    	CALL	CPMIO
+ 078C D1        	POP	D
+ 078D D1        	POP	D
+ 078E 7C        	MOV	A,H
+ 078F B5        	ORA	L
+ 0790 CA9707    	JZ	GETCIF3
+ 0793 21FFFF    	LXI	H,-1			;		return(-1);
+ 0796 C9        	RET
+                GETCIF3:
+ 0797 2A4402    	LHLD	IP			;	else {	ip[UNUSED] = BUFSIZ;
+ 079A 110200    	LXI	D,UNUSED
+ 079D 19        	DAD	D
+ 079E 118000    	LXI	D,BUFSIZ
+ 07A1 73        	MOV	M,E
+ 07A2 23        	INX	H
+ 07A3 72        	MOV	M,D
+ 07A4 2A4402    	LHLD	IP			;		cp = &ip[BUFFER];
+ 07A7 110400    	LXI	D,BUFFER
+ 07AA 19        	DAD	D
+ 07AB 224602    	SHLD	CHP
+                					;		}
+                					;	}
+                GETCIF2:
+ 07AE 2A4402    	LHLD	IP			; ip[UNUSED]--;
+ 07B1 110200    	LXI	D,UNUSED
+ 07B4 19        	DAD	D
+ 07B5 5E        	MOV	E,M
+ 07B6 23        	INX	H
+ 07B7 56        	MOV	D,M
+ 07B8 1B        	DCX	D
+ 07B9 72        	MOV	M,D
+ 07BA 2B        	DCX	H
+ 07BB 73        	MOV	M,E
+ 07BC 2A4602    	LHLD	CHP			; ip[NEXTP] = cp+1;
+ 07BF 23        	INX	H
+ 07C0 EB        	XCHG
+ 07C1 2A4402    	LHLD	IP
+ 07C4 010000    	LXI	B,NEXTP
+ 07C7 09        	DAD	B
+ 07C8 73        	MOV	M,E
+ 07C9 23        	INX	H
+ 07CA 72        	MOV	M,D
+ 07CB 2A4602    	LHLD	CHP			; if(*cp==CTRL_Z){
+ 07CE 7E        	MOV	A,M
+ 07CF FE1A      	CPI	CTRLZ
+ 07D1 C2E307    	JNZ	GETCIF4
+ 07D4 2A4202    	LHLD	UNIT			;	unit[FLAG] |= EOF_FL;
+ 07D7 112100    	LXI	D,FLAG
+ 07DA 19        	DAD	D
+ 07DB 7E        	MOV	A,M
+ 07DC F602      	ORI	EOFFLG
+ 07DE 77        	MOV	M,A
+ 07DF 21FFFF    	LXI	H,-1			;	return(-1);
+ 07E2 C9        	RET
+                					;	}
+                GETCIF4:
+ 07E3 6F        	MOV	L,A			; return(*cp & 0377);
+ 07E4 2600      	MVI	H,0
+ 07E6 C9        	RET
+                ;
+                ;	putc(c,unit)
+                ;
+                QZPUTC:
+ 07E7 C1        	POP	B	;rtn addr
+ 07E8 D1        	POP	D	;unit
+ 07E9 E1        	POP	H	;c
+ 07EA E5        	PUSH	H
+ 07EB D5        	PUSH	D
+ 07EC C5        	PUSH	B
+ 07ED E5        	PUSH	H			; if(cput(c,unit)<0)
+ 07EE D5        	PUSH	D			;	goto putcerr;
+ 07EF CD1408    	CALL	CPUT
+ 07F2 D1        	POP	D
+ 07F3 7C        	MOV	A,H
+ 07F4 B7        	ORA	A
+ 07F5 FA0F08    	JM	PUTCERR
+ 07F8 7D        	MOV	A,L			; if(c=='\r')
+ 07F9 FE0D      	CPI	EOL
+ 07FB C20D08    	JNZ	PUTCRET
+ 07FE 210A00    	LXI	H,LF			;	cput('\n',unit);
+ 0801 E5        	PUSH	H
+ 0802 D5        	PUSH	D
+ 0803 CD1408    	CALL	CPUT
+ 0806 D1        	POP	D
+ 0807 D1        	POP	D
+ 0808 7C        	MOV	A,H
+ 0809 B7        	ORA	A
+ 080A FA0F08    	JM	PUTCERR
+                PUTCRET:
+ 080D E1        	POP	H			; return(c);
+ 080E C9        	RET
+                PUTCERR:				;putcerr:
+ 080F C1        	POP	B			; return(-1);
+ 0810 21FFFF    	LXI	H,-1
+ 0813 C9        	RET
+                ;
+                ;	cput(c,unit)
+                ;
+                CPUT:
+ 0814 C1        	POP	B
+ 0815 D1        	POP	D
+ 0816 E1        	POP	H
+ 0817 224E02    	SHLD	ZCH
+ 081A EB        	XCHG
+ 081B 224202    	SHLD	UNIT
+ 081E D5        	PUSH	D
+ 081F E5        	PUSH	H
+ 0820 C5        	PUSH	B
+ 0821 112400    	LXI	D,FCBSIZE		; ip = unit + FCBSIZE;
+ 0824 19        	DAD	D
+ 0825 224402    	SHLD	IP
+ 0828 110000    	LXI	D,NEXTP 		; cp = ip[NEXTP];
+ 082B 19        	DAD	D
+ 082C 5E        	MOV	E,M
+ 082D 23        	INX	H
+ 082E 56        	MOV	D,M
+ 082F EB        	XCHG
+ 0830 224602    	SHLD	CHP
+ 0833 2A4402    	LHLD	IP			; if(ip[UNUSED]==0){
+ 0836 110200    	LXI	D,UNUSED
+ 0839 19        	DAD	D
+ 083A 7E        	MOV	A,M
+ 083B 23        	INX	H
+ 083C B6        	ORA	M
+ 083D C26D08    	JNZ	PUTCIF1
+ 0840 211500    	LXI	H,WRITE 		;	if(cpmio(WRITE,unit)~=0)	
+ 0843 E5        	PUSH	H
+ 0844 2A4202    	LHLD	UNIT
+ 0847 E5        	PUSH	H
+ 0848 CD1F09    	CALL	CPMIO
+ 084B D1        	POP	D
+ 084C D1        	POP	D
+ 084D 7C        	MOV	A,H
+ 084E B5        	ORA	L
+ 084F CA5608    	JZ	PUTCIF2
+ 0852 21FFFF    	LXI	H,-1			;		return(-1);
+ 0855 C9        	RET
+                PUTCIF2:
+ 0856 2A4402    	LHLD	IP			;	else {	ip[UNUSED] = BUFSIZ;
+ 0859 110200    	LXI	D,UNUSED
+ 085C 19        	DAD	D
+ 085D 118000    	LXI	D,BUFSIZ
+ 0860 73        	MOV	M,E
+ 0861 23        	INX	H
+ 0862 72        	MOV	M,D
+ 0863 2A4402    	LHLD	IP			;		cp = &ip[BUFFER];
+ 0866 110400    	LXI	D,BUFFER
+ 0869 19        	DAD	D
+ 086A 224602    	SHLD	CHP
+                					;		}
+                					;	}
+                PUTCIF1:
+ 086D 2A4402    	LHLD	IP
+ 0870 110200    	LXI	D,UNUSED		; ip[UNUSED]--;
+ 0873 19        	DAD	D
+ 0874 5E        	MOV	E,M
+ 0875 23        	INX	H
+ 0876 56        	MOV	D,M
+ 0877 1B        	DCX	D
+ 0878 72        	MOV	M,D
+ 0879 2B        	DCX	H
+ 087A 73        	MOV	M,E
+ 087B 2A4602    	LHLD	CHP			; ip[NEXTP] = cp+1;
+ 087E 23        	INX	H
+ 087F EB        	XCHG
+ 0880 2A4402    	LHLD	IP
+ 0883 010000    	LXI	B,NEXTP
+ 0886 09        	DAD	B
+ 0887 73        	MOV	M,E
+ 0888 23        	INX	H
+ 0889 72        	MOV	M,D
+ 088A 3A4E02    	LDA	ZCH			; return((*cp = c) & 0377);
+ 088D 2A4602    	LHLD	CHP
+ 0890 77        	MOV	M,A
+ 0891 2600      	MVI	H,0
+ 0893 6F        	MOV	L,A
+ 0894 C9        	RET
+                ;
+                ;	gets(buff)
+                ;
+                QZGETS:
+ 0895 C1        	POP	B
+ 0896 E1        	POP	H
+ 0897 224602    	SHLD	CHP
+ 089A E5        	PUSH	H
+ 089B C5        	PUSH	B
+ 089C 2B        	DCX	H			; save = buff[-1]; save2 = buff[-2];
+ 089D 56        	MOV	D,M			; buff[-1] = 0;  buff[-2] = 79;
+ 089E 3600      	MVI	M,0
+ 08A0 2B        	DCX	H
+ 08A1 5E        	MOV	E,M
+ 08A2 364F      	MVI	M,79					;6 May 80 rj
+ 08A4 E5        	PUSH	H
+ 08A5 D5        	PUSH	D
+ 08A6 EB        	XCHG				; cpm(GETSTR,buff-2);
+ 08A7 0E0A      	MVI	C,GETSTR
+ 08A9 CD0500    	CALL	BDOS
+ 08AC 2A4602    	LHLD	CHP			; buff[buff[-1]] = 0; (9 Jun 80. Was cp)
+ 08AF 2B        	DCX	H
+ 08B0 5E        	MOV	E,M
+ 08B1 23        	INX	H
+ 08B2 1600      	MVI	D,0
+ 08B4 19        	DAD	D
+ 08B5 3600      	MVI	M,0
+ 08B7 D1        	POP	D			; buff[-1] = save; buff[-2] = save2;
+ 08B8 E1        	POP	H
+ 08B9 73        	MOV	M,E
+ 08BA 23        	INX	H
+ 08BB 72        	MOV	M,D
+ 08BC 23        	INX	H
+ 08BD 0E02      	MVI	C,PUTCH 		; putchar('\n');
+ 08BF 1E0A      	MVI	E,LF
+ 08C1 CD0500    	CALL	BDOS
+ 08C4 2A4602    	LHLD	CHP			; return(buff);
+ 08C7 C9        	RET
+                ;
+                ;	getchar()
+                ;
+                QZGETCHAR:
+ 08C8 0E01      	MVI	C,GETCH 		; t = cpm(GETCH,0) & 0377;
+ 08CA CD0500    	CALL	BDOS
+ 08CD 6F        	MOV	L,A		
+ 08CE 2600      	MVI	H,0
+ 08D0 FE1A      	CPI	CTRLZ			; if(t==CTRLZ)
+ 08D2 C2D808    	JNZ	GETCHAR1
+ 08D5 21FFFF    	LXI	H,-1			;	t = -1;
+                GETCHAR1:
+ 08D8 FE0D      	CPI	EOL			; if(t==EOL)
+ 08DA C2E608    	JNZ	GETCHAR2
+ 08DD E5        	PUSH	H			;	putchar('\n');
+ 08DE 0E02      	MVI	C,PUTCH
+ 08E0 1E0A      	MVI	E,LF
+ 08E2 CD0500    	CALL	BDOS
+ 08E5 E1        	POP	H
+                GETCHAR2:
+ 08E6 C9        	RET				; return(t);
+                ;
+                ;	puts(cp)
+                ;
+                QZPUTS:
+ 08E7 C1        	POP	B			; get args
+ 08E8 E1        	POP	H
+ 08E9 E5        	PUSH	H
+ 08EA C5        	PUSH	B
+                PUTS1:
+ 08EB 7E        	MOV	A,M			; while(*cp)
+ 08EC B7        	ORA	A
+ 08ED CAFC08    	JZ	PUTSRET
+ 08F0 5E        	MOV	E,M			;	putchar(*cp++);
+ 08F1 23        	INX	H
+ 08F2 E5        	PUSH	H
+ 08F3 0E02      	MVI	C,PUTCH
+ 08F5 CD0500    	CALL	BDOS
+ 08F8 E1        	POP	H
+ 08F9 C3EB08    	JMP	PUTS1
+                PUTSRET:
+ 08FC C9        	RET				; return;
+                ;
+                ;	putchar(c)
+                ;
+                QZPUTCHAR:
+ 08FD C1        	POP	B
+ 08FE E1        	POP	H
+ 08FF 224E02    	SHLD	ZCH
+ 0902 E5        	PUSH	H
+ 0903 C5        	PUSH	B
+ 0904 EB        	XCHG				; cpm(PUTCH,c);
+ 0905 0E02      	MVI	C,PUTCH
+ 0907 CD0500    	CALL	BDOS
+ 090A 3A4E02    	LDA	ZCH			; if(c==EOL)
+ 090D FE0D      	CPI	EOL
+ 090F C21909    	JNZ	PUTCHIF1
+ 0912 1E0A      	MVI	E,LF			;	cpm(PUTCH,LF);
+ 0914 0E02      	MVI	C,PUTCH
+ 0916 CD0500    	CALL	BDOS
+                PUTCHIF1:
+ 0919 2A4E02    	LHLD	ZCH			; return(c & 0377);
+ 091C 2600      	MVI	H,0
+ 091E C9        	RET
+                ;
+                ;	cpmio(fn,unit)
+                ;
+                CPMIO:
+ 091F C1        	POP	B
+ 0920 D1        	POP	D
+ 0921 E1        	POP	H
+ 0922 225202    	SHLD	FN
+ 0925 EB        	XCHG
+ 0926 224202    	SHLD	UNIT
+ 0929 D5        	PUSH	D
+ 092A E5        	PUSH	H
+ 092B C5        	PUSH	B
+ 092C 2A4202    	LHLD	UNIT			; cpmdisk(*unit);
+ 092F 6E        	MOV	L,M
+ 0930 2600      	MVI	H,0
+ 0932 E5        	PUSH	H
+ 0933 CD7309    	CALL	CPMDISK
+ 0936 E1        	POP	H
+ 0937 2A4202    	LHLD	UNIT			; ip = unit+FCBSIZE;
+ 093A 112400    	LXI	D,FCBSIZE		; cpm(DMA,&ip[BUFFER]);
+ 093D 19        	DAD	D
+ 093E 110400    	LXI	D,BUFFER
+ 0941 19        	DAD	D
+ 0942 EB        	XCHG
+ 0943 0E1A      	MVI	C,DMA
+ 0945 CD0500    	CALL	BDOS
+ 0948 2A5202    	LHLD	FN			; t = cpm(fn,unit);
+ 094B 4D        	MOV	C,L
+ 094C 2A4202    	LHLD	UNIT
+ 094F EB        	XCHG
+ 0950 CD0500    	CALL	BDOS
+ 0953 CD1801    	CALL	CCSXT
+ 0956 225002    	SHLD	ZT
+ 0959 0E1A      	MVI	C,DMA			; cpm(DMA,TBUFF);
+ 095B 118000    	LXI	D,TBUFF
+ 095E CD0500    	CALL	BDOS
+ 0961 2A5002    	LHLD	ZT			; if(t~=0) return(-1);
+ 0964 7C        	MOV	A,H			; else	   return(0);
+ 0965 B5        	ORA	L
+ 0966 C26F09    	JNZ	CPMIF1
+ 0969 210000    	LXI	H,0
+ 096C C37209    	JMP	CPMIF2
+                CPMIF1:
+ 096F 21FFFF    	LXI	H,-1
+                CPMIF2:
+ 0972 C9        	RET
+                ;
+                ;	cpmdisk(disk)
+                ;
+                CPMDISK:
+ 0973 D1        	POP	D
+ 0974 E1        	POP	H
+ 0975 E5        	PUSH	H
+ 0976 D5        	PUSH	D
+ 0977 7D        	MOV	A,L			; if(d~=0)
+ 0978 B4        	ORA	H
+ 0979 CA8309    	JZ	DISKIF1
+ 097C EB        	XCHG				;	cpm(SELECT,d-1);
+ 097D 1B        	DCX	D
+ 097E 0E0E      	MVI	C,SELECT
+ 0980 CD0500    	CALL	BDOS
+                DISKIF1:
+ 0983 C9        	RET
+                ;
+                ;----------- End of Small-c library -----------
+                ;
+                ;main() {
+                QZMAIN:
+                ;    puts("Hola");
+ 0984 219509    	LXI H,CC1+0
+ 0987 E5        	PUSH H
+ 0988 CDE708    	CALL QZPUTS
+ 098B C1        	POP B
+                ;    putchar(NL);
+ 098C 210D00    	LXI H,13
+ 098F E5        	PUSH H
+ 0990 CDFD08    	CALL QZPUTCHAR
+ 0993 C1        	POP B
+                ;}
+ 0994 C9        	RET
+ 0995 486F6C6100CC1:	DB 72,111,108,97,0
+                
+                ; --- End of Compilation ---
+

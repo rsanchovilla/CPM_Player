@@ -1,0 +1,262 @@
+{$R-,A+,U-,W0}
+
+type
+  _playstring = string[255];
+  _queuenumber = 0..3;
+  _queueinfo   = record
+                   filler1:   array[1..10] of byte;
+                   period:    integer;
+                   amplitude: byte;
+                   enperiod:  integer;
+                   octave:    byte;
+                   notelen:   byte;
+                   tempo:     byte;
+                   volume:    byte;
+                   envelope:  byte;
+                 end;
+
+var
+  _vcba: _queueinfo absolute $FB41;
+  _vcbb: _queueinfo absolute $FB66;
+  _vcbc: _queueinfo absolute $FB8B;
+
+
+
+procedure PSGinit;
+
+  begin
+    inline ($DD/$21/$90/$00/$CD/_CALROM/$FB);
+  end;
+
+
+function lftq (q: _queuenumber): integer;
+
+  begin
+    inline ($3A/q/$DD/$21/$F6/$00/$CD/_CALROM/$FB/$C9);
+  end;
+
+
+procedure putq (q: _queuenumber; value: byte);
+
+  begin
+    inline ($3A/value/$5F/$3A/q/$DD/$21/$F9/$00/$CD/_CALROM);
+  end;
+
+
+procedure SetEOQ;
+  var
+    PLYCNT: byte absolute $FB40;
+
+  begin
+    putq (0, $FF);
+    putq (1, $FF);
+    putq (2, $FF);
+    inline ($21/plycnt/$34/$DD/$21/$99/$00/$CD/_CALROM/$FB);
+  end;
+
+
+
+function playstatus (n: integer): boolean;
+  var
+    MUSICF: byte absolute $FB3F;
+
+  begin
+    if n=0
+    then playstatus := (MUSICF <> 0)
+    else playstatus := odd(MUSICF shr pred(n));
+  end;
+
+
+procedure queuenote (n: _queuenumber; len, vol, period, envp: integer);
+  const
+    XONlimit = 10;
+
+  var
+    PLYCNT: byte absolute $FB40;
+
+  begin
+    if envp=0
+    then begin
+      if lftq(n) < 7 + XONlimit then repeat until lftq(n) > XONlimit;
+      inline ($F3);
+      putq (n, (hi(len) and $1F) + $60);
+      putq (n, lo(len));
+      putq (n, (vol and $3F) + $80);
+      end
+    else begin
+      if lftq(n) < 9 + XONlimit then repeat until lftq(n) > XONlimit;
+      inline ($F3);
+      putq (n, (hi(len) and $1F) + $A0);
+      putq (n, lo(len));
+      putq (n, (vol and $3F) + $C0);
+      putq (n, hi(envp));
+      putq (n, lo(envp));
+      end;
+    putq (n, hi(period) and $3F);
+    putq (n, lo(period));
+    inline ($FB);
+  end;
+
+
+procedure play (s1, s2, s3: _playstring);
+
+  var
+    l1:      byte absolute s1;
+    l2:      byte absolute s2;
+    l3:      byte absolute s3;
+    PLYCNT:  byte absolute $FB40;
+
+
+
+{$W1}
+  procedure parse (n: _queuenumber; var vcb: _queueinfo; var s: _playstring);
+
+    const
+      notenum: array['A'..'G'] of byte = (9, 11, 0, 2, 4, 5, 7);
+
+    var
+      l: byte absolute s;
+      i: integer;
+
+    function value (default: integer): integer;
+
+       const
+         digits: set of '0'..'9' = ['0'..'9'];
+
+       var v: integer;
+
+       begin
+         value := default;
+         while s[2] = ' ' do delete (s, 2, 1);
+         if s[2] in digits
+         then begin
+           v := ord(s[2])-48;
+           delete (s, 2, 1);
+           while s[2] in digits do
+             begin
+             v := 10*v + ord(s[2])-48;
+             delete (s, 2, 1);
+             end;
+           value := v;
+           end;
+       end {value};
+
+
+    function tics: integer;
+
+      var n: integer;
+
+      begin
+        n := vcb.tempo * value (vcb.notelen);
+        if n <> 0 then n := 12000 div n else n := 25;
+        while s[2] = '.' do
+          begin
+          n := (3 * n) shr 1;
+          delete (s, 2, 1);
+          end;
+        tics := n and $1FFF;
+      end;
+
+    function peri (i, oct: integer): integer;
+
+      const
+        period: array[0..11] of integer = (
+                   6848, 6464, 6101, 5758, 5435, 5130,
+                   4842, 4571, 4314, 4072, 3843, 3628);
+
+      begin
+        while i < 0 do
+          begin
+          i   := i + 12;
+          oct := pred(oct);
+          end;
+        while i > 11 do
+          begin
+          i   := i - 12;
+          oct := succ(oct);
+          end;
+        peri := period[i] shr oct;
+      end;
+
+    begin
+      if l=0 then exit;
+      with vcb do
+        begin
+        if volume > 127
+        then begin
+          amplitude := volume;
+          volume    := volume and $7F;
+          end;
+        case upcase(s[1]) of
+            'L': notelen   := value (notelen);
+            'M': enperiod  := value (enperiod);
+            'O': octave    := value (octave);
+            'T': tempo     := value (tempo);
+            'V': begin
+                 volume    := value (volume) and 15;
+                 amplitude := volume;
+                 end;
+            'S': begin
+                 envelope  := value (envelope) and 15;
+                 amplitude := envelope + 16;
+                 end;
+
+            'R': queuenote (n, tics, 0, 0, 0);
+            'N': begin
+                 i := value (0);
+                 if i=0
+                 then queuenote (n, tics, 0, 0, 0)
+                 else begin
+                   queuenote (n, tics, amplitude, peri(i, 1), enperiod);
+                   enperiod := 0;
+                   end;
+                 end;
+       'A'..'G': begin
+                 i := notenum[upcase(s[1])];
+                 while s[2] in ['#', '+'] do
+                   begin
+                   i := succ(i);
+                   delete (s, 2, 1);
+                   end;
+                 while s[2] = '-' do
+                   begin
+                   i := pred(i);
+                   delete (s, 2, 1);
+                   end;
+                 queuenote (n, tics, amplitude, peri(i, octave), enperiod);
+                 enperiod := 0;
+                 end;
+          end {case};
+        end;
+      delete (s, 1, 1);
+      if l=0 then putq (n, $FF);
+    end;
+
+{$W0}
+
+  begin
+    if (l1=0) and (l2=0) and (l3=0) then exit;
+
+    s1 := copy (s1, 1, 254) + #0;
+    s2 := copy (s2, 1, 254) + #0;
+    s3 := copy (s3, 1, 254) + #0;
+
+    repeat
+      parse (0, _vcba, s1);
+      parse (1, _vcbb, s2);
+      parse (2, _vcbc, s3);
+    until (l1=0) and (l2=0) and (l3=0);
+
+    inline ($21/plycnt/$34/$DD/$21/$99/$00/$CD/_CALROM/$FB);
+  end;
+
+
+
+
+procedure SetPSG (register, value: integer);
+
+  begin
+    inline ($3A/VALUE/$5F/$3A/REGISTER/$FE/$0E/$D0/$FE/$07/$20/$08/$7B/$E6/
+            $3F/$F6/$80/$5F/$3E/$07/$DD/$21/$93/$00/$CD/_CALROM/$FB);
+  end;
+

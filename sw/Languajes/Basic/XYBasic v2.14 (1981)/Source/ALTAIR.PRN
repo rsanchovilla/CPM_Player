@@ -1,0 +1,135 @@
+                	;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                	; DEVICE DRIVER OVERLAY FOR MARK WILLIAMS COMPANY XYBASIC
+                	; FOR ALTAIR 8800 SYSTEM WITH 88SIO-2
+                	;
+                	; MAI 2014, UDO MUNK
+                	;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                
+                	;XYBASIC ENTRY POINT
+ 0100 =         XYBASIC	EQU	0100H
+                
+                	;PORT NUMBERS
+ 0011 =         CIN	EQU	11H		;CONSOLE DATA INPUT PORT
+ 0011 =         COUT	EQU	11H		;CONSOLE DATA OUTPUT PORT
+ 0010 =         CCTL	EQU	10H		;CONSOLE CONTROL PORT
+ 0043 =         POUT	EQU	43H		;PRINTER DATA OUTPUT PORT
+ 0042 =         PCTL	EQU	42H		;PRINTER CONTROL PORT
+                
+                	;I/O BIT NUMBERS
+ 0002 =         TBA	EQU	02H		;TRANSMIT BUFFER AVAILABLE
+ 0001 =         RBR	EQU	01H		;RECEIVE BUFFER READY
+ 0001 =         PBA	EQU	01H		;PRINTER BUFFER AVAILABLE
+                
+                	;CODE GENERATION FOR RST INSTRUCTIONS
+ 0000           	ORG	0H		;RST 0
+ 0000 C34000    	JMP	INIT		;INITIALIZE ON RESTART
+                
+ 0008           	ORG	8H
+ 0008 C9        	RET
+                
+ 0010           	ORG	10H
+ 0010 C9        	RET
+                
+ 0018           	ORG	18H
+ 0018 C9        	RET
+                
+ 0020           	ORG	20H
+ 0020 C9        	RET
+                
+ 0028           	ORG	28H
+ 0028 C9        	RET
+                
+ 0030           	ORG	30H
+ 0030 C9        	RET
+                
+                	;DEVICE INITIALIZATION
+ 0040           	ORG	40H
+ 0040 3E03      INIT:	MVI	A,03H		;6850 ACIA RESET
+ 0042 D310      	OUT	CCTL
+ 0044 3E11      	MVI	A,11H		;8 DATA BITS, NO PARITY, 1 STOP BIT
+ 0046 D310      	OUT	CCTL
+ 0048 C30001    	JMP	XYBASIC		;BEGIN XYBASIC
+                
+                	;I/O DEVICE DRIVERS
+                
+                	;CONSOLE STATUS
+ 004B DB10      CSTAT:	IN	CCTL		;READ STATUS
+ 004D E601      	ANI	RBR		;MASK TO CHARACTER READY
+ 004F C8        	RZ			;NOT READY, RETURN 0 IN A
+ 0050 3EFF      	MVI	A,0FFH		;READY, RETURN 0FFH IN A
+ 0052 C9        	RET
+                
+                	;CONSOLE IN
+ 0053 DB10      CONIN:	IN	CCTL		;READ STATUS
+ 0055 E601      	ANI	RBR		;MASK CHARACTER READY
+ 0057 CA5300    	JZ	CONIN		;WAIT IF NOT READY
+ 005A DB11      	IN	CIN		;READ THE CHARACTER
+ 005C C9        	RET
+                
+                	;CONSOLE OUT
+ 005D DB10      CONOUT:	IN	CCTL		;READ STATUS
+ 005F E602      	ANI	TBA		;MASK TO BUFFER AVAILABLE
+ 0061 CA5D00    	JZ	CONOUT		;WAIT IF NOT AVAILABLE
+ 0064 79        	MOV	A,C		;CHARACTER TO A
+ 0065 D311      	OUT	COUT		;WRITE THE CHARACTER
+ 0067 C9        	RET
+                
+                	;PUNCH OUT, DEFINED TO SEND CHARACTERS TO CONSOLE
+ 005D =         PUNOUT	EQU	CONOUT
+                
+                	;READER IN, DEFINED TO READ CHARACTERS FROM CONSOLE
+ 0053 =         RDRIN	EQU	CONIN
+                
+                	;LIST OUT
+ 0068 DB42      LOUT:	IN	PCTL		;READ STATUS
+ 006A E601      	ANI	PBA		;MASK TO BUFFER AVAILABLE
+ 006C CA6800    	JZ	LOUT		;WAIT IF NOT AVAILABLE
+ 006F 79        	MOV	A,C		;CHARACTER TO A
+ 0070 D343      	OUT	POUT		;WRITE THE CHARACTER
+ 0072 C9        	RET
+                
+                	;XYBASIC DEVICE DRIVER JMP TABLE OVERLAY
+ 0118           	ORG	XYBASIC+18H
+                
+                	;CONSOLE IN
+ 0118 C35300    	JMP	CONIN
+ 011B C35300    	JMP	CONIN
+ 011E C35300    	JMP	CONIN
+ 0121 C35300    	JMP	CONIN
+                
+                	;CONSOLE OUT
+ 0124 C35D00    	JMP	CONOUT
+ 0127 C35D00    	JMP	CONOUT
+ 012A C35D00    	JMP	CONOUT
+ 012D C35D00    	JMP	CONOUT
+                
+                	;READER IN
+ 0130 C35300    	JMP	RDRIN
+ 0133 C35300    	JMP	RDRIN
+ 0136 C35300    	JMP	RDRIN
+ 0139 C35300    	JMP	RDRIN
+                
+                	;PUNCH OUT
+ 013C C35D00    	JMP	PUNOUT
+ 013F C35D00    	JMP	PUNOUT
+ 0142 C35D00    	JMP	PUNOUT
+ 0145 C35D00    	JMP	PUNOUT
+                
+                	;LIST OUT
+ 0148 C36800    	JMP	LOUT
+ 014B C36800    	JMP	LOUT
+ 014E C36800    	JMP	LOUT
+ 0151 C36800    	JMP	LOUT
+                
+                	;CONSOLE STATUS
+ 0154 C34B00    	JMP	CSTAT
+ 0157 C34B00    	JMP	CSTAT
+ 015A C34B00    	JMP	CSTAT
+ 015D C34B00    	JMP	CSTAT
+                
+                	;MONITOR ENTRY POINT
+                	;RESTART XYBASIC WHEN <CONTROL-B> TYPED
+ 0160 C34000    	JMP	INIT
+                
+ 0163           	END
+

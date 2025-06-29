@@ -1,0 +1,433 @@
+
+BLS Pascal 1.0
+
+
+Introduction
+------------
+
+BLS Pascal is the ancestor of Turbo Pascal!!!! 
+It runs on a NasCom 2 computer with NAS-SYS "operating system" and is tape based.
+BLSPAS.COM is a port from Nascom2 computer BLS Pascal 1.0 ROM version to CP/M.
+
+ Turbo Pascal Genealogy 	Year	System
+
+ Tiny Pascal Basic		1978	NorthStar Horizon
+ Tiny Pascal 1.0		1980	TRS80 Model 1
+ BLS Pascal Version 1.0	  	1981	NasCom
+ BLS Pascal Version 1.2         1981	NasCom (Same as Nascom Pascal 2.0)
+ BLS Pascal Version 1.3	  	1982	NasCom
+ COMPAS V1.0 			1982	CP/M
+ COMPAS V2.10 			1983	CP/M
+ COMPAS V2.20 			1983	CP/M
+ COMPAS V3.02 			1983	CP/M
+ Turbo pascal 1.0               1983	CP/M, MSDOS, CPM86
+ Turbo pascal 2.00              1984	CP/M, MSDOS, CPM86
+ Turbo pascal 3.00              1985	CP/M, MSDOS, CPM86
+ Turbo pascal 3.01A             1985	CP/M, MSDOS, CPM86
+ PolyPascal-80 V3.10 		1985	CP/M, MSDOS, CPM86
+ Turbo Pascal 4.0		1987	MSDOS
+ Turbo Pascal 5.0		1988	MSDOS
+ Turbo Pascal 5.5		1989	MSDOS
+ Turbo Pascal 6.0		1990	MSDOS
+ Turbo Pascal for Windows 1.0   1991	Win16
+ Turbo Pascal for Windows 1.5   1991	Win16
+ Borland Pascal 7.0		1992	MSDOS, Win16
+ Delphi 1.0                     1995    Win16
+ Delphi 2.0                     1996    Win32
+ Delphi 3.0                     1997    Win32
+ Delphi 4.0                     1998    Win32
+ Delphi 5.0                     1999    Win32
+ 
+ 
+
+Terminal definition
+-------------------
+
+Default terminal is VT52, but can be changed with BLSTERM (sources included)
+
+	A>BLSTERM BLSPAS.COM
+
+BLSTERM also can change terminal used by compiled programs. BLSTERM is a 
+Pascal program that can be updated/changed and recompiled 
+
+BLSPAS ported to CP/M
+---------------------
+
+Example sesion
+
+	A>BLSPAS
+
+	welcome mesage
+
+	>L TEST.PAS   <-- load pascal source program
+	>E            <-- edit source (ctrl-X to exit from editor)
+	>C            <-- compile
+	>R            <-- run
+	>T            <-- compile and generates TEST.COM
+	>Q	      <-- quit to CP/M
+
+The editor uses then size of NasCom screen (48 col x16 rows).  Inside the following
+keys are supported (same as BLSPAS in NasCom environment):
+
+	Cursor Left			Ctrl Q
+	Cursor Right			Ctrl R
+	Cursor Up			Ctrl S
+	Cursor Down			Ctrl T
+	Insert at cursor		Ctrl V
+	Delete at cursor		Ctrl U
+	Cursor to Beginning of line	Ctrl J
+	Cursor to End of line		Ctrl L
+	Page Up (14 lines)		Ctrl O
+	Page Down (14 lines)		Ctrl N
+
+
+The RUN-TIME environment to run .COM file compiled with BLS Pascal has the following 
+memory map:
+
+               0100-07FF - NasSys emulation code
+               0800-0BFF - Video RAM (not used, but reserved just in case)
+               0C00-0C7F - NasSys variables
+               0C80-0CFF - BLS Pas variables
+               0D00-0FFF - NasSys/BLS Stack
+               1000-D000 - BLS Pascal program code
+               D000-E180 - BLS Pascal RunTime Library
+ 
+On program initialization, the TPA end address is checked to validate the end
+address is grater that E180
+
+The program in execution (and BLSPAS) emulates parts of NASSYS original envieronment
+from nascom, and uses RST vectors 08, 10, 18, 28 and 30.
+
+Also BLSPAS write and writeln considers special meaning for the folowwing chars
+	1) 0D: a 0D 0A is send to console when 0D is printed
+	2) 0A: the char 0A is ignored and connot be sent to consolve via write
+	3) 0C: a Clear Screen is issued. BLSPAS sends to terminal the clear
+	   screen sequence defiend with BLSTERM program
+	4) 18: cancel. If cursor at the beggining of line, does nothing. 
+           If line has some characters printed, cursor goes beginning
+           of next line. 
+	these are standar NasSys screen commands. Additional to these are
+
+        5) 19: Cursor On. BLSPAS sends to terminal the CursorOn screen sequence 
+	   defiend with BLSTERM program
+        6) 1A: Cursor Off. BLSPAS sends to terminal the CursorOn screen sequence 
+	   defiend with BLSTERM program
+
+BLSPAS compiler memory map:
+
+               0100-07FF - NasSys emulation code
+               0800-0BFF - Video RAM
+               0C00-0C7F - NasSys variables
+               0C80-0CFF - BLS Pas variables
+               0D00-0FFF - Z80 stack
+               1000-B000 - BLS RAM available to source code/compiled code
+               B000-BFFF - NasSys emulation code
+               C000-CFFF - BLS Pas compiler (to be moved to F000 during compilation)
+               D000-EFFF - BLS Pas compiler
+
+To run, BLSPAS needs the TPA ends at F000 or more
+Note: when a program is executed with R command inside BLSPAS, his top of ram
+address is D000. When the same program is generated as a stand allone programa
+(T command), and executed from CPM command line, his top of RAM is D000. 
+
+Thus, when BLS Pascal is loaded, there are A000 bytes (1000 to B000, that is 40K) available 
+for sourcecode + object code + running program variables
+
+The compiled .COM file in execution has C000 bytes (1000 to D000, that is 48K) available 
+for object code + running program variables. Also mem from E180 to end of TPA is free
+to be used
+
+
+BLSPAS usage
+------------
+
+	A>BLSPAS        -> enter to BLS Pascal environment
+
+	A>BLSPAS HHHH   -> sets the Top of RAM (HHHH = hex address), and then 
+                           enter BLS Pascal environment
+
+Starts the Compiler setting the top of ram to be used during 
+compilation/program execution inside the environment. Default is B000
+
+	A>BLSPAS RTL
+
+Generates RTL.BIN: is the BLSPAS Run Time library with the current defined
+terminal type. To be loaded in 0100, and started with JP 0100 as a 
+regular COM file. It initializes the run-time environment, copies
+Run Time Library to B000-E180, and issues a JP 1000 to start compiled
+program. Usage example:
+
+		A>BLSPAS
+		>L A.PAS     <-- load A.PAS program
+		>TAPE 1000   <-- generates A.BIN at starting address 1000
+		>Q           <-- exit
+
+		A>PIP TEST.COM=RTL.BIN,A.BIN
+		A>TEST       <-- executes program
+
+	A>BLSPAS NASSYS
+
+Generates NASSYS.BIN: is the NasCom Run Time library with the current defined
+terminal type, without the Pascal RunTime. To be loaded in 0100, and started 
+with JP 0100 as a regular COM file. It initializes the Nascom emulation environment, 
+copies helper functons to B000-B800, and issues a JP 1000 to start program. 
+Usage example:
+
+		A>PIP TEST.COM=NASSYS.BIN,A.BIN <-- A.BIN starts at $1000
+		A>TEST       <-- executes program
+	
+
+
+BLS Pascal changes
+------------------
+
+Here is the detailed list of changes/patches for BLS Pascal original Nascom 
+
+
+	0) Command line parsing
+
+In original NasCom version ther is no command line. Top of RAM is defined when
+launching the program from NAS-SYS environment.
+CPM version gets top of ram parameter from command line
+
+	1) Default Top of RAM
+
+In original ROM NasCom version detects the end of ram (first address that fails
+reading same byte written). 
+CPM version gets top of ram parameter from command line or use B000 
+
+	2) BLS Pascal Editor FIND command prompt change
+
+In original ROM NasCom prints an '->' (arrow character) as prompt for user
+to type the serached text when issuing a FIND command (Ctrl-F) inside the editor
+CPM version prompts with '>' character as arrow is not in the standart ascii
+character set
+
+	3) BLS Pascal Full scren Editor. 
+
+The original ROM Nascom BLS Pascal full screen editor is emulated on screen. Thus
+only a 64x16 characters are used. Outside editor, and during compiled program 
+execution, all 80x25 screen charactets are accesible.
+
+	4) Disk Usage for Load/save pascal source program text
+
+The original ROM Nascom BLS Pascal is tape oriented. 
+CPM version replaces tape I/O by Disk I/O. To support this, some changes
+are made in compiler commands:
+
+		L  [A:]filename[.ext]
+
+		Load Command. The filename is mandatory and should conform
+		to CPM stardart, including optional drive letter and extension
+		During load, progress information shown is 
+		HHHH RRRR . HHHH RRRR . HHHH RRRR ...
+		where
+	           HHHH = source text bytes loaded (in hex)
+        	   RRRR = remaining free memory (in hex)
+		if less that 256 bytes an Out of memory error is printed
+		Load sets the working filename.
+
+
+		S  [[A:]filename[.ext]]
+
+	        Save command.
+		If no filename is given, working filename is used (i.e. last LOAD filename)
+		If filename is given, this is the new working filename
+		During save, progress information shown is 
+			HHHH RRRR 
+			HHHH RRRR 
+			HHHH RRRR 
+			...
+		where
+        	   HHHH = source text bytes saved (in hex)
+	           RRRR = remaining bytes remaining to be saved (in hex)
+
+		V
+
+		Verify command is disable, as is a non-sense for Disk I/O
+
+	5) Hi Memory usage
+
+The original ROM Nascom BLS Pascal uses address D000-FFFF for program. In CPM, high
+memory is used por Operating System. The CPM version swaps compiler code and CPM code
+in range F000-FFFF during compilation.
+
+	6) Disk Usage for Tape pascal source program text
+
+The original ROM Nascom BLS Pascal saves compiled object code in tape
+without filename. CPM version uses disk instead using the same TAPE
+command:
+
+        	TAPE 
+
+		generates a standalone .COM file using Working filename
+
+		TAPE HHHH
+		
+		generates a .BIN file, the object code generated is at
+		address HHHH (in hex), with no RunTime Pascal Library.
+		To execute, RTL.BIN should be loaded at address 0100.
+		At address 1000, a JP HHHH instruction is needed
+
+	7) Disable BLS Pascal runtime library functions tied to NasCom
+
+The original ROM Nascom BLS Pascal has runtime functions and procedures
+to support NasCom environment. These funciontions are non-sense in
+CPM environmente and thus are disabled in BLSPAS CPM version
+
+   		load(a,i) - load array from tape
+		save(a) - save array to tape
+		plot(x,y,f) - plot pixed on NasCom screen 
+		point(x,y) - get pixed state from NasCom screen 
+
+
+	8) Ctrl-C program break support
+
+The original ROM Nascom BLS Pascal does not has program break support as reset
+is available, and a warn-start command is available in NasSys.
+In CPM version, pressing Control-C terminates compiled program execution, and
+returns control to CP/M command line prompt or BLS Pascal compiler environment
+if program has been executed with RUN command.
+
+Ctrl-C is checked in readln(), read(), keyboard
+
+	9) screen(x,y) support for CP/M
+
+The original ROM Nascom BLS Pascal supports screen(x,y) function to position
+the cursor in NasCom video RAM (64x16 character size).
+CPM BLSPAS version uses sends BLSTERM defined escape sequence to position the
+cursor on terminal (80x25 character size).
+
+	10) New Compiler Command: W - Shows Working filename
+
+CPM BLSPAS version defines a new compiler command: W that displays the current
+working filename.
+
+BLS Pascal Library
+------------------
+
+PASLIB.PAS is a source code library that defines procedures and functions 
+for CP/M support.
+
+	function BlsPascalVersion: integer; 
+		return BLS Pascal version: 10 for v1.0, 12 for v1.2
+
+	function GetHiMem: integer;
+	procedure SetHiMem(m: integer);
+		Ges/Set Top of memory 
+
+	function MemAvail: integer;
+		Returns free memory available. 
+
+	procedure ClrScr;
+	procedure Cursor(b: boolean);
+		Screen support: clear screen, enables/disables cursor	
+
+	function StrHex(n, len: integer): string[4];
+	function StrInt(n: integer): string[8];
+		Converts integer to ascii, to hex string (len charaters)
+
+	function ValHex(s:string[4]): integer;
+	function ValInt(s:string[8]): integer;
+	function ValReal(s:string[16]): real;
+		Converts string number/hex string to integer/real
+
+	function UpCase(c: integer): integer;
+		Converts to uppercase charater ascii value in c
+
+	const FileVar= 36;
+	const IOEndOfFile = 1; (* ReadFile *)
+	      IOError_DirFull = 1;(* WriteFile *)
+	      IOError_ReadingUnwrittenData = 1; (* ReadFileRecord *)
+	      IOError_DiscFull = 2;
+	      IOError_CannotCloseEntent = 3; (* WriteFileRecord *)
+	      IOError_ReadingUnwrittenExtent = 4; (* ReadFileRecord *)
+	      IOError_RecordNumberOutOfRange = 6; (* ReadFileRecord *)
+	      IOError_InvalidFCB = 9;
+	      IOError_DiskChanged = 10;
+	      IOError_InvalidFileName = 11;
+	      IOError_OpenError = 12; 
+	      IOError_CloseError = 13; 
+	      IOError_ReadError = 14; 
+	      IOError_WriteError = 15; 
+	      IOError_CreateError = 16; 
+	      IOError_DeleteError = 17;
+	      IOError_GetFileRCError = 18; 
+	      IOError_RenameError = 19;
+	var IORes: integer; (* 0=OK, No errors in I/O operation, else IOError value *)
+
+	procedure AssignFile(var file: string[FileVar]; fn: string[14]);
+	procedure CreateFile(var file: string[FileVar]); 
+	procedure OpenFile(var file: string[FileVar]); 
+	procedure CloseFile(var file: string[FileVar]); 
+	procedure GetFileSize(var file: string[FileVar]; var RecordCound: integer); 
+		file I/O procedures
+
+	procedure ReadFile(var file: string[FileVar]; BufAddr:integer); 
+	procedure WriteFile(var file: string[FileVar]; BufAddr:integer); 
+	procedure SeekFile(var file: string[FileVar]; CurrentRecord: integer); 
+	function FilePos(var file: string[FileVar]): integer; 
+		Sequential file procedures
+
+	procedure ReadFileRecord(var file: string[FileVar]; BufAddr:integer); 
+	procedure WriteFileRecord(var file: string[FileVar]; BufAddr:integer); 
+	procedure SeekFileRecord(var file: string[FileVar]; RecordCound: integer); 
+	function FilePosRecord(var file: string[FileVar]): integer; 
+		Random file procedures
+	
+	procedure CopyFile(fn1, fn2: string[14]); 
+	procedure DeleteFile(fn: string[14]); 
+	procedure RenameFile(fn1, fn2: string[14]); 
+		file handling procedures
+
+	function ParamCount: integer; 
+	function ParamStr(nParam: integer): string[80];
+		CP/M command line handling. 
+	
+	var bdosRes, bdosResAddr: integer;
+	procedure Halt; 
+	procedure bdos(c, de: integer);
+	procedure bdosfile(c: integer; var file: string[FileVar]); 
+	procedure bdosfilebuf(c: integer; var file: string[FileVar]; BufAddr:integer); 
+	procedure bdosfilerc(c: integer; var file: string[FileVar]; var RecordCound: integer); 
+		CP/M Bdos functions
+
+
+Example programs
+----------------
+
+Some example programs are provided:
+
+	TEST.PAS 	simple test program Hello World
+	TYPE.PAS	Simple file contents dump program
+	COPY.PAS	Simple copy file program
+        PASMEM.PAS      Displays RAM available during execution (RUN program
+                        inside BLS Pascal, then compile with TAPE, execute 
+                        PASMEM.COM as stand alone program and compare available RAM)
+	3DLAB.PAS	3D Labirinth game. Adapted from original version for 
+			Nascom2 BLS Pascal
+
+Support programs
+----------------
+
+	BLSTERM.COM	View/Change terminal settings for BLSPAS.COM and any 
+			program compiled with BLS Pascal
+
+source code (\SRC dir)
+-----------
+
+	BLSPAS.ASM	Source code for BLS Pascal CP/M port
+	BLSPAS.ROM	Original BLSPAS code for NasCom, imported by BLSPAS.ASM
+	BLSTERM.PAS	Pascal source code for BLSTERM
+        BLS Pascal 1.0.ASM.txt	Disassembled and commented (somewhat) original ROm version
+			
+Orher files
+-----------
+
+BLS Pascal.pdf		Manual/Documentation for BLS Pascal 1.2 (same as v1.0, except
+			v1.0 does not support CODE reserved word)
+Pascal Evolucion.xlsx   Indicate the evolution of Pascal: available reserved words & rtl
+
+
+
+

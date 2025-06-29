@@ -1,0 +1,80 @@
+/*  program to make a link/load submit file for bcpl 
+ */
+
+GET "LIBHDR"     // needs all the string package, and ARGS
+
+
+GLOBAL  $(  openout:fg
+            instruct:fg+1
+        $) 
+
+LET start() BE
+$( LET temp = VEC 20     
+   LET title = "MAKESUB    version 1.00  (c) Gordon Crosse 1985*n"
+   LET  p,outfile= ?,?
+   LET ARGS = VEC argvsize
+
+   newline()
+   writes(title)
+
+   getargs(ARGS)
+   IF  ARGS!0 = 0  THEN instruct()
+
+   FOR I = 1 TO ARGS!0 DO
+    $( p := pos(".",ARGS!I)
+       IF (p > 0) THEN delete(ARGS!I,p,4)
+    $)
+   outfile := addstr(ARGS!1,".SUB")
+   outfile := openout(outfile)
+   selectoutput(outfile)
+   writes("LINK %DRIVE2,%BCPL2,")
+   writes(addstr(ARGS!1,",%BRTS,"))
+   IF ARGS!0 > 1 THEN
+   $(
+     FOR I = 2 TO ARGS!0 DO
+       $(  TEST pos("%",ARGS!I) ~= 1 THEN
+           $( copy(ARGS!I,temp)
+              insert("%",temp,1)
+              writes(addstr(temp,","))
+           $)
+           ELSE  writes(addstr(ARGS!I,","))
+       $)
+   $)
+   writes("%RTS2 /U*n")
+   writes("REN ")
+   writes(addstr(ARGS!1,".HEX = %DRIVE2.HEX*n"))
+   writes(addstr("LOAD ",ARGS!1))
+   newline()
+   writes("ERA ")
+   writes(addstr(ARGS!1,".HEX*n"))
+   endwrite(outfile)
+   selectoutput(findoutput("CON:"))
+   writes("*n ++ Submit File made - ")
+   writes(addstr(ARGS!1,".SUB  ++*n"))
+$)
+
+// open a file to write
+
+LET openout(name) = VALOF
+$( 
+   LET f = findoutput(name)
+   IF  f = 0 THEN
+      $( writes("*n+++ Can't Create File +++*n")
+         FINISH
+      $)
+   RESULTIS f
+$)
+
+// explain program
+
+LET instruct() BE
+$(
+   writes("*nPurpose: make a submit file to link and load a BCPL program*n")
+   writes("           DRIVE2,BCPL2,BRTS, and RTS2 are already included.*n")
+   writes("*nUseage: *
+           * A> makesub  program [ list of modules delimited by spaces ]*n")
+   writes("*t At least one argument - main - must be given*n")
+   writes("*t No .ext is needed.  Program is the new .obj file to be linked*n")
+   writes("*t The submit file will be PROGRAM.SUB*n")
+   newline()  FINISH
+$)

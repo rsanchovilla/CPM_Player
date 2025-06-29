@@ -1,0 +1,1122 @@
+.pl68
+..18.01.1990/ 29.1.90
+.pn80
+.op
+.po10
+.hePASCAL                         #              Sprachbeschreibung
+4.6. Nutzerdefinierte Prozeduren und Funktionen
+
+4.6.1. Deklaration von Prozeduren und Funktionen
+------------------------------------------------
+
+4.6.1.1. Prozedurdeklaration
+- - - - - - - - - - - - - - -
+
+Syntax:  Prozedurdeklaration<
+
+Deò  Prozedurkopæ bestehô auó deí reservierteî Worô PROCEDURÅ unä 
+eineí Bezeichneò aló Namå deò Prozedur® Gew>hnlicè folgô ihí einå 
+formale Parameterliste.
+FORWARÄ verweisô darauf¬ da\ diå Prozeduò sp}teò deklarierô wird¬ 
+EXTERNAL auf ein externes Unterprogramm.
+Existierô  eiî  Prozedurblock¬  sï bestehô eò auó eineí  Deklara
+tionsteiì und einem Anweisungsteil.
+Deò Deklarationsteiì eineò Prozeduò haô diå gleichå Forí wiå  beé 
+eineí   Programm®   Allå   iî  deò  formaleî  Parameterlistå   ií 
+Deklarationsteiì erkl}rteî Bezeichneò sinä lokaì zuò Prozeduò unä 
+globaì   zõ  jedeò  Prozeduò  iî  ihr®   Dieseò   Bereicè   hei\ô 
+G{ltigkeitsbereicè  deò  Bezeichner®  Au\erhalâ dieseó  Bereicheó 
+sinä siå nichô definiert® Einå Prozeduò kanî jedå iî eineí zõ ihò 
+}u\ereî Blocë definiertå Konstante¬ Type¬ Variable¬ Prozeduò odeò 
+Funktioî  verwenden®  Daó  gilô nichô  f{ò  Markeî  (vgl®  Ziffeò 
+4.6.2.1.).
+Deò  Anweisungsteiì spezifizierô diå Operationen¬  diå ausgef{hrô 
+werdeî sollen¬ wenî diå Prozeduò aufgerufeî wird® Eò haô diå Forí 
+eineò  Verbundanweisung®   Siå  endeô  miô  Semikolon®  Wirä  deò 
+Prozedurbezeichneò    selbsô   innerhalâ   deó    Anweisungsteiló 
+verwendet¬  wirä  diå Prozeduò rekursiö ausgef{hrt®  Eó mu\  danî 
+beachteô werden¬  da\ zõ dieseí Zeitpunkô beé deò Compilatioî diå 
+A-Compiler-Direktive passiv (*JA-*) gesetzt ist.
+
+
+4.6.1.2. Funktionsdeklaration
+- - - - - - - - - - - - - - -
+
+Syntax:  Funktionsdeklaration<
+
+Deò  Funktionskopæ  bestehô auó deí reservierteí  Worô  FUNCTION¬ 
+eineí Nameî unä deò Spezifikatioî deó Ergebnistyps® Letzterå wirä 
+durch Anf{gung eines Doppelpunktes und eines Typs erreicht.
+Deò  Ergebnistyğ  eineò  Funktioî  mu\ eiî  einfacheò  Tyğ  (d.h® 
+INTEGER¬  REAL¬  BOOLEAN¬ CHAR)¬ eiî Stringtyğ odeò eiî Zeigertyğ 
+sein.
+F{ò FORWARÄ,  EXTERNAÌ  unä Funktionsblocë  gelteî  diå  gleicheî 
+Regelî  wiå iî deò Prozedurdeklaration®  Aló Besonderheiô mu\  ií 
+Anweisungsteiì wenigstenó einå Ergibtanweisunç auftreten¬ diå deí 
+Funktionsbezeichneò eineî Werô zuweist® Diå letztå dieseò Ergibt
+anweisungeî zuí Funktionsbezeichneò ergibô deî Werô deò Funktion® 
+Wenî  deò  Funktionsbezeichneò  selbsô  aló  Funktionsaufruæ   ií 
+Anweisungsteiì  deò  Funktioî auftritt¬  danî wirä  diå  Funktioî 
+rekursiö aufgerufen®  Iî dieseí Fallå mu\ zõ dieseí Zeitpunkô diå 
+A-Compiler-Direktive passiv (*JA-*) sein.
+.paŠBeé deò  Definitioî eineó Fuîktionstypó isô zõ beachten¬  da\ eiî 
+aló  Parameteò  odeò Ergebnistyğ verwendeteò  strukturierteò  Tyğ 
+vorher als Typbezeichner deklariert sein mu\. 
+Aus diesem Grunde ist die folgende Konstruktion nicht erlaubt:
+
+  FUNCTION Kette(Zeile: Linie) : STRING^80~;
+
+Maî  mu\  stattdesseî  vorheò  deî  Tyğ  STRING^80~  durcè  eineî 
+Bezeichneò   erkl}reî   unä   miô  dieseí  danî   deî   Tyğ   deó 
+Funktionsergebnisses definieren:
+
+  TYPE Str80 = STRING^80~;
+  FUNCTION Kette(Zeile: Linie) : Str80;
+
+Wegeî  deò Arô deò Implementatioî deò Prozeduò WRITÅ unä  WRITELÎ  
+daræ  einå Funktion¬  diå irgendeinå deò Standardprozedureî READ¬ 
+READLN¬   WRITÅ  odeò  WRITELÎ  verwendet¬  niemaló  durcè  eineî 
+Ausdrucë   iî  eineò  WRITE- odeò  WRITELN-Anweisunç   aufgerufeî 
+werden.
+
+
+4.6.2. Datenaustausch zwischen Programmeinheiten
+------------------------------------------------
+
+4.6.2.1. Blockkonzept
+- - - - - - - - - - -
+
+PASCAÌ  isô  einå  blockorientiertå   Sprache®   Blockorientiertå 
+Sprachå  hei\t¬  da\  allå definierteî unä deklarierteî  Objekte¬ 
+alsï  Konstanten¬  Typen¬  Variableî unä Unterprogramme¬  iî  deí 
+gesamteî Blocë g{ltiç sind¬  iî deí siå vereinbarô  wurden®  Einå 
+Ausnahmå bildeî lediglicè Marken® Iî deî eingelagerteî Prozedureî 
+unä  Funktioneî k>nneî alsï allå Objektå ohnå eigenå  Deklaratioî 
+benutzô werden¬ diå ií {berlagerteî Blocë enthalteî sind®  Solchå 
+Objekte nennt man deshalb global.
+Wenî  ií Vereinbarungsteiì eineó Unterprogrammeó eiî Objekô unteò 
+eineí  Bezeichneò  deklarierô wird¬  deò  iî  deò  {bergeordneteî 
+Programmeinheiô   bereitó  benutzô  wurde¬   hebô  diå   (lokale© 
+Deklaratioî  ií Unterprogramí diå globalå G{ltigkeiô auf®  Diå iî 
+eineí  Unterprogramí definierteî unä deklarierteî  Objektå  - beé 
+Variableî  sprichô  maî  voî  lokaleî  Variableî  - sinä  f{r diå 
+{bergeordnetå  Programmeinheiô  nichô g{ltig¬  unä eó  kanî  aucè 
+nicht auf sie zugegriffen werden.
+.paŠDaó   Blockkonzepô  gehô  auó  deí  folgendeî  Programmausschnitô 
+hervor:
+
+  --------------------PROGRAM Hauptprogramm;-------------------
+  !                   .                                       !
+  !                   TYPE Feld = ARRAY^1..20~ OF CHAR;       !
+  !                   VAR  x,y  : Feld;                       !
+  !                        i,j,k: INTEGER;                    !
+  !       ------------PROCEDURE Prozedur;---------------      !
+  !       !           VAR z : Feld;                    !      !
+  !       !               i : INTEGER;                 !      !
+  !       !           (*Gueltig auch x,y,j,k*)         !      !
+  !       !           .                                !      !
+  !       ------------END;------------------------------      !
+  !       ------------FUNCTION Funktion : Typ;----------      !
+  !       !           VAR a   : Feld;                  !      !
+  !       !               j,z : INTEGER;               !      !
+  !       !           (*Gueltig auch x,y,i,k*)         !      !
+  !       !           .                                !      !
+  !       !-----------END;------------------------------      !
+  !                   BEGIN (*Hauptprogramm*)                 !
+  !                   (*Gueltig  sind x,y,j,i,k*)             !
+  !                   .                                       !
+  !                   END.                                    !
+  !                                                           !
+  -------------------------------------------------------------
+
+Diå   G{ltigkeiô  deò  globaleî  Variableî  isô   aló   Kommentaò 
+eingef{gt. 
+Lokalå  Variableî  verliereî beií Verlasseî eineó  Unterprogrammó 
+ihren Wert.
+
+
+4.6.2.2. Parameter
+- - - - - - - - - -
+
+Dateî  k>nneî deî Prozedureî odeò Funktioneî aucè durcè Parameteò 
+{bergebeî werden®  F{ò dieså Parameteò wirä eiî  Substitutionsme
+chanismuó  bereitgestellt¬  deò erlaubt¬  diå Logië deó Unterpro
+grammó miô verschiedeneî Anfangswerteî zõ versehen® Diå Prozedur
+anweisunç odeò deò Funktionsbezeichner¬ diå bzw® deò daó entspre
+chendå  Unterprogramí  aufruft¬  kanî einå Listå  voî  Parameterî 
+enthalten¬  diå maî aló diå aktuelleî Parameteò bezeichnet® Dieså 
+werdeî deî formaleî Parameterî {bergeben¬  diå ií Kopæ deó Unter
+programmó spezifizierô sind®  Diå Zuordnunç deò Parameteò beé deò 
+]bergabå  erfolgô  iî  deò Reihenfolgå ihreó  Auftretenó  iî  deò 
+Parameterliste® PASCAÌ unterst{tzô zweé unterschiedlichå Methodeî 
+deò  Parameter{bergabeº  ]bergabå  deò Parameteò  durcè  ]bergabå 
+eineó Werteó (Wert{bergabe¬ Wertparameter© unä ]bergabå deò Para
+meteò durcè Substitutioî deò Adresseî (Adressen{bergabe¬  Variab
+lenparameter).
+Diå   Stacktechnië  beií  Parameteraustauscè  isô  ií  Anhanç   Æ 
+beschrieben.
+
+Syntax:  Formal-Parameterabschnitt<
+         aktueller Parameter<
+.paŠ4.6.2.2.1. Variablenparameter
+- - - - - - - - - - - - - - -
+
+Beé Variablenparameterî wirä diå Adresså deó aktuelleî Parameteró 
+aî  diå  Prozeduò {bergebeî (CALÌ BÙ REFERENCE)®  Dabeé  arbeiteî 
+Prozeduò unä rufendeó Programí miô deò gleicheî Variablen¬ sï da\ 
+eine ]bermittlung von Ergebnissen m>glich ist, z.B.
+  PROCEDURE Test (VAR Fehler : BOOLEAN);
+Kennzeicheî  f{ò  Variablenparameteò  isô daó VAÒ  iî  deò  Listå 
+formaleò  Parameter®  Ausdr{ckå aló aktuellå Parameteò sinä nichô 
+erlaubt.
+
+
+4.6.2.2.2. Wertparameter
+- - - - - - - - - - - - -
+
+Beé  Wertparameterî  wirä deò Werô deó aktuelleî Parameteró  (auó 
+deò  Prozeduranweisung©  iî deî formaleî Parameteò  deò  Prozeduò 
+{bertragen (CALL BY VALUE).
+Eine R{ckgabe von Ergebnissen ist nicht m>glich, z.B.
+  PROCEDURE Kombination (a: REAL; b: INTEGER);
+Hieò fehlô daó VAÒ iî deò Listå formaleò Parameter® Ausdr{ckå aló 
+aktuelle Parameter sind erlaubt.
+
+
+4.6.2.2.3. Ungetypte Variablenparameter
+- - - - - - - - - - - - - - - - - - - -
+
+Isô  deò  Tyğ eineó Parameteró nichô  getypt¬  d.h®  enth}lô  deò 
+Parameterteiì  ií  Kopæ deó Unterprogrammó  keinå  Typdefinition¬ 
+danî  wirä deò Parameteò aló ungetypô  bezeichnet®  Deò  aktuellå 
+Parameteò kanî danî eiî beliebigeò Tyğ sein®  Eò wirä wiå deò Tyğ 
+BYTÅ  behandelt®  Auó  dieseí Grundå kanî maî  ungetyptå  formalå 
+Parameteò nuò dorô verwenden¬ wï deò Datentyğ ohnå Bedeutunç ist® 
+Dieó  isô beispielsweiså beé deî Parameterî voî ADDR¬  BLOCKREAD¬ 
+BLOCKWRITE¬ FILLCHAÒ odeò MOVÅ unä beé Adress-Spezifikationeî voî 
+absoluteî Variableî deò Fall®  Ií folgendeî Beispieì wirä beé deò 
+Prozeduò  SCHALTEÒ  diå Verwendunç  ungetypteò  Parameteò  demon
+striert®  Siå  {bertr}gô deî Inhalô deò Variableî a± nacè a²  unä 
+voî a² nacè a± (Austauscè deò Inhalte):
+
+  PROCEDURE Schalter(VAR Eins,Zwei; Anzahl : INTEGER);
+  TYPE
+    a = ARRAY^1..Max~ OF BYTE;
+  VAR
+    a1                : a ABSOLUTE Eins;
+    a2                : a ABSOLUTE Zwei;
+    ZwischenSpeicher  : BYTE;
+    Zaehler           : INTEGER;
+  BEGIN
+    FOR Zaehler := 1 TO Anzahl DO
+    BEGIN
+      ZwischenSpeicher  := a1^Zaehler~;
+      a1^Zaehler~       := a2^Zaehler~;
+      a2^Zaehler~       := ZwischenSpeicher
+    END
+  END;ŠDefiniert man :
+
+  TYPE
+    Matrix = ARRAY^1..50,1..25~ OF REAL;
+  VAR
+    TestMatrix,BestMatrix : Matrix;
+
+danî  kanî maî 'Schalter§ zuí Austauscheî deó Inhalteó deò beideî 
+Matrizen verwenden. Der Prozeduraufruf lautet dann:
+
+  SCHALTER(TestMatrix,BestMatrix,Umfang(TestMatrix));
+
+
+4.6.3. FORWARD-Deklaration
+--------------------------
+
+Eiî Unterprogramí kanî deklarierô werden¬  indeí maî seineî  Kopæ 
+separaô  voî  seineí Blocë spezifiziert®  Dieseò separatå  Unter
+programmkopæ isô exakô deò gleichå wiå deò eineó normaleî  Unter
+programmes¬  au\eò  daÜ  eò   miô deí reservierteî  Worô  FORWARÄ 
+endet®  FORWARÄ stehô statô deó Blockeó selbst®  Diå  Deklaratioî 
+deó  vollst}ndigeî  Unterprogrammeó folgô  sp}ter®  Diå  FORWARD-
+Deklaratioî isô nichô f{ò OVERLAY-Unterprogrammå erlaubt.
+
+Beispiel:
+
+  PROCEDURE Beispiel (VAR a:REAL; b:CHAR); FORWARD;
+
+FORWARD-Deklarationeî sinä z.B® erforderlich¬ wenî Unterprogrammå 
+deklariert werden, die sich gegenseitig rufen.
+
+
+4.6.4. EXTERNAL-Deklaration
+---------------------------
+
+Daó  reserviertå  Worô  EXTERNAÌ  wirä  zuò  Definitioî  externeò 
+Prozedureî  unä Funktioneî verwendet®  Typiscè isô diå Verwendunç 
+f{r in Maschinencode geschriebene Prozeduren oder Funktionen.
+
+Eiî  externeó  Unterprogramí  haô  keineî  Block¬   d.h®   keineî 
+Deklarationsteiì  unä  keineî Anweisungsteil®  Eó  wirä  nuò  deò 
+Unterprogrammkopæ  spezifiziert¬  deí unmittelbaò daó reserviertå 
+Worô  EXTERNAÌ unä einå Integerkonstantå folgt¬  diå diå  Adresså 
+des Unterprogramms definiert.
+
+Beispiele: 
+
+  PROCEDURE DiskReset: EXTERNAL JEC00;
+  FUNCTION  Iostatus : BOOLEAN; EXTERNAL JD123;
+
+Parameteò k>nneî aî externå Unterprogrammå {bergebeî werden¬  unä 
+diå Syntaø isô dabeé exakô diå gleichå wiå beé normaleî Prozedur- 
+oder Funktionsaufrufen:
+
+  PROCEDURE Plot(x,y:INTEGER); EXTERNAL J8003;
+  PROCEDURE Sortieren(VAR List:DC;Anzahl:INTEGER);EXTERNAL J3000;
+.paŠ4.6.5. OVERLAY-Strukturen
+-------------------------
+
+Beé Programmen¬ diå diå Kapazit}ô deó Hauptspeicheró {bersteigen¬ 
+kanî  einå  ]berlagerungsstruktuò f{ò diå Unterprogrammå  erzeugô 
+werden®  Diå  Hauptspeicherbelegunç iî eineí solcheî Fallå  zeigô 
+das folgende Schema:
+
+             ----------------
+             !     UP-3     !
+             !--------------!-------------
+             !     UP-2   ! !    UP-5    !
+  -----------!--------------!----------------------------
+  !   HP     !     UP-1 !   !    UP-4         !   HP    !
+  !----------!--------------!------------------------------<
+  !           Dateiname<.000   Dateiname<.001
+
+  J100              ]berlagerungsbereich
+
+Daó  Prinziğ  bestehô  darin¬  nichtaktivå  Unterprogrammå  eineò 
+]berlagerungsgruppå  auæ deî externeî Datenspeicheò  auszulagern® 
+Ersô  ií  Fallå ihreó Aufrufeó werdeî siå  iî  deî  Hauptspeicheò 
+transportiert®  Siå  {berschreibeî  eiî eventuelì vorheò  aktiveó 
+Unterprogramí deòselbeî  ]berlagerungsgruppe® Deò Vorteiì bestehô 
+darin¬  da\  deò ]berlagerungsbereicè ií Hauptspeicheò  f{ò  einå 
+]berlagerungsgruppå   nuò  sï  gro\  seiî  mu\  wiå  daó   gr>\tå 
+Unterprogramí   dieseò   Gruppe®   Diå  m>glichå  Einsparunç   aî 
+Hauptspeicherkapazit}ô  kanî betr}chtlicè sein®  Auæ dieså  Weiså 
+isô eó m>glich¬  gro\å Programmå auæ Rechnerî miô relatiö kleineò 
+Hauptspeicherkapazit}t auszuf{hren.
+Diå  technischå Realisierunç eineò ]berlagerungsstruktuò  erfolgô 
+w}hrenä   deó   einheitlicheî   Compiler-/Linkervorgangs®   Dabeé 
+entstehô  jå  ]berlagerungsgruppå  einå  ]berlagerungsdatei¬  diå 
+soforô  auæ eineî externeî Datentr}geò  ausgelagerô  wird®  Dieså 
+enth}lô   deî   Maschinencodå   alleò   zuò   Gruppå   geh>rendeî 
+Unterprogramme®  Diå ]berlagerungsdateieî erhalteî deî Dateinameî 
+deó   Hauptprogrammó   unä   einå   Nummeò   000,00±   ..®    aló 
+Dateinamenserweiterung.
+Deí    PASCAL-Systeí    mu\   mitgeteilô   werden¬    da\    einå 
+]berlagerungstruktuò  erforderlicè isô unä welchå  Unterprogrammå 
+einå  ]berlagerungsgruppå bildeî sollen®  Dabeé isô zõ  beachten¬ 
+da\ sicè Unterprogrammå deò gleicheî Gruppå niemaló untereinandeò 
+rufen (aktivieren) k>nnen.
+Weitere Hinweise f{r die Bildung von Gruppen:
+a© Ann}hernä gleichgro\å  Unterprogrammå sollteî iî  einå  Gruppå 
+   aufgenommen werden.
+b© H}ufiç  aktivå Programmå sollteî verschiedeneî  Gruppeî  zuge
+   ordneô werden.
+c) In OVERLAY-Unterprogrammen ist keine Rekursion erlaubt.
+
+F{ò   deî  Aufbaõ  eineò  ]berlagerungsstruktuò  gilô   folgendeò 
+Verfahrensweg®   Eiî   Unterprogramm¬   daó   Bestandteiì   eineò 
+]berlagerungsstruktuò  werdeî soll¬  erh}lô voò deí Schl{sselworô 
+PROCEDURE oder FUNCTION den Zusatz OVERLAY.
+.paŠAllå  aufeinanderfolgendeî Unterprogrammå miô  deí  Schl{sselworô 
+OVERLAÙ  bildeî  einå ]berlagerungsgruppe®  Diå Gruppå  gilô  aló 
+abgeschlossen¬  wenî  eiî  folgendeó Unterprogramí  keiî  OVERLAÙ 
+enth}lt®  Folgô nacè dieseí Unterprogramí ohnå OVERLAÙ wiedeò eiî 
+Unterprogramí miô OVERLAY¬  sï wirä einå neuå ]berlagerungsgruppå 
+er>ffnet®  Dá  diå  Reihenfolgå  deò  Unterprogrammdeklarationen¬ 
+gegebenenfalló miô FORWARD¬ voí Programmiereò freé gew}hlô werdeî 
+unä  aucè  "leere¢  (Pseudo-©  Unterprogrammå  deklarierô  werdeî 
+k>nnen¬  isô  auæ  dieså  Arô einå  einfache¬  abeò  vollst}ndigå 
+Mitteilung an das PASCAL-System m>glich.
+
+Beispiel:
+
+  PROGRAM Ueberlagerung;
+      :
+      .
+    OVERLAY PROCEDURE UP-1;  ------
+    BEGIN                         !
+      :                           !
+      .                           !
+    END;                          !
+    OVERLAY PROCEDURE UP-2;       !--<  (*Overlay: UEBERLAG.000*)
+    BEGIN                         !
+      :                           !
+      .                           !
+    END;                          !
+    OVERLAY PROCEDURE UP-3;       ! 
+    BEGIN                         !
+      :                           !
+      .                           !
+    END;  -------------------------
+
+    PROCEDURE tab (anz:INTEGER);     (*Prozedur zur Trennung*)
+    BEGIN                            (*der zwei Overlay-Gebiete*)   
+      :
+      .
+    END;                    -------
+    OVERLAY PROCEDURE UP-4;       !
+    BEGIN                         !
+      :                           ! 
+      .                           !--<  (*Overlay: UEBERLAG.001*)
+    END;                          !
+    OVERLAY PROCEDURE UP-5;       !
+    BEGIN                         !
+      :                           !
+      .                           !
+    END;  ------------------------- 
+
+    BEGIN                             (*Hauptprogramm*)
+      :
+      .
+    END.
+.paŠ4.7. Standardprozeduren und -funktionen
+     (ohne Dateiarbeit und Zeiger)
+
+4.7.1. STRING-Funktionen und -Prozeduren
+----------------------------------------
+
+CONCAT-Funktion
+
+Syntax: concat( Quelle< , Quelle< )
+
+Diå  Funktioî CONCAÔ (Tyğ STRING© lieferô eineî STRING¬  deò  diå 
+Zusammenf{gung der STRING's enth}lt.
+
+Wenî  diå  gesamtå  L}ngå  25µ  Byteó  {bersteigt¬  entstehô  eiî 
+Laufzeitfehler»   maî  kanî  miô  deí  "+"-Operatoò  daó  gleichå 
+erreichen®  CONCAÔ  sicherô  nuò diå Kompatibilit}ô  miô  andereî 
+Compilern®  Diå  Quelleî k>nneî STRING-Variablen¬  ARRAY-OF-CHAR-
+Variablen, STRING-Konstanten oder Zeichen (CHAR) sein.
+
+Beispiel:
+
+  PROCEDURE Conc;
+  VAR A,B: STRING^30~;
+  BEGIN
+    A:= 'Sprachbeschreibung ';
+    B:= '1990';
+    writeln (concat(A,'PASCAL',' 880/S ','B))
+  END;      (*Ausgabe: Sprachbeschreibung PASCAL 880/S 1990*)
+
+
+COPY-Funktion
+
+Syntax: copy ( Kette<, Position<, Anzahl<)
+
+Dieså  Funktioî  (Tyğ STRING© lieferô auó deí STRINÇ   Kette<  aâ  
+ Position< einen Teil-STRING in der L}nge  Anzahl<.
+
+Wenî   Position<  gr>\eò  aló  L}ngå   Kette<  ist¬  bestehô  daó 
+Ergebnió auó deò leereî Zeichenkettå ''®   Position< unä  Anzahl< 
+sind Variablen, Konstanten oder Ausdr{cke vom Typ INTEGER.
+Wenî   Position< «  Anzahl< au\erhalâ voî  Kette<  liegt¬  werdeî 
+nuò  diå innerhalâ voî  Kette< liegendeî  Zeicheî  zur{ckgegeben® 
+Liegô   Position<  nichô innerhalâ voî 1..255¬  sï  entstehô  eiî 
+Laufzeitfehler.
+
+Beispiel:
+
+  PROCEDURE Cop;
+  VAR A: STRING^80~;
+  BEGIN               
+    A:='Zeichenkettenfeld';
+    writeln (copy(A,8,5))       (*Ausgabe: kette*)
+  END;
+.paŠDELETE-Prozedur
+
+Syntax: delete ( Kette<, Position<, Anzahl<)
+
+Iî    Kette<   werdeî   aâ   Position<  Zeicheî   gel>schô   (unä 
+verdichtet).
+Diå Parameteò  Position< unä  Anzahl< sinä Variablen¬ Konstanten¬ 
+oder Ausdr{cke vom Typ INTEGER.
+Wenî  Position< gr>\eò aló diå L}ngå voî  Kette< ist¬  wirä  keiî 
+Zeicheî  gel>scht®  Wenî   Position<  «   Anzahl<  au\erhalâ  deò 
+Zeichenkettå  liegt¬  werdeî  nuò diå Zeicheî  gel>scht¬  diå  aâ  
+ Position<  innerhalâ  liegen®  Liegô  Position< nichô iî  1..255¬ 
+wird ein Laufzeitfehler erzeugt.
+
+Beispiel:
+
+  PROCEDURE Del;
+  VAR A: STRING^50~;
+  BEGIN
+    A:= 'Programmierung in PASCAL';
+    delete (A,9,9);
+    writeln (A)                     (*Ausgabe: Programm PASCAL*)
+  END;
+
+
+INSERT-Prozedur
+
+Syntax: insert ( Muster<, Kette<, Position<)
+
+Diå  Prozeduò  INSERÔ  f{gô iî deî  Ziel-STRINÇ   Kette<  aî  deò 
+Position  Position< den Quell-STRING  Muster< ein.
+Aló Musteò sinä Konstanteî odeò Variableî voí Tyğ STRINÇ unä CHAÒ 
+zugelassen®   Position<  isô  einå Variable¬  Konstantå odeò  eiî 
+Ausdruck vom Typ INTEGER.
+Isô  Position< gr>\eò aló diå L}ngå voî  Kette<¬ wirä  Muster< aî  
+ Kette< angef{gt® Wenî daó Ergebnió l}ngeò aló diå maximalå L}ngå 
+voî  Kette< ist¬  werdeî diå {berstehendeî Zeicheî  abgeschnitteî 
+unä   Kette<  erh}lô  nuò diå linkó  stehenden®  Wenî   Position< 
+au\erhalb von 1..255 liegt, entsteht ein Laufzeitfehler.
+
+Beispiel:
+
+  PROCEDURE Ins;
+  VAR A: STRING^80~;
+      B: STRING^20~;
+  BEGIN
+    A:= 'VEB Muehlhausen');
+    B:= 'Mikroelektronik ';
+    insert (B,A,5);
+    writeln (A)     (*Ausgabe: VEB Mikroelektronik Muehlhausen*)
+  END;
+.paŠLENGTH-Funktion
+
+Syntax: length ( Kette<)
+
+Dieså  Funktioî  lieferô diå L}ngå deò Zeichenkettå   Kette<  aló 
+INTEGER-Wert.
+
+Beispiel:
+
+  PROCEDURE Len;
+  VAR A: STRING^40~;
+  BEGIN
+    A:= 'Leipzig';
+    writeln (length(A),'/',length('Muehlhausen'));
+  END;                                           (*Ausgabe: 7/11*)
+
+
+POS-Funktion
+
+Syntax: pos ( Muster<, Kette<)
+
+Dieså  Funktioî  lieferô  diå  Positioî  deó  1®  Auftretenó  voî  
+ Muster< im STRING  Kette< als INTEGER-Wert.
+Wenî   Muster< nichô iî  Kette< gefundeî wird¬  danî lieferô  diå 
+Funktioî deî Werô 0.
+F{ò   Muster< unä  Kette< sinä einå Konstantå odeò  Variablå  voí 
+Tyğ  STRINÇ  odeò  CHAÒ zugelassen®  ARRAY-OF-CHAÒ wirä  wiå  eiî 
+String fester L}nge behandelt.
+
+Beispiel:
+
+  PROCEDURE Posf;
+  VAR A,B: STRING^30~;
+  BEGIN
+    A:= 'Standardfunktion';
+    B:= 'fun';
+    writeln (pos(B,A),'/',pos('a',A),'/',pos('xy',A))
+  END;                                      (*Ausgabe: 9/3/0*)
+
+
+STR-Funktion
+
+Syntax: str ( x<: b<: d<, Kette<)
+
+Diå  STR-Prozeduò  konvertierô  deî  numerischeî  Werô  voî    x< 
+(INTEGEÒ bzw® REAL-Typ© iî einå Zeichenkettå unä speicherô siå iî  
+ Kette<  ab®  Diå Konvertierunç kanî durcè diå voî  WRITELN/WRITÅ 
+bekannteî  Formatpaarå  b< (Ausgabebreite© unä  d<  (Dezimalstel
+len©  gesteuerô  werden®    b<  unä   d<  odeò   d<  k>nneî  aucè 
+weggelassen werden.
+.paŠBeispiel:
+
+  PROCEDURE Strt;
+  VAR  i:INTEGER;
+       j:REAL;
+       zk1,zk2:STRING^10~;
+  BEGIN
+    i:=1234;
+    j:=2.5E4;
+    str(i:5,zk1);         (*zk1 =' 1234'*)
+    str(j:10:0,zk2)       (*zk2 ='     25000'*)
+  END;
+
+
+VAL-Prozedur
+
+Syntax: val ( Kette<, Variable<, Code<);
+
+Deò  STRING-Ausdrucë   Kette<  mu\ deî Regelî  eineò  numerischeî 
+Konstanteî gen{gen®  Wedeò f{hrendå nocè nachfolgendå Leerzeicheî 
+sinä erlaubt. Diå Prozeduò VAÌ konvertierô diå Konstantå zõ eineí 
+Werô  voí  gleicheî  Tyğ wiå  Variable<  (INTEGER-/REAL-Typ©  unä 
+speicherô dieseî iî  Variable< ab® Wirä keiî Fehleò festgestellt¬ 
+isô  deò Werô deò Variableî  Code<=0®  Anderenfalló erh}lô  Code< 
+(Variablå  voí  Tyğ  INTEGER© deî Werô deò  Positioî  deó  ersteî 
+fehlerhafteî Zeichenó iî  Kette<¬ unä deò Werô voî  Ausdruck< isô 
+undefiniert.
+
+Beispiel:
+
+  str1:= '234';
+  val(str1,I,Result);    (* I = 234      Result = 0 *)
+  
+  str2:= ' 234';         
+  val(str2,I,Result);    (* I = undef.   Result = 1 *)
+
+  str3:= '2.5E4';
+  val(str3,r,Result);    (* r = 25000    Result = 0 *)
+
+
+4.7.2. Arithmetische Funktionen
+-------------------------------
+
+ABS-Funktion
+
+Syntax: abs ( Ausdruck<)
+
+Diå Funktioî lieferô deî Absolutwerô deò INTEGER- odeò  REAL-Zahì  
+ Ausdruck<.
+Das Ergebnis ist vom gleichen Typ wie das Argument.
+
+Beispiele:
+
+  write (abs (-3.21):5:2);     (*Ausgabe: 3.21*)
+  write (abs (-127):4:0);      (*Ausgabe: 127*)
+  write (abs (18.1299):8:4);   (*Ausgabe: 18.1299*)
+.paŠARCTAN-Funktion
+
+Syntax: arctan ( Ausdruck<)
+
+Diå  Funktioî lieferô deî Arcustangenó voî  Ausdruck< aló  reellå 
+Zahl. Das Argument  Ausdruck< ist im Bogenma\ anzugeben.
+
+Beispiele: 
+
+  write (arctan (1));        (*Ausgabe: 7.85398 E-01  (0.7854)*)
+  write (arctan (1.222));    (*Ausgabe: 8.84977 E-01  (0.8850)*)
+
+
+COS-Funktion
+
+Syntax: cos ( Ausdruck<)
+
+Diå  Funktioî lieferô deî Cosinuó voî  Ausdruck< aló reellå Zahl® 
+Das Argument  Ausdruck< ist im Bogenma\ anzugeben.
+
+Beispiele:
+
+  write (cos (1));           (*Ausgabe: 5.40302 E-01  (0.5403)*)
+  write (cos (1.4444));      (*Ausgabe: 1.26061 E-01  (0.1261)*)
+
+
+EXP-Funktion
+
+Syntax: exp ( Ausdruck<)
+
+Die Funktion liefert die Exponentialfunktion e  als reelle Zahl. 
+
+Beispiele:
+
+  write (exp (8));           (*Ausgabe: 2.98094 E+03  (2980.94)*)
+  write (exp (-12.5555));    (*Ausgabe: 3.52547 E-06
+                                        (0.00000352547)*)
+
+FRAC-Funktion
+
+Syntax: frac ( Real<)
+
+Die Funktion ermittelt den gebrochenen Teil von  Real<. 
+Das Ergebnis ist vom Typ REAL.
+
+Beispiel:
+
+  write (frac (123.37));     (*Ausgabe: 3.7 E-01  (0.37)*)
+.paŠINT-Funktion
+
+Syntax: int ( Ausdruck<)
+
+Die Funktion ermittelt den ganzen Teil von  Ausdruck<.
+Ausdrucë isô voí Tyğ INTEGEÒ odeò REAL®  Daó Ergebnió isô jå nacè 
+Argument vom Typ INTEGER oder REAL.
+
+Beispiel:
+
+  write (int (5.27):2);      (*Ausgabe: 5*)
+  r:= int(5);                (*wenn r=REAL dann 5.*)
+
+
+LN-Funktion
+
+Syntax: ln ( Ausdruck<)
+
+Diå  Funktioî lieferô deî nat{rlicheî Logarithmuó voî   Ausdruck< 
+als reelle Zahl.
+
+Beispiele:
+
+  write (ln (127));          (*Ausgabe: 4.8441870864*)
+  write (ln (18.5555));      (*Ausgabe: 2.9207662411*)
+
+
+SIN-Funktion
+
+Syntax: sin ( Ausdruck<)
+
+Diå  Funktioî lieferô deî Sinuó voî  Ausdruck< aló  reellå  Zahl® 
+Das Argument  Ausdruck< ist im Bogenma\ anzugeben.
+
+Beispiele:
+
+  write (sin (1):13:11);     (*Ausgabe: 0.84147098481*)
+  write (sin (1.684):12:10); (*Ausgabe: 0.9359930402 *)
+
+
+SQR-Funktion
+
+Syntax: sqr ( Ausdruck<)       
+
+Diå  Funktioî  lieferô daó Quadraô voî  Ausdruck<®  Daó  Argumenô 
+kanî voí Tyğ INTEGEÒ odeò REAÌ sein®  Daó Ergebnió isô gleicè deí 
+Typ von  Ausdruck<.
+
+Beispiele:
+
+  write (sqr (9.0000):2:0);  (*Ausgabe: 81*)
+  write (sqr (-12):3:0);     (*Ausgabe: 144*)
+.paŠSQRT-Funktion
+
+Syntax: sqrt ( Ausdruck<)
+
+Diå Funktioî lieferô diå Quadratwurzeì deò Zahì  Ausdruck< (REAL¬ 
+INTEGER). Das Ergebnis ist vom Typ REAL.
+
+Beispiel:
+
+  write (sqrt (100):2:0);    (*Ausgabe: 10*)
+
+
+4.7.3. Skalarfunktionen
+-----------------------
+
+ODD-Funktion
+
+Syntax: odd ( Integer<)
+
+Diå Funktioî lieferô deî boolescheî Werô deó Ausdruckó   Integer< 
+MOÄ ²  < 0¬ alsï f{ò geradzahligeó  Integer< lieferô diå Funktioî 
+FALSE, f{r ungerade Werte TRUE.
+ Integer< isô einå Variable¬  Konstantå odeò eiî Ausdrucë voí Tyğ 
+INTEGER.
+
+Beispiel:
+
+  PROCEDURE Od;
+  VAR i:INTEGER;
+  BEGIN
+    readln(i);
+    IF odd(i) THEN writeln('I = ungerade Zahl')
+              ELSE writeln('I = gerade Zahl')
+  END;
+
+
+PRED-Funktion
+
+Syntax: pred ( Ordinale<)
+
+Diå Funktioî lieferô deî Vorg}ngeò voî  Ordinale<®  
+ Ordinale< isô einå  Variablå voí ordinaleî Typ®  
+i:½ pred(i© isô schnelleò aló i:½ i-1.
+
+Beispiele: 
+
+  write (pred('C'));         (*Ausgabe: B*)
+  k:=5; write (pred(k));     (*Ausgabe: 4*)
+
+
+SUCC-Funktion
+
+Syntax: succ ( Ordinale<)
+
+Diå Funktioî lieferô deî Nachfolgeò voî  Ordinale<®  
+ Ordinale< isô einå Variablå voí ordinaleî Typ®  
+i:½ succ(i© isô schnelleò aló i:½ i+1.ŠBeispiele:
+
+  write (succ('H'));         (*Ausgabe: I*)
+  k:= 29; write (succ(k));   (*Ausgabe: 30*)
+  k:= succ(k);               (*k=30*)
+
+
+4.7.4. Konvertierfunktionen (ohne Pseudofunktion)
+-------------------------------------------------
+
+Diå Pseudofunktioîen zuò Konvertierunç CHAR¬  ORD¬  PTÒ  unä  daó 
+Retyping sind in Ziffer 4.3.4.5. dargestellt.
+
+
+ROUND-Funktion
+
+Syntax: round ( Real<)
+
+Diå  Funktioî  lieferô  diå  ganzzahligå  Rundunç  (Integer©  deò 
+reelleî Zahì  Real<®  Diå Funktioî }hnelô deò Funktioî TRUNC® Daó 
+Ergebnió  wirä hieò jedocè auæ diå n}chstå ganzå  Zahì  auf- odeò 
+abgerundet®  Betr}gô deò gebrochenå Teiì genaõ 0.5¬ danî wirä beé 
+positiven Zahlen auf- und bei negativen Zahlen abgerundet.
+  
+Beispiele:
+
+  write (round (1.463):2:0);       (*Ausgabe: 1*)
+  write (round (12.864):2:0);      (*Ausgabe: 13*)
+  write (round (-127.3468):4:0);   (*Ausgabe: -127*)
+
+
+TRUNC-Funktion
+
+Syntax: trunc ( Real<)
+
+Diå  Funktioî  lieferô  deî ganzzahligeî Teiì  deò  reelleî  Zahì  
+ Real<. Der Realteil wird abgeschnitten.
+
+Beispiele:
+
+  write (trunc (31.6781):2:0);      (*Ausgabe: 31*)
+  write (trunc (-6.18):2:0);         (*Ausgabe: -6*)
+
+
+4.7.5. Bildschirmorientierte Prozeduren
+---------------------------------------
+
+CLREOL-Prozedur
+
+Syntax: clreol
+
+Dieså Funktioî l>schô allå Zeicheî aâ Cursorpositioî bió zuí Endå 
+der Zeile, ohne die Cursorposition zu ver}ndern.
+.paŠCLRSCR-Prozedur
+
+Syntax: clrscr
+
+Dieså  Prozeduò l>schô deî Bildschirí unä setzô deî Cursoò iî diå 
+linke obere Ecke (Steuerzeichen J0C).
+
+
+GOTOXY-Prozedur
+
+Syntax: gotoxy ( Position<, Position<)
+
+Dieså Funktioî setzô deî Cursoò aî diå miô  Position< festgelegtå 
+Stellå  auæ  deí  Bildschirm®   Deò  erstå  Parameteò  (Variable¬ 
+Konstantå  odeò  Ausdruck© gibô  diå Spaltå unä  deò  zweitå  diå 
+Zeile an. Die linke obere Ecke (Home-Position) ist (1,1).
+
+
+NORMSCR-Prozedur
+
+Syntax: normscr
+
+Das mit SPECSCR gesetzte Attribut wird zur{ckgesetzt.
+
+
+SPECSCR-Prozedur
+
+Syntax: specscr
+
+Diå  Prozeduò setzô installationsabh}ngiç eiî  Bildschirmattribuô 
+(z.B®  INVERS¬ BLINË odeò HARDSCROLL)® F{ò das KÃ compact-Floppy-
+Systeí isô dieså Prozeduò auæ INVERÓ vorinstalliert» vgl® ESCAPE-
+Funktioneî ií Handbucè f{ò deî Programmierer.
+
+
+4.7.6. Sonstige Funktionen und Prozeduren
+-----------------------------------------
+
+ADDR-Funktion
+
+Syntax: addr ( Objekt<)
+
+Diå  Funktioî  lieferô  diå  Speicheradresså  (Tyğ  INTEGER©  voî  
+ Objekt<® Daó Argumenô  Objekt< kanî einå Variable¬ Prozeduò odeò 
+Funktion sein. Konstanten sind als Argument nicht erlaubt.
+
+Beispiel:
+
+  PROCEDURE Addr demo (Par:REAL);
+  VAR Satz: RECORD  @: INTEGER;
+                    B: BOOLEAN
+            END;
+      Adresse: INTEGER;
+      R      : REAL;
+      S      : ARRAY^1..100~ OF CHAR;
+  BEGIN
+    writeln (addr (Addr demo));Š    writeln (addr (Par));
+    writeln (addr (Satz));
+    writeln (addr (Satz.B));
+    writeln (addr (S))
+  END;
+
+
+CHAIN- und EXECUTE-Prozedur
+
+Syntax: chain    ( Dateivariable<)
+        execute  ( Dateivariable<)
+
+Diå  Prozedureî CHAIÎ unä EXECUTÅ erlaubeî voî eineí Programí auó 
+diå  Aktivierunç  andereò Programmdateien®  Einå  Verkettunç  voî 
+Programmeî  machô sicè erforderlich¬  wenî Programmå gr>\eò  sinä 
+aló   deò   verf{gbarå   Speicherplatú   unä   OVERLAY-Struktureî 
+ungeeignet sind.
+ Dateivariable< isô diå Variablå eineò ungetypteî Datei®  Siå mu\ 
+vorheò mitteló ASSIGÎ eineò Diskettendateé zugewieseî sein¬  daræ 
+aber nicht er>ffnet (RESET/REWRITE) werden.
+Diå   Prozeduò   CHAIÎ   wirä  verwendet¬   uí   einå   CHN-Dateé 
+abzuarbeiten¬  welchå vorheò miô deò Compiler-Optioî Í  compilerô 
+wurde (vgl. Punkt 2.6).
+Diå  CHN-Dateé wirä aî diå Stellå ií Speicheò geladeî unä beé deò 
+Adresså  gestartet¬  diå  daó aktuellå  Programí  hat¬  d.h®  diå 
+Adresse¬   diå  beé  deò  ]bersetzunç  deó  aktuelleî   Programmó 
+angegebeî  wurde®  Daó neõ gestartetå Programí verwendeô aucè diå 
+bereitó  ií  Speicheò  stehendå  Laufzeitbibliothek®  Auó  dieseí 
+Grundå m{sseî beidå diå gleichå Startadresså haben.
+Diå   Prozeduò   EXECUTÅ  wirä  verwendet¬   uí  einå   COM-Dateé 
+auszuf{hren¬   diå   eineî  abarbeitungsf}higeî   Codå   enth}lt® 
+Existiert die Disk-Datei nicht, tritt ein E/A-Fehler auf.
+Diå   Programmgr>\å  haô  beé  deò  Verkettunç  keinå  Bedeutung¬ 
+allerdingó  m{sseî  auszutauschendå Dateî  oberhalâ  deó  gr>\teî 
+Programms stehen, wenn eine  Daten{bergabe erforderlich ist.
+Dieser Datentausch kann auf drei Wegen ausgef{hrt werden:
+a© Gemeinsaí benutztå globalå Variableî (gleicheò  Vereinbarungs
+   teiì notwendig)
+b) Verwendung von absoluten Variablen (ABSOLUTE)
+c) Verwendung von Diskettendateien.
+
+Beispiel (ohne Datenaustausch):
+
+  PROGRAM Eins;
+  (*Programmierter Start des Programms Zwei*)
+  VAR Start : FILE;
+  BEGIN
+    assign(Start,'ZWEI.COM');
+    execute(Start)
+  END.
+
+Einå eventuelì erforderlichå R{ckkehò nacè CHAIÎ odeò EXECUTÅ inó 
+rufende Programm mu\ mit EXECUTE selbst organisiert werden.
+.paŠDELAY-Prozedur
+
+Syntax: delay ( Anzahl<)
+
+Dieså  Prozeduò  erzeugô  einå  Warteschleife¬  diå  iî  ungef}hò  
+ Anzahl<  ª  0.µ Millisekundeî durchlaufeî wird®  Diå exaktå Zeiô 
+kanî wegeî deò unterschiedlicheî Hardwarå etwaó davoî abweichen.
+
+
+EXIT-Prozedur
+
+Syntax: exit
+
+Dieså  Prozeduò dienô deí vorzeitigeî Beendeî eineò  Programmein
+heiô (Prozedur¬  Funktioî odeò dås Hauptprogramms)®  Wirä EXIÔ iî 
+eineò Prozeduò odeò Funktioî ausgef{hrt¬ sï wirä diå Programmaus
+f{hrunç iî deò rufendeî Programmeinheiô fortgesetzt.
+EXIT in einem Hauptprogramm wirkt wie HALT.
+
+Beispiel:
+
+  PROCEDURE Lesen;
+  BEGIN
+    assign(f,'DATEN.BAS');
+    (*JI-*)
+    reset(f);
+    (*JI+*)
+    IF ioresult  < 0 THEN BEGIN
+       writeln ('Dateifehler !!!');
+       exit;
+    END;
+  :
+  .
+  END;
+
+
+FILLCHAR-Prozedur
+
+Syntax: fillchar ( Ziel<, Anzahl<, Zeichen<)
+
+]bertragunç  voî   Anzahl<  gleicheò Zeichen  Zeichen<  iî  eineî 
+Speicherbereich, beginnend ab dem ersten Byte.
+Wenî   Anzahl< gr>\eò isô aló diå L}ngå voî  Ziel<¬  danî  werdeî 
+diå nachfolgendeî Dateî {berschrieben.
+ Zeichen<  isô  einå Variablå odeò Konstantå voí  Tyğ  CHAR®  Beé 
+ Zeichen< kleiner 255 ist auch die BYTE-Schreibweise erlaubt.
+
+Beispiel:
+
+  PROCEDUR Fil;
+  VAR Puffer: ARRAY^1..200~ OF CHAR;
+  BEGIN
+    fillchar (Puffer,200,' ');  (*in die Variable Puffer werden*)
+  END;                          (*200 Leerzeichen uebertragen*)
+.paŠHALT-Prozedur
+
+Syntax: halt         
+
+Diå  Prozeduò HALÔ bewirkô deî Abbrucè deò Programmausf{hrunç unä 
+die R{ckkehr in das Laufzeitsystem.
+
+
+HI-Funktion
+
+Syntax: hi ( Integer<)
+
+Diå Funktioî gibô daó h>herwertigå Bytå zur{ck®  Daó Ergebnió isô 
+voí  Tyğ INTEGEÒ (niederwertigeò Teiì deó Ergebnisseó  isô  stetó 
+Null).
+
+
+KEYPRESSED-Funktion
+
+Syntax: keypressed
+
+Diå  Funktioî gibô deî Werô TRUÅ zur{ck¬  wenî einå Tastå auæ deò 
+Konsolå  gedr{ckô  wurde®  Daó  Ergebnió wirä  durcè  Aufruæ  deò 
+Konsol-Status-Routine des BIOS realisiert.
+
+
+LO-Funktion
+
+Syntax: lo ( Integer<)
+
+Diå   Funktioî  gibô  daó  niederwertigå  Bytå  deó  Werteó   voí 
+Integerausdrucë   Integer< zur{ck®  Deò Tyğ deó  Ergebnisseó  isô 
+Integer (h>herwertiger Teil des Ergebnisses ist stets Null).
+
+
+MOVE-Prozedur
+
+Syntax: move ( Quelle<, Ziel<, Anzahl<)
+
+Dieså  Funktioî  kopierô  ií Speicheò einå bestimmtå  Anzahì  voî 
+Byteó   Anzahl< voî deò Speicherstellå aâ  Quelle< zuò  Speicher
+stellå aâ  Ziel<® Hierbeé sinä  Quelle< unä  Ziel< zweé Variableî 
+beliebigeî Typó (aucè Zeiger)¬  unä  Anzahl< isô eiî  Integeraus
+druck.
+
+
+OVRDRIVE-Prozedur
+
+Syntax: ovrdrive ( Drive<)
+
+Drive := 0/1/2/3/4
+Dabeé spezifizierô ° daó aktuellå Laufwerk¬  ± daó L× A¬ ² daó L× 
+Â usw®  Diå Prozeduò legô fest¬  iî welcheí Laufwerë diå OVERLAY-
+Fileó  000,001,..®  erwarteô werden®  Dá dieså beé deí jeweiligeî 
+Unterprogrammaufruæ  f{ò OVERLAY-Programmå ben>tigô  werden¬  mu\ 
+zur rechten Zeit das richtige Laufwerk spezifiziert sein.
+.paŠPARAMCOUNT-Funktion
+
+Syntax: paramcount
+
+Dieså Funktioî ermitteìt diå Anzahì deò  Kommandozeilenparameter¬ 
+diå  beií  Starô eineó COM-Fileó durcè Leerzeicheî getrennô  nacè 
+deí  COM-File-Nameî nocè angegebeî werden®  Daó Ergebnió isô  voí 
+Typ INTEGER.
+
+Beispiel: Kommando
+
+  <TEST ARTIKEL.DAT 15.9.89 ^ET~
+  paramcount liefert den Wert 2.
+
+
+PARAMSTR-Funktion
+
+Syntax: paramstr ( Integer<)
+
+Dieså  Funktioî stellô deî  Integer<-teî  Kommandozeilenparameteò 
+bereit®  Daó  Ergebnió  isô  voí  Tyğ  STRING®  Ií  Beispieì  f{ò 
+PARAMCOUNT gilt:
+
+Beispiele:
+
+  paramstr(1) = 'ARTIKEL.DAT';
+  paramstr(2) = '15.9.89';
+
+
+RANDOM-Funktion
+
+Syntax: random
+
+Gibô  einå  gleichverteiltå  Zufallszahì zwischeî Nulì  unä  Einó 
+zur{ck® Deò Tyğ isô REAL.
+
+
+RANDOM(I)-Funktion
+
+Syntax: random ( Integer<)
+
+Gibô  einå  Zufallzahì zur{ck¬  diå gr>\eò odeò gleicè  Nulì  unä 
+kleineò  aló  Integer< ist®   Integer< unä diå  Zufallszahì  sinä 
+beide vom Typ INTEGER.
+
+
+RANDOMIZE
+
+Syntax: randomize
+
+Deò    Zufallszahlengeneratoò    wirä   iî   eineî    definierteî 
+Anfangszustand versetzt.
+.paŠ.hePASCAL                        #              Sprachbeschreibung     
+SIZEOF-Funktion
+
+Syntax: sizeof ( Variable<)
+
+Diå Funktioî lieferô aló INTEGER-Werô diå L}ngå voî  Variable< iî 
+Bytes.
+F{r  Variable< ist jeder Variablenbezeichner zugelassen.
+
+Beispiel:
+
+  PROCEDURE Size;
+  VAR B: ARRAY^1..10~ OF CHAR;
+      A: ARRAY^1..15~ OF CHAR;
+  BEGIN
+    A:= 'ABCDEFGHI@KLMNO';
+    B:= '0123456789';
+    writeln(sizeof(A),'/',sizeof(B));    (*Ausgabe: 15/10*)
+    move (B,A,sizeof(B));
+    writeln (A);
+  END.                    (*Ausgabe: 0123456789KLMNO*)
+
+SIZEOF l}\t sich auch g{nstig mit FILLCHAR und MOVE verbinden.
+
+
+SWAP-Funktion
+
+Syntax: swap ( Integer<)
+
+Diå Funktioî gibô eineî Werô zur{ck¬ deò voî  Integer< daó h>her- 
+unä  niederwertigå  Bytå  vertauschô  hat®    Integer<  isô  einå 
+Variable oder Konstante vom Typ INTEGER.
+
+Beispiel:
+
+  i:= swap(J1234)   (*Wert von i = J3412*)
+
+
+UPCASE-Funktion
+
+Syntax: upcase ( Zeichen<)
+
+Zeicheî  isô  einå Variablå odeò  Konstantå  voí  Teilbereichstyğ 
+'a'...'z'.
+Daó Ergebnió isô deò entsprechendå Gro\buchstabe® Liegô  Zeichen< 
+au\erhalb des Bereichs 'a'..'z', ist die Funktion wirkungslos.
+
+Beispiel:
+
+  VAR T:STRING^20~;
+      i:INTEGER;
+  readln (T);
+  FOR i:=1 TO length(T) DO T^i~:= upcase(T^i~);
+

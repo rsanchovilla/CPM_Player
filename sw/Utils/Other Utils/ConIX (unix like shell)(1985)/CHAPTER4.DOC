@@ -1,0 +1,529 @@
+
+
+
+
+			  Chapter 4 - Memory Management
+
+
+	The  amount  of	 memory	 used  by  ConIX,  internal  machine  code
+	organization,  how  ConIX manages memory usage,	freeing	memory for
+	program	usage, overall system memory layout,  and  the	way  ConIX
+	treats memory from the user's standpoint.
+
+
+				   - CONTENTS -
+	__________________________________________________________________
+
+
+	  4.  Memory Management......................................  4-1
+
+	    4.1	 Management Levels...................................  4-2
+
+	    4.2	 ConIX System Memory Map.............................  4-4
+
+	    4.3	 Memory	Usage Rules..................................  4-6
+
+	    4.4	 Notes...............................................  4-7
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				      -	i -
+
+
+
+
+
+	ConIX Operating	System				 Memory	Management
+
+	4.  Memory Management
+
+	ConIX is very small considering	the number of features it
+	provides.  However, its	approximate 25K	size is	enough to take a
+	sizable	chunk out of the memory	available in any micro.	 The
+	crunch can be most harshly felt	in the reduced workspace for
+	programs, such as text editors,	which need as much memory as they
+	can get.  Some programs	make you pay in	memory for their features.
+	Not ConIX!
+
+	The test of time proves	any program's usability.  If a program is
+	cumbersome to use, it will simply fall into oblivion on	some dusty
+	shelf.	To prevent such	a dreary destiny for our program, we have
+	devoted	much time to making ConIX be more of a benefit to the
+	user, rather than a detriment.	The environment	it provides is
+	extremely powerful and useful, while it	has many features and
+	settings designed to make sure it will not get in the way of what
+	you want to accomplish.	 Memory	Management is one of those
+	features.
+
+	Simply defined,	Memory Management is the process by which ConIX
+	manages	the amount of TPA memory it occupies in	your system.  The
+	time when you usually need as much memory as possible is when
+	running	a program, so that more	data can be kept in active
+	workspace.  It is at this point	that you can select the	amount of
+	memory allocated for use by ConIX.
+
+	There are eight	different levels of Memory Management which can	be
+	set by the user, depending upon	how much memory	is needed.  Each
+	level corresponds to a segment of the ConIX machine code which is
+	actively stored	in memory.  Set	at its highest level (8), ConIX
+	will take up as	little as (12K of TPA memory!  Such a small amount
+	of memory will definitely go unnoticed when you're running any of
+	your CP/M programs.
+
+	The first is the lowest	level of Memory	Management.  When set at
+	this segment, no management takes place	and ConIX occupies the
+	maximum	amount of memory which it needs	to reside, in its
+	entirety, in your system.  Every time you move up one level, all
+	previous levels	get thrown out of memory before	the execution of a
+	disk-based command.  The space occupied	by the discarded levels	is
+	then made available for	use by the running program.
+
+	Once the program finishes execution, ConIX automatically reloads
+	only as	much of	itself as is needed to process your commands (to
+	level 5).  If you request a built-in command from a segment of
+	ConIX which is not currently in	memory,	then only that segment
+	will be	loaded.	 All reloading is done from the	original CONIX.COM
+	file, which was	used by	CP/M to	bring ConIX into your system
+	initially.  The	memory manager will look for this file in the
+	default	directory which	was set	when the initial CP/M load took
+	place.	This location may be changed with the OPT +CX internal
+	command.
+
+
+
+
+
+				       4-1
+
+
+
+
+
+	Memory Management			    ConIX Operating System
+
+	The Memory Management level can	be set by using	the OPT	+/-MM
+	internal command, as:
+
+		<A:00> opt +mm <#level>
+
+	The specified level number will	be the default each time a disk-
+	based program is executed.  For	example, typing:
+
+		<A:00> opt +mm 5
+
+	will set ConIX to invoke Memory	Management and remove code from
+	level 1	to 4 each time a command is loaded from	disk.
+
+	Execution of an	internal command can only increase the amount of
+	memory being used by ConIX since the command may lie in	a segment
+	which had been managed out of memory.  However,	this increase is
+	only temporary as these	segments will again be freed when another
+	.COM program is	executed.
+
+	The Memory Management level may	also be	modified for a single
+	program	by typing:
+
+		<A:00> [m=<#level>]  command  (arg(s))
+
+	This change is only temporary as the default level set by OPT +MM
+	will once again	be used	for all	following commands, unless
+	respecified.
+
+	Memory Management is a fast and	efficient means	by which you can
+	allocate space for program execution.  With this feature, you can
+	be sure	that ConIX will	never get in your way!
+
+
+	4.1  Management	Levels
+
+	The eight levels of Memory Management serve to group the ConIX
+	internal machine-code segments by different functions.	These
+	segments, and the functions contained within them, are described
+	below.
+
+	Level 1: Programming Functions
+
+	  This is the topmost level of ConIX (where the	top is the
+	  beginning and	the bottom is the end of the ConIX machine code).
+	  It contains data manipulation	commands which are most	often used
+	  only within a	Command	Language program.
+
+	Level 2: XCC Commands
+
+	  This is the segment which contains the instructions necessary
+	  for the execution of Command Language	programs.  It is,
+	  therefore, only used when such a program is running.
+
+
+
+
+
+
+				       4-2
+
+
+
+
+
+	ConIX Operating	System				 Memory	Management
+
+
+	Level 3: General Utilities
+
+	  The commands within this segment are used more often than those
+	  in the first segment,	but not	as often as those in the fourth.
+	  It is	an in-between group, mainly intended to	break up the size
+	  of the entire	Utilities code section.	 Most of the commands
+	  stored here are used for manipulating	memory.
+
+	Level 4: Utilities
+
+	  These	are the	most often used	commands or utilities.	You are
+	  most likely to access	this segment more often	during the course
+	  of using your	system than any	other level above it.  For
+	  example, the DIR and ERA commands reside here.
+
+	Level 5: Command Line Setup
+
+	  This segment is significantly	larger than any	of the previous
+	  ones.	 It contains the Command Line Processor, or parser, which
+	  performs all the command line	setup such as decoding arguments
+	  and variables.  It also contains the loader, which searches
+	  internally and on disk for the commands you enter.  After the
+	  command is found, the	selected redirection buffers and routines
+	  are activated	within this segment.
+
+	  Needless to say, this	section	must be	around in order	to process
+	  your commands.  Therefore, if	Memory Management is set to a
+	  higher level (above 5), this section and everything which is
+	  ``managed out'' below	it, must always	be reloaded after the
+	  execution of a disk-based program.
+
+	  To prevent delays after running programs, we recommend that
+	  Memory Management be set by default (using the OPT +MM internal
+	  command) to this level, namely 5.  If	you must occasionally
+	  execute a program that requires more memory, specify a higher
+	  level	of management using the	[M] Command Line Option.
+
+	  If you run programs that need	a lot of memory	more often than
+	  not, then specify the	default	level to be higher than	5.  When
+	  you run a command that does not need that much memory, specify a
+	  lower	level of management using [M], to prevent memory from
+	  being	freed unnecessarily.
+
+	Level 6: Redirection and SysCall Decoder
+
+	  This is the most important segment of	ConIX because it contains
+	  all of the run-time features which programs might utilize during
+	  their	execution.  For	example, Redirection, Print Spooling, and
+	  Function Keys	are included within this section.
+
+	  When Memory Management is set	to level 6 or lower, you will lose
+	  absolutely nothing as	far as features	are concerned.	ConIX will
+	  handle itself	properly knowing the memory usage restrictions
+	  imposed upon it by the user and no functionality will	be lost
+
+
+
+				       4-3
+
+
+
+
+
+	Memory Management			    ConIX Operating System
+
+	  because of this.  However, if	this section is	managed	out
+	  (management level set	above 6), a program will run exactly as	it
+	  would	under regular CP/M, which means	that all the ConIX
+	  features would be lost during	execution.  The	features will, of
+	  course, return for use by the	built-in commands, but they will
+	  be inaccessible to disk-based	software.  Therefore, whenever
+	  possible, this level should not be managed out, so as	to prevent
+	  such a drastic loss from occurring.
+
+	Level 7: Permanent Data	Storage
+
+	  This is the section where the	ConIX ``internal'' data	values are
+	  stored.  All the changes and customizations of features which
+	  were made during the course of using ConIX are recorded in this
+	  section.  If it is managed out (i.e.,	management level set to
+	  8), the data stored in this section (about 4K) must be saved so
+	  that the user's changes will remain when ConIX returns.  This	is
+	  done by writing the permanent	data area to a disk file,
+	  CONIX.DAT, stored in the default directory which was externally
+	  set when ConIX was first loaded from CP/M.  If CONIX.DAT already
+	  exists and is	set to R/O, it will not	be overwritten and the
+	  file CONIX.DA$ will be used instead.	In any case, the temporary
+	  file will be created with its	SYS attribute set and deleted once
+	  ConIX	is reloaded.  The OPT +CD internal command may be used to
+	  change the directory which will hold this file.
+
+	Level 8: System	Loader
+
+	  This is the highest possible level of	Memory Management.  All	of
+	  ConIX	is gone	except for a very small	loader which reloads the
+	  permanent storage section (level 7) from the temporary file
+	  CONIX.DAT/$.	Level 7	also contains the Memory Management code
+	  which	is then	used to	reload ConIX to	level 5	so that	additional
+	  commands can be processed.
+
+
+
+	4.2  ConIX System Memory Map
+
+	When running ConIX, your system's memory will be organized in the
+	following way:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				       4-4
+
+
+
+
+
+	ConIX Operating	System				 Memory	Management
+
+			   ___________________________
+			   |			     |
+			   |	    Page 0	     |
+			   | Reserved for System Use |
+			   |			     |
+			   ---------------------------
+			   |			     |
+			   | Transient Program Area  |
+			   |			     |
+			   ---------------------------
+			   |			     |
+			   | Transient Program Area  |
+			   |	   and ConIX	     |
+			   |			     |
+			   ---------------------------
+			   |			     |
+			   |	  ConIX	Loader	     |
+			   |			     |
+			   ---------------------------
+			   |			     |
+			   |	   CP/M	BDOS	     |
+			   |			     |
+			   ---------------------------
+			   |			     |
+			   |	      BIOS	     |
+			   |			     |
+			   ---------------------------
+
+	The first block	of memory is page zero which starts at location
+	0000h and is reserved for certain system functions, such as:
+
+		0000h	Warm Boot
+		0001h	BIOS Address
+		0005h	BDOS SysCalls
+		0006h	End of TPA + 1
+		005Ch	Default	FCB (36	bytes)
+		0080h	Default	DMA (128 bytes)
+
+	The next area in system	memory is the TPA, which is active memory
+	used to	store and execute disk-based (.COM) programs.  ConIX
+	occupies part of the TPA memory, the amount of which depends upon
+	the Memory Management level in effect.	This is	also the area
+	where the CCP resided before ConIX took	its place.  Following
+	ConIX is the loader segment which is a small (12K byte program
+	that reloads ConIX when	it is entirely managed out (level was set
+	to 8).
+
+	Finally, comes CP/M itself and the BIOS	system-dependent
+	functions.  These segments might not always be resident	in this
+	area of	memory if your system is running a CP/M	emulator, or
+	implements memory bank-switching.  Consult your	system manuals for
+	more information about the particulars of your CP/M
+	implementation.
+
+
+
+
+
+				       4-5
+
+
+
+
+
+	Memory Management			    ConIX Operating System
+
+	4.3  Memory Usage Rules
+
+	It is quite obvious that a disk	can hold much more data	than
+	active computer	memory,	as most	disks can store	more than the 64K
+	bytes of memory	that an	8-bit processor	can address.  Therefore,
+	it would seem logical to use the disk for operations which would
+	not fit	into memory.  Most programs operate as such if they must
+	handle data which can vary either small	or large, as a program for
+	a compiler, or a text file for an editor.
+
+	If such	a program is to	be efficient, it will try to use as much
+	memory as possible before going	to disk	for the	remainder of the
+	data.  This is the fastest method, as memory is	electronic and not
+	mechanical like	a disk,	and should be used instead of disk
+	whenever possible.  ConIX internally does exactly that by managing
+	how much memory	is actually needed at one time.	 But there is
+	actually more that the user can	do with	memory than ConIX can do
+	for itself automatically.
+
+	A great	deal of	the flexibility, speed and convenience offered by
+	ConIX lies in its attitude towards the way memory is to	be used.
+	ConIX contains many functions which allow you to specify the areas
+	of memory in which certain operations are to take place.  You are
+	given the freedom to use any part of memory that you like.  It is
+	entirely left up to the	user to	specify	memory which will not
+	interfere with the data	storage	and functions of ConIX itself.
+
+	The user should	be aware that all memory is volatile, and may be
+	changed	at any time by a running program, or by	ConIX itself.  The
+	operation of ConIX is most definitely predictable, as you can
+	always determine its start address with	the TOP	internal command.
+	Any memory between location 100h and this address may be utilized
+	for memory functions.  This area is called the Transient Program
+	Area, or just TPA.
+
+	Many disk programs use only a set, or at least predictable amount
+	of memory.  You	can usually figure out how much	memory is
+	available for holding some more	permanent data.	 Generally, most
+	ConIX internal commands	do not break into the TPA, so if you don't
+	run a program off disk,	you can	pretty much be assured that this
+	memory will remain untouched.  If an internal command will modify
+	the TPA	segment	of memory, then	it will	be clearly mentioned in
+	this manual.
+
+	Memory is highly recommended for use with data which is	small
+	enough to be stored without any	loss.  If you specify a	segment	of
+	memory which is	not large enough to hold the given data, ConIX is
+	smart enough not to exceed its bounds and simply excludes the
+	remainder.  Although levity in assigning memory	can be quite
+	fatal, if used carefully, you can achieve execution speeds which
+	rival the larger minis.
+
+
+
+
+
+
+
+				       4-6
+
+
+
+
+
+	ConIX Operating	System				 Memory	Management
+
+	4.4  Notes
+
+	The amount of memory required by a program is usually dependent
+	upon its size and the amount of	space required for storing run-
+	time data.  If a program is too	large to be loaded into	available
+	memory,	ConIX will print an appropriate	error message and abort.
+	At this	time, you should keep setting a	higher Memory Management
+	level until the	program	can load.
+
+	Once the program is loaded, it may not execute or run properly due
+	to a lack of memory.  If this is the case, you should try an even
+	higher level.  But remember, once you pass level 6, programs can
+	no longer take advantage of ConIX features.  We	have found
+	programs like WordStar and dBase II to run fine	at level 6.  (The
+	command	line option string we use is [m=6,f,o].)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				       4-7
+
+
+
+
+    >  - ÂHAPTER7DOC               N  Ä  ÂHAPTER7DOC               ^  -  ÂHAPTER8DOC               d Ä: 

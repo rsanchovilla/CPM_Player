@@ -1,0 +1,102 @@
+h40132
+s 00090/00000/00000
+d D 1.1 83/03/21 18:06:38 mrk 1 0
+c date and time created 83/03/21 18:06:38 by mrk
+e
+u
+mrk
+U
+t
+T
+I 1
+subroutine setbit (x, y, qvis)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: Encode an x y point into the raster buffer             #
+#                                                                      #
+#     Input Parameters:                                                #
+#            x, y - raster point to be turned on                       #
+#                                                                      #
+#     Output Parameters:                                               #
+#            none                                                      #
+#                                                                      #
+#     Routines Called:                                                 #
+#            divid  - divide two 16 bit integers                       #
+#            mult   - multiply two 16 bit integers                     #
+########################################################################
+integer x, y
+logical qvis
+
+integer xpos, ypos, iout, ival, j, k, i, index, yrow
+integer divid , mult
+integer clrtbl(7), clr1, clr2
+
+integer dispnt, pagcnt, primfg, objlst(DISPLAYxLISTxLENGTH)
+integer ytop,ybot
+SHORTINT rasbuf(RASTERxLENGTH)
+
+include(`ddcom')
+
+common /printr/ dispnt, pagcnt, primfg, objlst
+common /raster/ ytop, ybot, rasbuf
+
+data clrtbl /2, 13, 3, 12, 1, 23, 4/
+
+   qvis = .false.    # Point not visible yet
+
+   if (y < ybot | y > ytop) return  # Point is not in current printer scan
+
+   if (x < 0 | x > XxLIMITSxPRINTER)  return   # Can not put out this X point
+
+   if (ndclrp == 0)  return   # Do not use color 0
+
+   qvis = .true.    # Point is visible now
+
+   # Get the two colors that make up the color
+   clr2 = divid (clrtbl(ndclrp), 10, clr1)
+
+   xpos = x + 1                  # Bias into (1-max) range
+
+   # Since more than one color is in the raster buffer for the scan
+   # Use that color as an offset to determine which bit to set
+
+   ypos = ytop - y          # Bias into current rows (0 - (n-1))
+   yrow = divid (ypos, PRINTxSIZE, i)  # Mod for the bit into i
+
+   index = mult( clr1-1, RASTERxBUFFER) + xpos  # Byte to access
+
+   j = 1      # Determine bit to set
+   for (; i>0; i=i-1) {
+      j = mult (2, j)
+      }
+
+   # Need to see if the bit is already set before adding it in
+   k = mult(j, 2)
+   ival = divid (rasbuf(index), k, iout) # And off bottem bits into iout
+
+   if  (iout < j)  {  # The bit is not set, need to set it
+      rasbuf(index) = rasbuf(index)+j  # Set the correct bit for the printer
+      }
+
+   if (clr2 > 0)  {  # Then the color must be mixed
+      index = mult( clr2-1, RASTERxBUFFER) + xpos  # Byte to access
+
+      # Need to see if the bit is already set before adding it in
+      ival = divid (rasbuf(index), k, iout) # And off bottem bits into iout
+
+      if  (iout < j)  {  # The bit is not set, need to set it
+         rasbuf(index) = rasbuf(index)+j # Set the bit for the printer
+	 }
+      }
+
+   return
+end
+E 1

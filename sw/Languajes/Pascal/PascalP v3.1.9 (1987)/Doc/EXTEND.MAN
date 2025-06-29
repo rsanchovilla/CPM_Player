@@ -1,0 +1,502 @@
+.macro chttl = Language Extensions
+.ch .chttl
+.hl 1 Standard Procedures
+The following standard procedures have been added to the required  Pascal
+set.  Their use usually does not require the S- mode (See use of fname below),
+and  most  can normally be replaced (for portability) by user  written  
+procedures.  {} enclose optional parameters. 
+If P- mode is in effect all procedures
+not in the standard Pascal set will be flagged by warnings.
+
+.note NOTE
+The standard procedures required by the various Pascal Standards
+are not discussed here.  
+.res
+
+In  the  following fname may be a character string (e.g.  'fname') or  a
+reference to a packed array of char terminated with a blank.  Use of fname  in
+calls to reset, rewrite, exists, appendto, update requires S- mode.  Note that
+fname  should always be terminated with a blank.  Fname should normally  begin
+with  an  alphabetic  character,  and contain only  alpha-numeric  characters.
+Lower  case characters are automatically upshifted before use,  but  a  string
+variable will not be affected.
+
+.hl 2 File Access 
+At present APPENDTO is parsed, but not implemented at run-time.
+
+.i 10     RESET(VAR f{, fname});
+.i 10     REWRITE(VAR f{, fname}); .cr
+have been extended to allow the optional 2nd.  parameter.  This causes 
+attachment to the named external file.
+
+.i 10     EXISTS(VAR f{, fname}) : boolean; .cr
+is equivalent to "reset", but does not cause a run-time error if the operation
+fails.  It returns true for success, else false.
+
+.i 10     APPENDTO(VAR f{, fname}); .cr
+is equivalent to "rewrite", but opens a file for append access.  The file must
+pre-exist, and any further writes append to that file.
+
+.i 10     UPDATE(VAR f{, fname}); .cr
+is equivalent to rewrite/reset, but allows direct access to records of a fixed
+record size file.  f may not be a text file.  See REPOSITION.
+
+.i 10     RENAME(VAR f, fname) : boolean; .cr
+renames  the previously opened file f to fname.   Returns true if  successful.
+Also  closes the file automatically.   Failure may be caused by  a  previously
+existing file named "fname",  (on the same disk drive under CPM),  by illegal
+.bb fname, .eb by f not being open,  and by f being a
+device-file rather than a disk file.
+
+.i 10     PURGE(VAR f); .cr
+purges the previously opened file f.  f must be a disk file.
+
+.i 10     CLOSE(VAR f); .cr
+closes the previously opened file f
+
+.i 10     FILENAME(f, fname : packed array[1..28] of char); .cr
+returns the actual system file name to fname.  f must be open.  Under CPM, if
+the  file is open on other than the default drive,  or a drive  was  specified
+when opened, that drive id is returned in fname.  Fname is returned upshifted.
+
+.i 10     STATUS(f) : integer; .cr
+returns 0 if the file is not open, otherwise an odd value.  
+Negative values signify some  form  of  error.   
+For positive values various  bit  positions  have  special
+significance, and are especially useful with device files:
+.asis
+
+     1 = file is open;
+     2 = a get will function without waits;
+     4 = put will function without waits
+     8 = writeln will function without waits.
+!
+.hl 2 File read/write procedures
+
+.i 10     OVERPRINT(f,#...); .cr
+.i 10     PROMPT(f,#...); .cr
+are  syntatically  identical to the  standard  writeln  procedure.   Overprint
+causes output without a following line feed,  and prompt causes output without
+a  following carriage return or line feed.   In all cases the output buffer is
+flushed  to  the output device. .bb  Prompt should be used whenever a line
+that has not been completed by "writeln" is intended to appear on the output
+device (typically the console).  Without this the message will probably
+remain within a system buffer. .eb
+
+.i 10     READX(f, VAR) : boolean; .cr
+is  similar to read for integer or real variables,  but does not create a 
+run-time error when bad input is found. 
+It returns true when no valid input  was
+supplied,  otherwise  false.   Only  one argument may be read,  as opposed  to
+read(f, VAR, VAR,..);
+
+.bb
+.i 10     READ(f, VAR a : PACKED ARRAY[1..?] OF char); .cr
+The read procedure has been extended to allow input of strings.  Input will
+continue until either the string is full, or eoln is encountered.  In any
+case the final character in the string will be a nul (chr(0)), and any
+remaining portion of the string will be nul filled.  Note that this means
+that the maximum length of the received string is one less than the
+declared string length.  No automatic readln is executed, so that long
+input lines may  be completely received by multiple reads, or flushed by
+readln.  If eoln is true at completion, the complete line was read. The
+length of the input line can be discovered with the LENGTH function. .eb
+
+.bb
+.i 10    LENGTH(VAR a : PACKED ARRAY[1..?] OF char) : integer; .cr
+is effectively a special application of the SCANFOR function, with
+some parameters automatically supplied by the compiler.  It is used to
+discover the length of text lines read into arrays.  Note that this
+describes the actual length of the string, and that proper storage with
+the terminating marker requires one extra byte. .eb
+
+.bb
+.i 10 STRINGCP(VAR s1,s2 : PACKED ARRAY[1..?] OF char) : integer; .cr
+compares strings read by the above string read procedure, or other
+strings terminated by a nul (chr(0)) byte.  Returns +1, 0, -1 for
+s1 greater, equal, or less than s2.  Comparison does not include 
+any characters past the length of the shorter string, and a string
+identical to a shorter string up to the lenth of the shorter string
+is considered larger. .eb
+
+.i 10     REPOSITION(f, integer); .cr
+repositions file  f at record #(integer) for further random access.   The file
+must  have  been opened with the "UPDATE" procedure,  and must not be  a  text
+file.   After reposition a get(f) may be performed to read the desired record,
+or  a  put(f) can write into the desired record.   A sequence of gets or  puts
+will  act as if the file was sequential.   To switch from get to put (or  from
+put to get) REPOSITION must first be executed.   Under CPM repositioning to a
+point  past the end of file will extend the file and fill the new record  with
+binary  zeroes.   This  allows the use of "sparse" files  in  databases.   The
+record size is defined by the Pascal declaration of the file.
+
+.bb
+.hl 2 Unsigned arithmetic.
+
+These procedures operate on values stored as integers, but will not cause
+integer overflows, and treat all values as unsigned.  The use of the type
+declaration "unsigned = integer;" is suggested.  You should imagine the
+appropriate arithmetic operator inserted between the parameters.
+
+.i 10     UADD(u1, u2 : unsigned) : unsigned; .cr
+.i 10     USUB(u1, u2 : unsigned) : unsigned; .cr
+.i 10     UMULT(u1, u2 : unsigned) : unsigned; .cr
+.i 10     UDIV(u1, u2 : unsigned) : unsigned; .b
+.i 10     UCMP(u1, u2 : unsigned) : integer; .cr
+compares two unsigned values, returning +1, 0, or -1 for u1 greater,
+equal, or less than u2. .eb
+
+.hl 2 Miscellaneous Procedures
+
+.i 10     SIZEOF(VAR or TYPE id) : integer; .cr
+a pseudo-function returning the storage requirements of the item in the  units
+of the executing system.
+
+.i 10     TYPEID(expression) : typeid; .cr
+a pseudo-function,  converts expression to a value of type typeid.  Expression
+and  typeid  must occupy the identical storage space.   Primarily used as  the
+inverse of "ORD" to convert an integer to an enumerated type.   Other uses are
+possible, but dangerous.  Use of this function requires the S- mode.
+
+.i 10     TERMINATE; .cr
+terminates program execution whenever executed.
+
+.i 10     SETJCW(integer); .cr
+sets the system job control word. Causes a running job to terminate at program
+completion if set to a negative value.  No effect in interactive processing.
+
+.i 10     DATER(VAR dl : PACKED ARRAY[1..15] OF char); .cr
+returns the current date and time formatted as: .b
+.i 15          yy/mm/dd hh:mm####(with a trailing blank) .b
+.note NOTE
+This meets ISO standards and collates in ascending time order.   If
+no system timers exist the string "00/00/00##0:00#" is returned.
+.res
+
+.i 10     ASL(i, n) : integer; .cr
+.i 10     ASR(i, n) : integer; .cr
+.i 10     LSL(i, n) : integer; .cr
+.i 10     LSR(i, n) : integer; .cr
+These  functions provide various integer shifts.   The arithmetic  shifts  may
+cause overflows.
+
+.i 10     ALLOCATE(VAR p : _^something); .cr
+is  functionally  identical to NEW,  except that no heap overflow  error  (and
+attendant  abort) will occur.   If the allocation fails p will be set to  NIL.
+Thus  the  application program can detect that a failure  occurred,  and  take
+remedial action.
+
+.bb
+.i 10     GETMEM(VAR p : _^something, size : integer); .cr
+is functionally identical to ALLOCATE, except that the user can specify  the
+size of memory to be allocated (in bytes).  This is UNSAFE in that no
+protection now exists against storing items too large for the assigned
+memory.  S- mode is required.  The assigned storage may be released with
+DISPOSE or RELEASE. .eb
+
+.i 10     DEBUG; .cr
+accesses the system debugger,  and is system dependant.  On the HP3000 this is
+the "debug" subsystem.  Under CPM the entire system should be executing under
+DDT  or  the equivalent,  because control is transferred via  memory  location
+038H after the state of the P-machine is displayed.
+
+.i 10     DELAY(seconds : integer); .cr
+pauses  the  executing  program  for seconds.   If the  system  has  not  been
+customized  to the clock speed (under CPM) the delay period may be in  error.
+Other implementations (e.g. time shared) may pause a process.
+
+.i 10     RANDOM(VAR seed : integer) : real; .cr
+returns  a pseudo-random number in the range 0 to less than 1.   The number is
+depandant on the input value of seed, which should not otherwise be altered.
+
+.i 10     MASK(integer, integer) : integer; .cr
+performs a bitwise AND over the integers.  No overflows can occur.
+
+.i 10     CRC(char, VAR integer); .cr
+incorporates the byte valued character in a CRC checksum, using the polynomial
+x^16 + x^12 + x^5 + 1.  Useful for communication systems.
+
+.i 10     MARK(p); .cr
+Where  p is of any pointer type.  Marks the heap in the current state. The
+variable p should not be altered until the corresponding "release".
+
+.i 10     RELEASE(p); .cr
+Releases all items created by NEW since the corresponding MARK(p).
+
+.note NOTE
+Mark and release are found on many Pascal systems,  but are not standard.
+.res
+.hl 2 System Programming Procedures
+These  procedures are used in various system programs,  and are generally
+useful.  They insulate against various run-time environments.
+
+.i 10     MERGEREAL(hi, lo : integer) : real; .cr
+.i 10     MERGEBYTES(hi, lo : integer) : integer; .cr
+.i 10     SPLITREAL(r : real; VAR hi, lo : integer); .cr
+.i 10     SPLITBYTES(i : integer; VAR hi, lo : integer); .cr
+insulate  between  differing  object  machine  storage  assignment  order  and
+patterns.   Programs using these are portable, while use of variant records is
+not. (byte is used as a synonym for char).  For example
+
+.i 20            i := mergebytes(ord(hibyte), ord(lobyte)); .b
+.i 30                        is completely machine independent.
+
+.note NOTE
+A  "standard real" for the system is defined as the bit pattern  used  on
+the  HP3000 (sign,  9 bit exponent offset by 256,  22 bit significand with  an
+implied  leading  1 bit),  which is not quite identical to the IEEE  standard.
+All  real  constants  in PCD files are of this  form,  and  are  automatically
+converted to resident form at execution time.   Native code files use whatever
+form is resident.
+.res
+
+For systems programs format conversions are performed by:
+
+.i 10     STDREAL(r : real) : real; (* resident to standard *) .cr
+.i 10     MYREALSTD(r : real) : real; (* std to resident *) .cr
+.i 10     REAL8080(r : real) : real; (* resident to 8080 *) .cr
+.i 10     MYREAL80(r : real) : real; (* 8080 to resident *) .cr
+In  general  the output of these functions is only usable  for  assignment  or
+manipulation by the split/merge byte/real procedures  above.
+
+The sequence
+.i 15                   r := real8080(myrealstd(standardreal)); .b
+will convert standard reals to 8080 reals on all machines.
+
+.i 10     POINTERTO(variable); .cr
+allows generation of a pointer to that variable.   S- mode is required.   Note
+that whenever such a pointer is assigned d- mode should be in effect,  because
+the  "pointed to" variable is not in the heap,  and "invalid pointer" run-time
+errors  will  occur.   This  is non-standard Pascal,  and  should  be  avoided
+wherever possible.
+
+.i 10     MOVETO(VAR char, char; integer); .cr
+.i 10     MOVEUP(VAR char, char; integer); .cr
+are NON-PORTABLE in general.   These avoid all type checking,  and allow  mass
+moves of storage content between arrays.   The char parameters can be supplied
+by integer variables, pointers, etc. as desired.  No run-time checks are made.
+Usage is thus inherently unsafe, but provides an escape from rigid Pascal type
+and bounds checking.  MOVETO moves the lower addressed elements first, and can
+be  used to move arrays downwards within themselves.   MOVEUP moves the higher
+addressed  elements  first,  and  can be used to move  arrays  upwards  within
+themselves.   "integer" is the number of storage elements to move, in terms of
+character  storage  units.   The  first parameter  is  the  destination  (thus
+"moveto"), and the second the source.
+
+.i 10     SCANFOR   (char; VAR char; max : integer) : integer; .cr
+.i 10     SCANWHILE (char; VAR char; max : integer) : integer; .cr
+are again machine dependant and NON-PORTABLE.   NO CHECKING ON the VAR char is
+performed.  Thus this may be supplied by an array referance, or by a referance
+to an item within an array of char.,  or any other variable.  It is treated as
+a pointer to element 1 of an array [1..max] of char if max is positive, and as
+a  pointer  to element -1 of the array [-max..-1] if max is  negative.   0  is
+returned  if  the  searched-for  element  is not  found  (or  only  found  for
+scanwhile),  else the index (measured as above) of the searched element.  Note
+that negative values of max cause backward searches,  
+and return negative, or 0, values. .bb Scanwhile can be considered a search for
+an element NOT equal to char. .eb
+No storage is ever altered by the search, which simply returns information.
+
+.hl 2 Special procedures
+These  allow for precise control of CPM systems,  and are  non-portable.
+They should therefore normally be avoided.
+
+.i 10     PEEK(n) : integer; .cr
+.i 10     GETPORT(n) : integer; .cr
+are functions returning 0..255
+
+.i 10     POKE(n, i); .cr
+.i 10     PUTPORT(n, i); .cr
+are procedures storing 0..255.
+
+.i 10     INTERRUPTS(onoff : boolean); .cr
+controls the interrupt system.
+
+.i 10     SYSCALL(fnct : integer; parm : integer) : integer; .cr
+.i 10     IOCALL(entryno : integer; data : integer) : integer; .cr
+allow  for direct connection to CPM services.   The parm and data  parameters
+are  not checked,  so that any type which fits in a single 16 bit word may  be
+used.   In  particular,  to satisfy CPM requirements,  these may be  pointers
+generated by the POINTERTO standard procedure (s- mode required).   With these
+procedures interface procedures to the system may be generated, thus isolating
+system  dependant  features from the application.   Note  that  no  protection
+against misuse exists.
+
+.hl 2 Super Special Procedures
+
+These are available when suitable connectors have been installed,
+and are thus not generally portable.   However  standard
+connector locations exist in the interpreters and run-time packages.
+See the file CPMLINK.MAC.
+
+.i 10     CPUTIME(VAR t : ARRAY[0..1] OF 0..maxint); .cr
+.i 10     TIMECLK(VAR t : ARRAY[0..1] OF 0..maxint); .cr
+return  (timeclk)  time of day in millisecs   after  midnight,  or
+(cputime) central processor time used.   Under CPM the procedures are 
+identical.  ARRAY[0] is the less significant part.
+
+.i 10     TIMESET(hour, min : integer); .cr
+.i 10     DATESET(VAR d : array[0..2] OF integer); .cr
+.i 10     DATEGET(VAR d : array[0..2] OF integer); .cr
+provide  for  Pascal program control of  system  timers.   On  the
+HP3000  timeset  and dateset are illegal (reserved for system).   ARRAY[0]  is
+day,  ARRAY[1] is month,  ARRAY[2] is year.  By convention dateset to an array
+of zeroes stops the time of day clock.
+
+.i 10     STARTINTERVALTIMER(interval : integer; where : _^boolean); .cr
+.i 10     STOPTIMER; .cr
+provide  for timed input systems.   Startintervaltimer causes  the
+boolean  "where"   to be unconditionally set to TRUE  at  "interval"  periods.
+This  can be used as a flag to acquire a value from A/D converter files,  etc.
+Stoptimer disables this. Not available on HP3000.
+
+.i 10     STARTPROFILER(interval : integer; where : _^storage); .cr
+initializes the profiler subsystem,  and allows measurement of program dynamic
+execution.  The main program .bb must include  PROFILER.INC file,  declare
+the auxiliary constants, .eb and call the initializing,  stopping,
+and  dumping procedures.   The utility program "PLOTPROF" can then  create  an
+execution  time  histogram.   This  subsystem provides  information  to  guide
+program   optimization,   and   can   avoid  wasting  effort   on    pointless
+optimizations.   Note  that the profiler,  at present,  is  incompatible  with
+STARTINTERVALTIMER, since the identical timer hardware is used.
+
+.hl 1 File System
+The file system contains provisions for files as components of  structured
+types, including pointers to files.  Use of files in such types requires 
+specific  user  use  of the standard procedure FILEINIT(f) to  
+initialize  the  file control  blocks before any
+other use of the file is made,  and of the  standard procedure
+CLOSE(f)  to close the file.   The compiler performs the  equivalent
+procedures on directly declared files (e.g. f : text) automatically, but does
+not detect the presence of the file types within structured variables.
+
+The  file  system  of standard Pascal has been extended  to  allow  direct
+access  and attachment to files.   Additional carriage control procedures have
+been added.
+
+A second parameter may be added to RESET and REWRITE.   This parameter is
+a character string containing the external file name in internal format.   The
+last character of this string must be a blank.
+
+Execution  of "write(f,'string':0)" and equivalent statements is  a  null
+operation.  This is non-standard Pascal, and is never flagged.  If string is a
+single  character (ex.  write(f,'a':0) ) an error occurs.   The maximum string
+length or field size is 255,  however multiple writes may create any length of
+line.
+
+REPOSITION  (file,
+integer)  will reposition a file to the indicated record.   A  subsequent  GET
+will  begin at this record,  while a subsequent PUT will write to this record.
+Note  that REPOSITION will not modify the EOF flag;  it is ignored  in  
+determining the validity of the next GET or PUT. Future changes are possible.
+
+Under  CPM  all  disk files are mapped into CPM  standard  formats  and
+packed into successive 128 byte file records.  File items may cross sector and
+extent boundaries.
+
+Two  new formatting procedures have been added.  OVERPRINT (file)  writes
+the  buffer without advancing the line.   The next line will print on  top  of
+this one.  The procedure PROMPT (file) writes the current line without 
+repositioning  the carriage.   
+This allows a subsequent READLN to read from the same
+line as the output message.    Both OVERPRINT and PROMPT deal with the current
+line (buffer) contents.  Like PAGE, the file parameter is optional.  Note that
+lines output by the PROMPT procedure will not have trailing blanks removed.
+
+STATUS(file) returns an Integer
+value.   It is zero if the file has not yet been used,  and odd if the file is
+open.  It  returns a negative value for errors (device and  system  dependant.
+STATUS can be used to determine whether, for example, a "rewrite" was 
+successful.   
+
+.note NOTE
+a  rewrite failure always causes an error message,  however the
+system  normally  allows  up to 5 non-fatal run-time errors  to  occur  before
+aborting.
+
+.hl 1 Lazy I/O
+The  "lazyio"  system is implemented.   This allows normal use of  interactive
+files  (e.g.  CON) while meeting the Pascal  standards  for  reset,
+readln, etc.  These normally perform logical access to the following character
+of  the file,  which is then available for look ahead via eof,  eoln,  f^ 
+references.   The system postpones the physical 
+input of that character/condition
+until  it  is  actually referenced,  thus allowing natural  use  of  prompting
+messages, etc.  While not yet provided, the implementation is such as to allow
+implementation of a single level UNGET(f) procedure (for textfiles only).
+
+Note  that some programming care must be taken to avoid referring to eof,
+eoln, f^ until such prompts have been made.
+
+Thus  any  text file may be routed  to/from  interactive  devices  (e.g.
+console), with no special programming considerations.
+
+
+.hl 1 Procedure Calls
+The  procedure  call syntax has been extended to allow reference to  
+separately compiled programs and to procedures written in other  languages.   
+The word  "FORWARD" is replaced by "EXTERNAL" for separately compiled  
+procedures, and by "INTRINSIC" for procedures in other languages.
+
+.hl 2 Separate Compilation
+Separate compilation is achieved by removing the main program but leaving
+the trailing ".".   Note that the ";" still terminates the final procedure. S-
+mode is required.  All procedures defined at the outermost level may be 
+referenced  in another compilation.   
+Such separately compiled procedures may refer
+to globals defined within the source code,  but it is up to the user to ensure
+that  such  globals  are identical with those  used  in  other  modules.   The
+_$include  facility (or {$i'name'} pseudo-comment) is useful for this  purpose.
+The resultant code files will .bb be RBM (relocatable
+binary module) files under CPM. 
+RBM files can be linked with "LINKER" under CPM.
+See "Program  segmentation". .eb
+
+.hl 2 Procedure Parameters
+Note that while access to programs written in languages other than Pascal
+is  permitted by using INTRINSIC,  it is up to the user to  create  compatible
+parameters. 
+
+Procedure  parameters are stacked in the order declared in the  procedure
+heading.   Value parameters are completely evaluated,  and may be of any size.
+They  may be treated as initialized variables,  but may not be used to control
+FOR  loops.  A  function value is treated as a parameter preceding  all  other
+paramaters, and is not removed on function exit.  The user should NOT assume a
+default functional value, but should always explicitly set it.
+
+.hl 1 Case Default
+The  syntax  of the CASE statement has been extended to allow  a  default
+action  to be taken if the expression value is not represented in the list  of
+labelled statements using an "OTHERWISE" clause at the termination of the CASE
+statement  (as defined in the draft ISO standard)  This extension requires  S-
+compilation  mode.   In the absence of this statement any execution of a  case
+statement with an undefined case variable will cause a run-time error (with or
+without runtime checks enabled).
+
+.hl 1 Complex Comparisons
+Structured variables may be compared for (in)equality, as in "IF array1 =
+array2",  but  not  for  other relations.   This is an extension  to  standard
+Pascal, and at present is not detected by the S+ compiler option.  For future
+compatibility  such  use should be bracketed by the S- _....  S+  options  in
+source code to prevent generation of warnings. Note that "array1 := array2" is
+legal Pascal, enforcing equality.
+
+.hl 1 Strings
+An ISO standard compatible string facility has been included.  See the 
+discussion of READ, LENGTH, and STRINGCP procedures above.  The design is
+such that programs using these extension may be ported to any standard
+Pascal system by writing appropriate procedures.  However, such replacement
+procedures will have the normal strong typeing, rather than be universal.
+
+.hl 1 Substrings
+A  limited substring facility has been provided.   A  modified  subscript
+specifies  the  initial  index and length within a string.   In  keeping  with
+normal  Pascal philosophy,  the substring length must be a  compile-time  
+constant.   A[I  FOR 10] specifies 10 elements of array A starting at element  I.
+The  substring variable may be used on either side of an assignment,  or as  a
+procedure  parameter.   The same notation may be used for arrays of any  type,
+but  no further subscripts or field selections may be applied.   This notation
+is portable,  but more restrictive that the MOVETO and MOVEUP procedures noted
+above. S- mode is required.
+
+gq

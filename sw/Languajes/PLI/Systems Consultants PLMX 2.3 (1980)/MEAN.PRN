@@ -1,0 +1,123 @@
+MEANV	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                	TITLE MEANV
+                                	NAME ('MEANV')
+  0000'                         MEANV::
+                                ;
+                                ;/***********************************************************/
+                                ;/* A PROGRAM TO FIND THE MEAN OF THE 10 VALUES OF AN ARRAY */
+                                ;/***********************************************************/
+                                ;
+                                ;
+                                ;MEAN$VAL:
+                                ;
+                                ;DO;
+                                ;
+                                ;
+                                ;        DECLARE X (10) BYTE DATA (23,2,18,0,20,14,45,27,8,33);
+                                ;
+                                ;        DECLARE SUM ADDRESS;
+                                ;
+                                ;        DECLARE (MEAN, I) BYTE;
+                                ;
+                                ;
+                                ;        SUM = 0;
+  0000'   21 0000               	LXI H,0H
+                                ;
+                                ;        I = 0;
+  0003'   22 0000"              	SHLD A0003
+  0006'   3E 00                 	MVI A,0H
+                                ;
+                                ;        DO WHILE I <= 9;
+  0008'   32 0003"              	STA A0005
+  000B'                         G0007:
+  000B'   2E 09                 	MVI L,09H
+  000D'   3A 0003"              	LDA A0005
+                                	EXTRN BP36@
+  0010'   CD 0000*              	CALL BP36@
+                                ;
+                                ;           SUM = SUM + X (I);
+  0013'   0F                    	RRC
+  0014'   D2 0039'              	JNC G0008
+  0017'   2A 0003"              	LHLD A0005
+  001A'   26 00                 	MVI H,0
+  001C'   EB                    	XCHG
+  001D'   21 004D'              	LXI H,A0001
+  0020'   19                    	DAD D
+  0021'   7E                    	MOV A,M
+  0022'   2A 0000"              	LHLD A0003
+                                	EXTRN BP57@
+  0025'   CD 0000*              	CALL BP57@
+                                ;
+                                ;           I = I + 1;
+  0028'   22 0000"              	SHLD A0003
+  002B'   2E 01                 	MVI L,01H
+  002D'   3A 0003"              	LDA A0005
+                                	EXTRN BP25@
+  0030'   CD 0000*              	CALL BP25@
+                                ;
+MEANV	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+                                ;        END;
+  0033'   32 0003"              	STA A0005
+  0036'   C3 000B'              	JMP G0007
+                                ;
+                                ;        MEAN = SUM / 10;
+  0039'                         G0008:
+  0039'   3E 0A                 	MVI A,0AH
+  003B'   2A 0000"              	LHLD A0003
+                                	EXTRN BP71@
+  003E'   CD 0000*              	CALL BP71@
+  0041'   22 0005"              	SHLD T0009
+  0044'   3A 0005"              	LDA T0009
+                                ;
+                                ;
+                                ;END MEAN$VAL;
+  0047'   32 0002"              	STA A0004
+                                	EXTRN EXIT@
+  004A'                         SCAT@:
+  004A'   CD 0000*              	CALL EXIT@
+  004D'                         A0001:
+  004D'   17                    	DB 017H
+  004E'   02                    	DB 02H
+  004F'   12                    	DB 012H
+  0050'   00                    	DB 0H
+  0051'   14                    	DB 014H
+  0052'   0E                    	DB 0EH
+  0053'   2D                    	DB 02DH
+  0054'   1B                    	DB 01BH
+  0055'   08                    	DB 08H
+  0056'   21                    	DB 021H
+  0057'                         	DSEG 
+  0000"                         A0003:
+  0000"                         	DS 02H
+  0002"                         A0004:
+  0002"                         	DS 01H
+  0003"                         A0005:
+  0003"                         	DS 01H
+  0004"                         T0006:
+  0004"                         	DS 01H
+  0005"                         T0009:
+  0005"                         	DS 02H
+                                	END
+MEANV	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+004D'	A0001           0000"	A0003           0002"	A0004           
+0003"	A0005           0031*	BP25@           0011*	BP36@           
+0026*	BP57@           003F*	BP71@           004B*	EXIT@           
+000B'	G0007           0039'	G0008           0000I'	MEANV           
+004A'	SCAT@           0004"	T0006           0005"	T0009           
+
+
+
+No Fatal error(s)
+
+
+0005"                         	DS 02H
+                                	EN

@@ -1,0 +1,34 @@
+  program roots
+#
+# This program calculates and displays the same table
+# of square roots displayed by the example program
+# ROOTS in the Cromemco Fortran manual.
+#
+  real a (10)
+  integer i, j, k
+#
+# These lines display the heading for the table
+#
+  write (3, 1)
+1 format (1x, /////, 25x, 'Table of Square Roots', /)
+  write (3, 2)
+2 format (1X, 8X, '0', 6X, '1', 6X, '2', 6X, '3', 6X,
+                  '4', 6X, '5', 6X, '6', 6X, '7', 6X,
+                  '8', 6X, '9', /)
+#
+# The following lines calculate 10 square roots, load
+# them into an array, and display the elements of the
+# array.  This repeats 10 times to display the entire
+# table.
+#
+  for (i = 0; i <= 9; i = i + 1)
+     {
+     for (j = 0; j <= 9; j = j + 1)
+        a(j + 1) = sqrt (float(10 * i + j))
+     write (3, 3) i, (a(k), k = 1, 10)
+     }
+  write (3, 4)
+3 format (1x, i1, '-', 10f7.3)
+4 format (1x, //////)
+  end
+

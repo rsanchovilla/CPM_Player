@@ -1,0 +1,30 @@
+Echo   'This Batch file will compile and run a sample COBOL program'
+
+maklink -f  /usr/pkg/fdc/callroot.cob    .
+maklink -f  /usr/pkg/fdc/root.cob        .
+maklink -f  /usr/pkg/fdc/cobol[1-4].ovr  .
+maklink -f  /usr/pkg/fdc/cobol.com    .
+maklink -f  /usr/pkg/fdc/cobloc  .
+maklink -f  /bin/runcob.com  .
+
+
+Echo   'First, the input COBOL source files are typed:'
+Ty Root.cob
+Ty Callroot.cob
+
+Echo   'Next, the source files are compiled, producing REL object files:'
+Cobol Root,TTY:=Root
+Cobol Callroot,TTY:=Callroot
+
+Echo   'These are then linked, producing the executable file Callroot.com:'
+Link Callroot,Root,h:Coblbx/S,Callroot/N/E
+
+del  cobol[1-4].ovr 
+del  cobol.com  
+del  cobloc
+del  Callroot.rel  Root.rel
+
+Echo   'Finally, the compiled and linked program is executed:'
+Callroot
+del  runcob.com
+

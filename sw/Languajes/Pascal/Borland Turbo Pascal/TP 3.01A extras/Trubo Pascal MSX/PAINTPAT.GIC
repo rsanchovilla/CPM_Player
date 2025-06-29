@@ -1,0 +1,135 @@
+(*  P A I N T P A T   1.1                              20-NOV-1988  *)
+
+
+(*
+    For some details on the algorithm used see:
+
+    William F. Polik, Area Filling Algorithms
+    Computer Language, May 1986, pg. 33..40
+*)
+
+{$W0,A+}
+
+procedure PaintPattern (x,y: integer; var pattern);
+
+  var
+    EraseColor, StartLeftx, StartRightx, i: integer;
+    Direction:                              integer;
+
+
+  procedure fillspan (Leftx,Rightx,y: integer);
+
+    var
+      xn, yn: integer;
+      copydata: record
+                  nx, ny: integer;
+                  end
+                absolute pattern;
+
+
+  function NewColor(x: integer): integer;
+
+    begin
+      x := yn + (x mod xn);
+      inline ($2A/PATTERN/$23/$23/$23/$23/$ED/$5B/X/$3A/SCRMOD/$D6/$06/$38/
+              $09/$28/$16/$3D/$28/$04/$19/$6E/$62/$C9/$AF/$CB/$2A/$CB/$1B/
+              $3F/$17/$07/$07/$47/$0E/$0F/$C3/*+$0014/$AF/$CB/$2A/$CB/$1B/
+              $1F/$CB/$2A/$CB/$1B/$17/$17/$EE/$03/$07/$47/$0E/$03/$19/$7E/
+              $04/$05/$28/$03/$0F/$18/$FA/$A1/$6F/$60/$C9);
+    end;
+
+    begin { fillspan }
+      xn := copydata.nx;
+      yn := xn * (y mod copydata.ny);
+      inline ($2A/Y/$3A/$F6/$FA/$67/$22/$68/$F5/$21/$01/$00/$22/$6C/$F5/$2A/
+              LEFTX/$22/$66/$F5/$E5/$E5/$EB/$2A/RIGHTX/$AF/$32/$6F/$F5/$ED/
+              $52/$23/$22/$6A/$F5/$CD/NEWCOLOR/$7D/$32/$6E/$F5/$3A/$02/$FB/
+              $F6/$B0/$32/$70/$F5/$CD/DOV9938/$0D/$0D/$06/$AC/$D1/$13/$D5/$C5/
+              $D5/$CD/NEWCOLOR/$C1/$D1/$DD/$21/$31/$01/$3E/$02/$CD/_CALSUB/
+              $CB/$47/$C8/$07/$30/$F5/$F3/$ED/$69/$ED/$41/$FB/$C3/*+$FFE1);
+    end;
+
+  function VDPsearch (arg: integer): integer;
+
+    begin
+      inline ($2A/ARG/$26/$60/$22/$6F/$F5/$CD/DOV9938/$0D/$0D/$11/$02/$8F/$F3/
+              $ED/$59/$ED/$51/$ED/$78/$0F/$38/$FB/$CB/$5F/$28/$14/$1E/$08/$ED/
+              $59/$ED/$51/$ED/$68/$1C/$ED/$59/$ED/$51/$ED/$78/$E6/$01/$67/$18/
+              $03/$21/$FF/$FF/$AF/$ED/$79/$ED/$51/$FB/$C9);
+    end;
+
+{$A-}
+
+  procedure RecursiveFill (Leftx,Rightx,y,ParentLeftx,ParentRightx: integer);
+    var
+      NextLeftx, NextRightx: integer;
+
+    begin
+      if (y < 0) or (y > maxY) then exit;
+
+      NextLeftx := Leftx;                { start at leftmost point in shadow }
+      repeat                             { search for run in current shadow  }
+        V9938command.sx  := NextLeftx;
+        V9938command.sy  := y + swap(ACPAGE);
+        V9938command.col := EraseColor;
+        if point(NextLeftx,y)=EraseColor { find next leftmost x              }
+        then begin
+          NextRightx := NextLeftx;
+          NextLeftx  := succ(VDPsearch ($06));
+          end
+        else begin
+          NextLeftx  := VDPsearch ($00);
+          if NextLeftx < 0 then NextLeftx := succ(Rightx);
+          NextRightx := NextLeftx;
+          end;
+        if NextLeftx <= Rightx           { find next rightmost x             }
+        then begin
+          V9938command.sx := NextRightx;
+          NextRightx      := pred(VDPsearch ($02));
+          if NextRightx < 0 then NextRightx := maxX;
+
+          fillspan (NextLeftx,NextRightx,y);
+
+          { call fill algorithm with valid shadows }
+
+          RecursiveFill(NextLeftx,NextRightx,y+direction,NextLeftx,NextRightx);
+
+          direction := -direction;
+
+          if NextLeftx <= pred(pred(ParentLeftx))
+          then RecursiveFill (NextLeftx,pred(pred(ParentLeftx)),y+Direction,
+                              NextLeftx,NextRightx);
+          if succ(succ(ParentRightx)) <= NextRightx
+          then RecursiveFill (succ(succ(ParentRightx)),NextRightx,y+Direction,
+                              NextLeftx,NextRightx);
+
+          direction := -direction;
+
+          NextLeftx := succ(succ(NextRightx));{ skip to next possible leftmost x }
+          end;
+      until NextLeftx > Rightx;        { repeat until entire shadow examined }
+    end;
+
+{$A+}
+
+  begin { PaintPattern }
+    EraseColor := point(x,y);           { record color of seed point         }
+    if EraseColor = -1 then exit;       { seed point is off screen           }
+
+    V9938command.sx  := x;
+    V9938command.sy  := y;
+    V9938command.col := EraseColor;
+
+    StartLeftx  := succ(VDPsearch($06)); { find leftmost x in starting run  }
+    StartRightx := pred(VDPsearch($02)); { find rightmost x in starting run }
+    if StartRightx < 0 then StartRightx := maxX;
+
+    fillspan (StartLeftx,Startrightx,y); { fill starting span                }
+
+    direction := -1;                     { examine shadows of run            }
+    RecursiveFill(StartLeftx,StartRightx,pred(y),StartLeftx,StartRightx);
+
+    direction := +1;
+    RecursiveFill(StartLeftx,StartRightx,succ(y),StartLeftx,StartRightx);
+  end;
+

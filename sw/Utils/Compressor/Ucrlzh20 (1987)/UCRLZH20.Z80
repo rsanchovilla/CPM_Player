@@ -1,0 +1,1283 @@
+	.SALL
+	TITLE 'UNCRrunch LZH v2.0  20 July 1991'
+;************************************************************************
+;*									*
+;*			   UNCRunch LZH v2.0				*
+;*			      20 July 1991				*
+;*						   - Roger Warren	*
+;************************************************************************
+;
+;	With the kind permission of Mr. Steven Greenberg, author of 
+;	UNCRunch, this program was generated from his UNCRunch v2.4 code
+;	dated 15 Sept 1987.  Accordingly, the following notifications
+;	are in order:
+;
+; 	Portions Copyright (c)   S. Greenberg  09/15/87
+; 	Portions Copyright (c)   R. Warren     07/20/91
+;	May be reproduced for non-profit use only
+;
+;	You can distribute it AS IS or modify it for your OWN use,
+;	but public release of modified versions (source or object
+;	files) without permission is prohibited, nor can it be sold.
+
+;UNCRLZH HISTORY:
+; v2.0 Re-released because of new CRLZH algorithm changes.  Version 2.0
+;	of CRLZH is 10% FASTER and compresses further than V1.1.  The output
+;	files must be de-compressed with UNCRLZH version 2.0, which replaces
+;	UNCRLZH 1.1.  UNCRLZH 2.0 handles LZH encoded files of both versions
+;	as well as CRUCNCHED and SQUEEZED files.
+;	With the kind permission of Gene Pizzetta, changes made to UNCR
+;	thru version 2.8 have been incorporated into this program
+;	taken from Steve Greenberg's version 2.4.  This program will
+;	NOW handle date stamps ala ZSDOS.
+;
+; v1.1 Official first release.  No functional changes from Beta version.
+; 	Merely stepped version for differentiation.
+;
+; v1.0 Beta test version
+; 
+
+VERS	EQU	20
+SUBVERS	EQU	' '
+
+	.Z80
+
+	CSEG
+
+NO	EQU	0
+YES	EQU	NOT NO
+N	EQU	NO
+Y	EQU	YES
+CRUNCH	EQU	NO		; Yes for CRUNCH, no for UNCR (for common)
+;ZSYS	EQU	YES		; Yes if exclusively for Z-System
+	.ACCEPT	'ZCPR3-Only Version [Y/N] ? ',ZSYS
+
+;=======================================================================
+
+  IF ZSYS
+
+MEMPAG	EQU	2300H		; <== set! [see comment near end of program]
+
+  ELSE	; ZSYS
+
+MEMPAG	EQU	2500H		; <== set! [see comment near end of program]
+
+  ENDIF	; ZSYS
+
+;=======================================================================
+
+REV	EQU	(VERS/10*16)+(VERS MOD 10) ; Program revision level in BCD
+SIGREV	EQU	20H		; "Significant" revision level (compatibility)
+SIGRVY	EQU	20H		; "Significant" revision level for LZH
+
+NOPRED	EQU	0FFFFH		; "No predecessor"
+IMPRED	EQU	07FFFH		; Pred that can't be matched or bumped
+
+SCRUPT1	EQU	01H		; Screen update speeds
+SCRUPT2	EQU	07H
+
+; --- Reserved codes ---
+
+EOFCOD	EQU	100H		; EOF code
+RSTCOD	EQU	101H		; Adaptive reset code
+NULCOD	EQU	102H		; Null code
+SPRCOD	EQU	103H		; Spare code
+
+; --- ASCII equates ---
+
+CTRLC	EQU	03H		; ^c
+BELL	EQU	07H		; Beep
+BS	EQU	08H		; Backspace
+LF	EQU	0AH		; Linefeed
+CR	EQU	0DH		; Carriage return
+
+; --- CP/M address equates ---
+
+DFCB	EQU	5CH		; Default FCB #1
+DFCB2	EQU	6CH		; Default FCB #2
+DDMA	EQU	80H		; Default DMA address
+BDOS	EQU	0005H		; BDOS entry point
+
+; --- BDOS function equates ---
+
+CONIN	EQU	1		; Input a character from the console
+CONOUT	EQU	2		; Output single char to console
+PRTSTR	EQU	9		; Print string to console
+CONST	EQU	11		; Get console status
+GETVER	EQU	12		; Get CP/M version #
+SELDSK	EQU	14		; Select disk
+OPEN	EQU	15		; Open file
+CLOSE	EQU	16		; Close file
+SFIRST	EQU	17		; Search for first file
+SNEXT	EQU	18		; Search for next file
+ERASE	EQU	19		; Erase file
+READ	EQU	20		; Read file (sequential)
+WRITE	EQU	21		; Write file (sequential)
+MAKE	EQU	22		; Make file
+GETDSK	EQU	25		; Get currently logged drive
+SETDMA	EQU	26		; Set DMA address
+GSUSER	EQU	32		; Get/set user code
+RSTDRV	EQU	37		; Reset drive
+SETMS	EQU	44		; Set multi-sector count (cp/m+ only)
+GETDMA	equ	47		; ZSDOS get current DMA address
+EXDOSV	equ	48		; ZSDOS extended BDOS version
+GETFSTP	equ	102		; ZSDOS get file stamp
+SETFSTP	equ	103		; ZSDOS set file stamp
+
+;-----------------------------------------------------------------------
+
+	EXTRN	USQREL,UNCR1
+
+  IF NOT ZSYS
+	EXTRN	PARSEU
+  ENDIF	; NOT ZSYS
+
+	EXTRN	UNLZH
+
+	ENTRY	GETBYT,OUT
+	ENTRY	GLZHUN,PLZHUN	; for UNLZH
+
+;_______________________________________________________________________
+;
+; Macros to facilitate "horizontal" movement through the table.
+; See "Table structure" comment near "initbl" for more information.
+
+RIGHT1	 MACRO
+	LD	A,H		; }
+	ADD	A,10H		; } move "right" one column (same row)
+	LD	H,A		; }
+	 ENDM
+
+;.......................................................................
+
+START:	JP	STRT		; <--- entry
+	DB	'Z3ENV',01H	; ZCPR3 environment descriptor
+Z3ED:	DW	00h
+
+;-----------------------------------------------------------------------
+
+	DW	0		; filler
+	DB	'CRLZH'		; for ZCNFG
+	DB	VERS/10+'0',VERS MOD 10+'0'
+	DB	' '		; Filler
+ARCHIV:	DB	0		; Archive mode (not used, for CRUNCH)
+QUIFL:	DB	0		; Quiet mode flag
+NPROFL:	DB	0		; No prompt before overwrite flag
+TRBOFL:	DB	0		; Defeat multi-sector i/o flag
+CNFRFL:	DB	0		; Confirm every file flag
+WRMFLG:	DB	0		; Warm boot flag
+BIGFLG:	DB	0		; Bigger file prompt flag
+MAXUSR:	DB	31		; Maximum user allowed by program
+MAXDRV:	DB	16		; Maximum drive allowed by program
+SYSFL:	DB	0		; System file inclusion flag
+TYPFL:	DB	'Y'		; Default filetype (UNCRLZH only)
+
+;......................................................................
+;
+; File type exclusion list.  (for CRUNCH, not used by UNCR)
+
+EXTBL:	DB	'               '	; filled with spaces
+	DB	'               '
+
+;=*=-=*=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=
+
+CPYRT:	DB	'UNCRLZH '
+  IF ZSYS
+	DB	'Z-'
+  ENDIF	; ZSYS
+	DB	'Version ',VERS/10+'0','.',VERS MOD 10+'0',SUBVERS
+	DB	' Copyright (c) 1987 by S. Greenberg',CR,LF
+        DB	'        Portions  Copyright (c) 1991 by R. Warren',CR,LF
+	DB	' May be used/reproduced for non-profit use only',CR,LF,LF,'$'
+
+;=*=-=*=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=*=-=
+
+STRT:
+  IF ZSYS
+	LD	HL,(Z3ED)	; check for ZCPR3
+	LD	A,H
+	OR	L
+	JP	NZ,Z80
+  ELSE	; ZSYS
+	SUB	A		; Z-80 test [RAF]
+	JP	PO,Z80
+  ENDIF	; ZSYS
+	LD	DE,WRNGUP	; "Program requires Z-80 processor"
+	JP	MESS80		; No frills exit w/ message
+
+Z80:	LD	(OLDSTK),SP	; Save os's stack
+	LD	SP,TOPSTK	; Set local stack
+	CALL	STRTUP		; Does a lot of stuff
+
+;=======================================================================
+;
+;	*****	Re-enter here for each matching file *****
+;
+; General wildcard operation:  When the program is first invoked, a ll
+; matching filenames are put end to end in FNBUFF, 12 bytes each, in
+; alalphabetical order.  Since a filename is only 11 characters long,
+; the spare byte, which precedes each filename, is used as a "tag/flag".
+; By the time file processing starts (now), a number of routines have
+; already run (parts  of the STRTUP routine).  These routines set the
+; tag-flag which indicates to us now in what manner the file should be
+; processed:  "00" = "skip it", "01" = process it", "02" = "perform a
+; direct copy (if possible)", "FF" = "no more files".
+
+NXTFIL:	LD	SP,TOPSTK	; 'just in case'
+	LD	A,CR
+	CALL	TYPE
+	XOR	A		; clear embedded date flag
+	LD	(DATFLG),A
+	LD	(YFLAG),A	; ..and lzh flag
+	LD	DE,INFCB	; Input file fcb
+	CALL	CLRFCB		; Init it to blanks and zeroes
+	INC	DE		; Leave "DE" pointing at infcb+1 for below
+	LD	HL,(BUFPTR)	; Pntr to name of next file from expansion bfr
+NXTSEL:	LD	A,(HL)
+	OR	A		; If zero, the file is "unselected"
+	JR	NZ,ISSEL	; Br if it is selected
+	LD	BC,12		; Else just quietly skip to the next file
+	ADD	HL,BC
+	LD	(BUFPTR),HL
+	JR	NXTSEL
+
+;...............................
+;
+; The file is "selected"; prepare to process it
+
+ISSEL:	CP	0FFH		; An "FF" means done
+	JP	Z,RETCCP	; Br if that is the case
+	PUSH	AF		; Save stat (to see if file is "excluded" blw)
+
+	LD	A,(QUIFM)
+	OR	A
+	PUSH	DE
+	LD	DE,DASHES	; "-----" for visual separation
+	CALL	Z,MESAG2
+	POP	DE
+
+	INC	HL		; Skip to 1st filename char
+	LD	BC,11		; Filename character count
+	LDIR			; Put next file name into input fcb
+	LD	(BUFPTR),HL	; Save new pointer for next file
+	CALL	INTRAM		; Initialize all ram
+	LD	A,80H		; (init'd by "INTRAM", but must be init'd
+	LD	(CSAVE),A	; - differently for CRUNCH & UNCRunch)
+	POP	AF		; Get file's status byte back again
+	CP	02H		; 02 if file matched the "exclusion" list
+	JR	NZ,COPNIN	; If not, definitly attempt to uncompress it
+	LD	A,(WLDFLG)	; If so, see if prgm was invoked w/ wildcards
+	OR	A		;
+	JP	NZ,COPY9	; If so, do not uncompress; do a straight copy
+
+;.......................................................................
+;
+; Now open the input file.  A failure here is unusual, since the file
+; existed at the time the filename expansion took place.  There are
+; "normal" series of events which could lead up to this, however.
+
+COPNIN:	CALL	OPNIN		; Attempt to open the next input file "INFCB"
+	JR	NC,OPOK		; Br if ok
+	LD	DE,ERR1		; "input file not found"
+	JP	SKIP1		; Skip to next file
+
+;.......................................................................
+;
+; If we got here, the input file is open.  The output file is not
+
+OPOK:	LD	DE,OUTFCB	; Now for the output fcb
+	CALL	CLRFCB		; Clear it
+	INC	DE		; Leave "DE" pointing at filename area
+	LD	A,' '		; For proper alignment
+	CALL	TYPE
+	LD	HL,INFCB	; Print input filename to console
+	CALL	PRNFIL
+	XOR	A		; Init 1st char of date stamp bfr to zero
+	LD	(STAMP),A	; (nulls the buffer; zero is the eof char)
+	CALL	GETCHR		; Get a char from the input stream
+	JR	NC,NTMT		; If carry set on first byte, file is empty
+	LD	DE,ERR0		; "[ file empty ]"
+	JR	NCR2		; Treat same as "Not compressed"
+
+NTMT:	CP	76H		; Check for crunched file header "76FE"
+	JR	NZ,NCRNCH	; Br if not
+	CALL	GETCHR
+	CP	0FEH
+	JR	Z,YCRNCH
+	CP	0FDH		; lzh?
+	JR	Z,YLZH		; br if so
+	CP	0FFH		; Squeezed?
+	JR	Z,YESQZ		; Br if so
+
+NCRNCH:	CALL	CLSIN		; Not squeezed or crunched; close input file
+	LD	DE,MSG43	; "[not compressed]"
+
+NCR2:	CALL	MESAG2
+	LD	A,(WLDFLG)	; Invoked w/ wildcards?
+	OR	A
+	JP	NZ,COPY9	; Do straight copy ("copy" chks for diff du)
+	JP	NXTFIL		; Else go on to next file
+
+;...............................
+
+YESQZ:	LD	(SQZFLG),A	; Flag file as squeezed using ff already in a
+	CALL	GETCHR		; Get checksum byte #1
+	LD	L,A		; Hold that
+	CALL	GETCHR		; Checksum byte #2
+	LD	H,A
+	LD	(SQCKSM),HL	; Save for later reference
+	JR	YCRNCH
+
+YLZH:	LD	(YFLAG),A	; flag file as lzh crunched
+
+YCRNCH:	LD	DE,OUTFCB+1	; Where output filename will be copied to
+	LD	B,12		; Loop limiter (11 char filename + ".")
+
+EATLP:	CALL	GETCHR		; Get next char
+	OR	A		; A zero byte indicates end of filename
+	JR	Z,ATEIT		; Br when that is encountered
+	AND	7FH		; Force valid ascii (should be already)
+	CALL	UCASE		; Upcase the char- (may be lc if squeezed)
+	CP	'.'		; Check for name / ext division char
+	JR	Z,ISDOT		; Br when encountered
+	LD	(DE),A		; Else copy char to output fcb
+	INC	DE		; And incr that pointer
+	DJNZ	EATLP		; Continue, but not past end of filename
+	JR	IGNORE		; If no 0 detected, ignore following info
+
+;.......................................................................
+;
+; When "." is encountered, skip to the file extension bytes of the out-
+; put FCB.  Any remaining non-extension bytes were init'd to blank).  Do
+; not copy the "." to the output FCB.
+
+ISDOT:	LD	DE,OUTFCB+9	; Skip...
+	LD	B,3		; Update loop limiter counter
+	JR	EATLP		; And continue
+
+;...............................
+
+IGNORE:	LD	A,(SQZFLG)	; For squeezed files, nothing else to do
+	OR	A
+	JP	NZ,USQZIT	; Go to it
+
+IGNRLP:	CALL	GETCHR		; Loop absorbs extraneous header info
+	JR	C,NCRNCH	; Circumvent possible hangup (eof before 0)
+	OR	A		; Wait for the terminating zero
+	JR	Z,ATEIT		; If terminating zero is reached
+	CP	1		; do we have a date stamp?
+	JR	NZ,IGNOR2	; (no)
+
+	LD	B,15		; 15 bytes in date string
+	LD	DE,DATBUF	; DE -> date buffer
+DATLP:	CALL	GETCHR
+	JR	C,NCRNCH
+	OR	A
+	JR	Z,ATEIT
+	CP	0FFh		; if it's FFh, make it 0
+	JR	NZ,NOTFFH
+	CPL
+NOTFFH:	LD	(DE),A
+	INC	DE
+	DJNZ	DATLP
+	LD	A,0FFh
+	LD	(DATFLG),A
+	JR	IGNRLP
+
+IGNOR2:	CP	'['		; Else check for date stamp bof char
+	JR	NZ,IGNRLP	; Other chars are extraneous at this point
+
+;...............................
+
+	LD	DE,STAMP	; Start copying file stamp info to this buffer
+	JR	ENTSLP
+
+STMPLP:	CALL	GETCHR		; Get a char
+	JP	C,NCRNCH	; Circumvent hangup
+ENTSLP:	LD	(DE),A		; Put char in dest
+	INC	DE		; Incr dest pntr
+	OR	A
+	JR	NZ,STMPLP	; Loop till zero is reached
+
+;...............................
+
+ATEIT:	CALL	GETCHR		; Get revision level, do nothing with it
+	LD	A,(YFLAG)	; is it lzh?
+	OR	A
+	JR	NZ,YATEIT	; (yes, check significant revision below)
+	CALL	GETCHR		; Get significant revision level
+	CP	SIGREV		; Compare to this prog
+	JP	C,OLDTYP	; Br if old type1x crunched file
+	JR	Z,SIGOK		; If equal, ok, else...
+YATERR:	LD	DE,ERR5		; "can't uncrunch that file. newer revision of
+	JP	SKIP2		; - this program needed" or some such remark
+
+YATEIT:	CALL	GETCHR
+	CP	SIGRVY+1	; compare to significant revision
+	JR	NC,YATERR	; doesn't match
+	JP	OLDTYP		; continue
+
+SIGOK:	CALL	GETCHR		; Get checksum flag
+	LD	(CKSMFL),A	; Put it there
+	CALL	GETCHR		; Get spare byte, do nothing with it
+	CALL	OPNOUT		; Open output file & type "--->  <filename>"
+	PUSH	AF		; Save stat from above
+	CALL	PRNID		; Type any embedded date stamp info also
+	POP	AF
+	JP	C,SKIP2A	; If user wants to skip it
+
+;.......................................................................
+;
+; Now both files are open.  Eventually either both will be closed, or
+; the input file will be closed and the output deleted.
+
+	LD	A,(QUIFM)	; Skip column headings if in quiet mode
+	OR	A
+	JR	NZ,QUIET1
+	LD	DE,HEADNG	; Type all the "in / out  ca  cr" stuff
+	CALL	MESAGE
+
+QUIET1:	CALL	INITB2		; Initialize the lzw table
+	LD	DE,NOPRED	; Init to "NOPRED" (null value)
+
+;=======================================================================
+;
+;		 *** Main Decoding loop(s). ***
+;
+;=======================================================================
+
+MAINLP:	LD	(LASTPR),DE	; Always keep a copy of the last "pred" here
+	CALL	GETCOD		; Get bits to form a a new code in "DE"
+	JP	C,DUN		; Br if eof node or physical end-of-file
+	PUSH	DE		; Push a copy of the new pred
+	CALL	DECODE		; Decode new pred
+	LD	HL,ENTFLG	; Flag is "01" if "decode" made the entry
+	SRL	(HL)		; Check (and zero) the flag
+	JR	C,NOENTR	; Don't make the same entry twice!
+	LD	HL,(LASTPR)	; Get old pred
+	LD	A,(CHAR)	; And suffix char generated from the new pred
+	CALL	ENTERX		; Make new table entry from those two
+
+NOENTR:	POP	DE		; Get newest pred again (not that new anymore)
+	LD	A,(FULFLG)	; Monitor the table full flag
+	OR	A
+	JR	Z,MAINLP	; Continue decoding & entering 'till full
+
+;...............................
+
+	CP	0FEH		; When this becomes "FF", we are done
+	JR	NZ,FASTLP	; First it will become "FE", though. in that
+	INC	A		; - case perf 1 more loop & change it to "FF"
+	LD	(FULFLG),A	;
+	JR	MAINLP		; One more!
+
+;.......................................................................
+
+FASTLP:	LD	(LASTPR),DE	; Table full loop similar to above ,except
+	CALL	GETCOD		; - don't bother checking table full flag
+	JP	C,DUN		; - call "ENTFIL", not "ENTERX" (for possible
+	PUSH	DE		; - code reassignment
+	CALL	DECODE		; Call to actually decode chars
+	LD	HL,(LASTPR)	; Get old pred
+	LD	A,(CHAR)	; And suffix char generated from the new pred
+	CALL	ENTFIL		; Possibly make new table entry from those two
+	POP	DE
+	JR	FASTLP		; Continue in code reassignment mode
+
+;		*** End of Main Processing Loop(s)
+;_______________________________________________________________________
+;
+; Come here when one of the special codes is encountered (we may not
+; really be "dun").  Actually, a null code should have been intercepted
+; by the GET12 routine, leaving only EOF (actually done) or adaptive
+; reset.
+
+DUN:	LD	A,E		; Some kind of special code encountered
+	CP	LOW(EOFCOD)	; Actually done?
+	JR	Z,DUNDUN	; Br if do
+	CP	LOW(RSTCOD)	; Else better be reset (null was intercepted)
+	JP	NZ,FATBAD	; File is invalid
+
+;.......................................................................
+;
+; --- Perform an adaptive reset ---
+
+	LD	HL,0000		; Reset entry # prior to table re-initialization
+	LD	(ENTRY),HL
+	LD	(TTOTAL),HL	; Reset "codes reassigned"
+	XOR	A
+	LD	(FULFLG),A	; Reset  "table full" flag
+	CALL	INITB2		; Reset the entire table
+	LD	A,9		; Reset the code length to "9"
+	LD	(CODLEN),A
+	LD	A,02H		; Reset the target mask value accordingly
+	LD	(TRGMSK),A
+
+	LD	DE,NOPRED	; Set pred to "nopred"
+	LD	A,1		; 1st entry is always a special case
+	LD	(ENTFLG),A	; (trick it to make no table entry)
+	JP	MAINLP		; And continue where we left off
+
+;_______________________________________________________________________
+;
+; --- Actually done, close things up ---
+
+DUNDUN:	CALL	GETCHR		; Get the checksum, always next
+	LD	E,A
+	CALL	GETCHR		; Get checksum (hi-byte)
+	LD	D,A		; Checksum (from input file) now in "DE"
+	LD	A,(CKSMFL)	; Checksum override flag (not currently used)
+	AND	A		; Check flag, also clear carry for below
+	JR	NZ,CHKSOK	; If flag > 0, don't check checksum
+
+DUNDUQ:	LD	HL,(CHKSUM)	; Checksum (as computed)
+	SBC	HL,DE		; Else check by subtraction
+	JR	Z,CHKSOK	; Br if match
+	LD	DE,BADCHK	; Bad checksum, issue warning
+	CALL	MESAGE
+
+;...............................
+
+CHKSOK:	CALL	DONE		; Write out remaining output buffer
+
+CLOSE2:	CALL	CLSOUT		; Close output file
+	CALL	CLSIN		; Close input file
+	JR	NEXT
+
+;.......................................................................
+
+COPY9:	CALL	COPY		; Perform a straight copy
+	JP	C,NXTFIL	; If copy didn't take place, don't count it
+
+NEXT:	CALL	DATSTP		; Move date stamp
+	LD	HL,(NFP)	; If we got here, the file has been "processed"
+	INC	HL		; So incr the "files processed" counter
+	LD	(NFP),HL
+	JP	NXTFIL		; Go start next file
+
+;.......................................................................
+
+SKIP1:	CALL	MESAGE		; Entry if neither in nor output files open yet
+
+SKIP1A:	JP	NXTFIL		; (Entry here if no error text desired)
+
+;...............................
+
+SKIP2:	CALL	MESAGE		; Entry here if input file open only
+
+SKIP2A:	CALL	CLSIN		; (Entry here for no message)
+	JP	NXTFIL
+
+;.......................................................................
+;
+; The following routine actually performs the decoding.  The top section
+; "DECODE" flags the entry as "referenced".  It then calls the recursive
+; section below it, "DECODR", to do the actual work.
+
+DECODE:	PUSH	DE		; Save code. the code provides us an immediate
+	EX	DE,HL		;   index into the main logical table
+
+	LD	A,H		; (Add offset to beg of table, of course)
+	ADD	A,TABLHI
+	LD	H,A
+	SET	5,(HL)		; Set bit 5 of pred (hi) to flag entry as
+	POP	DE		; - "referenced" (ie not bumpable)
+
+;.......................................................................
+
+DECODR	EQU	$		; Decode and output the index supplied in "DE"
+
+	LD	IY,STKLIM	; Stack overflow check as a safety precaution
+	ADD	IY,SP		; (limit allows extra for this invocation lvl)
+	JP	NC,STKOVF	; Br on overflow (shouldn't happen)
+
+	PUSH	HL		; Only "HL" need be saved
+
+	LD	A,D		; Convert index in "DE" to address in "HL"
+	ADD	A,TABLHI
+	LD	H,A
+	LD	L,E		; Address now in "HL"
+
+	LD	A,(HL)		; Make sure the entry exists
+	AND	0DFH
+	CP	80H		; (Value for a vacant entry)
+	JR	NZ,OK1		; Br if so (normal case)
+
+;...............................
+
+	LD	A,01H		; The "ugly" exception, wswsw
+	LD	(ENTFLG),A	; Set flag so entry isn't made twice
+	PUSH	HL		; Save current stuff.
+	LD	HL,(LASTPR)	; Get the last pred..
+	LD	A,20H		; (setting this flag will flag the entry as
+	LD	(FFFLAG),A	; - referenced,)
+	LD	A,(CHAR)	; Get the last char
+	CALL	ENTERX		; Make an on the fly entry...
+	XOR	A
+	LD	(FFFLAG),A	; Put this back to normal
+	POP	HL		; And presto...
+	LD	A,(HL)		; It had better exist now!
+	CP	80H
+	JR	Z,FATBAD	; *** else file is fatally invalid ***
+
+;...............................
+
+OK1:	LD	D,(HL)		; Normal code- get "pred" (hi)
+	RIGHT1			; Move to "pred" (lo)
+	LD	E,(HL)		; Get that. if MSB of hi byte is set, val must
+	BIT	7,D		; - be "FF" (nopred) because it isn't "80H"
+	JR	NZ,TERM		; If so, branch. this terminates recursion.
+	RES	5,D		; Else clear flag bit & decode pred we found
+	CALL	DECODR		; Decode and output the "pred" (recursive call)
+	RIGHT1			; Move pointer ahead to the "suffix" byte
+	LD	A,(HL)		; Get it
+
+SAMABV:	CALL	SEND		; Output the "suffix" byte
+	POP	HL		; Restore reg and return
+	RET
+
+TERM:	RIGHT1			; Move pointer ahead to the suffix byte
+	LD	A,(HL)		; Get it & save it. it is the 1st char of the
+	LD	(CHAR),A	; - decoded string, and will be used later to
+	JR	SAMABV		; - attempt to make a new table entry.
+				; (rest is same as above)
+
+;_______________________________________________________________________
+
+FATBAD:	LD	DE,ERR4		; "invalid crunched file"
+	CALL	MESAGE		; ..print it
+	JP	CHKSOK		; Write out whatever we have, then next file
+				; (Stack gets reloaded before next file)
+
+;_______________________________________________________________________
+;
+; Enter { <pred>, <suffix> } into the table, as defined in { HL, A }
+
+ENTERX:	PUSH	AF		; Save the suffix till we're ready to enter it
+	PUSH	HL		; Save pred, xferred to "DE" just below
+	CALL	FIGURE		; Puts result in "phyloc" only, affects nothing
+	POP	DE		; Put pred in "DE" (pushed as "HL" above)
+	LD	HL,(ENTRY)	; Get next avail entry #
+	LD	A,H		; Convert that to an address
+	ADD	A,TABLHI
+	LD	H,A
+
+; Entries are made here, but not normally flagged as "referenced" until
+; the are received by "DECODE".  Until they are flagged as referenced,
+; theyare "bumpable" i.e., available for code reassignment.  If "FFFLAG"
+; is set to 20H, however, they will be flagged now.  This only occurs
+; during initialization (bumping an atomic entry would be most unfortu-
+; nate) and when a WsWsW string encounter initiates an emergency entry,
+; despite the code never having been received by "DECODE".
+
+	LD	A,(FFFLAG)	; Normally zero, as described above
+	OR	D
+	LD	(HL),A		; Make the entry- pred (hi) first
+	RIGHT1			; Move to pred (lo) position
+	LD	(HL),E		; Put that in
+	RIGHT1			; Move to suffix position
+	POP	AF		; Retrieve the suffix, saved on entry
+	LD	(HL),A		; Stick it in
+	LD	HL,(ENTRY)	; Increment the entry # counter
+	INC	HL
+	LD	(ENTRY),HL
+	INC	HL		; See if a new code length is indicated. the
+	LD	A,(TRGMSK)	; - extra inc "HL" above is to account for
+	CP	H		; - skew delays of uncruncher vs. cruncher
+	RET	NZ		; Normally just return
+
+	SLA	A		; Change to a new code length
+	LD	(TRGMSK),A	; This will be the next target mask
+	LD	A,(CODLEN)	; Get the old code length, as a # of bits
+	INC	A		; Increment it, too
+	CP	13		; Check for overflow (12 bits is the max)
+	JR	Z,FLGFUL	; If so, flag table as full
+	LD	(CODLEN),A	; Else this is the new code length
+	RET
+
+;...............................
+
+FLGFUL:	LD	A,0FEH		; Flag table as full
+	LD	(FULFLG),A
+	RET
+
+;.......................................................................
+;
+; Get the next code by stripping the appropriate # of bits off the input
+; stream, based on the current code length "CODLEN".  If the code is
+; "NULL", don't even return; just get another one.  If the code is one
+; of the other special codes, return with the carry flag set. "Spare" is
+; actually treated like a "null" for the time being, since it's use has
+; yet to be defined.
+
+GETCOD:	LD	DE,0000		; Init "shift register" to zero
+	LD	A,(CODLEN)	; Get current code length
+	LD	B,A		; Will be used as a loop counter
+	LD	A,(CSAVE)	; "leftover" bits
+
+GETLP:	SLA	A		; Shift out a bit
+	CALL	Z,REF		; Refill when necessary
+	RL	E		; Shift in the bit shifted out
+	RL	D		; Likewise
+	DJNZ	GETLP		; Loop for # of bits needed
+
+	LD	(CSAVE),A	; Save "leftover" bits for next time
+	LD	A,D		; If hi-byte = "01", we may have a special code
+	DEC	A		; Set z if it was "1"
+	AND	A		; Clr carry
+	RET	NZ		; Rtn w/ clr carry if byte wasn't "01"
+
+;...............................
+
+	LD	A,E		; Else further analysis necessary
+	CP	4		; Set carry on 100, 101, 102, 103
+	RET	NC		; Else code is normal, rtn with clr carry
+	CP	LOW(NULCOD)	; Is it the "NULL" code?
+	JR	Z,GETCOD	; If so, just go get another code
+	CP	LOW(SPRCOD)	; (treat the unimplemented "spare" like a null)
+	JR	Z,GETCOD	; As above
+
+	SCF			; < rtn with carry set indicating special code
+	RET			; (presumably "EOF" or "reset")
+
+;_______________________________________________________________________
+;
+; Routine to reload "A" with more bits from the input stream.  Note we
+; pre-shift out the next bit, shifting in a "1" from the left.	Since
+; the leftmost bit in the reg is a guaranteed "1", testing the zero
+; stat of the  accumulator later is a necessary and sufficient condition
+; for determining that all the bits in the accumulator have been used.
+;
+; The only things to be careful of is that the last bit is NOT used la-
+; ter, and that the bit now in the carry flag IS used upon return from
+; this	subroutine.  (This is the identical scheme used in USQFST.  An
+; exact complement to it is incorporated for shifting bits out in the
+; CRUNCH program).
+
+REF:	CALL	GETCHR		; Get the char
+	JR	C,PHYEOF	; Br if unexpected physical eof encountered
+	SCF			; To shift in the "1" from the right
+	RLA			; Do that, shifting out a "real" bit
+	RET			; Rtn (with that real bit in the carry flag)
+
+;_______________________________________________________________________
+
+PHYEOF:	LD	SP,TOPSTK	; "Emergency exit"- reset stack
+	LD	DE,UNXEOF	; "Unexpected eof."
+	CALL	MESAGE
+	JP	CHKSOK		; Write out what we have, then continue
+
+;_______________________________________________________________________
+;
+; Send character to the output buffer, plus related processing
+
+SEND:	EXX			; Alt regs used for output processing
+	SRL	B		; If reg is "1", repeat flag is set
+				; (note, clears itself automatically)
+	JR	C,REPEAT	; Go perf the repeat
+	CP	90H		; Else see if char is the repeat spec
+	JR	Z,SETRPT	; Br if so
+	LD	C,A		; Else nothing special- but always keep
+	EXX			; Back to normal regs
+	CALL	OUTC		; Else just output the char;
+	RET
+
+;.......................................................................
+;
+; Set repeat flag; count value will come as the next byte. (Note: don't
+; clobber C with the "90H"- it still has the prev character, the one to
+; be repeated)
+
+SETRPT:	INC	B		; Set flag
+	EXX			; Switch to primary regs & return.
+	RET
+
+;.......................................................................
+;
+; Repeat flag was previously set; current byte in a is a count value.
+; A zero count is a special case which means send 90H itself.  Otherwise
+; use B (was the flag) as a counter. The byte itself goes in A.
+
+REPEAT:	OR	A		; Check for special case
+	JR	Z,SND90H	; Jump if so
+	DEC	A		; Compute "count-1"
+	LD	B,A		; Juggle registers
+	PUSH	BC		; The count and the char
+	LD	B,0		; Zero the count in advance
+	EXX
+	POP	BC
+
+AGAIN:	LD	A,C
+	PUSH	BC
+	CALL	OUTC		; Repeat b occurrences of byte in 'c'
+	POP	BC
+	DJNZ	AGAIN		; Leaves b, the rpt flag, 0 as desired
+	RET
+
+;...............................
+
+SND90H:	LD	A,90H		; Special case code to send the byte 90h
+	EXX
+	CALL	OUTC
+	RET
+
+;.......................................................................
+;
+; Send the char in "A" to the output buffer and add it to the running
+; checksum.
+
+OUT	EQU	$
+OUTC:	CALL	OUTB		; Output it
+	CALL	CKSUM		; Add to the checksum
+	RET
+
+;_______________________________________________________________________
+;
+; Convert the middle letter of the filename extension to a "Z" if it is
+; "?", AND "difdu" = 0.  If we are uncrunching to a different DU:, get
+; all files.
+
+FIXFCB:	LD	A,(DIFDU)
+	OR	A
+	RET	NZ		; If this flag is set, leave ext char untouched
+	LD	HL,INFCB+10	; Point to middle letter of extension
+	LD	A,'?'
+	CP	(HL)		; See if it is ambiguous
+	RET	NZ		; If not, we'll allow any letter (rev v1.2)
+	LD	A,(TYPFL)	; Else force it to configuration choice
+	LD	(HL),A		; "Z", "Y", or "Q".  This is mainly so
+	RET			; the command line "UNCR *.*" will work well
+
+;_______________________________________________________________________
+;
+; Flag files to be copied, not uncompressed
+
+EXCLUD:	LD	BC,12		; Leave 12 in bc for incrementing ix
+	LD	IX,FNBUFF	; Points to beg of filenames
+
+OUTLP:	LD	A,(IX+0)	; Get flag byte for this entry
+	CP	0FFH		; Final [non-] entry?
+	RET	Z		; (return if so)
+
+	OR	A		; Is it an untagged filename?
+	JR	Z,NXTFN		; If so, leave it that way & move to next
+	LD	A,(IX+10)	; Otherwise check middle letter of fn ext
+	CP	'Z'
+	JR	Z,NXTFN		; If 'z', do not exclude it
+	CP	'Y'
+	JR	Z,NXTFN		; nor if it's 'y'
+	CP	'Q'
+	JR	Z,NXTFN		; Likewise 'q', else "exclude" it
+
+;-----------------------------------------------------------------------
+
+AUTOM3:	LD	A,02H		; Flag file as "excluded"
+	LD	(IX+0),A
+
+NXTFN:	ADD	IX,BC		; Move to next filename in "fnbuff"
+	JR	OUTLP
+
+;_______________________________________________________________________
+;
+; Type the stuff in the "stamp" buffer to the console.
+
+PRNID:	LD	HL,STAMP	; Point to that buffer
+	LD	B,40		; Practical limit of 40 char "stamp"
+	LD	A,(HL)		; is there a text string?
+	OR	A
+	RET	Z		; (nope)
+	LD	A,' '		; for aesthetics
+	CALL	TYPE
+PRFILP:	LD	A,(HL)		; Get a character
+	OR	A		; Zero terminates the field
+	RET	Z		; Return when encountered
+	CALL	TYPE		; Else type the char
+	CP	']'		; This terminates stamp also (after typing it)
+	RET	Z		; Return if that happened
+	INC	HL		; Else incr pointer
+	DJNZ	PRFILP		; And loop
+	RET
+
+;_______________________________________________________________________
+
+STKOVF:	LD	DE,ERR6		; "*** stack overflow ***"
+	LD	SP,TOPSTK	; Shouldn't happen, but we're still in control
+	JP	FATBAD		; Reset and continue with next file, if any
+
+;_______________________________________________________________________
+;
+; Initialize the table to contain the 256 "atomic" entries - { "NOPRED",
+; <char> },  for all values of <char> from 0 thru 255
+
+INITB2:	CALL	PRESE2		; "pre-initializes" the table (mostly zeroes)
+	LD	A,20H
+	LD	(FFFLAG),A
+	XOR	A		; Start with a suffix of zero
+	LD	HL,NOPRED	; Pred for all 256 atomic entries
+
+INILP:	PUSH	HL
+	PUSH	AF
+	CALL	ENTERX
+	POP	AF
+	POP	HL
+	INC	A		; Next suffix
+	JR	NZ,INILP	; Loop 256 times
+
+;.......................................................................
+;
+; Now reserve the four reserved codes 100H - 103H (EOF, RESET, NULL, and
+; SPARE.  This is easily achieved by inserting values in the table which
+; cannot possibly be matched, and insuring that they cannot be reas-
+; signed.  An occurrence of any of these codes is possible only when the
+; cruncher explicitely outputs them for the special cases for which they
+; are designated.
+
+	LD	B,4		; Loop counter for the 4 reserved entries
+
+RSRVLP:	PUSH	BC
+	LD	HL,IMPRED	; An "impossible" pred
+	XOR	A		; Any old suffix will do
+	CALL	ENTERX		; Make the entry
+	POP	BC
+	DJNZ	RSRVLP		; Loop 4 times
+
+	XOR	A		; Now restore this flag to its normal value
+	LD	(FFFLAG),A
+	RET
+
+;.......................................................................
+;
+; Low-level table preset called before initialization above. This rou-
+; tine presets the main table as follows: (see description of table
+; elsewhere):  Column 1: 4096 x 80H, Columns 2 and 3: 4096 x 00H
+
+PRESE2:	LD	HL,TABLE	; Beginning of main table, 4096 rows x 3 columns
+	LD	DE,TABLE+1
+	LD	BC,1000H
+	LD	(HL),80H
+	LDIR			; Put in 1000h "80H"'s
+	LD	(HL),0		;
+	LD	BC,2*1000H-1	; Note "-1"
+	LDIR			; And 2000h more "00H"'s
+
+;.......................................................................
+;
+; The auxiliary physical translation table is 5003 rows 2 columns
+; (logically speaking).  Actually 5120 rows, 2 columns are allocated.
+; All entries are initialized to 80H.
+
+	LD	HL,XLATBL	; Physical <--> logical xlation table
+	LD	DE,XLATBL+1
+	LD	BC,2800H	; Total entries = 1400h x 2
+	LD	(HL),80H
+	LDIR
+	LD	A,7FH
+	LD	(XLATBL+0),A
+	RET
+
+;_______________________________________________________________________
+;
+; Figure out what physical location the cruncher put its entry by repro-
+; ducing the hashing process.  Insert the entry # into the corresponding
+; physical location in XLATBL.
+
+FIGURE:	LD	B,A		; < suffix supplied goes into B
+	CALL	HASH		; Get initial hash value into  "HL"
+
+PHYLP:	LD	C,H		; C  <-- extra copy of h
+	LD	A,(HL)		; Check if any entry exists at that location
+	CP	80H		; Value for a vacant spot
+	JR	Z,ISMT		; Br if vacant
+	CALL	NM		; Else find next in chain
+	JR	PHYLP		; And continue
+
+;...............................
+
+ISMT:	LD	DE,(ENTRY)	; Get the logical entry #
+	LD	(HL),D		; Stick in hi-byte
+	LD	A,H		; Move "right1" for this table
+	ADD	A,14H
+	LD	H,A
+	LD	(HL),E		; Low-byte goes there
+	RET
+
+;...............................
+
+NM	EQU	$		; No match yet... find next "link" in chain
+
+	LD	DE,(DISP)	; Secondary probe- add disp computed by "HASH"
+	ADD	HL,DE
+	LD	A,H
+	CP	XLATBH		; Check for loop around
+	JR	NC,NC9		; Br if not
+	LD	DE,5003		; Else loop
+	ADD	HL,DE
+
+NC9:	RET
+
+;.......................................................................
+
+ENTFIL	EQU	$		; Try to enter the pred/suffix in HL|A
+
+	CALL	HASH		; Get initial hash value into  "HL"
+
+;.......................................................................
+
+PHYLP2:	LD	A,(HL)		; Check if any entry exists at that location
+	CP	80H		;
+	RET	Z		; End of chain, return w/o reassignment
+
+;...............................
+
+	PUSH	HL		; Save physical table pointer
+	LD	D,(HL)		; Get entry #, hi
+	LD	A,H		; }
+	ADD	A,14H		; } right 1 for this table
+	LD	H,A		; }
+	LD	L,(HL)		; Entry #, lo byte
+	LD	A,D
+	ADD	A,TABLHI	; Convert to an addr in "HL"
+	LD	H,A
+	BIT	5,(HL)		; See if entry is bumpable
+	JR	Z,MAKIT		; If so bumpable, go do it
+	POP	HL		; Else restore physical tbl pointer
+	CALL	NM		; Find next "link" in chain
+	JR	PHYLP2		; And continue
+
+;.......................................................................
+;
+; Reassign the entry pointed to by "avail", if any. Re-define the "last
+; pred entered" and "last suffix" variables.
+
+MAKIT:	POP	DE		; Get rid of extraneous physical pointer
+	LD	DE,(TTOTAL)	; Increase user's display count
+	INC	DE
+	LD	(TTOTAL),DE
+	LD	DE,(LASTPR)	; Get the pred
+	LD	A,(CHAR)	; And suffix
+	LD	B,A		; Put suffix here, ("right1" kills a)
+	LD	(HL),D		; Actually make the entry
+	RIGHT1
+	LD	(HL),E		; [pred(lo)]
+	RIGHT1
+	LD	(HL),B		; [suffix]
+	RET			; Done
+
+;.......................................................................
+;
+; For additional details about the hashing algorithm, see CRUNCH.
+
+HASH	EQU	$
+
+	LD	E,L		; Save so low-nybble of pred can be used below
+	ADD	HL,HL
+	ADD	HL,HL
+	ADD	HL,HL
+	ADD	HL,HL		; Shift whole pred value left 4 bits
+	XOR	H		; Xor hi-byte of that with suffix
+	LD	L,A		; Goes there as lo-byte of result
+	LD	A,E		; Get pred(lo) saved above
+	AND	0FH		; Want only low nybble of that
+	ADD	A,XLATBH	; Convenient time to add in table offset
+	LD	H,A		; Goes here as hi-byte of result
+	INC	HL		; Except add one. this eliminates poss. of 0.
+	PUSH	HL		; Save hash val for return
+	LD	DE,-5003-XLATBL	; Compute displacement value, - (5003-hash)
+	ADD	HL,DE		; (displacement has table offset removed again)
+	LD	(DISP),HL	; Secondary hashing value, a negative number.
+	POP	HL		; Get back orig hash address
+	RET			; And return it
+
+;=======================================================================
+;
+; For old style (v1.x) type crunched files, simply call the "UNCR1"
+; module.  LZH-encoded and squeezed files are handled identically,
+; except call "UNLZH" and "USQREL" modules, respectively.  All I/O
+; will be done by this program -- UNCR1 will get and feed data through
+; calls to entry points "GETBYT" and "OUT".  UNLZH will use "GLZHUN"
+; and "PLZHUN".
+
+OLDTYP:	CALL	GETCHR		; Get checksum flag
+	LD	(CKSMFL),A	; Put it there
+	CALL	GETCHR		; Get spare byte, do nothing with it *** nec??
+
+USQZIT:	LD	A,0FFH		; Flag this as an old style uncrunch
+	LD	(OLDFLG),A	; (controls type of screen updating)
+	CALL	OPNOUT		; Open output file & type "--> <filename>"
+	PUSH	AF		; Save stat from abv call
+	LD	A,(SQZFLG)	; *** necessary?
+	OR	A
+	CALL	Z,PRNID		; Type any embedded id text also
+	POP	AF		; Get back carry stat
+	JP	C,SKIP2A	; If user wants to skip it
+
+	LD	A,(QUIFM)
+	OR	A
+	LD	DE,HEADNY	; Type all the "in / out" stuff
+	CALL	Z,MESAGE
+
+
+	EXX			; Go back to start of file (already read some)
+	LD	HL,IBUF
+	EXX
+
+FIX21:	LD	HL,SECNT	; Bugger up the sector count since we just
+	INC	(HL)		; - reset the input pointer
+	LD	HL,(INCTR)	; [rev 2.1 fix]
+	DEC	HL		; Decr "inctr" for same reason
+	LD	(INCTR),HL
+	LD	A,'0'		; [Rev 2.1 fix]
+	LD	(PROGBF+5),A	; Reset ascii display to zero
+	LD	HL,TABLE	; Point to large data area for uncr1 & lzh
+	LD	A,(YFLAG)
+	OR	A
+	JR	NZ,USELZH	; if lzh-encoded, call unlzh
+	LD	A,(SQZFLG)
+	OR	A
+	JR	NZ,USESQZ	; If squeezed, call usqrel
+	CALL	UNCR1		; Uncrunch the whole thing
+
+ABVQ:	JP	NC,DUNDUN	; A "normal" return
+	JP	FATBAD		; Any other error falls under "invalid.."
+
+USESQZ:	CALL	USQREL		; unsqueeze it
+	LD	DE,(SQCKSM)	; Get checksum read at beginning of file
+	JP	NC,DUNDUQ	; Terminate similarly (w/o reading cksm bytes)
+	JP	FATBAD
+
+USELZH:	CALL	UNLZH		; uncrunch it a la lzh
+	JR	ABVQ		; check return
+
+;_______________________________________________________________________
+
+PRCSTM:	LD	DE,PRSER1	; "invalid argument" (no stamps allowed)
+	JP	FATALU
+
+;_______________________________________________________________________
+
+UCASE:	CP	'a'		; Upper-case character in A
+	RET	C
+	SUB	20H		; (Note "{","|","}",and "~" cannot occur)
+	RET
+
+;_______________________________________________________________________
+;
+; All ASCII centralized here as a service to disassembly hobbyists.
+
+INTRO:	DB	'LZH Uncruncher  Version ',VERS/10+'0','.',VERS MOD 10+'0'
+	DB	SUBVERS,CR,LF,'$'
+BADCHK:	DB	'Checksum error.',CR,LF,'$'
+MSG43:	DB	'    [ Not compressed ]',CR,LF,'$'
+ERR4:	DB	'Invalid Crunched File.',CR,LF,'$'
+ERR5:	DB	'Requires newer version.',CR,LF,'$'
+ERR6:	DB	'Stack Overflow.',CR,LF,'$'
+UNXEOF:	DB	'Unexpected EOF.',CR,LF,'$'
+USAGE:	DB	'Usage:',CR,LF
+	DB	'   $'
+PRGNAM:	DB	'UNCRLZH '		; must end with space if < 8 characters
+COMNAM:	DB	'        '
+SYNTX1:	DB	' {d$'
+SYNTX2:	DB	':}afn {d$'
+USAGE1:	DB	':} {/options}',CR,LF
+	DB	'Second parameter is destination.',CR,LF
+	DB	'Options following slash:',CR,LF
+	DB	'   Q   Quiet mode o$'
+USAGE2:	DB	CR,LF
+	DB	'   I   Inspect (Tag) mode o$'
+USAGE3:	DB	CR,LF
+	DB	'   T   Same as I',CR,LF
+	DB	'   E   $'
+USAGE4:	DB	'Erase existing files$'
+USAGE5:	DB	CR,LF
+	DB	'   S   $'
+USAGE6:	DB	'clude System files$'
+
+;=======================================================================
+
+; ** Include file begins here **
+
+	INCLUDE	COMMONLZ.LIB
+
+; ** Include file ends here **
+;=======================================================================
+; - File I/O
+
+PLZHUN	EQU	OUTC		; for UNLZH module 'puts' thru this label
+GLZHUN	EQU	GETBYT		; for UNLZH module 'gets' thru this lable
+
+;=======================================================================
+
+; Additional miscellaneous ram locations which need not be initialized
+; or are initialized by the routines which use them.
+
+CKSMFL:	DS	1		; Skip checksum if flag non-zero
+CHAR:	DS	1		; Last char of the previously decoded string
+FFFLAG:	DS	1
+CSAVE:	DS	1
+SQCKSM:	DS	2		; squeezed file checksum
+YFLAG:	DS	1		; non-zero = LZH crunched file
+
+;...............................
+
+STKSZ	EQU	8		; Minimum stack size (pages)
+IBUFSZ	EQU	8		; Input buffer size (pages)
+
+;=======================================================================
+;
+; ===>	All tables will begin at "MEMPAG", defined at the top of the
+;	program.  This should be set to a page aligned value i.e., ad-
+;	dress that ends  in "00", which is ABOVE the end all program
+;	and data segments.  You may have to do one test link to deter-
+;	mine the proper value (changing "MEMPAG" will not change the
+;	length of the segments on the subsequent link).
+;
+; "MEMPAG" is defined at the beginning of this program to remind you to
+; set it properly.  If you set it higher than necessary, there will be
+; no negative effect other than an increase in the TPA required to run
+; the program.	If you set it too low, you will be in big trouble.  The
+; value must be set manually because most linkers cannot resolve an
+; "and", "shift", or "hi" byte extraction at link time to determine the
+; page boundary.
+;
+;=======================================================================
+
+; "MAXFLS" is  buffer size (in files) for wildcard expansions.	Room for
+; this many files will be allocated.
+
+MAXFLS	EQU	256
+
+FNBUFF	EQU	MEMPAG		   ; (= beg of wildcard expansion buffer)
+ENDFNB	EQU	FNBUFF+(12*MAXFLS) ; End of expansion buffer
+
+IBUF	EQU	ENDFNB		   ; (= beg of input buffer)
+EIBUF	EQU	IBUF+(IBUFSZ*256)  ; End of input buffer
+
+TABLE	EQU	EIBUF		   ; (= beg of table)
+EOTBL	EQU	TABLE+(3*1000H)	   ; End of table
+XLATBL	EQU	EOTBL
+EXLATB	EQU	XLATBL+(2*1400H)
+STAMP	EQU	EXLATB		   ; 80h bytes for "stamp" buffer
+ESTAMP	EQU	STAMP+80H
+
+SAFETY	EQU	ESTAMP		   ; Safety region- beyond legal bottom of stack
+BOTSTK	EQU	SAFETY+80H	   ; "Legal" stack limit
+TOPSTK	EQU	EXLATB+(STKSZ*256) ; Top of stack
+
+ENDALL	EQU	TOPSTK		   ; End of everything, except output buffer
+OBUF	EQU	ENDALL		   ; Beginning of dynamically sized output buffer
+
+;.......................................................................
+
+STKLIM	EQU	0-BOTSTK	; Negation of "botstk", used as safety check
+
+IBUFHI	EQU	HIGH IBUF	; Input bfr addr, hi byte (lo byte = 0)
+EIBFHI	EQU	HIGH EIBUF	; End of input bfr addr, hi byte, likewise
+TABLHI	EQU	HIGH TABLE	; Beg of table, hi byte, likewise
+ETBLHI	EQU	HIGH EOTBL	; End of table, hi byte, likewise
+XLATBH	EQU	HIGH XLATBL
+EFNBHI	EQU	HIGH ENDFNB	; End of expansion buffer, likewise
+ENDHI	EQU	HIGH ENDALL	; End of everything, likewise
+OBUFHI	EQU	HIGH OBUF	; Output buffer address, hi byte likewise
+
+	END
+

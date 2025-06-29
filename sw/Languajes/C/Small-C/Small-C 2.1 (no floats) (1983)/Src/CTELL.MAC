@@ -1,0 +1,64 @@
+EXT Ufcbptr
+EXT Uchrpos
+CC1:
+ctell::
+PUSH B
+LXI H,4
+CALL CCDSGI##
+PUSH H
+CALL Umode
+POP B
+CALL CCLNEG##
+MOV A,H
+ORA L
+JNZ CC4
+LXI H,4
+CALL CCDSGI##
+PUSH H
+CALL isatty
+POP B
+MOV A,H
+ORA L
+JNZ CC4
+LXI H,0
+JMP CC5
+CC4:
+LXI H,1
+CC5:
+MOV A,H
+ORA L
+JZ CC3
+LXI H,-1
+POP B
+RET
+CC3:
+LXI H,0
+DAD SP
+PUSH H
+LXI H,Ufcbptr
+XCHG;;
+LXI H,6
+CALL CCDSGI##
+DAD H
+CALL CCDDGI##
+LXI D,33
+CALL CDPDPI##
+POP H
+PUSH H
+CALL CCGINT##
+POP B
+RET
+ctellc::
+LXI H,Uchrpos
+XCHG;;
+POP B
+POP H
+PUSH H
+PUSH B
+DAD H
+CALL CCDDGI##
+RET
+EXT isatty
+EXT Umode
+END
+

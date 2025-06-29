@@ -1,0 +1,121 @@
+
+TOPIC	: FILT programs	- FILTA, FILTB,	FILTW and FILTWC
+
+FROM	: IRV HOFF W6FFC
+
+DATE	: 14 MAR 84
+
+
+
+	FILTA  -  Filters ASCII	text files.  Removes high order	bits,
+		  control characters other than	CR, LF,	FF or TAB.
+		  Changes any lone LF to CR-LF.	 Ignores consecutive
+		  LF characters.  Option on retaining FF characters.
+
+	FILTB  -  Filters BASIC	files.	Same as	FILTA, but retains LF-CR
+		  which	some BASIC editors insert for lines longer than
+		  would	normally fit on	a CRT screen.  (This combination
+		  is not handled as a normal EOT by BASIC.)
+
+
+			WARNING:  The next two files remove
+				  WORDSTAR "dot	commands".
+				  They will also delete	ALL
+				  lines	starting with a	period.
+			
+	FILTW  -  Filters WORDSTAR document mode files.	 Handles CR and
+		  LF like FILTA.  Removes dot commands,	retaining FF if
+		  desired.  (Optional like on all four programs.)  Also
+		  converts "soft hyphens" (1FH)	to normal hyphens (2DH)
+		  and "non-break-spaces" (0FH) to normal spaces	(20H).
+
+	FILTWC -  Filters WORDSTAR document mode files.	 Same as FILTW
+		  except leaves	all CR and all LF intact in whatever way
+		  they originally appeared.
+
+
+
+	NOTE:	All these programs retain any FF (form feed) char-
+		acters that may	be present.  If	those are not wanted,
+		use PIP.COM and	the [F]	option at any time.  If	no
+		FF are wanted change the following.  (The three-byte
+		address	by-passes the "xx form feeds retained" line.)
+
+				FILTA	03D6  C2  to  C3
+				FILTB	03DB  C2  to  C3
+				FILTW	044C  C2  to  C3
+				FILTWC	044A  C2  to  C3
+
+     These four	programs are written in	assembly language.  They are
+considerably faster than the other two programs	included in the	list be-
+low.  In addition they provide an excellent summary when finished, with
+a typical example shown, using FILTW on	a WORDSTAR document mode file:
+
+
+     298 input lines read
+     276 output	lines with:
+
+	     256 tab characters retained
+	     2272 high-order bits deleted
+	     162 CTL-characters	deleted
+	     22	dot commands zeroed
+	     2 form feeds retained
+	     9 soft hyphens fixed
+	     4 space breaks fixed
+	     3 orphan line feeds
+
+
+     On	this program, FILTW took 16 seconds including the time to show
+the summary.  UNSOFT took 43 seconds, but there	is so much disk	activity
+the time varied	from 43-61 seconds, depending where on the disk	the new
+file was being placed.	PURETEXT took 104 seconds with so much disk ac-
+tivity it sounded like something was coming apart.  Both the UNSOFT and
+PURETEXT programs did a	warm reboot when complete, the above programs
+return immediately to CCP, again minimizing disk activity.
+
+
+     Other filter programs do not show such a progress report to let the
+user know the results -	such a summary will "spoil you forever".  This
+series also has	a superior feature over	other filter programs -	only one
+name is	needed on the command line, although two can be	used:
+
+
+	A>FILTW	HELLO.TXT <cr>			(1)
+	A>FILTW	HELLO.TXT NUNAME.DOC <cr>	(2)	
+
+	B>A:FILTA HELLO.TXT			(3)
+	B>FILTWC A:REPORT.DOC			(3)
+	B:A:FILTB A:FILE.BAS C:NEWFILE.BAS	(3)
+
+
+     1)	normal method.	When finished, renames the original to .BAK
+	and the	new file to the	original name.	Saves lots of time.
+
+     2)	makes a	second file called NUNAME.DOC while keeping the	original
+	HELLO.TXT file intact.	
+
+     3)	The files need not be on the same disk.
+
+
+
+Table of various filter	programs and how they handle CR	and LF chars.
+
+ORIGINAL  >	 =	=>	>>=	 >===	   ==>	    >=>>>=
+FILTWC	  >	 =	=>	>>=	 >===	   ==>	    >=>>>=
+FILTA	  >=	 >=	>=>=	>=>=	 >=	   >=>=	    >=>=>=>=
+FILTB	  >=	 =>	=>	>=>=	 >=	   =>=>	    >=>=>=>=
+FILTW	  >=	 >=	>=>=	>=>=	 >=	   >=>=	    >=>=>=>=
+UNSOFT	  >=		>=	>=>=	 >=	   >=	    >=>=>=>=
+PURETEXT  >=	*=	=>=	>=	 >==	   ==>	    >=>=>=
+
+		* (swallowed the character previous to the =)
+
+		  (UNSOFT trashed the single = completely)
+
+    >  is carriage return
+    =  is line feed
+
+>FILTW	HELLO.TXT <cr>			(1)
+	A>FILTW	HELLO.TXT NUNAME.DOC <cr>	(2)	
+
+	B>A:FILTA HELLO.TXT	

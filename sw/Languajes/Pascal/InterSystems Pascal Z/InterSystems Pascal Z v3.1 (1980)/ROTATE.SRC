@@ -1,0 +1,39 @@
+; rotate the floating point mantissa one bit
+;
+	NAME ROTATE
+	ENTRY ROTATRIGHT,ROTATLEFT,ROTRIGHT,ROTLEFT
+	INCLUDE FPINIT.SRC
+;
+rotatright:			;rotate a number right one bit
+	dad	d		;calculate addr of number
+	ora	a		;clear carry
+rotright:			;rotate w/o clearing carry
+	push	b		;save bc regs
+	mvi	b,fracln	;process whole mantissa
+rotr:	mov	a,m		;get next byte
+	rar			;...rotate...
+	mov	m,a		;and replace it
+	dcx	h		;bump pointer
+	djnz	rotr		;check count
+	pop	b		;restore bc
+	ret			;done!
+
+rotatleft:			;rotate a number left one bit
+	dad	d		;calculate addr of fpacc
+	ora	a		;clear carry
+rotleft:			;rotate w/o clearing carry
+	rar			;save carry
+	push	b		;save bc
+	lxi	b,lsb-msb-1	;least significant byte-1
+	dad	b
+	ral			;restore carry
+	mvi	b,fracln	;do whole mantissa
+rotl:	inx	h		;bump pointer
+	mov	a,m		;get next byte
+	ral			;...rotate...
+	mov	m,a		;and replace it
+	djnz	rotl		;check counter
+	pop	b		;restore bc
+	ret
+;
+

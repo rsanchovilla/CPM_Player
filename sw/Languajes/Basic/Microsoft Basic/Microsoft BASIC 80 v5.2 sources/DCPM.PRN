@@ -1,0 +1,1409 @@
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	SUBTTL	DISK PARAMETERS AND DOCUMENTATION
+                                	TITLE	Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM
+                                
+                                
+                                ;External symbols
+                                
+                                
+                                	EXTRN	DERBFM,DERBFN,DERBRN,DERDFL
+                                	EXTRN	DERFAO,DERFNF,DERIOE,DERNMF,DERTMF
+                                	EXTRN	FINPRT,OUTDO,CRDO
+                                	EXTRN	TEMP,STROUT,STRLT3,SNERR,SCRTCH
+                                	EXTRN	FACLO,FOUT,CONINT
+                                	EXTRN	CLSALL,FILFRM,FILIDX,GETBYT,FILSCN
+                                
+                                
+                                	EXTRN	BUF
+                                
+                                
+                                	EXTRN	DCOMPR,GETYPR,SYNCHR
+                                
+                                	EXTRN	FILNAM
+                                	EXTRN	FILNA2
+                                	EXTRN	DIRTMP
+                                ;Internal symbols
+                                
+                                	PUBLIC	NTOPNC,FILOUT,FILOU3,INDSKC
+                                	PUBLIC	NMLOFS,NMLOFC,NMLO.C,DATOFS,DATOFC,LOCOFS
+                                	PUBLIC	EOF,CLSFIL,LOC
+                                	PUBLIC	NAME,OPEN,KILL,INDSKB,PRGFIL
+                                
+                                
+                                
+                                
+                                ;
+                                ;
+                                ;			Revision history
+                                ;			-------- -------
+                                ;
+                                ;11/7/77		FIXED EOF() CODE TO USE ORNOFS INSTEAD OF NMLOFS, PGA
+                                ;12/2/77  (4.41) FIXED RANDOM ACCESS TO CLOSE EXTENTS PGA
+                                ;12/17/77	ADDITIONAL CODE TO SUPPORT ONTEL DOS BASIC, P.ZILBER
+                                ;12/29/77 (4.42)	FIXED BUG WHERE GET, PUT W/O REC NOT INC CURLOC, PGA
+                                ;1/5/78   (4.43) FIXED ANOTHER RANDOM BUG, LINE PRINTER ^C PROB. PGA
+                                ;7/23/79		Add Beehive interace and cleanup conditionals
+                                ;
+                                ;
+                                ;
+                                ;File information:
+                                ;
+                                ;	 1	Mode of the file
+                                ;F.BLK1	(n)	1st block of space, usually FCB( CPM: 33, ONTEL: 42,
+                                ;		MOSTEK: 47 ). Zero for others
+                                ;LOCOFS	 2	CURLOC, # of sectors read or writeen for sequential.
+                                ;		For random files, it is the last record # +1.
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+DISK PARAMETERS AND DOCUMENTATION
+
+                                ;ORNOFS	 1/2	Seq Input: 	# of bytes in sector when read.
+                                ;		Seq Output:	# bytes in output sector( # written )
+                                ;		Random:		Set to DATPSC by PUT and GET, sometimes
+                                ;				zeroed by OUTSQ2 setup for DSKOUT code.
+                                ;NMLOFS	 1/2	Seq Input:	# bytes left in input buffer
+                                ;		Seq Output:	Position of imaginary print head
+                                ;F.BLK2	(n)	2nd block of space( 6 byte chain links for ONTEL,
+                                ;		160 bytes for DMC, 10 bytes for BEEHIV )
+                                ;DATOFS	(n)	Sector buffer, Length = DATPSC
+                                ;
+                                ;Extra information for 5.0 version only:
+                                ;
+                                ;FD.SIZ	 2	Variable length record size( default = 128 )
+                                ;FD.PHY	 2	Current physical record #
+                                ;FD.LOG	 2	Current logical record #
+                                ;FD.CHG	 1	Future flag for across record PRINTs, etc.
+                                ;FD.OPS	 2	Output print position for PRINT, INPUT, WRITE
+                                ;FD.DAT	(n)	Data buffer for FIELD, size is (FD.SIZ). FD.MAX is max.
+                                ;
+                                ;%
+                                
+                                ;File modes
+                                
+  0000                          MD.000	SET	0			;THE MODE NUMBER FOR NO FILE, INTERNAL
+                                					;USE ONLY AS AN ESCAPE FROM OPEN
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT
+                                					;FILES NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+                                
+                                ;Disk code configuration switches
+                                
+  0001                          SPC1ST	SET	1 OR 0 OR 0 OR 0 OR 0 OR 0;1st block exists
+  0000                          SPC2ND	SET	0 OR 0 OR 0		;2nd block exists
+  0000                          SW2BYT	SET	0 OR 0 OR 0		;2 byte offsets (DATPSC .GT. 255)
+  0001                          SWLOF	SET	1 OR 0 OR 0 OR 0 OR 0 OR 0;There is a LOF function
+  0001                          SWRES	SET	1 OR 0 OR 0		;There is a RESET statement
+  0001                          SWFIL	SET	0 OR 1 OR 0 OR 0 OR 0	;There is a FILES command
+  0000                          SWDSKF	SET	(0 OR 0) AND (0-1)	;There is a DSKF function
+                                
+                                ; Offsets into file blocks for specific entries
+                                
+  0025                          LOCOFS	SET	34+3*1+9*0+14*0-10*0+267*0-30*0;OFFSET TO CURLOC BYTES
+  0027                          ORNOFS	SET	2+LOCOFS		;OFFSET TO NUMBER OF BYTES
+                                					;ORIGINALLY IN THE BUFFER
+  0028                          NMLOFS	SET	1+ORNOFS+0		;OFFSET TO BYTES REMAINING IN THE BUFFER
+  0028                          NMLOFC	SET	0+NMLOFS
+                                					;OR THE PRINT POSITION ON OUTPUT
+  0028                          NMLO.C	SET	0+NMLOFS
+                                
+                                
+  0029                          DATOFS	SET	1+NMLOFS+0+6*0+288*0+10*0;OFFSET TO BUFFER
+  0029                          DATOFC	SET	0+DATOFS
+  00A9                          DBLKSZ	SET	DATOFS+DATPSC
+                                	PUBLIC	DBLK.C
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+DISK PARAMETERS AND DOCUMENTATION
+
+  00A9                          DBLK.C	SET	0+DBLKSZ
+                                
+  00A9                          Q	SET	DBLKSZ
+                                ;DEFINE	ENT(SYM,SIZ),<
+                                ;INTERN	SYM
+                                ;SYM=Q
+                                ;Q=Q+SIZ>
+                                
+                                	PUBLIC	FD.SIZ,FD.PHY,FD.LOG,FD.CHG,FD.OPS,FD.DAT
+  0000                          FD.MAX	SET	0			;Size of FIELD buffer
+                                
+                                ;ENT	FD.SIZ,2		;Variable length record size default 128
+  00A9                          FD.SIZ	SET	Q
+  00AB                          Q	SET	Q+2
+                                ;ENT	FD.PHY,2		;Current physical record #
+  00AB                          FD.PHY	SET	Q
+  00AD                          Q	SET	Q+2
+                                ;ENT	FD.LOG,2		;Current logical record number
+  00AD                          FD.LOG	SET	Q
+  00AF                          Q	SET	Q+2
+                                ;ENT	FD.CHG,1		;Future flag for accross block PRINTs etc.
+  00AF                          FD.CHG	SET	Q
+  00B0                          Q	SET	Q+1
+                                ;ENT	FD.OPS,2		;Output print position for PRINT, INPUT, WRITE
+  00B0                          FD.OPS	SET	Q
+  00B2                          Q	SET	Q+2
+                                ;ENT	FD.DAT,FD.MAX		;Actual FIELD data buffer
+  00B2                          FD.DAT	SET	Q
+  00B2                          Q	SET	Q+FD.MAX
+                                					;Size is FD.SIZ bytes long
+                                
+                                	PUBLIC	FNZBLK
+  00B2                          FNZBLK	SET	0+Q
+                                
+  001A                          EOFCHR	SET	26+2*0-22*0-23*0	;END OF FILE CHARACTER
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	2
+Operating system calls and other data
+
+                                	SUBTTL	Operating system calls and other data
+                                
+                                
+                                	EXTRN	CPMVRN,CPMREA,CPMWRI
+                                
+                                ; CPM CALL IDENTIFIERS
+                                
+  000F                          C.OPEN	SET	15
+  0010                          C.CLOS	SET	16
+  0013                          C.DELE	SET	19
+                                ;C.WRIT==21
+  0016                          C.MAKE	SET	22
+  0017                          C.RENA	SET	23
+  001A                          C.BUFF	SET	26			;SET DMA ADDRESS
+  0019                          C.GDRV	SET	25			;GET CURRENTLY SELECTED DRIVE
+  000E                          C.SDRV	SET	14			;SET CURRENTLY SELECTED DRIVE
+  000D                          C.REST	SET	13			;INITIALIZE BDOS
+  0011                          C.SEAR	SET	17			;SEARCH FOR FILE
+                                
+                                ; OFFSETS INTO CP/M FCB (FILE CONTROL BLOCK)
+  0001                          FCB.FN	SET	1-0			;FILE NAME
+  0009                          FCB.FT	SET	9-0			;EXTENSION
+  000C                          FCB.EX	SET	12+20*0			;FILE EXTENT
+  000F                          FCB.RC	SET	15+23*0			;RECORD COUNT = CURRENT EXTENT SIZE
+  0020                          FCB.NR	SET	32+8*0			;NEXT RECORD NUMBER
+  0021                          FCB.RN	SET	33			;CP/M 2.x Random Record Number
+                                
+                                
+                                
+                                
+                                
+                                ;Special for CP/M testing
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	3
+EOF function
+
+                                	SUBTTL	EOF function
+                                
+                                	PUBLIC	EOF
+  0000'   CD 0000*              EOF::	CALL	FILFRM			;CONVERT ARGUMENT TO FILE NUMBER
+  0003'   CA 0000*              	JZ	DERBFN			;BAD FILE NUMBER - NOT FOUND !!!
+                                					;AND SET [B,C] TO POINT TO FILE DATA BLOCK
+  0006'   FE 02                 	CPI	MD.SQO			;IS IT A SEQUENTIAL OUTPUT FILE?
+  0008'   CA 0000*              	JZ	DERBFM			;THEN GIVE BAD FILE MODE
+  000B'   21 0027               ORNCHK:	LXI	H,0+ORNOFS		;SEE IF ANY BYTES ARRIVED IN THIS BUFFER
+  000E'   09                    	DAD	B
+  000F'   7E                    	MOV	A,M			;ZERO IFF IT IS END OF FILE
+  0010'   B7                    	ORA	A			;SET CC'S
+  0011'   CA 0035'              	JZ	WASEOF			;NO BYTES LEFT
+  0014'   0A                    	LDAX	B			;** 5.11 **  GET FILE MODE
+  0015'   FE 03                 	CPI	MD.RND			;IS IT A RANDOM FILE?
+  0017'   CA 0035'              	JZ	WASEOF			;** 5.11 **  (A) .NE. 0 - not EOF
+  001A'   23                    	INX	H			;POINT TO NUMBER LEFT IN BUFFER
+  001B'   7E                    	MOV	A,M			;GET NUMBER OF BYTES IN BUFFER
+  001C'   B7                    	ORA	A			;NON-ZERO?
+  001D'   C2 002A'              	JNZ	CHKCTZ			;THEN CHECK FOR CONTROL-Z
+  0020'   C5                    	PUSH	B			;SAVE [B,C]
+  0021'   60                    	MOV	H,B			;GET FCB POINTER IN [B,C]
+  0022'   69                    	MOV	L,C
+  0023'   CD 01EF'              	CALL	READIN			;READ ANOTHER BUFFER
+  0026'   C1                    	POP	B			;RESTORE [B,C]
+  0027'   C3 000B'              	JMP	ORNCHK			;HAVE NEW BUFFER, USE PREVIOUS PROCEDURE
+  002A'   3E 80                 CHKCTZ:	MVI	A,DATPSC AND 377O	;GET # OF BYTES IN FULL BUFFER
+  002C'   96                    	SUB	M			;SUBTRACT LEFT
+  002D'   4F                    	MOV	C,A			;PUT IN [B,C] FOR DAD
+  002E'   06 00                 	MVI	B,0
+  0030'   09                    	DAD	B			;ADD TO ORNOFS OFFSET
+  0031'   23                    	INX	H			;ADD ONE TO POINT TO BYTE IN BUFFER
+  0032'   7E                    	MOV	A,M			;GET BYTE
+  0033'   D6 1A                 	SUI	EOFCHR			;IF CONTROL-Z, EOF (CONTROL-\ IS FS)
+  0035'   D6 01                 WASEOF:	SUI	1			;MAP 0 TO -1 AND ALL OTHERS TO 0
+  0037'   9F                    	SBB	A
+  0038'   C3 0000*              	JMP	CONIA##			;CONVERT TO AN INTEGER AND RETURN
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	4
+OUTSEQ	-- Sequential output for a data block
+
+                                	SUBTTL	OUTSEQ	-- Sequential output for a data block
+                                
+                                ;
+                                ; [B,C] POINTS AT FILE DATA BLOCK
+                                ;
+                                	PUBLIC	OUTSEQ
+  003B'   50                    OUTSEQ:	MOV	D,B			;PUT FILE BLOCK OFFSET IN [D,E]
+  003C'   59                    	MOV	E,C
+  003D'   13                    	INX	D			;POINT TO FCB
+  003E'   21 0027               OUTSQ2:	LXI	H,0+ORNOFS		;POINT TO NUMBER IN BUFFER
+  0041'   09                    	DAD	B			;ADD START OF FILE DATA BLOCK
+  0042'   C5                    	PUSH	B			;SAVE FILE DATA POINTER
+  0043'   AF                    	XRA	A
+  0044'   77                    	MOV	M,A			;ZERO OUT NUMBER IN DATA BUFFER
+                                
+                                ;	OUTPUT NEXT RECORD IN FILE
+                                ;
+                                ;	(A) = 0
+                                ;	(HL) points to NMLOFS-1
+                                ;	(DE) points to File Data Block + 1 ( FCB if SPC2ND=0)
+                                ;	(BC) points to File Data Block
+                                
+  0045'   CD 0223'              	CALL	SETBUF			;SET BUFFER ADDRESS
+  0048'   3A 0000*              	LDA	CPMWRI			;Get write code
+  004B'   CD 0505'              	CALL	ACCFIL			;Access file
+  004E'   FE FF                 	CPI	255
+  0050'   CA 0000*              	JZ	DERTMF			;Too many files - 5.11
+  0053'   3D                    	DCR	A			;ERROR EXTENDING FILE? (1)
+  0054'   CA 0000*              	JZ	DERIOE			;YES
+  0057'   3D                    	DCR	A			;DISK FULL? (2)
+  0058'   C2 0067'              	JNZ	OUTSOK			;NO
+  005B'   D1                    	POP	D			;GET BACK FILE POINTER
+  005C'   AF                    	XRA	A			;GET ZERO
+  005D'   12                    	STAX	D			;MARK AS CLOSED
+  005E'   0E 10                 	MVI	C,C.CLOS		;CLOSE IT
+  0060'   13                    	INX	D			;POINT TO FCB
+  0061'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  0064'   C3 0000*              	JMP	DERDFL			;GIVE "DISK FULL" ERROR MESSAGE
+  0067'   3C                    OUTSOK:	INR	A			;TOO MANY FILES?
+  0068'   CA 0000*              	JZ	DERTMF			;YES
+                                
+  006B'   C1                    	POP	B			;GET POINTER AT CURLOC
+  006C'   21 0025               	LXI	H,0+LOCOFS		;BY ADDING OFFSET TO FILE POINTER
+  006F'   09                    	DAD	B
+  0070'   5E                    	MOV	E,M			;INCREMENT IT
+  0071'   23                    	INX	H
+  0072'   56                    	MOV	D,M
+  0073'   13                    	INX	D
+  0074'   72                    	MOV	M,D
+  0075'   2B                    	DCX	H
+  0076'   73                    	MOV	M,E
+  0077'   C9                    	RET	
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	5
+CLOSE A FILE
+
+                                	SUBTTL	CLOSE A FILE
+                                ; FILE NUMBER IS IN [A]
+                                ; ZERO ALL INFORMATION. IF FILE IS OPEN, RAISE ITS DISKS HEAD
+                                ; IF FILE IS SEQUENTIAL OUTPUT, SEND FINAL SECTOR OF DATA
+                                
+                                	PUBLIC	CLSFIL
+  0078'   CD 0000*              CLSFIL:	CALL	FILIDX			;GET POINTER TO DATA
+  007B'   CA 00A8'              	JZ	NTOPNC			;RETURN IF NOT OPEN
+                                					;SAVE FILE #
+  007E'   C5                    	PUSH	B			;SAVE FILE POINTER
+  007F'   0A                    	LDAX	B			;GET FILE MODE
+  0080'   50                    	MOV	D,B			;PUT FILE BLOCK OFFSET IN [D,E]
+  0081'   59                    	MOV	E,C
+  0082'   13                    	INX	D			;POINT TO FCB
+  0083'   D5                    	PUSH	D			;SAVE [D,E] FOR LATER
+  0084'   FE 02                 	CPI	MD.SQO			;SEQENTIAL OUTPUT?
+  0086'   C2 009E'              	JNZ	NOFORC			;NO NEED TO FORCE PARTIAL OUTPUT BUFFER
+  0089'   21 0095'              	LXI	H,CLSFL1		;RETURN HERE
+  008C'   E5                    	PUSH	H			;SAVE ON STACK
+  008D'   E5                    	PUSH	H			;NEED EXTRA STACK ENTRY
+  008E'   60                    	MOV	H,B			;GET FILE POINTER
+  008F'   69                    	MOV	L,C			;INTO [H,L]
+  0090'   3E 1A                 	MVI	A,EOFCHR		;PUT OUT CONTROL-Z (OR FS)
+  0092'   C3 00EB'              	JMP	FILOU4			;JUMP INTO CHAR OUTPUT CODE
+                                
+  0095'   21 0027               CLSFL1:	LXI	H,0+ORNOFS		;CHARS IN BUFFER
+  0098'   09                    	DAD	B			;TEST
+  0099'   7E                    	MOV	A,M			;TEST ORNOFS
+  009A'   B7                    	ORA	A
+  009B'   C4 003E'              	CNZ	OUTSQ2			;FORCE OUT BUFFER
+                                
+                                
+  009E'   D1                    NOFORC:	POP	D			;GET BACK FCB POINTER
+                                
+                                ;	CLOSE FILE
+                                ;
+                                ;	(DE) points to FCB
+                                ;	((SP)) points to File Data Block
+                                
+  009F'   CD 0223'              	CALL	SETBUF			;SET DMA ADDRESS
+  00A2'   0E 10                 	MVI	C,C.CLOS		;THE CLOSE
+  00A4'   CD 0005               	CALL	CPMENT			;CALL CPM
+                                ;*****	NO CHECK FOR ERRORS
+                                
+                                
+                                
+                                
+                                
+  00A7'   C1                    	POP	B			;RESTORE FILE POINTER
+  00A8'   16 29                 NTOPNC:	MVI	D,DATOFS		;NUMBER OF BYTES TO ZERO
+  00AA'   AF                    	XRA	A
+  00AB'   02                    MORCZR:	STAX	B
+  00AC'   03                    	INX	B
+  00AD'   15                    	DCR	D
+  00AE'   C2 00AB'              	JNZ	MORCZR
+  00B1'   C9                    	RET	
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	5-1
+CLOSE A FILE
+
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	6
+LOC (CURRENT LOCATION) AND LOF (LAST RECORD NUMBER)
+
+                                	SUBTTL	LOC (CURRENT LOCATION) AND LOF (LAST RECORD NUMBER)
+                                
+                                	PUBLIC	LOC
+  00B2'   CD 0000*              LOC:	CALL	FILFRM			;CONVERT ARGUMENT AND POINT AT DATA BLOCK
+  00B5'   CA 0000*              	JZ	DERBFN			;IF NOT OPEN, "BAD FILE NUMBER"
+  00B8'   FE 03                 	CPI	MD.RND			;Random mode?
+  00BA'   21 0026               	LXI	H,0+LOCOFS+1		;Assume not
+  00BD'   C2 00C3'              	JNZ	LOC1			;No, use CURLOC
+  00C0'   21 00AE               	LXI	H,0+FD.LOG+1		;POINT AT LOGICAL RECORD NUMBER
+  00C3'                         LOC1:
+  00C3'   09                    INTRED:	DAD	B
+  00C4'   7E                    INTRET:	MOV	A,M
+  00C5'   2B                    	DCX	H
+  00C6'   6E                    	MOV	L,M
+  00C7'   C3 0000*              	JMP	GIVINT##
+                                	PAGE
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	6-1
+LOC (CURRENT LOCATION) AND LOF (LAST RECORD NUMBER)
+
+                                
+                                	PUBLIC	LOF
+  00CA'   CD 0000*              LOF:	CALL	FILFRM			;CONVERT ARGUMENT AND INDEX
+  00CD'   CA 0000*              	JZ	DERBFN			;"BAD FILE NUMBER" IF NOT OPEN
+                                
+                                ;	(BC) points to File Data Block
+                                
+  00D0'   21 0010               	LXI	H,0+FCB.RC+1		;Point to record number
+  00D3'   09                    	DAD	B
+  00D4'   7E                    	MOV	A,M			;GET RC
+  00D5'   C3 0000*              	JMP	SNGFLT##		;FLOAT IT
+                                					;Return with LOF in (HL)
+                                					;SWLOF
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	7
+FILOUT -- PUT A CHARACTER IN AN OUTPUT BUFFER AND OUTPUT IF
+
+                                	SUBTTL	FILOUT -- PUT A CHARACTER IN AN OUTPUT BUFFER AND OUTPUT IF NECESSARY
+                                ;
+                                ; CALL AT FILOUT WITH [H,L] TO BE SAVED ON THE STACK
+                                ; AND THE CHARACTER IN THE HIGH ORDER BYTE BELOW THE [H,L]
+                                ; ON THE STACK. THE CURRENT DATA IS OUTPUT IF THERE ARE 128
+                                ; CHARACTER STUFFED INTO THE DATA AREA.
+                                ; FILOUT IS NORMALLY CALLED FROM OUTDO (OUTCHR)
+                                ;
+  00D8'   E1                    FILOUT:	POP	H			;GET SAVED [H,L] OFF STACK
+  00D9'   F1                    	POP	PSW			;GET SAVE CHAR OFF STACK
+  00DA'   E5                    FILOU3:	PUSH	H			;SAVE THE [H,L]
+  00DB'   F5                    	PUSH	PSW			;SAVE THE CHARACTER AGAIN
+  00DC'   2A 0000*              	LHLD	PTRFIL##		;GET THE POINTER TO THE FILE
+  00DF'   7E                    	MOV	A,M			;WHAT IS THE MODE?
+  00E0'   FE 01                 	CPI	MD.SQI			;MUST BE ECHOING OR "EXTRA IGNORED"
+                                					;DURING THE READING OF A FILE
+  00E2'   CA 0000*              	JZ	POPAHT##		;SO IGNORE THIS OUTCHR
+                                	EXTRN	FILOFV
+  00E5'   FE 03                 	CPI	MD.RND			;RANDOM?
+  00E7'   CA 0000*              	JZ	FILOFV			;YES, FINISH UP IN FIVDK.MAC
+  00EA'   F1                    	POP	PSW			;TAKE THE CHARACTER OFF
+  00EB'   D5                    FILOU4:	PUSH	D
+  00EC'   C5                    	PUSH	B
+  00ED'   44                    	MOV	B,H			;SETUP [B,C] FOR OUTSEQ
+  00EE'   4D                    	MOV	C,L
+  00EF'   F5                    	PUSH	PSW			;RE-SAVE OUTPUT CHARACTER
+  00F0'   11 0027               	LXI	D,0+ORNOFS		;POINT AT THE NUMBER OF CHARACTERS IN THE
+  00F3'   19                    	DAD	D			;BUFFER CURRENTLY
+  00F4'   7E                    	MOV	A,M
+  00F5'   FE 80                 	CPI	DATPSC AND 377O		;IS THE BUFFER FULL?
+  00F7'   E5                    	PUSH	H			;SAVE POINTER AT CHARACTER COUNT
+  00F8'   CC 003B'              	CZ	OUTSEQ			;OUTPUT IF FULL
+  00FB'   E1                    	POP	H			;GET BACK DATA BLOCK POINTER
+  00FC'   34                    	INR	M			;INCREMENT THE NUMBER OF CHARACTERS
+  00FD'   4E                    	MOV	C,M			;FETCH FOR OFFSET INTO DATA
+  00FE'   06 00                 	MVI	B,0
+  0100'   23                    	INX	H			;POINT AT PRINT POSITION
+                                	PUBLIC	FILUPP
+  0101'                         FILUPP:
+  0101'   F1                    	POP	PSW			;GET THE OUTPUT CHARACTER
+  0102'   F5                    	PUSH	PSW			;RESAVE FOR OUTPUT
+  0103'   56                    	MOV	D,M			;[D]=CURRENT POSITION
+  0104'   FE 0D                 	CPI	13			;BACK TO ZERO POSITION WITH RETURN?
+  0106'   70                    	MOV	M,B			;ASSUME RESET TO ZERO SINCE [B]=0
+  0107'   CA 010F'              	JZ	ISCRDS			;ALL DONE UPDATING POSITION
+  010A'   C6 E0                 	ADI	224			;SET CARRY FOR SPACES AND HIGHER
+  010C'   7A                    	MOV	A,D			;[A]=CURRENT POSITION
+  010D'   88                    	ADC	B			;ADD ON CARRY SINCE [B]=0
+  010E'   77                    	MOV	M,A			;UPDATE THE POSITION IN THE DATA BLOCK
+  010F'   09                    ISCRDS:	DAD	B
+  0110'   F1                    	POP	PSW			;GET THE CHARACTER
+  0111'   C1                    	POP	B
+  0112'   D1                    	POP	D
+  0113'   77                    	MOV	M,A			;SAVE IT IN THE DATA AREA
+  0114'   E1                    	POP	H			;GET BACK SAVED [H,L]
+  0115'   C9                    	RET	
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	7-1
+FILOUT -- PUT A CHARACTER IN AN OUTPUT BUFFER AND OUTPUT IF
+
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	8
+PUT AND GET STATEMENTS
+
+                                	SUBTTL	PUT AND GET STATEMENTS
+                                
+                                ;	EXTERN	GET,PUT
+                                	PUBLIC	FIVDPT
+  0116'                         FIVDPT:
+  0116'   1B                    	DCX	D			;MAP RECORD NUMBER 1=0 LOGICAL
+  0117'   2B                    	DCX	H
+  0118'   73                    	MOV	M,E
+  0119'   23                    	INX	H
+  011A'   72                    	MOV	M,D			;SETUP CURLOC AGAIN
+  011B'   23                    	INX	H			;POINT TO ORN
+  011C'   36 80                 	MVI	M,DATPSC AND 377O	;SET NUMBER IN THE BUFFER TO DATSPC
+  011E'   23                    	INX	H
+  011F'   36 80                 	MVI	M,DATPSC AND 377O
+  0121'   E1                    	POP	H			;[H,L]=TEXT POINTER
+  0122'   E3                    	XTHL				;SAVE TEXT POINTER, [H,L]=START OF DATA BLOCK
+  0123'   44                    	MOV	B,H
+  0124'   4D                    	MOV	C,L
+                                
+                                ;	RANDOM FILE ACCESS
+                                ;
+                                ;	(DE) = physical block #
+                                ;	(BC) points to File Data Block
+                                ;	(HL) points to File Data Block
+                                
+  0125'   E5                    	PUSH	H			;SAVE DATA BLOCK POINTER
+  0126'   3A 0000*              	LDA	CPMVRN			;Get version number
+  0129'   B7                    	ORA	A
+  012A'   CA 013A'              	JZ	RNDVR1			;Version 1.x
+                                
+  012D'   21 0022               	LXI	H,0+FCB.RN+1		;Offset to random record number
+  0130'   09                    	DAD	B
+  0131'   73                    	MOV	M,E			;Set new random record number
+  0132'   23                    	INX	H
+  0133'   72                    	MOV	M,D
+  0134'   23                    	INX	H
+  0135'   36 00                 	MVI	M,0
+  0137'   C3 017F'              	JMP	RNDDON			;Finished setting record number
+                                
+  013A'   21 000D               RNDVR1:	LXI	H,0+FCB.EX+1		;POINT TO EXTENT
+  013D'   09                    	DAD	B			;ADD START OF FILE CONTROL BLOCK
+  013E'   7B                    	MOV	A,E			;GET LOW BYTE OF OFFSET
+  013F'   17                    	RAL				;GET HIGH BIT IN CARRY
+  0140'   7A                    	MOV	A,D			;GET HIGH BYTE
+  0141'   17                    	RAL				;ROTATE IN HIGH BYTE OF LOW PART
+  0142'   56                    	MOV	D,M			;PUT ORIGINAL EXTENT IN [D]
+  0143'   BA                    	CMP	D			;ARE NEW AND OLD EXTENT THE SAME?
+  0144'   CA 0177'              	JZ	SAMEXT			;SAME EXTENT, DONT RE-OPEN
+  0147'   D5                    	PUSH	D			;SAVE RECORD NUMBER
+  0148'   F5                    	PUSH	PSW			;SAVE NEW EXTENT
+  0149'   E5                    	PUSH	H			;SAVE POINTER TO EXTENT
+  014A'   C5                    	PUSH	B			;SAVE FILE POINTER
+  014B'   11 0000*              	LXI	D,DIRTMP		;READ DIRECTORY IN HERE FOR OPEN
+  014E'   0E 1A                 	MVI	C,C.BUFF		;SET CPM BUFFER ADDRESS
+  0150'   CD 0005               	CALL	CPMENT
+  0153'   D1                    	POP	D			;GET CPM FCB POINTER
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	8-1
+PUT AND GET STATEMENTS
+
+  0154'   D5                    	PUSH	D			;SAVE BACK
+  0155'   13                    	INX	D			;POINT TO FCB
+  0156'   0E 10                 	MVI	C,C.CLOS		;CLOSE PREVIOUS EXTENT (?!)
+  0158'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  015B'   D1                    	POP	D			;GET BACK FCB POINTER
+  015C'   E1                    	POP	H			;RESTORE POINTER TO EXTENT FIELD
+  015D'   F1                    	POP	PSW			;GET BACK NEW EXTENT
+  015E'   77                    	MOV	M,A			;STORE NEW EXTENT
+  015F'   D5                    	PUSH	D
+  0160'   13                    	INX	D			;POINT TO FCB
+  0161'   0E 0F                 	MVI	C,C.OPEN		;OPEN NEW EXTENT
+  0163'   D5                    	PUSH	D			;SAVE EXTENT POINTER
+  0164'   CD 0005               	CALL	CPMENT			;BY CALLING CP/M
+  0167'   D1                    	POP	D			;RESTORE FCB POINTER
+  0168'   3C                    	INR	A			;DOES EXTENT EXIST?
+  0169'   C2 0175'              	JNZ	RNDOK			;YES
+  016C'   0E 16                 	MVI	C,C.MAKE		;MAKE THE EXTENT EXIST
+  016E'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  0171'   3C                    	INR	A			;ROOM IN DIRECTORY?
+  0172'   CA 0000*              	JZ	DERTMF			;NO
+  0175'   C1                    RNDOK:	POP	B			;RESTORE [B,C]
+  0176'   D1                    	POP	D			;RESTORE RECORD NUMBER
+  0177'   21 0021               SAMEXT:	LXI	H,0+FCB.NR+1		;NEXT RECORD FIELD
+  017A'   09                    	DAD	B			;POINT TO IT
+  017B'   7B                    	MOV	A,E			;GET LOW 7 BITS OF RECORD #
+  017C'   E6 7F                 	ANI	127
+  017E'   77                    	MOV	M,A			;SET RECORD #
+                                
+  017F'                         RNDDON:
+  017F'   E1                    	POP	H			;[H,L] POINT AT FILE DATA BLOCK
+                                
+                                ;	(BC) points to File Data Block
+                                ;	(HL) points to File Data Block
+                                
+  0180'   3A 0000*              	LDA	MAXTRK##		;GET FLAG FOR "PUT" OR "GET"
+  0183'   B7                    	ORA	A
+  0184'   C2 018C'              	JNZ	PUTFIN			;DO THE PUTTING
+  0187'   CD 01EF'              	CALL	READIN			;PERFORM THE GET
+  018A'   E1                    	POP	H			;GET THE TEXT POINTER
+  018B'   C9                    	RET	
+                                
+  018C'                         PUTFIN:
+  018C'   21 0021               	LXI	H,0+FCB.NR+1		;LOOK AT RECORD #
+  018F'   09                    	DAD	B			;[H,L] POINTS TO IT
+  0190'   7E                    	MOV	A,M			;GET IT
+  0191'   FE 7F                 	CPI	127			;LAST RECORD IN EXTENT?
+  0193'   F5                    	PUSH	PSW			;SAVE INDICATOR
+  0194'   11 0000*              	LXI	D,DIRTMP		;SAVE HERE
+  0197'   21 0029               	LXI	H,0+DATOFS		;POINT TO DATA
+  019A'   09                    	DAD	B
+  019B'   D5                    	PUSH	D			;SAVE DIRTMP POINTER
+  019C'   E5                    	PUSH	H			;SAVE DATA POINTER
+  019D'   CC 01AD'              	CZ	BUFMOV			;NOT LAST EXTENT
+  01A0'   CD 003B'              	CALL	OUTSEQ			;OUTPUT THE DATA
+  01A3'   D1                    	POP	D			;RESTORE DATA POINTER
+  01A4'   E1                    	POP	H			;RESTORE POINTER TO DIRTMP
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	8-2
+PUT AND GET STATEMENTS
+
+  01A5'   F1                    	POP	PSW			;RESTORE INDICATOR
+  01A6'   CC 01AD'              	CZ	BUFMOV			;MOVE SECTOR
+  01A9'   E1                    	POP	H			;GET THE TEXT POINTER
+  01AA'   C3 0000*              	JMP	FINPRT##		;ZERO PTRFIL
+                                
+  01AD'   C5                    BUFMOV:	PUSH	B			;SAVE [B,C]
+  01AE'   06 80                 	MVI	B,DATPSC		;# OF BYTES TO MOVE
+  01B0'   7E                    BUFSLP:	MOV	A,M			;GET BYTE FROM BUFFER
+  01B1'   23                    	INX	H			;BUMP POINTER
+  01B2'   12                    	STAX	D			;SAVE IN DIRTMP
+  01B3'   13                    	INX	D			;BUMP POINTER
+  01B4'   05                    	DCR	B
+  01B5'   C2 01B0'              	JNZ	BUFSLP			;KEEP MOVING BYTES
+  01B8'   C1                    	POP	B			;RESTORE [B,C]
+  01B9'   C9                    	RET	
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	9
+INDSKC, FILLSQ, AND READIN -- FOR READING CHARACTERS AND BU
+
+                                	SUBTTL	INDSKC, FILLSQ, AND READIN -- FOR READING CHARACTERS AND BUFFERS
+                                
+                                ;
+                                ; GET A CHARACTER FROM A SEQUENTIAL FILE IN [PTRFIL]
+                                ; ALL REGISTERS EXCEPT [D,E] SMASHED
+                                ;
+                                ;	'C' set if EOF read
+                                ;
+  01BA'   C5                    INDSKB:	PUSH	B			;SAVE CHAR COUNTER
+  01BB'   E5                    	PUSH	H			;SAVE [H,L]
+  01BC'   2A 0000*              INDSK3:	LHLD	PTRFIL##		;GET DATA BLOCK POINTER
+                                	EXTRN	FILIFV
+  01BF'   7E                    	MOV	A,M			;GET FILE MODE
+  01C0'   FE 03                 	CPI	MD.RND			;RANDOM?
+  01C2'   CA 0000*              	JZ	FILIFV			;DO INPUT
+  01C5'   01 0028               	LXI	B,0+NMLOFS		;SEE HOW MANY CHARACTERS LEFT
+  01C8'   09                    	DAD	B
+  01C9'   7E                    	MOV	A,M			;GET THE NUMBER
+  01CA'   B7                    	ORA	A
+  01CB'   CA 01DA'              	JZ	FILLSQ			;MUST GO READ SOME MORE -- IF CAN
+  01CE'   2B                    	DCX	H			;POINT AT ORNOFS
+  01CF'   7E                    	MOV	A,M			;GET ORIGINAL NUMBER
+  01D0'   23                    	INX	H			;POINT AT NUMBER LEFT AGAIN
+  01D1'   35                    	DCR	M			;DECREMENT THE NUMBER
+  01D2'   96                    	SUB	M			;SUBTRACT TO GIVE OFFSET
+  01D3'   4F                    	MOV	C,A			;[C]=OFFSET
+  01D4'   09                    	DAD	B
+  01D5'   7E                    	MOV	A,M			;GET THE DATA
+  01D6'   B7                    	ORA	A			;RESET CARRY FLAG FOR NO EOF
+  01D7'   E1                    	POP	H			;RESTORE [H,L]
+  01D8'   C1                    POPBRT:	POP	B			;RESTORE
+  01D9'   C9                    	RET	
+                                
+  01DA'   2B                    FILLSQ:	DCX	H			;BACK UP POINTER
+  01DB'   7E                    	MOV	A,M			;TO ORNOFS
+  01DC'   B7                    	ORA	A			;DID WE HIT EOF ON PREVIOUS READ?
+  01DD'   CA 01E6'              	JZ	FILLS1			;YES
+  01E0'   CD 01EC'              	CALL	READ2			;READ A RECORD
+                                ;	ORA	A		;USED TO BE - WAS IT EOF?
+  01E3'   C2 01BC'              	JNZ	INDSK3			;RETURN WITH A CHAR
+  01E6'   37                    FILLS1:	STC				;CARRY IS EOF FLAG
+  01E7'   E1                    	POP	H			;RESTORE [H,L]
+  01E8'   C1                    	POP	B			;EOF DETECTED
+  01E9'   3E 1A                 	MVI	A,EOFCHR		;RETURN WITH CHAR=CONTROL-Z (OR =FS)
+  01EB'   C9                    	RET	
+                                
+  01EC'   2A 0000*              READ2:	LHLD	PTRFIL##		;GET DATA POINTER
+  01EF'   D5                    READIN:	PUSH	D
+  01F0'   54                    	MOV	D,H			;PUT FCB POINTER IN [D,E]
+  01F1'   5D                    	MOV	E,L
+  01F2'   13                    	INX	D
+  01F3'   01 0025               	LXI	B,0+LOCOFS		;POINT TO CURLOC
+  01F6'   09                    	DAD	B
+  01F7'   4E                    	MOV	C,M			;UPDATE [CURLOC]
+  01F8'   23                    	INX	H
+  01F9'   46                    	MOV	B,M
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	9-1
+INDSKC, FILLSQ, AND READIN -- FOR READING CHARACTERS AND BU
+
+  01FA'   03                    	INX	B
+  01FB'   2B                    	DCX	H
+  01FC'   71                    	MOV	M,C
+  01FD'   23                    	INX	H
+  01FE'   70                    	MOV	M,B
+  01FF'   23                    	INX	H			;POINT TO NUMBER READ
+  0200'   23                    	INX	H			;POINT TO NMLOFS
+  0201'   E5                    	PUSH	H			;SAVE [H,L]
+                                ; ZERO OUT THE BUFFER IN CASE NOTHING READ
+  0202'   0E 80                 	MVI	C,DATPSC		;NUMBER OF BYTES/BUFFER
+  0204'   23                    ZRRND:	INX	H			;INCREMENT BUFFER POINTER
+  0205'   36 00                 	MVI	M,0			;ZERO IT
+  0207'   0D                    	DCR	C			;DECREMENT COUNT
+  0208'   C2 0204'              	JNZ	ZRRND			;KEEP ZEROING
+                                
+                                ;	READ SPECIFIED RECORD IN FILE
+                                ;
+                                ;	(DE) points to FCB
+                                ;
+                                ;	If SW2BYT = 0,
+                                ;		(A) = number of bytes read
+                                ;	If SW2BYT = 1,
+                                ;		(DE) = number of bytes read
+                                ;
+                                ;	If EOF, return with (A) or (DE) zero and
+                                ;		jump to READI2
+                                ;
+                                ;	Returns 'Z' set if EOF
+                                
+  020B'   CD 0223'              	CALL	SETBUF			;SET CPM BUFFER ADDRESS
+  020E'   3A 0000*              	LDA	CPMREA			;Get read code
+  0211'   CD 0505'              	CALL	ACCFIL			;Access file
+  0214'   B7                    	ORA	A			;EOF?
+  0215'   3E 00                 	MVI	A,0			;Return 0 if EOF
+  0217'   C2 021C'              	JNZ	READI2			;Assume EOF if error
+  021A'   3E 80                 READI1:	MVI	A,DATPSC		;OTHERWISE, HAVE 128 BYTES
+  021C'   E1                    READI2:	POP	H			;POINT BACK TO # READ
+  021D'   77                    	MOV	M,A			;STORE NUMBER READ
+  021E'   2B                    	DCX	H			;POINT AT NUMBER ORIGINALLY
+  021F'   77                    	MOV	M,A			;STORE NUMBER READ
+  0220'   B7                    	ORA	A			;Test for EOF
+  0221'   D1                    	POP	D			;GET [D,E] BACK
+  0222'   C9                    	RET	
+                                
+  0223'   C5                    SETBUF:	PUSH	B			;SAVE [B,C]
+  0224'   D5                    	PUSH	D			;SAVE [D,E]
+  0225'   E5                    	PUSH	H			;SAVE [H,L]
+  0226'   21 0028               	LXI	H,0+DATOFS-1		;POINT TO BUFFER
+  0229'   19                    	DAD	D			;ADD
+  022A'   EB                    	XCHG				;PUT BUFFER ADDRESS IN [D,E]
+  022B'   0E 1A                 	MVI	C,C.BUFF		;SET UP BUFFER ADDRESS
+  022D'   CD 0005               	CALL	CPMENT			;CALL CPM
+  0230'   E1                    	POP	H			;RESTORE [H,L]
+  0231'   D1                    	POP	D			;RESTORE [D,E]
+  0232'   C1                    	POP	B			;RESTORE [B,C]
+  0233'   C9                    	RET	
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	9-2
+INDSKC, FILLSQ, AND READIN -- FOR READING CHARACTERS AND BU
+
+                                
+                                ;
+  0234'                         INDSKC:
+  0234'   CD 01BA'              	CALL	INDSKB			;GET CHAR
+  0237'   D8                    	RC				;IF EOF, RETURN WITH END OF FILE CHARACTER
+  0238'   FE 1A                 	CPI	EOFCHR			;WAS IT A CONTROL-Z (OR FS)?
+  023A'   37                    	STC				;SET CARRY
+  023B'   3F                    	CMC				;MAKE SURE CARRY RESET
+  023C'   C0                    	RNZ				;NO
+  023D'   C5                    	PUSH	B			;SAVE [B,C]
+  023E'   E5                    	PUSH	H			;SAVE [H,L]
+  023F'   2A 0000*              	LHLD	PTRFIL			;GET POINTER TO FILE DATA BLOCK
+  0242'   01 0027               	LXI	B,0+ORNOFS		;POINT TO NUMBER ORIGINALLY IN BUFFER
+  0245'   09                    	DAD	B
+  0246'   36 00                 	MVI	M,0			;FORCE IT TO ZERO
+  0248'   23                    	INX	H			;POINT TO NUMBER IN BUFFER
+  0249'   36 00                 	MVI	M,0			;FORCE TO ZERO.
+  024B'   37                    	STC				;SET EOF FLAG
+  024C'   E1                    	POP	H			;RESTORE [H,L]
+  024D'   C1                    	POP	B			;RESTORE [B,C]
+  024E'   C9                    	RET	
+                                
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	10
+NAMFIL -- SCAN A FILE NAME AND NAME COMMAND
+
+                                	SUBTTL	NAMFIL -- SCAN A FILE NAME AND NAME COMMAND
+                                
+  024F'   CD 0000*              NAMFIL:	CALL	FRMEVL##		;EVALUATE STRING
+  0252'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  0253'   CD 0000*              	CALL	FRESTR##		;FREE UP THE TEMP
+  0256'   7E                    	MOV	A,M			;GET LENGTH OF STRING
+  0257'   B7                    	ORA	A			;NULL STRING?
+  0258'   CA 0000*              	JZ	DERNMF			;YES, ERROR
+  025B'   F5                    	PUSH	PSW			;NO "." SEEN
+  025C'   23                    	INX	H			;PICK UP POINTER TO STRING
+  025D'   5E                    	MOV	E,M			;BY GETTING ADDRESS
+  025E'   23                    	INX	H			;OUT OF DESCRIPTOR
+  025F'   66                    	MOV	H,M
+  0260'   6B                    	MOV	L,E			;[H,L] POINTS TO STRING
+  0261'   5F                    	MOV	E,A			;SAVE LENGTH
+                                
+                                ;	(HL) points to filename
+                                ;	(A) = length
+                                ;	(E) = length
+                                ;	((SP)) = no carry
+                                
+  0262'   FE 02                 	CPI	2			;CAN THERE BE A DEVICE?
+  0264'   DA 0272'              	JC	NODEV			;NO, NAME TOO SHORT
+  0267'   4E                    	MOV	C,M			;[C]=POSSIBLE DEVICE NAME
+  0268'   23                    	INX	H			;POINT TO NEXT CHAR
+  0269'   7E                    	MOV	A,M			;GET IT
+  026A'   1D                    	DCR	E			;DECREMENT COUNT FOR DEVICE NAME
+  026B'   FE 3A                 	CPI	':'			;COLON FOR DEVICE NAME?
+  026D'   CA 0276'              	JZ	CHKFIL			;YES, SO NOW GET FILE NAME
+  0270'   2B                    	DCX	H			;BACK UP POINTER BY ONE
+  0271'   1C                    	INR	E			;COMPENSATE FOR DCR
+  0272'   2B                    NODEV:	DCX	H			;BACK UP POINTER
+  0273'   1C                    	INR	E			;INCREMENT CHAR COUNT TO COMPENSATE FOR NEXT DECR
+  0274'   0E 40                 	MVI	C,'A'-1			;USE CURRENTLY SELECTED DRIVE
+  0276'   1D                    CHKFIL:	DCR	E			;DECRMENT CHAR COUNT
+  0277'   CA 0000*              	JZ	DERNMF			;ERROR IF NO FILENAME
+  027A'   79                    	MOV	A,C			;GET DRIVE #
+  027B'   D6 40                 	SUI	'A'-1			;CONVERT TO LOGICAL NUMBER
+  027D'   DA 0000*              	JC	DERNMF			;NOT IN RANGE
+  0280'   FE 1B                 	CPI	27			;BIGGER THAN 27
+  0282'   D2 0000*              	JNC	DERNMF			;NOT ALLOWED
+  0285'   01 0000*              	LXI	B,FILNAM		;WHERE TO PUT NAME
+  0288'   02                    	STAX	B			;STORE DISK # IN FCB
+  0289'   03                    	INX	B			;POINT TO WHERE FIRST CHAR OF FILE NAME IS STORED
+  028A'   16 0B                 	MVI	D,11-2*0		;LENGTH OF NAME
+  028C'   23                    FILINX:	INX	H			;BUMP POINTER
+  028D'   1D                    FILLOP:	DCR	E			;END OF STRING
+  028E'   FA 02C2'              	JM	FILSPC			;YES, FILL REST OF FIELD WITH BLANKS
+  0291'   7E                    	MOV	A,M			;GET CHAR
+  0292'   FE 2E                 	CPI	'.'			;EXTENSION?
+  0294'   C2 02A0'              	JNZ	FILLO1			;NO
+  0297'   CD 02AE'              FILLO0:	CALL	FILLNM			;YES, FILL NAME WITH BLANKS
+  029A'   F1                    	POP	PSW			;RESTORE CC'S
+  029B'   37                    	STC				;FLAG "." SEEN
+  029C'   F5                    	PUSH	PSW			;SAVE CC'S BACK
+  029D'   C3 028C'              	JMP	FILINX			;YES, IGNORE "."
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	10-1
+NAMFIL -- SCAN A FILE NAME AND NAME COMMAND
+
+  02A0'                         FILLO1:
+  02A0'   02                    	STAX	B			;COPY CHAR
+  02A1'   03                    	INX	B
+  02A2'   23                    	INX	H
+  02A3'   15                    	DCR	D			;DECRMENT POSSIBLE COUNT OF CHARS
+  02A4'   C2 028D'              	JNZ	FILLOP
+  02A7'                         GOTNAM:
+  02A7'   AF                    	XRA	A			;CLEAR EXTENT FIELD
+  02A8'   32 000C*              	STA	FILNAM+12
+  02AB'   F1                    	POP	PSW			;RESTORE CONDITION CODES
+  02AC'   E1                    	POP	H			;GET BACK TEXT POINTER
+  02AD'   C9                    	RET	
+                                
+  02AE'   7A                    FILLNM:	MOV	A,D			;GET # OF CHARS
+  02AF'   FE 0B                 	CPI	11+8*0-2*0		;INITIAL POSITION?
+  02B1'   CA 0000*              	JZ	DERNMF			;DONT ALLOW NULL FILENAME
+  02B4'   FE 03                 	CPI	3			;FILLED FIELD?
+  02B6'   DA 0000*              	JC	DERNMF			;NO, BUT 2ND "."
+  02B9'   C8                    	RZ				;YES, BACK TO LOOP
+  02BA'   3E 20                 FILLN1:	MVI	A,' '			;FILL WITH SPACE
+  02BC'   02                    	STAX	B
+  02BD'   03                    	INX	B
+  02BE'   15                    	DCR	D
+  02BF'   C3 02AE'              	JMP	FILLNM
+  02C2'   14                    FILSPC:	INR	D			;CHARS LEFT IN FILE BUFFER
+  02C3'   15                    	DCR	D			;TEST
+  02C4'   CA 02A7'              	JZ	GOTNAM			;NO
+  02C7'   3E 20                 FILSP2:	MVI	A,' '			;SPACE
+  02C9'   02                    	STAX	B			;STORE
+  02CA'   03                    	INX	B
+  02CB'   15                    	DCR	D			;FILLED WHOLE FIELD?
+  02CC'   C2 02C7'              	JNZ	FILSP2			;NO, MORE SPACES
+  02CF'   C3 02A7'              	JMP	GOTNAM			;YES, MAKE SURE NAME OK
+                                	PAGE
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	10-2
+NAMFIL -- SCAN A FILE NAME AND NAME COMMAND
+
+                                
+  02D2'                         NAME::
+  02D2'   CD 024F'              	CALL	NAMFIL			;PICK UP THE OLD NAME TO USE
+  02D5'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  02D6'   11 0000*              	LXI	D,DIRTMP		;READ DIRECTORY IN HERE
+  02D9'   0E 1A                 	MVI	C,C.BUFF		;SET BUFFER ADDRESS
+  02DB'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  02DE'   11 0000*              	LXI	D,FILNAM		;SEE IF ORIGINAL NAME EXISTS
+  02E1'   0E 0F                 	MVI	C,C.OPEN		;BY OPENING
+  02E3'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  02E6'   3C                    	INR	A			;DOES IT EXIST?
+  02E7'   CA 0000*              	JZ	DERFNF			;FILE NOT FOUND
+  02EA'   21 0000*              	LXI	H,FILNA2		;SAVE FILE NAME IN FILNA2
+  02ED'   11 0000*              	LXI	D,FILNAM
+  02F0'   06 0C                 	MVI	B,12+3*0-2*0+2*0+3*0-3*0;SET [C]=MAX FILE NAME LENGTH
+  02F2'   1A                    NAMRMV:	LDAX	D			;GET BYTE FROM FILE
+  02F3'   77                    	MOV	M,A			;SAVE BYTE IN "OLD" FILE NAME
+  02F4'   23                    	INX	H			;BUMP POINTERS
+  02F5'   13                    	INX	D
+  02F6'   05                    	DCR	B
+  02F7'   C2 02F2'              	JNZ	NAMRMV
+  02FA'   E1                    	POP	H			;GET THE TEXT POINTER BACK
+  02FB'   CD 0000*              	CALL	SYNCHR
+  02FE'   41                    	DB	'A'			;MAKE SURE "AS" IS THERE
+  02FF'   CD 0000*              	CALL	SYNCHR
+  0302'   53                    	DB	'S'			;
+  0303'   CD 024F'              	CALL	NAMFIL			;READ THE NEW NAME
+  0306'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  0307'   3A 0000*              	LDA	FILNAM			;GET DISK # OF FILE NAME
+  030A'   21 0000*              	LXI	H,FILNA2		;POINT TO ORIG FILE
+  030D'   BE                    	CMP	M			;COMPARE
+  030E'   C2 0000*              	JNZ	FCERR##			;DISKS MUST BE THE SAME
+  0311'   11 0000*              	LXI	D,FILNAM		;SEE IF ORIGINAL NAME EXISTS
+  0314'   0E 0F                 	MVI	C,C.OPEN		;BY OPENING
+  0316'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  0319'   3C                    	INR	A			;DOES IT EXIST?
+                                	EXTRN	DERFAE
+  031A'   C2 0000*              	JNZ	DERFAE			;YES
+  031D'   0E 17                 	MVI	C,C.RENA		;RENAME OPERATION
+  031F'   11 0000*              	LXI	D,FILNA2		;POINT AT OLD NAME FCB
+  0322'   CD 0005               	CALL	CPMENT			;CALL CPM
+                                ;	INR	A		;FILE FOUND?
+                                ;****DONT CHECK ERROR RETURN, CP/M HAS PROBLEMS****
+                                ;	JZ	DERFNF		;NO
+  0325'   E1                    	POP	H			;RESTORE TEXT POINTER
+  0326'   C9                    	RET	
+                                
+                                
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	11
+OPEN STATEMENT AND ALL DIRECTORY HANDLING
+
+                                	SUBTTL	OPEN STATEMENT AND ALL DIRECTORY HANDLING
+                                
+  0327'   01 0000*              OPEN::	LXI	B,FINPRT		;ZERO PTRFIL WHEN DONE
+  032A'   C5                    	PUSH	B
+  032B'   CD 0000*              	CALL	FRMEVL			;READ THE FILE MODE
+  032E'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  032F'   CD 0000*              	CALL	FRESTR			;FREE STRING TEMP & CHECK STRING
+  0332'   7E                    	MOV	A,M			;MAKE SURE ITS NOT A NULL STRING
+  0333'   B7                    	ORA	A
+  0334'   CA 0000*              	JZ	DERBFM			;IF SO, "BAD FILE MODE"
+  0337'   23                    	INX	H
+  0338'   4E                    	MOV	C,M			;[B,C] POINT AT MODE CHARACTER
+  0339'   23                    	INX	H
+  033A'   46                    	MOV	B,M
+  033B'   0A                    	LDAX	B			;[A]=MODE CHARACTER
+  033C'   E6 DF                 	ANI	-1-' '			;FORCE TO UPPER CASE
+  033E'   16 02                 	MVI	D,MD.SQO		;ASSUME ITS "O"
+  0340'   FE 4F                 	CPI	'O'			;IS IT?
+  0342'   CA 0353'              	JZ	HAVMOD			;[D] HAS CORRECT MODE
+  0345'   16 01                 	MVI	D,MD.SQI		;ASSUME SEQUENTIAL
+  0347'   FE 49                 	CPI	'I'			;IS IT?
+  0349'   CA 0353'              	JZ	HAVMOD			;[D] SAYS SEQUENTIAL INPUT
+  034C'   16 03                 	MVI	D,MD.RND		;MUST BE RANDOM
+  034E'   FE 52                 	CPI	'R'
+  0350'   C2 0000*              	JNZ	DERBFM			;IF NOT, NO MATCH SO "BAD FILE MODE"
+  0353'   E1                    HAVMOD:	POP	H			;GET BACK THE TEXT POINTER
+  0354'   CD 0000*              	CALL	SYNCHR
+  0357'   2C                    	DB	44			;SKIP COMMA BEFORE FILE NUMBER
+  0358'   D5                    	PUSH	D			;SAVE THE FILE MODE
+  0359'   FE 23                 	CPI	'#'			;SKIP A POSSIBLE "#"
+  035B'   CC 0000*              	CZ	CHRGTR##
+  035E'   CD 0000*              	CALL	GETBYT			;READ THE FILE NUMBER
+  0361'   CD 0000*              	CALL	SYNCHR
+  0364'   2C                    	DB	44			;SKIP COMMA BEFORE NAME
+  0365'   7B                    	MOV	A,E			;[A]=FILE NUMBER
+  0366'   B7                    	ORA	A			;MAKE SURE FILE WASN'T ZERO
+  0367'   CA 0000*              	JZ	DERBFN			;IF SO, "BAD FILE NUMBER"
+  036A'   D1                    	POP	D			;GET BACK FILE MODE
+  036B'   5F                    PRGFIL:	MOV	E,A			;SAVE FILE NUMBER IN [E]
+  036C'   D5                    	PUSH	D			;SAVE THE MODE IN [D]
+                                					;SINCE PROGRAM FILE [A]=0
+  036D'   CD 0000*              	CALL	FILIDX			;[B,C] POINT AT FILE DATA BLOCK
+  0370'   C2 0000*              	JNZ	DERFAO			;IF NON ZERO MODE, "FILE ALREADY OPEN"
+  0373'   D1                    	POP	D			;[D]=FILE MODE
+  0374'   7A                    	MOV	A,D			;FILE MODE TO [A]
+  0375'   02                    	STAX	B			;SAVE IN FILE BLOCK
+  0376'   C5                    	PUSH	B			;SAVE POINTER AT FILE DATA BLOCK
+  0377'   D5                    	PUSH	D			;SAVE BACK FILE MODE AND NUMBER
+  0378'   CD 024F'              	CALL	NAMFIL			;READ THE NAME
+  037B'   D1                    	POP	D			;RESTORE FILE NUMBER
+  037C'   C1                    	POP	B			;GET BACK FILE DATA BLOCK POINTER
+  037D'   C5                    	PUSH	B			;SAVE BACK
+                                	EXTRN	VARECS
+  037E'   F5                    	PUSH	PSW			;SAVE EXTENSION FLAG
+  037F'   0A                    	LDAX	B			;GET FILE MODE
+  0380'   CD 0000*              	CALL	VARECS			;SCAN RECORD LENGTH FIELD
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	11-1
+OPEN STATEMENT AND ALL DIRECTORY HANDLING
+
+  0383'   F1                    	POP	PSW			;GET BACK EXTENSION FLAG
+                                	EXTRN	TEMP
+  0384'   22 0000*              	SHLD	TEMP			;SAVE THE TEXT POINTER FOR A WHILE
+  0387'   DA 03A0'              	JC	PRGDOT			;IF "." SEEN, DONT DEFAULT EXTENSION
+  038A'   7B                    	MOV	A,E			;GET FILE NUMBER
+  038B'   B7                    	ORA	A			;SET CONDITION CODES
+  038C'   C2 03A0'              	JNZ	PRGDOT			;NOT FILE 0, DONT DEFAULT FILE NAME
+  038F'   21 0009*              	LXI	H,FILNAM+9-0-0-2*0	;POINT TO FIRST CHAR OF EXTENSION
+  0392'   7E                    	MOV	A,M			;GET IT
+  0393'   FE 20                 	CPI	' '			;BLANK EXTENSION
+  0395'   C2 03A0'              	JNZ	PRGDOT			;NON-BLANK EXTENSION, DONT USE DEFAULT
+  0398'   36 42                 	MVI	M,'B'			;SET DEFAULT EXTENSION
+  039A'   23                    	INX	H
+  039B'   36 41                 	MVI	M,'A'
+  039D'   23                    	INX	H
+  039E'   36 53                 	MVI	M,'S'			;SET ".BAS"
+                                					;BASCOM
+  03A0'   E1                    PRGDOT:	POP	H			;[H,L]=POINTER AT FILE DATA BLOCK
+  03A1'   22 0000*              	SHLD	PTRFIL##		;SETUP AS CURRENT FILE
+  03A4'   E5                    	PUSH	H			;SAVE BACK FILE DATA BLOCK POINTER
+  03A5'   23                    	INX	H			;POINT TO FCB ENTRY
+  03A6'   11 0000*              	LXI	D,FILNAM		;GET POINTER TO SCANNED FILE NAME
+  03A9'   0E 0C                 	MVI	C,12+0+0*3+2*0+3*0	;NUMBER OF BYTES TO COPY
+  03AB'   1A                    OPNLP:	LDAX	D			;GET BYTE FROM FILNAM
+  03AC'   77                    	MOV	M,A			;STORE IN FILE DATA BLOCK
+  03AD'   13                    	INX	D
+  03AE'   23                    	INX	H
+  03AF'   0D                    	DCR	C			;DECRMENT COUNT OF BYTES TO MOVE
+  03B0'   C2 03AB'              	JNZ	OPNLP			;KEEP LOOPING
+                                
+                                ;	OPEN FILE
+                                ;
+                                ;	((SP)) points to File Data Block
+                                ;	((SP)+2) contains the file mode - DMC!X3200!R2E
+                                
+  03B3'   36 00                 	MVI	M,0			;MAKE SURE EXTENT FIELD IS ZERO
+  03B5'   11 0014               	LXI	D,0+20			;POINT TO NR FIELD
+  03B8'   19                    	DAD	D
+  03B9'   36 00                 	MVI	M,0			;SET TO ZERO
+  03BB'   D1                    	POP	D			;GET POINTER TO FILE DATA BLOCK BACK IN [D]
+  03BC'   D5                    	PUSH	D			;SAVE AGAIN FOR LATER
+  03BD'   13                    	INX	D
+  03BE'   CD 0223'              	CALL	SETBUF			;SET BUFFER ADDRESS
+  03C1'   E1                    	POP	H			;GET BACK FILE DATA BLOCK PTR
+  03C2'   E5                    	PUSH	H			;SAVE BACK
+  03C3'   7E                    	MOV	A,M			;GET MODE
+  03C4'   FE 02                 	CPI	MD.SQO			;SEQENTIAL OUTPUT?
+  03C6'   C2 03DC'              	JNZ	OPNFIL			;NO, DO CPM OPEN CALL
+  03C9'   D5                    	PUSH	D			;SAVE FCB POINTER
+  03CA'   0E 13                 	MVI	C,C.DELE		;DELETE EXISTING OUTPUT FILE, IF ANY
+  03CC'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  03CF'   D1                    	POP	D			;RESTORE FCB POINTER
+  03D0'   0E 16                 MAKFIL:	MVI	C,C.MAKE		;CREATE FILE
+  03D2'   CD 0005               	CALL	CPMENT			;CALL CPM
+  03D5'   3C                    	INR	A			;TEST FOR TOO MANY FILES
+  03D6'   CA 0000*              	JZ	DERTMF			;THAT WAS THE CASE
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	11-2
+OPEN STATEMENT AND ALL DIRECTORY HANDLING
+
+  03D9'   C3 03F1'              	JMP	OPNSET			;FINISH SETUP OF FILE DATA BLOCK
+  03DC'   0E 0F                 OPNFIL:	MVI	C,C.OPEN		;CPM CODE FOR OPEN
+  03DE'   CD 0005               	CALL	CPMENT			;CALL CPM
+  03E1'   3C                    	INR	A			;FILE NOT FOUND
+  03E2'   C2 03F1'              	JNZ	OPNSET			;FOUND
+  03E5'   D1                    	POP	D			;GET BACK FILE POINTER
+  03E6'   D5                    	PUSH	D			;SAVE BACK
+  03E7'   1A                    	LDAX	D			;GET MODE OF FILE
+  03E8'   FE 03                 	CPI	MD.RND			;RANDOM?
+  03EA'   C2 0000*              	JNZ	DERFNF			;NO, SEQENTIAL INPUT, FILE NOT FOUND
+  03ED'   13                    	INX	D			;MAKE [D,E]=FCB POINTER
+  03EE'   C3 03D0'              	JMP	MAKFIL			;MAKE FILE
+                                
+                                ;	((SP)) points to File Data Block
+                                ;	((SP)+2) contains the file mode - DMC!X3200!R2E
+                                
+  03F1'   D1                    OPNSET:	POP	D			;POINT TO FILE INFO
+  03F2'   D5                    	PUSH	D			;SAVE POINTER BACK
+  03F3'   21 0025               	LXI	H,0+LOCOFS		;POINT TO CURLOC
+  03F6'   19                    	DAD	D
+  03F7'   AF                    	XRA	A			;ZERO CURLOC IN CASE THIS FILE
+                                					;WAS JUST KILLED
+  03F8'   77                    	MOV	M,A
+  03F9'   23                    	INX	H
+  03FA'   77                    	MOV	M,A
+  03FB'   23                    	INX	H
+  03FC'   77                    	MOV	M,A			;ZERO NUMBER OF BYTES IN THE BUFFER
+  03FD'   23                    	INX	H
+  03FE'   77                    	MOV	M,A			;ZERO PRINT POSITION
+  03FF'   E1                    	POP	H			;GET POINTER AT MODE
+  0400'   7E                    	MOV	A,M			;SEE WHAT HAS TO BE DONE
+  0401'   FE 03                 	CPI	MD.RND			;IS IT RANDOM MODE?
+  0403'   CA 0412'              	JZ	RNDFIN			;YES RANDOM FINISH UP
+  0406'   FE 01                 	CPI	MD.SQI			;IF SEQUENTIAL ALL THAT IS LEFT TO DO
+  0408'   C2 0000*              	JNZ	GTMPRT##		;FETCH TEXT POINTER AND DONE
+                                
+                                ;
+                                ; FINISH UP SEQUENTIAL INPUT AFTER FINDING FILE
+                                ;
+  040B'   CD 01EC'              	CALL	READ2			;READ FIRST DATA BLOCK
+  040E'                         OPN000:
+  040E'   2A 0000*              	LHLD	TEMP			;GET BACK THE TEXT POINTER
+  0411'   C9                    	RET	
+                                
+  0412'   01 0029               RNDFIN:	LXI	B,0+DATOFS		;NOW ADVANCE POINTER TO DATA
+  0415'   09                    	DAD	B			;BY ADDING PROPER OFFSET
+  0416'   0E 80                 	MVI	C,DATPSC		;# OF BYTES TO ZERO
+  0418'   70                    ZRRNDT:	MOV	M,B
+  0419'   23                    	INX	H
+  041A'   0D                    	DCR	C
+  041B'   C2 0418'              	JNZ	ZRRNDT
+  041E'   C3 0000*              	JMP	GTMPRT			;GET TEXT POINTER
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	12
+SYSTEM (EXIT) COMMAND - RETURN TO CPM (OR EXIT TO OS)
+
+                                	SUBTTL	SYSTEM (EXIT) COMMAND - RETURN TO CPM (OR EXIT TO OS)
+                                
+                                	PUBLIC	SYSTEM
+                                	PUBLIC	SYSTME
+  0421'                         SYSTEM:
+  0421'   C0                    	RNZ				;SHOULD TERMINATE
+  0422'   CD 0000*              	CALL	CLSALL			;CLOSE ALL DATA FILES
+  0425'   C3 0000               SYSTME:	JMP	CPMWRM			;WARM START CP/M
+                                					;BASCOM
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	13
+RESET COMMAND - FORCE DIRECTORY RE-READ ON ALL DISKS
+
+                                	SUBTTL	RESET COMMAND - FORCE DIRECTORY RE-READ ON ALL DISKS
+                                
+                                	PUBLIC	RESET
+  0428'   C0                    RESET:	RNZ				;SHOULD TERMINATE
+  0429'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  042A'   CD 0000*              	CALL	CLSALL			;CLOSE ALL FILES
+  042D'   0E 19                 	MVI	C,C.GDRV		;GET DRIVE CURRENTLY SELECTED
+  042F'   CD 0005               	CALL	CPMENT			;GET IT IN [A]
+  0432'   F5                    	PUSH	PSW			;SAVE CURRENT DRIVE #
+  0433'   0E 0D                 	MVI	C,C.REST		;DO THE RESET CALL
+  0435'   CD 0005               	CALL	CPMENT
+  0438'   F1                    	POP	PSW			;GET DRIVE TO SELECT
+  0439'   5F                    	MOV	E,A			;INTO [E]
+  043A'   0E 0E                 	MVI	C,C.SDRV		;SET DRIVE
+  043C'   CD 0005               	CALL	CPMENT			;CALL CPM
+  043F'   E1                    	POP	H			;RESTORE TEXT POINTER
+  0440'   C9                    	RET	
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	14
+Kill command
+
+                                	SUBTTL	Kill command
+                                
+  0441'                         KILL::
+  0441'   CD 024F'              	CALL	NAMFIL			;SCAN FILE NAME
+  0444'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  0445'   11 0000*              	LXI	D,DIRTMP		;READ DIRECTORY IN HERE
+  0448'   0E 1A                 	MVI	C,C.BUFF		;SET BUFFER ADDRESS
+  044A'   CD 0005               	CALL	CPMENT			;FOR CP/M
+  044D'   11 0000*              	LXI	D,FILNAM		;TRY TO OPEN FILE
+  0450'   D5                    	PUSH	D			;SAVE FCB POINTER
+  0451'   0E 0F                 	MVI	C,C.OPEN
+  0453'   CD 0005               	CALL	CPMENT
+  0456'   3C                    	INR	A			;FILE FOUND?
+  0457'   D1                    	POP	D			;GET BACK POINTER TO FCB
+  0458'   D5                    	PUSH	D			;SAVE BACK
+  0459'   F5                    	PUSH	PSW			;SAVE FOUND FLAG
+  045A'   0E 10                 	MVI	C,C.CLOS		;THIS MAY NOT BE NESC.
+  045C'   C4 0005               	CNZ	CPMENT			;CLOSE FILE
+  045F'   F1                    	POP	PSW			;RESTORE FOUND INDICATOR
+  0460'   D1                    	POP	D			;RESTORE FCB POINTER
+  0461'   CA 0000*              	JZ	DERFNF			;YES
+  0464'   0E 13                 	MVI	C,C.DELE		;CODE FOR DELETE
+  0466'   CD 0005               	CALL	CPMENT			;CALL CPM
+  0469'   E1                    	POP	H			;GET BACK TEXT POINTER
+  046A'   C9                    	RET	
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	15
+FILES COMMAND - LIST THE DIRECTORY
+
+                                	SUBTTL	FILES COMMAND - LIST THE DIRECTORY
+                                
+                                ; THIS IS THE FILES[<FILENAME>] COMMAND
+                                ; WHICH PRINTS THE FILES WHICH MATCH THE <FILENAME> WILDCARD SPECIFIER
+                                ; IF <FILENAME> IS OMITTED, ALL THE FILES ON THE CURRENTLY SELECTED DRIVE
+                                ; ARE LISTED
+                                	PUBLIC	FILES
+  046B'                         FILES:
+  046B'   C2 047B'              	JNZ	FILNB			;FILE NAME WAS SPECIFIED
+  046E'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  046F'   21 0000*              	LXI	H,FILNAM		;POINT TO FILE NAME
+  0472'   36 00                 	MVI	M,0			;SET CURRENT DRIVE
+  0474'   23                    	INX	H			;BUMP POINTER
+  0475'   0E 0B                 	MVI	C,11+8*0		;MATCH ALL FILES
+  0477'   CD 04FD'              	CALL	FILQST			;SET FILE NAME AND EXTENSION TO QUESTION MARKS
+  047A'   E1                    	POP	H			;RESTORE TEXT POINTER
+  047B'   C4 024F'              FILNB:	CNZ	NAMFIL			;SCAN FILE NAME
+  047E'   AF                    	XRA	A			;MAKE SURE EXTENT IS ZERO
+  047F'   32 000C*              	STA	FILNAM+12
+  0482'   E5                    	PUSH	H			;SAVE TEXT POINTER
+  0483'   21 0001*              	LXI	H,FILNAM+1		;GET FIRST CHAR OF FILE NAME
+  0486'   0E 08                 	MVI	C,8			;FILL NAME WITH QUESTION MARKS
+  0488'   CD 04F9'              	CALL	FILQS
+  048B'   21 0009*              	LXI	H,FILNAM+9		;POINT TO EXTENSION
+  048E'   0E 03                 	MVI	C,3			;3 CHARS IN EXTENSION
+  0490'   CD 04F9'              	CALL	FILQS			;FILL IT WITH QMARKS
+  0493'   11 0000*              	LXI	D,DIRTMP		;SET BUFFER TO 80 HEX
+  0496'   0E 1A                 	MVI	C,C.BUFF
+  0498'   CD 0005               	CALL	CPMENT
+  049B'   11 0000*              	LXI	D,FILNAM		;POINT TO FCB
+  049E'   0E 11                 	MVI	C,C.SEAR		;DO INITIAL SEARCH FOR FILE
+  04A0'   CD 0005               	CALL	CPMENT			;CALL CP/M
+  04A3'   FE FF                 	CPI	255			;FIND FIRST INCARNATION OF FILE
+  04A5'   CA 0000*              	JZ	DERFNF			;NO
+  04A8'   E6 03                 FILNXT:	ANI	3			;MASK OFF LOW TWO BITS
+  04AA'   87                    	ADD	A			;MULTIPLY BY 32
+  04AB'   87                    	ADD	A
+  04AC'   87                    	ADD	A
+  04AD'   87                    	ADD	A
+  04AE'   87                    	ADD	A
+  04AF'   4F                    	MOV	C,A			;PUT OFFSET IN [B,C]
+  04B0'   06 00                 	MVI	B,0
+  04B2'   21 0001*              	LXI	H,DIRTMP+1		;POINT TO DIRECTORY BUFFER
+  04B5'   09                    	DAD	B			;POINT TO FCB ENTRY IN DIRECTORY
+  04B6'   0E 0B                 	MVI	C,11+5*0+11*0		;CHARS IN NAME
+  04B8'   7E                    MORNAM:	MOV	A,M			;GET FILE NAME CHAR
+  04B9'   23                    	INX	H			;BUMP POINTER
+  04BA'   CD 0000*              	CALL	OUTDO			;PRINT IT
+  04BD'   79                    	MOV	A,C			;GET  CHAR POSIT
+  04BE'   FE 04                 	CPI	4+5*0			;ABOUT TO PRINT EXTENSION?
+  04C0'   C2 04CE'              	JNZ	NOTEXT			;NO
+  04C3'   7E                    	MOV	A,M			;GET FIRST CHAR OF EXTENSION
+  04C4'   FE 20                 	CPI	' '			;IF SO, NOT SPACE
+  04C6'   CA 04CB'              	JZ	PRISPA			;PRINT SPACE
+  04C9'   3E 2E                 	MVI	A,'.'			;PRINT DOT
+  04CB'   CD 0000*              PRISPA:	CALL	OUTDO
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	15-1
+FILES COMMAND - LIST THE DIRECTORY
+
+  04CE'   0D                    NOTEXT:	DCR	C			;DECREMENT CHAR COUNT
+  04CF'   C2 04B8'              	JNZ	MORNAM			;MORE OF NAME TO PRINT
+  04D2'   3A 0000*              	LDA	TTYPOS##		;GET CURRENT TTY POSIT
+  04D5'   C6 0D                 	ADI	13+6*0+9*0+2*0		;SPACE FOR NEXT NAME?
+  04D7'   57                    	MOV	D,A			;SAVE IN D
+  04D8'   3A 0000*              	LDA	LINLEN##		;GET LENGTH OF TERMINAL LINE
+  04DB'   BA                    	CMP	D			;COMPRE TO CURRENT POSIT
+  04DC'   DA 04E7'              	JC	NWFILN			;NEED TO FORCE CRLF
+  04DF'   3E 20                 	MVI	A,' '			;TWO SPACES BETWEEN FILE NAMES
+  04E1'   CD 0000*              	CALL	OUTDO
+  04E4'   CD 0000*              	CALL	OUTDO
+                                					;OR THREE
+  04E7'                         NWFILN:
+  04E7'   DC 0000*              	CC	CRDO			;TYPE CRLF
+  04EA'   11 0000*              	LXI	D,FILNAM		;POINT AT FCB
+  04ED'   0E 12                 	MVI	C,C.SEAR+1		;SEARCH FOR NEXT ENTRY
+  04EF'   CD 0005               	CALL	CPMENT			;SEARCH FOR NEXT INCARNATION
+  04F2'   FE FF                 	CPI	255			;NO MORE?
+  04F4'   C2 04A8'              	JNZ	FILNXT			;MORE.
+  04F7'                         NWFIL2:
+  04F7'   E1                    	POP	H			;RESTORE TEXT POINTER
+  04F8'   C9                    	RET	
+                                
+  04F9'   7E                    FILQS:	MOV	A,M			;GET CHAR
+  04FA'   FE 2A                 	CPI	'*'			;WILD CARD?
+  04FC'   C0                    	RNZ				;NO, RETURN
+  04FD'   36 3F                 FILQST:	MVI	M,'?'			;STORE QUESTION MARK
+  04FF'   23                    	INX	H			;BUMP POINTER
+  0500'   0D                    	DCR	C			;DECREMENT COUNT OF QMARKS
+  0501'   C2 04FD'              	JNZ	FILQST			;KEEP SAVING QMARKS
+  0504'   C9                    	RET	
+                                					;Final cr/lf
+                                					;SWFIL
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	16
+DSKF FUNCTION
+
+                                	SUBTTL	DSKF FUNCTION
+                                
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	17
+Miscellaneous Operating System I/O
+
+                                	SUBTTL	Miscellaneous Operating System I/O
+                                
+  0505'   D5                    ACCFIL:	PUSH	D			;Save FCB address
+  0506'   4F                    	MOV	C,A
+  0507'   C5                    	PUSH	B
+  0508'   CD 0005               	CALL	CPMENT
+  050B'   C1                    	POP	B
+  050C'   D1                    	POP	D
+  050D'   F5                    	PUSH	PSW
+  050E'   21 0021               	LXI	H,0+FCB.RN		;Point to random record number
+  0511'   19                    	DAD	D
+  0512'   34                    	INR	M
+  0513'   C2 051D'              	JNZ	ACCFL1
+  0516'   23                    	INX	H
+  0517'   34                    	INR	M
+  0518'   C2 051D'              	JNZ	ACCFL1
+  051B'   23                    	INX	H
+  051C'   34                    	INR	M
+  051D'   79                    ACCFL1:	MOV	A,C			;Get back CPM call code
+  051E'   FE 22                 	CPI	34			;Is it random write/
+  0520'   C2 0532'              	JNZ	ACCFL2			;NO
+                                
+  0523'   F1                    	POP	PSW			;Get error code and map into 1.4 errors
+  0524'   B7                    	ORA	A
+  0525'   C8                    	RZ	
+  0526'   FE 05                 	CPI	5
+  0528'   CA 0000*              	JZ	DERTMF			;Too many files
+  052B'   FE 03                 	CPI	3
+  052D'   3E 01                 	MVI	A,1			;Turn into I/O error
+  052F'   C8                    	RZ	
+  0530'   3C                    	INR	A			;DEFAULT TO DISK SPACE FULL (2)
+  0531'   C9                    	RET	
+                                
+  0532'   F1                    ACCFL2:	POP	PSW
+  0533'   C9                    	RET	
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	18
+Miscellaneous Operating System I/O
+
+                                
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	19
+BASCOM O.S. Dependent Data Areas
+
+                                	SUBTTL	BASCOM O.S. Dependent Data Areas
+                                
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	20
+BASCOM O.S. Dependent Data Areas
+
+                                
+                                	END	
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	S
+BASCOM O.S. Dependent Data Areas
+
+Macros:
+
+Symbols:
+0505'	ACCFIL          051D'	ACCFL1          0532'	ACCFL2          
+0000*	BUF             00FF 	BUFLEN          01AD'	BUFMOV          
+01B0'	BUFSLP          001A 	C.BUFF          0010 	C.CLOS          
+0013 	C.DELE          0019 	C.GDRV          0016 	C.MAKE          
+000F 	C.OPEN          0017 	C.RENA          000D 	C.REST          
+000E 	C.SDRV          0011 	C.SEAR          002A'	CHKCTZ          
+0276'	CHKFIL          035C*	CHRGTR          000E 	CLMWID          
+042B*	CLSALL          0078I'	CLSFIL          0095'	CLSFL1          
+0039*	CONIA           0000*	CONINT          000F 	CONTO           
+0005 	CPMENT          020F*	CPMREA          0127*	CPMVRN          
+0049*	CPMWRI          0000 	CPMWRM          04E8*	CRDO            
+0029I 	DATOFC          0029I 	DATOFS          0080 	DATPSC          
+00A9I 	DBLK.C          00A9 	DBLKSZ          0000 	DBLTRN          
+0000*	DCOMPR          0351*	DERBFM          0368*	DERBFN          
+0000*	DERBRN          0065*	DERDFL          031B*	DERFAE          
+0371*	DERFAO          04A6*	DERFNF          0055*	DERIOE          
+02B7*	DERNMF          0529*	DERTMF          04B3*	DIRTMP          
+0000I'	EOF             001A 	EOFCHR          0000*	FACLO           
+000C 	FCB.EX          0001 	FCB.FN          0009 	FCB.FT          
+0020 	FCB.NR          000F 	FCB.RC          0021 	FCB.RN          
+030F*	FCERR           00AFI 	FD.CHG          00B2I 	FD.DAT          
+00ADI 	FD.LOG          0000 	FD.MAX          00B0I 	FD.OPS          
+00ABI 	FD.PHY          00A9I 	FD.SIZ          046BI'	FILES           
+00CB*	FILFRM          036E*	FILIDX          01C3*	FILIFV          
+028C'	FILINX          02BA'	FILLN1          02AE'	FILLNM          
+0297'	FILLO0          02A0'	FILLO1          028D'	FILLOP          
+01E6'	FILLS1          01DA'	FILLSQ          0320*	FILNA2          
+04EB*	FILNAM          047B'	FILNB           04A8'	FILNXT          
+00E8*	FILOFV          00DAI'	FILOU3          00EB'	FILOU4          
+00D8I'	FILOUT          04F9'	FILQS           04FD'	FILQST          
+0000*	FILSCN          02C7'	FILSP2          02C2'	FILSPC          
+0101I'	FILUPP          0328*	FINPRT          0116I'	FIVDPT          
+00B2I 	FNZBLK          0000*	FOUT            0330*	FRESTR          
+032C*	FRMEVL          035F*	GETBYT          0000*	GETYPR          
+00C8*	GIVINT          02A7'	GOTNAM          041F*	GTMPRT          
+0353'	HAVMOD          01BC'	INDSK3          01BAI'	INDSKB          
+0234I'	INDSKC          00C3'	INTRED          00C4'	INTRET          
+010F'	ISCRDS          0441I'	KILL            04D9*	LINLEN          
+0050 	LINLN           00B2I'	LOC             00C3'	LOC1            
+0025I 	LOCOFS          00CAI'	LOF             0084 	LPTLEN          
+03D0'	MAKFIL          0181*	MAXTRK          0000 	MD.000          
+0003 	MD.RND          0001 	MD.SQI          0002 	MD.SQO          
+00AB'	MORCZR          04B8'	MORNAM          02D2I'	NAME            
+024F'	NAMFIL          0028 	NAMLEN          02F2'	NAMRMV          
+0028I 	NMLO.C          0028I 	NMLOFC          0028I 	NMLOFS          
+0272'	NODEV           009E'	NOFORC          04CE'	NOTEXT          
+00A8I'	NTOPNC          001D 	NUMLEV          000A 	NUMTMP          
+04F7'	NWFIL2          04E7'	NWFILN          0327I'	OPEN            
+040E'	OPN000          03DC'	OPNFIL          03AB'	OPNLP           
+03F1'	OPNSET          000B'	ORNCHK          0027 	ORNOFS          
+04E5*	OUTDO           003BI'	OUTSEQ          0067'	OUTSOK          
+003E'	OUTSQ2          00E3*	POPAHT          01D8'	POPBRT          
+Disk code for CPM/ONTEL/MOSTEK/DMC/BEEHIVE: WHG,PGA,MBM	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+BASCOM O.S. Dependent Data Areas
+
+03A0'	PRGDOT          036BI'	PRGFIL          04CB'	PRISPA          
+03A2*	PTRFIL          018C'	PUTFIN          00B2 	Q               
+01EC'	READ2           021A'	READI1          021C'	READI2          
+01EF'	READIN          0428I'	RESET           017F'	RNDDON          
+0412'	RNDFIN          0175'	RNDOK           013A'	RNDVR1          
+0177'	SAMEXT          0000*	SCRTCH          0223'	SETBUF          
+0000*	SNERR           00D6*	SNGFLT          0001 	SPC1ST          
+0000 	SPC2ND          0000*	STRLT3          0000*	STROUT          
+0003 	STRSIZ          0000 	SW2BYT          0000 	SWDSKF          
+0001 	SWFIL           0001 	SWLOF           0001 	SWRES           
+0362*	SYNCHR          0421I'	SYSTEM          0425I'	SYSTME          
+040F*	TEMP            0000 	TRUROM          04D3*	TTYPOS          
+0381*	VARECS          0035'	WASEOF          0204'	ZRRND           
+0418'	ZRRNDT          
+
+
+
+No Fatal error(s)
+
+
+  00D6*	S

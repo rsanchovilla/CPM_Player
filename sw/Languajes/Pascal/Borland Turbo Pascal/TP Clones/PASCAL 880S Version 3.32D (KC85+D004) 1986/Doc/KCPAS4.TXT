@@ -1,0 +1,579 @@
+.pl68
+.PN48
+.po10
+.op
+.heKC PASCAL                       #             Sprachbeschreibung     
+4.7. Compiler-Direktiven
+
+Compiler-Direktiven¬   diå  iî  Forí  voî  Pseudokommentareî   aî 
+beliebigeò  Stellå  ií  Quelltexô codierô  werden¬  dieneî  dazu¬ 
+Sonderabl{ufå   w{hrenä  deò  ]bersetzunç  unä  Abarbeitunç   deó 
+Programms vorzusehen.
+Deò   Listå   deò   Compiler-Direktiveî   muþ   eiî   "$"-Zeicheî 
+vorangestellt werden.
+
+(*$C-,I-*)
+(*$A-*)
+
+F}ò  allå Compiler-Direktiveî sinä Standardwertå vorgegeben¬  diå 
+falló  gew}nscht¬  ge{nderô werdeî  k|nnen®  Folgendå  Direktiveî 
+steheî zuò Verf}gung:
+
+A    Indexpr}fung
+
+Standardwert:  A+
+Miô deò Standardeinstellunç A« wirä w{hrenä deò Laufzeiô gepr}ft¬ 
+oâ Bereichs}berschreitungeî beé ARRAY-Indizeó vorliegen®  Eiî  zõ 
+gro~eò  odeò  zõ kleineò ARRAY-Indeø bewirkô eineî  Programm-Stoð 
+und die Fehlerausschrift "Index too high" oder "Index too low".
+A- schalteô  diå  ARRAY-]berpr}funç  auó unä  isô  damiô  iî  deò 
+Laufzeit schneller.
+
+C    Tastaturabfrage
+
+Standardwert:  C+
+Durcè  C«  wirä erreicht¬  daþ voî deò Tastatuò  durcè  Bet{tigeî 
+eineò  beliebigeî  Tastå  daó  Programí  unterbrocheî  unä  durcè 
+nachfolgendeó  ^ESC_ abgebrocheî werdeî kann®  Einå anderå  Tastå 
+au~er ^ESC_ bewirkt die Fortsetzung des Programms.
+Diå  Tastaturabfragå wirä zõ Beginî jedeò Schleife¬  Prozeduò unä 
+Funktioî     durchgef}hrô    unä    vergr|~erô    dadurcè     diå 
+Abarbeitungszeit.
+C- schaltet die Tastaturabfrage aus (au~er INCH-Funktion).
+
+F    Include-Datei
+
+Ií  Gegensatú  zõ deî andereî Compiler-Direktiveî muþ beé  Æ  eiî 
+Leerzeicheî unä eiî 1² Zeicheî langeò Dateinamå folgen®  Isô  deò 
+Dateiname k}rzer, mu~ er mit Leerzeichen aufgef}llt werden.
+Diå  Quelltextdateé  unteò  dieseí Nameî wirä auæ  Kassettå  odeò 
+Diskettå  gesuchô  unä  falló gefunden¬  aî  diå  Stellå  deò  F-
+Direktive geladen.
+Miô  dieseò  Direktivå  stehô deí  Programmiereò  eiî  geeigneteó 
+Mitteì zuí Erstelleî voî Prozedur- unä Funktionsbibliotheken¬ diå 
+danî  iî jedeó Programí ií Deklarationsteiì einf}gbaò  sind¬  zuò 
+Verf}gung®  Ebenfalló  kanî maî dieseó Mitteì anwenden¬  wenî beé 
+deò  Entwicklunç sehò langeò Programmå deò Speicherbereicè  nichô 
+mehò ausreicht®  Dieså Programmå sinä dennocè }bersetzbar¬  indeí 
+deò   gro~å  Teiì  deó  Programmó  auæ  Kassettå  odeò   Diskettå 
+ausgelagert und mit der Include-Anweisung 
+
+(*$F LANGEQUELLE *)
+Šimmeò  nuò 12¸ Bytå nacheinandeò ií RAÍ }bersetzô  werden®  Damiô 
+erh|hô  sicè  erheblicè deò Speicherbereicè  f}ò  daó  }bersetztå 
+Programm.
+Einå  Verschachtelunç  dieseò Direktivå isô nichô  gestatteô  (iî 
+einer Include-Datei darf sich keine weitere befinden).
+
+I    ]berlauftest 
+
+Standardwert:  I-  
+Beií Vergleicè zweieò INTEGER-Zahlen¬ diå sicè uí mehò aló MAXINÔ 
+voneinandeò unterscheiden¬  entstehô eiî falscheó Resultat¬  wenî 
+diå }blichå 16-bit-Zweierkomplementarithmetië verwendeô wird® Beé 
+deò  Einstellunç  voî  I«  wirä aucè beé solcheî Vergleicheî  eiî 
+richtigeó Ergebnió gesichert.
+I- schaltet den ]berlauftest aus.
+Beé arithmetischeî Operationeî reelleò Zahleî kanî ebenfalló  eiî 
+]berlauæ  auftreten¬  wenî sicè diå Operandeî uí mehò aló  3.4E3¸ 
+unterscheiden. In diesem Fall ist ein ]berlauftest nicht m|glich.
+
+L    Listen von Programmen beim Compilieren
+
+Standardwert:  L+
+Miô   L«   wirä  w{hrenä  deó  Compilierenó  daó  Auflisteî   voî 
+Programmtext und Objektcodeadressen ausgef}hrt.
+L- erzeugt ein Listing der fehlerhaften Zeilen.
+
+O    Bereichs}berschreitung
+
+Standardwert:  O+
+Tesô  auæ  Bereichs}berschreitunç beé ganzzahligeò  Additioî  unä 
+Subtraktion®   Einå  Abfragå  auæ  Bereichs}berschreitunç   alleò 
+INTEGER-Multiplikationeî  unä -Divisioneî sowiå alleò  arithmeti
+scheî  Operationeî miô reelleî Zahleî wirä  generelì  (unabh{ngiç 
+voî O« odeò O-© durchgef}hrt.
+O- schaltet den Test f}r ganzahlige Addition und Subtraktion aus.
+  
+P    Ausgabe Compilerlisting
+
+Ð  schalteô  wechselweiså  daó Compilerlistinç auæ  Druckeò  odeò 
+Bildschirm. Ein "+" oder "-" -Zeichen wird nicht gebraucht. 
+Beií   Starô   deó  Compileró  isô  immeò  deò   Bildschirí   aló 
+Ausgabeger{t aktiviert.
+
+S    Stack-Abfrage
+
+Standardwert:  S+
+Zõ Beginî jedeò Prozedur- unä Funktionsabarbeitunç wirä deò Stacë 
+auæ ]berlauæ gepr}ft®  Tritô eiî ]berlauæ ein¬  wirä daó Programí 
+abgebrocheî  unä  eó folgô diå Fehlerausschrifô "Ouô  oæ  RAÍ  aô 
+PC=zzzz"®   Miô   dieseò  Ma~nahmå  k|nneî  jedocè   }berfl}ssigå 
+Programmabbr}che hervorgerufen werden.
+S- schaltet die Stack-Abfrage aus.
+
+
+.paŠ.heKC PASCAL                       #       Interne Datendarstellung
+5. I n t e r n e   D a t e n d a r s t e l l u n g
+
+
+1. INTEGER
+
+INTEGER-Zahlen belegen zwei Bytes im Zeierkomplement.
+
+z.B.    16 --> 0010
+     -2048 --> F800
+
+
+2. REAL
+
+REAL-Zahleî  belegeî vieò Byteó aló bin{rå Werte®  Siå liegeî  iî 
+normierter Darstellung im Speicher vor.
+
+Exponent:           Bit 0...7        ;bin{res Zweierkomplement
+normierte Mantisse: Bit 8...30       ;Bit 29 immer 1
+                                     ;bis auf die Zahl 0
+Vorzeichen:         Bit 31           ;1=negativ ;0=positiv
+
+z.B.
+
+  2=2*10   =0010 *2 
+           =1.0 *2    =01.00 0000!0000 0000!0000 0000!0000 0001
+                                 !         !         !          
+-10=-10*10 =-1010 *2             !         !         !
+           =-1.010 *2 =11.01 0000!0000 0000!0000 0000!0000 0011
+                                 !         !         !      
+                            H    !    L    !    E    !    D
+
+Diå  Registeò werdeî iî deò Reihenfolgå E¬  D¬  L¬  È ií Speicheò 
+abgelegt.
+
+
+3. CHAR
+
+CHAR-Zeicheî belegeî eiî Byte¬ iî daó deò ASCII-Codå deó Zeichenó 
+abgespeichert wird.
+
+
+4. BOOLEAN
+
+BOOLEAN-Werte belegen ebenfalls ein Byte.
+
+z.B.   TRUE --> 01
+      FALSE --> 00
+    
+
+5. RECORDs und ARRAYs
+
+Dieså Variableî belegeî deî gleicheî Speicherplatú wiå diå  Summå 
+ihrer Komponenten.
+
+
+
+Š6. SETs
+
+Mengeî  werdeî  aló Bitketteî gespeicherô (prï Elemenô deò  Mengå 
+stehô  eiî  Biô zuò Verf}gung)®  Wenî deò Basistyð  deò  Mengå  î 
+Elemente hat, werden (n-1) DIV 8+1 Bytes ben|tigt.
+
+
+7. Zeiger
+
+Zeigeò  belegeî  zweé Byte®  Abgespeicherô wirä diå  Adresså  deò 
+zugeordneten Variablen.
+
+
+
+Zuò  Laufzeiô  deó Programmó werdeî diå Variableî  folgenderma~eî 
+eingeteilt und abgespeichert:
+
+1®    Globalå Variableî sinä ií Haupt-Blocë deó Programmó verein
+      barô unä werdeî iî deò Reihenfolge¬  iî deò siå  deklarierô 
+      wurden¬  voí  Endå  deó  Runtime-Stacë  beginnend¬  abw{rtó 
+      gespeichert.
+
+2®    Lokalå  Variableî  sinä iî  Unterbl|ckeî wiå PROCEDURÅ  unä 
+      FUNCTIOÎ  vereinbarô unä werdeî miô Hilfå deó  IX-Registeró 
+      lokalisiert®  Beií Aufruæ deò PROCEDURÅ odeò FUNCTIOÎ zeigô 
+      IØ  auæ deî Beginî deó innereî Blocks¬  sï daþ IX-´ auæ deî 
+      Anfang der lokalen Variablen zeigt.
+
+3®    Parameteò (Werteparameter© voî PROCEDUREî werdeî wiå lokalå 
+      Variableî behandelô unä wiå beé dieseî giltº  jå fr}heò eiî 
+      Parameteò deklarierô wurde¬ destï h|heò isô seinå Speicher
+      adresse®  Diå niedrigstå Adresså isô jedocè ií Gegensatú zõ 
+      lokaleî  Variableî IX+2®  Variablå Parameteò belegeî  immeò 
+      zweé  Byte¬  diå diå Adresså deò  entsprechendeî  Variableî 
+      enthalten.
+      R}ckgabewertå  voî  FUNCTIONeî werdeî oberhalâ  deó  ersteî 
+      Parameteró deò Funktioî ií Speicheò abgelegt.
+
+.paŠNachfolgendeó Beispieì solì diå internå Datendarstellunç verdeut
+lichen:
+
+
+PROGRAM beispiel;
+VAR A: INTEGER;
+    B: CHAR;
+    C: REAL;
+
+ PROCEDURE P(D: INTEGER; E: REAL; VAR F: REAL);
+ VAR G: INTEGER;
+     H: CHAR;
+     I: REAL;
+ BEGIN
+ END; (* of P)
+
+FUNCTION K(J: REAL): REAL;
+   VAR L: INTEGER;
+   BEGIN
+   K:=J
+   END; (* of K :)
+
+BEGIN (* Hauptprogramm *)
+ .
+ .
+END.
+
+
+Der Runtime-Stack m|ge den Standardwert #B000 besitzen.
+
+Variable            Adressbereich (hexadezimal)
+   A                AFFE  AFFF
+   B                AFFD
+   C                AFF9  AFFA  AFFB  AFFC
+   D                IX+8  IX+9
+   E                IX+4  IX+5  IX+6  IX+7
+   F                IX+2  IX+3
+   G                IX-6  IX-5
+   H                IX-7
+   I                IX-B  IX-A  IX-9  IX-8
+   J                IX+2  Ix+3  IX+4  IX+5
+   K                IX+6  IX+7  IX+8  IX+9
+   L                IX-6  IX-5
+.paŠ.heKC PASCAL                       #                         Anhang
+A. A n h a n g           
+
+A1. Fehlermeldungen des Compilers
+
+ 1   Zahl zu gro~
+ 2   Semikolon erwartet
+ 3   nicht vereinbarter Name
+ 4   Name erwartet
+ 5   = und nicht :=
+ 6   = erwartet
+ 7   Anweisung darf nicht mit diesem Namen beginnen
+ 8   := erwartet
+ 9   ) erwartet
+10   falscher Typ
+11   . erwartet
+12   Faktor erwartet
+13   Konstante erwartet
+14   dieser Name ist keine Konstante
+15   THEN erwartet
+16   DO erwartet
+17   TO oder DOWNTO erwartet
+18   ( erwartet
+19   dieser Ausdrucktyp kann nicht geschrieben werden
+20   OF wird erwartet
+21   , erwartet
+22   : erwartet
+23   PROGRAM erwartet
+24   Variable erwartet, da der Parameter ein variabler ist
+25   BEGIN erwartet
+26   READ erwartet eine Variable
+27   Ausdr}cke dieses Typs k|nnen nicht verglichen werden
+28   INTEGER- oder REAL-Zahl erwartet 
+29   dieser Variablentyp kann nicht gelesen werden
+30   dieser Name ist kein Typ
+31   REAL-Zahl verlangt Exponent
+32   skalarer, nicht numerischer Ausdruck erwartet
+33   statt Null-String, CHR(0) verwenden
+34   ^ erwartet
+35   _ erwartet
+36   ARRAY-Index mu~ skalarer Typ sein
+37   ..erwartet
+38   ARRAY-Deklaration verlangt ^ oder ,
+39   obere Grenze ist kleiner als untere
+40   SET ist zu gro~ (mehr als 256 Elemente)
+41   Funktionstyp mu~ vom Typ Name sein
+42   in SET wird , oder _ erwartet
+43   in SET wird .. oder , oder _ erwartet
+44   Parameter mu~ vom Typ Name sein
+4µ   leereò  SEÔ   kanî  nichô   ersteò  Faktoò  iî  eineò  nichô 
+     zuweisenden Anweisung sein
+46   einfacher Typ (einschlie~lich reeller Zahlen) erwartet
+47   einfacher Typ (au~er reellen Zahlen) erwartet
+48   SETs sind nicht vertr{glich
+49   SETs k|nnen nicht mit   oder > verglichen werden
+50   FORWARD, LABEL, CONST, VAR, TYPE oder BEGIN erwartet
+51   Hexadezimalziffer wird erwartet
+52   SETs k|nnen nicht mit POKE abgesetzt werdenŠ53   ARRAY zu gro~ (mehr als 64K)
+54   RECORD-Definition verlangt END oder ;
+55   Feldname erwartet
+56   Nach WITH wird eine Variable erwartet
+57   Variable bei WITH mu~ vom RECORD-Typ sein
+5¸   deò Feldnamå wurdå nichô miô  WITH-Anweisunç  iî  Verbindunç 
+     gebracht
+59   nach LABEL wird eine vorzeichenlose INTEGER-Zahl erwartet
+60   nach GOTO wird eine vorzeichenlose INTEGER-Zahl erwartet
+61   Marke in einer falschen Programmebene
+62   Marke ist nicht vereinbart
+63   Parameter von SIZE mu~ Variable sein
+64   auf Zeiger kann nur Gleichheitstest angewandt werden
+6·   einziç  zul{ssigeò Parameteò fýr INTEGER-Zahleî miô zweé ":¢ 
+     ist e:m:H
+68   Strings d}rfen kein Zeilenendezeichen enthalten
+69   NEW, MARK oder RELEASE verlangt Zeigervariable
+70   ADDR verlangt Variable als Parameter
+71   der Parameter mu~ eine Prozedur sein
+72   der Parameter mu~ eine parameterlose Prozedur sein
+73   maximal f}nf H}llkurvenabschnitte zul{ssig
+
+
+A2. Laufzeit-Fehlermeldungen
+
+Laufzeitfehleò  unterbrecheî  diå  Programmausf}hrung®   Auæ  deí 
+Bildschirí  erscheinô einå deò folgendeî Fehlermeldungeî unä  diå 
+Stelle¬  aî deò deò Fehleò auftraô ("aô PC=xxxx")® Isô deò Fehleò 
+nichô    anhanä   deò   Fehlermeldunç   einsichtig¬    kanî   daó 
+Compilerlisting¬  indeí  ebenfalló diå Adresseî  deò  }bersetzteî 
+Anweisungen stehen, weiterhelfen.
+
+ 1. Halt                         Halt
+ 2. Overflow                     ]berlauf
+ 3. Out of Ram                   Speicher zu klein
+ 4. Division by zero             Division durch Null
+ 5. Index too low                Index kleiner als Bereichsgrenze
+ 6. Index too high               Index gr|~er als Bereichsgrenze
+ 7. Maths Call error             Mathematischer Fehler        
+ 8. Number too large             Zahl zu gro~
+ 9. Number expected              Zahl erwartet
+10. Line too long                Zeile zu lang                
+11. Exponent expected            Exponent erwartet
+
+
+A3. Wortsymbole
+
+AND        DOWNTO       IN        PACKED        TO
+ARRAY      ELSE         LABEL     PROCEDURE     TYPE     
+BEGIN      END          MOD       PROGRAM       UNTIL
+CASE       FORWARD      NIL       RECORD        VAR
+CONST      FUNCTION     NOT       REPEAT        WHILE
+DIV        GOTO         OF        SET           WITH
+DO         IF           OR        THEN
+         
+
+ŠA4. Standardbezeichner
+
+CONST        MAXINT=32767;
+             FALSE,TRUE
+
+TYPE         BOOLEAN=(FALSE,TRUE);
+             CHAR    (*erweiterter ASCII-Zeichensatz*)
+             INTEGER=-MAXINT...MAXINT;
+             REAL
+
+VAR          ERRFLG, ERRCHK: BOOLEAN;
+             RA, RB, RC, RD, RE, RF, RH, RL: CHAR;
+             RAF, RBC, RDE, RHL: INTEGER;
+
+PROCEDURE    AFTER, ENT, ENV, EVERY, EXTERNAL,
+             HALT, INLINE, MARK, NEW, ONSQ, OUT,
+             PAGE, POKE, READ, READLN, RELEASE, SOUND,
+             TIN, TOUT, USER, WRITE, WRITELN
+
+FUNCTION     ABS, ADDR, ARCTAN, CHR, COS, ENTIER,
+             EOLN, EXP, FRAC, INCH, INITEVENT, INP,
+             LN, ODD, ORD, PEEK, PRED, RANDOM,
+             REMAIN, ROUND, SIN, SIZE, SQR, SORT, SUCC,
+             TAN, TRUNC
+
+.paŠA5. Listing des Demonstrationsbeispiels
+
+  10 PROGRAM demonstration;
+  20 (*$l-*)
+  30 VAR a,b,musikadr,zaehler:integer;
+  40  Xcor,Ycor,heading:real;
+  50  sec,min,stunden:integer;
+  60  anz:integer;
+  70
+  80 PROCEDURE musik;
+  90 LABEL 1111;
+ 100 BEGIN
+ 110  IF zaehler>24 THEN GOTO 1111;
+ 120  sound(7,1,1,602-zaehler*20,0,0,75);
+ 130  zaehler:=zaehler+1;
+ 140 1111: END;
+ 150
+ 160 PROCEDURE setcursor(spalte,zeile:integer);
+ 170 BEGIN
+ 180  rh:=chr(spalte); rl:=chr(zeile);
+ 190  user(#bb75)
+ 200 END;
+ 210
+ 220 PROCEDURE getcursor(VAR spalte,zeile:integer);
+ 230 BEGIN
+ 240  user(#bb78);
+ 250  spalte:=ord(rh); zeile:=ord(rl) 
+ 260 END;
+ 270
+ 280 PROCEDURE uhrzeit;
+ 290 VAR spalte,zeile:integer; 
+ 300 BEGIN
+ 310  sec:=sec+1;
+ 320  IF sec=60 THEN
+ 330  BEGIN
+ 340   sec:=0; min:=min+1;
+ 350   IF min=60 THEN
+ 360   BEGIN
+ 370    min:=0; stunden:=stunden+1 
+ 380   END 
+ 390  END;
+ 400  getcursor(spalte,zeile);
+ 410  setcursor(72,1);
+ 420  write(stunden:2,':',min:2,':',sec:2);
+ 430  setcursor(spalte,zeile)
+ 440 END;
+ 450
+ 460 PROCEDURE mode(m:integer);
+ 470 BEGIN
+ 480  ra:=chr(m);
+ 490  user(#bc0e)
+ 500 END;
+ 510
+ 520 PROCEDURE pen(i:integer);
+ 530 BEGIN
+ 540  ra:=chr(i);
+ 550  user(#bbde)Š 560 END;
+ 570
+ 580 PROCEDURE paper(i:integer);
+ 590 BEGIN
+ 600  ra:=chr(i);
+ 610  user(#bbe4)
+ 620 END;
+ 630
+ 640 PROCEDURE ink(i,c1,c2:integer);
+ 650 BEGIN
+ 660  ra:=chr(i); rb:=chr(c1); rc:=chr(c2);
+ 670  user(#bc32)
+ 680 END;
+ 690
+ 700 PROCEDURE plot(x,y:integer);
+ 710 BEGIN
+ 720  rde:=x; rhl:=y;
+ 730  user(#bbea) 
+ 740 END;
+ 750
+ 760 PROCEDURE line(x,y:integer);
+ 770 BEGIN
+ 780  rde:=x; rhl:=y;
+ 790  user(#bbf6)
+ 800 END;
+ 810
+ 820 PROCEDURE setXY(x,y:real);
+ 830 BEGIN
+ 840  XCOR:=x;
+ 850  Yc80 PROCEDURE paper(i:integer);
+ 590 BEGIN
+ 600  ra:=chr(i);
+ 610  user(#bbe4)
+ 620 END;
+ 630
+ 640 PROCEDURE ink(i,c1,c2:in80 PROCEDURE paper(i:integer);
+ 590 BEGIN
+ 600  ra:=chr(i);
+ 610  user(#bbe4)
+ 620 END;
+ 630
+ 640 PROCEDURE ink(i,c1,c2:integer);
+ 650 BEGIN
+ 660  ra:=chr(i); rb:=chr(c1); rc:=chr(c2);
+ 670  user(#bc32)
+ 680 END;
+ 690
+ 700 PROCEDURE plot(x,y:integer);
+ 710 BEGIN
+ 720  rde:=x; rhl:=y;
+ 730  user(#bbea) 
+ 740 END;
+ 750
+ 760 PROCEDURE line(x,y:integer);
+ 770 BEGIN
+ 780  rde:=x; rhl:=y;
+ 790  user(#bbf6)Š 800 END;
+ 810
+ 820 PROCEDURE setXY(x,y:real);
+ 830 BEGIN
+ 840  XCOR:=x;
+ 850  Ycor:=y 
+ 860 END;
+ 870
+ 880 PROCEDURE fwd(len:real);
+ 890 CONST PIby180=1.745329E-2;
+ 900 VAR newX,newY:real;
+ 910 BEGIN
+ 920  plot(round(Xcor),round(Ycor));
+ 930  newX:=Xcor+len*COS(heading*PIby180);
+ 940  newY:=Ycor+len*SIN(heading*PIby180);
+ 950  line(round(newX),round(newY));
+ 960  Xcor:=newX;
+ 970  Ycor:=newY 
+ 980 END;
+ 990 
+1000 PROCEDURE right(angle:real);
+1010 BEGIN
+1020  heading:=heading-angle 
+1030 END;
+1040
+1050 PROCEDURE init;
+1060 BEGIN
+1070  ink(0,24,24);
+1080  ink(1,2,2);
+1090  paper(0);
+1100  pen(1);
+1110  mode(2);
+1120  setXY(300,200);
+1130  heading:=0
+1140 END;
+1150
+1160 PROCEDURE spirals(l,a:real);
+1170 BEGIN
+1180  user(#bbc6);IF rde 480 THEN BEGIN (*Abfrage Grafik-Cursor*)
+1190   ra:=chr(1); rhl:=musikadr; user(#bcb0);
+1200   fwd(l);
+1210   right(a);
+1220   spirals(l+1,a) 
+1230  END 
+1240 END;
+1250
+1260 BEGIN
+1270  env(1,1; user(#bcb0);
+1200   fwd(l);
+1210   right(a);
+1220   spirals(l+1,a) 
+1230  END 
+1240 END;
+1250
+1260 BEGIN
+1270  env(1,1,10,10);
+1280  ent(-1,5,240,10);Š1290  anz:=0;
+1300  musikadr:=initevent(2,musik);
+1310  sec:=0; min:=0; stunden:=0; 
+1320  every(50,3,uhrzeit);
+1330  REPEAT
+1340   anz:=anz+1;
+1350   zaehler:=0;
+1360   init;
+1370   page;
+1380   writeln('Demonstrationsprogramm');
+1390   writeln; writeln('      KC PASCAL');
+1400   writeln;writeln('        ',anz);
+1410   b:=random(0);
+1420   WHILE b>300 DO b:=round(b/10);
+1430   a:=9;
+1440   spirals(a,b);
+1450   user(#bca7);
+1460  UNTIL anz=50 
+1470 END.
+

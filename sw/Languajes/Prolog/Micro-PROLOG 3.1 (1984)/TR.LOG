@@ -1,0 +1,40 @@
+Tr(trace)(notrace)
+((trace)(P "??-")(R X)(cont_trace X))
+((cont_trace notrace)/(PP)(P "*** exit trace ***")(PP)(PP))
+((cont_trace X)(tracen X 0)/(trace))
+((tracen () X))
+((tracen (X|Y) Z)
+  (sys X)
+  (prove_sys X Z )
+  (tracen Y Z))
+((tracen (X|Y) Z)
+  (NOT sys X) 
+  (prove X Z) 
+  (tracen Y Z))
+
+((sys (X|Y))(SYS X)/)
+((sys X|Y)(SYS X))
+
+((prove_sys X Y)(SUM Y 2 Z)(space Z)(P "CALL   :" X)(PP) X /
+              (space Z)(P "PROVED :" X)(PP))
+((prove_sys X Y)(SUM Y 2 Z)(space Z)(P "FAIL   :" X)(PP)(PP) FAIL)
+
+((prove X Y)(NOT CL(X|Z))
+            (SUM Y 2 x)(space x)
+            (P "CALL   :" X )(PP)
+            FAIL)
+((prove X Y)(ADDCL ((curr X)))(DELCL ((curr Z)))
+                (SUM Y 2 x)
+                (CL (X|y) 1 z) 
+                (space x)(P "CALL   :" Z "    ###" z "###")(PP)
+                (tracen y x)
+                (space x)(P "PROVED :" X "    ###" z "###")(PP))
+((prove X Y)(SUM Y 2 Z)
+            (space Z)(P "FAIL   :" X)(PP)(PP) FAIL)
+
+
+((space 0)/)
+((space X)(P " ")(SUM Y 1 X)/(space Y))
+
+CLMOD
+

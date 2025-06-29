@@ -1,0 +1,46 @@
+FINREP find-and-replace program:  allows wildcards (in search 
+string or filename), allows entry of control or hex characters 
+(0-FF), can be used with .COM files, and follows relative 
+capitalization.   See FINREP.DOC for full info.
+
+Usage: FINREP [d:]fn [newfn] /[switches]/ oldstring [newstring]
+	 (each element of this command line spaced thus)
+To abort, use ESC rather than ^C.
+To remove 1Ahex bytes from a .COM file use
+	       FINREP NAME.COM NAME.TXT /OH/ ,1a,
+To alter @section to @subheading:
+	  FINREP NAME.PW /V/  "@section" "@subheading"
+FINREP KWIKA.A KWIKA.WS /QW/ "@i["?*"]" ^Y|^Y
+replaces PW Italics @I[] by WS ^P^Y|^P^Y throughout
+	Input string (to be saved) shown by ?*
+	Output Save String shown by |
+
+Switches:  ranked O > H > C > W:
+// -- default = whole words only, relative case and high bit.
+B  -- disables .BAK file:  automatic if * ? in filename
+Q  -- allows wildcards in search string (runs slowly)
+V  -- displays each replacement for Verification
+O  -- includes object files
+H  -- maintains high bit as set in source
+W  -- disables whole word parameters: >>>> ESSENTIAL for PW @@ <<<<
+C  -- respect upper/lower case, replacing only case matches
+
+String Entry:  max. 30 bytes
+ASCII     - in quotes: "blurk", "54%**90er @"
+HEX       - separate by commas: d,1A,cd,10,ff,3 
+CAPITALS  - between !!: !A!,!hello!          [NEW IN V2.0] 
+CONTROL CHARACTERS - preceded by ^: ^M,^m^j,^c,^C,^[,^^
+WILDCARDS - ????, ?n (1 <= n <= 9) or ?* (indeterminate)
+If  you do not enter a replace string,  the  searched-for  string 
+will be replaced by nothing, i.e., deleted.
+BREAK == SAVE STRING - |
+
+FINREP  perf.wri /qwc/ "@"!ux!"{"?*"}" ^s|^s will replace the  PW 
+underline fence @UX{ ...  } by WS's ^S ...  ^S  Note that the "C" 
+flag is used here to search for caps; if l.c. as well as caps are 
+acceptable,  it  could be omitted and the search  string  written 
+"@ux{"?*"}".   You  can delete the fences altogether by replacing 
+the ^s|^s by | in the last example.
+
+
+includes object files

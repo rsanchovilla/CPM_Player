@@ -1,0 +1,105 @@
+            Z80 source code for CRLZH v2.0 and UNCRLZH v2.0
+
+Do I need the source?
+
+Probably not.  The files in this .LBR will assemble to the identical .COM 
+files supplied.  However, there seems to be no reason why not to release the 
+source for the drivers.  Note that both a ZCNFG .CFG file and a separate 
+overlay/patch file have been provided so that you need not re-assemble and 
+re-link to change most things.
+
+Most of the 'interesting' stuff is in the LZH encoding and decoding 
+algorithms, anyway, which are released in .REL (and .SLR) format ONLY in this 
+.LBR this time.  A separate release of the LZH encoding and decoding source 
+will be made in the near future.
+
+Please  note that the same conditions apply to this program  as  previous 
+CRUNCH and UNCR releases - you can "distribute" it AS IS or modify it for 
+your OWN  use, but public release of modified versions (source or object 
+files) without permission is prohibited. [and you can't sell it!]. 
+Portions (most of it, really) is Copyrighted by Steven Greenberg, who has 
+kindly given his permission for this new use of his code.
+
+Assembly and Linkage: SLR
+
+ Z80ASM crlzh20/rm    <== assembles CRLZH
+ Z80ASM ucrlzh20/rm   <== assembles UNCRLZH
+
+ SLRNK+ /a:100 /j crlzh/n crlzh20 parsefcb crlzh /e  <== links CRLZH
+ SLRNK+ /a:100 /j uncrlzh/n ucrlzh20 parsefcb usqrel unlzh uncr1 /e <= links UNCRLZH
+
+
+The  /j  switch  guarantees that that all of the code  segments  will  be
+"packed"  end  to end first, and all of the data  segments  will  follow.
+Since  all  data is uninitialized (ie initialized at run  time)  the  SLR
+linker  is  "smart" enough to leave these extra sectors out  of  the  COM
+file. This is how the distribution COM files were created.
+
+
+If SLR Systems tools are not available:
+
+Rename CRLZH20.Z80 to CRLZH20.MAC  and  UCRLZH20.Z80 to UCRLZH20.MAC.
+Do not rename the INCLUDE.LIB file.
+
+ M80 =crlzh20/n     <== assembles CRLZH20
+ M80 =ucrlzh20/n    <== assembles UCRLZH20
+
+-----
+If you have DRI's LINK program,
+
+ LINK crlzh20,parsefcb,crlzh               <== links CRLZH20 (rename to CRLZH)
+ LINK ucrlzh20,parsefcb,usqrel,unzlh,uncr1 <== links UCRLZH20 (rename to UNCRLZH)
+
+LINK will also ORG the program properly at 100H and consolidate the  data
+segments at the end. It will, however, append the data segment to the COM
+file,  making it longer.  The programs were, however, coded so  the  very
+large  data  tables were "EQU"'d rather than defined as  data,  so  there
+should only be a limited number of superfluous records.
+
+
+-----
+If you must use L80,
+
+ L80 /p:100,/d:1E27,crlzh/n,crlzh20,parsefcb,crlzh,/e    <== links CRLZH
+ L80 /p:100,/d:22EF,uncrlzh/n,ucrlzh20,parsefcb,usqrel,unlzh,uncr1,/e
+                                                         <== links UNCRLZH
+
+will  give similar results to LINK above. Unfortunately, you must  deter-
+mine  the  start of the data segment (ie the "1E27" &  "22EF"  above)  by
+making  a  preliminary link using a high number, eg  "d:4000",  and  then
+reading  the  second number on the "Program" line of  the  resulting  L80
+display.  Put  that number after the "d:" and link a second  time  for  a
+final result. The numbers shown above ARE the actual values for CRLZH &
+UNCRLZH v2.0 as distributed, but the numbers will be different if even a
+single line of code is changed.
+
+
+Please note that if substantial additions are made to either program,  an
+address  value in an EQU near the beginning of the program  (well  marked
+and explained in source) must be manually changed. This process is neces-
+sary  because, to the best of my knowledge, NONE of the linkers  can  re-
+solve  the "first page boundary after the end of the DSEG"  automatically
+(an easy problem if the code is absolute [non-relocatable]). The value is
+needed  in subsequent EQU's to define the large page aligned tables  men-
+tioned above.
+
+----
+
+What they do:  Virtually all the code of any interest is contained in the 
+UNLZH.REL and CRLZH.REL files supplied.  UNCR1.REL is a module which is 
+called up in  the very unlikely  event an old "type 1" crunched file is 
+encountered.  USQREL.REL is  an unsqueezer since UNCRLZH also unsqueezes as 
+a bonus. And finally PARSEFCB.REL  reduces some of the tedious work of 
+getting all  the file names,  user  numbers, drives, comments and switches 
+extracted  from the command  line.  Anything else is in the source code 
+contained in this LBR.  COMMONLZ.LIB is an "include" file necessary when 
+assembling either CRLZH20.Z80 or UCRLZH20.Z80. It contains file I/O and 
+many other routines  which are common to both programs. It must reside on  
+the same drive/user as the program being assembled.
+
+                                          R. Warren
+                                          25 Jul 91
+
+                                    The Elephant's Graveyard
+                                    Data: (619) 270-3148 ( 24 hrs, 7 days)
+

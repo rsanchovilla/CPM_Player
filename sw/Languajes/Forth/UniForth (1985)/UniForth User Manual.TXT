@@ -1,0 +1,2313 @@
+
+
+
+
+
+
+				    Chapter 1
+
+			      THE UNIFORTH SAMPLER
+
+
+	     The  UNIFORTH  Sampler is a subset of the full  Professional
+	UNIFORTH.   It	provides  a  full  assembler,  video  editor  and
+	software  floating-point arithmetic.   It supports  the  FORTH-83
+	Standard  with few exceptions.	 You will find the Sampler to  be
+	the equivalent of several commercial systems selling for $200  or
+	more.
+
+	     We decided to release the Sampler into the public domain for
+	several reasons.   First, distributing a version of UNIFORTH that
+	is  useful,  inexpensive  and  reproducible is	a  cost-effective
+	method	of advertising.   Second,  it gives you a chance to try a
+	good FORTH system at no cost.	If you don't like it, you haven't
+	spent a dime.	If you do like it,  we ask (but don't demand!)	a
+	$25  donation,	most  of  which  will be  reinvested  in  product
+	development  to  improve both the Sampler and  the  Professional.
+	Lastly,  the Sampler includes several novel features that we feel
+	are  useful,   but  want  to  bring  before  the  community   for
+	discussion.
+
+	     You  are  encouraged to copy and distribute the  Sampler  to
+	your friends and local bulletin boards.   You may use the Sampler
+	as the underlying language for a commercial software product.  In
+	return,  we hope that you will consider us when you need a  full-
+	featured FORTH system or other options,  and that you will spread
+	the word about UNIFORTH.
+
+	     We  can  supply  you  with the latest disk  version  of  the
+	Sampler  in your 5 1/4" or 8" (CP/M) format for $35,  or you  can
+	obtain a copy from a friend or local bulletin board.  Consult the
+	order form at the end for more details.
+
+	     This  manual is a much-abbreviated edition of  the  UNIFORTH
+	Manual Set.  (The complete set has over 500 pages, and comes in a
+	custom	slipcase/binder.   Copies of the full set are $60.)  This
+	manual	is  divided  into four	sections:   an	introduction  and
+	advertisement  for the Professional;  a brief tutorial on  FORTH;
+	some  of  the  system-specific	features  of  UNIFORTH;   and	a
+	vocabulary list.
+
+	     The  UNIFORTH  Sampler  is NOT a supported  product  and  is
+	distributed without warranties of Merchantability and fitness for
+	a  particular  purpose.    If  you  need  support,  purchase  the
+	Professional UNIFORTH.
+
+
+
+
+
+
+
+
+
+
+
+
+
+	 THE UNIFORTH SAMPLER				     PAGE 1-2
+
+
+	1.1  Getting Started
+
+	     The Sampler is distributed on one disk.  You can use the DOS
+	utilities  COPY and DISKCOPY for backup and distribution  copies.
+	You will find on the disk the following files:
+
+	     UNIFORTH.COM   The executable task image.
+
+	     FORTH.FTH	    The default file that is opened when UNIFORTH
+			    is executed.  It contains the SYSGEN utility,
+			    the segment utility, a game and other stuff.
+
+	     VEDITOR.FTH    The configuration file for the video editor.
+
+	     UNIFORTH.DOC   This manual.
+
+	     README.1ST     If	 present,   additional	information  that
+			    should be read before using the system.
+
+	All  of  the features of UNIFORTH are preconfigured in	the  task
+	image.	 You  need not "load" anything to have a working  system.
+	UNIFORTH.COM  requires a minimum of 40Kb user space,  which means
+	that  you probably will need a 52Kb machine with CP/M  2.2.   The
+	Sampler will ONLY work with a Z80 CPU and CP/M 2.2, and will bomb
+	if  you try it with an 8080 or CP/M 1.4.   We've also found  that
+	the Sampler will not run on an Osborne Executive because of their
+	poor  handling	of the real-time clock,  or on a banked  CP/M-3.0
+	system.
+
+	     Now start the execution of UNIFORTH by entering
+
+		  UNIFORTH
+
+	at which time you should get the Sampler startup screen.   If the
+	screen	is  blank or your computer hangs  up,  then  your  system
+	probably  has insufficient memory.   If you get a message to  the
+	effect of a missing file and an inquiry about creating it, answer
+	"N" and leave FORTH at the earliest opportunity.   Then make sure
+	FORTH.FTH is on the same disk as UNIFORTH.COM.
+
+	     After  you get the "ok" prompt,  you're  into  FORTH.   Then
+	follow	the  tutorial or an introductory text,	and learn  FORTH.
+
+	     There are three ways to exit UNIFORTH:  enter two successive
+	control-C  keystrokes (which aborts);  enter the word END  (which
+	has the same effect as the CTRL-C);  or enter BYE (which  flushes
+	and closes files before exiting).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				   Chapter 2
+
+				   USING FORTH
+
+
+	     The  first  concept  to  understand in using  FORTH  is  the
+	entering  and  execution  of words  through  the  terminal.   The
+	general rules are:
+
+
+	     1.   FORTH does not interpret a line of user input until the
+		  user	terminates the line by entering a carriage return
+		  (<cr>).
+
+	     2.   You  may  delete the previous character by  entering	a
+		  backspace (ASCII 08) or delete (ASCII 127).	An  ASCII
+		  "bell" character will be output if you try to backspace
+		  past the beginning of the line.
+
+	     3.   You may delete an entire line by entering a CTRL-U (the
+		  CTRL and U keys depressed simultaneously).
+
+	     4.   The user may interrupt printout at any time by entering
+		  CTRL-S.    The  printout  is	resumed  when  CRTL-Q  is
+		  pressed.  (Some systems permit any key for resumption.)
+
+	     5.   You  can  abort  a task that is  actively  printing  by
+		  pressing the ESCAPE key.
+
+	After pressing the return key to terminate a line of input, FORTH
+	will  go  through the line and execute every "word" in the  input
+	line.  The definition of a FORTH word is very simple:
+
+			      <<<WORD DEFINITION>>>
+
+		       A FORTH word is a sequence of up to
+		       64  characters,	with  at least one
+		       blank (space) on  each  side.   The
+		       sequence  of characters may contain
+		       any  character  in  the	ASCII  set
+		       except	   control     characters.
+		       UNIFORTH  retains  the	first	31
+		       characters  and	the  length of the
+		       word;  any word with the  first	31
+		       characters and length identical are
+		       not   unique.	All   words   with
+		       identical  first  31 characters and
+		       lengths greater than or equal to 31
+		       characters     are    treated	as
+		       identical.
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-2
+
+
+
+
+	For example, entering the line
+
+		  OK 43 24 + LIST <cr>
+
+	will cause FORTH to execute the four "words"
+
+		  43	     (push the number 43 on the stack)
+		  24	     (push the number 24 on the stack)
+		  +	     (add them together to get 67)
+		  LIST	     (and then list block 67)
+
+	Notice the spaces between the words on the input line.	You don't
+	need to type spaces before the first word or after the last  one.
+	The  words are executed in the order in which they were  entered.
+	The actual execution of each word will be discussed later.
+
+	     If  all goes well and FORTH successfully executes each  word
+	in the input line,  then FORTH will respond with its prompt (OK).
+	If  an error occurs,  the name of the word it was executing  when
+	the error occurred will be repeated, followed by a question mark.
+
+
+	2.1  The Stack
+
+
+	     To  see  how  FORTH does such things as  manipulating  data,
+	controlling  devices,  printing and accepting user's  input,  and
+	managing  files,  you will have to understand the mechanism  that
+	FORTH uses to keep track of the work in progress:  the STACK.
+
+	     A stack (sometimes called last-in-first-out or LIFO  memory)
+	is  a  device used largely in  compiler  writing,  microprocessor
+	design,  and HP calculators.  A stack can best be compared to the
+	tray holders commonly used in cafeterias:  the type with a spring
+	at  the bottom to push up trays as they are used.   Only the tray
+	most recently added is accessable;  it must be removed before the
+	trays below it are available.
+
+	     To see how this relates to FORTH, we need to experiment from
+	a terminal.   If you type a carriage return,  FORTH will  respond
+	with
+
+		  OK  <cr>
+		  OK
+
+	to  indicate that it has completed your previous request (in this
+	case,  you requested nothing) and is ready to do  more.   Suppose
+	you type a number:
+
+		  OK  5 <cr>
+		  OK
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-3
+
+
+	FORTH  has apparently done nothing;   however,	it has taken your
+	number	(5),  interpreted it as the numeric value 5 (rather  than
+	some other word), and "pushed" it onto the stack (added a tray to
+	the holder).
+
+	     Suppose you type a series of numbers,  separated by at least
+	one space so FORTH can tell them apart.   Basic FORTH only under-
+	stands 16-bit integers,  i.e.	numbers between -32768 and  32767
+	with  no  decimal  points or other punctuation except  a  leading
+	minus sign for negative numbers:
+
+		  OK 4 1 2 7 -23 6 <cr>
+
+	(We'll	tell  you  about other number types later.)  FORTH  still
+	doesn't  seem to have done anything,  but the stack now  contains
+	the original number 5,	plus 6 new numbers,  with the "top" value
+	being the number 6.
+
+	     Obviously something is missing:   a method of removing  data
+	from the stack and doing something useful with it.   The simplest
+	thing  that  can be done with the stack is to see what's  on  top
+	(easiest to get at).   FORTH has a word,  "." (dot),  which takes
+	the  number  on the top of the stack,  prints its  value  on  the
+	terminal,  and	throws the number away.   (We will enclose  FORTH
+	words in quotes whenever confusion is possible).   For an example
+	of dot:
+
+		  OK 8 .  <cr>
+		  8
+		  OK
+
+	will take the number 8,  push it on the stack,	then print it and
+	prompt for more input.	Another example,
+
+		  OK 8 7 .  CR .  <cr>
+		  7
+		  8
+		  OK
+
+	will type the two top stack values on separate lines.	CR is our
+	second learned FORTH word:  it just outputs a carriage return and
+	line feed to the terminal.
+
+
+	2.2  Stack Operators
+
+
+	     So  far we can only get to the topmost stack value.   As  on
+	the HP calculators,  there are words that allow us to  manipulate
+	the stack to get at other values.   The table below lists some of
+	the  most important operators.	 For this and subsequent  tables,
+	the topmost stack value is indicated by A,  the next stack  value
+	by B,  and so on.   The table gives the word, its function, and a
+	representation of the stack before and after the use of the word.
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-4
+
+
+
+	     WORD	   FUNCTION	    BEFORE    AFTER
+	     DUP	copies top of stack    B A     B A A
+	     SWAP	reverses top two       B A     A B
+			numbers on the stack
+	     DROP	destroys top of stack  B A     B
+	     OVER	copies 2nd number and  B A     B A B
+			 pushes it on top
+	     ROT	moves 3rd num to top   C B A   B A C
+	     -ROT	moves top to 3rd num   C B A   A C B
+
+
+	     The  usefulness  of these stack manipulation  words  becomes
+	apparent  when	you  consider  the  following  problem:   suppose
+	someone  else  has  put  a number on the stack and  you  wish  to
+	calculate its square without knowing what it is.  You could type
+
+	     OK  DUP * . <cr>
+	     25
+	     OK
+
+	By inference,  the number on the stack was 5.  Of course, we used
+	a  word  not defined yet to multiply the two  values.	So  let's
+	digress and discuss arithmetic functions.
+
+
+	2.3  Arithmetic Functions
+
+
+	     All  arithmetic  functions act on the stack  with	a  method
+	called	postfix or Reverse Polish Notation (RPN),  commonly  used
+	with the HP calculators.  Rather than give extensive examples, we
+	will  assume  that you have used an RPN calculator at some  time,
+	and just give a table of the elementary functions.
+
+	     WORD	FUNCTION		BEFORE	 AFTER
+	     ABS       absolute value of top	   B A	  B |A|
+		       of stack
+	     NEGATE    2's complement top	   B A	  B -A
+		       of stack
+	     +	       add top stack values	   B A	  B+A
+	     -	       sub top stack values	   B A	  B-A
+	     *	       mul top stack values	   B A	  B*A
+	     /	       div top stack values	   B A	  B/A
+	     MOD       remainder of division	 C B A	  C R
+		       of B/A
+	     MAX       top two numbers dropped,  C B A	  C MAX(A,B)
+		       larger one put back
+	     MIN       top two numbers dropped,  C B A	  C MIN(A,B)
+		       smaller one put back
+
+
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-5
+
+
+	An  example of the use of some of these functions is to  evaluate
+	the expression
+
+			       ABS [(5+4)/2 - 20]
+
+	You would enter it with FORTH by
+
+		  OK  5 4 + 2 / 20 - ABS . <cr>
+		  16
+		  OK
+
+	Note  that  the division truncates because we are  using  integer
+	arithmetic.
+
+
+	2.4  Logical Operators
+
+
+	     The  logical  operators act upon all 16 of the  bits  in  an
+	integer  and leave results which involve all those  bits.   There
+	are  four basic operators,  three of which require two numbers on
+	the stack and one which acts only on the top value:
+
+		  NOT	 one's complement of the top value.
+		  AND	 bitwise "AND" of the top two values.
+		  OR	 bitwise "OR" of the top two values.
+		  XOR	 bitwise exclusive OR of the top two values.
+
+
+	     The use of these definitions is most easily seen by using	a
+	base which is a power of two.  The most common of these are octal
+	and  hexadecimal.   This way there is an easily decoded relation-
+	ship  between  the value of a number and the state of  its  indi-
+	vidual bits.  Type
+
+		  OCTAL <cr>
+
+	FORTH is now ready to handle base 8.   Typing HEX would give base
+	16,  and DECIMAL gives base 10.   Using base 8, an example of the
+	logical operators is
+
+		  OK 453 321 AND .  <cr>
+		  1
+		  OK
+
+	where  the only bit in common between the octal numbers  453  and
+	321 is the least significant bit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-6
+
+
+	2.5  Relational Operators
+
+
+	     Relational  operators  compare  stack  values  and  leave	a
+	logical  truth flag;   ie.,  a number that is either zero or  one
+	depending  on  the tested condition.   All  relational	operators
+	destroy  the stack values they test and just leave the truth flag
+	on  the  stack.   There  are  many  of	these  operators  because
+	condition  testing is one of the most common functions	performed
+	in FORTH.  The table below lists the major relational operators.
+
+	     WORD		    FUNCTION
+	       0=	If the top stack value equals zero, leaves a 1
+			(true);  otherwise, leaves a 0 (false).  Also
+			called NOT.
+
+	       0<	True if stack value is less than 0, false
+			otherwise.
+
+	       0>	True if stack value is greater than 0, false
+			otherwise.
+
+	       <	True if the next lower stack value (B) is less
+			than the top stack value (A), false otherwise.
+
+	       =	True if B is equal to A, false otherwise.
+
+	       >	True if B is greater than A, false otherwise.
+
+
+	     An example of the use of some of these relational	operators
+	is to compare
+
+		  OK 8 0= 9 10 < = .  <cr>
+		  0
+		  OK
+
+	The  number 8 is compared to see if it is equal to zero.   It  is
+	not, so this operation leaves a 0 on the stack in place of the 8.
+	Then 9 is tested to see if it is less than 10.	 This is true, so
+	a 1 is pushed on the stack.  Then the results of the previous two
+	operations  (0 and 1) are tested to see if they are  equal.   The
+	result is 0, which is then printed.  The stack is now empty.
+
+
+	2.6  Forth Memory Allocation
+
+
+	     Before we go any further in examining FORTH, a little of the
+	nuts  and  bolts  must be presented.   FORTH is  a  core-resident
+	program that occupies approximately 24000 bytes of  memory.   Not
+	all of the allocated memory is filled under normal use;  instead,
+	it  is	partitioned  into subsections that can	expand	with  the
+	increasing load.  The partitions are:
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-7
+
+
+
+	I.   THE DICTIONARY.  Nearly all of FORTH resides in the diction-
+	     ary.   The  dictionary  starts at about address 300  and  is
+	     composed of three contiguous sections:
+
+	     a.   Kernel.   Core locations 300 through 8000 (bytes)  hold
+		  the  FORTH  kernel.	This  is  the  assembly  language
+		  program  that  contains  the 190 most  primitive  FORTH
+		  definitions; somewhat ignorant but easily teachable.
+
+	     b.   Basic FORTH.	 This section is the SYSTEM  definitions,
+		  some	200  elementary words that later definitions  can
+		  draw on.
+
+	     c.   Application  FORTH.	In this area are the  definitions
+		  for any program or utility that you load after starting
+		  your session.  This area grows upwards to higher memory
+		  locations.
+
+	II.  THE  DATA	STACK.	 The data stack contains  such	items  as
+	     arguments passed between routines, numbers typed in from the
+	     terminal,	system word temporary storage,	etc.,  and is the
+	     stack we previously talked about.	This stack is placed near
+	     the  top of the FORTH program,  and "grows" downward towards
+	     lower memory locations.
+
+	III. THE  RETURN STACK.   Less used by the  beginning  programmer
+	     (for  good  reason!),  the return stack's primary use is  to
+	     contain  addresses  of  the words to  be  executed  when  we
+	     "return" from the word being currently executed.  Other uses
+	     include  storage for loop parameters,  and numbers that  are
+	     "in  the  way" on the data stack.	 The return stack  starts
+	     near the top of the memory allocation and grows downward  in
+	     memory.  It is much smaller than the data stack (only 80 16-
+	     bit  locations),  so  use	it  sparingly  and  with  careful
+	     attention to the protocol.
+
+	IV.  THE BLOCK BUFFERS.  UNIFORTH is a disk-based system and uses
+	     two  or  more  buffers to bring data to and from  the  disk.
+	     Each buffer is nominally 1024 bytes long.
+
+	The  addresses	listed above are for a Z80  CP/M  system.   Other
+	systems will have slightly different addresses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-8
+
+
+	     A diagram of how memory is allocated in core is shown below.
+
+	     high limit     |---------------------------|
+			    |	 block buffer 2 	|
+			    |---------------------------|
+			    |	 block buffer 1 	|
+			    |---------------------------|
+			    | v 			|
+			    | v       return stack	|
+			    | v 			|
+			    |---------------------------|
+			    | v 			|
+			    | v        data stack	|
+			    | v 			|
+			^   |	.   .	.   .	.   .	|
+			^   |				|
+			^   |				|
+	      memory	^   |	.   .	.   .	.   .	|
+	     addresses	^   | ^ 			|
+			^   | ^ user application	|
+			^   | ^  dictionary		|
+			    | ^ 			|
+			    |---------------------------|
+			    |				|
+			    | "standard" FORTH		|
+			    |	  dictionary		|
+			    |				|
+			    |---------------------------|
+			    |				|
+			    |	 FORTH kernel		|
+			    |	     dictionary 	|
+			    |				|
+	     low limit	    |---------------------------|
+
+
+
+	2.7  Pointer Values
+
+
+	     FORTH  has  four  "pointers,"  most  of  which  are  usually
+	transparent  to the user.   The two stack pointers  have  already
+	been mentioned.   The data stack pointer can be referenced by the
+	word  SP@,  which  indicates the address of the top of the  stack
+	before	SP@ was used.	The return stack pointer's current  value
+	can be obtained by the word RP@.
+
+	     The dictionary pointer (DP) indicates the first free  memory
+	address  for  the storage of new definitions.	Its value can  be
+	obtained by DP @ and can be changed by ALLOT,  which uses the top
+	stack  value  as the number of bytes by which  to  increment  the
+	pointer.   Further  explanation of the dictionary pointer can  be
+	found in the User's Guide.
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-9
+
+
+	     The   interpreter	pointer  (IP)  is  an  internal  register
+	containing  the address of the next FORTH "word" to be	executed.
+	It  cannot  be accessed by the programmer  except  with  assembly
+	language  routines.   Some further information concerning the  IP
+	can be found in the User's Guide.
+
+
+	2.8  Definitions
+
+
+	     Now let's get back to our problem of squaring numbers.  What
+	we discussed before leads into the next logical point:	 it would
+	be   convenient  to  take  a  series  of  stack  operations   and
+	automatically call in the whole series when needed.  Consider the
+	case of squaring a number, i.e., calculating A*A.
+
+	     You can define a word to perform this function for you. Pick
+	a name for your word,  for example,  SQUARE.  You can define this
+	word by
+
+		  OK : SQUARE DUP * ;  <cr>
+
+
+	     The  first  thing	on the line is a word which is	just  the
+	single	character  ":" (colon).   Following it (separated  by  at
+	least one space) is the word name you are defining.   Next is the
+	series of words you wish to have executed (DUP *).   Finally, the
+	closing word is a semicolon,  which indicates that the definition
+	of SQUARE is complete.	 The word,  once defined, can now be used
+	like any of the well-known words, i.e.
+
+		  OK 5 SQUARE . <cr>
+		  25
+		  OK 3 4 + SQUARE 40 - . <cr>
+		  9
+		  OK
+
+
+	     Before  proceeding,  you  should stop and consider  what  is
+	happening  in  more detail.   The process of putting a series  of
+	words  together  in  a so-called  "colon  definition"  is  called
+	"compilation".	 When  FORTH  is  processing the words	inside	a
+	definition,  it  does almost all the work needed to perform  your
+	function.   When the word is used, FORTH can very rapidly perform
+	the function you have designed.
+
+	     The  colon  starts  the compilation  process  by  using  the
+	following  character  string  as  the "name"  of  what	is  being
+	compiled.   The name is stored at the beginning of the definition
+	in  the  "header section" as a count byte followed by  the  ASCII
+	characters  of	the name.   The address of an  assembly  language
+	routine  is next (the "code section") and then the information to
+	be processed (the "parameter section"),  such as the addresses of
+	the FORTH words to be included in your definition.   Finally, the
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-10
+
+
+	semicolon turns off the compilation process and gets you back  to
+	the "interactive execution" mode you started with.  If you forget
+	the semicolon, any words you type after it will be thrown in with
+	the colon definition and not executed immediately.
+
+	     Remember  that the only restriction on names is that control
+	characters  are  not allowed.	There is nothing sacred  about	a
+	"number" such as "7".  If you want to be different you can define
+
+		  :  7 5 ;
+
+	and obtain such bizarre results as
+
+		  OK 7 3 + .  <cr>
+		  8
+		  OK
+
+
+	     The next step in defining words is to realize that there  is
+	no   distinction   between  "FORTH  words"  and   "your   words".
+	Previously, you defined the word
+
+		  :  SQUARE DUP * ;
+
+	Using  this word you can define a routine to get the fifth  power
+	of numbers like this:
+
+		  :  **5 DUP SQUARE SQUARE * ;
+
+
+	     Now suppose you choose to redefine SQUARE.  You could choose
+	to do this by typing
+
+		  OK :	SQUARE DROP 5 .  ;  <cr> SQUARE Redefined
+		  OK 7 SQUARE <cr>
+		  5
+		  OK
+
+	Note the "Redefined" informative message that you get.	 However,
+	the  new  definition  of SQUARE will not affect its  use  in  the
+	previously defined word, **5.
+
+		  OK 2 **5 .  <cr>
+		  32
+		  OK
+
+	But  if  **5 is now redefined,	the new definition of  SQUARE  is
+	used.
+
+		  OK :	**5 DUP SQUARE SQUARE * ;  <cr> **5 Redefined
+		  OK 2 **5 .  <cr>
+		  5 5 2
+		  OK
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-11
+
+
+
+	     The behavior is governed by these two rules:
+
+	     1.   When	you  define  a word,  all words used  within  the
+		  definition must have been previously defined.
+
+	     2.   Later  changing a word you use within definitions  will
+		  not  affect  words you have  already	defined  -- their
+		  function  will  remain unchanged until you enter a  new
+		  definition for the word.
+
+
+	     Notice  that only the most recent dictionary  definition  of
+	words used within a colon definition will be used.   For example,
+	in   subsequent  use,	the  correct  definition  for  SQUARE  is
+	inaccessible  because another definition for SQUARE  was  created
+	later.	 There	is  a  way of "forgetting" the later  version  of
+	SQUARE.  The FORTH word FORGET, used like
+
+		  OK FORGET SQUARE <cr>
+		  OK
+
+	will erase from the dictionary the most recent definition of
+	SQUARE and all definitions made after it.
+
+	     We  have mentioned colon definitions.   You can also  define
+	machine  language words with the word CODE,  and terminate  their
+	definition with the word END-CODE,  in a similar manner as  colon
+	and semicolon.	We will mention machine language routines in more
+	detail in a subsequent chapter.
+
+	     One  other item before we leave the subject of  definitions.
+	Besides using RPN representation, FORTH is decidedly not FORTRAN-
+	like   in  its	definitions.	Though	these  act  exactly  like
+	subroutines, they differ in that most arguments are passed on the
+	data   stack,	and  that  the	entire	definition   is   written
+	horizontally.	While  you can write definitions with each called
+	word  on a separate line,  it is not commonly done.   This can be
+	confusing to the beginning programmer,	but think of it as if you
+	were entering the line interactively.
+
+
+	2.9  Constants and Variables
+
+
+	FORTH  has several words for reading from and writing to  memory.
+	To  read  from memory,	an address must be specified.	Then  "@"
+	(pronounced "fetch") takes that address,  reads the 16-bit  value
+	starting at that address,  and places it on the stack.	 The word
+	C@ accomplishes a similar task, except that it retrieves only the
+	byte stored at the address, places it in the low byte of a 16-bit
+	location or cell which is then placed on the stack.
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-12
+
+
+			      <<<CELL DEFINITION>>>
+
+		       A cell is a 16-bit memory location.
+		       The low order byte is stored at the
+		       first byte address;  the high order
+		       byte   is   stored   at	 the  next
+		       consecutive byte address.
+
+
+	The  procedure	of  reading (or fetching as it is  more  commonly
+	called)  and  then printing is used  often.   Therefore,  a  word
+	exists that combines both of these operations--the question  mark
+	(?).  It fetches an integer from a given address and prints it.
+
+	     Two words exist to write into a specific memory location. As
+	for  reading,  the  exclamation point ("!",  pronounced  "store")
+	stores a 16-bit value and C!   stores the low-order byte of a 16-
+	bit  value from the top of the stack.	In both cases,	the  data
+	value and the address are removed from the stack.  For example,
+
+				  16432 18500 !
+
+	stores the values 16432 at address 18500.
+
+	     Also in the context of definitions, you can define constants
+	and variables to be used in your programs.  Numeric constants can
+	be defined with the word CONSTANT.  For example,
+
+		  31415 CONSTANT PI-TIMES-10000
+
+	defines  the FORTH word PI-TIMES-10000.   Whenever you type  this
+	word, the constant 31415 will be pushed on the stack.
+
+	     Often  you find that it is awkward to have all your data  on
+	the  stack at once.   You can store data in single  named  memory
+	locations with the FORTH word VARIABLE.  For example,
+
+		  VARIABLE Q
+
+	defines the word Q.   When you type Q, the address of the storage
+	location corresponding to Q is pushed onto the stack.  You cannot
+	preset	this storage location during the definition as you  could
+	with  CONSTANT.   You can use Q in conjunction with @ and  !   to
+	change	the  contents  during program  execution  (for	instance,
+	updating a counter).   There is a special word called tick,  "'",
+	which  allows  the  changing of the value of  a  CONSTANT.   Tick
+	places the address of a word's parameter field (where the  number
+	is  stored for CONSTANT) on the stack.	 You can then change  the
+	value using "store".  For example,
+
+		  31416 ' PI-TIMES-10000 !
+
+	changes PI-TIMES-10000 from 31415 to 31416.
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-13
+
+
+
+	2.10  Typing
+
+
+	     One of the problems with FORTH as far as users are concerned
+	is that there is no typing of variables.   That is, once you have
+	defined  variable XXX,	the system doesn't know later whether XXX
+	is an integer,	floating point number, or what.  The advantage of
+	this  is  that	less  storage  space  and  compiler  overhead  is
+	necessary,  and  as long as you are dealing with  characters  and
+	integers, the inconvenience is small.
+
+	     The  disadvantage	comes into play when FORTH  becomes  more
+	complicated,  and  you	start implementing types such  as  double
+	precision integer,  string variables,  etc.  Because of this lack
+	of typing, you cannot perform mixed-mode arithmetic automatically
+	using a precedence scheme such as in FORTRAN.
+
+	     Therefore, when using FORTH, you must keep the type of every
+	variable  and  stack  member in mind,  and  perform  the  correct
+	operation on the numbers.  For example:
+
+		+      Add the two top 16-bit stack values, assuming they
+		       are single precision integers, and leave a 16-bit
+		       result.
+
+		D+     Add the four top 16-bit stack values, assuming
+		       they are two double precision (32-bit) integers,
+		       and leave a 32-bit result.
+
+		F+     Add the four top 16-bit stack values, assuming
+		       they are two single precision (32-bit) floating
+		       point values, and leave a 32-bit floating point
+		       result.
+
+		SS*D   Multiply the two top 16-bit stack values assuming
+		       they are single precision integers, and leave a
+		       32-bit double precision integer result.
+
+	In  other  words,  some  of the work has been taken  out  of  the
+	compiler  or language and placed on the  programmer's  shoulders.
+	There  is  no  inherent  reason why  a	typed-FORTH  couldn't  be
+	created;  there just has been no emphasis in this direction.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-14
+
+
+	2.11  Control Structures
+
+
+	     Control   structures  allow  you  to  modify  program  flow,
+	primarily by making decisions and causing various definitions  to
+	execute within a colon definition.
+
+
+	2.11.1	Looping
+
+
+	     Maintaining an iteration counter and causing a branch out of
+	the  loop  when a preset value is reached is a	very  fundamental
+	software feature.  FORTH provides the DO and LOOP words for this.
+
+	     When making a loop,  you usually know the starting value and
+	the number of repetitions desired.   When you sum these,  you get
+	the total.   DO expects to find two parameters on the stack,  the
+	total and the starting value:
+
+	     [total] [start] DO [things to be done] LOOP
+
+
+	     As an example, consider a definition to print out 5 numbers.
+	If we start with 1, then the total is 6, and our definition is:
+
+		  :  PRINT_FIVE 6 1 DO .  LOOP ;  <cr>
+
+	This definition expects to find 5 numbers on the stack.
+
+		  OK 34 5 2 6 -3 PRINT_FIVE <cr>
+		  -3 6 2 5 34
+		  OK
+
+	     Other  languages use the starting value and the ending value
+	as the loop limits,  and switch the order of the  limits.   These
+	variances are  matters of preference.
+
+	     Often  it	is useful to have a word to access the	iteration
+	counter, and FORTH provides several of them as indicated below.
+
+	     WORD		     FUNCTION
+	     I		 Push the value of the iteration counter of
+			  the innermost loop onto the stack.
+
+	     J		 Push the value of the next outermost loop
+			  counter onto the stack (i.e.,2 nested
+			  loops).
+
+	     I- 	 Subtract the value of the innermost counter
+			 from the value on the stack.
+
+	     I+ 	 Add the value of the innermost counter to
+			  the value on the stack.
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-15
+
+
+
+
+	     Consider a loop to print the numbers from 1 to 10:
+
+		  OK :	10_#'S 11 1 DO I .  LOOP ; <cr>
+
+	When executed, 10_#'S will give
+
+		  OK 10_#'S <cr>
+		  1 2 3 4 5 6 7 8 9 10
+		  OK
+
+
+	     Since  DO	expects to find the iteration parameters  on  the
+	stack at execution time,  you can wait until then to define them.
+	A general, ascending order, number printing routine might be:
+
+		  OK :	GEN_ASC_ORD DO I .  LOOP ; <cr>
+
+	When executed, this word expects to find the DO parameters on the
+	stack:
+
+		  OK 11 1 GEN_ASC_ORD <cr>
+		  1 2 3 4 5 6 7 8 9 10
+		  OK
+
+	     Since  one  normally thinks of these parameters  as  [start]
+	[finish] rather than the order that DO prefers, and further since
+	[finish] is often preferred over [finish+1], try this:
+
+		  :  LIMITS 1+ SWAP ;
+
+	The  1+ adds 1 to [finish] and SWAP puts [start] and [finish]  in
+	the correct order for a DO.   In other words,  you have created a
+	"preprocessor"	for  DO-LOOPS.	 This is rarely  done  with  most
+	languages,  but  if  you  expect  to use this  a  few  times  the
+	convenience pays off in FORTH.
+
+		  OK :	GEN_#_PRINT LIMITS DO I .  LOOP ; <cr>
+
+	In use, this gives:
+
+		  OK 1 5 GEN_#_PRINT <cr>
+		  1 2 3 4 5
+		  OK
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-16
+
+
+	2.11.2	Conditional branching
+
+
+	     Conditionals traditionally allow some value to be tested and
+	a  branch to occur based upon the test.   FORTH  allows  one- and
+	two-sided conditional branches.
+
+	     The  IF word and the THEN word are the simplest  cases.   IF
+	will  cause  the  definitions  between it  and	THEN  to  execute
+	provided  the top stack value (TOS) is logical true  (or  really,
+	not  equal  to zero).	If the TOS is zero,  FORTH will  skip  to
+	execute the words following the THEN word.  For example,
+
+		  OK :	USE_IF IF 1 .  THEN 2 .  ;  <cr>
+
+	When executed, this definition will give
+
+		  OK 1 USE_IF <cr>
+		  1 2
+		  OK 0 USE_IF <cr>
+		  2
+		  OK
+
+	IF always removes the logical quantity it tests from the stack.
+
+	     Another word,  ELSE, allows one of two branches to be taken.
+	As an example:
+
+		  OK :	USE_ELSE IF 1 .  ELSE 0 .  THEN ;  <cr>
+
+	     If 0 is on the stack,  the ELSE-clause will be executed;  if
+	a  number other than 0 is on the stack,  the TRUE-clause will  be
+	executed, as in
+
+		  OK 0 USE_ELSE <cr>
+		  0
+		  OK 4 USE_ELSE <cr>
+		  1
+		  OK
+
+	The ELSE portion executes if TOS is false, or 0.  In either case,
+	the  definition after THEN executes.   In the preceding  example,
+	the compiler operator ";" will execute.   It will signal both the
+	end of the definition at compile time, and perform house-cleaning
+	at the end of the definition at execute time.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	USING FORTH					      Page 2-17
+
+
+	2.11.3	Block structure branching
+
+
+	     FORTH also provides a block structure which is essentially a
+	loop without an iteration counter.  It is of the form:
+
+		  BEGIN [good stuff] [flag] UNTIL
+
+	     BEGIN  is	a  place holder and marks the  beginning  of  the
+	block.	 UNTIL tests for a true or false TOS, and if false trans-
+	fers  back to the word following BEGIN.   If true,  the word fol-
+	lowing UNTIL will execute.   UNTIL will remove its logical  quan-
+	tity from the stack.
+
+
+	2.12  And so Forth....
+
+
+	     You  now have seen most of the basics of FORTH,  along  with
+	some  examples.   The best way to learn more at this stage is  to
+	sit at a terminal and practice!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				    Chapter 3
+
+			   UNIQUE FEATURES OF UNIFORTH
+
+
+		As  mentioned  earlier,  the Sampler is a subset  of  our
+	commercial FORTH.  Even so, it has many additions to the FORTH-83
+	standard.  This chapter will mention a few of those features.  We
+	recommend  the	purchase  of  the UNIFORTH Manual  Set	for  more
+	information.
+
+
+	3.1  Files
+
+
+	     UNIFORTH uses DOS 2 tree-structured files.   In other words,
+	you can access files in any directory on any disk from inside  of
+	UNIFORTH.  The limitation is that the file pathname cannot exceed
+	63 characters.
+
+	     When  first  invoking  UNIFORTH,  you  have  the  option  of
+	including  a  file  name on the same line.   If no  name  follows
+	UNIFORTH,  then file FORTH.FTH will be	opened.   Otherwise,  the
+	passed file will be opened.  For example,
+
+		       UNIFORTH TEST.BIN
+
+	will  open file TEST.BIN for access after the coldstart procedure
+	is completed.
+
+	     All UNIFORTH source code filenames have an extension of .FTH
+	for unique identification.
+
+	     The following words give the basic file access functions:
+
+	     CHANA,CHANB
+		  There  are  two default "channels" for file  access  in
+		  UNIFORTH,  selected by the words CHANA and CHANB.  When
+		  first  invoking UNIFORTH,  CHANA is assumed.	 After	a
+		  channel has been selected, all file read/write commands
+		  are  directed  to that channel.   If	you  now  specify
+		  CHANB,  all  commands are directed to the file open  on
+		  that channel.
+
+	     MAKE-CHAN <name>
+		  If  you  want more files to be open  concurrently,  you
+		  might  want to add channels.	 This word will create	a
+		  new word like CHANA that,  when executed, switches file
+		  commands  to a new channel.	Each channel occupies  64
+		  bytes  of  dictionary  space in addition  to	the  word
+		  header.
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-2
+
+
+	     OPEN <fname>
+		  Open the file.   If the file doesn't exist, you will be
+		  prompted for its creation.   If you decline to create a
+		  new file, the previous file will be reopened.
+
+	     CLOSE
+		  Close  the file on the current channel.   No action  is
+		  taken if a file is not currently open.
+
+	     MAKE <fname>
+		  You can explicitly create a file with this word.   MAKE
+		  and OPEN only create the DOS directory entry;  the file
+		  has  no length until you explicitly write data  to  it.
+		  Also,  until you close the file,  DOS does not know the
+		  file's length.
+
+	     DELETE <fname>
+		  Deletes the file.
+
+	     FILESTATUS
+		  Displays information about the currently open file.
+
+	     Once opened, a file can be accessed in one of two ways:
+
+	     (1)  As  a block-oriented (FORTH) file.   You read/write  to
+		  the file using 1024-byte random-access blocks of  data.
+		  Common words are BLOCK, BUFFER, UPDATE, LOAD, etc.
+
+	     (2)  As a sequential, text-oriented file.	You read/write to
+		  the file in bytes or lines,  where a line is terminated
+		  with	a  CR/LF pair of ASCII characters.   This is  the
+		  kind of file created by ED or WORDSTAR.
+
+	     Block-oriented  files are the most straightforward.   All of
+	the  FORTH-83  read/write/load words work on  block  files.   The
+	limitations are that you will get an error message if you try  to
+	access data beyond the end of the file,  and that you cannot load
+	block  0  of any file.	 You can also open and read binary  files
+	such as UNIFORTH.COM with BLOCK, and dump their contents.
+
+	     A blank file can be created,  or a current file extended  in
+	length,  using	the word EXTEND.   It has the number of blocks to
+	extend as its argument.   Each added block is blank-filled with a
+	";S" at the beginning.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-3
+
+
+	     You can move blocks from one file to another with a brace of
+	words:
+
+	     n1 n2 COPYATOB
+		  Copy	block n1 of the file currently open on channel	A
+		  into block n2 of channel B.
+
+
+	     n1 n2 #blks MCOPY
+		  Copy #blks starting at block n1 in channel A to channel
+		  B, starting at block n2.
+
+	     Text files are read byte-by-byte.	 You should not use BLOCK
+	on a text file, as there is no guarantee that the file will be an
+	exact multiple of 1024 bytes in length (meaning you won't be able
+	to access the last part of the file).  Instead, there is a set of
+	words to perform the major read/write operations for you.
+
+	     RDBYTE char
+		  Read one byte from the current file.	If the end of the
+		  file	is  reached,  leave a true flag in place  of  the
+		  character.
+
+	     adr cnt RDLINE nchar
+		  Read a "line" from the file into a buffer.   The number
+		  of  characters actually read (nchar) will be less  than
+		  cnt if a CR/LF is detected.
+
+	     char WRBYTE
+		  Write the character to the current file.
+
+	     adr cnt WRLINE
+		  Write  cnt characters to the current	file.	Append	a
+		  CR/LF pair to terminate the line.
+
+	     WREOF
+		  Write an end-of-file mark on the current file.
+
+	     blk byte !FILEPOS
+		  A   method  of  random-access  on  a	sequential  file.
+		  Position  the next read/write to byte pointed to by the
+		  block # and byte offset.
+
+	     @FILEPOS blk byte
+		  Returns  the current file pointer.
+
+	     You  can  also  load source code  from  a	text  file.   For
+	example,  you might like to use FRED as a basic text editor,  and
+	feel  restricted by the 12x64 format of a FORTH block.	 You  can
+	create a text file and load the entire file:
+
+	     TLOAD
+		  Load	the  currently	open text file	starting  at  the
+		  current file pointer.  Each line of text is interpreted
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-4
+
+
+		  just	as if you had entered it from the  console.   You
+		  must terminate the file with a ;S.
+
+	Loading  from  a  text	file requires a  minimum  of  three  disk
+	buffers, so check #BUFF before you attempt a load.
+
+
+	3.2  Vectored I/O
+
+
+	     UNIFORTH  permits up to three input devices and five  output
+	devices to be used for console I/O.  These devices are controlled
+	by  the low-order byte of variable IOBYTE.   Each bit is assigned
+	to  a  particular  input  or  output  device.	 By  setting  the
+	appropriate bit,  you can send output to 5 devices simultaneously
+	or select an alternate keyboard.
+
+	     A	32-byte table is located at JMPTAB.   The bits in  IOBYTE
+	select from these 8 addresses to execute the proper routine.  The
+	bit definitions are:
+
+		  bit#	    JMPTAB+...	    routine
+		  0	    0		   console input
+		  1	    3		   auxillary input
+		  2	    9		   user specified input routine
+		  3	    12		   user specified output routine
+		  4	    15		   auxillary output
+		  5	    18		   disk output
+		  6	    21		   printer output
+		  7	    24		   console output
+
+			    27		   console status
+			    30		   auxillary status
+			    36		   user specified status
+
+	For  example,  to select console input and  printer  output,  you
+	would  set  IOBYTE to 82H.   You can insert your own routines  in
+	this table, with restrictions.	Check the Professional Manual Set
+	for more information.
+
+	     We've defined a set of words to account for the most  common
+	combinations:
+
+		  TERMINAL	 select PC input and output
+		  PRINTER	 select printer output only
+		  +PRINTER	 add printer output to current selection
+		  +DISK 	 add disk output to current selection
+
+	The  disk output is very restricted.   You must have a text  file
+	open  on  channel B.   All terminal output is then stored on  the
+	text file (a log file if you will).
+
+
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-5
+
+
+	3.3  Numeric input
+
+
+	     The  UNIFORTH  Sampler  supports  three  basic  data  types:
+	single	precision (16-bit) integers,  double  precision  (32-bit)
+	integers, and single precision (32-bit) floating point.
+
+	     When  entering  a number from the keyboard,  you  must  tell
+	FORTH  what  type  of  number it is  to  convert.   Since  16-bit
+	integers are the default,  you need only enter the digits with an
+	optional  +  or - sign at the beginning.   For	32-bit	integers,
+	include a comma anywhere within the number.   For floating point,
+	include a period anywhere within the number, with an optional "E"
+	style exponent.  Examples:
+
+		  string	 converted as:
+		  235		 16-bit integer
+		  23,5		 32-bit integer
+		  235.0 	 floating point
+		  2.35E2	 floating point
+
+	All values convert to 235.   Variable PRECIS tells you what  kind
+	of  number  was  last  converted  (-1=none,  0=16-bit,	1=32-bit,
+	2=floating point),  and variable DPL locates the decimal point or
+	comma within the number.
+
+
+	3.4  Video editor
+
+
+	     We've included our "slow" video editor as part of the  basic
+	system.  It comes preconfigured for an ADM3/5, and uses only BIOS
+	calls to perform its duties.  We suggest that you try this editor
+	as-is before attempting any modifications.   At worst, the screen
+	will  be  filled with garbage characters,  and you can	exit  the
+	editor	at  any time with ctrl-X without any modifications  being
+	written to disk (or ESC if changes are to be written).
+
+	     To enter the editor,  just use "n EDIT" where n is the block
+	number to be edited.   If you were attempting to load a block and
+	ran  into  an error,  and received the	block/line  number  error
+	message,  the word WHERE (no arguments) will enact the editor and
+	display  the  erroneous  code.
+
+	     Once  inside  the	editor,  the commands  are  pretty  self-
+	explanatory.  All commands are mnemonic related and are displayed
+	at the top of the screen.   The line stack is a temporary holding
+	area  that  can  be  used to transfer lines  from  one	block  to
+	another.   Jump  block will position the cursor at the	displayed
+	block number; overtype it with the block you wish to move to.
+
+
+
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-6
+
+
+	     If   you  wish  to  customize  the  editor,   look  at  file
+	VEDITOR.FTH.   It  contains configuration blocks for three  other
+	popular terminals:   the TV-912,  the H-19 and the  VT-100.   The
+	UNIFORTH  Professional	version includes about 10  more  terminal
+	types.	However, this basic selection will cover 95% of all clone
+	cases.	 Find  the  terminal type that most closely matches  your
+	system	and  load  the	appropriate  block.   This  modifies  the
+	vectored editor words that are terminal specific.
+
+	     In  addition,  all control codes are defined  as  constants.
+	You  may  wish	to use another key (such as  a	WordStar  layout)
+	instead  of  what we've selected.   Just modify  the  appropriate
+	parameter   and   menu	item  from  VEDITOR.FTH  and   load   the
+	configuration block.
+
+	     When you've made all of the necessary changes, resysgen your
+	system to save the modifications.
+
+
+	3.5  SYSGEN
+
+
+	     UNIFORTH permits the storage of a precompiled system,  to be
+	later executed in a similar manner as UNIFORTH.COM.   You may add
+	anything  to the system that you want;	make patches to the basic
+	system;  delete  earlier utilities like the  high-level  floating
+	point  functions;  and then save the new task image onto  another
+	file.
+
+	     The SYSGEN utility is in file FORTH.FTH.	You will find two
+	words most useful:
+
+	     REALLOCATE
+		  This	word  prompts you for two pieces of  information:
+		  the  number of disk buffers and the  memory  size.   We
+		  recommend  3	buffers.   If you have more than 64Kb  of
+		  user program space on your system (that is,  more  than
+		  about 96Kb of total memory),	you may be tempted to use
+		  a  number  larger than 64 when asked for  memory  size.
+		  The  UNIFORTH  Sampler is limited to 64K,  and so  will
+		  truncate  any  answer  you give  to  fit  within  those
+		  constraints.
+
+	     SYSGEN
+		  The main word.   After you have used reallocate, sysgen
+		  will	save  the compiled image onto a task  file.   You
+		  specify the file name. issue   5 LOAD    to compile and
+		  make SYSGEN available
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-7
+
+
+	     SCRAMBLE
+		  If you wish to distribute a commercial application  and
+		  don't  want  the user to have any access to  FORTH,  we
+		  recommend  the  use of the  word  SCRAMBLE.	It  first
+		  destroys  the word links,  then executes  SYSGEN.   The
+		  resultant  compiled task image will not be able to find
+		  enough words in the dictionary to make effective use of
+		  FORTH,  yet your later application words will still  be
+		  available.
+
+
+	3.6  Assembler
+
+
+	     Included on the basic library disk is an assembler that uses
+	the Z-80 mnemonics.  This assembler is essential in defining some
+	of  the  basic	words of the system,  and uses some 3K	bytes  of
+	storage.
+
+	     You have full access to this assembler for your own use and,
+	in fact, are highly encouraged to use it.  FORTH machine language
+	definitions are extremely easy to create and debug, compared with
+	other  languages.   It	is ideal for learning how to  program  in
+	machine language, or to test out various algorithms before incor-
+	porating them in other programs.
+
+	     Machine language FORTH words are created by using one of the
+	defining words CODE or SUBROUTINE.  In each case, the interpreta-
+	tion state is changed from compilation (i.e.,storing the  addres-
+	ses  of routines into a definition) to execution (executing  each
+	word as it is encountered).  The words executed are Z-80 opcodes,
+	which  use stack parameters to create Z-80 instructions which are
+	then stored into the definition.
+
+
+	3.6.1  Creation of Code Words
+
+
+	     To create a machine-language word callable from other  FORTH
+	words,	use CODE,  just like you would the defining word "colon".
+	For example,
+
+	CODE DUP  HL POP,  HL PUSH,  HL PUSH,  NEXT,  END-CODE
+
+	which  creates	a  code word called DUP that pops the  top  stack
+	value  into the register pair HL,  then pushes it back on  twice.
+	The last statement in a CODE definition must be  END-CODE,  which
+	cleans up the stack and returns the user to the FORTH vocabulary.
+
+	     The word NEXT, is one of the three required ways of termina-
+	ting the actual word definition if the new word is to be callable
+	from other FORTH words.  The three ways are:
+
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-8
+
+
+		  NEXT,     Jump  to the interpreter to pick up the  next
+			    word to execute.
+
+		  HPUSH,    Push  the  contents of HL onto the stack  and
+			    then jump to the interpreter (go to NEXT).
+
+		  DPUSH,    Push the contents of DE onto the stack,  then
+			    push HL, and finally go to NEXT.
+
+
+	     A	defining  word called SUBROUTINE is available  to  create
+	machine-language  words  to  be used only  within  other  machine
+	language words (using CALLs or JPs).  For example,
+
+	SUBROUTINE 4*  HL HL ADD,  HL HL ADD,  RET,  END-CODE
+
+	creates  the  word 4* that will multiply HL by 4.   To	use  this
+	word:
+
+	CODE 64*  HL POP,  4* CALL,  4* CALL,  4* CALL,
+	    HPUSH,  END-CODE
+
+	will multiply the top stack value by 64.   Remember:   you cannot
+	directly execute 4* as defined in this way.  For example,
+
+		  : 64*  4* 4* 4* ;
+
+	will fail, as 4* does not have a code-field address nor a jump to
+	NEXT.
+
+	     The  data stack is accessed by the "PUSH," and "POP,"  FORTH
+	instructions.	All return stack operations are not easily acces-
+	sible from inside CODE words.	Also,  because push, pop and call
+	use the data stack,  you must be careful on how to pass arguments
+	to  subroutines as the arguments to be passed will be covered  up
+	by a "call" type statement unless you first pop them into  regis-
+	ters in the calling routine.
+
+	     The Z-80 registers are assigned by UNIFORTH as follows:
+
+		   A   general purpose register
+		  BC   general purpose register pair
+		  DE   general purpose register pair
+		  HL   general purpose register pair
+		  IX   general purpose register pair
+		  IY   return stack pointer
+		   A'  general purpose register
+		  BC'  general purpose register pair
+		  DE'  general purpose register pair, sometimes
+			  output from NEXT
+		  HL'  Interpreter pointer
+		  SP   data stack pointer
+		   I   interrupt vector  (set by monitor)
+		   R   refresh register  (set by monitor)
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-9
+
+
+
+	Where  primes indicate the alternate register set.   Any register
+	or  register pair labelled as general purpose can be used at  any
+	time  by  any word.   The register pair HL' can be  used  by  the
+	programmer if its contents are saved and restored.  The interrupt
+	vector (I) and refresh (R) registers are usually reserved for the
+	monitor  and definitely should not be used.   DE' is only used by
+	;CODE  and can generally be used by the programmer as  a  general
+	purpose register.  BC' may be used in future versions for storing
+	the  user  area  pointer,   so	use  it  with  caution	in   your
+	applications.
+
+
+	3.6.2  Assembler Mnemonics
+
+
+	     The  mnemonics  used for UNIFORTH are basically the same  as
+	used by Zilog, except:
+
+	     1.  All instructions are reverse-polish.  For example,
+
+			   Zilog:  LD A,C
+
+			   FORTH:  C A LD,
+
+
+	     2.   All instructions have a trailing comma.  This indicates
+		  that something is being stored in the dictionary by the
+		  instruction,	and also prevents multiple definitions as
+		  would be the case for XOR.
+
+	     3.   Indirect  memory addressing is shown by adding a  right
+		  parenthesis after the address:
+
+			   Zilog:  LD A,(4000)
+
+			   FORTH:  4000 ) A LD,
+
+	     4.  Index register with displacement is similar:
+
+			   Zilog:  LD A,(IX+32)
+
+			   FORTH:  32 (IX) A LD,
+
+
+
+	     5.   The assembler is definitely not user-proof.	The  only
+		  error  checking  is for removal of all items placed  on
+		  the stack during the definition (i.e.,  loops and bran-
+		  ches	properly terminated).	You can really	screw  up
+		  using codes not allowed by Zilog.  For example,
+
+					31 PE JR,
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-10
+
+
+		  is  accepted	by  the assembler,  but stores a  48  hex
+		  followed by the 1F hex displacement into memory,  which
+		  is interpreted by the Z-80 as:
+
+			   LD	 C,B
+			   RRA
+
+		  which is obviously not what you wanted!   You,  as  the
+		  programmer, are responsible for knowing proper usage of
+		  each instruction.
+
+
+				    NOTATION
+
+	reg	  any of the registers A,B,C,D,E,H,L,I,R,IXH,IXL,
+		      IYH,IYL,(HL),(C) as appropriate
+	rp	  any of the register pairs AF,AF',BC,BC',DE,DE',
+		      HL,HL',IX,IY,SP
+	(xy)	  index register displacement (IX),(IY)
+	cc	  condition codes Z,NZ,CY,NC,PO,PE,P,M
+	b	  a 3-bit integer
+	data	  an 8-bit integer
+	data16	  a 16-bit integer
+	addr	  a 16-bit address
+	disp	  a signed 8-bit displacement
+	    note:  anywhere HL is used, you can use IX or IY
+
+
+	opcode details
+
+	     Zilog		       FORTH
+	     ADC reg		     reg ADC,
+	     ADC data		    data ADC,
+	     ADC HL,rp		   rp HL ADC,
+	     ADC (xy+disp)     disp (xy) ADC,
+	     BIT b,reg		   reg b BIT,
+	     CALL addr		   addr CALL,
+	     CALL cc,addr	addr cc CALL,
+	     EX AF,AF'		   AF' AF EX,
+	     EX (SP),HL 	  HL (SP) EX,
+	     JP (HL)		     (HL) JP,
+	     LD rp,(addr)	addr ) rp LD,
+	     LD (addr),rp	rp addr ) LD,
+	     OUT (C),reg	 reg (C) OUT,
+	     OUT (port),A	A port ) OUT,
+
+	3.6.3  The Use of ;CODE
+
+
+	     The  word ;CODE is the machine-level counterpart  to  DOES>.
+	Instead  of high level words following DOES>,  assembler instruc-
+	tions follow ;CODE.  Again, you must terminate with a "NEXT," and
+	the word END-CODE.
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-11
+
+
+	     One less than the parameter field address is in register DE'
+	upon the entry of the instructions after ;CODE.  The instructions
+	following ;CODE should first switch to the alternate register set
+	with "EXX," and then increment DE' ("DE' INC,") to have DE' point
+	to the parameter field.  Finally, before you exit the definition,
+	use another "EXX," to return to the primary register  set.   More
+	information about ;CODE can be found in the Programmer's Manual.
+
+
+	3.6.4  Conditional Branching
+
+
+	     Several  branching structures have been included as in  high
+	level FORTH.   You can use IFs and BEGIN-UNTIL loops, in addition
+	to hard branching with JP and JR opcodes.
+
+	  cc IF,       Start a forward branch.	 cc is the Z-80 condition
+		       code to be satisfied.   (Actually, IF, codes a 'JP
+		       nn', where nn is the opposite of cc).
+
+	  cc RIF,      Same  as IF,  except that a relative jump (JR)  is
+		       used.   You can only use a limited set of cc,  and
+		       must terminate with RTHEN, when using the relative
+		       form.
+
+	  ELSE,        The branch for the case when the condition code is
+		       not satisfied.
+
+	  RELSE,       Same as ELSE, except uses the relative jump.  Must
+		       terminate with RTHEN to work.
+
+	  THEN,        Termination of an IF, statement.
+
+	  RTHEN,       Termination of an RIF, statement.
+
+	  BEGIN,       Start of a block structure.
+
+	  cc UNTIL,    Branches back to BEGIN, until cc is satisfied.
+
+	  cc RUNTIL,   Same as UNTIL except uses the relative jump.
+
+	  cc WHILE,    Executes   statements   following  while   cc   is
+		       satisfied.
+
+	  REPEAT,      End of a BEGIN, WHILE, sequence.
+
+	  RAGAIN,      Similar to REPEAT, except uses the relative jump.
+
+	  DO,	       Mark  the  beginning of a DO-LOOP.   Identical  to
+		       BEGIN,
+
+	  LOOP,        Performs a DJNZ, operation.  Must be preceded by a
+		       DO, statement.
+
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-12
+
+
+	In each case of a conditional testing instruction,  you must have
+	set  or tested the condition codes before the instruction  execu-
+	tion.	For example, for 'NZ IF,' you could have executed 'B CP,'
+	before the IF, to set the condition codes.
+
+	3.6.5  Examples
+
+
+	     Some of the best examples of CODE words can be found in your
+	library  disk.	 Listed  below	are three simple  examples  as	a
+	further guide.
+
+	     For more help in programming the Z-80,  we highly	recommend
+	the  purchase  of Z-80 Assembly Language  Programming,	by  Lance
+	Leventhal,  Osborne  Press,  or Programming the Z-80,  by  Rodney
+	Zaks, Sybex Press.
+
+
+	Example  1.   Incrementing  the top stack value by the amount  in
+	variable INCREASE.
+
+	     VARIABLE INCREASE	       ( amt to increase by)
+	     2 INCREASE !	       ( initial value)
+
+	     CODE BUMP		       ( define BUMP)
+		 DE POP,	       ( pop stack value into DE)
+		 INCREASE ) HL LD,     ( get increment into HL)
+		 DE HL ADD,	       ( add together)
+		 HPUSH, 	       ( put total back on stack)
+		 END-CODE
+
+	Example  2.   Adding  or subtracting 1 from the top  stack  value
+	depending on whether it is positive or negative respectively.
+
+	     CODE BIGGER	       ( define BIGGER)
+		  HL POP,	       ( pop stack value into HL)
+		  A XOR,	       ( clear A)
+		  H CP, 	       ( is value negative)
+		  CY IF,	       ( if CY, yes)
+		  HL DEC,	       (   so then subtract)
+		  ELSE, 	       ( if not CY, then...)
+		  HL INC,	       (   increment)
+		  THEN, 	       ( now end)
+		  HPUSH,	       ( by pushing HL onto stack)
+		  END-CODE
+
+	Example 3.   Using a DO-LOOP construct with DO and LOOP.  Shift a
+	byte left n times.
+
+	     CODE LSHIFT	       ( define LSHIFT)
+		  DE POP,	       ( get count)
+		  HL POP,	       ( byte to shift is now in L)
+		  E B LD,	       ( move count to B)
+		  DO,		       ( start of loop)
+
+
+
+
+
+
+
+
+
+	UNIQUE FEATURES OF UNIFORTH			   Page 3-13
+
+
+		  L RL, 	       ( rotate left one bit)
+		  LOOP, 	       ( continue until B=0)
+		  HPUSH,	       ( put rotated value back)
+		  END-CODE	       (   on stack and end)
+
+
+	3.7  Deviations from FORTH-83
+
+
+	     We've sold FORTH-79 systems for years, but took 18 months to
+	decide to revise UNIFORTH to match the FORTH-83 Standard.   There
+	has been a lot of controversy about F83, with good reason.
+
+	     The primary problem is that FIG-FORTH and F79 programs  will
+	not  run  under F83.   The Standards committee changed the  basic
+	function of several words,  but kept their names the same.   This
+	means that the wealth of published FORTH software is not  useable
+	without recoding, so beware!
+
+	     UNIFORTH closely follows F83 with some exceptions.   Primary
+	amongst  these is the F83 requirement of floored division.   What
+	this  means  is  that integer truncation is  to  the  next  lower
+	number.   Dividing  -14  by 10 yields -2,  since  the  fractional
+	result	 is   -1.4.    This  type  of  truncation   makes   sense
+	mathmatically  but  doesn't match your natural thinking  nor  the
+	currently available hardware.	All 8086,  68000,  PDP-11, Z8000,
+	etc.  processors  use  arithmetic where the result  is	truncated
+	towards zero.	Our example would then yield -1 as the result.
+
+	     Another  problem  is in handling the sign of the  remainder.
+	If you divide -14 by 10, is the remainder -4 or +4?  F83 requires
+	that  the  result by +4 (taking the sign of  the  divisor).   All
+	processors give remainders that use the sign of the dividend,  or
+	-4 in our example.  Again, UNIFORTH conforms to the hardware, not
+	the Standard.
+
+	     We've  left  many	words "immediate" (such  as  ."  and  all
+	vocabulary names).  F83 uses separate words for execution and for
+	compile.    F83's  UM*	is  UNIFORTH's	USS*D,	 where	our  form
+	explicitly  tells  what  kind of mixed mode arithmetic	is  being
+	used.
+
+	     We're  not happy about the -1 truth flag.	 While	it  makes
+	sense logically,  it makes error checking more difficult.  Beware
+	of F79 and FIG-FORTH uses of the truth flag!
+
+	     The  Programmer's Guide gives information on how to  convert
+	FIG-FORTH and F79 systems to UNIFORTH.
+
+	     There  is	much  more  about the Sampler  that  hasn't  been
+	discussed here.   Explore the system!  You may find features that
+	are of use.   The Manual Set describes the UNIFORTH  Professional
+	in  gory detail,  so you might take a look at it if you need more
+	help.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				    Chapter 4
+
+			      WHAT YOU ARE MISSING
+
+
+	     Now that you have used UNIFORTH,  you might be interested in
+	how the Professional differs from the public domain Sampler.   We
+	recommend  writing  for our free,  complete catalog,  but  listed
+	below are some of the major differences in more technical detail.
+
+	Multitasking
+	     The Professional is a fast multitasking system.   Tasks  can
+	be assigned priorities,  and messages can be passed between them.
+	Each  task  takes less than 1K bytes of memory,  so many  can  be
+	resident  at once.   We often build systems that include the user
+	task,  a  printer spooler,  a temperature background  acquisition
+	task,  and  a  telecommunications task,  where all  four  are  in
+	operation at once at no noticible degradation in response.
+
+	Speed
+	     We've carefully optimized the Professional and use state-of-
+	the-art  threading techniques to make the fastest possible  FORTH
+	system.   The  floating  point routines use a separate stack  for
+	fastest calculations.	You will find a 50% or larger improvement
+	in speed.
+
+	Strings
+	     A full string package is included.   All the functions  that
+	you would find in BASIC,  such as MID$ and INSTR, are included so
+	that you can manipulate strings as easily as integers.
+
+	Custom utilities
+	     The  Professional	UNIFORTH includes files of  functions  to
+	access the keyboard, provide full musical note generation, and to
+	draw lines, dots and filled polygons on color graphics board.  In
+	addition, every operating system request is implemented.
+
+	Source code
+	     You get the source code to everything except the 5Kb kernel.
+	In all, about 400Kb of source code is distributed.
+
+	Debugger
+	     The  Professional	comes with a single-step  debugger/tracer
+	that can be used to track down errors in your code.  The data and
+	return	stacks	are displayed as each word  is	executed.   Break
+	points may be set.
+
+	Decompiler
+	     A	complete decompiler will display any high-level  UNIFORTH
+	word on your screen.   This utility is highly useful to check the
+	syntax of a word or to retrieve an interactive definition.
+
+
+
+
+
+
+
+
+
+
+	WHAT YOU ARE MISSING				   PAGE 4-2
+
+
+	More systems
+	     The   Professional   UNIFORTH  is	available  for	a   dozen
+	processors and even more operating systems.  We will customize it
+	for  a particular computer,  create stand-alone systems  and  add
+	multi-user support as desired.
+
+	Documentation
+	     The   UNIFORTH  Professional  comes  with	500+   pages   of
+	documentation in a custom slipcase/binder.   All aspects of FORTH
+	are covered,  from a tutorial much like the one in this manual to
+	detailed   discussions	 of   threading   techniques,	 database
+	management,  forms generation,	coding conventions and much more.
+	Numerous examples are included to speed the learning process.
+
+	Support
+	     You get 90 days of free hotline support.  Additional support
+	is also available.   We offer on-site classes.	 The Professional
+	is offered with a 30-day money-back guarantee.
+
+	Cross-compilers
+	     The  UNIFORTH cross-compiler requires the Professional,  and
+	supports many microprocessor targets.
+
+	     For  complete  information,  write  for  the  free  UNIFORTH
+	catalog.   If  you  just  wish	to order CP/M  2.2  version  that
+	corresponds to this Sampler,  then use the catalog numbers listed
+	below.
+
+	Cat #	       Computer 		     Price
+	C22	  Generic Z80 CP/M 2.2		     $195.00
+	C22K	  KayPro Z80 CP/M 2.2		     $195.00
+
+	Other items of interest are listed below.
+
+	Cat #	       Sampler version		     Price
+	S21Z	  Z80 CP/M 2.2			     $35
+	S21P	  IBM PC DOS 2.x		     $35
+	S21A	  Apple // (ProDos, 80col)	coming soon
+	S21C	  Commodore 64			coming soon
+	S21M	  Macintosh			coming soon
+
+	Cat #	       Item			     Price
+	BK01	  UNIFORTH Manual Set		     $60
+	BK11	  Starting FORTH/Brodie 	     $17.95
+	BK12	  Thinking FORTH/Brodie 	     $15.95
+
+
+	Ordering information:
+
+	     Specify your computer type and your disk format.	All items
+	are sent post-paid by UPS or First Class within the U.S.  Checks,
+	CODs,  money  orders  and purchase orders  in  U.S.  dollars  are
+	accepted.  Maryland residents add 5% sales tax.  Prices are valid
+	as of April 15,  1985 and may be different if ordering much later
+
+
+
+
+
+
+
+
+
+	WHAT YOU ARE MISSING				   PAGE 4-3
+
+
+	than that date.  Make checks payable to:
+
+			    Unified Software Systems
+				  P.O. Box 2644
+			    New Carrollton, MD 20784
+				 (301) 552-9590
+
+
+	Conclusions
+
+	     We  hope  that you have enjoyed using the UNIFORTH  Sampler.
+	It is a complete FORTH system that will provide you many years of
+	usefulness.   Please, let us know your impressions.  Did you find
+	FORTH worthwhile?   Are there bugs in this system?  What features
+	would  you  like to see?   Its through user input  and	community
+	discussion that FORTH will grow or die.  Cast your vote!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

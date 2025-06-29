@@ -1,0 +1,79 @@
+;-------------------------------------------------------------
+;PATCH AREA
+;This is an adaptation of Qterm.pat, a patch area for
+; Qterm.com v. 4.2 by David Goodenough.  It is designed so
+; that any Qterm patches can be used with the game program.
+;If you are going to modify this to suit your terminal type,
+; please note that the game program uses only a limited
+; part of the patch area, and hence only the sequences and
+; routines that are used by the game is represented here.
+; You can be as liberal as you can with the space usage,
+; but bear in mind that this version of the patch CANNOT
+; be used with any other programs that use Qterm patches.
+;
+;You may use any patching program you prefer (DDT, MLOAD,
+; etc.) to patch this onto the game program.  If you are
+; using SAVE, 20 (14h) would be a good number to use.
+;-------------------------------------------------------------
+;Routine assignements - DO NOT TOUCH THIS AREA!!!
+	ORG	0100h
+	JP	0506h
+	JP	0006h
+	JP	0009h
+	JP	000Ch
+	JP	0500h
+;-------------------------------------------------------------
+;Speed of the Z-80 CPU in MHz, rounded up.  If a faster or
+; slower equivalent processor is used (like a 180, 280, etc.)
+; translate it into Z-80 time.  Only 4 LSB are honored.  If
+; you set this to 0, the game will be hell.  If you set it to
+; 15, that's cheating.
+	ORG	01CEh
+	DB	06h
+;-------------------------------------------------------------
+;Sign-on message.  This is to tell the player which terminal
+; configuration is being used.  MUST BE TERMINATED WITH 00h!!!
+	ORG	01D0h
+	DB	'Sam Coupe Pro-DOS, VT52'
+	DB	00h
+;-------------------------------------------------------------
+;Clear-screen character sequence.  All the necessary codes
+; to clear the screen completely and move the cursor to
+; the top left hand corner.  MUST BE TERMINATED WITH 00h!!!
+	ORG	01F0h
+	DB	27,'E',27,'H'
+	DB	00h
+;-------------------------------------------------------------
+;Cursor movement ROUTINE.  H contains row (y), and L contains
+; column (x).  (0,0) or 0000h points to the top left hand
+; corner.
+;NOTE: this is not a list of sequence, but a routine.
+;ALSO NOTE: CALL 0109h will cause the content of the register
+; C to be sent to the device output (the terminal)
+;         : CALL 010Ch will cause the content of the register
+; L to be printed at the device output in decimal.  Use this
+; routine for ANSI-type terminals and other terminals that
+; use decimal character output to position the cursor.  ONLY
+; THE 6 LSB ARE HONORED FOR THE SAKE OF SPEED.
+
+
+
+        ORG	0200h
+        PUSH	HL
+	LD	C,27
+	CALL	0109h
+	LD	C,'Y'
+	CALL	0109h
+	POP	HL
+	PUSH 	HL
+	LD	A,H
+	CALL	_MT1
+	POP	HL
+	LD	A,L
+_MT1:	ADD	A,20h
+	LD	C,A
+	CALL	0109h
+	RET
+
+;That's all, folks!
+

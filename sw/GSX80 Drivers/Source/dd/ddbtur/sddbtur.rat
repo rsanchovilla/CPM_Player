@@ -1,0 +1,463 @@
+h12285
+s 00451/00000/00000
+d D 1.1 83/03/15 21:13:11 tes 1 0
+c date and time created 83/03/15 21:13:11 by tes
+e
+u
+4
+U
+t
+T
+I 1
+#-h-  ddbtur.c            local   03/24/82  11:21
+#-h-  ddbtur.rat          local   01/20/82  09:30
+subroutine ddbtur (contrl, intin, rlin, intout, rlout)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver for Bascom-Turner 1100 plotter  #
+#                                                                      #
+#     Input Parameters:                                                #
+#            contrl(1-3) - An integer array with following information #
+#                          contrl(1) - opcode for driver function      #
+#                          contrl(2) - length of integer array intin   #
+#                          contrl(3) - length of real input array rlin #
+#                                                                      #
+#            intin   -     Array of integer input parameters           #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters:                                               #
+#            contrl(4-6) - contrl(4) - length of integer array intout  #
+#                          contrl(5) - length of integer array rlout   #
+#                          contrl(6) - count of any other control parms#
+#                                                                      #
+#             rlout  -     Array of integer output parameters          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             gdstot - buffered output for the B-T 1100 plotter        #
+#             dnfplt - prompt the user for a new sheet of paper        #
+#             drbtur - move/draw for B-T plotter                       #
+#             dabtur - emulate a dashed line on the B-T plotter        #
+#             dpnplt - prompt user to change the pen                   #
+#             gimnmx - function to range check integer                 #
+#                                                                      #
+########################################################################
+	
+include mgsdef
+ 
+# local defines
+define(X_LIMITS_B_T_1100,1999.)             #plotter surface width
+define(Y_LIMITS_B_T_1100,1399.)             #plotter surface height
+ 
+integer contrl(1),intin(1),intout(1)
+real rlin(1),rlout(1)
+ 
+integer opcode, i, j, gimnmx,
+        rotate(2), txtsiz(2), dotmrk(10), mrkout(2), setup(3), txthgt(7)
+ 
+include mgscom
+ 
+#  Rotate text:  0Q
+data rotate / DIG0, BIGQ/
+ 
+#  Text size:    1W
+data txtsiz / DIG1, BIGW/
+ 
+#  Put out dot marker using motor steps:  zqttwwttqy
+data dotmrk /LETZ, LETQ, LETT, LETT, LETW, LETW, LETT, LETT, LETQ, LETY/
+ 
+#  Put out a regular marker:   0E
+data mrkout / DIG0, BIGE/
+ 
+#  Set up the plotter   Absolute mode:    A
+#                       Set current position as origin:   O
+#                       Move the plotter to home:         H
+data setup/ BIGA, BIGO, BIGH/
+ 
+#  Corresponding text heights for the seven text widths
+data txthgt / 18, 24, 28, 35, 42, 49, 56/
+ 
+data fulsiz /.006/  # Sizes used for marker clipping
+data hlfsiz /.003/
+ 
+ 
+opcode=contrl(OPCODE)
+ 
+#
+#  opcode move and draw
+#
+if  ((opcode == DRAW) | (opcode == MOVE)) {
+ 
+   if ((opcode == DRAW) & (ndclrp ~= ndclrl))  {  # Need a new color
+      call gdevot (NEWLINE)  # Dump the buffer
+      i = ndclrl
+      call dpnplt (i, 1, icnvt, j) # Use icnvt as a dummy input/output array
+      ndclrp = ndclrl  # This is the current color now
+      }
+ 
+   if ((opcode == MOVE) | (ndlntp == 1))  {
+      call drbtur (opcode, rlin)
+      }
+   else {  # Need to emulate the dash pattern
+      call dabtur (rlin)   # Emulate the dash pattern
+      }
+   }
+#
+#  opcode text
+#
+else if (opcode == TEXT) {
+ 
+   if (ndclrp ~= ndclrt) { # Need a new color
+      call gdevot (NEWLINE)  # Dump the plotter buffer
+      i = ndclrt
+      call dpnplt (i, 1, icnvt, j)
+      ndclrp = ndclrt   # This is the current color now
+      }
+ 
+   j = contrl(INTEGER_IN_LENGTH)   # Get the string length
+ 
+   call gdevot (BIGC)         #text command
+   for (i = 1; i <= j; i = i + 1) {
+       k = intin(i)
+       # If find a lower case letter, make it a upper case
+       if ((k >= LETA) & (k <= LETZ))  k = k - SPACE
+       call gdevot (k)
+       }
+   call gdevot (CR)            #terminate string
+   }
+ 
+#
+#  opcode marker
+#
+else if (opcode == MARKER) {
+ 
+   if (ndclrp ~= ndclrm)  {  # Need a new color
+      call gdevot (NEWLINE)  # Dump the plotter buffer
+      i = ndclrm
+      call dpnplt (i, 1, icnvt, j)
+      ndclrp = ndclrm  # This is the current pen color
+      }
+ 
+   # Clip marker to device limits
+   x1 = rlin(1) - hlfsiz
+   x2 = x1 + fulsiz
+   y1 = rlin(2) - hlfsiz
+   y2 = y1 + fulsiz
+   if ((amin1(x1,y1)<0.0) | (x2 > zdxlng) | (y2 > zdylng)) return
+ 
+   i = gimnmx (intin(1), 1, 5)    # Put marker in ranges
+ 
+   call drbtur (MOVE,rlin)    # Move to where the marker should be
+   if (i == 1)   {  # Put out the dot marker
+      call gdstot (10, dotmrk)
+      }
+   else {
+      mrkout(1) = (i+46)  # Put out 0-3
+      call gdstot (2, mrkout)
+      }
+   }
+ 
+#
+#  opcode set fill color
+#
+else if (opcode == SET_FILL_COLOR) {
+ 
+   intout(1) = gimnmx (intin(1), 0, 7) # Emulation supports 8 patterns
+   }
+ 
+#
+#  opcode text size
+#
+ 
+else if (opcode == TEXT_SIZE) {
+ 
+   # Determine text size to use, command only needs the text height
+   # convert size to device range (1 to ...)
+   # realizing that the device sizes are 20, 30, 40, 50, 60, 70, and 80
+   i = rlin(2) * X_LIMITS_B_T_1100 / 10.
+   ndtxsz = gimnmx(i,2,8) - 1 # Put the size into the actual device cap. range
+ 
+   txtsiz(1) = ndtxsz + DIG0 # Put out the size
+   call gdstot (2, txtsiz)
+ 
+   #  Now return the size of the character cell
+   #                      1/x_limit*18
+   rlout(1) = float(txthgt(ndtxsz)) / X_LIMITS_B_T_1100 # Return approx width
+   #                      1/x_limit*20
+   rlout(2) = float(ndtxsz+1)*10. / X_LIMITS_B_T_1100   # Return the height
+   }
+#
+#  opcode line style
+#
+else if (opcode == LINESTYLE) {
+      ndlntp = gimnmx (intin(1), 1, 5)  # Emulation supports 5 patterns
+      intout(1) = ndlntp # Inform upper level of style selected 1-5
+      }
+ 
+#
+#  opcode text rotation
+#
+else if (opcode == CHAR_ROTATION) {
+      ndtxrt = mod((int(rlin(1))+45)/90 ,4)# Device can rotate in 90 degree
+                                          # increments
+      rotate(1) = ndtxrt + DIG0
+      call gdstot (2,rotate)
+ 
+      rlout(1) = ndtxrt * 90           # Inform upper level of angle
+      }
+#
+#    opcode new_frame
+#
+else if (opcode == NEW_FRAME) {
+      call gdevot (BIGH)        # Home the plotter
+      call gdevot ( BIGI)       # Move the paper
+      }
+ 
+#
+# opcode set line color
+#
+else if (opcode == SET_LINE_COLOR) {
+   ndclrl = max0( 0, intin(1))
+   intout(1) = ndclrl
+   }
+ 
+#
+# opcode set text color
+#
+else if (opcode == SET_TEXT_COLOR) {
+   ndclrt = max0( 0, intin(1))
+   intout(1) = ndclrt
+   }
+ 
+#
+# opcode set marker color
+#
+else if (opcode == SET_MARKER_COLOR) {
+   ndclrm = max0( 0, intin(1))
+   intout(1) = ndclrm
+   }
+ 
+#
+# opcode set_device_parameters
+#
+else if (opcode == SET_DEVICE_PARAMETERS) {
+ 
+      # set up device capability array
+ 
+      devcap(TEXT_CAP) = YES      # Text capability
+      devcap(LINESTYLE_CAP) = 5   # Capable of 5 different linestyle
+      devcap(TEXT_SIZE_CAP) = 7   # Capable of many different text sizes
+      devcap(MARKER_CAP) = 5      # Capable of 5 different markers
+      devcap(TEXT_ROT_CAP) = 4    # Capable of 4 different text rotations
+ 
+      # Initialize Device Driver globals
+ 
+      zdlgax = X_LIMITS_B_T_1100  # Set the length of the longest axis
+      zdxlng = 1.0              # Set x and y axis lengths in NDC units
+      zdylng = 0.7              # Y_LIMITS_B_T_1100/X_LIMITS_B_T_1100
+ 
+      ndlntp = 1                # A solid line
+      ndtxsz = 1                # The default text size is 1
+      ndclrl = 1                # Default line color is index 1
+      ndclrt = 1                # Default text color is index 1
+      ndclrm = 1                # Default marker color is index 1
+      ndclrp = 1                # Index 1 is the current pen
+ 
+      zdxpos = 0.0              # Default position is at home
+      zdypos = 0.0
+ 
+      # initialize plotter
+ 
+      call gdstot (3, setup)
+      }
+ 
+#
+#     inquire screen size
+#
+else if (opcode == INQUIRE_SCREEN_SIZE) {
+   rlout(1) = zdxlng
+   rlout(2) = zdylng
+   rlout(3) = X_LIMITS_B_T_1100
+   }
+ 
+#
+#  opcode escape
+#
+else if (opcode == ESCAPE) {
+   j = contrl(INTEGER_IN_LENGTH)
+   call gdstot (j, intin)
+   }
+ 
+#
+#     stop graphics
+#
+else if (opcode == STOP_GRAPHICS) {
+   call gdevot (BIGH)          # Move to home
+   call gdevot (NEWLINE)       # Dump the buffer
+   }
+ 
+return
+end
+#-t-  ddbtur.rat          local   01/20/82  09:30
+#-h-  dabtur.rat          local   04/23/82  14:00
+subroutine dabtur (rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver dash emulation for B-T plotters #
+#                                                                      #
+#     Input Parameters:                                                #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#             drbtur - do a move/draw                                  #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+#local defines
+define (DASH_INCREMENT,.015625)
+ 
+real rlin(1)
+ 
+integer actary(16), action, j, k, kk, opcode
+real dx, dy, dxinc, dyinc, px1, py1, px2, py2,
+     dr, p1(2), x, y
+ 
+include mgscom
+ 
+# The following equivalence statements are used to decrease the amount of code
+#    necessary to access specific array elements. The arrays and the
+#    variables equivalenced are listed below:
+#
+#       p1(1) :: x
+#       p1(2) :: y
+ 
+equivalence (p1(1), x), (p1(2), y)
+ 
+ 
+#action definitions for line styles 2-5: 0=move, 1=draw, 2=point
+data actary / 2, 2, 2, 2,  2, 0, 1, 2,  0, 1, 0, 1,  0, 1, 1, 0 /
+ 
+   dx = rlin(1) - zdxpos   # determine the distance from the current position
+   dy = rlin(2) - zdypos
+   dr = sqrt(dx**2 + dy**2)
+   if (dr < zeps) return   # If we're already there, just return
+ 
+   dxinc = (dx/dr)*DASH_INCREMENT   #normalize dx and dy
+   dyinc = (dy/dr)*DASH_INCREMENT   #   and scale to incremental value
+   plngth = abs(dy)
+   pinc = abs(dyinc)
+   if (abs(dx) > abs(dy)) {
+      plngth = abs(dx)
+      pinc = abs(dxinc)
+      }
+   # p1(1)
+   x = zdxpos
+   # p1(2)
+   y  = zdypos
+   j = 0
+   k = (ndlntp-2)*4 + 1
+   for (p=0.0; p<=plngth; p=p+pinc) {
+      if (j > 3) {
+         j = 0
+         call gdevot (NEWLINE)   #flush output buffer
+         }
+      kk = k + j
+      action = actary(kk)
+      if (action == 0)      { opcode = MOVE }
+      else if (action == 1) { opcode = DRAW }
+      else {
+         call drbtur (MOVE, p1)
+         opcode = DRAW
+         }
+      call drbtur (opcode, p1)
+      # p1(1) = p(1) + dxinc
+      x = x + dxinc
+      # p1(2) = p1(2) + dyinc
+      y = y + dyinc
+      j = j + 1
+      }
+   if (j > 3) j = 0
+   kk = k + j
+   if (actary(kk) == 1) { call drbtur (DRAW, rlin) }
+   else                 { call drbtur (MOVE, rlin) }  # Insure that we are at
+                                                      #    the end point.
+   return
+end
+#-t-  dabtur.rat          local   04/23/82  14:00
+#-h-  drbtur.rat          local   01/20/82  09:30
+subroutine drbtur (opcode, rlin)
+########################################################################
+#                                                                      #
+#          THIS MATERIAL IS CONFIDENTIAL AND IS FURNISHED UNDER        #
+#          A WRITTEN LICENSE AGREEMENT.  IT MAY NOT BE USED,           #
+#          COPIED OR DISCLOSED TO OTHERS EXCEPT IN ACCORDANCE          #
+#          WITH THE TERMS OF THAT AGREEMENT.                           #
+#                                                                      #
+#          COPYRIGHT (C) 1982 GRAPHIC SOFTWARE SYSTEMS INC.            #
+#          ALL RIGHTS RESERVED.                                        #
+#                                                                      #
+#     Function: GSS-CORE device driver move/draw for B_T_1100          #
+#                                                                      #
+#     Input Parameters:                                                #
+#           opcode - driver function, either move/draw                 #
+#                                                                      #
+#            rlin    -     Array of real input parameters              #
+#                                                                      #
+#     Output Parameters: none                                          #
+#                                                                      #
+#     Routines Called:                                                 #
+#            gdstot - output a string to the B_T_1100 plotter          #
+#                                                                      #
+########################################################################
+ 
+include mgsdef
+ 
+integer opcode
+real rlin(1), xtemp, ytemp
+ 
+integer len, xcoord, ycoord, iconvt(4)
+ 
+include mgscom
+   zdxpos = rlin(1)
+   zdypos = rlin(2)
+   xcoord = int ( zdxpos*zdlgax)    # convert coords to device space
+   ycoord = int ( zdypos*zdlgax)
+ 
+   if (opcode == MOVE)   {  # Put the pen up or down
+      call gdevot (BIGU)
+      }
+   else  {
+      call gdevot (BIGD)
+      }
+   len = itoch ( xcoord, icnvt, 4, ierror)
+   call gdstot (len, icnvt)
+   call gdevot (BIGX)
+   len = itoch ( ycoord, icnvt, 4, ierror)
+   call gdstot (len, icnvt)
+   call gdevot (BIGY)
+   return
+end
+#-t-  drbtur.rat          local   01/20/82  09:30
+#-t-  ddbtur.c            local   03/24/82  11:21
+#-h-  ddhi3m.c            local   03/24/82  11:21
+E 1

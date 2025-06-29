@@ -1,0 +1,135 @@
+{$R-,A+,U-,W0}
+
+type _drawstring = string[255];
+
+procedure drawString (s: _drawstring);
+
+  const digits: set of '0'..'9' = ['0'..'9'];
+        angle:  integer         = 0;
+        scale:  integer         = 0;
+
+  var
+    len:         byte absolute s;
+    i,x,y:       integer;
+    draw,nomove: boolean;
+
+
+  procedure moveto (x,y: integer);
+
+    var xmemo,ymemo: integer;
+
+    begin
+      xmemo := GXPOS;
+      ymemo := GYPOS;
+      if draw
+      then lineto (x,y)
+      else begin
+        GXPOS := x;
+        GYPOS := y;
+        end;
+      if nomove
+      then begin
+        GXPOS := xmemo;
+        GYPOS := ymemo;
+        end;
+      draw   := TRUE;
+      nomove := FALSE;
+    end;
+
+
+  procedure drawto (x,y: integer);
+
+    begin
+      if scale <> 0
+      then begin
+        x := (x * scale) div 4;
+        y := (y * scale) div 4;
+        end;
+      case angle and 3 of
+        0:  moveto (GXPOS+x,GYPOS+y);
+        1:  moveto (GXPOS+y,GYPOS-x);
+        2:  moveto (GXPOS-x,GYPOS-y);
+        3:  moveto (GXPOS-y,GYPOS+x);
+      end {case};
+    end;
+
+
+  function value (default: integer): integer;
+
+     var v: integer;
+
+     begin
+       value := default;
+       while s[succ(i)] = ' ' do i := succ(i);
+       if i < 255
+       then if s[succ(i)] in digits
+         then begin
+           i := succ(i);
+           v := ord(s[i])-48;
+           while (i < 255) and (s[succ(i)] in digits) do
+             begin
+             i := succ(i);
+             v := 10*v + ord(s[i])-48;
+             end;
+           value := v;
+           end;
+     end;
+
+  begin
+    if len<255 then fillchar (s[succ(len)], 255-len, 0);
+    draw := TRUE; nomove := FALSE;
+    i := 1;
+    while i <= len do
+      begin
+      case upcase(s[i]) of
+        'B': draw   := FALSE;
+        'N': nomove := TRUE;
+        'A': angle  := value(0);
+        'S': scale  := value(0);
+        'C': pencolor (value(ATRBYT));
+
+        'U': drawto (0,-value(1));
+        'R': drawto (value(1),0);
+        'D': drawto (0,value(1));
+        'L': drawto (-value(1),0);
+
+        'E': begin x:=value(1); drawto(x,-x) end;
+        'F': begin x:=value(1); drawto(x,x) end;
+        'G': begin x:=value(1); drawto(-x,x) end;
+        'H': begin x:=value(1); drawto(-x,-x) end;
+
+        'M': begin
+             if s[succ(i)] in ['+', '-']
+             then begin
+               {relativ}
+               i := succ(i);
+               if s[i] = '+' then x := value(0) else x := -value(0);
+               if s[succ(i)] = ',' then i := succ(i);
+               if s[succ(i)] = '+'
+               then begin
+                 y := 1;
+                 i := succ(i);
+                 end
+               else if s[succ(i)] = '-'
+               then begin
+                 y := -1;
+                 i := succ(i);
+                 end
+               else y := 1;
+               y := y * value(0);
+               drawto (x,y);
+               end
+             else begin
+               {absolut}
+               x := value(GXPOS);
+               if s[succ(i)] = ',' then i := succ(i);
+               y := value(GYPOS);
+               moveto (x,y);
+               end;
+             end { M };
+      end {case};
+      i := succ(i);
+      end;
+  end;
+
+

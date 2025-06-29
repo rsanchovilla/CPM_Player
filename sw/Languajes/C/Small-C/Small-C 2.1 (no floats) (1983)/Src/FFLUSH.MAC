@@ -1,0 +1,121 @@
+EXT Udirty
+EXT Uauxsz
+EXT Uauxfl
+CC1:
+fflush::
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL Umode
+POP B
+XCHG;;
+LXI H,2
+CALL CCAND##
+MOV A,H
+ORA L
+JZ CC3
+LHLD Uauxsz
+MOV A,H
+ORA L
+JZ CC5
+LHLD Uauxsz
+XCHG;;
+POP B
+POP H
+PUSH H
+PUSH B
+DAD H
+CALL CCDDGI##
+MOV A,H
+ORA L
+JZ CC5
+LHLD Uauxfl
+PUSH H
+LXI H,4
+CALL CCDSGI##
+XTHL
+CALL CCDCAL##
+POP B
+MOV A,H
+ORA L
+JZ CC5
+LXI H,1
+JMP CC6
+CC5:
+LXI H,0
+CC6:
+MOV A,H
+ORA L
+JNZ CC7
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL isatty
+POP B
+CALL CCLNEG##
+MOV A,H
+ORA L
+JZ CC8
+LXI H,Udirty
+XCHG;;
+POP B
+POP H
+PUSH H
+PUSH B
+DAD H
+CALL CCDDGI##
+MOV A,H
+ORA L
+JZ CC8
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+LXI H,40
+PUSH H
+CALL Usector
+POP B
+POP B
+MOV A,H
+ORA L
+JZ CC8
+LXI H,1
+JMP CC9
+CC8:
+LXI H,0
+CC9:
+MOV A,H
+ORA L
+JNZ CC7
+LXI H,0
+JMP CC10
+CC7:
+LXI H,1
+CC10:
+MOV A,H
+ORA L
+JZ CC4
+POP B
+POP H
+PUSH H
+PUSH B
+PUSH H
+CALL Useterr
+POP B
+LXI H,-2
+RET
+CC4:
+CC3:
+LXI H,0
+RET
+EXT isatty
+EXT Useterr
+EXT Usector
+EXT Umode
+END
+

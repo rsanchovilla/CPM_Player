@@ -1,0 +1,38 @@
+Const Call=$CD;
+      AdrOfPuSe=$F800; AdrOfLine=$F803;
+      AdrOfCircle=$F806; AdrOfArguments=$F809;
+
+Var Arguments : Record Hor                 : Integer;
+                       Vert,Farb           : Byte;
+                       Arg1,Arg2,Arg3,Arg4 : Integer;
+                End Absolute AdrOfArguments;
+
+Procedure Pixel(Colum:Integer;Line,Pattern:Byte);
+Begin With Arguments Do
+      Begin Hor:=Colum; Vert:=Line; Farb:=Pattern;
+      End;
+      InLine(Call/AdrOfPuSe);
+End;
+
+Procedure Line(Colum0:Integer;Line0:Byte;Colum1:Integer;Line1,Pattern:Byte);
+Begin With Arguments Do
+      Begin Arg1:=Colum0; Arg2:=Line0;
+            Arg3:=Colum1; Arg4:=Line1;
+            Farb:=Pattern;
+      End;
+      InLine(Call/AdrOfLine);
+End;
+
+Procedure Circle(Colum:Integer;Line,Radiant,Pattern:Byte);
+Begin With Arguments Do
+      Begin Arg1:=Colum; Arg2:=Line; Arg3:=Radiant; Farb:=Pattern;
+      End;
+      InLine(Call/AdrOfCircle);
+End;
+
+Procedure Box(Colum0:Integer;Line0:Byte;Colum1:Integer;Line1,Pattern:Byte);
+Begin Line(Colum0,Line0,Colum0,Line1,Pattern);
+      Line(Colum0,Line1,Colum1,Line1,Pattern);
+      Line(Colum1,Line1,Colum1,Line0,Pattern);
+      Line(Colum1,Line0,Colum0,Line0,Pattern);
+End;

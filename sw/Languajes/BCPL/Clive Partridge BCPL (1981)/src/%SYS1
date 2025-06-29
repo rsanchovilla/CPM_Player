@@ -1,0 +1,85 @@
+*  SYS1  -  LOWLEVEL NEWBRAIN OS ROUTINES
+*  
+
+TEMP		EQU  5
+TSLOT		EQU  TEMP*20H
+TSLOTCODE	EQU  TSLOT.SHL.8
+PAGEREGISTER    EQU  2
+SYSP0		EQU  0F8C9H
+CPM0		EQU  0F8AEH
+PSTORE		EQU  2000H-256
+TPSTORE		EQU  PSTORE+TSLOTCODE
+
+	GLOBAL	XRET
+
+MBASE:	DEFW	MEND-$
+
+* PAGEIN - pagein(spn)  
+
+PAGEIN: DEFW    3
+	DEFB	38H,2		;ycode to put argument in HL
+	DEFB	0
+	PUSH	BC
+	LD	B,H
+	CALL	PAGE
+	POP	BC
+	JP	XRET
+
+PAGE:	LD	C,PAGEREGISTER
+	DI
+	OUT	(C),L
+	EI
+	RET
+
+* ALLOW HIGHLEVEL CONTROL OF INTERRUPTS  - disableInt() & enableInt()
+
+IDISAB: DEFW	2
+	DEFB	0
+	DI
+	JP	XRET
+
+IENAB:  DEFW	2
+	DEFB	0
+	EI
+	JP	XRET
+
+* syspstore(str) - store a string on system page, and return addr
+* only one string at a time (intended for parameters to s.open).
+
+SSTORE: DEFW	3
+	DEFB	38H,2
+	DEFB	0
+	ADD	HL,HL			; HL has (BCPL) addr of string
+	PUSH	BC
+	PUSH	HL
+	LD	HL,(SYSP0)
+	LD	B,TSLOT
+	CALL	PAGE
+	DI
+	POP	HL
+	LD	C,(HL)			; get length byte
+	LD	B,0
+	INC	HL
+	LD	DE,TPSTORE
+	LDIR
+	LD	HL,(CPM0)
+	LD	B,H
+	CALL	PAGE
+	EI
+	POP	BC
+	LD	HL,PSTORE
+	JP	XRET
+
+	IF	($.AND.1)=1		;align on word-boundary
+	DEFB	0
+	ENDIF
+
+	DEFW	150, PAGEIN-MBASE	;Globals in this module
+	DEFW    151, IDISAB-MBASE
+	DEFW	152, IENAB-MBASE
+        DEFW    158, SSTORE-MBASE
+	DEFW	4
+MEND:	DEFW	158
+
+
+

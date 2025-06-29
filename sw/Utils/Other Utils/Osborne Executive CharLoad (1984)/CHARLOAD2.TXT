@@ -1,0 +1,185 @@
+***************************  CHARLOAD.ASM  ***************************
+*                                                                    *
+*               Osborne Executive Character Font Loader              *
+*                           Extended version                         *
+*                                                                    *
+*                     Copyright 1984, Bob Abrahams                   *
+*       (The author may be contacted via CompuServe 72406,1355.)     *
+*                                                                    *
+******************  Version 2.0  ***  November, 1984  ****************
+
+                         Osborne Executive (R)
+    is a Registered Trademark of Osborne Computer Corporation (OCC)
+                     CP/M (TM) and CP/M Plus (TM)
+      are Registered Trademarks of Digital Research, Inc. (DRI)
+
+CHARLOAD  is  a companion to the OCC-supplied CHARGEN  Character  Font 
+Generator.   It  is a short,  fast program used to load character sets 
+from files or System Tracks to either of these or to the Font RAM bank 
+in memory.  It does not create character sets.
+
+Advantages of CHARLOAD over CHARGEN for transfering character sets:
+1) CHARLOAD is faster to operate than CHARGEN,  since it uses  command 
+line instructions rather than a series of menus.
+2) CHARLOAD's command line system provides for changing character sets 
+in  a SUBMIT file sequence.  
+3) CHARLOAD is much  shorter than  CHARGEN (3K rather than 29K) and so 
+uses much less disk space.
+4)  CHARLOAD can create and use Image format files in addition to  the 
+HEX  format files that CHARGEN uses.   These Image format files occupy 
+only 2K of disk space rather than the 6K that HEX format character set 
+files use.
+
+CHARLOAD uses a command structure similar to that of CP/M's  PIP.   If 
+the  program  is  called  without an additional command  on  the  CP/M 
+command  line,  both character sets are displayed and a prompt (*)  is 
+given for the input of a command.   In this case (as with PIP),  after 
+each  command is executed,  another prompt is given until  a  carriage 
+return  with  no  other  input is entered.   CP/M  Plus  line  editing 
+functions  are active on this input line,  and  lower-case  characters 
+will be read as their upper-case equivalents.
+
+The general form of CHARLOAD commands is
+
+     A>CHARLOAD destination = source
+                 - or -
+     *destination = source
+
+The  destination and/or source may be  filenames,  following  standard 
+CP/M  Plus conventions of d:filename.typ,  where the drive  identifier 
+(d:) and filetype (.typ) are optional.  If the filetype is left blank, 
+default  values  are assigned,  as described below.   Blank names  and 
+wildcards are not allowed.
+
+If no filetype is given for a source file,  first .CHR is tried,  and, 
+if a file with that name is not found,  filetype .IMG is tried.  If no 
+filetype is given for a destination file, filetype .CHR is assigned if 
+the  file is to be in HEX format and filetype .IMG is assigned if  the 
+file is to be in Image format.  (See below for format descriptions.)
+
+Two pseudo-filenames can be used with CHARLOAD.  $SYSTEM indicates the 
+System Tracks,  and may be preceeded by a drive  identifier.   $SYSTEM 
+should  not  be  used in reference to a drive that is  not  using  the 
+standard  Osborne Executive format.   $FONTRAM indicates the Font  RAM 
+bank in memory.   $FONTRAM may not be used as a source, as this memory 
+section is "write-only" memory.   Only the first letter after the $ is 
+checked,  so  these may be abbreviated as $S and $F.   No other  names 
+starting with a dollar sign ($) are  permitted.   (Note:  Use a double
+dollar sign for these names in SUBMIT files, e.g. $$SYSTEM to refer to
+the System Tracks.   This is because the  $ character in a SUBMIT file
+usually indicates a SUBMIT variable.)
+
+If a single name is given on a command line (with no = sign), CHARLOAD 
+assumes that this is the source and that the destination is $FONTRAM.
+
+CHARLOAD  uses two storage formats.   Image format is an image of  the 
+character set definition information in font RAM,  and is always 2K in 
+length.   (Each character definition occupies 16 bytes:   The first 10 
+represent  the 10 8-bit rows of each character;  the last 6 bytes  are 
+not  used.   See  the  Osborne  Executive  Reference  Guide  for  more 
+information.)   System Track character sets are always stored in  this 
+form, as are, of course, font RAM sets.  With CHARLOAD, files may also 
+be in this form, though CHARGEN will NOT be able to read such files.
+
+HEX  format files are stored in Intel HEX format.   Files  created  by 
+CHARGEN are in this format and each is a full HEX format definition of 
+all of the bytes in the font RAM,  including unused bytes.   HEX files 
+converted  from Image source by CHARLOAD are also in this full format.  
+Shorter  HEX format files may be created by assemblers or other  means 
+that  do not include these unused bytes or character definitions  that 
+are  not required.   These can be loaded by CHARLOAD,  but may not  be 
+compatible with CHARGEN. 
+
+CHARLOAD  determines the format to use by the filetype or by  optional 
+specifiers.   Unless otherwise specified,  the format is assumed to be 
+HEX if the filetype is .CHR or .HEX.   Otherwise the format is assumed 
+to be Image.   To specify one format or the other, follow the filename 
+with [H] to specify HEX format or [I] to specify Image format.   The H 
+specifier  may not be used with $SYSTEM or $FONTRAM names and H and  I 
+specifiers may not be used with the same file.
+
+Unless otherwise specified,  CHARLOAD assumes that $SYSTEM or $FONTRAM 
+refer to the Alternate character set.   To specify the Main  character 
+set, follow the name with [M].  To specify the Alternate character set 
+explicitly,  follow  the  name with [A].   Where both the  source  and 
+destination  names  are $SYSTEM or $FONTRAM,  if one has  A  and/or  M 
+specifiers  and  the  other  has  none,   CHARLOAD  assumes  the  same 
+specification  for both.   The A and M specifiers may not be used with 
+files.  
+
+If  both  A and M specifiers are used [AM],  the  resulting  operation 
+depends on the type of names in the instruction.   If both are $SYSTEM 
+or  $FONTRAM,  then  both  character  sets  are  transfered  to  their 
+respective locations.  If the source is $SYSTEM and the destination is 
+a  file,  only  the Main character set will be loaded from the  System 
+Tracks  to the file.   If the source is a file and the destination  is 
+$SYSTEM or $FONTRAM, the file will be loaded to both character sets.
+
+Specifiers  must be enclosed in square brackets and must  not  include 
+any  characters  other than the described specifier letters or  spaces 
+or  tabs.   Spaces and/or tabs may be used in anywhere in the  command 
+line  except  within  names  to  improve  legibility.   No  extraneous 
+characters or comments may be included within or following the command 
+on the command line. 
+
+Some examples of CHARLOAD commands and their functions:
+
+ A>CHARLOAD                <-- Run CHARLOAD, display current character
+                             sets in memory, issue * prompt.
+ *$FONTRAM=OCCFONT         <-- Load OCCFONT.CHR (possibly OCCFONT.IMG)
+                             into the Alternate character set in memory.
+ *$FONTRAM[M]=MAIN.IMG     <-- Load MAIN.IMG into the Main character set
+                             in memory.
+ *A:$SYSTEM=B:$SYSTEM[AM]  <-- Copy the System Track fonts from drive B:
+                             onto drive A:.
+ *NEWFONT=$SYSTEM[M]       <-- Create file NEWFONT.CHR with System Track
+                             Main character set loaded in HEX format.
+
+ A>CHARLOAD GAMEFONT       <-- Load GAMEFONT.CHR (possibly GAMEFONT.IMG)
+                             into the Alternate character set in memory.
+ A>CHARLOAD $SYSTEM        <-- Restore the Alternate character set in 
+                             memory from the Alternate character set on 
+                             the System Tracks.
+ (The last two examples represent common uses for setting up a special  
+ character set and restoring to normal following its use.)
+
+In  CHARLOAD  prompt  mode,  messages are displayed as  each  step  is 
+performed,  advising  the  user  of  the  sequence  performed.   These 
+messages indicate what the program is reading, converting and writing.  
+Also,  when  the  font RAM is written,  the contents of  that  section 
+written  is  displayed.   This  information is not shown in  the  CP/M 
+command line mode.  
+
+Error  messages  are  shown  in  both  modes  and  are  fairly   self-
+explanatory.   "Destination  name  error",  "Source name  error",  and 
+"Specifier  error"  indicate unexpected or prohibited  input  in  that 
+section  of  the command line.   "HEX Format error" indicates  that  a 
+source   file   being  converted  was  not  in  proper   HEX   format.  
+"Insufficient  disk  space"  and "Directory full"  are  also  possible 
+indications.   These are "soft" errors and will return to the CHARLOAD 
+prompt  if  in that mode.   Other disk function errors  (read,  write, 
+etc.)  are considered fatal and will terminate CHARLOAD in  any  mode.  
+These  include attempts to write to a write-protected disk.   Many  of 
+these will first be intercepted by the Executive BIOS,  which will ask 
+if a re-try is wanted.   If a "No" answer is given to this,  the error 
+will  be  trapped  by the BDOS or by CHARLOAD for exit to  the  system 
+prompt.
+
+If  a  source  file is not found,  this will  be  indicated.   If  the 
+filetype entered was blank,  after not finding filename.CHR,  CHARLOAD 
+tries filename.IMG.   Only after both are not found does the  function 
+terminate.  Note that under CP/M Plus, if the file is not found in the 
+current user area, it is automatically searched for as a SYS attribute 
+file in User area 0, and if found there, can be read.
+
+If  a file to be written exists,  the user will be asked whether it is 
+"OK  to  overwrite?  (Y/N)".   An  affirmative reply  will  cause  the 
+original file to be deleted and replaced by the new file.   No back-up 
+is made.   A negative reply terminates the function and returns to the 
+appropriate prompt.   If such a file exists and is Read/only,  this is 
+indicated  and  the  function terminated.   If it  is  Password  write 
+protected,  and  the  required  password is not  in  effect,  this  is 
+indicated and the function is terminated.
+
+
+

@@ -1,0 +1,59 @@
+PRIMES                                                                 Page 1
+
+
+     1  PROGRAM PRIMES;
+     1  (*$I+
+     1   * THIS IS A DEMONSTATION PROGRAM TO GIVE AN EXAMPLE
+     1   * OF HOW TO WRITE A PROGRAM IN PASCAL/Z
+     1   * TO STOP THIS PROGRAM JUST TYPE CTRL-C
+     1   *
+     1   * TEST PROGRAM TO GET THE PRIME FACTORS OF NUMBERS 2..32767
+     1   *)
+     1   
+     1   (*
+     1    * DEFINE SOME VARIABLES
+     1    *)
+     1  VAR  A: INTEGER;		(* NUMBER UNDER TEST *)
+     1       PRIME: BOOLEAN;		(* IS PRESENT # A PRIME *)
+     1       COUNT: INTEGER;		(* # OF PRIMES ALREADY FOUND *)
+     1       PRIMES: ARRAY(. 1..5000 .) OF INTEGER;
+     1  PROCEDURE FACTOR( A: INTEGER );
+     1       VAR   I,J,K:  INTEGER;
+     1             DIVIDE:  BOOLEAN;	(* WAS DIVISION SUCCESSFUL *)
+     1       BEGIN
+     1             IF A < 4 THEN WRITE( A:1 ) (* #'S < 4 ARE PRIME *)
+     3             ELSE BEGIN
+     4                  J := 1;
+     5                  REPEAT
+     6                       J := J + 1;
+     7                       K := PRIMES(. J .);
+     8                       I := A DIV K;
+     9                       DIVIDE := ( I * K = A )
+    10                       UNTIL DIVIDE OR (I < K) OR (J = COUNT);
+    10                  IF DIVIDE THEN BEGIN
+    12                       PRIME := FALSE;
+    13                       FACTOR( I );
+    14                       WRITE( '*',K:1 ) 
+    15                       END
+    15                  ELSE WRITE( A:1 )
+    16                  END
+    16             END;
+    16  (*
+    16   * MAIN PROGRAM
+    16   *)
+    16       BEGIN
+    16            COUNT := 1;			(* INITIALIZE COUNT *)
+    17            FOR A := 2 TO 32767 DO BEGIN
+    19                 WRITE( A:5, ' = ' );
+    20                 PRIME := TRUE;
+    21                 FACTOR( A );
+    22                 IF PRIME THEN BEGIN
+    24                      WRITE('*1            *****  PRIME  *****');
+    25                      COUNT := COUNT + 1;
+    26                      PRIMES(. COUNT .) := A
+    27                      END;
+    27                 WRITELN(' ');
+    28                 END;
+    29            WRITELN(' THERE WERE ', COUNT-1:1, ' PRIMES ' );
+    30  	  END.
+

@@ -1,0 +1,1125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3c.org/TR/1999/REC-html401-19991224/loose.dtd">
+<!-- saved from url=(0031)http://www.pcengines.ch/tp3.htm -->
+<HTML><HEAD><TITLE>Turbo Pascal 3.0 Compiler and Code Generation Internals</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<META content="Turbo Pascal 3.0 compiler / code generation&#13;&#10;internals" 
+name=description>
+<META content="MSHTML 6.00.2900.3020" name=GENERATOR></HEAD>
+<BODY><FONT face="Trebuchet MS, Arial, Sans Serif" size=3><!!top>
+<TABLE cellSpacing=0 cellPadding=0 width="100%" align=left border=0>
+  <TBODY>
+  <TR>
+    <TD vAlign=top align=left bgColor=#cccccc colSpan=5><A 
+      href="http://www.pcengines.ch/index.htm" target=_self><IMG height=52 
+      alt="PC Engines Home" hspace=0 
+      src="Turbo Pascal 3_0 Compiler and Code Generation Internals_archivos/logo.gif" 
+      width=331 border=0></A></TD></TR><!!><!!topmenu>
+  <TR>
+    <TD width="100%" bgColor=#cc0000 colSpan=5 height=25><FONT 
+      face="Trebuchet MS, Arial, sans-serif" color=#ffffff>&nbsp;&nbsp;<A 
+      href="http://www.pcengines.ch/index.htm"><FONT 
+      color=#ffffff>Home</FONT></A> |&nbsp;<A 
+      href="http://www.pcengines.ch/about.htm"><FONT 
+      color=#ffffff>Info</FONT></A> |&nbsp;<A 
+      href="http://www.pcengines.ch/embedpc.htm"><FONT color=#ffffff>Embedded 
+      PC</FONT></A> |&nbsp;<A href="http://www.pcengines.ch/tinybios.htm"><FONT 
+      color=#ffffff>tinyBIOS™</FONT></A> |&nbsp;<A 
+      href="http://www.pcengines.ch/wrap.htm"><FONT 
+      color=#ffffff>WRAP</FONT></A> |&nbsp;<A 
+      href="http://www.pcengines.ch/cflash.htm"><FONT color=#ffffff>CompactFlash 
+      Adapter</FONT></A> |&nbsp;<A href="http://www.pcengines.ch/test.htm"><FONT 
+      color=#ffffff>Test Tools</FONT></A> |&nbsp;<A 
+      href="http://www.pcengines.ch/resource.htm"><FONT 
+      color=#ffffff>Resources</FONT></A> |&nbsp;<A 
+      href="http://www.pcengines.ch/order.php"><FONT 
+      color=#ffffff>Shop</FONT></A></FONT></TD></TR><!!>
+  <TR>
+    <TD vAlign=top colSpan=5>
+      <TABLE>
+        <TBODY>
+        <TR>
+          <TD vAlign=baseline bgColor=#dddddd colSpan=5>
+            <P><FONT size=5><B>Turbo Pascal 3.0 Compiler / Code Generation 
+            Internals</B></FONT> </P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>The following is documentation I created after reverse 
+            engineering the Turbo Pascal 3.01A compiler. While many features, 
+            e.g. units and objects, have been added, today's compiler is still 
+            related to the old code. 
+            <P>Before you flame me about stuff that has been fixed, remember 
+            that this is about an OLD version of the compiler. 
+            <P>NEW: This file will generate disassembled, commented source from 
+            YOUR 3.01A compiler -&gt; <A 
+            href="http://www.pcengines.ch/scg.zip">SCG.ZIP</A> </P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=5><B>Compiler Structure</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>Compilers usually consist of the following functional groups: 
+            <UL>
+              <LI>Lexical analysis 
+              <LI>Syntactical analysis (parser) 
+              <LI>Optimizer 
+              <LI>Code generator 
+              <LI>Symbol table manager 
+              <LI>Error handler </LI></UL>
+            <P>TURBO Pascal isn't your usual compiler... The parser is 
+            interspersed with portions of the code generator, and there is no 
+            optimizer. Most compilers need multiple passes to do their work, but 
+            TURBO is a (faster) single pass compiler. 
+            <P>Fortunately, programming languages of the Pascal type are 
+            designed with simple compilation in one pass in mind. All symbols 
+            must be defined before they are used. The compiler can easily 
+            determine the type of a constant without looking ahead: 
+            <UL>
+              <LI>symbol 
+              <LI>$7FFF 
+              <LI>12345 
+              <LI>12345.5 - This is an exception. TURBO first verifies whether a 
+              numeric constant is an integer or a real constant. Actually, a 
+              standard Pascal compiler doesn't have to do this - standard Pascal 
+              requires that the integer section of a real constant be a valid 
+              integer number ! 
+              <LI>09CFH - This notation (used by many assemblers and languages) 
+              is a negative example. Compilers - like people - read from left to 
+              right. To read a number in this notation, it has to be read into a 
+              buffer to recognize its type, then it can be converted. Guess why 
+              TURBO uses $ for hex numbers... <I>I wonder why Niklaus Wirth 
+              chose this notation for Modula-2.</I></LI></UL></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Lexical Analysis</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>The task of the lexical analysis is to read the source code from 
+            memory or from an include file, to eliminate comments and to 
+            recognize compiler directives, symbols and keywords. 
+            <P>It is called by the parser. On each call a language element 
+            (keyword, symbol, constant...) is read. The starting position is 
+            stored. If an error is recognized the editor will be started and the 
+            cursor will point to this position.</P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Parsing Program Structures</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>The task of this part of the compiler is to analyze the structure 
+            of the program to be compiled and to check the syntax. Like most 
+            Pascal compilers, TURBO uses a recursive descent parser. The code 
+            generation is included in the parser. 
+            <P>The compilation of program structures is quite simple. Usually 
+            the syntax is described in Backus-Naur form or by a "railway 
+            diagram". As an example the IF statement will be covered. 
+            <P><PRE>	 IF cond THEN stat1 { ELSE stat2 }
+	                                        ___________________
+	    ____  ______  ______  ___________  /                   \
+	  -&gt;_IF_-&gt;_expr_-&gt;_THEN_-&gt;_statement_-&lt;&gt;                    --&gt;
+	                                       \______  ___________/
+	                                        _ELSE_-&gt;_statement__
+	</PRE>
+            <P>After reading an element, the parser takes the applicable track. 
+            If there isn't any the syntax is incorrect, and an error is 
+            reported. 
+            <P>It is possible to have a parser generated automatically by a so 
+            called compiler-compiler, if the Backus-Naur form of the syntax is 
+            given. Unfortunately this doesn't help very much: The really 
+            difficult parts of a compiler - code generation and optimization - 
+            must still be written manually. 
+            <P>How is the IF statement translated ? (The corresponding section 
+            in the compiler is at offset 6C12). The statement procedure reads an 
+            IF and calls the IF procedure. First the condition - actually an 
+            arithmetic expression of type boolean - is evaluated. This is done 
+            by calling the expression procedure. The expression is read until an 
+            illegal symbol (THEN) is found. This terminates the expression, 
+            which is checked for type boolean. The IF procedure inserts a 
+            conditional jump to the end of statement 1 here. The displacement is 
+            inserted later - it is not yet known. If the expression has been 
+            terminated by something else than a THEN, an error is reported. Now 
+            the first statement (stat1) is translated. Actually, this is a 
+            RECURSIVE call of the statement procedure (That's why this is a 
+            recursive descent parser). Please note that the syntax definition is 
+            recursive, too ! Because of possible nested IF statements the 
+            variables of the IF procedure are saved on the stack. After this 
+            statement, an ELSE may follow. If it does, a jump to the end of 
+            stat2 is emitted and the jump from the beginning of stat1 is 
+            patched, then the second statement is translated and the second jump 
+            patched. 
+            <P>The code produced looks like this: 
+            <P><PRE>	    (IF..THEN)              (IF..THEN..ELSE)
+
+	        cond                    cond
+	        JNZ l1                  JNZ l1
+	        JMP l2                  JMP l2
+	    l1: stat 1              l1: stat 1
+	    l2: ...                     JMP l3
+	                            l2: stat 2
+	                            l3: ...
+	</PRE>The long jump at the beginning isn't always necessary. 
+            Unfortunately, the compiler cannot predict how long the statement 
+            will be. To improve this, the jump would have to be replaced by a 
+            short one and the subsequent code moved, which would complicate the 
+            compiler quite a bit. 
+            <P>All other program structures are translated in a similar way. 
+          </P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Parsing Arithmetic 
+        Expressions</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>The evaluation of expressions is somewhat more complex, as the 
+            precedence of the operations has to be taken into account. The 
+            solution in TURBO is, however, quite simple (code starting at 7A70). 
+
+            <P>Expressions are usually translated to reverse polish notation (as 
+            used on Hewlett-Packard calculators and in the programming language 
+            FORTH). 
+            <P>There are five groups of operations: 
+            <UL>
+              <LI>negation (highest precedence) 
+              <LI>NOT 
+              <LI>multiplication, division, ... 
+              <LI>addition, subtraction, ... 
+              <LI>comparisons, IN (lowest precedence) </LI></UL>
+            <P>This translates into the following program structure: 
+            <P><PRE>	  PROCEDURE atom; { element }
+	  BEGIN
+	    CASE op OF
+	      CONST:read constant
+	      VAR  :read variable          { indexing -&gt; recursive }
+	      '('  :read expression        { recursive             }
+	            ')' must follow
+	      func :read parameters        { recursive             }
+	            emit function call
+	      TYPE :'(' must follow        { type conversion, e.g. Integer(TRUE) }
+	            read expression        { recursive             }
+	            ')' must follow
+	            convert type -&gt; type wanted
+	      ELSE syntax error;
+	    END;
+	  END;
+
+	  PROCEDURE neg; { negation - }
+	  VAR negflag:BOOLEAN;
+	  BEGIN
+	    negflag:=(op=neg);
+	    atom;
+	    IF negflag THEN emit negation;
+	  END;
+
+	  PROCEDURE NOT; { NOT }
+	  VAR notflag:BOOLEAN;
+	  BEGIN
+	    notflag:=(op=NOT);
+	    neg;
+	    IF notflag THEN emit NOT;
+	  END;
+
+	  PROCEDURE mult_level; { multiplication ... }
+	  VAR mult_op:operation;
+	  BEGIN
+	    NOT;
+	    WHILE op IN mult_ops DO BEGIN
+	      save the result;
+	      mult_op:=op;
+	      NOT;
+	      emit operation(mult_op);
+	    END;
+	  END;
+
+	  PROCEDURE add_level; { addition ... }
+	  VAR add_op:operation;
+	  BEGIN
+	    mult_level;
+	    WHILE op IN add_ops DO BEGIN
+	      save the result;
+	      add_op:=op;
+	      mult_level;
+	      emit operation(add_op);
+	    END;
+	  END;
+
+	  PROCEDURE expression; { comparisons, IN }
+	  VAR cmp_op:operation;
+	  BEGIN
+	    add_level;
+	    IF op IN cmp_ops THEN BEGIN
+	      save the result;
+	      cmp_op:=op;
+	      add_level;
+	      emit operation(cmp_op);
+	    END;
+	  END;
+	</PRE>
+            <P><B>Example 1:</B> Translation of (a+b)=c -&gt; RPN = a , b + c = 
+            <P><PRE>	curr. char, stack (active procedure),              code produced
+	---
+	(:expression add_level mult_level not neg atom
+	a:... expression add_level mult_level not neg atom
+	+:... expression add_level                         -&gt; MOV  AX,a
+	b:... expression add_level mult_level not neg atom
+	):... expression add_level                         -&gt; ADD  AX,b
+	):expression add_level mult_level not neg atom
+	=:expression
+	c:expression add_level mult_level not neg atom
+	 :expression                                       -&gt; CMP  AX,c
+	</PRE>
+            <P><B>Please note:</B> 
+            <UL>
+              <LI>The parentheses trigger a recursive call of the expression 
+              procedure. 
+              <LI>The code production always lags behind the analysis. This 
+              improves the code produced (e.g. <CODE>ADD AX,b</CODE>).</LI></UL>
+            <P><B>Example 2:</B> Translation of a+b*c -&gt; RPN = a , b , c * + 
+            <P><PRE>	curr. char, stack (active procedure),              code produced
+	---
+	a:expression add_level mult_level not neg atom
+	+:expression add_level                             -&gt; MOV  AX,a
+	b:expression add_level mult_level not neg atom
+	*:expression add_level mult_level                  -&gt; PUSH AX
+	                                                   -&gt; MOV  AX,b
+	c:expression add_level mult_level not neg atom
+	 :expression add_level mult_level                  -&gt; IMUL c
+	 :expression add_level                             -&gt; POP  CX
+	                                                   -&gt; ADD  AX,CX
+	</PRE>
+            <P><B>Please note:</B> 
+            <UL>
+              <LI>The content of <CODE>a</CODE> must be stacked, as the AX 
+              register is needed for the multiplication. This is recognized by 
+              setting the flag <CODE>push_ax</CODE>. If subsequent code uses the 
+              AX register (destroying its content), it has to emit <CODE>PUSH 
+              AX</CODE>. Finally, if this has happened, the register must be 
+              restored by <CODE>POP CX</CODE>. 
+              <LI>The code produced is rather simple-minded. By transforming the 
+              expression to b*c+a better code could be produced: <PRE>	  MOV  AX,b
+	  IMUL c
+	  ADD  AX,a
+	</PRE></LI></UL>During evaluation, type checking and type 
+            conversion (Integer -&gt; Real...) is also done. 
+            <P>The 8088 instruction set is often not used well. a:=a+1 yields 
+            this code (INC a would be better): <PRE>	  MOV  AX,a
+	  ADD  AX,#1
+	  MOV  a,AX
+	</PRE>Expressions usually account for the bulk of the code 
+            produced, so their translation is very important. </TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Optimization</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>The goal of code optimization is reducing the size and/or 
+            execution time of the code produced. It is usually impossible to 
+            find an optimal solution, as a space-time tradeoff has to be made. 
+            TURBO Pascal doesn't have an optimizer. However, to improve the 
+            efficiency of your programs by manual optimizations or by add-on 
+            optimizers, it is good to know how common optimizations work. 
+            <P>Optimizations can be local or global: They can cover a single 
+            statement or an entire program. Global optimization is much more 
+            difficult and can cause problems. GOTO's and function or procedure 
+            calls can keep the optimizer from working efficiently. 
+            <P>Side effects can cause errors that are hard to find. Try it - 
+            you'll get what you deserve... An example: <PRE>	  FUNCTION funny:INTEGER;
+	  BEGIN
+	    side_effect:=side_effect+1;
+	    funny:=5;
+	  END;
+
+	  ...
+
+	  a:=side_effect+funny+side_effect;
+	</PRE>The evaluation sequence and thus the result depends on the 
+            compiler used. 
+            <P>Variables don't necessarily stay constant between assignments. 
+            Consider this: <PRE>	  wait_int:=FALSE;
+	  REPEAT UNTIL wait_int;
+	</PRE>This might wait for an interrupt procedure to set a flag. An 
+            optimizing compiler would convert this to an endless loop... 
+            <I>Modern C compilers use the <CODE>volatile</CODE> keyword to avoid 
+            this.</I> 
+            <P><B>Use of Register Variables</B> 
+            <P>Many load and store operations can be eliminated by using 
+            register variables. On the 8088 this is rather difficult, as there 
+            are few registers, often with special uses. 
+            <P><B>Common Subexpressions</B><BR><PRE>	  c:=(a+b)*d;
+	  e:=g-(a+b);
+	</PRE>The subexpression (a+b) can be used twice. Expressions of the 
+            form a[i]:=a[i]+ 1 also are a good target for optimizations. 
+            <P><B>Array Indexing</B> 
+            <P>References with constant indices (a[5]) or indices with a 
+            constant offset (a[i+1]) can be optimized. Array indexing in loops 
+            can often be improved considerably, too. 
+            <P><B>Constant Folding</B> 
+            <P>Programs can be more readable if constants expressions can be 
+            written in a symbolic form. The compiler can evaluate these 
+            expressions at compilation time. <I>Later versions of the compiler 
+            do this.</I> 
+            <P><B>Strength Reduction</B> 
+            <P>This means replacing operations by "cheaper" equivalents, e.g. 
+            x*0.2 instead of x/5 (multiplications are faster than divisions). 
+            <P><B>Loop Optimization</B><BR><PRE>	  FOR i:=1 TO 100 DO dest[i]:=a+b;
+	</PRE>The subexpression a+b can be evaluated outside the loop, as a 
+            and b don't change in the loop. 
+            <P><B>Dead Code Elimination</B><BR><PRE>	  CONST debug=FALSE;
+
+	  IF debug THEN writeln('Debug');
+	</PRE>The IF statement can be left out - the condition is never 
+            met. The same thing can be done with procedures which are never 
+            used. There are optimizers that eliminate all unused procedures from 
+            the run-time library of programs translated by TURBO Pascal. 
+            <I>Later versions of the compiler do this.</I> 
+            <P><B>Evaluation of Boolean Expressions</B><BR><PRE>	  IF (a=5) AND (b=6) THEN ... can be changed into
+
+	  IF (a=5) THEN
+	    IF (b=6) THEN ...
+	</PRE>The same thing can be done with OR and NOT. Never expect 
+            boolean expressions to be executed completely ! <I>Later versions of 
+            the compiler do this.</I> 
+            <P><B>Variable Alignment</B> 
+            <P>Variables in the data segment and on the stack should be aligned 
+            to even offsets to improve performance on 16 bit PC's. </P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Code Generation</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>The code generator has the difficult task of translating the 
+            elements recognized by the parser into executable code. If it gets 
+            difficult to tell whether the code has been generated by a human 
+            programmer or by a compiler then it is indeed a good one... Don't 
+            expect too much of this from TURBO. 
+            <P>In the following sections the code produced by TURBO will be 
+            explained. 
+            <P><B>Program</B><BR><PRE>	  run-time library, if not chain file
+	  CALL  initmem       ;set segments
+	  W     mainflag      ;see source code
+	  W     turbocs,turbods
+	  W     cssize,dssize
+	  w     heapsize,maxhpsz
+	  w     maxfile,stdinsz,stdoutsz
+	  MOV   BP,SP         ;stack frame
+	  CALL  uncrunch      ;expand overlays
+	  W     link,*+2
+	  definition part
+	  program part = main program
+	  XOR   AX,AX         ;Halt
+	  CALL  progend
+	</PRE>
+            <P><B>Definition Part</B> 
+            <P>The definition part may contain code, therefore it must be 
+            skipped over by: <BR><PRE>	  JMP   l1
+	  <OVERLAYS constants structured | functions procedures>
+	  l1:</PRE>
+            <P><B>Structured Constants</B> 
+            <P>Structured constants are stored in the same format as normal 
+            variables. 
+            <P><B>Overlays</B> 
+            <P>The space needed for overlays is not stored in the COM file. It 
+            is freed by the uncrunch procedure. This means moving up the 
+            subsequent code. This is executed at the beginning of program 
+            execution and after loading an overlay procedure. <PRE>	  CALL  rdover        ;read overlay file
+	  W     $ffff         ;overlay procedure now in memory = invalid
+	  B     'over.001'    ;name of overlay file
+
+	    In the section read from the overlay file:
+
+	    CALL  uncrunch      ;expand overlay
+	    W     link,*+2      ;link for uncrunching
+	    overlay procedure / function
+
+	  W     link,*        ;for uncrunching
+	</PRE>
+            <P><B>Forward Definitions</B> 
+            <P>For forward definitions a jump to the final definition is 
+            produced. The displacement is inserted when the real definition is 
+            made. <PRE>	  JMP   defined_proc
+	</PRE>
+            <P><B>External Procedures</B> 
+            <P>The code read from an external file is not changed. 
+            <P><B>Procedure Definitions</B> 
+            <P>Local variables of procedures and functions are always stored on 
+            the stack. This means that only active procedures take up space on 
+            the stack. This also enables recursive calls. The transfer of 
+            parameters and the allocation of stack space can be quite 
+            complicated, thus slowing down procedure calls. 
+            <P>For every procedure a data structure called stack frame or 
+            activation record is built on the stack. The pointer to the stack 
+            frame is always stored in the BP register (the 8088 can't use the 
+            stack pointer SP as index register). The structure of the stack 
+            frame is as follows: <PRE>	  BP+.:function result (space allocated by caller)
+	  BP+.:first parameter
+	  BP+4:last parameter
+	  BP+2:return address
+	  BP+0:pointer to caller's stack frame
+	  BP-2:new stack frame
+	  BP-4:local variables
+	  BP-.:stack top
+	</PRE>The code for a standard procedure entry looks like this: <PRE>	  PUSH  BP            ;save old pointer
+	  MOV   BP,SP         ;set new pointer
+	  PUSH  BP            ;save new pointer (for display)
+	  definition part     ;constants, local procedures
+	  SUB   SP,#size      ;allocate space for local variables
+	                      ;1..2 bytes: DEC SP
+	  program part        ;the actual procedure
+	  MOV   SP,BP         ;forget local variables
+	  POP   BP            ;restore old pointer
+	  RET   prmsize       ;return, remove parameters from stack
+	                      ;no parameters: RET
+	</PRE>How function results are passed depends on their type. 
+            Scalars (integer...) are returned in AX, for boolean results the 
+            flags are set with OR AX,AX. Reals are on the stack anyway. Strings 
+            must be moved such that they occupy only their effective length: <PRE>	  MOV   DX,#pos_on_stack
+	  MOV   CL,#max_len
+	  MOV   SP,BP
+	  POP   BP
+	  JMP   retstr        ;the normal end is omitted
+	</PRE>Unfortunately, things aren't that simple. Consider nested 
+            procedure definitions: <PRE>	  PROCEDURE level1;
+	  VAR
+	    i:INTEGER;
+
+	    PROCEDURE level2;
+	    BEGIN
+	      i:=0;
+	      level2;
+	    END;
+
+	  BEGIN
+	    level2;
+	  END;
+	</PRE>The inner procedure level2 uses a local variable of level1, 
+            but also calls itself recursively. The stack offset of i depends on 
+            the calling order. TURBO Pascal uses a so called display to resolve 
+            this. The display contains pointers to the stack frames of calling 
+            procedures. Each procedure also adds its own pointer to the display. 
+            The display is an extension of the stack frame. <PRE>	  BP+0:old pointer
+	  BP-2:display outermost procedure
+	  BP-.:display
+	  BP-.:display current procedure
+	  BP-.:local variables
+	  BP-.:stack top
+	</PRE>This is maintained by the following code: <PRE>	  PUSH  BP            ;save old pointer
+	  MOV   AX,SP         ;set new pointer - keep BP
+	  PUSH  [BP-nest*2]   ;build display
+	   ..                 ;once for each nesting level
+	  MOV   BP,AX         ;set new pointer
+	  PUSH  BP            ;add own pointer to display
+	  definition part
+	</PRE>Newer CPU's (186, 286...) have special commands for these 
+            operations (ENTER, LEAVE). Please note that referencing variables 
+            via the display is slower than normal references. If speed is 
+            important don't nest procedure definitions.</TD></TR>
+        <TR>
+          <TD bgColor=#eeeeee>
+            <P><FONT face="Trebuchet MS, Arial, Sans Serif" size=4><B>Program 
+            Structures</B> </FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P><B>Program Part</B> 
+            <P><PRE>	  statements
+	  l1: JMP l2          ;jump to the end
+	  POP   AX            ;GOTO, EXIT: clean up the stack
+	  JMP   l1
+	  l2:
+	</PRE>GOTO's and EXIT's aren't really that simple. Sometimes stack 
+            variables (FOR, WITH) must be removed, which is done at the end of 
+            the procedure. 
+            <P><B>Statement</B> 
+            <P>If the user interrupt directive is set, an INT 3 is emitted for 
+            each statement. This calls a routine which checks for user 
+            interrupts. This feature can be "misused" to trace a program or to 
+            profile its execution time. If this isn't used anywhere in the 
+            program, you can also insert breakpoints as INLINE statements for 
+            debugging with DEBUG. 
+            <P><B>IF</B> 
+            <P>This has been covered above. 
+            <P><B>WHILE</B> <PRE>	  l1: condition       ;evaluate condition
+	  J..   l2            ;:condition met
+	  JMP   l3
+	  l2: statement
+	  JMP   l1            ;try again
+	  l3:                 ;end of loop
+	</PRE>
+            <P><B>REPEAT</B> <PRE>	  l1: statement
+	  condition           ;evaluate condition
+	  J..   l2            ;condition met: end
+	  JMP   l1            ;not met: repeat
+	  l2:
+	</PRE>REPEAT loops are faster than WHILE loops. 
+            <P><B>FOR</B> 
+            <P>The counter (stored on stack) and the control variable are 
+            independent: assignments to the control variable don't change the 
+            number of loop executions. <PRE>	  starting value -&gt; AX
+	  PUSH  AX
+	  ending value -&gt; AX
+	  POP   CX
+	  XCHG  CX,AX
+	  SUB   CX,AX         ;calculate difference
+	  JGE   l1            ;(DOWNTO: JNG)
+	  JMP   l3            ;don't execute
+	  l1: INC CX          ;(DEC CX)
+	  <STORE variable control in value beginning>
+	  l2: PUSH CX         ;save counter
+	  <STATEMENT>
+	  POP   CX            ;restore counter
+	  DEC   CX            ;(INC CX)
+	  JZ    l3            ;0: done
+	  INC   loop_var      ;(DEC) update control variable
+	  JMP   l2            ;loop
+	  l3:                 ;end
+	</PRE>
+            <P><B>CASE</B> <PRE>	  CASE .. OF
+	    2,5 : .. ;
+	    7..9: .. ;
+	    ELSE  .. ;
+	  END;
+
+	  <SCALAR expression> ;evaluate selection
+	  CMP   AX,#2         ;compare
+	  JZ    ok1           ;:yes
+	  CMP   AX,#5
+	  JZ    ok1           ;:yes
+	  JMP   test2         ;try next case
+	  ok1:  <STATEMENT>   ;ok - execute
+	  JMP   endcase       ;jump to end
+	  test2: CMP AX,#7    ;check subrange
+	  JL    test2no       ;:no
+	  CMP   AX,#9
+	  JLE   ok2           ;:yes
+	  test2no: JMP else   ;no: execute ELSE part
+	  ok2:  <STATEMENT>   ;ok - execute
+	  JMP   endcase
+	  else: <STATEMENT>   ;ELSE part
+	  endcase:
+	</PRE>Complicated CASE statements can exceed the range of short 
+            jumps. In this case so called "hips" are emitted: <PRE>	  JMP   hip2          ;skip hip
+	  hip: JMP ok         ;jump to statement part
+	  hip2:               ;normal continuation
+	</PRE>Some compilers also use this technique for IF and other 
+            statements. 
+            <P><B>GOTO</B> 
+            <P>A jump is emitted. If the GOTO leaves a WITH or a FOR block, the 
+            stack must be cleaned up. This is recognized and fixed at the end of 
+            the program part. 
+            <P><B>WITH</B> 
+            <P>The compiler has an internal WITH stack. The pointers for indexed 
+            WITH's are stored on the stack: <PRE>	  set pointer to variable
+	  PUSH ES             ;store pointer on stack
+	  PUSH DI
+	  statement
+	  ADD   SP,#4         ;remove pointer from stack
+	</PRE>If the address is known at compilation time this is not 
+            necessary. 
+            <P><B>Procedure Calls</B> 
+            <P>If the directive K+ is set, a stack check is executed: <PRE>	  MOV   CX,#space_needed
+	  CALL  xchkstk
+	</PRE>Then parameters are evaluated and passed: 
+            <UL>
+              <LI>Normal parameter: <PRE>	evaluate expression
+	optional range check
+	PUSH  DX            ;pointer
+	PUSH  AX            ;scalar and pointer</PRE>
+              <LI>String: <PRE>	MOV   CL,#max_length;string is extended to maximal length
+	CALL  xstrparm      ;-&gt; on stack like a local variable</PRE>
+              <LI>Set: <PRE>	MOV   CX,#crunch    ;set crunch parameter:
+	                    ;lo = number of bytes
+	                    ;hi = number empty bytes at beginning
+	CALL  xsetparm      ;adapt set</PRE>
+              <LI>Real: already on stack 
+              <LI>Structured variable <PRE>	set pointer to variable
+	MOV   CX,#size
+	MOV   xblkparm      ;copy variable onto stack</PRE>
+              <LI>VAR parameters: put pointer on stack <PRE>	set pointer to variable
+	PUSH  ES
+	PUSH  DI
+	</PRE></LI></UL>
+            <P>For overlay procedures this must be inserted: <PRE>	  MOV   AX,#length/256
+	  MOV   DX,#pos in overlay file / 256
+	</PRE>Then the procedure is called by <PRE>	  CALL  proc.
+	</PRE>
+            <P><B>Function Call</B> 
+            <P>Stack space is allocated for the result (SUB SP,#space_needed), 
+            everything else is the same. On return the result is on stack (real, 
+            string) or in AX (integer, scalar). It would be easy to return 
+            structured variables - I don't understand why this isn't a standard 
+            feature. It would make things like complex arithmetics much easier. 
+            <P><B>Calling Standard Procedures and Functions</B> 
+            <P>Standard procedures like Read and Write can have any number of 
+            parameters of any type. This means much flexibility is needed. This 
+            problem is solved in TURBO in a very efficient way: The standard 
+            procedure table only contains the address of the corresponding 
+            translation routine. This routine emits the code for reading the 
+            parameters (some of them passed in registers !) and for calling the 
+            run-time library. Some functions (Swap, Hi, Lo) don't call a 
+            procedure but create inline code instead. 
+            <P><B>Assignments and Expressions</B> 
+            <UL>
+              <LI>Scalar / pointer: ES and DI are saved, if necessary. This is 
+              only done if the expression does not consist of a constant or a 
+              simple variable. 
+              <LI>Normal variable: <PRE>	  set pointer to variable
+	  PUSH  ES            ;save pointer to destination variable
+	  PUSH  DI
+	  evaluate expression
+	  type conversion
+	  store result in destination variable
+	</PRE>
+              <LI>Structured variable: <PRE>	  pointer to second variable
+	  MOV   CX,#size      ;pointer to destination variable on stack
+	  CALL  xmovevar      ;copy variable
+	</PRE>
+              <LI>Type conversions: <PRE>	  CALL  xintreal      ;Integer -&gt; Real
+
+	  MOV   AH,AL         ;Char -&gt; String: char -&gt; second byte
+	  MOV   AL,01         ;length: 1 char
+	  PUSH  AX            ;push as string
+
+	  CALL  xstrch        ;String -&gt; Char
+	</PRE></LI></UL>
+            <P><B>Expressions</B> 
+            <P>The algorithms for translation of expressions were explained in 
+            section 4. Arithmetic operations for scalars are emitted by ecalc. 
+            For each operation there's a parameter block (starting at 973E) 
+            controlling the code generation. <PRE>	  expr1 - 5     -&gt; SUB  AX,#5
+	  expr1 - var   -&gt; SUB  AX,var
+	  expr1 - expr2 -&gt; XCHG CX,AX (first result in CX, second in AX)
+	                   SUB  AX,CX
+	</PRE>Expressions of the a:=a+1 type aren't translated well. 
+            a:=succ(a) is better, but not optimal. 
+            <P><B>Set Expressions</B> 
+            <P>Sets are stored in a compressed form and must be expanded to 
+            their full size (32 bytes) for doing set operations. Because of this 
+            set operations tend to be slow. Set constructors are handled in an 
+            inefficient way. [5,var1..var2] is translated like this: <PRE>	  CALL  sldempty      ;store empty set on stack
+	  MOV   AX,#5         ;expression = 5
+	  CALL  setincl       ;include element in set
+	  MOV   AX,var1       ;first expression subrange
+	  PUSH  AX            ;save
+	  MOV   AX,var2       ;second expression subrange
+	  CALL  setinrng      ;include subrange in set
+	</PRE>If the parameters are variable this is all right. For 
+            constant sets this is disastrous. 
+            <UL>
+              <LI><CODE>IF ch IN ['0'..'9','A'..'Z','a'..'z','_'] THEN 
+              ...</CODE> 
+              <P>The conventional solution. Very slow, as the set is always 
+              built when this is executed. Takes much space for complicated 
+              sets. </P>
+              <LI><PRE>CONST setcn:SET OF char = ['0'..'9','A'..'Z','a'..'z','_'];
+	IF ch IN setcn THEN ...
+	</PRE>This takes up somewhat more space for this example (set 
+              constant takes up 32 bytes), but is much faster. 
+              <LI><PRE>CASE ch OF
+	  '0'..'9','A'..'Z','a'..'z','_':...;
+	END;
+	</PRE>For simple cases this gives the shortest and fastest 
+              code.</LI></UL>
+            <P><B>Variable References</B> 
+            <P><B>MEM / MEMW</B> <PRE>	  expression: segment
+	  PUSH  AX
+	  expression: offset
+	  XCHG  DI,AX         ;pointer -&gt; ES:DI
+	  POP   ES
+	</PRE>
+            <P>Use ABSOLUTE for variables with a constant address. 
+            <P><B>WITH Indexing</B> 
+            <P>In a WITH block all variable names must be searched first in the 
+            scopes of the active records and then in the regular symbol table. 
+            This can take quite some time. If the base offset is not known at 
+            compilation time (WITH rec[var] DO), a WITH pointer must be 
+            calculated and stored on the stack, otherwise this is done at 
+            compilation time. 
+            <P><B>Array Indexing, String Indexing</B> 
+            <P>If necessary ES and DI must be saved before evaluation. Different 
+            code is produced depending on the index. 
+            <P>Constant index: The index is checked at compilation time, 
+            multiplied by the element size and added to the base offset, no code 
+            is emitted. 
+            <P>Variable index with range checking: <PRE>	  SUB   AX,#lower_bound (max be DEC AX / nothing)
+	  MOV   CX,#upper_bound+1
+	  CALL  xindchk       ;check index
+	</PRE>Variable index without range checking: The subtraction of the 
+            lower bound can be omitted, it is multiplied by the element size and 
+            then subtracted from the base offset. 
+            <P>The index is multiplied by the element size. This is optimized 
+            for some important element sizes: <PRE>	  no code             ;size = 1
+
+	  SHL   AX,1          ;size = 2
+
+	  SHL   AX,1          ;size = 4
+	  SHL   AX,1
+
+	  SHL   AX,1          ;size = 6
+	  MOV   CX,AX
+	  SHL   AX,1
+	  ADD   AX,CX
+
+	  MOV   CX,#size      ;other element sizes
+	  MUL   CX
+	</PRE>
+            <P align=left>The index is then stored in DI: <PRE>	  XCHG  DI,AX
+	</PRE>
+            <P align=left>or added to the existing index: <PRE>	  ADD   DI,AX
+	</PRE>
+            <P><B>Record Indexing</B> 
+            <P>This is very simple: The offset of the record variable is added 
+            to the memory offset of the variable. 
+            <P><B>Pointer indexing</B> Pointers are loaded with LES 
+            DI,pointer_var. 
+            <P><B>Use of Addressing Modes</B> 
+            <P>The procedure <CODE>einstr</CODE> emits a command using the 
+            correct addressing mode. If necessary a segment prefix (CS: or ES:) 
+            is inserted. 
+            <UL>
+              <LI>not indexed, not on stack: <PRE>  MOV   AX,var
+	</PRE>
+              <LI>indexed: <PRE>  MOV   AX,[DI]       ;no offset
+	  MOV   AX,[DI]offs8  ;short offset (-128..127)
+	  MOV   AX,[DI]offs16 ;long offset (0..65535)
+	</PRE>
+              <LI>stack, local variables: <PRE>  MOV   AX,[BP]offs   ;not indexed
+	  MOV   AX,[BP+DI]offs;indexed
+	</PRE>
+              <LI>stack, callers local variables: <PRE>  MOV   BX,[BP]-lev*2 ;read display pointer
+	  SS:                 ;indexed by BX - need prefix
+	  MOV   AX,[BX]offs   ;not indexed
+	  MOV   AX,[BX+DI]offs;or indexed
+	</PRE></LI></UL>
+            <P><B>Calculate Pointer to Variable</B> <PRE>	  indexing
+	</PRE>
+            <P>The offset is read into DI: <PRE>	  MOV   DI,#offset    ;not indexed
+	  ADD   DI,#offset    ;indexed: short or long offset
+	  LEA   DI,[BP]offs   ;stack: load effective address
+	</PRE>
+            <P>The segment is handed over on the stack: <PRE>	  PUSH  CS/DS/ES/SS
+	</PRE>
+            <P><B>Read Variable</B> 
+            <UL>
+              <LI>Scalar: <PRE>  MOV   AX,var        ;integer, not indexed, not on stack
+	  MOVB  AL,var        ;byte, not indexed, not on stack
+	  MOV   AX,..         ;other integer (emitted by einstr)
+	  MOVB  AL,..         ;other byte
+	</PRE>For byte variables XOR AH,AH is inserted - TURBO always 
+              uses integer variables internally. 
+              <LI>Pointer: <PRE>  LES   AX,ptr_var    ;AX = offset
+	  MOV   DX,ES         ;DX = segment
+	</PRE>
+              <LI>Real: <PRE>  set pointer to variable
+	  CALL  xldreal
+	</PRE>
+              <LI>Set: <PRE>  set pointer to variable
+	  MOV   CX,#set_crunch
+	  CALL  xldset
+	</PRE>
+              <LI>String: <PRE>  set pointer to variable
+	  CALL  strload
+	</PRE></LI></UL>
+            <P><B>Store Variable</B> 
+            <UL>
+              <LI>Scalar: If R+ is set, range checking is done: <PRE>  MOV   CX,#lower_bound
+	  MOV   DX,#upper_bound
+	  CALL  xrngchk
+	</PRE>If the variable is neither indexed nor on the stack, 
+              there's a short form again: <PRE>  MOV   var,AX        ;integer
+	  MOVB  var,AL        ;byte
+	</PRE>Otherwise the correct MOV is emitted by 
+              <CODE>einstr</CODE>. 
+              <LI>Pointer: <PRE>  MOV   dest,AX       ;offset
+	  MOV   dest+2,DX     ;segment
+	</PRE>
+              <LI>Real: <PRE>  set pointer to variable
+	  CALL  xstoreal
+	</PRE>
+              <LI>String: <PRE>  set pointer to variable
+	  MOV   CL,#max_length
+	  CALL  strstore
+	</PRE>
+              <LI>Set: <PRE>  set pointer to variable
+	  MOV   CX,#set_crunch
+	  CALL  setsto
+	</PRE></LI></UL></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Symbol Table</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#ffffff colSpan=5>
+            <P>The symbol table manager has to insert and search symbols of any 
+            type. The difficulty is that definitions may be of any complexity 
+            and names may have any length. The structure implemented in TURBO 
+            closely represents the definition and reference sequence, making it 
+            easy to "navigate" through complex types. 
+            <P>Symbols are searched beginning with the most recent definition. 
+            For new definitions, the current block (limited by the "fence" set 
+            at the beginning of a procedure definition) and the keyword table 
+            are searched for duplicate definitions. Thus it is possible to 
+            override old definitions. At the end of a procedure local variables 
+            may be removed from the symbol table. This reduces memory usage and 
+            search time. 
+            <P><B>Symbol Table Entry Structure</B> 
+            <P>The symbol table "symtab" is stored in the stack segment (the 
+            actual stack doesn't need much space) and grows down. The entries 
+            have this basic structure: <PRE>	  off  :next entry
+	  --
+	  off-2:tag word = entry type
+	  off-4:name length
+	  off-5:name
+	  off-.:entry
+	      0:offset to next entry
+	</PRE>The symbol table is always searched backwards, looking at the 
+            most recent entries first. A linear search is used. Sample symbol 
+            table entries can be found in the compiler tables (starting from 
+            9277). 
+            <P><B>tag = 0100: Label</B> <PRE>	 - 1:procedure nesting (to prevent jumps into or out of procedures)
+	 - 2:0=ok, FF=not yet defined
+	 - 4:offset
+	</PRE>
+            <P><B>tag = 0200: Constant</B> <PRE>	 - 1:type of constant
+	 - 3:constant - strings are stored backwards
+	</PRE>Structured constants are initialized variables stored in the 
+            code segment and are entered as such in the symbol table. 
+            <P><B>tag = 0300: Type</B> <PRE>	 - 2:pointer to type definition
+	</PRE>
+            <P><B>tag = 0400: Variable</B> 
+            <P>For subvariables of a record the low byte of the tag word is the 
+            number of the record definition this entry belongs to. <PRE>	 - 2:pointer to type definition
+	 - 4:offset
+	 - 5:0=normal, FF=indirect (VAR)
+	 - 6:segment
+	     FF = DS
+	     FE = CS
+	     FD = ES (via pointer)
+	     .. = SS, the number corresponds to the procedure nesting level
+	</PRE>For ABSOLUTE variables of the form $B800:0 a pointer is 
+            stored in the code segment, the symbol table entry id CS indirect. 
+            <P><B>tag = 0500: Procedure</B> 
+            <P><B>tag = 0600: Function</B> <PRE>	 - 2:function only - pointer to result type
+	 - 4:function only - offset on stack
+	 - 5:function only - 0 = normal, FF = indirect
+	 - 6:function only - segment: SS
+	 - 8:code offset of procedure / function
+	 - A:position in overlay file / of forward jump
+	 - C:0=ok, FF=forward definition
+	 - E:length of overlay procedure
+	 -10:number of parameter lists
+	 - 2:type pointer                      |may be repeated
+	 - 3:0=normal, FF=VAR parameter        |
+	 - 4:number of parameters of this type |
+	 - 5:names                             |
+	</PRE>The parameters are also listed as local variables. 
+            <P><B>Structure of Subentries</B> 
+            <P>The normal entries aren't sufficient for the description of 
+            complex types. Unnamed subentries are used for this. For complex 
+            definitions this gives a tree structure. ARRAY[1..15] OF INTEGER is 
+            an array having the subrange 1..15 as index type and INTEGER as 
+            element type. 
+            <P><B>tag = 0000, 0800: Subentries</B> <PRE>	 - 2:component size
+	 - 4:lower bound / pointer to type definition
+	 - 6:upper bound / pointer to index type definition
+	 - 7:flag / record number
+	 - 8:component type
+	      1 = array
+	      2 = record
+	      3 = set
+	      4 = pointer
+	      5 = typed file   (FILE OF)
+	      6 = text file    (TEXT)
+	      7 = untyped file (FILE)
+	      8 = string
+	      9 = real
+	      A = integer
+	      B = boolean
+	      C = char
+	      . = enumeration types (numbered)
+	</PRE>The compiler often uses this register assignment: <PRE>	  CL = component type
+	  CH = where's the result ?
+	        0 = constant
+	        1 = variable
+	        2 = in AX / on stack
+	        3 = flags set (jz/jnz)
+	        4 = comparison, use branch opcode brnchop
+	</PRE>The use of the subentry fields depends on the component type: 
+
+            <P>Array <PRE>	 - 2:component size
+	 - 4:type pointer
+	 - 6:pointer to index type
+	 - 8:01
+	</PRE>Record <PRE>	 - 2:component size
+	 - 7:record number
+	 - 8:02
+	</PRE>Set <PRE>	 - 2:component size
+	 - 4:pointer to index type
+	 - 8:03
+	</PRE>Pointer <PRE>	 - 2:component size = 4
+	 - 6:pointer to type / type name
+	 - 7:0=ok, FF=not yet resolved
+	 - 8:04
+	</PRE>Pointers can be forward defined. In this case the type name 
+            is stored as an invisible entry. The type pointer is then inserted 
+            later. 
+            <P>String <PRE>	 - 2:length + 1
+	 - 8:08
+	</PRE>Text file with nonstandard buffer size <PRE>	 - 2:component size
+	 - 8:06
+	</PRE>Enumeration type, subrange <PRE>	 - 2:size: 1 or 2 bytes
+	 - 4:lower bound
+	 - 6:upper bound
+	 - 8:number of enumeration type
+	</PRE>The elements of an enumeration type are stored as constants. 
+            <P><B>Symbol Table Search</B> 
+            <P>TURBO uses a linear search to find symbols in the symbol table. 
+            This can be slow. A worst case program can get compilation speed 
+            down to 0.022 lines per second... 
+            <P>There is a better way: Hashing. <I>This is used in later versions 
+            of the compiler.</I> </P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Error Handler</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>Many compilers try to continue compilation after an error has 
+            been found. The difficulty about this is that this shouldn't trigger 
+            an avalanche of meaningless error messages. 
+            <P>TURBO always stops if an error is found. This can also be seen as 
+            an advantage: The programmer is forced to solve problems one at a 
+            time. </P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Run-time Library</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#ffffff colSpan=5>
+            <P>In the run-time library all standard procedures and functions 
+            needed for the execution of programs are stored. TURBO does this in 
+            a rather wasteful (but simple) way: it always inserts all 
+            procedures. <I>Later versions of the compiler only include the 
+            procedures that are actually used.</I> 
+            <P><B>Memory Map</B> 
+            <P>The segments are allocated as follows: <PRE>	  --
+	   stack     (SS)  (grows down)
+	  --
+	   free
+	  --
+	   heap            (grows up)
+	  --
+	   variables (DS)
+	  --
+	   code      (CS)
+	  --
+	</PRE>
+            <P><B>Heap</B> 
+            <P>Heap storage is allocated in blocks having a size that is a 
+            multiple of 8 bytes. The free blocks are kept track of with this 
+            structure: <PRE>	 +0: pointer to next free block -&gt; linked list
+	 +4: length of free block
+	 +8: free block
+	</PRE>Hpstrt points to the first free block. The last block in the 
+            list - the free space between stack and heap - is marked by a 0. If 
+            there isn't enough space between heap and stack an error is 
+            reported. 
+            <P><B>Floating Point Arithmetics</B> 
+            <P>Floating point numbers are divided into two parts: The exponent 
+            gives the order of magnitude, the mantissa gives the accuracy 
+            needed. <PRE>	  number = mantissa * 2 ^ exponent
+	</PRE>The mantissa is a binary fraction with an accuracy of 40 
+            bits. The mantissa always represents a number between 0.5 and 1, 
+            i.e. it is normalized. This means the most significant bit is always 
+            1. Here the sign is stored. The examples use decimal numbers for 
+            simplicity. 
+            <P>A floating point addition works as follows: <PRE>	   0.95 E+00
+	+  0.60 E-01
+
+	   0.95 E+00   The number with the smaller exponent is
+	+  0.06 E+00   adjusted (de-normalized) to match the other.
+	=  1.01 E+00   The numbers can now be added as usual.
+	               The result is too big, it must be normalized
+	=  0.10 E+01   and rounded up.
+	</PRE>Please note that floating point additions and subtractions 
+            can cause large round off errors, if the exponents differ too much. 
+            <P>It is often claimed that BCD arithmetics cause less errors. This 
+            is not correct - they are not as visible. Some calculators actually 
+            do cosmetic rounding, if the result is near to an integer number. 
+            The best way to avoid round off errors is to calculate money amounts 
+            in cents and not in dollars. BCD multiplications and divisions are 
+            slow. However, BCD does have one advantage: Conversions to and from 
+            ASCII are much faster. As business applications usually consist 
+            mainly of additions and subtractions, BCD can actually be faster. 
+            <P>Floating point multiplication <PRE>	   0.13 E+00   The exponents are added (division: subtracted)
+	*  0.49 E+03   and the mantissas are multiplied.
+
+	   0.13 E+00
+	*  0.49 E+00
+	*       E+03
+
+	=  0.0637      The additional digits are cut off and the
+	*       E+03   result is normalized and rounded up.
+
+	=  0.64 E+02
+	</PRE>Square roots are evaluated using Newton's approximation. This 
+            is a good solution, but not the best: The 8087 does square roots 
+            faster than divisions ! Transcendental functions are evaluated using 
+            the standard polynomials found in math books. I have seen better 
+            algorithms to do this. Don't expect much speed and precision from 
+            TURBO transcendentals.</TD></TR>
+        <TR>
+          <TD vAlign=baseline bgColor=#dddddd colSpan=5>
+            <P><FONT size=5><B>Appendix</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Bugs</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>Thanks to the relative simplicity of the algorithms used TURBO 
+            Pascal is almost bug-free. Well, almost. 
+            <P><B>Set as Procedure Parameter</B> 
+            <P>If the last element is in the range 248..255 and the first above 
+            7, this doesn't work. Redefine the set or pass it as a VAR 
+            parameter. 
+            <P><B>SizeOf</B> 
+            <P>Sometimes a redundant load is emitted. 
+            <P><B>UpCase</B> 
+            <P>The argument type is not checked. Try UpCase(15). 
+            <P><B>WHILE</B> 
+            <P>DO can be omitted.</P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Compiler Speed</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>TURBO may be faster than most other compilers, but there's still 
+            a wide margin for improvements: 
+            <UL>
+              <LI>symbol table: use hashing 
+              <LI>include files: use larger buffer 
+              <LI>don't copy source lines into another buffer </LI></UL>The editor 
+            could be much faster. The screen is re-displayed in an "intelligent" 
+            way (using DelLine and InsLine). On a terminal this may be faster - 
+            with memory mapped video this is a nuisance. Search and replace is 
+            slow.</TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#eeeeee colSpan=5>
+            <P><FONT size=4><B>Write Faster Programs Using TURBO 
+            Pascal</B></FONT></P></TD></TR>
+        <TR>
+          <TD vAlign=top align=left bgColor=#ffffff colSpan=5>
+            <P>Avoid the standard string functions. 
+            <UL>
+              <LI>Use ord(st[0]) instead of length(st) 
+              <LI>Use move instead of string assignments: <PRE>	  move(st1,st2,max_len+1);
+	</PRE></LI></UL>
+            <P>Write real constants with decimal point (10.0 instead of 10). 
+            This eliminates conversions. 
+            <P>GOTO statement considered harmful. So what... If a GOTO is the 
+            best way to express a program structure - use it ! TURBO GOTO's are 
+            still better than BASIC GOTO's: names can be used instead of 
+            numbers. 
+            <P>I/O can be improved if larger buffers are used (use multiples of 
+            512 bytes for best results). Use BlockRead and BlockWrite. If large 
+            blocks are read or written the MS-DOS and TURBO overhead doesn't 
+            matter as much as for small blocks.</P></TD></TR></TBODY></TABLE></TD></TR><!!copy>
+  <TR>
+    <TD vAlign=center align=middle bgColor=#cccccc colSpan=5 height=25><FONT 
+      face="TrebuchetMS, Arial, sans-serif" color=#cc0000 size=3>© 2002-2006 <A 
+      href="mailto:pdornier2346@pcengines.ch"><FONT color=#cc0000>PC Engines 
+      GmbH</FONT></A>. All rights reserved.</FONT> 
+</TD></TR></TBODY></TABLE><!!></FONT></BODY></HTML>

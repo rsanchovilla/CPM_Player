@@ -1,0 +1,36 @@
+; CHAIN TO ANOTHER PASCAL PROGRAM WITH THE SAME GLOBAL STACK
+;
+	ENTRY CHAIN,L125
+	EXT FILNAM,OPNIN,PERROR,CHAIN$
+	INCLUDE DEFLT.SRC
+;
+L125:
+CHAIN:	LXI	H,5CH		;CP/M default file control block.
+	CALL	FILNAM		;PROCESS FILENAME STORED BY FTXTIN
+	CALL	OPNIN		;OPEN IT
+	JRC	CHERR		;NOT THERE, CHAIN ERROR
+
+	LXI	D,100H		;Start of overlay.
+KEEPRD:	PUSH	D		;Save overlay pointer.
+	MVI	C,26		; CP/M code to set DMA address.
+	CALL	CPM
+	LXI	D,5CH
+	MVI	C,20
+	CALL	CPM		;Read 128 bytes of overlay.
+	POP	D
+	LXI	H,128
+	DAD	D		;Make DMA pointer point to next 128 byte chunk.
+	XCHG
+	ORA	A		;Test code returned by CP/M.
+	JRZ	KEEPRD		;Branch if not EOF.
+;
+; JUMP INTO CALLED PROGRAM
+
+	XRA	A		; The compiled code likes A=0.
+	JMP	CHAIN$		; Start program without reinitializing stack.
+
+CHERR:	LXI	H,CHMSG		;POINT TO THE MESSAGE
+	JMP	PERROR
+CHMSG:	DB	'Unable to chai','n'+80H
+
+

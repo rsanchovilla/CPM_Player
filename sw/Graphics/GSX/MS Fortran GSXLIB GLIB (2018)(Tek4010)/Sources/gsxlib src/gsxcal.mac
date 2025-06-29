@@ -1,0 +1,90 @@
+; -------------------------------------------------
+;       GSX Interface for Microsoft FORTRAN 3.44
+;
+;       Martin Hepperle, 2020
+;
+;       GSXCAL.MAC
+;
+;       Requires FORLIB.REL for linkage of $AT
+;
+; -------------------------------------------------
+        .Z80
+
+BDOS    EQU    05H
+
+        TITLE  GSXCAL
+; -------------------------------------------------
+        DSEG
+
+;       parameter block
+PBLOCK: DS 0    ; here
+CONTRL: DW 0    ;
+INTIN:  DW 0    ;
+PTSIN:  DW 0    ;
+INTOUT: DW 0    ;
+PTSOUT: DW 0    ;
+
+; -------------------------------------------------
+        CSEG
+
+        MSFTN EQU 1
+
+;       One should use the MS FTN 3.44 runtime routine
+;       $AT to access the parameters 3,4,5.
+;       This is used when MSFTN is EQUated to 1.
+;       Otherwise a "manual" appoach is used.
+
+IF MSFTN EQ 1
+        EXTRN $AT
+ENDIF
+
+; -------------------------------------------------
+        PUBLIC  GSXCAL
+
+;       SUBROUTINE GSXCAL( CONTRL, INTIN, PTSIN, INTOUT, PTSOUT )
+;       INTEGER*2 CONTRL(30), INTIN(200), PTSIN(200)
+;       INTEGER*2 INTOUT(200), PTSOUT(200)
+GSXCAL:
+        ; get first two parameters
+        LD   (CONTRL),HL  ; address of CONTRL
+        LD   (INTIN),DE   ; address of INTIN
+
+IF MSFTN EQ 1
+        LD   A,3
+        LD   HL,PTSIN
+        CALL $AT          ; copy three remaining addresses
+ELSE
+        PUSH BC           ; get address of
+        POP  HL           ;   address block to HL
+
+        LD   C,(HL)       ; address of PTSIN
+        INC  HL
+        LD   B,(HL)
+        INC  HL
+        LD   (PTSIN),BC
+
+        LD   C,(HL)       ; address of INTOUT
+        INC  HL
+        LD   B,(HL)
+        INC  HL
+        LD   (INTOUT),BC
+
+        LD   C,(HL)       ; address of PTSOUT
+        INC  HL
+        LD   B,(HL)
+        LD   (PTSOUT),BC
+ENDIF
+        ; call GSX
+        LD   HL,PBLOCK    ; address of parameter block
+        PUSH HL
+        POP  DE
+        LD   C,115        ; 115d = 73H
+
+        CALL BDOS
+
+        RET
+; -------------------------------------------------
+
+        END
+
+

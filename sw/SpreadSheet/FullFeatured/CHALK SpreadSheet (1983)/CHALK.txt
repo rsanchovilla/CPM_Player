@@ -1,0 +1,793 @@
+
+
+
+                                       CHALK
+                             AN ELECTRONIC SPREAD SHEET
+                                  BY PAUL M WILSON
+
+                                  TABLE OF CONTENTS
+
+         1.  OVERVIEW............................................... 2
+         2.  GET STARTED............................................ 2
+         3.  BOARD COMPONENTS....................................... 4
+         4.  HELP................................................... 5
+         5.  COMMANDS............................................... 6
+         6.  STANDARDS.............................................. 8
+         7.  BOARD DESIGN HINTS..................................... 8
+         8.  DEFINE SYSTEM.......................................... 8
+         9.  GLOSSARY............................................... 9
+        10.  MESSAGES...............................................10
+        11.  FILE STRUCTURE.........................................11
+        12.  MAKE MONEY WITH CHALK..................................12
+        13.  EXAMPLES...............................................13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                        1
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+
+        1. OVERVIEW:
+           CHALK  IS AN ELECTRONIC SPREADSHEET.  IT ALLOWS YOU TO BUILD AND MAINTAIN  A 
+           BOARD OF TABULAR DATA.  SOME POSSIBLE USES ARE CASH FLOW PROJECTION, STUDENT 
+           GRADE BOOK, PHONE BOOK, INVENTORY MAINTENANCE, CHECK BOOK MAINTENANCE, AND SALES 
+           HISTORY.
+
+           A BOARD IS A TABLE HAVING ROWS AND COLUMNS. THE BOARD HAS A TITLE. EACH ROW
+           AND EACH COLUMN MAY HAVE A TITLE. THE INTERSECTION OF A ROW AND A COLUMN IS
+           CALLED A CELL.  CELLS ARE THE BASIC BUILDING BLOCK OF THE BOARD. EACH CELL
+           CONTAINS AN AMOUNT AND A FORMULA. NORMALLY AMOUNTS ARE DISPLAYED BUT YOU
+           CAN ALTERNATLY SEE FORMULAS.
+
+           YOU CONTROL ALL TITLES AND THE CONTENTS OF ALL CELLS. YOU CAN SAVE AND
+           RETRIEVE THE CONTENTS OF ANY BOARD AS A FILE. SELECTED AMOUNTS OF EXISTING
+           BOARDS CAN BE MERGED WITH THE CURRENT BOARD. ROWS AND COLUMNS CAN BE ADDED
+           OR DELETED. SELECTED PORTIONS OF THE BOARD CAN BE SORTED BY ROW TITLE OR
+           ROW AMOUNT IN ASCENDING OR DESCENDING SEQUENCE. THE BOARD CAN BE PRINTED.
+
+        2. GET STARTED:
+           THIS SECTION EXPLAINS THE STEPS NECESSARY TO START USING A BOARD. IT ASSUMES 
+           THAT THE SYSTEM HAS BEEN DEFINED.
+
+        STEP PROMPT============= ENTER=============== EXPLAINATION================ NEXT
+         
+         1 SYSTEM PROMPT         CHALK                LOGON TO CHALK                  2
+         
+         2 AUTHOR'S STATEMENT    PRESS RETURN                                         3
+         
+         3 AUTHOR'S STATEMENT    PRESS RETURN                                         4
+         
+         4 ENTER BOARD NAME OR   EXISTING BOARD FILE  LOAD BOARD INTO MEMORY          6
+           NEW                   NAME
+                                                      WARNING BOARD NOT FOUND         4
+
+                                 NEW                  INITIALIZE NEW BOARD IN MEMORY  5
+
+                                 Q                    EXIT CHALK
+         
+         5 ENTER EXPECTED ROWS,
+           EXPECTED COLS         ##,##                BUILD EMPTY BOARD IN MEMORY     6
+
+                                                      IF BOARD WON'T FIT SHOW
+                                                      ##### BYTES MORE MEMORY        
+                                                      REQUIRED. TRY SMALLER ARRAY     5
+
+         6 BOARD  FORMAT                              THE BOARD IS NOW DISPLAYED.
+        == ===================== ==================== =================================
+
+
+
+
+
+
+
+
+
+                                        2
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        2.1 EXAMPLE OF LOGON FOR A NEW BOARD:
+            NOTE EXAMPLE SCREEN SIZE IS 64 COLUMNS.
+
+        2.1.1 FIRST LOGON SCREEN:
+        ================================================================
+        |CHALK REVISION:  2.10  COPYRIGHT 1983 BY PAUL M WILSON        |
+        |PRESS RETURN                                                  |
+        |NOT RESPONSIBLE FOR CONSEQUENTIAL DAMAGES                     |
+        |AUTHOR'S STATEMENT                                            |
+        |                                                              |
+        ================================================================
+
+        2.1.2 SECOND LOGON SCREEN:
+        ================================================================
+        |CHALK REVISION:  2.10  COPYRIGHT 1983 BY PAUL M WILSON        |
+        |PRESS RETURN                                                  |
+        |                                                              |
+        |AUTHOR'S STATEMENT CONTINUED                                  |
+        |                                                              |
+        ================================================================
+
+        2.1.3 WHAT BOARD DO YOU WANT:
+        ================================================================
+        |CHALK REVISION:  2.10  COPYRIGHT 1983 BY PAUL M WILSON        |
+        |ENTER BOARD NAME OR NEW<NEW>                                  |
+        |                                                              |
+        ================================================================
+
+        2.1.4 SPECIFY BOARD SIZE:
+        ================================================================
+        |CHALK REVISION:  2.10  COPYRIGHT 1983 BY PAUL M WILSON        |
+        |ENTER EXPECTED ROWS, EXPECTED COLS <3,4>                      |
+        |CURRENT ROWS: 3 COLS: 4                                       |
+        |MAX ROWS:    22 COLS:23                                       |
+        |                                                              |
+        ================================================================
+        AN EMPTY BOARD OF 3 ROWS BY 4 COLUMNS WILL BE CONSTRUCTED. NOTE THAT FOR THIS
+        EXAMPLE THE BOARD COULD EVENTUALLY GROW TO 22 ROWS BY 23 COLUMNS. IT IS
+        IMPORTANT THAT YOU ESTIMATE AS ACCURATLY AS POSSIBLE THE DIMENSIONS OF YOUR
+        BOARD. EACH TIME YOU RUN CHALK AND SPECIFY A NEW OR EXISTING BOARD, THE
+        MAXIMUM BOARD SIZE WILL BE COMPUTED. CHALK ATTEMPTS TO ALLOCATE AN EQUAL
+        NUMBER OF ROWS AND COLUMNS BEYOND THE CURRENT BOARD SIZE. THAT IS A ROW WILL
+        BE ALLOCATED AND THEN A COLUMN REPETITIVELY UNTIL ALL AVAILABLE MEMORY IS
+        USED. THUS SHOULD YOU ADD ROWS BEYOND THE INITIAL 3 AND THEN SAVE THE BOARD,
+        THE NEXT TIME YOU RUN CHALK WITH THIS BOARD, MAX ROWS WILL PROBABLY BE LARGER
+        AND MAX COLUMNS WILL BE SMALLER.
+
+
+
+
+
+
+
+
+
+
+
+                                        3
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        3. BOARD COMPONENTS:
+           A BOARD IS A TABLE HAVING ROWS AND COLUMNS. THE BOARD HAS A TITLE. EACH ROW
+           AND EACH COLUMN MAY HAVE A TITLE. THE INTERSECTION OF A ROW AND A COLUMN IS
+           CALLED A CELL.  CELLS ARE THE BASIC BUILDING BLOCK OF THE BOARD. EACH CELL
+           CONTAINS AN AMOUNT AND A FORMULA. NORMALLY AMOUNTS ARE DISPLAYED BUT YOU
+           CAN ALTERNATLY SEE FORMULAS.
+
+           YOU CONTROL ALL TITLES AND THE CONTENTS OF ALL CELLS. YOU CAN SAVE AND
+           RETRIEVE THE CONTENTS OF ANY BOARD AS A FILE. SELECTED AMOUNTS OF EXISTING
+           BOARDS CAN BE MERGED WITH THE CURRENT BOARD. ROWS AND COLUMNS CAN BE ADDED
+           OR DELETED. SELECTED PORTIONS OF THE BOARD CAN BE SORTED BY ROW TITLE OR
+           ROW AMOUNT IN ASCENDING OR DESCENDING SEQUENCE.
+
+        3.1 BOARD COMMUNICATION:
+            THE FIRST THREE LINES OF THE CRT ARE USED TO COMMUNICATE WITH THE BOARD.
+
+        3.1.1 LINE 1. HEADER INFORMATION:
+            LINE ONE DISPLAYS THE LOCATION OF THE CURRENT CELL (WHICH IS HIGHLIGHTED
+            ON THE DISPLAY), THE BOARD FILE NAME, COPYRIGHT, AUTOMATIC CURSOR
+            DIRECTION, AND THE FORMULA OF THE CURRENT CELL. IF CALCULATIONS MUST BE
+            PERFORMED TO UPDATE THE BOARD, A WARNING IS DISPLAYED ON THE LINE.
+
+        3.1.2 LINE 2. DATA ENTRY PROMPT:
+            LINE TWO DISPLAYS THE CURRENT ROW AND COLUMN TITLES. COMMANDS, AMOUNTS
+            AND FORMULAS ARE INPUT, THE CURSOR ADVANCES AND THE BOARD IS REFRESHED.
+            COMMAND PROMPTS ARE ALSO DISPLAYED ON THIS LINE.
+
+        3.1.3 LINE 3. WARNINGS AND MESSAGES PERTINENT TO THE LAST DATA ENTRY.
+
+
+        3.2 BOARD DATA:
+        3.2.1  LINE 4. BOARD TITLE AND DATE.
+        3.2.2  LINE 5. COLUMN IDENTIFIERS.
+        3.2.3  LINE 6. COLUMN TITLES.
+        3.2.4  LINE 7 THRU N. ROW IDENTIFIER, ROW TITLE, AMOUNTS OR FORMULAS.
+
+           NEW BOARD:
+         ===============================================================
+        1|ROW: 1 COL:AA CHALK BY:PAUL M WILSON:CURSOR DOWN:A     |
+        2|                    |          |#######.##                   |
+        3|                                                             |
+        4|BOARD:NEW                               NEW                  |
+        5|                            AA        AB        AC        AD |
+        6|                                                             |
+        7| 1                        0.00      0.00      0.00      0.00 |
+        8| 2                        0.00      0.00      0.00      0.00 |
+        9| 3                        0.00      0.00      0.00      0.00 |
+         ===============================================================
+
+
+
+
+
+
+
+
+
+                                        4
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        4.  HELP:
+            AFTER A BOARD HAS BEEN CHOSEN,  THE HELP SCREENS CAN BE VIEWED AT ANY TIME 
+            BY ENTERING '?'.
+
+            THE FIRST HELP SCREEN DISPLAYS THE COMMANDS AND EXPLAINS CURSOR MOTION.
+
+        ================================================================
+        |C  CALCULATE BOARD   |T  TITLE BOARD |AR ADD ROW              |
+        |S  SAVE BOARD ON DISK|TR TITLE ROW   |DR DELETE ROW           |
+        |DATE DATE BOARD      |TC TITLE COL   |AC ADD COL              |
+        |HS HARDCOPY SCREEN   |H  HARDCOPY    |DC DELETE COL           |
+        |V  VIEW ON/OFF       |B  VIEW BOARD  |F  VIEW FORMULA         |
+        |Q  QUIT              |R  RIGHT       |D  DOWN                 |
+        |                     |AB ADD BOARD   |SORT SORT               |
+        |                                                              |
+        |M  MOVE CURSOR FOLLOWED BY ANY COMBINATION OF:                |
+        |   A COL 1      |W ROW 1     |R RIGHT A SCREEN                |
+        |   S LEFT A COL |E UP A ROW  |V DOWN A SCREEN                 |
+        |   D RIGHT A COL|X DOWN A ROW|                                |
+        |   F LAST COL   |Z LAST ROW                                   |
+        |   Q COL 1 ROW 1|RRCC WHERE RR IS ROW AND CC IS COL           |
+        |                                                              |
+        |?  HELP                                                       |
+        |                                                              |
+        ================================================================
+
+        THE SECOND HELP SCREEN DESCRIBES FORMULA RULES.
+
+        =====================================================================
+        |FORMULA  DESCRIPTION            |FORMULA DESCRIPTION               |
+        |FA       ACTUAL                 |FB      BLANK                     |
+        |Frr+ss   ROW rr + ROW ss        |Fcc+dd  COL cc + COL dd           |
+        |Frr-ss   ROW rr - ROW ss        |Fcc-dd  COL cc - COL dd           |
+        |Frr*ss   ROW rr * ROW ss        |Fcc*dd  COL cc * COL dd           |
+        |Frr/ss   ROW rr / ROW ss        |Fcc/dd  COL cc / COL dd           |
+        |F###%rr  PERCENT OF ROW rr      |F###%cc PERCENT OF COL  cc        |
+        |Frr&ss   ROW rr THRU ROW ss SUM |Fcc&dd  COL cc THRU COL dd SUM    |
+        |Ftt>uu   MOVE ROW tt COL cc                                        |
+        |                                                                   |
+        |NOTE:                                                              |
+        |rr AND ss MUST BE LESS THAN THE CURRENT ROW.                       |
+        |cc AND dd MUST BE LESS THAN THE CURRENT COL.                       |
+        |tt MAY BE ANY ROW. uu MAY BE ANY COL LESS THAN THE CURRENT COL.    |
+        |uu MAY EQUAL CUR COL IF CELL ttuu HAS BEEN CALCULATED.             |
+        |                                                                   |
+        |CALCULATIONS FOR EACH CELL ARE MADE IN COL FASHION FROM ROW 1 COL 1|
+        |TO THE LAST ROW OF COL 1 AND THEN ADVANCING TO THE NEXT COL.       |
+        |'C' IN THE TOP LINE AFTER FREE INDICATES CALCULATIONS ARE NEEDED.  |
+        |CALCULATIONS ARE MADE BY ENTERING 'C'.                             |
+        |                                                                   |
+        =====================================================================
+
+
+
+
+
+
+                                        5
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        5.  COMMANDS:
+            COMMANDS CAN BE VIEWED BY ENTERING '?'.
+
+            COMMAND DESCRIPTION        EXPLAINATION
+            _______ __________________ _______________________________________________
+            AB      ADD BOARD          ADDS AMOUNTS FROM A SPECIFIED ROW AND COL RANGE
+                                       OF A SPECIFIED BOARD TO THE CURRENT BOARD USING
+                                       THE CURRENT CELL AS THE UPPER LEFT HAND CORNER.
+
+            AC      ADD COL            INSERTS A NEW COL TO THE IMMEDIATE RIGHT OF THE 
+                                       CURRENT COL. THE NEW COL WILL HAVE ZERO FOR ALL 
+                                       VALUES AND WILL HAVE THE SAME FORMULA CHARAC-
+                                       TERISTICS  AS THE CURRENT COL.  FORMULAS ARE 
+                                       AUTOMATICALLY ADJUSTED, CALCULATIONS ARE
+                                       PERFORMED AND THE SCREEN IS REFRESHED.  THE
+                                       CURSOR  IS  PLACED IN THE NEW COL.
+
+            AR      ADD ROW            INSERTS A NEW ROW IMMEDIATLY BELOW THE  CURRENT 
+                                       ROW. THE NEW ROW WILL HAVE ZEROS FOR ALL VALUES 
+                                       BUT  IT WILL HAVE THE SAME FORMULA  CHARACTER-
+                                       ISTICS AS THE CURRENT ROW.  ALL FORMULAS ARE
+                                       AUTOMATICALLY  ADJUSTED,  CALCULATIONS ARE
+                                       PERFORMED  AND THE  SCREEN IS  REFRESHED. THE
+                                       CURSOR  IS  PLACED IN THE NEW ROW.
+
+            B       VIEW BOARD         REFRESHES THE SCREEN WITH THE AMOUNTS  CENTERED 
+                                       AROUND THE CURRENT CELL. SETS THE VIEW  FORMULA 
+                                       TOGGLE OFF.
+
+            C       CALCULATE BOARD    COMPUTES CURRENT AMOUNTS FOR THE  BOARD.
+                                       REFRESHES  THE SCREEN WITH AMOUNTS.  SETS VIEW
+                                       FORMULA TOGGLE OFF. SETS VIEW BOARD TOGGLE ON.
+
+            D       DOWN               TOGGLE CONTROLS THE DIRECTION OF THE  AUTOMATIC 
+                                       CURSOR AFTER ENTRY OF DATA.  IF IN FORMULA MODE 
+                                       THE  NEXT CELL WILL BE IMMEDIATLY  DOWN.  IF IN 
+                                       AMOUNT MODE THE NEXT CELL WILL BE THE NEXT CELL 
+                                       DOWN WHICH CAN ACCEPT AN AMOUNT.
+            
+            DATE    DATE BOARD         UPDATES THE DATE ASSOCIATED WITH THE BOARD.
+
+            DC      DELETE  COL        DELETES THE CURRENT COL.  ADJUSTS ALL FORMULAS. 
+                                       COMPUTES CURRENT AMOUNTS FOR THE BOARD. COLUMNS 
+                                       REFERENCED  IN A FORMULA CAN'T BE DELETED.  THE 
+                                       CURSOR IS PLACED IN THE PRIOR COLUMN.
+
+            DR      DELETE  ROW        DELETES THE CURRENT ROW.  ADJUSTS ALL FORMULAS. 
+                                       COMPUTES  CURRENT  AMOUNTS FOR THE BOARD.  ROWS 
+                                       REFERENCED  IN A FORMULA CAN'T BE DELETED.  THE 
+                                       CURSOR IS PLACED IN THE PRIOR ROW.
+
+
+
+
+
+
+
+                                        6
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+            COMMAND DESCRIPTION        EXPLAINATION
+            ------- ------------------ -----------------------------------------------
+            F       VIEW FORMULA       REFRESHES THE SCREEN WITH THE FORMULAS CENTERED 
+                                       AROUND THE CURRENT CELL.  SETS THE VIEW AMOUNTS 
+                                       TOGGLE OFF.
+
+            H       HARDCOPY           PRINT A HARDCOPY OF THE BOARD. DATA PRINTED 
+                                       DEPEND ON WHETHER THE 'B' OR 'F' TOGGLE IS SET.
+
+            HS      HARDCOPY SCREEN    PRINT A HARDCOPY OF THE CURRENT SCREEN ONLY.
+
+            Q       QUIT               QUIT.  IF  DATA HAS BEEN CHANGED, TRIES TO SAVE 
+                                       THE BOARD.
+
+            R       RIGHT              TOGGLE CONTROLS THE DIRECTION OF THE  AUTOMATIC 
+                                       CURSOR AFTER ENTRY OF DATA. IN FORMULA  MODE 
+                                       THE  NEXT CELL WILL BE IMMEDIATLY TO THE RIGHT. 
+                                       IN AMOUNT MODE THE NEXT CELL WILL BE THE NEXT 
+                                       CELL TO THE RIGHT WHICH CAN ACCEPT AN AMOUNT.
+
+            S       SAVE BOARD ON DISK CALCULATES AMOUNTS FOR THE BOARD. SETS VIEW ON. 
+                                       REFRESHES THE SCREEN. ASKS FOR THE NAME TO SAVE 
+                                       THE  BOARD AS. IF THE BOARD NAME ALREADY EXISTS 
+                                       GIVES YOU A CHANCE TO CHANGE YOUR MIND.
+
+            SORT    SORT               ANY VALID RANGE OF ROWS MAY BE SORTED IN
+                                       ASCENDING OR DESCENDING SEQUENCE BY EITHER ROW
+                                       TITLE OR AMOUNTS OF THE CURRENT COL.
+                                       FORMULA PATTERNS FOR ALL ROWS MUST MATCH.
+
+            T       TITLE BOARD        TITLE BOARD.
+
+            TC      TITLE COL          TITLE THE CURRENT COL. THE CURSOR AUTOMATICALLY
+                                       ADVANCES TO THE NEXT COL FOR ENTRY OF A TITLE
+                                       IN THAT COL TOO.  PRESS RETURN  WHEN  YOU ARE
+                                       DONE ENTERING COL TITLES.
+
+            TR      TITLE ROW          TITLE THE CURRENT ROW. THE CURSOR AUTOMATICALLY
+                                       ADVANCES TO THE NEXT ROW FOR ENTRY OF  A TITLE
+                                       IN THAT ROW TOO.  PRESS RETURN  WHEN  YOU ARE
+                                       DONE ENTERING ROW TITLES.
+
+            V        VIEW ON/OFF       TOGGLE TO SUPPRESS VIEWING OF THE ENTIRE BOARD. 
+                                       USED TO SPEED ENTRY OF DATA AND FORMULAS.
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                        7
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        6.  STANDARDS:
+               DATA ENTRY. THE REPLY TO ANY PROMPT MUST TERMINATE WITH A RETURN.
+               Q WILL GENERALLY EXIT A STEP.
+               RETURN WILL LEAVE DATA UNCHANGED.
+               AMOUNTS MUST HAVE ZERO OR TWO PLACES TO THE RIGHT OF THE DECIMAL.
+               MINUS SIGNS ARE LEADING.
+
+        7.  DEFINE THE SYSTEM:
+            SYSTEM REQUIREMENTS:
+               ANY CP/M SYSTEM WITH AT LEAST 48K.
+               CRT ABLE TO:
+                  HOME THE CURSOR.
+                  CLEAR SCREEN FROM CURSOR TO END OF SCREEN.
+                  TOGGLE HIGHLIGHTING ON AND OFF (HIGHLY DESIRABLE).
+                  RING BELL.
+               PRINTER (HIGHLY DESIRABLE).
+
+        7.1 MAKE A COPY OF THE CHALK DISKETTE AND SAVE IT! AS YOU WILL PROBABLE
+            WANT TO GIVE CHALK TO FRIENDS (HUNDREDS I HOPE!). PLEASE DO IT NOW.
+
+        7.2 CHALK ASSUMES THE CURRENT ACTIVE DRIVE CONTAINS THE FOLLOWING FILES:
+            1. CHALK.COM
+            2. CHALK1.OVL
+            3. CHALK2.OVL
+            4. CHALK3.OVL
+            5. CHALK.CTL
+            6. CHALKNEW.COM
+            THESE ARE THE ONLY FILES THAT ARE ABSOLUTELY REQUIRED TO EXECUTE CHALK.
+            CHALKNEW.COM IS ONLY NEEDED WHEN RECONFIGURING THE SYSTEM.
+
+        7.3 TAILOR CHALK TO YOUR SYSTEM CONFIGURATION:
+            EXECUTE CHALKNEW TO MODIFY THE FOLLOWING FIELDS IN CRT.CTL:
+            1. SCREEN DEPTH.
+            2. SCREEN WIDTH.
+            3. PRINTER PAGE LINES.
+            4. PRINTER PAGE WIDTH.
+            5. HOME. THIS IS THE COMMAND TO HOME THE CURSOR ONLY. DON'T USE THE
+               COMMAND TO HOME AND CLEAR.
+            6. CLEAR FROM CURSOR TO END OF SCREEN.
+            7. BRIGHT.
+            8. DIM.
+            9. BELL.
+           10. PRINTER FORM FEED.
+            NOTE THAT ITEMS 5 THRU 10 EXPECT THE DECIMAL VALUES OF THE ASCII CHARACTER
+            CODES NEEDED TO FORM THAT COMMAND. IF MORE THAN ONE ASCII CHARACTER IS
+            NEEDED, THEY MUST BE SEPARATED BY COMMAS. FOR EXAMPLE THE HAZLETINE 1500
+            COMMAND TO HOME THE CURSOR IS '126,18'. SEE THE CONTROL FILE IF YOU NEED
+            TO KNOW MORE.
+
+
+
+
+
+
+
+
+
+                                        8
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        8.   BOARD DESIGN HINTS:
+             LOOK FOR AN EXISTING BOARD SIMILAR TO THE BOARD YOU WANT AND COPY IT.
+             IF YOU CAN'T FIND AN EXISTING BOARD TO COPY THEN DO THE FOLLOWING.
+
+        8.1  ESTIMATE  THE  NUMBER  OF ROWS AND COLUMNS YOU  WILL  NEED.  THIS  IS 
+             IMPORTANT AS IT IS TIME CONSUMING TO ADD OR DELETE ROWS AND COLUMNS.
+
+        8.2  TITLE THE BOARD.
+
+        8.3  TITLE ROWS.
+
+        8.4  TITLE COLUMNS.
+
+        8.5  DEFINE FORMULAS.
+             IF  YOU ARE SUMMING A SERIES OF CELLS IT IS HELPFUL TO MAKE THE FIRST CELL 
+             OF  THE SERIES BLANK.  SINCE BLANK CELLS ALWAYS CONTAIN A VALUE  OF  ZERO, 
+             THIS  DOESN'T  AFFECT THE CALCULATIONS YET MAKES IT MUCH EASIER TO ADD  OR 
+             DELETE THE FIRST CELL CONTAINING DATA.
+
+             REMEMBER THAT CALCULATIONS ARE ALWAYS PERFORMED FROM TOP TO BOTTOM LEFT TO 
+             RIGHT.
+
+        8.6  ENTER INITIAL AMOUNTS.
+
+        8.7  BE SURE TO SAVE THE BOARD.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                        9
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        9.  GLOSSARY:
+
+               AMOUNT:
+                  ANY QUANTITY IN THE RANGE +/- 99999999.99.
+
+               BOARD:
+                  THE FILE YOU ARE CURRENTLY WORKING WITH. MAY HAVE A NAME OF UP TO 
+                  8 CHARACTERS. THE BOARD MAY ALSO BE GIVEN A TITLE. THE CURRENT BOARD 
+                  MAY BE SAVED AS MANY TIMES AS DESIRED FOR ANY CHALK SESSION.
+
+               CELL:
+                  THE BASIC BUILDING BLOCKS OF THE BOARD. THE CURRENT CELL IS
+                  HIGHLIGHTED. EACH CELL CONTAINS AN AMOUNT AND A FORMULA. UNLESS YOU 
+                  ARE  IN  FORMULA MODE YOU WILL SEE AN ENTERED AMOUNT OR A CALCULATED 
+                  AMOUNT IN EACH CELL. CELLS ARE ADDRESSED BY ROW AND COLUMN.
+
+               COLUMN:
+                  EACH CELL OCCUPIES A COLUMN ADDRESS. COLUMNS ADDRESSES ARE 2
+                  ALPHABETIC CHARACTERS.
+
+               FORMULA:
+                  THE ALGORITHM USED TO DISPLAY THE COMPUTED AMOUNT FOR ANY  CELL. SEE 
+                  THE HELP SCREENS FOR MORE ABOUT FORMULAE.
+
+               HARD COPY:
+                  THE PRINTED OUTPUT AVAILABLE FOR ANY BOARD OR SCREEN.
+
+               ROW:
+                  EACH CELL OCCUPIES A ROW ADDRESS.
+
+               TITLE:
+                  YOU CAN TITLE A BOARD.
+                  YOU CAN ALSO TITLE EACH ROW AND EACH COLUMN.
+
+        10.  MESSAGES:
+               MESSAGES APPEAR  ON  THE THIRD LINE OF THE SCREEN.  THEY  DESCRIBE  THE 
+               RESULTS OF THE LAST ENTERED DATA.  IF AN ERROR HAS BEEN MADE  THE  BELL 
+               WILL RING.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                       10
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        11.  FILE STRUCTURE:
+               ALL DATA FILES END WITH THE 3 CHARACTERS 'BRD'.
+               ALL DOCUMENTATION FILES END WITH THE 3 CHARACTERS 'DOC'.
+               ALL EXAMPLE BOARDS START WITH THE THREE CHARACTERS 'CHK'.
+
+               FIVE FILES ARE REQUIRED ON THE SYSTEM AND THEY MUST BE ON THE CURRENT
+               ACTIVE DRIVE. THEY ARE:
+                 1. CHALK.COM
+                 2. CHALK1.OVL
+                 3. CHALK2.OVL
+                 4. CHALK3.OVL
+                 5. CHALK.CTL
+
+               THE SYSTEM DOCUMENTATION FILE IS CHALK.DOC.
+
+               THE EXAMPLE DOCUMENTATION FILE IS CHALKEX.DOC
+
+               CHALKA2B.SUB IS A SUBMIT FILE TO PIP ALL CHALK FILES TO DRIVE B.
+
+               CHALKNEW.COM IS USED TO DEFINE THE SYSTEM.
+
+        11.1  CONTROL FILE:
+               THE CONTROL FILE IS NAMED CHALK.CTL.
+               IT CONSISTS OF LINES OF NUMBERS SEPARATED BY COMMAS.
+               EACH LINE IS TERMINATED BY 255.
+               FOR EXAMPLE THE LINE FOR A BELL IS USUALLY:
+               7,255<CRLF>
+               
+               LINE                                          DEFAULT
+               ============================================= =================
+               REGISTRATION                                  0,255<CRLF>
+               ROW TITLE LENGTH                              16,255<CRLF>
+               COLUMN TITLE LENGTH                           10,255<CRLF>
+               SCREEN DEPTH                                  24,255<CRLF>
+               SCREEN WIDTH                                  80,255<CRLF>
+               PRINTER PAGE LINES                            66,255<CRLF>
+               PRINTER PAGE WIDTH                            132,255<CRLF>
+               HOME                                          126,18,255<CRLF>
+               CLEAR FROM CURSOR TO END OF SCREEN            126,24,255<CRLF>
+               BRIGHT                                        126,31,255<CRLF>
+               DIM                                           126,25,255<CRLF>
+               BELL                                          7,255<CRLF>
+               PRINTER FORM FEED                             12,255<CRLF>
+               LAST LINE OF FILE                             END<CRLF>
+
+               CAUTION SHOULD BE USED IN MODIFYING THESE PARAMETERS. MODIFICATION
+               OF TITLE LENGTH PARAMETERS MAY CAUSE PREVIOUS BOARDS TO BE
+               PROCESSED INCORRECTLY. DEFAULT VALUES ARE FOR A HAZLETINE 1500 CRT.
+               YOU MAY HAVE TO CHANGE HOME, CLEAR, BRIGHT AND DIM FOR YOUR CRT.
+               IF YOU DON'T HAVE BRIGHT AND DIM OR THE EQUIVALENT ON YOUR CRT, THEN
+               USE 0,255<CRLF> FOR THOSE PARAMETERS.
+
+
+
+
+
+
+                                       11
+
+
+
+
+
+        CHALK  AN ELECTRONIC SPREADSHEET
+
+
+        11.2  DATA FILE:
+               ALL BOARDS HAVE A TYPE OF BRD. SAVING AN EXISTING BOARD CAUSES THE
+               OLD BOARD TYPE TO BECOME BAK.
+
+               BOARD TITLE
+               DATE AS MMDDYY
+               MAX ROW,MAX COL
+               ROW TITLE 1
+               ...........
+               ROW TITLE N
+               COLUMN TITLE 1
+               ..............
+               COLUMN TITLE N
+               CELL DATA ARRANGED ROW MAJOR AND COLUMN MINOR. EACH CELL IS ON A LINE.
+               A CELL CONTAINS THE FOLLOWING FIELDS SEPARATED BY COMMAS:
+                  VALUE
+                  FORMULA TYPE
+                  FORMULA ARGUMENT 1
+                  FORMULA ARGUMENT 2
+
+        11.3  SUBMIT FILE: CHALKA2B.SUB
+              PIP
+              B:=CHALK.COM[OV]
+              B:=CHALK1.OVL[OV]
+              B:=CHALK2.OVL[OV]
+              B:=CHALK3.OVL[OV]
+              B:=CHALK.CTL
+              B:=CHALK.DOC
+              B:=CHALKEX.DOC
+              B:=CHALKA2B.SUB
+              B:=CHKCASH.BRD
+              B:=CHKCLASS.BRD
+              B:=CHKMETER.BRD
+              B:=CHKPHONE.BRD
+              B:=CHKSALES.BRD
+              B:=CHKSIMP.BRD
+              B:=CHALKUSR.DOC
+
+        12. DISTRIBUTE CHALK TO YOUR FRIENDS:
+               I REALLY WANT YOU TO DISTRIBUTE CHALK TO YOUR FRIENDS. YOU MIGHT MAKE A
+               FEW BUCKS ON IT. SUBMIT CHALKA2B. CHALK FILES AND DOCUMENTATION WILL BE
+               COPIED FROM DRIVE A TO DRIVE B.
+               FEEL FREE TO ADD YOUR COMMENTS TO CHALKUSR.DOC, BUT PLEASE DON'T CHANGE
+               ANYTHING ELSE. REMEMBER THE NEXT GUY MIGHT NEED WHAT YOU CHANGE.
+
+        13.  EXAMPLES:
+             SEE CHALKEX.DOC.
+        102083================== END CHALK.DOC =======================================
+
+
+
+
+
+
+
+
+
+                                       12
+
+
+
+
+
+

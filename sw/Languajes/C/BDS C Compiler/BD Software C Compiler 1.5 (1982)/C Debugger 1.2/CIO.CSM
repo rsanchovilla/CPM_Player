@@ -1,0 +1,264 @@
+;
+;	Mode-driven console I/O package
+; 	Adapted from Steve Ward's CIO.C
+;	9/82 by Leor Zolman
+;
+; This package provides a mode-driven direct console interface for applications
+; where the standard library versions of "getchar", "putchar", etc.,
+; do not provide enough control. The console I/O mode is set by calling the
+; funciton "ttymode", where each bit of the argument controls a specific
+; feature of the I/O mechanism, as follows:
+;	--------------------------------------------------------------
+;BIT:	|7, 6 |     5	 |     4    | 3     |    2   |   1   |  0    |
+;	|     | swap CR &|  LF -->  |strip  |  x-on/ | quit  | echo  |
+; USE:	|not  | and LF   |   CR-LF  |bit 7  |  x-off | char  | mode  |
+;	| used| (input)  | (output) |(input)|(output)|(input)|(input)|
+;	--------------------------------------------------------------
+;
+; Most features are self-explanatory; the "quit char" bit, if on, means
+; that if the user types the standard system "Quit" character (set to
+; control-C by default in the run-time package, and changeable by poking
+; into the appropriate location), then program execution will be terminated
+; and control will return to command level.
+;
+; Functions in this source file:
+;
+;	putchar	getchar	kbhit	ttymode
+;
+; "putchar", "getchar" and "kbhit" have the same calling format as the standard
+; library versions. "ttymode" takes a new mode byte based on the diagram above,
+; and returns the previous mode byte.
+;
+
+	INCLUDE <bds.lib>
+
+NL:	equ 10
+CR:	equ 0dh
+
+
+;
+; putchar(c)
+;
+	FUNCTION	putchar
+	EXTERNAL	rawio
+
+	call	ma1toh	;get C in HL
+	push	h	;pass to rawio
+	lxi	h,1	;pass "putchar" code to rawio
+	push	h
+	call	rawio	;put out the char
+	pop	d
+	pop	d
+	ret
+
+	ENDFUNC
+
+;
+; int getchar()
+;
+
+	FUNCTION	getchar
+	EXTERNAL	rawio
+
+	lxi	h,2
+	push	h	;pass "getchar" code to rawio
+	call	rawio
+	pop	d
+	ret
+
+	ENDFUNC
+
+;
+; int kbhit()
+;
+
+	FUNCTION	kbhit
+	EXTERNAL	rawio
+
+	lxi	h,3
+	push	h	;pass "kbhit" code to rawio
+	call	rawio
+	pop	d
+	ret
+
+	ENDFUNC
+
+;
+; int ttymode(newmode)
+;
+
+	FUNCTION	ttymode
+	EXTERNAL	rawio
+
+	call	ma1toh	;get mode value
+	push	h	;pass to rawio
+	lxi	h,4
+	push	h	;pass "ttymode" code to rawio
+	call	rawio
+	pop	d
+	pop	d
+	ret
+
+	ENDFUNC
+
+	FUNCTION	rawio
+	EXTERNAL	exit
+	call	arghak	;get arg1 = operation code, arg2 = arg
+	push	b
+again:	call	istat	;check input status
+	jz	brk	;any input? if not, go away
+	mov	c,a	;yes... put in C
+	lda	mode	;save current mode
+	mov	b,a	;save mode in B
+	ani	strip	;stripping parity?
+	mov	a,c
+	jz	rawio0
+	ani	7fh	;if so, strip parity
+rawio0:	mov	c,a	;and save for now.
+	mov	a,b	;get mode again
+	ani	swap	;swapping CR and LF?
+	jz	rawio1
+
+	mov	a,c	;is it CR?
+	cpi	CR
+	mvi	c,LF
+	jz	rawio1	;if so, turn into LF
+	cpi	LF	;is it LF?
+	mvi	c,CR
+	jz	rawio1	;if so, turn into CR
+	mov	c,a	;otherwise leave it alone	
+
+rawio1:	mov	a,b	;look at mode
+	ani	quit	;allowing quit characters?
+	jz	rawio2	;if not, don't check for quitc
+
+;
+;  Check for quits:
+;
+
+	lda	quitc	;else do...
+	cmp	c	;char a quit char?
+	jz	exit	;if so, get out of here!
+rawio2:	mov	a,b	;look at mode
+	ani	flow	;recognizing flow control?
+	jz	rawio5
+
+;
+;  Handle Flow Control:
+;
+
+	mov	a,c	;look at char
+	cpi	'S'-64	;control-S?
+	jnz	rawio4
+rawio3:	sta	freeze	;if so, freeze things
+	jmp	brk
+rawio4:	cpi	'Q'-64	;control-Q?
+	jnz	rawio5
+	xra	a	;if so, turn off freeze
+	jmp	rawio3	
+
+;
+; Save the char and echo if echo mode is on:
+;
+
+rawio5:	lda	pending
+	ora	a	;any chars already stacked up?
+	jnz	brk	;if so, ignore new character
+	inr	a	;set pending flag
+	sta	pending
+	mov	a,c	;get the char
+	sta	pendch	;save it
+	mov	a,b	;echo mode?
+	ani	echo
+	cnz	putraw	;if so, put out the character
+		
+brk:
+	lda	arg1	;look at control code
+	ora	a	;null op?
+	jz	done	;if so, go return
+
+	dcr	a	;putchar?
+	jnz	brk3
+	lda	freeze	;if frozen,
+	ora	a
+	jnz	again	;don't try to write till we get ^Q
+	
+;
+; Put out a character to console:
+;
+
+	lda	arg2	;get the arg to putchar
+	mov	c,a	;write it to console
+	call	putraw
+
+;
+; Check for newline expansion:
+;
+
+	cpi	NL	;'\n'?
+	jnz	brk2
+	lda	mode
+	ani	expand	;expanding newlines?
+	jz	brk2
+	mvi	c,CR		
+	call	putraw	;put out CR if so
+brk2:	lhld	arg2	;return the arg
+done:	pop	b	;restore BC
+	ret
+
+brk3:	dcr	a	;getchar?
+	jnz	brk4
+			;yes.
+	lda	pending	;any pending input?
+	ora	a
+	jz	again	;if not, go poll input
+	xra	a	;else clear pending input flag
+	sta	pending
+	lda	pendch	;and return the char
+brk3a:	mov	l,a
+	mvi	h,0
+	pop	b
+	ret
+
+brk4:	dcr	a	;kbhit?
+	jnz	brk5
+	lda	pending	;yes. return pending status.
+	jmp	brk3a
+
+brk5:	dcr	a	;set I/O mode?
+	jnz	done	;if not, don't do nuthin at all
+	lda	mode	;get mode
+	mov	l,a	;save old mode in L
+	lda	arg2	;get new mode
+	sta	mode	;set it
+	ani	flow	;check if flow control is enabled
+	jnz	brk6	;if it is, don't touch state
+	sta	freeze	;else make sure we're thawed by clearing freeze
+brk6:	mvi	h,0	;clear HL	
+	pop	b
+	ret	
+
+istat:	mvi	c,dconio	;prepare for direct console I/O BDOS call
+	mvi	e,0FFh		;interrogate console status
+	call	bdos
+	ora 	a		;set Z if no char ready
+	ret
+
+putraw:	push	b
+	push	d
+	push	psw
+	mov	e,c		;put char in E
+	mvi	c,dconio
+	call	bdos
+	pop	psw
+	pop	d
+	pop	b
+	ret
+	
+ch:	ds 1
+oldmode: ds 1
+
+	ENDFUNC
+
+	end
+

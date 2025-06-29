@@ -1,0 +1,77 @@
+	REAL TIME MICROSYSTEMS ASSEMBLER - INSTRUCTIONS
+
+This disk includes a new assembler from Real Time Microsystems,
+2240 Main St., #18, Chula Vista, CA 92011.  This assembler is
+required to assemble the source for TARBELL BASIC, since it
+is too large to fit on one diskette.  The unique feature of
+this assembler in this regard, is that it has a pseudo-op
+called LINK, which causes the assembly process to continue
+with the file named as it's operand.  This allows assembly
+of a large program which is broken up into several different
+files on different disks.
+
+Because of some of the bugs listed below, however, this
+assembler cannot be used to assemble the file named TBASICIO.ASM
+on this disk.  Use the CP/M assembler for this instead.
+
+After typing RTMASM, the following functions are available:
+
+DO <filename>	Open a .DO (like submit) and use it for input.
+QT		Close all files and return to CP/M.
+CL		Close all files and restart assembler.
+LN		Disable all console listing.
+LE		Enable error printout on the console.
+LI		Enable program listing on the console.
+LS		Sort the symbol table and list it, if listing on.
+PE		Enable list device (high speed printer).
+PD		Disable list device.
+ER <filename>	Make a file of all statements containing errors.
+		(.ERR)
+SY <filename>	Make a file containing the xymbol table (.SYM).
+HX <filename>	Make an Intel hex format file (.HEX).
+PR <filename>	Make a file of the program listing (.PRN).
+AS <filename>	Assemble the file (.ASM).
+
+NOTE:  Use filenames without extention.
+
+Typical Sequence:
+
+	LN
+	LE
+	SY TBASIC
+	HX TBASIC
+	AS TBASICA1
+	QT
+
+The above sequence will assemble TARBELL BASIC, without the .PRN
+file, but giving the .HEX and .SYM file.  The .SYM file is not in
+ASCII format, so if you want a symbol table listing, use the PE
+and the LS commands (may be deferred to later).
+Known bugs:  1.  It will not assemble a line containing
+exclamation points to seperate instructions.  2.  It will flag as
+an error a comment line beginning with a semicolon (use an asterisk).
+3.  It will flag as an error a line containing only a label.
+4.  It will flag as an error a line with a label which duplicates
+one which is inside a false conditional assembly.  5.  The letter
+"A" cannot be used instead of PSW in a PUSH instruction.
+
+Error Types:
+
+DUP	Duplicate Label
+EXP	Expression error
+UND	Undefined symbol
+OVR	8-bit operand too large
+MNE	mnemonic error
+REG	Illegal register
+
+The psuedo-ops are identical to the CP/M assembler, except
+for the new one:	LINK <filename> (no extension)
+A drive can be specified in the usual fashion (A: or B:).
+
+
+
+
+
+
+
+

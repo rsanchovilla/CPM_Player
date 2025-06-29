@@ -1,0 +1,73 @@
+
+include "ratdefn.rtf"
+define(NFILES,4)
+# include - replace  include file  by contents of file
+   character line(MAXLINE), str(MAXLINE)
+   integer equal, getlin, getwrd, fopen
+   integer infile(NFILES), len, level, loc
+#   string incl "include"
+   character incl(8)
+   data incl(1) /LETI/
+   data incl(2) /LETN/
+   data incl(3) /LETC/
+   data incl(4) /LETL/
+   data incl(5) /LETU/
+   data incl(6) /LETD/
+   data incl(7) /LETE/
+   data incl(8) /EOS/
+ 
+   call initio
+
+   infile(1) = STDIN
+   for (level = 1; level > 0; level = level - 1) {
+      while (getlin(line, infile(level)) ^= EOF) {
+	 loc = 1
+	 len = getwrd(line, loc, str)
+	 if (equal(str, incl) == NO)
+	    call putlin(line, STDOUT)
+	 else {
+	    level = level + 1
+	    if (level > NFILES)
+	       call error("includes nested too deeply.")
+	    len = getwrd(line, loc, str)
+	    infile(level) = fopen(str, RDONLY)
+	    if (infile(level) == ERR)
+	       call cant(str)
+	    }
+	 }
+      if (level > 1)
+	 call close(infile(level))
+      }
+
+   call putch(EOF,STDOUT)
+
+   stop
+   end
+# getwrd - get non-blank word from in(i) into  out, increment i
+   integer function getwrd(in, i, out)
+   character in(ARB), out(ARB)
+   integer i, j
+ 
+   while (in(i) == BLANK | in(i) == TAB)
+      i = i + 1
+   j = 1
+   while (in(i) ^= EOS & in(i) ^= BLANK
+      & in(i) ^= TAB & in(i) ^= NEWLINE) {
+      out(j) = in(i)
+      i = i + 1
+      j = j + 1
+      }
+   out(j) = EOS
+   getwrd = j - 1
+   return
+   end
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,44 @@
+.macro chttl = Compiler Error Messages
+.ch .chttl
+.hl 1 General
+The  compiler  produces error codes,  and lists them after the  offending
+line on both output and pasclist formal files.   If the L- option is in effect
+output  to pasclist is suppressed.   If the translation file  (formally  "ef",
+normally EF.  under CPM) is available a
+list of error code translations follows.   Note that the position indicated in
+the  source line is that in which the error was detected,  and that the actual
+error may occur earlier. 
+
+.hl 1 Action after errors
+If any errors are found the compiler will set JCW (job control word)
+to the error state, and
+if  warnings  are  found it will set JCW to the warn state.  See the procedure
+SETJCW under Extensions.  This is very useful when executing long compilations
+under the various batch mechanisms .bb (JOB or SUBMIT under CPM).  Under CP/M
+SETJCW  to  a
+negative  value causes any submit job to be cancelled on program  termination,
+and the warn state is ignored. .eb
+
+.hl 1 Some conditions causing errors/warnings
+The  compiler will always generate a warning if the standard files  INPUT
+or OUTPUT are reset or rewritten (or the equivalent).  These files are 
+normally  the  user console,  and cannot be reread nor can the effects  
+of  previous writes be erased.
+
+While  NIL is implemented as a predefined type,  the compiler will forbid
+any attempts to redefine it, thus giving it the effective status of a reserved
+word.
+
+In  general the compiler will generate warnings where the actual  meaning
+is  unambiguous (e.g.  use of a feature in the wrong mode,  attempts to  reset
+input,  etc.) and errors wherever the possibility of a mis-spelling or  faulty
+punctuation exists.
+
+.hl 1 Accessing Error Messages
+Under  CPM the error message file is accessed as file "EF" with a  blank
+extension.   If  this file is not on the default or system disks it should  be
+specified on the command line with the appropriate disk identifier,  otherwise
+no  translation  will occur.
+The error message file may be modified freely  (one
+line per error) to install other languages, clarify errors, etc.
+ˢ

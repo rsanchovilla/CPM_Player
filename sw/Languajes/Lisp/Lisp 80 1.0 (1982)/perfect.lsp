@@ -1,0 +1,16 @@
+DEFINE ((
+(PERFECT () (PROG (S D N I)
+	(SETQ N 1)
+L1	(SETQ S 0)
+	(SETQ I (QUOTIENT N 2))
+	(SETQ D 1)
+L2	(COND ((ZEROP (REMAINDER N D))
+	       (SETQ S (PLUS S D))))
+	(COND ((LEQP (SETQ D (PLUS 1 D)) I) (GO L2))
+	      ((EQ S N)
+	       (PRINT (CONS N '(IS A PERFECT NUMBER)))))
+	(PRINT (LIST N 'SUM% DIVISORS S))
+	(COND ((LEQP (SETQ N (PLUS 1 N)) 500) (GO L1)))
+	))
+))
+

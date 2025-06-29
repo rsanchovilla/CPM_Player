@@ -1,0 +1,25 @@
+Echo   'This command file will compile a program to test a COBOL CRT driver'
+maklink -f  /usr/pkg/fdc/crtest.cob  .
+maklink -f  /usr/pkg/fdc/cobol[1-4].ovr  .
+maklink -f  /usr/pkg/fdc/cobol.com    .
+maklink -f  /usr/pkg/fdc/cobloc  .
+maklink -f  /bin/runcob.com  .
+
+Echo   'First, the input COBOL source file is typed:'
+Ty Crtest.cob
+
+Echo   'Next, the source file is compiled, producing a REL object file:'
+Cobol crtest,=crtest
+
+Echo   'This is linked with Coblbx.rel, producing an executable file:'
+Link Crtest,h:Coblbx/s,Crtest/N/E
+
+del  cobol[1-4].ovr 
+del  cobol.com  
+del  cobloc
+del  crtest.rel
+
+Echo   'Finally, the compiled and linked program is executed:'
+Crtest
+del  runcob.com
+

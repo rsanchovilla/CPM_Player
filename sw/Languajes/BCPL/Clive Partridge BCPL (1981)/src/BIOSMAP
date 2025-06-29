@@ -1,0 +1,112 @@
+GET "LIBHDR"
+
+MANIFEST
+ $( mask=8191
+    numberofwords=24+13
+ $)
+ 
+GLOBAL
+ $( readline:101
+    read:102
+    buffer:103
+    puthex:104
+    sum:105
+ $)
+
+LET start() BE
+ $( LET buff=VEC 40
+    LET code=VEC 8192/bytesperword
+    LET map=VEC (8192/8)/bytesperword
+    LET x,z,max=0,0,0
+    LET ostring="ADPBAS* *AHSTBU* *DMAADR* *ERFLAG* *HSTACT* *HSTDPH*
+		*HSTDSK* *HSTSEC* *HSTTRK* *HSTWRT* *MAXDSK* *READOP*
+		*READWR* *RSFLAG* *SEKDPH* *SEKDSK* *SEKHST* *SEKSEC*
+		*SEKTRK* *UNACNT* *UNADSK* *UNASEC* *UNATRK* *WRTYPE*
+		*BUFFER* *OTHER * *LSTTRA* *DRIVE * *GAP   * *SECSIZ*
+		*SPEED * *SEEKRA* *SECTOR* *TRACK * *SIDE  * *RESULT*
+		*COMMAN"
+    LET istring="DISCBI* *MAPSIZ* *BASE  "
+    LET v=VEC numberofwords
+    LET w=VEC 3
+    FOR y=0 TO numberofwords DO v!y := -1
+    FOR y=0 TO (8192/8)/bytesperword DO map%y := 0
+    buffer := buff
+    selectinput(findinput("BIOS.OBJ"))
+     $( readline()
+        SWITCHON read(4) INTO
+         $( CASE 0 : x := ((read(2)<<8)+read(3))&mask
+                FOR y=0 TO read(1)-1 DO code%(x+y) := read(5+y)
+	    CASE 4 : CASE 5 : ENDCASE
+	    CASE 3 : z := VALOF
+		 $( FOR y=0 TO numberofwords-1 DO IF VALOF
+		     $( FOR z=1 TO 6 DO IF ostring%(y*6+z)~=buffer%z THEN
+			    RESULTIS FALSE
+		        RESULTIS TRUE
+		     $) THEN RESULTIS y
+		    RESULTIS -1
+		 $)
+		UNLESS z=-1 THEN v!z := (read(5)<<8)+read(6)
+		ENDCASE
+	    CASE 2 : z := VALOF
+		 $( FOR y=0 TO 2 DO IF VALOF
+		     $( FOR z=1 TO 6 DO IF istring%(y*6+z)~=buffer%z THEN
+			    RESULTIS FALSE
+		        RESULTIS TRUE
+		     $) THEN RESULTIS y
+		    RESULTIS -1
+		 $)
+		UNLESS z=-1 THEN w!z := (read(5)<<8)+read(6)
+		ENDCASE
+            CASE 1 : endread()
+                BREAK
+         $)
+     $) REPEAT
+    FOR y=0 TO numberofwords-1 DO
+     $( z := v!y
+	UNTIL z=-1 DO
+	 $( z := z-w!0+1
+	    map%(z/8) +:= #X80>>(z REM 8)
+	    z := (z-1+w!0)&mask
+	    z := code%z+((code%(z+1))<<8)
+	 $)
+     $)
+    selectoutput(findoutput("BIOSMAP.OBJ"))
+    writes("$BIOSMA050031*n")
+    sum := 0
+    FOR x=w!2-w!1 TO w!2-1 BY 32 DO
+     $( wrch(':')
+        z := w!2-x
+        IF z>32 THEN z := 32
+	puthex(z)
+	puthex(x>>8)
+	puthex(x&255)
+	puthex(0)
+	FOR y=0 TO z-1 DO puthex(map%(x-(w!2-w!1)+y))
+	puthex((-sum)&255)
+	wrch('*n')
+     $)
+    writes(":00000001FF*n")
+ $)
+
+LET puthex(x) BE
+ $( LET y,z=x>>4,x&15
+    wrch(y<10->y+'0',y-10+'A')
+    wrch(z<10->z+'0',z-10+'A')
+    sum +:= x
+ $)
+
+LET readline() BE
+ $( LET x,ch=0,0
+     $( ch := rdch()
+        buffer%x := ch
+        x +:= 1
+     $) REPEATUNTIL ch='*n'
+ $)
+
+LET read(n)=VALOF
+ $( LET x,y=buffer%(n+n-1)-'0',buffer%(n+n)-'0'
+    IF x>=10 THEN x -:= 'A'-'0'-10
+    IF y>=10 THEN y -:= 'A'-'0'-10
+    RESULTIS (x<<4)+y
+ $)
+

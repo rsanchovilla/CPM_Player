@@ -1,0 +1,720 @@
+	TITLE	BIO - STRUCTURED BASIC I/O ROUTINES	<< introduction >>
+ rem
+ rem**************************************************************************** rem
+ rem THE FOLLOWING ROUTINES AND TABLES CONSTITUTE SBASIC'S INTERFACE
+ rem .	TO THE VARIOUS PERIPHERAL DEVICES.
+ rem
+ rem FROM SBASIC A PERIPHERAL DEVICE IS TREATED AS IF IT WERE AN
+ rem .	ORDINARY DISK FILE WITH THE FOLLOWING EXCEPTIONS:
+ rem
+ rem .	1. The 'file' (peripheral) name must start with a dollar sign.
+ rem .	2. Peripheral names must be unique within the next two characters.
+ rem .		(i.e., "$LPT" and "$LPR" are seen as the same name.)
+ rem .	3. Many functions within SBASIC can only refer to disk files;
+ rem .		examples include RENAME, ERASE, and CREATE (it doesn't
+ rem .		really seem logical to be able to ERASE a line printer,
+ rem .		anyway).
+ rem .	4. Specific peripherals may or may not support all I/O operations;
+ rem .		one cannot GET data from a line printer, for example.
+ rem
+ rem
+ rem****************************************************************************
+ rem
+	TITLE	<< externals, equates, entry points, etc. >>
+ rem
+ rem EXTERNAL ROUTINES WHICH MAY BE USED BY THE I/O ROUTINES
+ rem
+	EXT	PSHALL	; SAVE ALL REGISTERS (INCLUDING IX,IY,HL',ETC.)
+			; 	ON CPU STACK
+	EXT	POPALL	; RESTORE ALL REGISTERS
+			;	NOTE: THESE ROUTINES MUST BE ACCESSED BY A 'CALL'
+			; 	      DO NOT 'JP' TO THESE ROUTINES
+	EXT	UMULT	; UNSIGNED MULTIPLY
+			;	BC * DE => HL,DE  (16 BIT RESULT IN DE)
+			;	IF HL>0 (32 BIT RESULT) ROUTINE RETURNS 'NZ'
+			;	[USE CDOS CALL FOR DIVIDE, IF NEEDED.]
+	EXT	ERTIME	; TIME-OUT ERROR FOR TIMED INPUT.  DO NOT USE.
+	EXT	ERRIO	; GENERAL I/O ERROR.  TO USE, PLACE DESIRED ERROR
+			;	CODE IN THE A REGISTER AND CALL ERRIO.
+			;	NOTE: IF ERROR CODE IS 0-127, THE RESULTANT
+			;	      ERROR WILL NOT BE TRAPPABLE FROM THE
+			;	      SBASIC PROGRAM.
+			;	NOTE: ALSO SEE BELOW FOR SPECIAL ERROR RETURNS
+			;	      FROM SOME FUNCTIONS.
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem ENTRY POINTS WITHIN THIS MODULE
+ rem
+ rem**************************************************************************** rem
+	ENTRY	DDLIST	; MASTER DEVICE DRIVER TABLE
+ rem
+	ENTRY	SYGETC	; GET-CHARACTER-FROM SYSTEM CONSOLE
+			; NOTE: NOT NORMALLY USED FOR PROGRAM EDITING
+			;	AND 'INPUT'.  USED BY DRIVER "$CONSOLE"
+			;	AND BY 'GET' STATEMENT ('GET\0\...')
+			;	AND ALWAYS USED IF 'SET 14,1' USED IN SBASIC.
+ rem
+	ENTRY	SYPUTC	; PUT-A-CHARACTER TO SYSTEM CONSOLE. USED
+			; FOR ALL CONSOLE OUTPUT.
+	ENTRY	CHSTAT	; CHECK CONSOLE STATUS.  USED FOR CHECKING TO SEE
+			; IF A KEY (PARTICULARLY AN ESCAPE) HAS BEEN PUSHED.
+	FORM
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem FIXED OFFSETS AND RAM TABLE LOCATIONS WITHIN SBASIC WHICH ARE USED
+ rem .	BY I/O ROUTINES.
+ rem
+ rem**************************************************************************** rem
+ rem
+ rem THE EXTENDED FILE CONTROL BLOCK (EFCB)
+ rem .	EACH OPEN FILE IS ASSIGNED AN EFCB (AND ALL CALLS RECEIVE ADDRESS
+ rem .	OF THIS EFCB IN THE IY REGISTER).  CERTAIN PARAMETERS ARE PASSED
+ rem .	TO THE I/O ROUTINES VIA THESE BLOCKS.  
+ rem
+EFCB	EQU	0	; THE BASE ADDRESS
+EFCBUS	EQU	0	; EFCB-IN-USE FLAG:  SET AND RESET BY SYSTEM!
+			; DON'T TOUCH!
+EFCBDA	EQU	1	; ADDRESS OF THE DEVICE DRIVER CURRENTLY USING 
+			; THIS EFCB.  NOTE THAT THIS IS THE ADDRESS
+			; OF THE HEAD OF ITS TABLE (SEE BELOW).
+EFCBDD	EQU	3	; DEVICE DEPENDENT INFORMATION -- THESE TWO BYTES
+			; ARE COPIED FROM THE DEVICE'S ENTRY IN DDLIST.
+EFCBP1	EQU	5	; PARAMETER 1 ... PASSED AT 'OPEN' TIME VIA
+			; 'OPEN\CHANNEL,PARM1,PARM2\...' FROM SBASIC.
+EFCBP2	EQU	7	; PARAMETER 2 ... PASSED BY 'OPEN', AS ABOVE.
+ rem
+EFCBS1	EQU	9	; STATUS PARAMETER 1 ... PASSED AT I/O TIME VIA
+			; GET, PUT, PRINT, INPUT ... FOR EXAMPLE:
+			; 'GET\CHANNEL,STATUS1,STATUS2\...' FROM SBASIC.
+EFCBS2	EQU	11	; STATUS PARAMETER 2 ... SIMILAR TO EFCBS1.
+ rem
+EFCBFREE EQU	13
+EFCBTOP	 EQU	191	; THE REST OF THE 192 BYTES OF THE EFCB IS AVAILABLE
+			; TO THE DRIVER FOR TEMPORARY STORAGE, BUFFERED I/O,
+			; OR WHATEVER IS NECESSARY.
+ rem
+ rem
+ rem Equates for CDOS system calls, etc.
+ rem
+SYSPUTC	EQU	2	; 'PUT C'HARACTER TO SYSTEM CONSOLE
+SYSCRDY EQU	11	; CHECK IF CHARACTER READY AT SYSTEM CONSOLE
+SYSRNE	EQU	128	; READ ONE CHARACTER FROM SYSTEM CONSOLE, WITHOUT ECHO
+SYSCRT	EQU	142	; Special CRT Function (cursor addressing, fields,etc.)
+ rem
+SYSRDR	EQU	3	; GET BYTE FROM 'READER' DEVICE
+SYSPUN	EQU	4	; PUT BYTE TO 'PUNCH' DEVICE
+SYSLPT	EQU	5	; PUT BYTE TO 'LIST' OR 'PRINTER' DEVICE
+ rem
+	FORM
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem FIXED RAM LOCATIONS
+ rem CAUTION!  VALID ONLY FOR VERSION 03.XX SBASIC.
+ rem
+ rem
+	ABS
+CDOS:	EQU	5	; SBASIC ALWAYS USES STANDARD CDOS ENTRY POINT!
+ rem
+ rem
+	ORG	0230H
+SETSYS:			; THE VARIOUS SET/SYS() PARAMETERS !
+			; SEE SBASIC MANUAL FOR EXPLANATION OF USAGE FROM
+			; SBASIC...SOME OF THESE MAY BE USEFUL TO 
+			; AN I/O DRIVER.  PARAMETERS THAT SHOULD NOT
+			; BE CHANGED HAVE NOT BEEN NAMED HERE.
+PAGESIZE DS	2	; MAX CHARACTERS PER LINE FOR OUTPUT...IF MSB
+			; 	IS SET, PAGESIZE IS INFINITE.
+TABSIZE  DS	2	; NUMBER OF COLUMNS BETWEEN PRINT POSITIONS WHEN
+			;	USING 'PRINT A,B,...'
+LASTCHAR DS	2	; LAST CHARACTER OUTPUT TO ANY DEVICE (LSB ONLY)
+			;
+LASTERR	 DS	2	; LAST RUNTIME ERROR NUMBER IS IN LSB.  MSB NOT USED
+			;	BY SYSTEM, BUT MOST USER PROGRAMS EXPECT 
+			;	IT TO BE ZERO.
+COLUMN	 DS	2	; CURRENT PRINT COLUMN.  RESET TO ZERO ONLY BY CR
+			;	(BUT I/O ROUTINES COULD CHANGE IF WANTED)
+TIMER	 DS	2	; INPUT TIMEOUT COUNTER.
+			;
+ rem
+ rem
+ rem THE FOLLOWING LOCATIONS REFERENCE INTERNAL SBASIC FLAGS, ETC.
+ rem $CONSOLE USES THEM TO PROVIDE I/O TRULY COMPATIBLE WITH 'SYGETC'
+ rem (SEE BELOW). NO DOCUMENTATION OF USAGE IS PROVIDED.  USER-WRITTEN
+ rem DRIVERS SHOULD NOT USE THESE LABELS.
+ rem
+FLGECH	EQU	031DH
+MODECH	EQU	0260H
+MODFIL	EQU	0267H
+MODRUN	EQU	021FH
+ rem
+	TITLE	<<< DDLIST - list of available drivers >>>
+	REL		; BEGIN ACTUAL CODE GENERATION
+ rem
+ rem DDLIST -- a table of names, entry point addresses, etc. of all 
+ rem .		peripheral device drivers available to SBASIC users.
+ rem
+ rem
+ rem DDLIST consists of a series of 8-byte entries, each defining a separate
+ rem .		device driver.  The format of each entry must follow
+ rem .		certain rules.  The offsets of required information within
+ rem .		each entry is shown below:
+ rem
+ rem OFFSET (bytes)	INFORMATION
+ rem
+ rem .   0	  (2)		the device name...without the '$' that the SBASIC
+ rem .				user needs.
+ rem .   2	  (2)		the address of the driver that will handle I/O to
+ rem .				this named device.
+ rem .   4	  (2)		device dependent ... each driver may designate its
+ rem .				own usage for these bytes.  
+ rem .			   NOTE:   SBASIC will move these bytes into the
+ rem .				bytes labeled EFCBDD within the appropriate
+ rem .				EFCB before calling the driver's OPEN routine.
+ rem .   6	  (2)		RESERVED for future use.  Should be zero.
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem
+ rem
+ rem the actual DDLIST:
+ rem
+ rem
+ rem
+DDLIST:
+ rem
+ rem first entry
+ rem
+	db	'CO'	  ; "$COnsole" -- the system console driver
+	dw	DRCONSOLE ; address of the driver for this device
+	db	0,0	  ; driver does not use device dependent info
+	dw	0	  ; --reserved--
+ rem
+ rem next entry
+ rem
+	db	'SY'	  ; "$SYstem console" -- historical name
+			  ; NOTE:  this driver differs from $CONSOLE in that
+			  ;	it directly accesses the 4FDC/TUART port
+			  ;	rather than going thru CDOS. CAUTION!!
+	dw	DRTUART	  ; address of the general purpose TUART driver
+	db	00H	  ; first EFCBDD byte: port address !
+	db	0	  ; second EFCBDD byte: do not set baud rate on OPEN
+	dw	0	  ; --reserved--
+ rem
+ rem next entry
+ rem
+	db	'T5'	  ; "$T50" -- tuart port 50H -- used in some systems
+			  ;	as a serial line printer.
+	dw	DRTUART	  ; note that the driver address is the same as that 
+			  ;	used by "$SY" !!!
+	db	50H	  ; first EFCBDD byte: port address is 50H.
+	db	0	  ;  second EFCBDD byte: do not set baud rate on OPEN
+	dw	0	  ; --reserved--
+ rem
+ rem next entry
+ rem
+	db	'LP'	  ; "$LPT" -- the line printer
+	dw	DRLPT	  ; address of its driver
+	db	0,0	  ; no EFCBDD info
+	dw	0	  ; --reserved--
+ rem
+ rem next entry
+ rem
+	db	'RD'	  ; "$RDR" -- the CDOS 'reader device' driver
+	dw	DRRDR	  ; address of driver
+	db	0,0
+	dw	0
+ rem
+ rem next entry
+ rem
+	db	'PU'	  ; "$PUNCH" -- the CDOS 'punch device' driver
+	dw	DRPUNCH	  ; address of driver
+	db	0,0
+	dw	0
+ rem no more entries
+ rem
+	db	0	  ; *** this zero byte must be here to signal 
+			  ;	the end of DDLIST ***
+ rem
+	TITLE	<<< comments on schema of driver routines >>>
+ rem
+ rem
+ rem Just as the DDLIST must adhere to a certain format, a peripheral device
+ rem .	driver must conform to SBASIC's rules.
+ rem
+ rem The driver address specified at OFFSET 2 within any DDLIST entry must, 
+ rem .	in turn, point to a table of eight (8) two-byte addresses.
+ rem .	Each address within this new table (known as the 'DRIVER
+ rem .	ROUTINES TABLE') points to a sub-driver which implements a particular
+ rem .	primitive I/O function, according to SBASIC's definition thereof.
+ rem
+ rem The following shows the offset within the table (in bytes) of each 
+ rem .	subroutine address, a description of the necessary routine, and
+ rem .	a list of what parameters are passed and where.  The notation 'ERROR:'
+ rem .	indicates what error message results if the A register contains a
+ rem .	non-zero value upon return from the routine.  Be sure to zero A
+ rem .	if no error is encountered!!!!
+ rem
+ rem
+ rem OFFSET (bytes)	 DESCRIPTION
+ rem
+ rem .   0	(2)	    *	OPEN.  This routine is called when the user OPENs
+ rem .				the device from SBASIC.  It should perform
+ rem .				any needed initialization.
+ rem .			    EFCBDD contains the device dependent bytes
+ rem .				from the DDLIST entry.
+ rem .			    EFCBP1 and EFCBP2 contain the parameters passed
+ rem .				by the user's OPEN request (see above).
+ rem .			    The A' register contains 0,1, or 2 -- a count
+ rem .				of the parameters passed.
+ rem .				(note: EFCBP1 and EFCBP2 will contain 0FFFFH
+ rem .				if the user did not specify a value.)
+ rem .			    ERROR: 134, Cannot open file.
+ rem
+ rem .   2	(2)	    *	CLOSE.  called when the file channel (number) is closed
+ rem .				either implicitly or explicitly.  The routine
+ rem .				should perform any necessary cleanup (buffer
+ rem .				flushes, etc.).
+ rem .			    NO parameters are passed.
+ rem .			    ERROR: 142, Cannot CLOSE file.
+ rem
+ rem .   4	(2)	    *	SET STATUS OR POSITION.  called at each usage of any 
+ rem .				file I/O statement (GET, PUT, PRINT, or INPUT).
+ rem .				The parameters specified by the user ( as in
+ rem .				'PUT \channel,parm1,parm2\ ...' ) are passed
+ rem .				to SET STATUS for usage on a device-dependent
+ rem .				basis.
+ rem .			    EFCBS1 and EFCBS2 contain the parameters (or
+ rem .				0FFFFH if not specified).
+ rem .			    Register A' contains the parameter count.
+ rem .			    ERROR: 140, File position/status.
+ rem
+ rem .   6	(2)		GET STATUS OR POSITION.  called by the IOSTAT()
+ rem .				function.  Usage is device dependent, and 
+ rem .				the second value of the function may be 
+ rem .				used to select one of several returned values.
+ rem .			    Register A' contains the second value passed
+ rem .				to the IOSTAT function (e.g., "n" in
+ rem .				'IOSTAT( channel, n )' .
+ rem .			    ERROR: 140, File position/status.
+ rem
+ rem .   8  (2)		OUTPUT ONE BYTE  or character.  Currently all I/O
+ rem .				to peripheral devices is performed on a 
+ rem .				byte-at-a-time basis.  If buffering is desired,
+ rem .				the driver should provide it.
+ rem .			    The byte to output is passed in the A register.
+ rem .			    (No error return exists for this function --
+ rem .				use ERRIO as noted above to force an error.)
+ rem
+ rem .  10	(2)		INPUT ONE BYTE  or character.  The byte is NOT masked
+ rem .				to 7-bits by GET, but is so masked by INPUT.
+ rem .			    The input byte should be returned in the 
+ rem .				A register.
+ rem .			    (No error return exists for this function --
+ rem .				use ERRIO as noted above to force an error.)
+ rem
+ rem .  12  (2)		--RESERVED-- not currently in use.  should be zero.
+ rem .  14	(2)		--RESERVED-- not currently in use.  should be zero.
+ rem
+ rem============================================================================ rem
+ rem NOTES:	an asterisk denotes routines which MUST be included in
+ rem .			each driver!
+ rem .		for the optional routines, an omitted routine should be
+ rem .			be marked by an address of zero.  A user attempt
+ rem .			to access such a routine (e.g., by trying to INPUT
+ rem .			from a line printer) will generate an ERROR: 130,
+ rem .				Invalid command for device.
+ rem
+ rem
+ rem---------------------------------------------------------------------------- rem
+ rem .dummy -- A Special Routine
+ rem
+ rem
+ rem Several of the device drivers have 'missing' routines...that is
+ rem .	they do not implement one or more of the 'required' routines
+ rem .	(open, close, and set status).  However, SBASIC will not run
+ rem .	correctly with a driver if these routines are not supplied.
+ rem .	Since these routines are expected to return a zero in the
+ rem .	A register if no errors are encountered, the following routine
+ rem .	serves this purpose.
+ rem
+.dummy:
+	XOR	A	; this zeroes the A register...
+	RET		; and this ensures a no-error routine to SBASIC.
+ rem
+ rem---------------------------------------------------------------------------- rem
+	TITLE	<<< the CONSOLE driver >>>
+ rem
+ rem
+ rem the driver for $CONSOLE includes the routines used for SBASIC's
+ rem .	primary console I/O.
+ rem .	EXCEPT:  program entry from the keyboard and responses to the 
+ rem .		 INPUT statement use the CDOS read-a-buffered-line
+ rem .		 system call.  Usage of the CDOS routine may be 
+ rem .		 overridden by the user via a 'SET 14,1' command.
+ rem .		 NOTE that the command sequence
+ rem .			OPEN \n\ "$CONSOLE"
+ rem .			INPUT \n\ ...
+ rem .		 will NOT use the CDOS routine, but will instead use
+ rem .		 this driver.
+ rem
+ rem
+DRCONSOLE:
+ rem
+	dw	.dummy	; the CONSOLE does not require or use an OPEN routine
+	dw	.dummy	; nor does it use a CLOSE routine
+			;	but NOTE that the routines must exist,
+			;	even if they are dummies !!!
+	dw	CONSET	; the SET STATUS routine may be used to change
+			;	cursor position, etc.
+	dw	0       ; currently, the CONSOLE does not support a status 
+			;	read (cursor read?)
+			;	NOTE that this routine may be omitted, and
+			;	hence the use of the zero 'address'.
+	dw	SYPUTC	; master system output-a-character routine
+			;
+	dw	CONGETC	; get-a-character from console:  almost identical
+			;	to master system getc...see below.
+	dw	0	; --reserved--
+	dw	0	; --reserved--
+ rem
+ rem
+ rem end of driver table for $CONSOLE
+ rem
+ rem**************************************************************************** rem
+	FORM
+ rem
+ rem start of driver routines:
+ rem
+ rem
+ rem put-a-character
+ rem
+SYPUTC:
+	PUSH	DE	; (NORMALLY NOT REQUIRED OF A DRIVER --
+	PUSH	BC	;   SYSTEM DRIVER IS AN EXCEPTION -- SAVES TIME
+	LD	A,(LASTCHAR) ;  AND SPACE MANY PLACES TO HAVE IT DO ITS
+			;	OWN HOUSEKEEPING.)
+	LD	E,A	; CDOS EXPECTS THE CHARACTER HERE
+	LD	C,SYSPUTC  ; SYSTEM CALL FOR PUTC
+	CALL	CDOS	; OUTPUT THE CHARACTER
+ rem
+	POP	BC	; RECOVER OUR OWN REGS...
+	POP	DE
+	RET		;AND QUIT.
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem GET-A-CHARACTER
+ rem
+ rem
+ rem CONGETC is specially designed to 'simulate' console I/O and hence must fool
+ rem .	SBASIC's get-a-line routine into believing that it called SYGETC
+ rem .	directly instead of via $CONSOLE.  
+ rem
+CONGETC:
+	LD	A,(FLGECH)
+	LD	(MODECH),A
+	LD	A,0FFH
+	LD	(MODFIL),A	; GET-A-LINE IS PROPERLY FOOLED
+ rem
+ rem NOW CONGETC SIMPLY FALLS THRU TO SYGETC...SBASIC'S STANDARD GET-A-BYTE-FROM-
+ rem .	CONSOLE ROUTINE (SEE NOTE ABOVE ABOUT 'SET 14,1').
+ rem
+ rem
+ rem NOTE: SYGETC DOES SEVERAL THINGS IN ITS OWN WAY:  NOT THE LEAST OF
+ rem .		WHICH IS HANDLING THE INPUT TIMER TIMEOUT.
+ rem
+SYGETC:
+	
+.TIME	EQU	175	; THIS IS THE FUNDAMENTAL WAIT-FOR-A-TENTH-OF-A-SECOND
+			; COUNTER VALUE...CHANGE THIS TO FIT YOUR SYSTEM
+			; IF YOU WISH (DIFFERENT MEMORY SPEEDS, DIFFERENT
+			; VERSION OF CDOS CAN AFFECT THIS).
+ rem
+	PUSH	HL	; AGAIN, SYGETC DOES ITS OWN HOUSEKEEPING
+	PUSH	DE
+	PUSH	BC
+ rem
+	LD	A,(MODRUN) ; FLAG: >0 IF A PROGRAM IS RUNNING!
+	OR	A
+	JR	Z,CHARRDY	; PROGRAM ENTRY...NO TIMED INPUT
+	JP	M,CHARRDY	; DIRECT STATEMENT EXECUTION...TO TIMING
+ rem
+	LD	HL,(TIMER)
+	LD	A,H
+	OR	L	; CHECK CURRENT VALUE OF TIMER
+	JR	Z,CHARRDY ; THE TIMER IS ALREADY ZERO.  MEANS ITS NOT ACTIVE.
+ rem
+ rem
+ rem READY TO DO TIMED INPUT
+ rem
+TIMED:
+	LD	B,.TIME
+ rem
+SGCLOOP:		; WAIT LOOP
+	CALL	CHSTAT	; CHECK FOR CHARACTER READY...SEE BELOW
+	OR	A
+	JR	NZ,CHARRDY ; STOP TIMING...A CHARACTER IS READY
+	DJNZ	SGCLOOP	; OTHERWISE KEEP WAITING
+ rem
+ rem MINOR TIMER (REG B == .TIME) HAS TIMED OUT...TICK OFF 1/10TH OF A SECOND
+ rem
+ rem
+	DEC	HL	; COUNT DOWN BY ONE
+	LD	(TIMER),HL ; AND PUT IT BACK FOR NEXT TIME
+	LD	A,H
+	OR	L	 ; AND CHECK ONCE AGAIN...
+	CALL	Z,ERTIME ; TIMER RAN OUT.  GENERATE USER-TRAPPABLE
+			 ; ERROR...NOTE THAT SYS(5) IS ALREADY SET TO 0 NOW
+			 ; SO FURTHER INPUTS WON'T BE TIMED.
+	JR	TIMED	 ; AND GO TRY FOR ANOTHER TIMER TICK
+ rem
+ rem**************************************************************************** rem
+ rem TO HERE WHEN 1) CHARACTER IS READY  OR  2) WHEN WE ARE NOT DOING TIMED INPUT
+ rem
+CHARRDY:
+	LD	C,SYSRNE	; READ FROM CONSOLE WITH NO ECHO
+	CALL	CDOS		; (BECAUSE SBASIC DOES ITS OWN SPECIAL ECHOING)
+	LD	(LASTCHAR),A	; HISTORICAL
+	POP	BC	
+	POP	DE
+	POP	HL		; CLEAN UP OUR HOUSE
+	RET			; AND BACK TO CALLER
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem CONSOLE SET STATUS ( SET CURSOR POSITION )
+ rem
+CONSET:
+	EX	AF,AF'	; GET COUNT OF PARAMETERS TO A REGISTER
+	OR	A	; IS COUNT ZERO?
+	RET	Z	; YES...SO WE DON'T DO A SET STATUS. NOTE THAT
+			;	WE ARE RETURNING WITH A=0...IMPLYING
+			;	THAT WE FOUND NO ERROR!
+ rem
+	LD	E,0	; ( IN CASE THERE IS NO SECOND PARAMETER )
+ rem
+	LD	D,(IY+EFCBS1)  ; D REGISTER GETS LSB OF FIRST PARAMETER...
+			;		NOTE THAT NO CHECK IS PERFORMED
+			;		AS TO LEGALITY OF THE VALUE...SEE
+			;		CDOS MANUAL FOR SIDE-EFFECTS.
+	CP	2	; NOW CHECK: DID USER PASS A SECOND PARAMETER?
+	JR	NZ,CSET2; NO...SO WE USE THE ZERO IN E-REGISTER AS PARM2
+ rem
+	LD	E,(IY+EFCBS2) ; AND THIS IS LSB OF SECOND PARAMETER.
+ rem
+CSET2:
+	LD	C,SYSCRT ; REQUEST SPECIAL CRT FUNCTION
+	CALL	CDOS	 ; ...FROM CDOS
+ rem
+	XOR	A	 ; ENSURE THAT A=0 (NO ERROR ENCOUNTERED)
+	RET		 ; AND BACK TO USER
+ rem
+ rem**************************************************************************** rem
+ rem THE FOLLWING ROUTINE IS REQUIRED BY SBASIC.  IT IS THROUGH THIS
+ rem .	ROUTINE THAT SBASIC CHECKS FOR AN ESCAPE-KEY WHILE A PROGRAM
+ rem .	IS RUNNING.  MODIFY AT YOUR OWN RISK!
+ rem
+CHSTAT:
+	LD	C,SYSCRDY
+	CALL	CDOS	; WE LET CDOS DO ALL THE WORK!
+	RET
+ rem
+	TITLE	<<< a general-purpose TUART driver >>>
+ rem
+ rem DRTUART -- this is a fairly complete driver for serial I/O via
+ rem .		a Cromemco TUART (or the serial port of the 4FDC).
+ rem
+ rem FEATURES:
+ rem .	One driver may be used to access any TUART port.
+ rem .	The DDLIST may specify a default baud rate (to 9600 baud) or
+ rem .		it may specify that the currently set baud rate remain
+ rem .		unchanged.
+ rem .	The SBASIC user may override any baud rate specified via the DDLIST.
+ rem
+DRTUART:			; the driver table comes first
+ rem
+	dw	TUOPEN		; open a tuart port
+	dw	.dummy		; no CLOSE routine needed
+	dw	.dummy		; set status not supported
+	dw	0		; get status not legal
+	dw	TUPUTC		; put-a-character to TUART port
+	dw	TUGETC		; get-a-character from TUART port
+	dw	0		; --reserved--
+	dw	0		; --reserved--
+ rem
+ rem**************************************************************************** rem
+ rem OPEN a TUART serial port
+ rem
+TUOPEN:
+	LD	C,(IY+EFCBDD)	; THE FIRST BYTE OF THE DEVICE DEPENDENT INFO
+				; SPECIFIES THE TUART PORT ADDRESS.
+	LD	A,(IY+EFCBDD+1)	; THE SECOND BYTE OF THE DEVICE DEPENDENT 
+				; ENTRY...NOTE THAT SBASIC HAS MOVED IT FROM
+				; THE DDLIST INTO OUR OWN PERSONAL EFCB!
+	OR	A		; DID THE DDLIST SPECIFY A DEFAULT BAUD RATE?
+	JR	Z,TUOP2		; NO...LEAVE THE BAUD RATE ALONE
+ rem
+	OUT	(C),A		; SEND OUT BAUD RATE TO TUART...NOTE THAT
+				; THE DDLIST ENTRY IS EXPECTED TO CONTAIN
+				; THE CORRECT BIT PATTERN FOR THE DESIRED
+				; BAUD RATE !!! CAUTION !!!
+	LD	A,0		; THIS IS A JUST-IN-CASE...
+	INC	C
+	INC	C		; WE ADDRESS PORT n2H...THE TUART COMMAND 
+				; 	REGISTER
+	OUT	(C),A		; AND ENSURE THAT WE ARE NOT IN 'HIGH BAUD'
+				;	(OCTUPLED BAUD RATE) MODE.
+	DEC	C
+	DEC	C		; BACK TO PRIMARY PORT ADDRESS
+ rem
+ rem DDLIST-SPECIFIED BAUD RATE HAS BEEN SET
+ rem
+TUOP2:	
+	EX	AF,AF'		; GET COUNT OF USER-SPECIFIED PARAMETERS
+	OR	A
+	RET	Z		; NONE SPECIFIED...SO WE ARE DONE WITH 'OPEN'
+ rem
+ rem USER REQUESTED A SPECIAL BAUD RATE/COMMAND FOR THE TUART
+ rem
+	LD	B,0		; A DEFAULT VALUE: NO OCTUPLED BAUD RATE
+	CP	2		; DID USER SPECIFY 2 PARAMETERS?
+	JR	NZ,TUOP3	; NO...JUST ONE.
+	LD	B,(IY+EFCBS2)	; YES...RETRIEVE IT...
+TUOP3:
+	INC	C
+	INC	C
+	OUT	(C),B		; THE 2ND PARM (OR DEFAULT) IS THE TUART 
+				; COMMAND REGISTER SPECIFIER!
+	DEC	C
+	DEC	C		; BACK TO THE BAUD-RATE PORT
+ rem
+	LD	A,(IY+EFCBS1)	; GET USER-SPECIFIED BAUD RATE
+	OUT	(C),A		; AND NOW THE TUART BAUD RATE AND COMMAND ARE 
+				;	COMPLETE!
+ rem
+	XOR	A
+	RET			; RETURN WITH NO ERROR INDICATION
+ rem
+ rem**************************************************************************** rem
+ rem OUTPUT ONE CHARACTER TO TUART
+ rem
+TUPUTC:
+	LD	C,(IY+EFCBDD)	; GET PORT ADDRESS FROM EFCB (SEE TUOPEN)
+ rem
+	LD	B,A		; SAVE BYTE TO BE OUTPUT HERE FOR NOW
+ rem
+TPCLOOP:
+	IN	A,(C)		; GET STATUS OF THIS TUART
+	AND	080H		; CHECK: IS TRANSMIT BUFFER EMPTY?
+	JR	Z,TPCLOOP	; NO...WE MUST WAIT FOR IT TO FINISH LAST
+				;	CHARACTER TRANSMISSION.
+ rem
+	INC	C		; TO THE DATA PORT OF THE TUART
+	LD	A,B		; SO THAT BYTE RETURNS STILL IN A
+	OUT	(C),A		; AND OUTPUT ONE BYTE TO TUART!
+	RET
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem INPUT ONE CHARACTER FROM TUART
+ rem
+TUGETC:
+	LD	C,(IY+EFCBDD)	; THE PORT ADDRESS FROM EFCB
+ rem
+TGCLOOP:
+	IN	A,(C)		; CHECK TUART STATUS PORT
+	AND	040H		; IS DATA AVAILABLE YET?
+	JR	Z,TGCLOOP	; NO...WAIT FOR IT.
+ rem
+	INC	C		; TO THE DATA PORT OF THIS TUART
+	IN	A,(C)		; GET THE BYTE
+	RET			; AND QUIT.
+ rem
+	TITLE	<<< INTERFACES TO CDOS READER,PUNCH, AND LIST DEVICES >>>
+ rem
+ rem These interfaces are simple.  They support only
+ rem .	unidirectional I/O, do not allow any status passing, and (with the
+ rem .	exception of the printer driver) do nothing at OPEN or CLOSE time.
+ rem
+ rem**************************************************************************** rem
+ rem PRINTER or LIST device --- "$LPT" from SBASIC
+ rem
+ rem**************************************************************************** rem
+DRLPT:			; first, the driver address table
+ rem
+	dw	LPTOPEN	; a simple open routine
+	dw	.dummy	; no CLOSE routine
+	dw	.dummy	; and no SET STATUS routine
+	dw	0	; GET STATUS is illegal here
+	dw	LPTPUTC	; output 1 character to the printer
+	dw	0	; trying to get a character from a printer is illegal
+	dw	0	; --reserved--
+	dw	0	; --reserved--
+ rem
+ rem**************************************************************************** rem
+LPTOPEN:
+	LD	A,0CH	; THIS IS AN ASCII FORM FEED...
+	CALL	LPTPUTC	; ...WHICH WE OUTPUT EACH TIME THE PRINTER IS OPENED
+ rem
+	XOR	A	; ZERO TO A
+	RET		; ...SAYS THAT OPEN WAS SUCCESSFUL !
+ rem
+ rem**************************************************************************** rem
+LPTPUTC:
+	LD	E,A	; MOVE CHARACTER TO WHERE CDOS EXPECTS IT
+	LD	C,SYSLPT
+	CALL	CDOS	; AND OUTPUT ONE CHARACTER VIA CDOS
+	RET		; AND THAT IS ALL
+ rem
+ rem**************************************************************************** rem
+ rem PUNCH device -- "$PUNCH"
+ rem
+ rem**************************************************************************** rem
+DRPUNCH:		; the device address table
+ rem
+	dw	.dummy	; no OPEN routine
+	dw	.dummy	; no CLOSE routine
+	dw	.dummy	; no SET STATUS routine
+	dw	0	; GET STATUS is illegal
+	dw	PUNPUTC	; output 1 character to punch
+	dw	0	; get-a-byte from punch is illegal
+	dw	0	; --reserved--
+	dw	0	; --reserved--
+ rem
+ rem**************************************************************************** rem
+PUNPUTC:		; OUTPUT ONE CHARACTER TO PUNCH
+	LD	E,A	; WHERE CDOS EXPECTS THE CHARACTER
+	LD	C,SYSPUN
+	CALL	CDOS	; OUTPUT VIA CDOS SYSTEM CALL
+	RET
+ rem
+ rem
+ rem**************************************************************************** rem
+ rem READER driver -- "$RDR"
+ rem
+ rem**************************************************************************** rem
+DRRDR:			; device driver address table
+ rem
+	dw	.dummy	; no OPEN
+	dw	.dummy	; no CLOSE
+	dw	.dummy	; no SET STATUS
+	dw	0	; illegal to GET STATUS
+	dw	0	; can't PUT a character to the reader
+	dw	RDRGETC ; get 1 character (byte) from reader
+	dw	0	; --reserved--
+	dw	0	; --reserved--
+ rem
+ rem**************************************************************************** rem
+RDRGETC:		; GET 1 BYTE FROM READER DEVICE
+	LD	C,SYSRDR
+	CALL	CDOS	; LET CDOS DO ALL THE WORK!
+	RET
+ rem
+ rem**************************************************************************** rem
+ rem .	END OF SBASIC DRIVERS...ADD YOUR OWN
+ rem
+	END
+

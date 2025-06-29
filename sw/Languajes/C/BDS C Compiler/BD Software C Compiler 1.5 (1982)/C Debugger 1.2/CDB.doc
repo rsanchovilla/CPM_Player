@@ -1,0 +1,529 @@
+
+
+
+   CDB: A Debugger for BDS C                                           page 1
+
+
+
+
+
+
+
+
+
+                            CDB: A Debugger for BDS C
+
+
+
+                                   Version 1.2
+                                 4 November 1982
+
+                                 David Kirkland
+                                5915 Yale Station
+                          New Haven, Connecticut  06520
+                                 (203) 787-9764
+
+                      Copyright (c) 1982 by David Kirkland
+
+          This document is a continuation  of  the CDB Appendix from the
+        BDS C User's Guide.  It is  supplied on disk instead of on paper
+        because of the large number of characters that  are  unprintable
+        on the daisy wheel currently being used to  run  off  the User's
+        Guide.  Note that all really useful reference material is in the
+        CDB Appendix of the User's Guide; the  main items given here are
+        a file listing and a sample CDB session.
+
+
+
+
+                                 Files Supplied
+
+
+     The following CDB-related files are supplied  on  the  CDB  distribution
+   disk:
+
+           L2.C            |  source code for L2 linker
+           CHARIO.C        |
+           L2.COM             executable form of L2 linker
+
+
+           CDB.DOC            this file
+
+           CDB.H              header file for CDB.COM and CDB2.OVL
+
+           CDB.COM            prepared for BDOS at or above D000
+
+           CDB1.H          |
+           CDB.C           |  source code for CDB.COM
+           BUILD.C         |
+
+           CDB2.OVL           prepared for BDOS at or above D300
+
+
+
+
+
+
+
+
+
+   CDB: A Debugger for BDS C                                           page 2
+
+
+
+
+           CDB2.H          |
+           CDB2.C          |
+           ATBREAK.C       |
+           BREAK.C         |  source code for CDB2.OVL
+           COMMAND.C       |
+           PRINT.C         |
+           PARSE.C         |
+           UTIL.C          |
+           DASM.CSM        |
+
+           DASM.CRL           CRL version of DASM.CSM
+
+           CDB.SUB            command file to simplify compilation and linkage
+                              of CDB.COM
+           CDB2.SUB           command file to simplify compilation of
+                              CDB2 components
+           LCDB2.SUB          command file to simplify linkage of CDB2.OVL
+
+
+
+
+                      An Example -- A CDB Debugging Session
+
+
+     This section contains a transcript of a debugging session to demonstrate
+   the  use  of  CDB.   The  target  program, which is contained in the  file
+   TARGET.C, is as follows:
+
+   /*
+    *  /.C    David Kirkland, 20 October 1982
+    *
+    *  This is a short submit program.  It is designed to be used
+    *  when the user wants to batch a few commands, but it's too
+    *  much trouble to edit a SUB file to do the work.  It can be
+    *  used in two forms:
+    *
+    *  B>/ command line 1; command line 2; ... command line n
+    *
+    *  or
+    *
+    *      B>/
+    *      }command 1
+    *      }command 2
+    *       .
+    *       .
+    *      }command n
+    *      }
+    *
+    *  In the first form, the / command is entered with arguments.
+    *  group of characters delimited by a semicolon (or the end of
+    *  the line) is treated as a separate command.
+    *
+
+
+
+
+
+
+
+
+
+   CDB: A Debugger for BDS C                                           page 3
+
+
+
+    *  In the second form, / is entered without arguments.
+    *  / then prompts with a "}", and the user enters commands, one
+    *  per line.  A null line terminates command entry.
+    *  (To enter a null line, enter a singe ^ on the line.)
+    *
+    *  In either form, control characters can be entered either
+    *  directly or via a sequence beginning with a "^" and followed
+    *  by a letter or one of the characters: [ \ ] ^ _
+    *
+    */
+
+
+   #include <bdscio.h>
+
+   #define OPEN            15      /* BDOS function codes  */
+   #define CLOSE           16
+   #define DELETE          19
+   #define CREATE          22
+   #define SET_DMA         26
+   #define RAND_WRITE      34
+   #define COMPUTE_SIZE    35
+
+   struct fcb {                    /* define fcb format    */
+           char drivecode;
+           char fname[8];
+           char ftype[3];
+           char extent;
+           char pad[2];
+           char rc;
+           int  blk[8];
+           char cr;
+           int  rand_rec;
+           char overflow;
+           };
+
+   #define CPMEOF 0x1a
+   #define MAXBLK 256
+   #define SUBNAME "A:$$$.SUB"
+
+   struct  fcb ffcb;
+                                   /* the way a record from the $$$.SUB  */
+   struct  subrec {                /* file looks:                        */
+           char reclen;            /*    number of characters in command */
+           char aline[127];        /*    command line                    */
+           } ;
+
+   struct  subrec out[128];
+
+   storeline(block,line) int block; char *line; {
+
+           /* storeline takes the line pointed to by "line" and
+            * converts it to $$$.SUB representation and stores
+            * it in out[block].
+
+
+
+
+
+
+
+
+
+   CDB: A Debugger for BDS C                                           page 4
+
+
+
+            * This routine handles control characters (the ^
+            * escape sequence).
+            *
+            */
+
+           char *p;
+           struct subrec *b;
+           int i, len;
+
+           b = out[block];
+
+           /* copy line into out.aline, processing control chars */
+           for (p = b->aline; *p = *line; p++, line++)
+                   if (*line=='^')
+                           if ('@' <= toupper(*++line) &&
+                                toupper(*line) <= '_')
+                                   *p = 0x1f&*line;
+                           else if (*p = *line)
+                                   break;
+
+           /* set up length byte */
+           b->reclen = len = strlen(b->aline);
+           if (len>127) {
+                   printf("Line %d is too long (%d > %d)\n",block,len,127);
+                   bdos(DELETE,ffcb);
+                   exit();
+                   }
+
+           /* pad block with CPMEOFs (not needed?) */
+           for (i=len+2;i<128;i++)
+                   *++p = CPMEOF;
+   }
+
+   main (argc, argv) int argc;  char *argv[]; {
+           char  *p,               /* points to ; that ended
+                                      current command      */
+                 *b,               /* current character in
+                                      command              */
+                 done;             /* loop control         */
+           char  line[256], *gets();
+           int   block;            /* index into out array */
+
+           block = 0;
+
+           if (argc<2)             /* prompt user format   */
+                   while (1) {
+                           putchar('}');
+                           if (!*gets(line))
+                                   break;
+                           storeline(block++, line);
+                           }
+           else {
+                   /* scan command line in low memory */
+
+
+
+
+
+
+
+
+
+   CDB: A Debugger for BDS C                                           page 5
+
+
+
+                   b = p = 0x80;
+                   for (done=0; !done; p = b) {
+                           /* skip leading whitespace */
+                           while (isspace(*++b)) p = b;
+                           while (*b && *b!=';') b++;
+                           done = !*b;
+                           *b = 0;
+                           storeline(block++, p+1);
+                           }
+                   }
+
+           setfcb(ffcb,SUBNAME);
+           if (255==bdos(OPEN,ffcb) && 255==bdos(CREATE,ffcb)) {
+                   printf("Can't create %s\n",SUBNAME);
+                   exit();
+                   }
+
+           /* find end of $$$.SUB so submits can nest */
+           bdos(COMPUTE_SIZE,ffcb);
+
+           /* write blocks in REVERSE order for CCP */
+           for(--block; block >= 0; block--) {
+                   bdos(SET_DMA, out[block]);
+                   bdos(RAND_WRITE, ffcb);
+                   ffcb.rand_rec++;
+                   }
+
+           /* all done! */
+           if (255==bdos(CLOSE,ffcb))
+                   printf("Could not close %s\n",SUBNAME);
+   }
+
+
+   The debugging session follows. Text typed by the user is in boldface.
+
+   ----- Start of Session -----
+
+
+   B>
+   B>cc target.c -k
+   BD Software C Compiler v1.50  (part I)
+      35K Unused
+   BD Software C Compiler v1.50 (part II)
+      32K to spare
+   B>l2 target -d
+   Mark of the Unicorn Linker ver. 2.2.2
+   Loading TARGET.CRL
+   Scanning A:DEFF.CRL
+   Scanning A:DEFF2.CRL
+
+   Link statistics:
+     Number of functions: 17
+     Code ends at: 0x133B
+
+
+
+
+
+
+
+
+
+   CDB: A Debugger for BDS C                                           page 6
+
+
+
+     Externals begin at: 0x133B
+     Externals end at: 0x535F
+     End of current TPA: 0xE406
+     Jump table bytes saved: 0x5D
+     Link space remaining: 26K
+
+   B>cdb target
+   c debugger ver 1.2
+   top of target stack is 8C94, cdb2 is at 9000
+   globals use 0160 bytes, locals use 00D9 bytes
+
+   break at MAIN 0 [0A54]
+   >list map
+
+   STORELIN   08A1         MAIN    0A51    TOUPPER 0CDA    STRLEN  0D11
+   PRINTF     0D51         ISSPACE 0D79    ISLOWER 0DAF    _SPR2   0DDE
+   PUTS       113E         _USPR   116A    ISDIGIT 120C    _GV2    123B
+   BDOS       1298         EXIT    12AC    GETS    12B2    PUTCHAR 12E6
+   SETFCB     1318
+   >list args
+   argc    [8C90] = 0001 =     1  '..'
+   argv    [8C92] = 0863
+   >break storeline
+   >l breaks
+   MAIN  -1
+   STORELIN 0
+   >go
+   }dir a:
+
+   break at STORELIN 0 [08A4]
+   >list args
+   block   [8B81] = 0000 =         0  '..'
+   line    [8B83] = 8B8A
+   >d *line string
+   8B8A (len 6): "dir a:"
+   >trace 5
+     trace:        STORELIN 15 [08AF]
+     trace:        STORELIN 18 [08CE]
+     trace:        STORELIN 18.1 [08DC]
+     trace:        STORELIN 19 [08F1]
+
+   break at STORELIN 27 [096D]
+   >break 28
+   >go
+
+   break at STORELIN 28 [09A6]
+   >dump *b
+   a struct subrec
+   reclen     [135F] = 06 = '.'
+   aline      a 127 element array of char
+   1360 [  0] 64 69 72 20 61 3a 00 00  00 00 00 00 00 00 00 00 'dir a:..........'
+   1370 [ 16] 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 '................'
+   1380 [ 32] 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 '................'
+
+
+
+
+
+
+
+
+
+   CDB: A Debugger for BDS C                                           page 7
+
+
+
+   1390 [ 48] 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 '................'
+   13A0 [ 64] 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 '................'
+   13B0 [ 80] 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 '................'
+   13C0 [ 96] 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 '................'
+   13D0 [112] 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00    '...............'
+   >d len
+   [8B7B] = 0006 =        6  '..'
+   >,b->reclen
+   [135F] = 06 = '.'
+   >b setfcb
+   >go
+   }
+
+   break at SETFCB 0 [131B]
+   >list args
+   first argument address is 8B81
+   [1] = 133B = 4923, [2] = 0C97 = 3223, [3] =01FE = 510
+   [4] = 22Ca = 8906, [5] = 0030 = 48, [6] = 7269 = 29289
+   >t
+
+   break at MAIN 33 [0BA1]
+   >dump ffcb
+   a struct fcb
+   drivecod   [133B] = 01 = '.'
+   fname      a 8 element array of char
+   133C [  0] 24 24 24 20 20 20 20 20 '$$$     '
+   ftype      a 3 element array of char
+   1344 [  0] 53 55 42  'SUB'
+   extent     [1347] = 00 = '.'
+   pad        a 2 element array  of char
+   1348 [  0] 00 00  '..'
+   rc         [134A] = 00 = '.'
+   blk        a 8 element array of int
+   134B [  0] 0000 0000 0000 0000 =      0     0     0     0  '........'
+   1353 [  4] 0000 0000 0000 0000 =      0     0     0     0  '........'
+   cr         [135B] = 00 = '.'
+   rand_rec   [135C] = 0000 =       0  '..'
+   overflow   [135E] = 00 = '.'
+   >t 5
+     trace:  BDOS 0 [129B]
+     trace:  BDOS returning 00FF = 255 = '..'
+     trace:  BDOS 0 [129B]
+     trace:  BDOS returning 0001 = 1 = '..'
+
+   break at MAIN 39 [0BE6]
+   >t
+
+   break at BDOS 0 [129B]
+   >t
+
+   BDOS returning 00FF = 255 = '..'
+   >t
+
+
+
+
+
+
+
+
+
+
+   CDB: A Debugger for BDS C                                           page 8
+
+
+
+   break at MAIN 42 [0BF6]
+   >go
+
+   MAIN returning FF02 = -254 = '..'
+   >quit
+
+   B>
+
+   ----- End of Session -----
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,337 @@
+
+RESTORE.DOC - Documentation for RESTORE.COM
+				31 January 19871
+				Steve Dirickson
+
+
+Description:
+-----------
+RESTORE is a utility program that improves disk performance by regrouping
+the allocation groups assigned to each file on the disk so that each file
+is allocated to sequential sectors on the disk i.e., 'restoring' the disk
+to the condition it was in when it was new.
+
+Discussion:
+----------
+CP/M-compatible operating systems store files on disk in what are called
+"allocation groups."  The size of an allocation group is determined by
+the system's BIOS, and is typically 1k or 2k bytes for floppy disks, and
+2k, 4k, or 8k for hard disks.  The allocation group is the smallest unit
+of storage on the disk; if you write a one-byte file to the disk, it will
+take up just as much space (in the sense of making that space unavailable
+for storing other files) as would a file the size of one entire alloca-
+tion group.
+
+When a disk is formatted, all allocation groups are free, and the first
+file written to the disk occupies the allocation groups immediately after
+the directory, in sequence.  The next file written to the disk occupies
+the groups after the first and so on.  When a file is deleted, its allo-
+cation groups are freed up, and may be reused by the system.
+
+As files are written and erased, later files start to become 'fragmented'
+i.e., they are written with some allocation groups in one location and
+other groups in other locations.  Thus, when these 'fragmented' files are
+read or written, the system must position the read/write head over one
+track for part of the file, then move the head to another track for more
+of the file.  This starts to degrade disk performance, because more and
+more time is spent moving the head around to find the various parts of
+the file, causing access times for the files to get longer and longer.
+This problem affects both floppy and hard disks.  The effect this has on
+the system response is dependent on how the system buffers the disk data
+in memory.  A system that uses a 'track buffer' system, where an entire
+track is saved in memory each time the disk is read, will be VERY much
+slower when accessing severely fragmented files than when the files are
+stored in sequential allocation groups and thus several related groups
+are kept in memory together.  Similarly, a system that uses multiple-
+record disk I/O will be seriously degraded by disk fragmentation.  Con-
+versely, an unbuffered BIOS, and especially an unblocked BIOS, will be
+less affected, because latency (the time the controller has to wait for
+the desired record to rotate under the head) is more significant in com-
+parison to track stepping times.
+
+The only way to recover from this situation has been to copy all files
+on the disk to backup disks, reformat the disk (or simply erase all the
+files), and then recopy the files from the backup disk(s) to the working
+disk.  This takes a significant amount of time to do, and it is even more
+inconvenient if files are assigned to several user areas on the disk,
+since each user area on the backup disk must be individually entered and
+the files in that area copied to the corresponding area on the work disk.
+
+RESTORE is designed to make this process easier by eliminating the copy
+to and from the backup disks.  RESTORE works only on the disk being re-
+stored, and thus may be used even in a single-disk system.
+
+
+			    ***WARNING***
+
+Since RESTORE does in-place restoration of the disk, it has INCREDIBLE
+potential for wrecking havoc with your disk if something goes wrong while
+it is working, like a loss of power or a controller fault.  Therefore,
+you should ALWAYS back up the disk to be RESTOREd shortly before running
+the program.  This shouldn't be much of a problem, since you do a full
+back up of your hard disk at least every weekend, right?  RIGHT?  NO?!!
+Well, if you don't, you should.  It only takes one occurrence of having
+to rebuild a disk's directory one group at a time to make you a believer.
+Just after a full backup is the optimum time to run RESTORE.
+
+
+Use:
+---
+NOTE:  You MUST sort the directory of the disk to be RESTOREd before
+running RESTORE, by running SAP, SAPP, CLEANDIR or some similar program.
+If RESTORE finds that the directory is not sorted, it will tell you so
+and quit. (SAP.COM, version 5.0 is included in this .LBR).  Also note
+that some older versions of CLEANDIR, SAP, SAPP, etc., did not properly
+sort the directory because they did not include the last directory entry
+on the disk in the sort.  RESTORE WILL find this entry, and will tell
+you that your directory is not sorted.	You can use DUU, DU3, PATCH or
+your own favorite disk utility to examine the directory of the disk to
+see what is wrong.
+
+Once you have the disk's directory sorted, simply start the program by
+typing 'RESTORE'.  The program will sign on, and ask you to change disks
+if you desire.	This allows single-disk users to place the disk contain-
+ing the program in the drive, start the program, and then swap in the
+disk to be restored.  This means you don't have to copy the program to
+each disk you want to restore.
+
+Note that RESTORE  --ALWAYS--  works on the user's default disk i.e.,
+the one you were on when you invoked the program.  So, if you want to
+restore the disk in drive B but RESTORE is on the disk in drive A, you
+MUST log onto disk B and then call the program from drive A:
+
+	    A>B:<ret>
+	    B>A:RESTORE <ret>
+
+RESTORE reads in the directory of the default disk, analyzes the direc-
+tory, and prints some information; how many directory entries are on the
+disk, how many groups are allocated, how many groups have to be swapped,
+and how many times the directory will be rewritten.  This last is sig-
+nificant since 1) directory writes usually take much longer than other
+writes, because most BIOSs immediately write their buffer to the disk
+after a change in the directory, rather than waiting until the user wants
+to write somewhere else, and 2) the directory takes up several allocation
+groups, and the entire directory is rewritten after each directory entry
+has been fixed.  Note that the number of directory entries reported by
+RESTORE will probably not match the number of files on the disk, since
+each extent of a file takes up its own directory entry.
+
+After RESTORE tells you what it is going to have to do to the disk, it
+asks you to type 'Y' to restore the disk, or anything else to abort.  You
+may enter an upper or lower case Y, or even type CTL-Y.  Anything else
+will cause RESTORE to abort without doing anything to the disk.
+
+After you type 'y', RESTORE will start to fix your disk.  It prints the
+name of the directory entry is is working on, so you can keep track of
+how it is doing.  You may type a CTL-C at any time, and RESTORE will a-
+bort after it finishes the current directory entry, and tell you how many
+directory entries are left over.  Left to itself, RESTORE will finish the
+disk, then tell you it is finished and terminate.
+
+If you are using a system that does not reload the directories from disk
+on each warm boot, like ZRDOS version 1.6 and later, you will need to do
+whatever your system needs (run DISKRST in the case of ZRDOS) to restore
+the system's directory to match the one on disk.  Remember, RESTORE works
+thorough the BIOS, so the DOS has no idea what is going on.
+
+
+System Requirements:
+-------------------
+Operating System - A CP/M-compatible operating system that supports con-
+sole input and output and the following direct BIOS function calls:
+
+	  Select Disk
+	  Set Track
+	  Set Sector
+	  Set DMA Address
+	  Disk Read
+	  Disk Write
+	  Sector Translation
+
+These are the only direct BIOS calls used by RESTORE.  Console I/O is
+done via the BDOS, so you may use the CTL-P to echo the output to your
+printer.  If you do so, you may need to install the patch discussed be-
+low.
+
+Processor - Versions are provided for both 8080/8085-compatible proces-
+sors (RESTOREI.COM) and for Z80-compatible processors (RESTOREZ.COM).
+The Z80 version is about 5% smaller and runs about 1% faster than the
+8080 version.
+
+Memory - Depends on your disk system.  The largest disk directory RESTORE
+can handle is 1024 entries (DRM = 1023 for you operating system hacker
+types).  This size disk typically uses 4k byte allocation groups.  With
+this type of disk, RESTORE requires a 44k TPA.	This is the largest TPA
+requirement.  Other disk sizes can be restored in less TPA.  A SSSD
+floppy limited to 64 directory entries using 1k allocation groups can be
+RESTOREd in 8k of TPA.
+
+Note that RESTORE is NOT a ZCPR3 utility.  I have tried to make it as
+nearly universal as possible.  It does not use cursor-positioning se-
+quences for the terminal, or require any installation.	The only thing
+your terminal has to be able to do is receive and display standard ASCII
+characters, including being able to do a carriage return without a line-
+feed.  This is used in the display of the files being processed.  The
+same line is rewritten as each new file is started.  If your terminal
+can't do a carriage return without a line feed (or makes a mess doing
+so, like a TTY), or if you want to echo the output of the program to
+your printer without wearing a hole in the paper, install the following
+patch:
+
+	Patches:
+	-------
+	To make the file display do a line feed as well as a
+	carriage return, use your debugger or disk utility to
+	look at the word at address 103h (just after the jump
+	at the start of the program).  This word is the address
+	of the location in the file display string where you
+	can insert a line feed character (0ah).  Put a LF there
+	and write the modified file back to disk.
+
+	The other patch option is the flag that controls the
+	disk-change wait.  As released, the program will print
+	a message telling you to change disks if necessary, and
+	press any key when ready.  Then it waits for you to
+	press any key.	Later, after the statistics for the disk
+	are printed, it asks you to press 'Y' to continue, or
+	any other key to abort.  If you don't want these waits,
+	or you want to do unattended 'batch processing' of mul-
+	tiple drives, you will need to patch this byte to zero.
+	It is located just after the word described above, at
+	address 105h.  It is non-zero to have the program wait
+	for input in these two situations, or zero to start
+	processing immediately.  The input for these two user
+	waits is done using the BDOS 'Read Console Buffer'
+	function, so ZEX or XSUB may be used to provide the
+	input; note, however, that doing so will cost you about
+	3k of TPA, and may cause a memory shortage problem.
+	Try it on your largest disk.  If it works, you can have
+	it both ways.
+
+
+Limitations:
+-----------
+As discussed above, the maximum size disk RESTORE can handle is one with
+a limit of 1024 directory entries using 4K byte allocation groups (ac-
+tually, it will also handle this size disk with 8K allocation groups but
+only if you have a 51.5k TPA i.e., your BDOS starts at some address after
+CE00h.	Since I am a believer in the 48k TPA convention, this is not the
+advertised maximum disk size).	This is the typical configuration for
+most popular CP/M hard disks (10-30 Mb).  If you have a drive with a DRM
+of 2047, RESTORE will not run.	I'm not really sure why people make disks
+like this, since, with CP/M's limit of 8 Mb per logical disk, this means
+that there is room for one directory entry for each allocation group on
+the disk!.  That's a lot of lost directory space.  Since it would take
+64k simply to read in the directory of such a disk, RESTORE will tell you
+that there is not enough memory and quit.  I have chosen not to use the
+incremental-directory-read technique that was added to CLEANDIR and SAP
+for such disks, since, to remain within the 48k TPA boundary, this would
+only increase the maximum number of directory entries from 1024 to 1152.
+
+One of the problems associated with a program of this type is the hand-
+ling of bad sectors on the disk.  Since there is no standard way of
+marking bad sectors, I have completely ignored the issue in writing the
+program.  I recommend the following system for those with bad sectors
+on their hard disk:
+
+     1) You have probably used BDxx, FBAD, or whatever you use to
+	mark the bad sectors on the disk.  Use DUU, DU3, PATCH, or
+	your own disk utility to examine the disk's directory.
+	Note the allocation groups that are assigned to the '.BAD'
+	(or however your utility marks them) files.  Make a list
+	of the allocation groups containing the bad sectors.
+
+     2) After you finish backing up your disk (that IS when you use
+	RESTORE, isn't it?  See the WARNING above if not), run RE-
+	STORE, then use your disk utility to look at the disk's di-
+	rectory and see what files are now assigned to the allocation
+	groups on your list of bad groups.  Make a list of these
+	files.
+
+     3) Erase the files on the list.
+
+     4) Rerun FBAD, etc., to re-mark the bad wgroups.
+
+     5) Copy over the files on the list from your backup disk.
+
+I realize that this is somewhat cumbersome, and I apologize for that.
+But, since there is no sandardized method for handling bad sectors, this
+this is the best I have been able to come up with.
+
+Note:  When the discussion above talks about 'using your disk utility'
+to examine the disk's directory, you may use the DMAP program included
+with RESTORE instead.  See the DMAP.DOC file for information on this u-
+tility.  Simply type 'DMAP' and look for the filenames or allocation
+groups you want to scroll by.
+
+
+Operation:
+---------
+RESTORE uses a brute-force method to relocate allocation groups.  It
+reads in the directory (which MUST be sorted), and decides from the di-
+directory allocation data in the Disk Parameter Block for the disk how
+many groups are allocated to the directory.  The next sequential alloca-
+tion group should be assigned to the first file in the directory.  RE-
+STORE looks to see if that is the case.  If not, it scans the directory
+to find what file has that group allocated to it.  If the desired group
+is not allocated, RESTORE copies the group referenced in the directory
+into the desired group, then changes the directory entry to show the new
+group.	If the group is allocated to another file, RESTORE reads both
+groups into memory, then writes them to the alternate locations, effect-
+ively swapping the groups in place.  Both directory entries are modified,
+the next sequential allocation group is selected, and the process re-
+peats.	The updated directory is written to the disk after each directory
+entry is completed, not after each allocation group swap.  Thus, the
+number of directory rewrites will typically be about one-half to one-
+fourth (on a hard disk; one-fourth to one-eighth on a floppy disk) of
+the number of group swaps required.
+
+When I say that the method is 'brute force', I mean that no intelligence
+is used in the sort process.  Under worst-case conditions, the first al-
+location group on a disk might be free, with all other groups assigned
+in the desired sequence to the files in the directory.	In this case the
+disk is really not fragmented and nothing needs to be done.  If you run
+RESTORE on a disk in this situation, it will tell you that EVERY GROUP
+on the disk must be moved, and will do so if you let it.  No analysis of
+the fragmentation of the disk is done, and no optimization is used to
+figure out how to restore the disk using the least number of group swaps.
+While possible, the code to do this would make the program long enough
+that it might not be able to process a 1024-entry directory.  On a more
+basic level, it would take me longer to write the optimization than I
+feel is reasonable.  RESTORE works, and works well.  The machine does
+not in the least mind moving the same allocation group three or four
+times.
+
+On the subject of speed:  RESTORE is, in addition to being more conven-
+ient than copying all the files back from a backup disk, considerably
+faster than that method.  While times vary depending on the degree of
+fragmentation and the hardware, I have found RESTORE to be about 20%
+faster than a NON-VERIFYING copy of files from backup floppies back to
+my hard disk.  RESTORE does read-after-write CRC verification of all
+disk writes.  Plus, you don't have to sit around and feed your machine
+floppies for hours.  RESTORE will process a filled 20 Meg hard disk in
+about 5 hours on my hardware; doing the same thing, with verification,
+from floppies takes over 9 hours and about 28 disk swaps!  With RESTORE,
+simply use a multiple-command line or SUBMIT file (DON'T use ZEX or XSUB
+if you have a big hard disk) and let RESTORE crunch away over night, or
+while you are out shopping for a computer for your wife (or husband).
+Note that if you want to use this 'batch processing' of multiple drives,
+you must patch the disk-change flag to zero as described above to disable
+the disk-change wait.
+
+
+DISCLAIMER:
+----------
+This is a very useful utility, and I have tested it extensively.  How-
+ever, as noted above, it is also very capable of lunching your disks
+completely if the system has a problem.  Use it in good health and hap-
+piness, but MAKE BACKUPS BEFORE YOU USE IT!!.  Papa Wallenda ran his
+system without a backup.  He's not around any more.  'Nuff said.
+
+				Steve Dirickson
+				21145 Raintree Place NW
+				Poulsbo  WA  98370-9726
+				Voice: 206-697-1270/9311
+				BBS: Seattle's 'downspout': 206-325-1325
+				     ZNode Central: 415-489-9005
+

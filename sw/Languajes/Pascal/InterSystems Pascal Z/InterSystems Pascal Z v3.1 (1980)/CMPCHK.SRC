@@ -1,0 +1,33 @@
+;ROUTINES TO COMPLEMENT AN OPERAND, AND CHECK FOR A ZERO OPERAND
+;
+	NAME CMPCHK
+	ENTRY COMPOP,COMP1,ZERCHK,ZERCK1
+	INCLUDE FPINIT.SRC
+;
+; complement an operand
+;
+compop:	dad	d		;and calculate addr of fpacc
+comp1:	mvi	b,fracln	;process whole mantissa
+	mov	a,m		;get first byte
+	cma			;complement and...
+	adi	1		;..add one
+compl:	mov	m,a		;save present byte
+	inx	h		;bump pointer
+	mov	a,m		;get next byte
+	cma			;complement and add
+	aci	0		;carry
+	djnz	compl		;check for last byte
+	ret			;yes...done
+
+;
+; check number for a zero
+;
+zerchk:	dad	d		;and calculate address of fpacc
+zerck1:	mvi	b,fracln	;process whole mantissa
+	xra	a		;clear accumulator
+zchka:	ora	m		;check next byte
+	dcx	h		;bump pointer
+	djnz	zchka		;any more?
+	ret			;no, return
+;
+

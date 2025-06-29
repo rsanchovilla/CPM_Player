@@ -1,0 +1,43 @@
+; converts the 16 bit integer in hl to a floating point #
+;
+	NAME CVTFLT
+	ENTRY CVTFLT
+	EXT ABS
+	INCLUDE FPINIT.SRC
+;
+;THIS IS MOD CVTFLT,SO...
+$CVTFLT	SET	0FFFFH
+;
+	INCLUDE FPMAC.SRC
+;
+cvtflt:	mov	b,h		;check high byte, if negative, fix value
+	call	abs		;get absolute value of n
+	mov	a,b		;get old high byte
+	ani	80h		;mask old high bit
+	ora	h		;or with absolute value
+	mov	h,a		;and restore
+	pop	b		;get return address
+	mvi	d,15		;initial exponent, don't need intflg
+	push	d		;save on stack
+	inx	s		;only need one byte
+	push	h		;save high 16 bits
+	lxi	h,0		;save low  16 bits
+	push	h
+	push	h		;save scr1...
+	inx	s		;..which is only one byte
+	push	x
+	push	y		;save ix...and iy
+	push	b		;save return address
+	dad	s
+	push	h		;save pointer
+	pop	x		;in ix...
+	xchg			;...and de
+	normfp	2		;normalize the number
+	pop	h		;get return address
+	pop	y
+	pop	x		;restore index registers
+	pop	d		;throw away excess bytes
+	xra	a		;clear acc
+	pchl			;and.....return
+;
+

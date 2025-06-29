@@ -1,0 +1,700 @@
+	MACRO-80 3.44	09-Dec-81	PAGE	1
+
+
+                                	.z80
+                                	.list
+  0000'                         	aseg
+                                	org	100h
+                                
+  8000                          FCPMLOC	EQU	08000h	; location of patch routines to use regular cp/m bdos
+  4000                          FPROGLEN	EQU	4000h	; length of FS.BIN program (16Kb)
+                                
+  0100    21 010F               start:  ld	hl,mstart+1	; copy patch program to FCMPLOC address
+  0103    11 8000               	ld	de,FCPMLOC
+  0106    01 058A               	ld	bc,mend-main
+  0109    ED B0                 	ldir
+  010B    C3 8000               	jp	main
+                                	
+  010E    00                    mstart: nop
+                                	
+                                	.phase	FCPMLOC
+                                
+                                ; these are the patches for FS1.BIN
+                                
+                                ; The patches allows to use the WaveMate Terminal-125 TV Video card that 
+                                ; has the same character set anmd block 2x3 graphics as TRS-80 Level 1
+                                ; Terminal-125 have a 64 columns x 32 lines display memory mapped at $C000 
+                                ; Sorcerer is 64 columns x 30 lines with video mem starting at $F080
+                                
+  8000    21 4700               main:	ld	hl,FPROG+1+FPROGLEN
+  8003    11 8000               	ld	de,4000h+FPROGLEN	; where the FS1.BIN prog is to be loaded
+  8006    01 4000               	ld 	bc,FPROGLEN		; length of FS1.BIN program
+  8009    ED B8                 	lddr                    	; put prog at its original location
+  800B    CD 8017               	call	patch			; patch original FS1.BIN prog to call new routines 
+  800E    CD 8516               	call	patchHi			; patch to draw with ficcional vector generator for 3D scenary
+  8011    CD 8315               	call 	choose			; let the user choose the scenary to fly
+  8014    C3 7500               	jp	7500h			; start of FS1.BIN prog
+                                	
+  8017                          patch:
+  8017    21 822F               	ld	hl,ClsMain	; call clear screen
+  801A    22 7503               	ld	(7502h+1),hl	; 
+                                	
+  801D    21 0000               	ld	hl,0		; NOP NOP opcode
+  8020    22 750E               	ld	(750eh),hl	; path ldir to not copy used defined chars on exidy
+                                	
+  8023    21 72F8               	ld	hl,72f8h	; opcode with video ram addr reference
+  8026    CD 8211               	call    relocvram	; relocate video ram (main screen)
+                                
+  8029    21 72FE               	ld	hl,72feh	; opcode with video ram addr reference
+  802C    CD 8228               	call    relocvramHi	; relocate video ram HI byte (main screen)
+  802F    21 72FF               	ld	hl,72feh+1	; dec hi by one to not erase last line of screen
+  8032    35                    	dec	(hl)
+                                
+  8033    21 7307               	ld	hl,7307h	; draw main screen
+  8036    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8039    21 640A               	ld	hl,640ah	; clear screen
+  803C    CD 8211               	call    relocvram	; relocate video ram
+                                
+                                
+	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+
+
+  803F    21 5556               	ld	hl,5556h	; "U_" message
+  8042    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8045    21 5514               	ld	hl,5514h	; 
+  8048    CD 8210               	call    relocvram2	; relocate video ram (2 opcodes)
+                                
+  804B    21 5490               	ld	hl,5490h	; path video ram table 5490..549e
+  804E    E5                    pa1a:	push    hl
+  804F    CD 8212               	call    relocvAddr	; relocate video ram addr
+  8052    E1                    	pop 	hl
+  8053    11 0003               	ld	de,0003
+  8056    19                    	add	hl,de
+  8057    7E                    	ld	a,(hl)		; get hi byte for next video ram addr
+  8058    FE 36                 	cp	36h
+  805A    CA 8061               	jp	z,pa1b		; jump if =$36 (end of table)
+  805D    2B                    	dec	hl		; hl points back to lo byte of video ram addr
+  805E    C3 804E               	jp	pa1a
+  8061                          pa1b:
+                                
+  8061    21 5451               	ld	hl,5451h	; top view plane + "RADAR" message
+  8064    CD 8211               	call    relocvram	; relocate video ram
+  8067    21 5457               	ld	hl,5457h	
+  806A    CD 8211               	call    relocvram	; relocate video ram
+  806D    21 545C               	ld	hl,545ch	
+  8070    CD 8211               	call    relocvram	; relocate video ram
+  8073    21 5462               	ld	hl,5462h	
+  8076    CD 8211               	call    relocvram	; relocate video ram
+  8079    21 5467               	ld	hl,5467h	
+  807C    CD 8211               	call    relocvram	; relocate video ram
+  807F    21 546D               	ld	hl,546dh	
+  8082    CD 8211               	call    relocvram	; relocate video ram
+  8085    21 5473               	ld	hl,5473h	
+  8088    CD 8211               	call    relocvram	; relocate video ram
+  808B    21 5478               	ld	hl,5478h	
+  808E    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8091    21 52E9               	ld	hl,52e9h	; "S_" message
+  8094    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8097    21 51B1               	ld	hl,51b1h	; "WAR!" message
+  809A    CD 8211               	call    relocvram	; relocate video ram
+  809D    21 51B7               	ld	hl,51b7h	
+  80A0    CD 8211               	call    relocvram	; relocate video ram
+                                
+  80A3    21 5179               	ld	hl,5179h	; "IN RANGE" message
+  80A6    CD 8211               	call    relocvram	; relocate video ram
+  80A9    21 517F               	ld	hl,517fh	
+  80AC    CD 8211               	call    relocvram	; relocate video ram
+  80AF    21 5185               	ld	hl,5185h	
+  80B2    CD 8211               	call    relocvram	; relocate video ram
+  80B5    21 518B               	ld	hl,518bh	
+  80B8    CD 8211               	call    relocvram	; relocate video ram
+                                
+  80BB    21 5159               	ld	hl,5159h	
+  80BE    CD 8210               	call    relocvram2	; relocate video ram
+  80C1    21 513E               	ld	hl,513eh	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+
+
+  80C4    CD 8210               	call    relocvram2	; relocate video ram
+  80C7    21 5131               	ld	hl,5131h	
+  80CA    CD 8210               	call    relocvram2	; relocate video ram
+  80CD    21 5124               	ld	hl,5124h	
+  80D0    CD 8210               	call    relocvram2	; relocate video ram
+  80D3    21 5117               	ld	hl,5117h	
+  80D6    CD 8210               	call    relocvram2	; relocate video ram
+  80D9    21 510A               	ld	hl,510ah	
+  80DC    CD 8210               	call    relocvram2	; relocate video ram
+  80DF    21 50F0               	ld	hl,50f0h	
+  80E2    CD 8210               	call    relocvram2	; relocate video ram
+  80E5    21 50DB               	ld	hl,50dbh	
+  80E8    CD 8210               	call    relocvram2	; relocate video ram
+  80EB    21 50C8               	ld	hl,50c8h	
+  80EE    CD 8210               	call    relocvram2	; relocate video ram
+  80F1    21 50B6               	ld	hl,50b6h	
+  80F4    CD 8210               	call    relocvram2	; relocate video ram
+  80F7    21 509D               	ld	hl,509dh	
+  80FA    CD 8210               	call    relocvram2	; relocate video ram
+                                
+  80FD    21 5054               	ld	hl,5054h	
+  8100    CD 8211               	call    relocvram	; relocate video ram
+  8103    21 4FF6               	ld	hl,4ff6h	
+  8106    CD 8211               	call    relocvram	; relocate video ram
+  8109    21 4FA0               	ld	hl,4fa0h	
+  810C    CD 8211               	call    relocvram	; relocate video ram
+  810F    21 4F6A               	ld	hl,4f6ah	
+  8112    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8115    21 4F17               	ld	hl,4f17h	
+  8118    CD 8211               	call    relocvram	; relocate video ram
+  811B    21 4F1A               	ld	hl,4f1ah	
+  811E    CD 8211               	call    relocvram	; relocate video ram
+  8121    21 4F1D               	ld	hl,4f1dh	
+  8124    CD 8211               	call    relocvram	; relocate video ram
+  8127    21 4F20               	ld	hl,4f20h	
+  812A    CD 8211               	call    relocvram	; relocate video ram
+  812D    21 4F23               	ld	hl,4f23h	
+  8130    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8133    21 4EEE               	ld	hl,4eeeh	
+  8136    CD 8211               	call    relocvram	; relocate video ram
+  8139    21 4EEB               	ld	hl,4eebh	
+  813C    CD 8211               	call    relocvram	; relocate video ram
+  813F    21 4EE8               	ld	hl,4ee8h	
+  8142    CD 8211               	call    relocvram	; relocate video ram
+  8145    21 4EE5               	ld	hl,4ee5h	
+  8148    CD 8211               	call    relocvram	; relocate video ram
+  814B    21 4EE2               	ld	hl,4ee2h	
+  814E    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8151    21 4D11               	ld	hl,4d11h	; "STALL" message
+  8154    CD 8211               	call    relocvram	; relocate video ram
+  8157    21 4D17               	ld	hl,4d17h	
+  815A    CD 8211               	call    relocvram	; relocate video ram
+  815D    21 4D1D               	ld	hl,4d1dh	
+	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+
+
+  8160    CD 8211               	call    relocvram	; relocate video ram
+                                
+  8163    21 4908               	ld	hl,4908h	; path video ram table 4908..4994
+  8166    E5                    pa2a:	push    hl
+  8167    CD 8212               	call    relocvAddr	; relocate video ram addr
+  816A    E1                    	pop 	hl
+  816B    11 0005               	ld	de,0005
+  816E    19                    	add	hl,de
+  816F    7E                    	ld	a,(hl)		; get hi byte for next video ram addr
+  8170    B7                    	or	a
+  8171    CA 8178               	jp	z,pa2b		; jump if zero (end of table)
+  8174    2B                    	dec	hl		; hl points back to lo byte of video ram addr
+  8175    C3 8166               	jp	pa2a
+  8178                          pa2b:
+  8178    21 8202               	ld	hl,getkey	; call read keyboard
+  817B    22 4A1C               	ld	(4a1bh+1),hl	; 
+                                
+  817E    3E 77                 	ld	a,'w'		; key for Declare War
+  8180    32 4AAA               	ld	(4aa9h+1),a
+  8183    3E 20                 	ld	a,32		; key for Fire (war must be declared)
+  8185    32 4A21               	ld	(4a20h+1),a
+  8188    3E 62                 	ld	a,'b'		; key for Bomb drop (war must be declared)
+  818A    32 4A6A               	ld	(4a69h+1),a
+  818D    3E 39                 	ld	a,'9'		; key for increment throttle power
+  818F    32 4A28               	ld	(4a27h+1),a
+  8192    3E 33                 	ld	a,'3'		; key for decrement throttle power
+  8194    32 4A35               	ld	(4a34h+1),a
+  8197    3E 6D                 	ld	a,'m'		; key for map/radar view
+  8199    32 4A42               	ld	(4a41h+1),a
+  819C    3E 66                 	ld	a,'f'		; key for forward view
+  819E    32 4A4C               	ld	(4a4bh+1),a
+  81A1    3E 6B                 	ld	a,'k'		; key for breaks
+  81A3    32 4A55               	ld	(4a54h+1),a
+  81A6    3E 36                 	ld	a,'6'		; key for rudder right
+  81A8    32 4A6F               	ld	(4a6eh+1),a
+  81AB    3E 35                 	ld	a,'5'		; key for center rudder 
+  81AD    32 4A8B               	ld	(4a8ah+1),a
+  81B0    3E 34                 	ld	a,'4'		; key for rudder left
+  81B2    32 4A95               	ld	(4a94h+1),a
+  81B5    3E 64                 	ld	a,'d'		; key for down view (delail level = airfield runway)
+  81B7    32 4A9D               	ld	(4a9ch+1),a
+  81BA    3E 75                 	ld	a,'u'		; key for up view (delail level = scenary)
+  81BC    32 4ABF               	ld	(4abeh+1),a
+  81BF    3E 32                 	ld	a,'2'		; key for yoke down
+  81C1    32 4AB4               	ld	(4ab3h+1),a
+  81C4    3E 38                 	ld	a,'8'		; key for yoke up
+  81C6    32 4ACA               	ld	(4ac9h+1),a
+  81C9    3E 30                 	ld	a,'0'		; reset flight
+  81CB    32 4AD2               	ld	(4ad1h+1),a
+                                
+                                				; setup ^C as key to exit to CP/M
+                                
+  81CE    3E 03                 	ld	a,3		; ^C to quit game
+  81D0    32 4AA6               	ld	(4aa5h+1),a
+  81D3    3E 30                 	ld	a,48		; jr z exitgame
+  81D5    32 4AA8               	ld	(4aa7h+1),a
+	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+
+
+  81D8    3E C3                 	ld	a,0c3h		; exitgame: jp exitcpm
+  81DA    32 4AD9               	ld	(4ad9h),a
+  81DD    21 823B               	ld	hl,exitcpm	; exit to cpm
+  81E0    22 4ADA               	ld	(4ad9h+1),hl	
+                                
+  81E3    21 6000               	ld	hl,6000h	; path video ram table 6000..6297 (scenary -> for draw line routine)
+  81E6    E5                    pa3a:	push    hl
+  81E7    CD 8212               	call    relocvAddr	; relocate video ram addr
+  81EA    E1                    	pop 	hl
+  81EB    11 0004               	ld	de,0004
+  81EE    19                    	add	hl,de
+  81EF    7E                    	ld	a,(hl)		; get hi byte for next video ram addr
+  81F0    C6 10                 	add	a,10h
+  81F2    D2 81F9               	jp	nc,pa3b		; jump if next addr < $f0xx (end of table)
+  81F5    2B                    	dec	hl		; hl points back to lo byte of video ram addr
+  81F6    C3 81E6               	jp	pa3a
+  81F9                          pa3b:
+  81F9    C9                    	ret
+                                
+                                
+  81FA    1E 1A                 cls: 	ld	e, 01ah		; ^Z -> clear screen
+  81FC    0E 02                 	ld      c, 2		; Console output
+  81FE    CD 0005               	call    0005		; Call BDOS
+  8201    C9                    	ret
+                                
+  8202    E5                    getkey: push	hl
+  8203    D5                    	push 	de
+  8204    C5                    	push	bc
+  8205    1E FF                 	ld	e,255
+  8207    0E 06                 	ld      c, 6		; Direct Console input
+  8209    CD 0005               	call    0005		; Call BDOS
+  820C    C1                    	pop 	bc
+  820D    D1                    	pop 	de
+  820E    E1                    	pop	hl
+  820F    C9                    	ret
+                                	
+  C000                          VRAM	equ	0c000h		; address of Term-125 memory mapped video ram
+                                
+  8210                          relocvram2:			; relocate video ram 2-byte opcode
+  8210    23                    	inc 	hl		; 
+  8211                          relocvram:			; relocate video ram opcode
+  8211    23                    	inc 	hl		; hl points to video ram addr in opcode
+  8212                          relocvAddr:			; relocate video ram addr
+  8212    E5                    	push	hl		; save addr to modify 
+  8213    5E                    	ld	e,(hl)		; get low part
+  8214    23                    	inc 	hl
+  8215    56                    	ld	d,(hl)		; get hi part
+  8216    EB                    	ex	de,hl		; now HL=sorcerer video ram addr reference
+  8217    01 F080               	ld	bc,0f080h	; 
+  821A    B7                    	or	a		; clear carry
+  821B    ED 42                 	sbc	hl,bc		; HL=sorcerer video ram addr reference - $f080
+  821D    01 C000               	ld	bc,VRAM		; + $C000 
+  8220    B7                    	or	a		; clear carry
+  8221    09                    	add	hl,bc		; now HL=TERMINAL-125 video ram addr reference
+  8222    EB                    	ex	de,hl		; now DE=TERMINAL-125 video ram addr reference
+  8223    E1                    	pop	hl		; now HL=addr to modify
+	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+
+
+  8224    73                    	ld	(hl),e		; set low part
+  8225    23                    	inc 	hl
+  8226    72                    	ld	(hl),d		; set hi part
+  8227    C9                    	ret
+                                	
+                                
+  8228                          relocvramHi:			; relocate video ram (hi byte)
+  8228    23                    	inc 	hl		; hl points to video ram addr in opcode
+  8229    7E                    	ld	a,(hl)		; get hi byte
+  822A    06 30                 	ld	b,0f0h-(VRAM shr 8)
+  822C    90                    	sub	b		; hi byte: $F0 becomes $C0
+  822D    77                    	ld	(hl),a		; save back
+  822E    C9                    	ret
+                                	
+  822F                          ClsMain:
+  822F    CD 81FA               	call 	cls
+  8232    0E 09                 	ld	c,9
+  8234    11 8241               	ld 	de,helptxt
+  8237    CD 0005               	call 	0005
+  823A    C9                    	ret
+                                
+  823B                          exitcpm:
+  823B    CD 81FA               	call	cls
+  823E    C3 0000               	jp	00000		; exit back to cp/m
+                                
+  8241                          helptxt: 
+  8241    20 20 20 20           	DB "     inc", 13,10
+  8245    20 69 6E 63           
+  8249    0D 0A                 
+  824B    20 20 38 20           	DB "  8   9 ", 13,10
+  824F    20 20 39 20           
+  8253    0D 0A                 
+  8255    34 3C 35 3E           	DB "4<5>6 | ", 13,10
+  8259    36 20 7C 20           
+  825D    0D 0A                 
+  825F    20 20 32 20           	DB "  2   | ", 13,10  
+  8263    20 20 7C 20           
+  8267    0D 0A                 
+  8269    59 6F 6B 65           	DB "Yoke  3 ", 13,10
+  826D    20 20 33 20           
+  8271    0D 0A                 
+  8273    20 20 20 20           	DB "     dec", 13,10
+  8277    20 64 65 63           
+  827B    0D 0A                 
+  827D    20 20 20 20           	DB "    Thrt", 13,10
+  8281    54 68 72 74           
+  8285    0D 0A                 
+  8287    2D 2D 2D 2D           	DB "--------", 13,10
+  828B    2D 2D 2D 2D           
+  828F    0D 0A                 
+  8291    6B 3A 20 62           	DB "k: break", 13,10
+  8295    72 65 61 6B           
+  8299    0D 0A                 
+  829B    6D 3A 20 6D           	DB "m: map  ", 13,10
+  829F    61 70 20 20           
+  82A3    0D 0A                 
+	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+
+
+  82A5    66 3A 20 66           	DB "f: fwd  ", 13,10
+  82A9    77 64 20 20           
+  82AD    0D 0A                 
+  82AF    20 20 20 76           	DB "   view ", 13,10
+  82B3    69 65 77 20           
+  82B7    0D 0A                 
+  82B9    2D 2D 2D 2D           	DB "--------", 13,10
+  82BD    2D 2D 2D 2D           
+  82C1    0D 0A                 
+  82C3    0A 0A 0A 0A           	DB 10,10,10,10,10
+  82C7    0A                    
+  82C8    0A 0A 0A 0A           	DB 10,10,10,10,10
+  82CC    0A                    
+  82CD    0A 0A 0A 0A           	DB 10,10,10,10,10
+  82D1    0A                    
+  82D2    0A 0A 0A              	DB 10,10,10
+  82D5    20 20 77 3A           	DB "  w: war|b: bomb|space: fire|u/d: detail level|0: reset flight"
+  82D9    20 77 61 72           
+  82DD    7C 62 3A 20           
+  82E1    62 6F 6D 62           
+  82E5    7C 73 70 61           
+  82E9    63 65 3A 20           
+  82ED    66 69 72 65           
+  82F1    7C 75 2F 64           
+  82F5    3A 20 64 65           
+  82F9    74 61 69 6C           
+  82FD    20 6C 65 76           
+  8301    65 6C 7C 30           
+  8305    3A 20 72 65           
+  8309    73 65 74 20           
+  830D    66 6C 69 67           
+  8311    68 74                 
+  8313    1E                    	DB 01eh			; home
+  8314    24                    	DB "$"
+                                
+                                
+  8315                          choose:
+  8315    CD 81FA               	call 	cls
+  8318    0E 09                 	ld	c,9
+  831A    11 8366               	ld 	de,sctxt1	; message: sublogic FS1 for TRS-80
+  831D    CD 0005               	call 	0005
+A 8320    32 8558               	ld	HiRes,a
+  8323    B7                    	or	a
+  8324    CA 832F               	jp	z,ch0
+  8327    0E 09                 	ld	c,9
+  8329    11 83F0               	ld 	de,sctxt2	; message using 3d graphics
+  832C    CD 0005               	call 	0005
+  832F    0E 09                 ch0:	ld	c,9
+  8331    11 8427               	ld 	de,sctxt3	; scenary options
+  8334    CD 0005               	call 	0005
+                                
+  8337    01 0FA0               	ld	bc,4000
+  833A    CD 8202               ch1:	call	getkey
+  833D    FE 30                 	cp	'0'
+  833F    CA 823B               	jp	z,exitcpm
+  8342    FE 03                 	cp	3		; ^C exits to cp/m
+	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+
+
+  8344    CA 823B               	jp	z,exitcpm
+  8347    FE 31                 	cp	'1'
+  8349    CA 8365               	jp	z,ch3		; TakeOff is the default flight
+  834C    FE 32                 	cp	'2'
+  834E    CA 84F2               	jp	z,scLanding
+  8351    FE 33                 	cp	'3'
+  8353    CA 84A3               	jp	z,scHiFly
+  8356    11 03E8               	ld	de,1000		; wait a bit
+  8359    1B                    ch2:	dec 	de
+  835A    7A                    	ld 	a,d
+  835B    B3                    	or	e
+  835C    C2 8359               	jp	nz,ch2		; if bc counter expired and
+  835F    0B                    	dec	bc		; no figth has been choosen
+  8360    78                    	ld	a,b		; then go to default take off flight
+  8361    B1                    	or	c
+  8362    C2 833A               	jp	nz, ch1
+  8365    C9                    ch3:	ret
+                                
+  8366                          sctxt1: 
+  8366    0D 0A                 	DB 13,10
+  8368    73 75 62 4C           	DB "subLOGIC T80-FS1", 13,10
+  836C    4F 47 49 43           
+  8370    20 54 38 30           
+  8374    2D 46 53 31           
+  8378    0D 0A                 
+  837A    46 6C 69 67           	DB "Flight Simulator 1 for TRS-80, cassette version (1979)", 13,10
+  837E    68 74 20 53           
+  8382    69 6D 75 6C           
+  8386    61 74 6F 72           
+  838A    20 31 20 66           
+  838E    6F 72 20 54           
+  8392    52 53 2D 38           
+  8396    30 2C 20 63           
+  839A    61 73 73 65           
+  839E    74 74 65 20           
+  83A2    76 65 72 73           
+  83A6    69 6F 6E 20           
+  83AA    28 31 39 37           
+  83AE    39 29 0D 0A           
+  83B2    50 6F 72 74           	DB "Ported to CP/M w/WaveMate Terminal-125 TV Video Card (2024)", 13, 10, "$"
+  83B6    65 64 20 74           
+  83BA    6F 20 43 50           
+  83BE    2F 4D 20 77           
+  83C2    2F 57 61 76           
+  83C6    65 4D 61 74           
+  83CA    65 20 54 65           
+  83CE    72 6D 69 6E           
+  83D2    61 6C 2D 31           
+  83D6    32 35 20 54           
+  83DA    56 20 56 69           
+  83DE    64 65 6F 20           
+  83E2    43 61 72 64           
+  83E6    20 28 32 30           
+  83EA    32 34 29 0D           
+  83EE    0A 24                 
+  83F0    77 69 74 68           sctxt2: DB "with vector generator for High Resolution 3D scenary",13,10,"$"
+	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+
+
+  83F4    20 76 65 63           
+  83F8    74 6F 72 20           
+  83FC    67 65 6E 65           
+  8400    72 61 74 6F           
+  8404    72 20 66 6F           
+  8408    72 20 48 69           
+  840C    67 68 20 52           
+  8410    65 73 6F 6C           
+  8414    75 74 69 6F           
+  8418    6E 20 33 44           
+  841C    20 73 63 65           
+  8420    6E 61 72 79           
+  8424    0D 0A 24              
+  8427    0A 0A 0A              sctxt3:	DB 10,10,10
+  842A    41 76 61 69           	DB "Available flights:",13,10
+  842E    6C 61 62 6C           
+  8432    65 20 66 6C           
+  8436    69 67 68 74           
+  843A    73 3A 0D 0A           
+  843E    0A                    	DB 10
+  843F    20 20 20 31           	DB "   1) Take Off",13,10
+  8443    29 20 54 61           
+  8447    6B 65 20 4F           
+  844B    66 66 0D 0A           
+  844F    20 20 20 32           	DB "   2) Landing",13,10
+  8453    29 20 4C 61           
+  8457    6E 64 69 6E           
+  845B    67 0D 0A              
+  845E    20 20 20 33           	DB "   3) High altitude fligh",13,10
+  8462    29 20 48 69           
+  8466    67 68 20 61           
+  846A    6C 74 69 74           
+  846E    75 64 65 20           
+  8472    66 6C 69 67           
+  8476    68 0D 0A              
+  8479    0A                    	DB 10
+  847A    20 20 20 30           	DB "   0) Return to CP/M",13,10
+  847E    29 20 52 65           
+  8482    74 75 72 6E           
+  8486    20 74 6F 20           
+  848A    43 50 2F 4D           
+  848E    0D 0A                 
+  8490    0A 0A 0A              	DB 10,10,10
+  8493    43 68 6F 6F           	DB "Choose flight: "
+  8497    73 65 20 66           
+  849B    6C 69 67 68           
+  849F    74 3A 20              
+  84A2    24                    	DB "$"
+                                
+  84A3                          scHiFly:
+  84A3    21 1100               	ld	hl,01100h	; y pos
+  84A6    22 442D               	ld	(442dh),hl
+  84A9    21 D800               	ld	hl,0d800h	; x pos
+  84AC    22 4432               	ld	(4432h),hl
+  84AF    21 1300               	ld	hl,1300h	; altitude
+  84B2    22 4437               	ld	(4437h),hl
+	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+
+
+  84B5    21 0000               	ld	hl,0		; heading 0 -> plane facing to noth mountains
+  84B8    22 4441               	ld	(4441h),hl
+  84BB    3E 70                 	ld	a,70h
+  84BD    32 44C5               	ld 	(44c5h),a	; throttle
+  84C0    3E 20                 	ld	a,20h
+  84C2    32 44C7               	ld 	(44c7h),a	; yoke
+  84C5    21 3DB2               	ld 	hl, 03DB2h     
+  84C8    22 441D               	ld 	(441Dh),hl	; airspeed
+  84CB    21 84D7               	ld	hl,scHiKey	; patch read keyboard call to simulate up view 'U' key press to view the scenary
+  84CE    22 4A1C               	ld	(4a1bh+1),hl	; 
+  84D1    3E 05                 	ld	a,5
+  84D3    32 84F1               	ld	(scHnum),a
+  84D6    C9                    	ret
+                                	
+  84D7                          scHiKey:
+  84D7    3A 84F1               	ld	a,(scHnum)
+  84DA    3D                    	dec	a
+  84DB    32 84F1               	ld	(scHnum),a
+  84DE    B7                    	or	a
+  84DF    CA 84E6               	jp	z, scH1
+  84E2    3A 4ABF               	ld	a,(4abeh+1);	; get the key configured for up view (delail level = scenary)
+  84E5    C9                    	ret			; return it as first read key
+  84E6    E5                    scH1:	push	hl
+  84E7    21 8202               	ld	hl,getkey	; restore call read keyboard
+  84EA    22 4A1C               	ld	(4a1bh+1),hl	; 
+  84ED    E1                    	pop	hl
+  84EE    C3 8202               	jp	getkey
+  84F1    00                    scHnum:	db 	0
+                                
+  84F2                          scLanding:
+  84F2    21 319B               	ld	hl,319Bh	; y pos
+  84F5    22 442D               	ld	(442dh),hl
+  84F8    21 2213               	ld	hl,2213h	; x pos
+  84FB    22 4432               	ld	(4432h),hl
+  84FE    21 0349               	ld	hl,0349h	; altitude
+  8501    22 4437               	ld	(4437h),hl
+  8504    21 FE71               	ld	hl,0fe71h	; heading (0=North=heading 000, -400=West=heading 270, +401=East=heading 90, +800=South=heading 180
+  8507    22 4441               	ld	(4441h),hl
+  850A    3E 50                 	ld	a,50h
+  850C    32 44C5               	ld 	(44c5h),a	; throttle
+  850F    21 3DB2               	ld 	hl, 03DB2h     
+  8512    22 441D               	ld 	(441Dh),hl	; airspeed
+  8515    C9                    	ret
+                                
+                                
+                                			; patch to draw with ficcional vector generator for 3D scenary
+                                			; activated then starting with an X in command line
+                                			; 	A>FS1 X
+                                			; not realistic but very cool, showing the simulator at its best	
+                                
+  8516                          patchHi:	
+  8516    AF                    	xor 	a
+A 8517    32 8558               	ld	HiRes,a
+  851A    3A 0080               	ld	a,(80h)	; command line length
+  851D    B7                    	or	a
+  851E    C8                    	ret 	z	; no command line -> do not activate vector generator
+	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+
+
+  851F    3A 0082               	ld 	a,(82h)
+  8522    FE 78                 	cp	'x'
+  8524    CA 852A               	jp	z,pahi1	; yes, activate verctors
+  8527    FE 58                 	cp	'X'
+  8529    C0                    	ret	nz	; command line is not X -> do not activate vector generator
+  852A                          pahi1:
+  852A    3E 01                 	ld	a,1
+  852C    32 8558               	ld 	(HiRes),a
+  852F    21 8579               	ld	hl,PointGr	; intercept draw point FS1 routine
+  8532    22 6475               	ld	(6474h+1),hl
+  8535    21 8562               	ld	hl,LineGr	; intercept drawline FS1 routine
+  8538    22 6485               	ld	(6484h+1),hl		
+  853B    21 8559               	ld	hl,ClearGr	; intercept clear screen FS1 routine
+  853E    22 49F7               	ld	(49f6h+1),hl
+  8541    21 0064               	ld	hl,100		; x scale   adjust the x,y scale so the
+  8544    22 44AA               	ld	(44aah),hl      ;           resolution of vectors drawn
+  8547    21 006A               	ld	hl,106		; y scale   is 200x212 pixels, instead
+  854A    22 44AC               	ld	(44ach),hl      ;           of original TRS-80 resolution
+  854D    3E 88                 	ld	a,136		; x offset  (98x40) or the Term-125 
+  854F    32 44AE               	ld	(44aeh),a       ;           resolution (98x80)
+  8552    3E 6E                 	ld	a,110		; y offset 
+  8554    32 44AF               	ld	(44afh),a
+  8557    C9                    	ret
+                                
+  8558    00                    HiRes:	DB 	0		; flag =1 then using Hires 3D Vector	
+                                
+  8559                          ClearGr:		; clear graphic overlay and scenary text screen
+  8559    F5                    	push	af
+  855A    3E 01                 	ld	a,1
+  855C    D3 10                 	out	(10h),a		; write 1 to port 10 -> clear graphic overlay
+  855E    F1                    	pop 	af
+  855F    C3 6406               	jp	6406h		; do return to FS1 text screen clear routine
+                                
+  8562                          LineGr:			; draw a vector
+  8562    F5                    	push 	af
+  8563    3E 02                 	ld	a,2
+  8565    D3 10                 	out	(10h),a		; write 2 to port 10 -> start vector coordinates
+  8567    7B                    	ld 	a,e
+  8568    D3 11                 	out	(11h),a		; write x0 to port 11 -> vector coordinates
+  856A    7A                    	ld 	a,d
+  856B    D3 11                 	out	(11h),a		; write y0 to port 11 -> vector coordinates
+  856D    7D                    	ld 	a,l
+  856E    D3 11                 	out	(11h),a		; write x1 to port 11 -> vector coordinates
+  8570    7C                    	ld 	a,h
+  8571    D3 11                 	out	(11h),a		; write y1 to port 11 -> vector coordinates
+  8573    3E 03                 	ld	a,3
+  8575    D3 10                 	out	(10h),a		; write 3 to port 10 -> draw vector coordinates
+  8577    F1                    	pop	af
+  8578    C9                    	ret
+                                	; jp	6297h		; do not return to FS1 draw line routine
+                                
+                                
+  8579                          PointGr:		; draw a point
+  8579    F5                    	push 	af
+  857A    3E 02                 	ld	a,2
+  857C    D3 10                 	out	(10h),a		; write 2 to port 10 -> start vector coordinates
+	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+
+
+  857E    7D                    	ld 	a,l
+  857F    D3 11                 	out	(11h),a		; write x1 to port 11 -> vector coordinates
+  8581    7C                    	ld 	a,h
+  8582    D3 11                 	out	(11h),a		; write y1 to port 11 -> vector coordinates
+  8584    3E 04                 	ld	a,4
+  8586    D3 10                 	out	(10h),a		; write 4 to port 10 -> draw a pointcoordinates
+  8588    F1                    	pop	af
+  8589    C9                    	ret
+                                	; jp	643b		; do not return to FS1 draw point routine
+                                
+  858A    00                    mend:	nop
+                                	.dephase
+  069A    00                    	nop 		; the addr of this instr should be < than the ORG just below
+                                	
+                                	ORG	06FFh	; the original FS1.BIN prog goes to addr 0600h
+                                			; should be in a CP/M record boundary so can be handled by
+                                			; CP/M PIP program
+  06FF    00                    FPROG:		nop
+                                   
+                                   END 
+	MACRO-80 3.44	09-Dec-81	PAGE	S
+
+
+Macros:
+
+Symbols:
+832F 	CH0             833A 	CH1             8359 	CH2             
+8365 	CH3             8315 	CHOOSE          8559 	CLEARGR         
+81FA 	CLS             822F 	CLSMAIN         823B 	EXITCPM         
+8000 	FCPMLOC         06FF 	FPROG           4000 	FPROGLEN        
+8202 	GETKEY          8241 	HELPTXT         8558 	HIRES           
+8562 	LINEGR          8000 	MAIN            858A 	MEND            
+010E 	MSTART          804E 	PA1A            8061 	PA1B            
+8166 	PA2A            8178 	PA2B            81E6 	PA3A            
+81F9 	PA3B            852A 	PAHI1           8017 	PATCH           
+8516 	PATCHHI         8579 	POINTGR         8212 	RELOCVADDR      
+8211 	RELOCVRAM       8210 	RELOCVRAM2      8228 	RELOCVRAMHI     
+84E6 	SCH1            84A3 	SCHIFLY         84D7 	SCHIKEY         
+84F1 	SCHNUM          84F2 	SCLANDING       8366 	SCTXT1          
+83F0 	SCTXT2          8427 	SCTXT3          0100 	START           
+C000 	VRAM            
+
+
+
+2 Fatal error(s)
+
+
+     8178 	PA2B            

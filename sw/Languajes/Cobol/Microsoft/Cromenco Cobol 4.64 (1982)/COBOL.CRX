@@ -1,0 +1,37 @@
+% Command file to compile a Cobol version 04.64 program
+% Note:  If you are compiling in a directory NOT located on the root
+%	 device,  use COPY instead of MAKLINK throughout.
+
+if #1. = . goto err
+
+maklink -f  /usr/pkg/fdc/cobol[1-4].ovr  .
+maklink -f  /usr/pkg/fdc/cobol.com  .
+maklink -f  /usr/pkg/fdc/cobloc  .
+
+
+% New Common Runtime System 
+% The following four commands are used to compile and link a program
+% to use the new common runtime system.  Note that the commands under
+% "Old Form Runtime System" must be commented out.
+maklink -f  /bin/runcob.com  .
+cobol #1,tty:=#1
+link #1,h:coblbx/s,#1/n/e
+
+
+% Old Form Runtime System
+% To compile and link a program using the pre-version 4.64 form of the
+% Runtime System, remove the comment characters from the following two
+% commands. Note that the commands under "New Common Runtime System"
+% must be commented out.
+% cobol #1,tty:=#1/x
+% link #1,h:coblib/s,#1/n/e
+
+
+del  cobol[1-4].ovr cobol.com cobloc
+del  #1.rel
+exit
+
+%err
+echo 'Wrong number of arguments'
+echo 'Syntax: cobol filename'
+

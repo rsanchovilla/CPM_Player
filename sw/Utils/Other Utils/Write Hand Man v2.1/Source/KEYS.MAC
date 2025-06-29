@@ -1,0 +1,591 @@
+;
+;	KEYS application for Write-Hand-Man
+;
+;	Copyright (c) 1985 by Poor Person Software
+;
+.8080
+	org	0
+base	equ	$
+bdos	equ	base+5
+home	equ	base+010h
+bdos	equ	base+5
+functch equ	base+16h
+functab equ	base+18h
+;
+fcb	equ	base+05ch
+open	equ	15
+close	equ	16
+create	equ	22
+ranread equ	33
+ranwrit equ	34
+ranrec	equ	fcb+33
+;
+pstring equ	9
+conio	equ	6
+;
+ctlu	equ	5	; up  CTL E
+ctld	equ	24	; down CTL X
+ctle	equ	25	; erase CTL Y
+ctll	equ	19	; left	CTL S
+ctlr	equ	04	; right CTL D
+ctlh	equ	08	; destructive backspace  CTL H
+ctlv	equ	22	; insert mode toggle  CTL V	     
+ctln	equ	14	; new definitions
+ctlf	equ	3	; edit macro character
+ctlo	equ	15	; old definitions
+ctldel	equ	127	; delete character    DEL	     
+;
+buf	equ	base+080h
+;
+	org	0100h
+	jmp	go
+go:
+;
+	lhld	functch
+	mov	a,m
+	ori	040h
+	sta	dfunc1	; the current trigger
+;
+	lhld	functab ; the table
+	lxi	d,buf
+	mvi	c,129	; the size
+gol:
+	mov	a,m
+	stax	d
+	inx	h
+	inx	d
+	dcr	c
+	jnz	gol
+;
+	lxi	h,buf+15
+	lxi	b,16
+	mvi	e,8
+gol2:
+	mvi	m,0
+	dad	b
+	dcr	e
+	jnz	gol2
+;
+	lda	dfunc1
+	cpi	255
+	cz	getold		; get old stuff
+	call	putnew
+	xra	a
+	sta	currow
+	sta	curcol			; put cursor here
+	call	dispage
+	lda	dfunc1
+	cpi	255
+	jnz	loop
+	mvi	a,' '
+	sta	dfunc1		; don't display del  
+; 
+loop:
+	mvi	c,conio
+	mvi	e,255
+	call	bdos
+	ora	a
+	jz	loop		   ; wait for a character
+	cpi	27
+	jz	exit
+	cpi	ctlu
+	jz	doup
+	cpi	ctld
+	jz	dodwn
+	cpi	ctll
+	jz	dolft
+	cpi	ctlr
+	jz	dorgt
+	cpi	ctldel
+	jz	dodel 
+	cpi	ctlh
+	jz	dobsp
+	cpi	ctlv
+	jz	doins
+	cpi	ctln
+	jz	setdef
+	cpi	ctlf
+	jz	setmac
+	cpi	ctlo
+	jz	doold
+;
+	cpi	020h
+	jc	loop		; a control character
+	jmp	dochar		; do a character
+;
+exit:
+	jmp	base		   ; return
+;
+doup:
+	lda	currow
+	ora	a
+	jz	loop		; nothing doing
+	dcr	a
+	sta	currow
+	call	dopos		; position
+	jmp	loop
+dodwn:
+	lda	currow
+	cpi	7
+	jnc	loop		; nothing doing
+	inr	a
+	sta	currow
+	call	dopos		; position
+	jmp	loop
+dorgt:
+	lda	curcol
+	cpi	15
+	jnc	loop		; nothing doing
+	lda	curcol
+	call	getadr		; see if over a null
+	mov	a,m
+	ora	a
+	jz	loop		; yep no move
+	lda	curcol
+	inr	a
+	sta	curcol
+	call	dopos
+	jmp	loop		; ok
+dolft:
+	lda	curcol
+	ora	a
+	jz	loop		; nothing doing
+	dcr	a
+	sta	curcol
+	call	dopos
+	jmp	loop
+dodel:
+	lda	curcol
+	cpi	15
+	jz	loop
+	call	getadr		; my address
+	push	h
+	mvi	a,15		; last column-1
+	call	getadr
+	pop	d
+	mov	a,l
+	sub	e
+	mov	c,a		; length of move
+	push	d
+	pop	h	
+	inx	h
+; move from d+1 to d for c
+dellp1:
+	mov	a,m
+	stax	d
+	inx	h
+	inx	d
+	dcr	c
+	jnz	dellp1		; continue move
+	call	dthisl 
+	call	dopos
+	jmp	loop
+dobsp:
+	lda	curcol
+	ora	a
+	jz	loop		; nothing to do
+	dcr	a
+	sta	curcol
+	call	getadr		
+	mvi	m,' '
+	call	dthisl	  
+	call	dopos
+	jmp	loop
+doins:
+	lda	insert
+	mov	b,a
+	mvi	a,1
+	sub	b
+	sta	insert
+	jmp	loop
+;
+dochar:
+;
+;	the first part is already in a	if ^ then set location to '^'  
+;	and get second part
+;	if first part is simply character  set location to character
+;
+	mov	b,a		; save around insert
+	lda	curcol
+	cpi	15
+	jz	loop
+	lda	insert
+	ora	a
+	mov	a,b		; restore
+	jz	noins		; no insert
+	push	psw		; save for insert 
+	lda	curcol
+	mov	b,a
+	mvi	a,14
+	sub	b
+	mov	b,a		; number to move may be zero
+	push	b		; save this
+;
+	mvi	a,14
+	call	getadr		; destination of move
+	push	h
+	pop	d		; copy to de
+	dcx	d		; source of move
+	pop	b		; count
+inslp:
+	mov	a,b
+	ora	a
+	jz	inslpe		; done
+	ldax	d
+	mov	m,a		; move byte
+	dcx	h
+	dcx	d	
+	dcr	b
+	jnz	inslp		; loop till done
+inslpe:
+	pop	psw		; recover character
+noins:
+	cpi	'^'
+	jz	dochc		; control character 
+	push	psw
+	lda	curcol
+	call	getadr
+	pop	psw
+	mov	m,a		; put it in
+	call	dthisl		; display this line
+	call	dopos
+	jmp	dorgt		; and go to next character
+dochc:
+	lda	curcol
+	call	getadr
+	mvi	m,'^'
+	call	dthisl
+	call	dopos
+dchin:
+	mvi	e,255
+	mvi	c,conio
+	call	bdos
+	ora	a
+	jz	dchin
+	cpi	020h
+	jc	dchin
+	push	psw
+	lda	curcol
+	call	getadr
+	pop	psw
+	ani	01fh		; make control
+	mov	m,a
+	call	dthisl
+	jmp	dorgt
+;
+setdef:
+	call	putnew		; put to buffer
+;
+	call	home
+	lxi	d,savem
+	mvi	c,9
+	call	bdos
+	mvi	c,1
+	call	bdos		; conin
+	ani	05fh
+	cpi	'Y'
+	jnz	exit
+;
+	lda	buf	
+	push	psw		; save for a second
+	lda	dfunc1
+	ani	01fh
+	sta	buf		; first record
+	lxi	d,fcb
+	mvi	c,open
+	call	bdos
+	inr	a
+	jnz	oldok
+	lxi	d,fcb
+	mvi	c,create
+	call	bdos
+oldok:
+	lxi	h,0
+	shld	ranrec		; set to record 0
+	lxi	d,fcb
+	mvi	c,ranwrit
+	call	bdos
+	pop	psw
+	sta	buf		; restore
+	lxi	h,1
+	shld	ranrec
+	lxi	d,fcb
+	mvi	c,ranwrit
+	call	bdos
+	lxi	d,fcb
+	mvi	c,close
+	call	bdos
+	jmp	exit
+;
+putnew:
+	lhld	functch 
+	lda	dfunc1
+	ani	01fh
+	mov	m,a		; set macro character
+	lhld	functab 	; table of functions
+	lxi	d,buf		; source
+	mvi	c,128
+putnlp:
+	ldax	d   
+	mov	m,a
+	inx	h
+	inx	d
+	dcr	c
+	jnz	putnlp
+	ret
+;
+setmac:
+	mvi	a,'$'	  
+	sta	dfunc1
+	call	home
+	lxi	d,line1
+	mvi	c,9
+	call	bdos		; position over character
+setml:
+	mvi	3,255
+	mvi	c,conio
+	call	bdos
+	ora	a
+	jz	setml
+	cpi	020h
+	jc	setml
+	push	psw		; save
+	mov	e,a
+	mvi	c,2
+	call	bdos		; output it
+	pop	psw
+	ani	01fh
+	sta	dfunc1
+	call	dopos
+	jmp	loop
+;
+doold:
+	call	getold
+	call	dispage
+	jmp	loop
+;
+getold:
+	lxi	d,fcb
+	mvi	c,open
+	call	bdos
+	inr	a
+	rz		; leave quickly
+	lxi	h,0
+	shld	ranrec
+	lxi	d,fcb
+	mvi	c,ranread
+	call	bdos	; read first block
+	lda	buf
+	ori	040h
+	sta	dfunc1	; set into display
+	lxi	h,1
+	shld	ranrec
+	lxi	d,fcb
+	mvi	c,ranread
+	call	bdos	; read second block
+	lxi	d,fcb
+	mvi	c,close
+	call	bdos
+	ret	      
+dispage:
+	call	home
+	call	blkpage 	   ; blank the screen
+	call	home		; home the cursor
+	lxi	h,line1
+	call	dline
+	lxi	h,line2  
+	call	dline
+;
+	lxi	h,buf	 
+	mvi	b,8		; 8 lines
+dloop:
+	call	disf		; display function key
+	lxi	d,16
+	dad	d
+	dcr	b
+	jnz	dloop
+;
+	call	dopos		; position
+	ret
+;
+blkpage:
+	mvi	b,10
+blklp:
+	lxi	h,blline
+	call	dline
+	dcr	b
+	jnz	blklp
+	lxi	h,lastl
+	call	dline
+	ret
+dline:
+	push	b		; save b
+;
+	mvi	c,32		; characters per line
+;
+dlp:
+	mov	e,m		; get byte
+	push	h
+	push	b
+	call	putchr	       ; display it
+	pop	b
+	pop	h
+	inx	h		; bump pointer
+	dcr	c		; count
+	jnz	dlp
+;
+	push	h		; save buffer pointer
+	mvi	e,'|'
+	call	putchr	       ; put border
+	call	crlf		; next line
+	pop	h
+	pop	b
+	ret
+;
+dthisl:
+	xra	a
+	call	getadr		; h=address of beginning of line
+	lda	currow		; line number
+	mov	b,a
+	mvi	a,8
+	sub	b
+	mov	b,a
+	push	b
+	push	h
+	mvi	e,13
+	call	putch1
+	lxi	h,blline
+	call	dline
+	call	dopos
+	mvi	e,13
+	call	putch1		; at beginning of my line
+	pop	h
+	pop	b		; fall into display function line
+disf:
+	push	b
+	push	h
+;
+	mvi	a,'9'
+	sub	b		; this is function key number
+	mov	e,a
+	call	putchr
+	mvi	e,' '
+	call	putchr
+	pop	h
+	push	h		; save h
+;
+disfl:
+	mov	a,m
+	ora	a
+	jz	disfle		; done
+	push	h
+	mov	e,a
+	call	putchr	       ; put it out
+	pop	h
+	inx	h
+	jmp	disfl
+disfle:
+	call	crlf
+	pop	h
+	pop	b
+	ret
+putchr: 		       ; write character to console
+	mov	a,e		; save
+	cpi	020h		; is it control
+	jnc	putch1	       ; no
+	push	psw
+	mvi	e,'^'
+	mvi	c,conio
+	call	bdos
+	pop	psw
+	ori	040h
+	mov	e,a
+putch1:
+	mvi	c,conio
+	call	bdos
+	ret
+crlf:				; write CR/LF
+	mvi	e,13
+	call	putch1
+	mvi	e,10
+	call	putch1
+	ret
+;
+dopos:
+;
+;	position to the currow curcol
+;
+	call	home		; start from here
+	mvi	e,'K'
+	call	putchr
+	mvi	e,'e'
+	call	putchr
+	mvi	e,10
+	call	putch1
+	mvi	e,10
+	call	putch1
+
+;
+	lda	currow		; are we at top
+	ora	a
+	jz	upcol		; skip line do column
+uplp1:
+	mvi	e,10		; output LF
+	push	psw
+	call	putch1
+	pop	psw
+	dcr	a		; loop to on previous line
+	jnz	uplp1
+upcol:				; now go to correct column
+	lda	curcol
+	ora	a
+	rz			; already there
+	mvi	b,0
+uplp2:
+	push	b
+	mov	a,b		; a = column for getaddr
+	call	getadr		; get address this character
+	mov	e,m
+	mov	a,m		; see if null (stop now)
+	ora	a
+	jz	atnull
+	call	putchr	       ; put it
+	pop	b  
+	inr	b		; advance counter
+	lda	curcol
+	cmp	b		; see if there 
+	jnz	uplp2		; no loop some more
+	ret			; yep
+atnull:
+	pop	b
+	mov	a,b
+	sta	curcol
+	ret
+;
+getadr:
+	push	psw		; save column
+	lda	currow		; this is current row
+	rlc
+	rlc
+	rlc
+	rlc			; times 16
+	mov	c,a
+	pop	psw
+	add	c
+	mov	c,a
+	mvi	b,0
+	lxi	h,buf
+	dad	b
+	ret
+;
+insert: db	0		; insert mode flag
+currow: db	0	; current line
+curcol: db	0	; current col
+line1:	db	'Key Macro Editor  Macro CHAR=^  '
+dfunc1 equ line1+30
+line2:	db	'ESC-CAN, ^N-new, ^O-old, ^C-CHAR'
+blline: db	'                                '
+lastl:	db	'--------------------------------'
+savem:	db	'Save new definitions? -   Y/N >$'
+	end
+           

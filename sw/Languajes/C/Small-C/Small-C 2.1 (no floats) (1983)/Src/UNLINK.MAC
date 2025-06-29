@@ -1,0 +1,72 @@
+CC1:
+unlink::
+LXI H,-36
+DAD SP
+SPHL
+LXI H,0
+DAD SP
+PUSH H
+LXI H,0
+PUSH H
+LXI H,36
+PUSH H
+CALL pad
+POP B
+POP B
+POP B
+LXI H,38
+CALL CCDSGI##
+PUSH H
+LXI H,2
+DAD SP
+PUSH H
+CALL Unewfcb
+POP B
+POP B
+MOV A,H
+ORA L
+JZ CC4
+LXI H,19
+PUSH H
+LXI H,2
+DAD SP
+PUSH H
+CALL Ubdos
+POP B
+POP B
+XCHG;;
+LXI H,255
+CALL CCNE##
+MOV A,H
+ORA L
+JZ CC4
+LXI H,1
+JMP CC5
+CC4:
+LXI H,0
+CC5:
+MOV A,H
+ORA L
+JZ CC3
+LXI H,0
+XCHG;;
+LXI H,36
+DAD SP
+SPHL
+XCHG;;
+RET
+CC3:
+LXI H,-2
+XCHG;;
+LXI H,36
+DAD SP
+SPHL
+XCHG;;
+RET
+delete  equ    unlink
+        entry  delete
+EXT Unewfcb
+EXT Ubdos
+EXT pad
+END
+

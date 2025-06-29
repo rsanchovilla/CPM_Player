@@ -1,0 +1,1009 @@
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1
+Common file for BASIC interpreter
+
+                                	SUBTTL	Common file for BASIC interpreter
+                                	.SALL	
+                                
+  000F                          CONTO	SET	15			;CHARACTER TO SUPRESS OUTPUT (USUALLY CONTROL-O)
+  0000                          DBLTRN	SET	0			;FOR DOUBLE PRECISION TRANSCENDENTALS
+                                	IF2	
+                                
+                                	.PRINTX	/EXTENDED/
+                                
+                                
+                                	.PRINTX	/LPT/
+                                
+                                	.PRINTX	/CPM DISK/
+                                
+                                
+                                	.PRINTX	/Z80/
+                                
+                                	.PRINTX	/FAST/
+                                
+                                	.PRINTX	/5.0 FEATURES/
+                                
+                                	.PRINTX	/ANSI COMPATIBLE/
+                                	ENDIF
+                                
+  000E                          CLMWID	SET	14			;MAKE COMMA COLUMNS FOURTEEN CHARACTERS
+  0080                          DATPSC	SET	128			;NUMBER OF DATA BYTES IN DISK SECTOR
+  0050                          LINLN	SET	80			;TERMINAL LINE LENGTH 
+  0084                          LPTLEN	SET	132
+  00FF                          BUFLEN	SET	255			;LONG LINES
+  0028                          NAMLEN	SET	40			;MAXIMUM LENGTH NAME -- 3 TO 127
+                                
+  001D                          NUMLEV	SET	0*20+19+2*5		;NUMBER OF STACK LEVELS RESERVED
+                                					;BY AN EXPLICIT CALL TO GETSTK
+                                
+  0004                          STRSIZ	SET	4
+                                
+  0003                          STRSIZ	SET	3
+  0003                          NUMTMP	SET	3			;NUMBER OF STRING TEMPORARIES
+                                
+  000A                          NUMTMP	SET	10
+                                
+  0003                          MD.RND	SET	3			;THE MODE NUMBER FOR RANDOM FILES
+  0001                          MD.SQI	SET	1			;THE MODE NUMBER FOR SEQUENTIAL INPUT FILES
+                                					;NEVER WRITTEN INTO A FILE
+  0002                          MD.SQO	SET	2			;THE MODE FOR SEQUENTIAL OUTPUT FILES
+                                					;AND PROGRAM FILES
+  0000                          CPMWRM	SET	0			;CP/M WARM BOOT ADDR
+  0005                          CPMENT	SET	CPMWRM+5		;CP/M BDOS CALL ADDR
+  0000'                         	CSEG	
+  0000                          TRUROM	SET	0
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-1
+Common file for BASIC interpreter
+
+                                
+                                	TITLE	DSKCOM - - COMMON ROUTINES FOR DISK BASICS
+                                
+                                	EXTRN	CLSFIL,CONINT,DATOFS,DERBFN,DERRPE,ERROR,FILOU3,CHRGTR,CURLIN
+                                	EXTRN	INDSKB,INDSKC,NMLOFS,PRGFIL,SCRTCH,SNERR
+                                	EXTRN	FRMEQL,BUF
+                                	EXTRN	STRLT3,DERFOV
+                                	EXTRN	DATOFC,DERBFM,DIRTMP,DOASIG,DOCNVF,DSCTMP,ERRFDR,FCERR
+                                	EXTRN	FILPT1,FILPTR,FIN,FINBCK,FINPRT,FRCSTR,FRESTR,FRETOP
+                                	EXTRN	FRMEVL,GETBYT,GETSPA,GONE,GTBYTC,GTMPRT,INCHRI,LETCON
+                                	EXTRN	LINKER,LIST,LSTFRE,MAIN,MAXFIL,NEWSTT,NMLOFC,OMERR
+                                	EXTRN	PTRFIL,PTRGET,PUTNEW,READY,RUNC
+                                	EXTRN	SCCPTR
+                                
+                                	EXTRN	SAVSTK,STRINI,TXTTAB,VALTYP,VARTAB,VMOVFM,VMOVMF,ENDCON
+                                	EXTRN	GETYPR,SYNCHR,DCOMPR
+                                	PUBLIC	CLSALL,FILFRM,FILIDX,FILSCN,FIELD,PRGFLI,FILIND
+                                	PUBLIC	FILINP,FILGET,MKI$,MKS$,MKD$,CVI,CVS,CVD
+                                	PUBLIC	DLINE,PRGFL2,LRUN,LOAD,PRGFIN,MERGE,DIRDO,SAVE,CLOSE
+                                	PUBLIC	OKGETM
+                                	PUBLIC	RSET,LSET
+                                	PUBLIC	BINPSV
+                                	EXTRN	PROSAV,PROLOD
+                                	EXTRN	PROFLG
+                                ; REVISION HISTORY
+                                ;4/23/78	PGA	ALLOW # ON CLOSE
+                                ;
+                                ;8/6/79  PGA	IF ^C ON MBASIC FOO, DONT RETURN TO SYSTEM. SEE 'NOTINI'
+                                ;6/27/80	PGA	FIX INPUT#1,D# SO IT USES FINDBL INSTEAD OF FIN
+                                ;		AND THUS AVOIDS LOSING SIGNIFICANCE.
+                                ;
+                                ;%
+                                	SUBTTL	FILINP AND FILGET -- SCAN A FILE NUMBER AND SETUP PTRFIL
+                                
+  0000'   0E 01                 FILINP:	MVI	C,MD.SQI		;MUST BE SEQUENTIAL INPUT
+  0002'   FE 23                 FILGET:	CPI	'#'			;NUMBER SIGN THERE?
+  0004'   C0                    	RNZ				;NO, NOT DISK READER
+  0005'   C5                    	PUSH	B			;SAVE EXPECTED MODE
+  0006'   CD 001F'              	CALL	FILSCN			;READ AND GET POINTER
+  0009'   D1                    	POP	D			;[E]=FILE MODE
+  000A'   BB                    	CMP	E			;IS IT RIGHT?
+  000B'   CA 0013'              	JZ	GDFILM			;GOOD FILE MODE
+  000E'   FE 03                 	CPI	MD.RND			;ALLOW STUFF WITH RANDOM FILES
+  0010'   C2 0000*              	JNZ	DERBFM			;IF NOT, "BAD FILE MODE"
+  0013'                         GDFILM:
+  0013'   CD 0000*              	CALL	SYNCHR
+  0016'   2C                    	DB	44			;GO PAST THE COMMA
+  0017'   EB                    FILSET:	XCHG				;[D,E]=TEXT POINTER
+  0018'   60                    	MOV	H,B			;SETUP PTRFIL
+  0019'   69                    	MOV	L,C
+  001A'   22 0000*              	SHLD	PTRFIL
+  001D'   EB                    	XCHG				;TEXT POINTER BACK INTO [H,L]
+  001E'   C9                    	RET	
+                                
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-2
+FILINP AND FILGET -- SCAN A FILE NUMBER AND SETUP PTRFIL
+
+                                
+                                	SUBTTL	FILSCN, FILFRM, AND FILIDX
+                                ;
+                                ; AT THIS ENTRY POINT [H,L] IS ASSUMED TO BE THE TEXT POINTER AND
+                                ; A FILE NUMBER IS SCANNED
+                                ;
+  001F'   2B                    FILSCN:	DCX	H
+  0020'   CD 0000*              	CALL	CHRGTR
+  0023'   FE 23                 	CPI	'#'			;MAKE NUMBER SIGN OPTIONAL
+  0025'   CC 0000*              	CZ	CHRGTR			;BY SKIPPING IT IF THERE
+  0028'   CD 0000*              	CALL	FRMEVL			;READ THE FILE NUMBER INTO THE FAC
+                                ;
+                                ; AT THIS ENTRY POINT THE FAC HAS THE FILE NUMBER IN IT ALREADY
+                                ;
+  002B'   CD 0000*              FILFRM:	CALL	CONINT			;GET THE FILE NUMBER INTO [A]
+                                ;
+                                ; AT THIS POINT IT IS ASSUMED THE FILE NUMBER IS IN [A]
+                                ; THE FILE NUMBER IS RETURNED IN [E]
+                                ; [D] IS SET TO ZERO. [H,L] IS SAVED.
+                                ; [B,C] IS SET TO POINT AT THE FILE DATA BLOCK FOR FILE [E]
+                                ; [A] GIVE THE MODE OF THE FILE AND ZERO IS SET  IF THE FILE IS
+                                ; MODE ZERO (NOT OPEN).
+                                ;
+  002E'   5F                    FILIDX:	MOV	E,A			;GET FILE NUMBER INTO [E]
+  002F'   3A 0000*              FILID2:	LDA	MAXFIL			;IS THIS FILE # LEGAL?
+  0032'   BB                    	CMP	E
+  0033'   DA 0000*              	JC	DERBFN			;IF NOT, "BAD FILE NUMBER"
+  0036'   16 00                 	MVI	D,0			;SETUP DOUBLE-BYTE OFFSET TO GET
+                                					;POINTER TO FILE DATA BLOCK
+  0038'   E5                    	PUSH	H			;SAVE [H,L]
+  0039'   21 0000*              	LXI	H,FILPTR		;POINT AT POINTER TABLE
+  003C'   19                    	DAD	D			;ADD ON OFFSET TWICE FOR DOUBLE BYTE
+  003D'   19                    	DAD	D			;ENTRIES
+  003E'   4E                    	MOV	C,M			;PICK UP POINTER IN [B,C]
+  003F'   23                    	INX	H
+  0040'   46                    	MOV	B,M
+  0041'   0A                    	LDAX	B			;GET MODE OF FILE INTO [A]
+  0042'   B7                    	ORA	A			;SET ZERO IF FILE NOT OPEN
+  0043'   E1                    	POP	H			;RETRIEVE [H,L]
+  0044'   C9                    	RET	
+                                
+                                ; GETPTR IS CALLED FROM VARPTR(#<EXPRESSION>)
+                                	PUBLIC	GETPTR
+  0045'   CD 002F'              GETPTR:	CALL	FILID2			;INDEX INTO FILE DATA BLOCK
+  0048'   21 0000*              	LXI	H,DATOFC		;POINT TO DATA BLOCK
+  004B'   FE 03                 	CPI	MD.RND			;RANDOM FILE?
+  004D'   C2 0053'              	JNZ	NTFIVD			;NO, USE NOTRRMAL FOOFFSET
+  0050'   21 0000*              	LXI	H,0+FD.DAT##		;YES
+  0053'                         NTFIVD:
+  0053'   09                    	DAD	B			;ADD START OF FILE DATA BLOCK
+  0054'   EB                    	XCHG				;RETURN IN [D,E]
+  0055'   C9                    	RET	
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-3
+FILSCN, FILFRM, AND FILIDX
+
+                                
+                                
+  0056'   3E 02                 MKI$:	MVI	A,2			;VALUE TYPE FOR INTEGER AND NUMBER
+                                					;OF CHARACTERS RESULT WILL NEED
+  0058'   01                    	DB	1			;SKIP NEXT TWO BYTES WITH "LXI	B,"
+  0059'   3E 04                 MKS$:	MVI	A,4			;VALUE TYPE OF SINGLE PRECISION
+  005B'   01                    	DB	1			;SKIP NEXT TWO BYTES
+  005C'   3E 08                 MKD$:	MVI	A,8			;VALUE TYPE OF DOUBLE-PRECISION
+  005E'   F5                    	PUSH	PSW			;SAVE THE NUMBER OF BYTES OF
+                                					;STRING SPACE WE NEED
+  005F'   CD 0000*              	CALL	DOCNVF			;CONVERT FAC TO PROPER TYPE
+  0062'   F1                    	POP	PSW			;GET THE NUMBER OF BYTES NEEDED
+  0063'   CD 0000*              	CALL	STRINI			;GET A PLACE FOR THE STRING DATA
+  0066'   2A 0001*              	LHLD	DSCTMP+1		;POINT TO THE PLACE TO STORE THE DATA
+  0069'   CD 0000*              	CALL	VMOVMF			;MOVE THE FAC VALUE INTO THE STRING CREATION
+  006C'   C3 0000*              	JMP	FINBCK			;FINISH UP THESE STRING FUNCTIONS
+                                
+  006F'   3E 01                 CVI:	MVI	A,1			;SET [A] TO BE VALTYP-1
+  0071'   01                    	DB	1			;SKIP THE NEXT TWO BYTES WITH "LXI B,"
+  0072'   3E 03                 CVS:	MVI	A,3			;ALSO SET [A] TO NUMBER OF CHARACTERS REQUIRED -1
+  0074'   01                    	DB	1			;SKIP THE NEXT TWO BYTES
+  0075'   3E 07                 CVD:	MVI	A,7			;DOUBLE PRECISION VALUE TYPE -1
+  0077'   F5                    	PUSH	PSW			;SAVE THE VALTYP
+  0078'   CD 0000*              	CALL	FRESTR			;MAKE SURE THE ARGUMENT IS A STRING
+                                					;AND GET A POINTER TO THE DESCRIPTOR
+  007B'   F1                    	POP	PSW			;GET BACK NUMBER OF CHARACTERS REQUIRED-1
+  007C'   BE                    	CMP	M			;MAKE SURE THE STRING IS LONGER THAN THAT
+  007D'   D2 0000*              	JNC	FCERR			;IF NOT, "ILLEGAL FUNCTION CALL"
+  0080'   3C                    	INR	A			;[A]=TRUE VALUE TYPE
+  0081'   23                    	INX	H
+  0082'   4E                    	MOV	C,M			;[H,L]=POINTER AT STRING DATA
+  0083'   23                    	INX	H			;TO BE MOVED INTO THE FAC
+  0084'   66                    	MOV	H,M
+  0085'   69                    	MOV	L,C
+  0086'   32 0000*              	STA	VALTYP			;SETUP VALUE TYPE FOR MOVE
+                                					;AND FOR IDENTIFICATION
+  0089'   C3 0000*              	JMP	VMOVFM			;MOVE IN THE STRING DATA
+                                
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-4
+FILSCN, FILFRM, AND FILIDX
+
+                                
+                                	SUBTTL	SETUP TO READ A SEQUENTIAL ITEM -- FILIND
+                                
+  008C'                         FILIND:
+  008C'   CD 0000*              	CALL	GETYPR			;SEE IF INPUT IS STRING OR NUMBER
+  008F'   01 0000*              	LXI	B,DOASIG		;RETURN ADDRESS TO SETUP [FAC]
+  2C20                          CON1	SET	0+(44*256)+32
+  0092'   11 2C20               	LXI	D,CON1			;SETUP TERMINATORS SPACE AND COMMA
+  0095'   C2 00B0'              	JNZ	INPDOR			;IF NUMERIC, GO READ THE FILE
+  0098'   5A                    	MOV	E,D			;MAKE BOTH TERMINATORS COMMA
+  0099'   C3 00B0'              	JMP	INPDOR			;GO READ THE FILE
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-5
+SETUP TO READ A SEQUENTIAL ITEM -- FILIND
+
+                                
+                                	SUBTTL	LINE INPUT & READ CODE FOR ITEM FETCHING FROM SEQUENTIAL INPUT FILES
+                                
+  009C'   CD 0000'              DLINE:	CALL	FILINP			;GET FILE NUMBER SET UP
+  009F'   CD 0000*              	CALL	PTRGET			;READ STRING TO STORE INTO
+  00A2'   CD 0000*              	CALL	FRCSTR			;MAKE SURE IT WAS A STRING
+  00A5'   01 0000*              	LXI	B,FINPRT		;RESET TO CONSOLE WHEN DONE READING
+  00A8'   C5                    	PUSH	B			;SAVE ON STACK
+  00A9'   D5                    	PUSH	D			;SAVE POINTER AT VARIABLE
+  00AA'   01 0000*              	LXI	B,LETCON		;GOOD RETURN ADDRESS FOR ASSIGNMENT
+  00AD'   AF                    	XRA	A			;SET A=0 FOR STRING VALUE TYPE
+  00AE'   57                    	MOV	D,A			;ZERO OUT BOTH TERMINATORS
+  00AF'   5F                    	MOV	E,A
+  00B0'   F5                    INPDOR:	PUSH	PSW			;SAVE VALUE TYPE
+  00B1'   C5                    	PUSH	B			;SAVE RETURN ADDRESS
+  00B2'   E5                    	PUSH	H			;SAVE POINTER AT DATA COMING IN
+                                					;A DUMMY POINTER AT BUFMIN
+  00B3'   CD 0000*              NOTNWT:	CALL	INDSKC			;READ A CHARACTER
+  00B6'   DA 0000*              	JC	DERRPE			;READ PAST END ERROR IF EOF
+  00B9'   FE 20                 	CPI	' '			;SKIP LEADING SPACES
+  00BB'   C2 00C3'              	JNZ	NOTSPC			;EXCEPT FOR LINE INPUT
+  00BE'   14                    	INR	D			;CHECK FOR LINEINPUT
+  00BF'   15                    	DCR	D
+  00C0'   C2 00B3'              	JNZ	NOTNWT			;SKIP ANY NUMBER
+  00C3'   FE 22                 NOTSPC:	CPI	34			;QUOTED STRING COMING IN?
+  00C5'   C2 00D8'              	JNZ	NOTQTE
+  00C8'   47                    	MOV	B,A			;SAVE THE QUOTE
+  00C9'   7B                    	MOV	A,E			;MUST BE INPUT OF A STRING
+  00CA'   FE 2C                 	CPI	44			;WHICH HAS [E]=44
+  00CC'   78                    	MOV	A,B			;QUOTE BACK INTO [A]
+  00CD'   C2 00D8'              	JNZ	NOTQTE
+  00D0'   50                    	MOV	D,B			;TERMINATORS ARE QUOTES ONLY
+  00D1'   58                    	MOV	E,B
+  00D2'   CD 0000*              	CALL	INDSKC			;READ PAST QUOTATION
+  00D5'   DA 0126'              	JC	QUITSI			;IF EOF, ALL DONE
+  00D8'                         NOTQTE:
+  00D8'   21 0000*              	LXI	H,BUF			;BUFFER FOR DATA
+  00DB'   06 FF                 	MVI	B,255			;MAXIMUM NUMBER OF CHARACTERS (255)
+  00DD'   4F                    LOPCRS:	MOV	C,A			;SAVE CHARACTER IN [C]
+  00DE'   7A                    	MOV	A,D			;CHECK FOR QUOTED STRING
+  00DF'   FE 22                 	CPI	34
+  00E1'   79                    	MOV	A,C			;RESTORE CHARACTER
+  00E2'   CA 0111'              	JZ	NOTQTL			;DON'T IGNORE CR OR STOP ON LF
+  00E5'   FE 0D                 	CPI	13			;CR?
+  00E7'   E5                    	PUSH	H			;SAVE DEST PTR. ON STACK
+  00E8'   CA 0146'              	JZ	ICASLF			;EAT LINE FEED IF ONE
+  00EB'   E1                    	POP	H			;RESTORE DEST. PTR.
+  00EC'   FE 0A                 	CPI	10			;LF?
+  00EE'   C2 0111'              	JNZ	NOTQTL			;NO, TEST OTHER TERMINATORS
+  00F1'   4F                    	MOV	C,A			;SAVE CURRENT CHAR
+  00F2'   7B                    	MOV	A,E			;GET TERMINATOR 2
+  00F3'   FE 2C                 	CPI	54O			;CHECK FOR COMMA (UNQUOTED STRING)
+  00F5'   79                    	MOV	A,C			;RESTORE ORIG CHAR
+  00F6'   C4 017F'              	CNZ	STRCHR			;IF NOT, STORE LF (?)
+  00F9'   CD 0000*              	CALL	INDSKC			;GET NEXT CHAR
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-6
+LINE INPUT & READ CODE FOR ITEM FETCHING FROM SEQUENTIAL IN
+
+  00FC'   DA 0126'              	JC	QUITSI			;IF EOF, ALL DONE.
+  00FF'   FE 0D                 	CPI	13			;IS IT A CR?
+  0101'   C2 0111'              	JNZ	NOTQTL			;IF NOT SEE IF STORE NORMALLY
+  0104'   7B                    	MOV	A,E			;GET TERMINATOR
+  0105'   FE 20                 	CPI	' '			;IS IT NUMERIC INPUT?
+  0107'   CA 0120'              	JZ	LPCRGT			;IF SO, IGNORE CR, DONT PUT IN BUFFER
+  010A'   FE 2C                 	CPI	44			;IS IT NON-QUOTED STRING (TERM=,)
+  010C'   3E 0D                 	MVI	A,13			;GET BACK CR.
+  010E'   CA 0120'              	JZ	LPCRGT			;IF SO, IGNORE CR.
+  0111'   B7                    NOTQTL:	ORA	A			;IS CHAR ZERO
+  0112'   CA 0120'              	JZ	LPCRGT			;ALWAYS IGNORE, AS IT IS TERMINATOR
+                                					;FOR STRLIT (SEE QUIT2B)
+  0115'   BA                    	CMP	D			;TERMINATOR ONE?
+  0116'   CA 0126'              	JZ	QUITSI			;STOP THEN
+  0119'   BB                    	CMP	E			;TERMINATOR TWO?
+  011A'   CA 0126'              	JZ	QUITSI
+  011D'   CD 017F'              	CALL	STRCHR			;SAVE THE CHAR
+  0120'   CD 0000*              LPCRGT:	CALL	INDSKC			;READ ANOTHER CHARACTER
+  0123'   D2 00DD'              	JNC	LOPCRS			;IF NOT, CHECK AS TERMINATOR
+  0126'   E5                    QUITSI:	PUSH	H			;SAVE PLACE TO STUFF ZERO
+  0127'   FE 22                 	CPI	34			;STOPPED ON QUOTE?
+  0129'   CA 0131'              	JZ	MORSPC			;DON'T SKIP SPACES THEN
+                                					;BUT DO SKIP FOLLOWING COMMA OR
+                                					;CRLF THOUGH
+  012C'   FE 20                 	CPI	' '			;STOPPED ON SPACE?
+  012E'   C2 0159'              	JNZ	NOSKCR			;NO, DON'T SKIP SPACES
+                                					;OR ANY FOLLOWING COMMAS OR CRLFS EITHER
+  0131'   CD 0000*              MORSPC:	CALL	INDSKC			;READ SPACES
+  0134'   DA 0159'              	JC	NOSKCR			;EOF, ALL DONE.
+  0137'   FE 20                 	CPI	' '
+  0139'   CA 0131'              	JZ	MORSPC
+  013C'   FE 2C                 	CPI	44			;COMMA?
+  013E'   CA 0159'              	JZ	NOSKCR			;OK, SKIP IT
+  0141'   FE 0D                 	CPI	13			;CARRIAGE RETURN?
+  0143'   C2 0151'              	JNZ	BAKUPT			;BACK UP PAST THIS CHARACTER
+  0146'                         ICASLF:
+  0146'   CD 0000*              	CALL	INDSKC			;READ ANOTHER
+  0149'   DA 0159'              	JC	NOSKCR			;EOF, ALL DONE.
+  014C'   FE 0A                 	CPI	10			;LINE FEED?
+  014E'   CA 0159'              	JZ	NOSKCR			;OK, SKIP IT TOO
+  0151'   2A 0000*              BAKUPT:	LHLD	PTRFIL			;GO TO NUMBER OF CHARATERS
+  0154'   01 0000*              	LXI	B,0+NMLOFS
+  0157'   09                    	DAD	B
+  0158'   34                    	INR	M			;BACK UP BY INCREMENTING CHARACTER COUNT
+  0159'   E1                    NOSKCR:	POP	H			;GET BACK PLACE TO STORE TERMINATOR
+  015A'   36 00                 QUIT2B:	MVI	M,0			;STORE THE TERMINATOR
+  015C'   21 FFFF*              	LXI	H,BUF-1			;ITEM IS NOW STORED AT THIS POINT +1
+  015F'   7B                    	MOV	A,E			;WAS IT A NUMERIC INPUT?
+  0160'   D6 20                 	SUI	' '			;IF SO, [E]=" "
+  0162'   CA 016D'              	JZ	NUMIMK			;USE FIN TO SCAN IT
+                                	EXTRN	STRLT2
+  0165'   42                    	MOV	B,D			;SET [B]=44 IF SCANNING UNQUOTED STRING
+  0166'   16 00                 	MVI	D,0
+  0168'   CD 0000*              	CALL	STRLT2
+  016B'   E1                    	POP	H			;GET BACK [H,L]
+  016C'   C9                    	RET				;DO ASSIGNMENT
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-7
+LINE INPUT & READ CODE FOR ITEM FETCHING FROM SEQUENTIAL IN
+
+                                
+  016D'   CD 0000*              NUMIMK:	CALL	GETYPR			;GET TYPE OF NUMERIC VARIABLE BEING READ
+  0170'   F5                    	PUSH	PSW			;SAVE IT
+  0171'   CD 0000*              	CALL	CHRGTR			;READ FIRST CHARACTER
+  0174'   F1                    	POP	PSW			;RESTORE TYPE OF VARIABLE
+  0175'   F5                    	PUSH	PSW			;SAVE BACK
+  0176'   DC 0000*              	CC	FIN			;SINGLE PRECISION INPUT
+  0179'   F1                    	POP	PSW			;GET BACK TYPE OF VAR
+                                	EXTRN	FINDBL
+  017A'   D4 0000*              	CNC	FINDBL			;DOUBLE PRECISION INPUT
+  017D'   E1                    	POP	H			;GET [H,L]
+  017E'   C9                    	RET				;DO THE ASSIGNMENT
+                                
+  017F'   B7                    STRCHR:	ORA	A			;TRYING TO STORE NULL BYTE
+  0180'   C8                    	RZ				;RETURN, DONT STORE IT
+  0181'   77                    	MOV	M,A			;STORE THE CHARACTER
+  0182'   23                    	INX	H
+  0183'   05                    	DCR	B			;128 YET?
+  0184'   C0                    	RNZ				;MORE SPACE IN BUFFER, RETURN
+  0185'   C1                    	POP	B			;GET RID OF SUPERFLUOUS STACK ENTRY
+  0186'   C3 015A'              	JMP	QUIT2B			;SPECIAL QUIT
+                                
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-8
+LINE INPUT & READ CODE FOR ITEM FETCHING FROM SEQUENTIAL IN
+
+                                
+  0189'   16 01                 PRGFLI:	MVI	D,MD.SQI		;SEQUENTIAL INPUT MODE
+  018B'   AF                    PRGFL2:	XRA	A			;INTERNAL FILE NUMBER IS ALWAYS ZERO
+  018C'   C3 0000*              	JMP	PRGFIL			;SCAN FILE NAME AND DISK NUMMER
+                                					;AND DO THE RIGHT THING USING MD.KIL
+                                					;AS A FLAG
+                                
+  018F'                         LRUN:
+  018F'   F6                    LRUN2::	DB	366Q			;SET NON ZERO TO FLAG "RUN" COMMAND
+  0190'   AF                    LOAD:	XRA	A			;FLAG ZERO FOR "LOAD"
+  0191'   F5                    	PUSH	PSW			;SAVE "RUN"/"LOAD" FLAG
+  0192'   CD 0189'              	CALL	PRGFLI			;FIND THAT FILE AND SETUP FOR
+                                					;USING INDSKC SUBROUTINE
+  0195'   3A 0000*              	LDA	MAXFIL			;SAVE THE NUMBER OF FILES
+  0198'   32 0001*              	STA	LSTFRE+1		;SINCE WE MAKE IT LOOK LIKE ZERO
+                                					;SO ,R OPTION CAN LEAVE FILES
+                                					;OPEN
+  019B'   2B                    	DCX	H			;SEE IF NO RUN OPTION
+  019C'   CD 0000*              	CALL	CHRGTR
+  019F'   CA 01B3'              	JZ	NOTRNL			;NO, JUST LOAD
+  01A2'   CD 0000*              	CALL	SYNCHR
+  01A5'   2C                    	DB	44			;GOTTA HAVE A COMMA
+  01A6'   CD 0000*              	CALL	SYNCHR
+  01A9'   52                    	DB	'R'			;ONLY OPTION IS RUN
+  01AA'   C2 0000*              	JNZ	SNERR			;AND THAT BETTER BE THE END
+  01AD'   F1                    	POP	PSW			;GET RID OF "RUN"/"LOAD" FLAG
+                                	PUBLIC	CHNENT
+  01AE'                         CHNENT:
+  01AE'   AF                    	XRA	A			;SO FILES AREN'T CLOSED
+  01AF'   32 0000*              	STA	MAXFIL			;PRETEND THERE AREN'T ANY
+  01B2'   F6                    	DB	366O			;FLAG RUN WITH NON-ZERO
+  01B3'   F1                    NOTRNL:	POP	PSW			;FLAG NON-RUN WITH ZERO
+  01B4'   32 0000*              	STA	LSTFRE
+  01B7'   21 0000*              	LXI	H,DIRTMP
+  01BA'   36 00                 	MVI	M,0
+  01BC'   22 0000*              	SHLD	FILPTR			;MESS UP POINTER AT FILE ZERO
+  01BF'   CD 0000*              	CALL	SCRTCH			;WIPE OUT OLD STUFF
+  01C2'   3A 0001*              	LDA	LSTFRE+1		;RESTORE MAXFIL
+  01C5'   32 0000*              	STA	MAXFIL			;THAT WAS KLUDGED
+  01C8'   2A 0000*              	LHLD	FILPT1
+  01CB'   22 0000*              	SHLD	FILPTR			;RESTORE BACK TO NORMAL
+  01CE'   22 0000*              	SHLD	PTRFIL			;PTRFIL GOT ZEROED SO FIX IT TOO
+                                ; BELOW IS FIX (TO LABEL NOTINI) SO THAT IF ^C DURING MBASIC FOO, WONT EXIT TO SYSTEM
+  01D1'   2A 0000*              	LHLD	CURLIN			;GET LINE NUMBER
+  01D4'   23                    	INX	H			;SEE IF IN INITIALIZATION
+  01D5'   7C                    	MOV	A,H
+  01D6'   A5                    	ANA	L
+  01D7'   3C                    	INR	A
+  01D8'   C2 01DE'              	JNZ	NOTINI			;NO
+  01DB'   22 0000*              	SHLD	CURLIN			;SAVE DIRECT LINE NUMBER
+  01DE'                         NOTINI:
+  01DE'   CD 0000*              	CALL	INDSKC			;READ THE FIRST CHARACTER
+  01E1'   DA 0000*              	JC	MAIN			;ALL DONE IF NOTHING IN FILE
+  01E4'   FE FE                 	CPI	254			;IS THIS A PROTECTED FILE?
+  01E6'   C2 01EF'              	JNZ	NTPROL			;NO
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-9
+LINE INPUT & READ CODE FOR ITEM FETCHING FROM SEQUENTIAL IN
+
+  01E9'   32 0000*              	STA	PROFLG			;SET PROTECTED FILE
+  01EC'   C3 01F3'              	JMP	BINLOD			;DO BINARY LOAD
+  01EF'                         NTPROL:
+  01EF'   3C                    	INR	A			;IS IT A BINARY FILE?
+  01F0'   C2 0270'              	JNZ	MAINGO			;NO, SINCE PTRFIL IS NON-ZERO
+                                					;INCHR WILL USE INDSKC INSTEAD OF POLLING
+                                					;THE TERMINAL
+                                					;WHEN EOF IS HIT PTRFIL WILL BE RESTORED
+                                					;AND LSTFRE WILL BE USED AS A FLAG
+                                					;TO INDICATE WHETHER TO RUN THE
+                                					;LOADED PROGRAM
+                                ;
+                                ; TIME FOR A BINARY LOAD.
+                                ; AFTER THE LOAD, THE FILE IS LINKED TOGETHER
+                                ; LSTFRE IS USED AS A FLAG WHETHER TO RUN OR NOT
+                                ;
+  01F3'   2A 0000*              BINLOD:	LHLD	TXTTAB			;GET PLACE TO START STORING INTO
+  01F6'   EB                    LPBLDR:	XCHG				;SEE IF THERE IS ROOM TO SPARE
+  01F7'   2A 0000*              	LHLD	FRETOP
+  01FA'   01 FFAA               	LXI	B,0+65536-86
+  01FD'   09                    	DAD	B
+  01FE'   CD 0000*              	CALL	DCOMPR
+  0201'   EB                    	XCHG	
+  0202'   DA 024B'              	JC	OUTLOD			;ERROR AND WIPE OUT PARTIAL GARBAGE
+                                					;UNLINKED!! NO ZEROES AT THE END!!
+  0205'   CD 0000*              	CALL	INDSKB			;READ THE A DATA BYTE
+                                					;THIS IS SEMI-WEAK SINCE MEMORY
+                                					;IS LEFT IN A BAD BAD STATE
+                                					;IF AN I/O ERROR OCCURS
+  0208'   77                    	MOV	M,A			;STORE BYTE
+  0209'   23                    	INX	H			;INCRMENT POINTER
+  020A'   D2 01F6'              	JNC	LPBLDR			;READ THE NEXT CHAR
+  020D'   22 0000*              	SHLD	VARTAB			;SAVE END TEMP FOR DECODING
+  0210'   3A 0000*              	LDA	PROFLG			;IS THIS A PROTECTED FILE?
+  0213'   B7                    	ORA	A			;SET CC'S
+  0214'   C4 0000*              	CNZ	PROLOD			;TRANSLATE TO GOOD STUFF
+  0217'   CD 0000*              	CALL	LINKER			;FIX THE LINKS
+  021A'   23                    	INX	H			;WHEN LINKER RETURNS, [H,L]
+  021B'   23                    	INX	H			;POINTS TO DOUBLE ZERO
+  021C'   22 0000*              	SHLD	VARTAB			;UPDATE [VARTAB]
+  021F'   21 0000*              	LXI	H,MAXFIL		;ONLY CLOSE FILE ZER0
+  0222'   7E                    	MOV	A,M
+  0223'   32 0001*              	STA	LSTFRE+1
+  0226'   36 00                 	MVI	M,0
+  0228'   CD 0000*              	CALL	RUNC			;SETUP ARYTAB, STREND
+  022B'   3A 0001*              	LDA	LSTFRE+1		;RESTORE NUMBER OF FILES
+  022E'   32 0000*              	STA	MAXFIL
+                                	EXTRN	CHNFLG,CHNRET
+  0231'   3A 0000*              	LDA	CHNFLG			;CHAIN IN PROGRESS
+  0234'   B7                    	ORA	A			;TEST
+  0235'   C2 0000*              	JNZ	CHNRET			;YES, GO BACK TO CHAIN CODE
+  0238'   3A 0000*              	LDA	LSTFRE			;RUN OR NOT?
+  023B'   B7                    	ORA	A
+  023C'   CA 0000*              	JZ	READY
+  023F'   C3 0000*              	JMP	NEWSTT
+                                
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-10
+LINE INPUT & READ CODE FOR ITEM FETCHING FROM SEQUENTIAL IN
+
+  0242'   CD 0000*              PRGFIN:	CALL	FINPRT			;ZERO PTRFIL
+  0245'   CD 0000*              	CALL	CLSFIL			;CLOSE FILE ZERO
+  0248'   C3 0000*              	JMP	GTMPRT			;REFETCH TEXT POINTER
+  024B'   CD 0000*              OUTLOD::CALL	SCRTCH
+  024E'   C3 0000*              	JMP	OMERR
+  0251'   C1                    MERGE:	POP	B			;ELIMINATE NEWSTT RETURN
+  0252'   CD 0189'              	CALL	PRGFLI			;READ THE NAME AND DISK
+  0255'   2B                    	DCX	H			;MUST END THERE
+  0256'   CD 0000*              	CALL	CHRGTR
+  0259'   CA 0262'              	JZ	OKGETM			;READ THE FILE
+  025C'   CD 0242'              	CALL	PRGFIN			;CLOSE OUT TIME
+  025F'   C3 0000*              	JMP	SNERR			;AND "SYNTAX ERROR"
+  0262'   AF                    OKGETM:	XRA	A			;NO RUN OPTION WITH "MERGE"
+  0263'   32 0000*              	STA	LSTFRE			;SET UP THE FLAG
+  0266'   CD 0000*              	CALL	INDSKC			;READ FROM [PTRFIL] FILE
+  0269'   DA 0000*              	JC	MAIN			;GO BACK IF EOF
+  026C'   3C                    	INR	A			;IS IT A BINARY FILE??
+  026D'   CA 0000*              	JZ	DERBFM			;BINARY IS WRONG FILE MODE
+  0270'   2A 0000*              MAINGO:	LHLD	PTRFIL			;GET FILE POINTER
+  0273'   01 0000*              	LXI	B,NMLOFC		;POINT TO NUMBER OF CHARS IN BUFFER
+  0276'   09                    	DAD	B			;BY ADDING OFFSET
+  0277'   34                    	INR	M			;BACK UP FILE BY INCREMENTING COUNT
+  0278'   C3 0000*              	JMP	MAIN
+                                
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-11
+LINE INPUT & READ CODE FOR ITEM FETCHING FROM SEQUENTIAL IN
+
+                                
+                                	SUBTTL	DISPATCH FOR DIRECT STATEMENT
+                                ;
+                                ; MAKE SURE WE'RE NOT READING A FILE IN
+                                ;
+  027B'                         DIRDO:
+  027B'   E5                    	PUSH	H
+  027C'   2A 0000*              	LHLD	PTRFIL
+  027F'   7C                    	MOV	A,H
+  0280'   B5                    	ORA	L			;IS PTRFIL ZERO SO NOT FILE READING?
+  0281'   11 0000*              	LXI	D,0+ERRFDR		;"DIRECT STATEMENT IN FILE"
+  0284'   C2 0000*              	JNZ	ERROR			;NOTE: LXI D, IS USED TO
+                                					;TO MAKE SOURCE CONVERSIONS EASIER
+  0287'   E1                    	POP	H			;GET BACK POINTER AT BUFMIN
+  0288'   C3 0000*              	JMP	GONE			;EXECUTE DIRECT STATEMENT
+                                
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-12
+DISPATCH FOR DIRECT STATEMENT
+
+                                
+                                	SUBTTL	SAVE COMMAND -- ASCII OR BINARY
+                                
+  028B'   16 02                 SAVE:	MVI	D,MD.SQO		;ELIMINATE EARLIER VERSION
+                                					;AND CREATE EMPTY FILE
+  028D'   CD 018B'              	CALL	PRGFL2			;READ FILE NAME AND DISK NUMBER AND
+                                					;LOOK IT UP
+  0290'   2B                    	DCX	H
+  0291'   CD 0000*              	CALL	CHRGTR			;END OF STATEMENT?
+  0294'   CA 02A7'              	JZ	BINSAV			;BINARY SAVE!!
+  0297'   CD 0000*              	CALL	SYNCHR
+  029A'   2C                    	DB	44			;ONLY OPTION IS ",A"
+                                	EXTRN	PROSAV
+  029B'   FE 50                 	CPI	'P'			;PROTECTED SAVE?
+  029D'   CA 0000*              	JZ	PROSAV			;DO IT
+  02A0'   CD 0000*              	CALL	SYNCHR
+  02A3'   41                    	DB	'A'			;FOR ASCII SAVE
+  02A4'   C3 0000*              	JMP	LIST			;USE THE LIST CODE TO DO THE OUTPUT
+                                					;CONTROL-CS ARE NOT ALLOWED
+                                					;AND AT THE END PTRFIL IS ZEROED
+  02A7'                         BINSAV:
+  02A7'   CD 0000*              	CALL	SCCPTR			;GET RID OF POINTERS BEFORE SAVING
+                                	EXTRN	PROCHK
+  02AA'   CD 0000*              	CALL	PROCHK			;DONT ALLOW BINARY SAVES OF PROTECTED PROGRAMS
+  02AD'   3E FF                 	MVI	A,255			;ALWAYS START WITH 255
+  02AF'   CD 0000*              BINPSV:	CALL	FILOU3			;SEND TO FILE
+  02B2'   2A 0000*              	LHLD	VARTAB			;GET STOP POINT
+  02B5'   EB                    	XCHG				;SAVE IN [D,E]
+  02B6'   2A 0000*              	LHLD	TXTTAB			;GET START POINT
+  02B9'   CD 0000*              BSAVLP:	CALL	DCOMPR			;REACHED THE END?
+  02BC'   CA 0242'              	JZ	PRGFIN			;REGET TEXT POINTER AND CLOSE FILE 0
+  02BF'   7E                    	MOV	A,M			;GET LINE DATA
+  02C0'   23                    	INX	H			;POINT AT NEXT DATA
+  02C1'   D5                    	PUSH	D			;SAVE LIMIT
+  02C2'   CD 0000*              	CALL	FILOU3			;SEND CHAR TO FILE
+  02C5'   D1                    	POP	D			;RESTORE LIMIT
+  02C6'   C3 02B9'              	JMP	BSAVLP			;CONTINUE WITH LINE DATA
+                                
+                                	SUBTTL	DRIVER CODE FOR CLOSE
+                                
+  02C9'   01 0000*              CLOSE:	LXI	B,CLSFIL		;SERVICE ROUTINE ADDRESS
+  02CC'   3A 0000*              	LDA	MAXFIL			;HIGHEST POSSIBLE ARGUMENT
+                                					;WHICH MEANS DO ALL POSSIBLE
+  02CF'   C2 02EC'              RTALLR:	JNZ	RTLOOP			;NOT END OF STATEMENT, SO SCAN ARGUMENTS
+  02D2'   E5                    	PUSH	H			;SAVE THE TEXT POINTER
+  02D3'   C5                    MRALL:	PUSH	B			;SAVE ROUTINE ADDRESS
+  02D4'   F5                    	PUSH	PSW			;SAVE CURRENT VALUE
+  02D5'   11 02DB'              	LXI	D,RETALL		;RETURN ADDRESS
+  02D8'   D5                    	PUSH	D			;SAVE IT TO COME BACK WITH
+  02D9'   C5                    	PUSH	B			;DISPATCH TO SERVICE ROUTINE
+  02DA'   C9                    	RET	
+  02DB'   F1                    RETALL:	POP	PSW			;GET BACK OLD ARGUMENT
+  02DC'   C1                    	POP	B			;GET BACK SERVICE ROUTINE ADDRESS
+  02DD'   3D                    	DCR	A			;DECREMENT ARGUMENT
+  02DE'   F2 02D3'              	JP	MRALL			;LOOP ON MORE VALUES
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-13
+DRIVER CODE FOR CLOSE
+
+  02E1'   E1                    	POP	H			;GET BACK THE TEXT POINTER
+  02E2'   C9                    	RET	
+                                
+  02E3'   C1                    RETRTS:	POP	B			;GET BACK SERVICE ROUTINE ADDRESS
+  02E4'   E1                    	POP	H			;GET BACK THE TEXT POINTER
+  02E5'   7E                    	MOV	A,M			;SEE IF MORE ARGUMENTS
+  02E6'   FE 2C                 	CPI	44			;DELIMITED BY COMMA
+  02E8'   C0                    	RNZ	
+  02E9'   CD 0000*              	CALL	CHRGTR			;READ FIRST CHARACTER OF FORMULA
+  02EC'   C5                    RTLOOP:	PUSH	B			;SAVE THE SERVICE ROUTINE ADDRESS
+  02ED'   7E                    	MOV	A,M			;GET POSSBLE "#"
+  02EE'   FE 23                 	CPI	'#'			;IS IT
+  02F0'   CC 0000*              	CZ	CHRGTR			;SKIP IT, ITS OPTIONAL
+  02F3'   CD 0000*              	CALL	GETBYT			;READ THE ARGUMENT
+  02F6'   E3                    	XTHL				;SAVE THE TEXT POINTER ON THE STACK
+                                					;AND SET [H,L]=SERVICE ADDRESS
+  02F7'   E5                    	PUSH	H			;SAVE THE SERVICE ADDRESS
+  02F8'   11 02E3'              	LXI	D,RETRTS		;PUT A RETURN ADDRESS ON THE STACK
+  02FB'   D5                    	PUSH	D
+  02FC'   E9                    	PCHL				;DISPATCH TO DO THE FUNCTION
+                                
+                                
+  02FD'   D5                    CLSALL:	PUSH	D
+  02FE'   C5                    	PUSH	B			;SAVE [B,C] FOR STKINI
+  02FF'   AF                    	XRA	A			;MAKE IT CLOSE ALL DISKS
+  0300'   CD 02C9'              	CALL	CLOSE
+  0303'   C1                    	POP	B
+  0304'   D1                    	POP	D			;GET BACK [D,E]
+  0305'   AF                    	XRA	A			;RETURN WITH [A]=0 AND Z ON
+  0306'   C9                    	RET	
+                                
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-14
+DRIVER CODE FOR CLOSE
+
+                                
+                                	SUBTTL	"FIELD" STATEMENT FOR SETTING UP I/O STRINGS
+  0307'   CD 001F'              FIELD:	CALL	FILSCN			;GET DATA BLOCK POINTER IN [B,C]
+  030A'   CA 0000*              	JZ	DERBFN			;"BAD FILE NUMBER" IF FILE NOT OPEN
+  030D'   D6 03                 	SUI	MD.RND			;MAKE SURE ITS A RANDOM FILE
+  030F'   C2 0000*              	JNZ	DERBFM			;IF NOT, "BAD FILE MODE"
+                                	EXTRN	FD.SIZ,TEMPA,TEMPB,FD.DAT
+  0312'   EB                    	XCHG				;SAVE TEXT POINTER
+  0313'   21 0000*              	LXI	H,0+FD.SIZ		;POINT TO RECORD SIZE
+  0316'   09                    	DAD	B
+  0317'   7E                    	MOV	A,M			;GET IT
+  0318'   23                    	INX	H
+  0319'   66                    	MOV	H,M
+  031A'   6F                    	MOV	L,A
+  031B'   22 0000*              	SHLD	TEMPA			;STORE MAX ALLOWED
+  031E'   21 0000               	LXI	H,0			;ZERO MAX # OF CHARS
+  0321'   22 0000*              	SHLD	TEMPB
+  0324'   7C                    	MOV	A,H			;MAKE [A]=0
+  0325'   EB                    	XCHG				;GET BACK TEXT POINTER
+  0326'   11 0000*              	LXI	D,0+FD.DAT		;POINT TO 5.0 FIELD BUFFER
+  0329'   EB                    LOPFLD:	XCHG				;SAVE TEXT POINTER IN [D,E]
+  032A'   09                    	DAD	B			;ADD ON DATA POINTER SO [H,L] NOW POINTS
+                                					;AT THE START OF THE DATA
+  032B'   47                    	MOV	B,A			;SETUP COUNT OF CHARACTERS PAST BY
+                                					;IN DATA AREA, SO TOTAL IS NEVER GREATER THAN 128
+  032C'   EB                    	XCHG				;TEXT POINTER BACK INTO [H,L]
+                                					;[D,E]=POINTER INTO DATA AREA
+  032D'   7E                    	MOV	A,M			;MORE "AS"S TO SCAN?
+  032E'   FE 2C                 	CPI	44			;COMMA STARTS THE CLAUSE
+  0330'   C0                    	RNZ				;BACK TO NEWSTT IF NOT
+  0331'   D5                    	PUSH	D			;SAVE THE POINTER INTO THE DATA BLOCK
+  0332'   C5                    	PUSH	B			;SAVE [B]=NUMBER OF CHARACTERS ALLOCATED
+  0333'   CD 0000*              	CALL	GTBYTC			;READ NUMBER INTO [A] FROM TEXT
+  0336'   F5                    	PUSH	PSW			;SAVE THIS NUMBER
+  0337'   CD 0000*              	CALL	SYNCHR
+  033A'   41                    	DB	'A'			;SCAN THE "AS"
+  033B'   CD 0000*              	CALL	SYNCHR
+  033E'   53                    	DB	'S'
+  033F'   CD 0000*              	CALL	PTRGET			;GET A POINTER AT THE STRING DESCRIPTOR
+  0342'   CD 0000*              	CALL	FRCSTR			;INTO [D,E]
+  0345'   F1                    	POP	PSW			;GET THE NUMBER OF CHARACTERS
+  0346'   C1                    	POP	B			;GET THE NUMBER ALREADY USED
+  0347'   E3                    	XTHL				;SAVE THE TEXT POINTER AND
+                                					;[H,L]=POINTER INTO DATA BLOCK
+  0348'   4F                    	MOV	C,A			;SAVE # OF CHARACTERS IN [C]
+  0349'   D5                    	PUSH	D			;SAVE [D,E]
+  034A'   E5                    	PUSH	H			;SAVE [H,L]
+  034B'   2A 0000*              	LHLD	TEMPB			;GET TOTAL SO FAR
+  034E'   06 00                 	MVI	B,0			;ACCUMULATE COUNT
+  0350'   09                    	DAD	B
+  0351'   22 0000*              	SHLD	TEMPB			;SAVE TOTAL AGAIN
+  0354'   EB                    	XCHG				;TOTAL TO [D,E]
+  0355'   2A 0000*              	LHLD	TEMPA			;GET MAX ALLOWED
+  0358'   CD 0000*              	CALL	DCOMPR			;IN RANGE?
+  035B'   DA 0000*              	JC	DERFOV			;NO, GIVE ERROR
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-15
+"FIELD" STATEMENT FOR SETTING UP I/O STRINGS
+
+  035E'   E1                    	POP	H			;RESTORE [H,L]
+  035F'   D1                    	POP	D			;RESTORE [D,E]
+  0360'   EB                    	XCHG				;[H,L] POINT AT STRING DESCRIPTOR
+  0361'   71                    	MOV	M,C			;STORE THE LENGTH
+  0362'   23                    	INX	H
+  0363'   73                    	MOV	M,E			;STORE THE POINTER INTO THE DATA BLOCK
+  0364'   23                    	INX	H
+  0365'   72                    	MOV	M,D
+  0366'   E1                    	POP	H			;GET BACK THE TEXT POINTER
+                                	IFF	DATPSC-256
+                                	JNZ	LOPFLD			;IF TOTAL ADDED UP TO NOT 256, GO BACK FOR MORE
+                                	MOV	A,C			;SEE HOW MUCH WE ADDED
+                                	ORA	A			;TEST
+                                	RNZ	
+                                	ENDIF				;JUST ADDED UP TO 256, GIVE SYNTAX ERROR IF MORE
+  0367'   C3 0329'              	JMP	LOPFLD			;CONTINUE SCANNING "AS" CLAUSES IF MORE
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-16
+"FIELD" STATEMENT FOR SETTING UP I/O STRINGS
+
+                                
+                                	SUBTTL	Random Non-I/O -- LSET/RSET/FIELD
+                                
+                                ;LSET/RSET stringvar = stringexp
+                                ;
+                                ; If stringvar points to an I/O buffer, use the string size to
+                                ;justify string. If stringvar is a literal, make new var with length
+                                ;of literal. If stringvar points to string space, use it. If the
+                                ;length of the variable is zero, return the null string. If a copy
+                                ;must be created, and stringexp is a temporary, use this space over
+                                ;unless length stringvar greater than stringexp.
+                                
+  036A'   F6                    RSET:	DB	366O			;ORI	<STC>
+  036B'   37                    LSET:	STC				;Set carry if lset
+  036C'   F5                    	PUSH	PSW			;Save LSET/RSET flag
+  036D'   CD 0000*              	CALL	PTRGET			;Get pointer to stringvar
+  0370'   CD 0000*              	CALL	FRCSTR			;Must be a string variable
+  0373'   D5                    	PUSH	D			;Save pointer to descriptor
+  0374'   CD 0000*              	CALL	FRMEQL			;EAT "=" AND EVALUATE STRINGEXP
+  0377'   C1                    	POP	B			; [B,C] = ptr to descr.
+  0378'   E3                    	XTHL				;Text ptr on bottom of stack
+  0379'   E5                    	PUSH	H			;LSET/RSET flag next
+  037A'   C5                    	PUSH	B			;Put descr. ptr back on
+  037B'   CD 0000*              	CALL	FRESTR			;Error if not string, free temp.
+  037E'   46                    	MOV	B,M			;Get length of stringexp
+  037F'   E3                    	XTHL				; [H,L] = descr. of var,save othr
+  0380'   7E                    	MOV	A,M			;Get length of stringvar
+  0381'   4F                    	MOV	C,A			;Save in [C]
+  0382'   C5                    	PUSH	B			;Save lengths of both
+  0383'   E5                    	PUSH	H			;Save descriptor pointer
+  0384'   F5                    	PUSH	PSW			;PSW zero if was temp.
+  0385'   23                    	INX	H
+  0386'   5E                    	MOV	E,M
+  0387'   23                    	INX	H
+  0388'   56                    	MOV	D,M			;Get ptr to stringvar text
+  0389'   B7                    	ORA	A			;stringvar null?
+  038A'   CA 03EE'              	JZ	RETCUR			;Yes, don't change
+  038D'   2A 0000*              	LHLD	TXTTAB
+  0390'   CD 0000*              	CALL	DCOMPR			;Stringvar in disk buffer?
+  0393'   D2 03C7'              	JNC	OLDSTR			;Yes, use it
+  0396'   2A 0000*              	LHLD	VARTAB
+  0399'   CD 0000*              	CALL	DCOMPR			;stringvar in program(literal)?
+  039C'   DA 03C7'              	JC	OLDSTR			;No, in string space so use it
+                                ;Need to make new string for result since stringvar points to a literal.
+                                ;If stringexp was a temporary, it has been freed. If the length of
+                                ;stringexp is greater than or equal to the length of stringvar, GETSPA
+                                ;can be called and no garbage collection can occur so temp. can be reused.
+                                ;If stringvar is greater, must get a temp. to point to stringexp if it
+                                ;was a temp. , then call GETSPA which in this case can garbage collect.
+  039F'   59                    	MOV	E,C
+  03A0'   16 00                 	MVI	D,0			;# BYTES TO ALLOCATE FOR RESULT
+                                	EXTRN	STREND
+  03A2'   2A 0000*              	LHLD	STREND
+  03A5'   19                    	DAD	D
+  03A6'   EB                    	XCHG	
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-17
+Random Non-I/O -- LSET/RSET/FIELD
+
+  03A7'   2A 0000*              	LHLD	FRETOP
+  03AA'   CD 0000*              	CALL	DCOMPR			;WILL GETSPA GARBAGE COLLECT?
+  03AD'   DA 0402'              	JC	MAKDSC			;Yes, better have stringexp temp.
+  03B0'   F1                    MADESC:	POP	PSW
+  03B1'   79                    	MOV	A,C			;Get length of stringvar
+  03B2'   CD 0000*              	CALL	GETSPA			;Get space for result
+  03B5'   E1                    	POP	H			;Get stringvar descr.
+  03B6'   C1                    	POP	B			;Get lengths off stack
+  03B7'   E3                    	XTHL				;Get what we wanted, stringexp descr.
+  03B8'   D5                    	PUSH	D
+  03B9'   C5                    	PUSH	B
+  03BA'   CD 0000*              	CALL	FRESTR			;Free temp if any
+  03BD'   C1                    	POP	B
+  03BE'   D1                    	POP	D
+  03BF'   E3                    	XTHL	
+  03C0'   C5                    	PUSH	B			;Restore stack to previous state
+  03C1'   E5                    	PUSH	H
+  03C2'   23                    	INX	H
+  03C3'   73                    	MOV	M,E
+  03C4'   23                    	INX	H
+  03C5'   72                    	MOV	M,D			;Set pointer to stringvar copy
+  03C6'   F5                    	PUSH	PSW
+  03C7'   F1                    OLDSTR:	POP	PSW
+  03C8'   E1                    	POP	H			;Get stringvar descr.
+  03C9'   23                    	INX	H
+  03CA'   5E                    	MOV	E,M
+  03CB'   23                    	INX	H
+  03CC'   56                    	MOV	D,M			;Get pointer to text area
+  03CD'   C1                    	POP	B			;Get lengths off stack
+  03CE'   E1                    	POP	H			;Get pointer to stringexp descr.
+  03CF'   D5                    	PUSH	D
+  03D0'   23                    	INX	H
+  03D1'   5E                    	MOV	E,M
+  03D2'   23                    	INX	H
+  03D3'   56                    	MOV	D,M			;Get ptr to stringexp text
+  03D4'   EB                    	XCHG				;Put pointer in [H,L]
+  03D5'   D1                    	POP	D
+  03D6'   79                    	MOV	A,C			;Get length of field(stringvar)
+  03D7'   B8                    	CMP	B
+  03D8'   D2 03DC'              	JNC	FILDOK			;Jump if field large enough for result
+  03DB'   47                    	MOV	B,A			;Save # of bytes to copy
+  03DC'   90                    FILDOK:	SUB	B
+  03DD'   4F                    	MOV	C,A			;[C] = # blanks to fill
+  03DE'   F1                    	POP	PSW			;Get LSET/RSET flag
+  03DF'   D4 03F8'              	CNC	BLKFIL			;Fill leading if RSET
+  03E2'   04                    	INR	B			;In case zero
+  03E3'   05                    COPLOP:	DCR	B			;Decr. # to copy
+  03E4'   CA 03F3'              	JZ	LRSTDN			;Done when all copied
+  03E7'   7E                    	MOV	A,M			;Get byte from stringexp
+  03E8'   12                    	STAX	D			;Copy to stringvar
+  03E9'   23                    	INX	H
+  03EA'   13                    	INX	D
+  03EB'   C3 03E3'              	JMP	COPLOP
+                                
+  03EE'   C1                    RETCUR:	POP	B
+  03EF'   C1                    	POP	B
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-18
+Random Non-I/O -- LSET/RSET/FIELD
+
+  03F0'   C1                    	POP	B
+  03F1'   C1                    	POP	B
+  03F2'   C1                    	POP	B			;Get garb off stack
+  03F3'   DC 03F8'              LRSTDN:	CC	BLKFIL			;Fill trailing if LSET
+  03F6'   E1                    	POP	H			;Restore text pointer
+  03F7'   C9                    	RET	
+                                
+  03F8'   3E 20                 BLKFIL:	MVI	A,' '			;Fill with spaces
+  03FA'   0C                    	INR	C			;In case zero
+  03FB'   0D                    BLKFL1:	DCR	C			;Decr. # to fill
+  03FC'   C8                    	RZ				;Return when done
+  03FD'   12                    	STAX	D			;Store space
+  03FE'   13                    	INX	D
+  03FF'   C3 03FB'              	JMP	BLKFL1
+                                
+                                ; If stringexp was a temporary, create a new temporary to point to
+                                ; stringexp since old one was freed. This must be done since GETSPA
+                                ; will be called and garbage collection might occur. If stringexp is
+                                ; not a temporary, return.
+                                
+  0402'   F1                    MAKDSC:	POP	PSW			;Get temp flag
+  0403'   E1                    	POP	H
+  0404'   C1                    	POP	B
+  0405'   E3                    	XTHL				;Dig down to stringexp descr.
+  0406'   EB                    	XCHG				;FRETMS wants [D,E]
+  0407'   C2 0413'              	JNZ	MAKDS1			;Not a temp, don't reallocate
+  040A'   C5                    	PUSH	B
+  040B'   78                    	MOV	A,B
+  040C'   CD 0000*              	CALL	STRINI			;Make a temp point to stringexp
+  040F'   CD 0000*              	CALL	PUTNEW			;Get a temp to point to it
+  0412'   C1                    	POP	B
+  0413'   E3                    MAKDS1:	XTHL	
+  0414'   C5                    	PUSH	B
+  0415'   E5                    	PUSH	H			;Restore stack to previous state
+  0416'   F5                    	PUSH	PSW
+  0417'   C3 03B0'              	JMP	MADESC
+                                	PAGE
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-19
+Random Non-I/O -- LSET/RSET/FIELD
+
+                                
+                                	SUBTTL	Program I/O -- Fixed Length INPUT
+                                
+                                ; Format:
+                                ;		stringvar = INPUT$(#bytes[,[#] file#])
+                                ;If no file # is given, characters will be read from the user's
+                                ; terminal. No echoing will be done and no editing will be allowed
+                                ; (i.e. rubout,@,_,^U are just input as characters).
+                                
+                                	PUBLIC	FIXINP
+  041A'   CD 0000*              FIXINP:	CALL	CHRGTR
+  041D'   CD 0000*              	CALL	SYNCHR
+  0420'   24                    	DB	'$'			;STRING FUNCTION
+  0421'   CD 0000*              	CALL	SYNCHR
+  0424'   28                    	DB	'('
+  0425'   CD 0000*              	CALL	GETBYT			;Get # of bytes to read
+  0428'   D5                    	PUSH	D			;Save # of bytes to read
+  0429'   7E                    	MOV	A,M
+  042A'   FE 2C                 	CPI	54O			;Read from disk file?
+  042C'   C2 043E'              	JNZ	REDTTY			;No, from user's terminal
+  042F'   CD 0000*              	CALL	CHRGTR
+  0432'   CD 001F'              	CALL	FILSCN			;Set up file #
+  0435'   FE 02                 	CPI	MD.SQO			;SEQUENTIAL OUTPUT FILE?
+  0437'   CA 0000*              	JZ	DERBFM			;THEN BAD FILE MODE
+  043A'   CD 0017'              	CALL	FILSET			;SET UP PTRFIL
+  043D'   AF                    	XRA	A			;SET ZERO FOR FLAG
+  043E'   F5                    REDTTY:	PUSH	PSW			;NON ZERO SET IF TERMINAL I/O
+  043F'   CD 0000*              	CALL	SYNCHR
+  0442'   29                    	DB	')'			;Must have paren
+  0443'   F1                    	POP	PSW			;Get flag off stack
+  0444'   E3                    	XTHL				;Save text ptr, [L]=# to read
+  0445'   F5                    	PUSH	PSW			;Save flag
+  0446'   7D                    	MOV	A,L
+  0447'   B7                    	ORA	A			;Read no characters?
+  0448'   CA 0000*              	JZ	FCERR			;Yes, error
+  044B'   E5                    	PUSH	H			;Save #
+  044C'   CD 0000*              	CALL	STRINI			;Get space for string
+  044F'   EB                    	XCHG	
+  0450'   C1                    	POP	B			;[C] = # to read
+  0451'   F1                    FIXLOP:	POP	PSW
+  0452'   F5                    	PUSH	PSW			;NON-ZERO set if should read from TTY
+  0453'   CA 0478'              	JZ	DSKCHR			;Read from disk file
+                                	EXTRN	CHARCG
+  0456'   CD 0000*              	CALL	CHARCG			;GET CHAR IF ONE
+  0459'   C2 045F'              	JNZ	CHARCW			;WAS ONE
+  045C'   CD 0000*              	CALL	INCHRI			;Read a char from terminal
+  045F'                         CHARCW:
+                                ;Note : will check flag on interrupt ^c
+  045F'   FE 03                 	CPI	3			;Control-C?
+  0461'   CA 0471'              	JZ	INTCTC			;Yes, stop
+  0464'   77                    PUTCHR:	MOV	M,A			;Put char into string
+  0465'   23                    	INX	H
+  0466'   0D                    	DCR	C			;Read enough yet?
+  0467'   C2 0451'              	JNZ	FIXLOP			;No, read more
+  046A'   F1                    	POP	PSW			;Get flag off stack
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	1-20
+Program I/O -- Fixed Length INPUT
+
+  046B'   CD 0000*              	CALL	FINPRT			;Clear PTRFIL
+  046E'   C3 0000*              	JMP	PUTNEW			;Return string as result
+  0471'   2A 0000*              INTCTC:	LHLD	SAVSTK			;GET SAVED STACK POINTER
+  0474'   F9                    	SPHL				;SET [H,L] TO IT
+  0475'   C3 0000*              	JMP	ENDCON			;STOP PROGRAM
+                                
+  0478'   CD 0000*              DSKCHR:	CALL	INDSKC			;Get char from file
+  047B'   DA 0000*              	JC	DERRPE			;If carry, read past EOF
+  047E'   C3 0464'              	JMP	PUTCHR			;Put char in string
+                                	END	
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	S
+Program I/O -- Fixed Length INPUT
+
+Macros:
+
+Symbols:
+0151'	BAKUPT          01F3'	BINLOD          02AFI'	BINPSV          
+02A7'	BINSAV          03F8'	BLKFIL          03FB'	BLKFL1          
+02B9'	BSAVLP          015D*	BUF             00FF 	BUFLEN          
+0457*	CHARCG          045F'	CHARCW          01AEI'	CHNENT          
+0232*	CHNFLG          0236*	CHNRET          0430*	CHRGTR          
+000E 	CLMWID          02C9I'	CLOSE           02FDI'	CLSALL          
+02CA*	CLSFIL          2C20 	CON1            002C*	CONINT          
+000F 	CONTO           03E3'	COPLOP          0005 	CPMENT          
+0000 	CPMWRM          01DC*	CURLIN          0075I'	CVD             
+006FI'	CVI             0072I'	CVS             0049*	DATOFC          
+0000*	DATOFS          0080 	DATPSC          0000 	DBLTRN          
+03AB*	DCOMPR          0438*	DERBFM          030B*	DERBFN          
+035C*	DERFOV          047C*	DERRPE          027BI'	DIRDO           
+01B8*	DIRTMP          009CI'	DLINE           0090*	DOASIG          
+0060*	DOCNVF          0067*	DSCTMP          0478'	DSKCHR          
+0476*	ENDCON          0282*	ERRFDR          0285*	ERROR           
+0449*	FCERR           0327*	FD.DAT          0314*	FD.SIZ          
+0307I'	FIELD           03DC'	FILDOK          002BI'	FILFRM          
+0002I'	FILGET          002F'	FILID2          002EI'	FILIDX          
+008CI'	FILIND          0000I'	FILINP          02C3*	FILOU3          
+01C9*	FILPT1          01CC*	FILPTR          001FI'	FILSCN          
+0017'	FILSET          0177*	FIN             006D*	FINBCK          
+017B*	FINDBL          046C*	FINPRT          041AI'	FIXINP          
+0451'	FIXLOP          0371*	FRCSTR          03BB*	FRESTR          
+03A8*	FRETOP          0375*	FRMEQL          0029*	FRMEVL          
+0013'	GDFILM          0426*	GETBYT          0045I'	GETPTR          
+03B3*	GETSPA          016E*	GETYPR          0289*	GONE            
+0334*	GTBYTC          0249*	GTMPRT          0146'	ICASLF          
+045D*	INCHRI          0206*	INDSKB          0479*	INDSKC          
+00B0'	INPDOR          0471'	INTCTC          00AB*	LETCON          
+0218*	LINKER          0050 	LINLN           02A5*	LIST            
+0190I'	LOAD            00DD'	LOPCRS          0329'	LOPFLD          
+01F6'	LPBLDR          0120'	LPCRGT          0084 	LPTLEN          
+03F3'	LRSTDN          018FI'	LRUN            018FI'	LRUN2           
+036BI'	LSET            0264*	LSTFRE          03B0'	MADESC          
+0279*	MAIN            0270'	MAINGO          0413'	MAKDS1          
+0402'	MAKDSC          02CD*	MAXFIL          0003 	MD.RND          
+0001 	MD.SQI          0002 	MD.SQO          0251I'	MERGE           
+005CI'	MKD$            0056I'	MKI$            0059I'	MKS$            
+0131'	MORSPC          02D3'	MRALL           0028 	NAMLEN          
+0240*	NEWSTT          0274*	NMLOFC          0155*	NMLOFS          
+0159'	NOSKCR          01DE'	NOTINI          00B3'	NOTNWT          
+00D8'	NOTQTE          0111'	NOTQTL          01B3'	NOTRNL          
+00C3'	NOTSPC          0053'	NTFIVD          01EF'	NTPROL          
+016D'	NUMIMK          001D 	NUMLEV          000A 	NUMTMP          
+0262I'	OKGETM          03C7'	OLDSTR          024F*	OMERR           
+024BI'	OUTLOD          018D*	PRGFIL          0242I'	PRGFIN          
+018BI'	PRGFL2          0189I'	PRGFLI          02AB*	PROCHK          
+0211*	PROFLG          0215*	PROLOD          029E*	PROSAV          
+027D*	PTRFIL          036E*	PTRGET          0464'	PUTCHR          
+046F*	PUTNEW          015A'	QUIT2B          0126'	QUITSI          
+023D*	READY           043E'	REDTTY          02DB'	RETALL          
+DSKCOM - - COMMON ROUTINES FOR DISK BASICS	MACRO-80 3.44	09-Dec-81	PAGE	S-1
+Program I/O -- Fixed Length INPUT
+
+03EE'	RETCUR          02E3'	RETRTS          036AI'	RSET            
+02CF'	RTALLR          02EC'	RTLOOP          0229*	RUNC            
+028BI'	SAVE            0472*	SAVSTK          02A8*	SCCPTR          
+024C*	SCRTCH          0260*	SNERR           017F'	STRCHR          
+03A3*	STREND          044D*	STRINI          0169*	STRLT2          
+0000*	STRLT3          0003 	STRSIZ          0440*	SYNCHR          
+0356*	TEMPA           0352*	TEMPB           0000 	TRUROM          
+038E*	TXTTAB          0087*	VALTYP          0397*	VARTAB          
+008A*	VMOVFM          006A*	VMOVMF          
+
+
+
+No Fatal error(s)
+
+
+   02

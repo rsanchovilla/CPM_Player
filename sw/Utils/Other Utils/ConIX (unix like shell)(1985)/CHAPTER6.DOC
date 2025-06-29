@@ -1,0 +1,529 @@
+
+
+
+
+			      Chapter 6	- Variables
+
+
+	Descriptions and  usage	 info  of  the	different  variable  types
+	(Disk-Based, Hex, Memory), invoking commands by	using variables	as
+	aliases,   force-interpreting	of   special   characters   within
+	variables,  matching  a	 file  pattern for command line	expansion,
+	function  keys	using  disk-based  variables,	and   programmable
+	character keys for special keyboard definitions.
+
+
+				   - CONTENTS -
+	__________________________________________________________________
+
+
+	  6.  Variables..............................................  6-1
+
+	    6.1	 Disk-Based Variables................................  6-1
+
+	    6.2	 Hexadecimal Variables...............................  6-4
+
+	    6.3	 Memory	Variables....................................  6-4
+
+	    6.4	 Filename Expansion..................................  6-5
+
+	    6.5	 Programmable Function Keys..........................  6-6
+
+	    6.6	 Programmable Character	Keys.........................  6-6
+
+	    6.7	 Notes...............................................  6-7
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				      -	i -
+
+
+
+
+
+	ConIX Operating	System					 Variables
+
+	6.  Variables
+
+	ConIX provides many different types of variables which can be used
+	to programmably	include	text on	the command line.  Wherever a
+	variable is referenced on the command line, the	characters it
+	contains will be substituted in	place of the reference,	as if they
+	had been typed by the user.  The only difference is that special
+	characters (double quotes, command separators, and variable
+	references) which appear within	a variable will	not be recognized
+	as being special by the	Command	Line Processor.	 We will describe
+	a method of getting around this	limitation in a	following section.
+
+	Variables are referenced by preceding their name with the dollar-
+	sign character,	`$'.  If an invalid variable reference is given,
+	the dollar-sign	itself will be included	as an actual character on
+	the command line.  If a	variable does not contain any text, no
+	characters will	be included on the command line	when it	is
+	referenced.  The different types of variables and their	usages
+	will be	described in the sections that follow.
+
+
+	6.1  Disk-Based	Variables
+
+	ConIX provides 52 disk-based variables,	each of	which can be used
+	to hold	up to 255 characters.  Because they are	stored on disk (in
+	the file A:0/VARS.SET),	their contents will remain even	after a
+	reset or a power down.	These variables	are referenced as $a, $b,
+	$c, . .	. $z and $A, $B, $C, . . . $Z, for a total of 52
+	variables.  The	only difference	between	these two sets is the case
+	of the variable	letter.	 Care should be	taken to make sure that
+	lowercase variables are	properly referenced so they will not be
+	mapped to uppercase on the command line.
+
+	The contents of	the disk variables may be modified by the SET and
+	= (Equals) commands, which are described in detail in the commands
+	section.  For the purpose of providing examples	of variable usage,
+	we will	describe a simple form of the SET command in the
+	paragraphs to follow.
+
+	The syntax of the SET command is:
+
+		<A:00> set <variable> =	(value)
+
+	where variable is a single letter describing the disk variable
+	(a-z or	A-Z) and value is a single argument which will be assigned
+	as the contents	of the specified variable.  For	example, the
+	command	line:
+
+		<A:00> set a = "Hello there!"
+
+	will set the variable `$A' (remember that `a' got mapped to an
+	`A') to	the string ``Hello there!''.  The double quotes	are
+	required in order to get the two words into the	single argument
+	required by SET.  These	quotes only serve to create an argument,
+	and are	not entered into the variable's	value string.  If you
+
+
+
+				       6-1
+
+
+
+
+
+	Variables				    ConIX Operating System
+
+	would want quotes in the value,	they must be preceded by a
+	backslash (as was described earlier).
+
+	To reference a variable	on the command line, for example, as the
+	argument to the	program	ECHO, type:
+
+		<A:00> echo $a
+		HELLO THERE!
+		<A:00>
+
+	which is the same as if	you would have typed:
+
+		<A:00> echo Hello there!
+		HELLO THERE!
+		<A:00>
+
+	Notice how the contents	of `$A'	were mapped to uppercase, although
+	it contains the	upper and lowercase characters that were entered
+	by SET.	 This operation	can be defeated	by putting quotes around
+	the variable, as:
+
+		<A:00> echo "$A"
+		Hello there!
+		<A:00>
+
+	The operation of the quotes is the same	with variables as with any
+	characters entered directly on the command line.  Notice that the
+	variable reference was made as "$A" since we were previously
+	relying	upon ConIX to map the `a' character to uppercase.  When	in
+	quotes,	"$a" would reference a different variable `$a' since no
+	uppercase mapping takes	place.
+
+	It is important	to realize that	the variable substitution occurs
+	before the specified command or	program	executes.  This	definition
+	is most	essential in understanding why:
+
+		<A:00> set a = "echo $A"
+
+	causes the variable `$A' to contain the	character string
+	``echo Hello there!''.	Since the reference is expanded	before the
+	SET command executes, we may set a variable to itself plus another
+	variable or string.
+
+	If we examine this new `$A' as before, we'd get:
+
+		<A:00> echo "$A"
+		echo Hello there!
+		<A:00>
+
+	since the variable itself contains the word ``echo''.  As a next
+	step in	understanding variables, you can type:
+
+
+
+
+
+
+
+				       6-2
+
+
+
+
+
+	ConIX Operating	System					 Variables
+
+		<A:00> $a
+		HELLO THERE!
+		<A:00>
+
+	where the entire contents of the variable acts as the command
+	line.  This is exactly as if you would have manually typed:
+
+		<A:00> echo Hello there!
+		HELLO THERE!
+		<A:00>
+
+	Using variables	in this	way, complex command strings may be
+	recalled and executed with only	two keystrokes.	 For example, if
+	we set `$A' as:
+
+		<A:00> set a = "exec dir; era foo.asm; ed foo.asm"
+
+	we could run that entire command list as:
+
+		<A:00> $a
+		     .
+		     .	displays the directory
+		     .
+		     .	erases "FOO.ASM"
+		     .
+		     .	invokes	an editor on "FOO.ASM"
+		     .
+		<A:00>
+
+	The EXEC command was necessary to cause	the interpretation of the
+	semicolon character within the variable.  If this command was
+	excluded, ConIX	would try to execute a command `DIR;' which does
+	not exist.  The	reason is that ConIX does not parse the	contents
+	of the variable, and places it onto the	command	line as-is.  The
+	EXEC command causes the	command	line to	be reparsed after the
+	variable substitution is performed.
+
+	Note that if `$A' had been referenced within double quotes as
+	"$A", the entire contents of the variable would	be placed into the
+	zero'th	argument, namely the command string.  This would produce
+	an error since there is	no such	command	as "exec dir; era foo.asm;
+	ed foo.asm".  Furthermore, we enclosed the value argument string
+	in quotes above	because	SET only takes the first argument as the
+	variable's value.  We also do not want ConIX to	interpret any of
+	the separation characters within the string.  If we left out the
+	quotes by mistake, as with:
+
+
+
+
+
+
+
+
+
+
+
+
+				       6-3
+
+
+
+
+
+	Variables				    ConIX Operating System
+
+		<A:00> set a = exec dir; era foo.asm; ed foo.asm
+		     .
+		     .	sets $A	to "EXEC" (DIR is lost)
+		     .
+		     .	erases "FOO.ASM"
+		     .
+		     .	invokes	an editor on "FOO.ASM"
+		     .
+		<A:00>
+
+	we would clearly not get the desired result because ConIX,
+	rightfully so, interpreted the semicolons as indicating	the end	of
+	a command.
+
+
+	6.2  Hexadecimal Variables
+
+	The Hexadecimal	Variables are mainly used for passing data from
+	internal commands to the command line environment.  There are 16
+	such variables,	each of	which can hold a single	byte value from	00
+	to FF.	They are referenced as $$0, $$1, $$2, .	. . $$F.  In
+	practice, only a few of	these variables	are utilized by	internal
+	commands, although they	all may	be set explicitly with the SHX
+	command.  The manual description for each command will tell you
+	which hex variables, if	any, will be modified by its execution.
+
+
+	6.3  Memory Variables
+
+	The contents of	the ConIX Memory Variables are stored in system
+	memory,	and may	be as large as available memory	permits.  They are
+	lightning fast,	and are	used primarily to store	temporary data,	as
+	memory itself is temporary by definition.  They	are referenced as:
+
+		$@(&address)
+
+	where address is the optional 16-bit hexadecimal address at which
+	the data is located.  This data	is may be stored by many ConIX
+	functions, as described	throughout this	manual.	 The data is
+	usually	terminated by the value	FF hex,	and the	contents of the
+	variable will be substituted onto the command line until that
+	point.	For example, the command:
+
+		<A:00> echo $@37f0
+
+	passes to ECHO the string of characters	stored in memory beginning
+	at location 37F0 hex until the FF hex terminator byte.
+
+	If no address is given,	$@ references the contents of the default
+	memory buffer.	This buffer can	store up to 128	characters, and	is
+	located	within the system memory occupied by ConIX.
+
+
+
+
+
+
+
+				       6-4
+
+
+
+
+
+	ConIX Operating	System					 Variables
+
+	6.4  Filename Expansion
+
+	Filename Expansion provides the	user with the convenience of
+	referencing a common group of filenames	without	having to type
+	them individually on the command line.	The syntax of this feature
+	is:
+
+		*:(:)(/)<pattern>
+
+	The sequence `*:' indicates the	start of a filename expansion
+	string.	 The names of all files	matching the given pattern for
+	FILE.EXT will be placed	onto the command line in place of the
+	pattern	which may contain the `?' and `*' characters, as
+	conforming with	standard CP/M pattern matching.
+
+	If the optional	`:' is used, the matched filenames will	be
+	preceded with the disk code (A:	- P:) corresponding to the disk	on
+	which they were	found.	If the optional	`/' is used, the user area
+	will be	included.  Both	may be combined	as `:/'	to include both
+	disk and user areas.
+
+	To illustrate this feature we will provide some	examples:
+
+	Assuming the disk directory contained four files:  FOO.ASM,
+	FOO.COM	BAR.ASM, BAR.COM you could type:
+
+		<A:00> echo *:*.*
+		FOO.ASM	FOO.COM	BAR.ASM	BAR.COM
+		<A:00>
+
+	where all the files residing in	the current directory are matched
+	and their names	substituted onto the command line.  You	may use
+	more complex patterns, as:
+
+		<A:00> echo *:foo.*
+		FOO.ASM	FOO.COM
+		<A:00>
+
+	which only matches files whose names begin with	`FOO.',	or:
+
+		<A:00> echo *:*.asm
+		FOO.ASM	BAR.ASM
+		<A:00>
+
+	which only matches files with names ending in `.ASM'.  Use:
+
+		<A:00> echo *::/*.asm
+		A:00/FOO.ASM A:00/BAR.ASM
+		<A:00>
+
+	to include the disk and	user area with the filenames.
+
+
+
+
+
+
+
+				       6-5
+
+
+
+
+
+	Variables				    ConIX Operating System
+
+	6.5  Programmable Function Keys
+
+	ConIX takes the	concept	of variables a bit further by allowing you
+	to reference any of the	52 Disk-Based Variables	while working
+	within a running program.  Their contents can be recalled into the
+	actual input of	the program, just like conventional function keys
+	found on many fancy terminals.
+
+	At any point while running your	program, simply	type a special
+	lead-in	control	sequence followed by the single	character
+	corresponding to the variable you want to access ($a-z,	$A-Z).
+	The contents of	the corresponding variable will	appear on your
+	screen as if you would have typed it there manually.  By default,
+	the lead-in character is not set, so as	to prevent conflicts with
+	special	control	sequences that are being used at a particular
+	installation.  We recommend setting the	lead-in	to CTRL-F by using
+	the OPT	+/-FK internal command,	as:
+
+		<A:00> opt +fk '^f
+
+	If CTRL-F is undesirable, any control sequence not already defined
+	within ConIX can be used.
+
+
+	6.6  Programmable Character Keys
+
+	ConIX requires many special characters for use with different
+	built-in features.  Because not	all computers have these
+	characters available on	their keyboard,	ConIX provides a way for
+	you to type every possible ASCII character.
+
+	Programmable Character Keys provide a simple and convenient method
+	of entering obscure characters,	not only to ConIX, but also to any
+	running	program.  You can define up to 24 such keys, each of which
+	can produce any	desired	ASCII character.  These	keys may be
+	accessed in the	same manner as the regular Programmable	Function
+	Keys.  Just type the special lead-in character,	and follow it with
+	the single letter which	corresponds to the character you want to
+	type.  That character will appear on the screen	just as	if it was
+	entered	directly by hitting a dedicated	key on the keyboard.
+
+	By default, the	lead-in	is not set so as to prevent possible
+	conflicts.  We recommend using CTRL-K, which may be set	via the
+	OPT +/-FC internal command as:
+
+		<A:00> opt +fc '^k
+
+	Some of	the keys have been preset to produce certain characters
+	which are usually not found on some older-style	keyboards.  For
+	example	`b' is set to produce a	backslash by simply typing <CTRL-
+	K>b.  See the OPT internal command in the commands section for a
+	listing	of their preset	values and how they may	be redefined or
+	modified to include additional characters.
+
+
+
+
+
+				       6-6
+
+
+
+
+
+	ConIX Operating	System					 Variables
+
+	6.7  Notes
+
+	Since the dollar-sign is hard-coded as the lead-in for all command
+	line variable references, certain oddities can be produced by
+	unsuspecting users.  For example, the command:
+
+		<A:00> stat file.ext $r/o
+
+	will not execute as expected, but rather as:
+
+		<A:00> STAT FILE.EXT <variable $R>/O
+
+	where the contents of disk-based variable $R will be substituted
+	in place of the	reference `$r'.	 Preceding the dollar-sign with	a
+	backslash will defeat the automatic interpretation of the `$' as
+	indicating the start of	a variable reference.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				       6-7
+
+
+
+
+DOC                3"  CHAPTER1DOC                ç  CHAPTER2DOC                `(  CHAPTER3DOC                €  

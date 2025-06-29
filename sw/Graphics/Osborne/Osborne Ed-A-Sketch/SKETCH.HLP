@@ -1,0 +1,335 @@
+%1%CURSOR MOTION:		     SCREEN MODIFICATIONS:
+^D    +Right 1 pos.	     ^1   *Insert Character
+^S    +Left 1 pos.	     ^0   *Delete Character
+^E    +Up 1 pos.	     ^7   *Insert Line
+^X    +Down 1 pos.	     ^4   *Delete Line
+^W     Up & Left	     ^6   *Fill Area
+^R     Up & Right	     ^2   *Dim Area
+^Z     Down & Left	     ^8   *Underline Area
+^C     Down & Right	     ^5   *Erase Area
+^Q     Motion Prefix	     ^3    Pick Area
+        (move to edge)	     ^9   *Put
+TAB    Move 1 tab stop       ^T^6 *Draw Line
+^A     Back Tab		     ESC  *OOPS
+
+MISC:
+^O    Define Area	     TOGGLE MODES:
+^V    View Chart	     ^T^2  Dim Characters
+^K    Save		     ^T^3  Graphics Chars.
+^?    Help		     ^T^8  Underline Chars.
+^P    Abort		     ^T^6  Trace
+
++ -- Arrow keys may        * -- OOPS key works on
+     also be used.              these functions
+%%0%CURSOR MOTION:		     SCREEN MODIFICATIONS:
+^D    +Right 1 pos.	     ^1   *Insert Character
+^S    +Left 1 pos.	     ^0   *Delete Character
+^E    +Up 1 pos.	     ^7   *Insert Line
+^X    +Down 1 pos.	     ^4   *Delete Line
+^W     Up & Left	     ^6   *Fill Area
+^R     Up & Right	     ^2   *Dim Area
+^Z     Down & Left	     ^8   *Underline Area
+^C     Down & Right	     ^5   *Erase Area
+^Q     Motion Prefix	     ^3    Pick Area
+        (move to edge)	     ^9   *Put
+TAB    Motion Prefix	     ^T^6 *Draw Line
+        (move to tab stop)   ESC  *OOPS
+
+MISC:
+^O    Define Area	     TOGGLE MODES:
+^V    View Chart	     ^T^2  Dim Characters
+^K    Save		     ^T^3  Graphics Chars.
+^?    Help		     ^T^8  Underline Chars.
+^P    Abort		     ^T^6  Trace
+
++ -- Arrow keys may        * -- OOPS key works on
+     also be used.              these functions
+%%0%CURSOR MOTION KEYS:
+Cursor motion is controlled by a rectangle of keys
+around S-D. Typing control of these keys moves the
+cursor one positon in the desired direction:
+
+  U-L Up U-R	     ^W ^E ^R
+  Left Right   <==>    ^S ^D
+ D-L Down D-R	     ^Z ^X ^C
+Arrow keys may also be used for non-diagonal motions
+    ^E			  /\\
+  ^S  ^D	<==>	<-  ->
+    ^X			  \\/
+
+Non-diagonal single steps wrap around edge of screen
+
+Prefixing any of these motions with ^Q means to move
+the full extent in the appropriate direction.
+
+Prefixing any of these motions with a TAB (^I) means
+to move to the next tab stop in the appropriate
+direction.  (Stops are every 8 spaces horizontally
+and 4 spaces vertically.) Striking the TAB key twice
+before the motion key means to move 2 tab stops,etc.
+%^D^S^E^X^W^R^Z^C^Q^I%1%CURSOR MOTION KEYS:
+
+Cursor motion is controlled by a rectangle of keys
+around S-D. Typing control of these keys moves the
+cursor one positon in the desired direction:
+
+  U-L Up U-R	     ^W ^E ^R
+  Left Right   <==>    ^S ^D
+ D-L Down D-R	     ^Z ^X ^C
+
+Arrow keys may also be used for non-diagonal motions
+    ^E			  /\\
+  ^S  ^D	<==>	<-  ->
+    ^X			  \\/
+
+Non-diagonal single steps wrap around edge of screen
+
+Prefixing any of these motions with ^Q means to move
+the full extent in the appropriate direction.
+
+
+^I is forward TAB.  ^A is backwards TAB.
+%^D^S^E^X^W^R^Z^C^Q^I^A%%INSERT/DELETE OF LINE/CHARACTER:
+IL/IC:	a blank line/character is inserted at the
+   current cursor position, and all remaining
+   characters (IL: below, IC: to the left) are moved
+   one position (IL:down, IC:right).
+DL/DC:	The current line/character is deleted, all
+   remaining characters (DL:below, DC: to the right)
+   are moved one position (DL:up, DC:left),
+   inserting blanks at the (DL:bottom DC:right).
+Line-Area (X ln) mode with IC/DC: insert/delete
+   'X' characters on the current line.
+Line-Area (X ln) mode with IL/DL: insert/delete
+   'X' lines.
+Block-Area (XxY) mode with IC/DC: insert/delete a
+   block of 'X' by 'Y' characters at the
+   current position by moving the characters
+   to the right either right or left.
+Block-Area (XxY) mode with IL/DL: insert/delete a
+   block of 'X' by 'Y' characters at the
+   current position by moving the characters
+   below either up or down.
+NOTE: 'Same Area' mode is not valid.
+      The functions are 'OOPS-able'.
+%^\0^\1^\4^\7%%OOPS:
+
+The ESC key will restore portions of the screen
+which have been over-written or modified by
+certain functions.  The affected portion of the
+screen will be restored to its state before the
+offending function was performed.  Therefore,
+any characters typed into the area after the
+function was performed will be lost.
+For the 'Draw Line' function, the entire 
+rectangle through which the line was drawn
+will be restored.
+
+Note that 'OOPS' is also a function, and, as
+such, can be restored by a later 'OOPS'.
+%^[%%DEFINE AREA:
+Areas of affect are defined as follows:
+^O followed by cursor motions defines a rectangle
+^O^O followed by vertical motions defines an area
+     in entire lines
+^O followed by a number defines an area in entire
+     lines or, as noted, characters on a single line
+
+	   Default:		Notes:
+Fill	   to end of line	Fill-Fill = to begin
+Dim	   entire screen		     of line
+Underline  entire screen
+Erase	   to end of line
+Pick	   one line
+IL/DL	   one line
+IC/DC	   one character        ^O# == # characters
+Save	   entire screen        ^O^K == area save
+	    (in absolute mode)   (in relative mode)
+
+^O is also a prefix command in some cases:
+Put - Only non-empty cells are 'Put'
+View - Toggle visible display of empty cells
+Trace - Draw line from marker to cursor
+%^O%%TOGGLE MODE:
+
+Graphics: toggles between graphics and non-graphics
+	interpretation of keyboard input
+Dim: toggles between half- and full-intensity
+	output to screen
+Underline: toggles between non-underlined and
+	underlined output to screen
+Trace: toggles between trace mode and normal
+	positioning mode for cursor motion keys
+
+Trace mode: Whenever a single space cursor position
+	key (i.e. not tabbed or full extent motion)
+	is struck while in trace mode, the cursor
+	is moved to the appropriate position
+	and the current character is displayed.
+
+Note: if an area has been defined when trace mode
+	is entered, it is interpreted as being
+	a command to draw the straighted possible
+	line from the marker to the current position
+	rather than to toggle trace mode itself.
+%^T%%ABORT:
+
+Striking CTL-P while Ed-a-Sketch will cause an
+immediate abort of the program.  The picture is
+not saved.  (If a picture file is being modified,
+the original version will be left untouched.)
+
+Note that CTL-P does not abort when in HELP
+mode (as now).  You must first hit RETURN to
+get back to normal mode.
+%^P%%DISPLAY:
+There are three states of the display line:
+
+1:  Display of current status:  The current
+    cursor position is shown and the status 
+    of flags is indicated.  Flags typed in
+    full intensity are in effect.  Those in
+    half intensity are not.
+2:  A 2-line display of the keyboard character
+    to graphics character translations.
+3:  Off.
+
+Striking CTL-V repeatedly will cycle through
+these three states.
+
+Moving the cursor onto the display line will
+cause an immediate cycling to state 3.
+
+MODE-DISPLAY will cause 'holes' to be shown in the
+picture.  When in this mode, real spaces (generated
+by space key) are shown as blanks while holes are
+shown as accent grave (`).
+%^V%%SAVE:
+Striking <RETURN> will use the suggested default.
+Save to file (<ESC> to avoid saving): name?
+   <ESC> avoids saving the file.
+   If there is a current file, it will be suggested.
+Relative Positioning:  Normal,Coded? Normal
+   Asked only if an AREA is currently defined.
+Format:  (Asm,Basic,Picture) ? Picture
+Assembly Language: label: PIC?
+   prompt for assembly language label.
+Basic: Starting line: 9000?
+   prompt for BASIC statement number.
+   Generate Initialization Routines? Yes
+	Asked only if BASIC Substitution switch set
+   For all variables (not just those used)? Yes
+Do you wish to continue SKETCHing this picture? Yes
+   <Y> returns to editing the current picture.
+Do you wish to SKETCH another picture? Yes
+   <N> exits from Ed-a-Sketch.
+Input File Name (or <ESC>):
+   <ESC> starts sketching on a blank screen.
+   Entering a name will read in that file.
+%^K%%MODE:
+MODE is a prefix to other functions:
+
+MODE-DISPLAY (CTL-L CTL-V): Display 'holes'.
+	Holes will be displayes as accent
+	grave (`) rather than as blanks.  This
+	is a toggle.
+
+MODE-PUT (CTL-L CTL-9): PUT with 'holes'.  Holes
+	in the PICK buffer will not overwrite
+	the picture when it is PUT.  Normally,
+	'holes' overwrite with blanks.
+
+MODE-FILL (CTL-L CTL-6): 'Draw Line':  Draw the
+	straightest possible line from the
+	'ENTER-defined' position to the current
+	cursor position.
+
+MODE-AREA (CTL-L CTL-O): 'Same Area':  Use the
+	same area as previously defined.  This
+	is invalid with Insert/Delete and
+	Draw Line.
+%^L%%DIM,UNDERLINE,ERASE AREA:
+
+DIM: Reverse the full/half intensity status of
+	each position within the defined area.
+	If no area is defined, the entire
+	picture is inverted.
+
+UNDERLINE: Reverse the underlined/non-underlined
+	status of each position within the defined
+	area.  If no area is defined, the entire
+	picture is inverted.
+
+ERASE: Erase the entire defined area.  If no area
+	is defined, the current line is erased
+	from the current cursor position to the
+	right edge of the picture.
+
+
+These functions are 'OOPS-able'.
+%^\2^\5^\8%%PICK and PUT:
+
+PICK: Pick up a copy of the entire ENTER-defined
+	area into the 'PICK' buffer.  If no area is
+	defined, the current line will be 'PICKed'.
+PUT: Put a copy of the 'PICK' buffer at the current
+	cursor position.  If the buffer extends
+	beyond either the right edge or the bottom
+	of the picture, that portion of the 'PICK'
+	buffer will be ignored.
+    If the 'PICK' buffer was picked up with 
+	Block-Area, the upper-left-hand corner
+	of the buffer will be placed at the current
+	cursor postion.
+    If the 'PICK' buffer was picked up with
+	Line-Area, the upper-left-hand corner
+	of the buffer will be placed at the left
+	edge of the current line.
+MODE-PUT: Put with 'holes'. Holes in the pick buffer
+	will not over-write the current picture.
+
+PUT is an 'OOPS-able' function.
+%^\3^\9%%FILL:
+
+AREA-FILL: The entire ENTER-defined area will be
+	filled with the next character typed.
+
+FILL: Fill the current line from the current
+	cursor position to the right edge of the
+	picture with the next character typed.
+
+FILL-FILL: Fill the current line from the left
+	edge of the picture to the current cursor
+	position with the next character typed.
+
+MODE-FILL: Draw the straightest possible line from
+	ENTER-defined position to the current
+	cursor position with the nest character
+	typed.  A restore (OOPS) after this
+	will restore the entire ENTER-defined
+	area, not just the characters over-
+	written.
+
+These functions are 'OOPS-able'.
+%^\6%%In GRAPHICS mode, striking the following keys:
+
+	! @ # $ \% ^ & * ( ) _ + ]
+	1 2 3 4 5 6 7 8 9 0 - = [	`
+
+	 Q W E R T Y U I O P \\ '	| "
+
+	 A S D F G H J K L ;		:
+
+	 Z X C V B N M , . /	< > ?	{ } \~
+
+Produces the following characters:
+
+	~! @ # $ \% ^ & * ( ) _ + ]
+	~1 2 3 4 5 6 7 8 9 0 - = [      `
+
+	~ Q W E R T Y U I O P \\ '       | "
+
+	~ A S D F G H J K L ;           :
+
+	~ Z X C V B N M , . /   < > ?   { } \~
+%

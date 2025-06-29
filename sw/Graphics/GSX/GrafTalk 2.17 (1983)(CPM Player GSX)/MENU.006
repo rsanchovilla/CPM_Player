@@ -1,0 +1,107 @@
+! April 29, 1983
+
+@1
+VARIABLE MEN1
+CLEARSCREEN
+RECOVER 1
+!!======================================
+!!	COLOR AND SHADING MENU
+!!======================================
+!!
+!!
+!!1  .. HELP ...........................
+!!2  .. ERASE GRAPHICS .................
+!!3  .. RETURN TO CALLING MENU .........
+!!4  .. CLEAR TEXT FROM SCREEN .........
+!!
+!!5  .. DISABLE COLOR ..................
+!!6  .. CHOOSE A COLOR SEQUENCE ........
+!!7  .. CHOOSE A SINGLE COLOR ..........
+!!
+!!8  .. DISABLE SHADING ................
+!!9  .. CHOOSE A SHADING SEQUENCE ......
+!!10 .. CHOOSE A SINGLE SHADING ........
+!!11 .. CHOOSE SOLID SHADING ...........
+!!
+!!======================================
+!!
+!!ENTER YOUR CHOICE >
+MENU MEN1 11 1 ^
+COMPARE MEN1 1
+IF YES JUMP 2
+COMPARE MEN1 3
+IF YES END
+COMPARE MEN1 2
+IF YES ERASE
+COMPARE MEN1 4
+IF YES JUMP 40
+COMPARE MEN1 5
+IF YES NO COLOR
+COMPARE MEN1 6
+IF YES JUMP 5
+COMPARE MEN1 7
+IF YES JUMP 6
+COMPARE MEN1 8
+IF YES NO SHADING
+COMPARE MEN1 9
+IF YES JUMP 8
+COMPARE MEN1 10
+IF YES JUMP 9
+COMPARE MEN1 11
+IF YES SOLID
+JUMP 1
+
+@5
+!!ENTER SEQUENCE OF COLORS AS INTEGERS
+SEQUENCE COLOR ^
+JUMP 1
+
+@6
+!!ENTER A SINGLE COLOR AS AN INTEGER >
+COLOR ^
+JUMP 1
+
+@8
+!!ENTER SEQUENCE OF SHADING TYPES AS INTEGERS ON A SINGLE LINE
+SEQUENCE SHADING ^
+JUMP 1
+
+@9
+!!ENTER A SINGLE SHADING TYPE AS AN INTEGER >
+SHADING ^
+JUMP 1
+
+@2
+CLEARSCREEN
+!!HELP INFORMATION FOR THE COLOR AND SHADING MENU
+!!===============================================
+!!
+!!COLOR:  In GrafTalk, colors  are indicated  by integers.  The correspondence
+!!between integer  and color  depends upon the device in use.  If you choose a
+!!sequence of colors, GrafTalk will cycle through colors in the order you have
+!!specified for
+!!	each of the sections of a pie,
+!!	each of the curves on a plot,
+!!	each of the bars on a bar chart.
+!!If you choose a single color, colors that would have been cycled will all be
+!!the specified	 color.	 Enter the colors for sequencing  colors  as a list of
+!!integers, on one line with at least one space between elements of the list.
+!!
+!!SHADING:  Shading types are also indicated by integers as follows:
+!!  0 --------- no shading    2 -- vertical stripes    8 - 135-degree stripes
+!!  1 - horizontal stripes    4 - 45-degree stripes   16 -------------- solid
+!!All others are combinations, e.g. 9 = 8 + 1.
+!!Both single  shading type and shading	 sequencing act exactly as color above.
+!!
+!!Unless you specify otherwise,	 both color and shading will be sequenced in a
+!!pre-determined order
+!!
+!!TYPE <cr> TO RETURN TO THE MENU >
+STOP
+JUMP 1
+
+@40
+CLEARSCREEN
+STOP
+JUMP 1
+q

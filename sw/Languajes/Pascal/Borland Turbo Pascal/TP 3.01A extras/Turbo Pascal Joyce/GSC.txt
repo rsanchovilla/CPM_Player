@@ -1,0 +1,169 @@
+﻿CONST Gsx = 115;
+        Monitor_ID = 01;
+        Printer_LR_ID = 21;
+        Printer_HR_ID = 22;
+        Plotter_ID = 11;
+
+TIPO String_10 = STRING [10];
+        DEVTYPE = (monitor, Printer_LR, Printer_HR, plotters);
+
+VAR DE_Address,
+        X_Resolution,
+        Y_Resolution: Integer;
+        Pb: array [1 0,5] of Integer;
+        Contrl: array [1 0,6] of Integer;
+        Intin: array [1 0.10] of Integer;
+        Intout: array [1 0.45] of Integer;
+        Ptsin: Array [1-4] of Integer;
+        Ptsout: array [1 0.12] of Integer;
+
+PROCEDIMIENTO Grafic_On (Dev: DEVTYPE);
+VAR I: Integer;
+COMENZAR
+  Escriba (Chr (27), '0 '); {Ocultar barra de status}
+  Escriba (Chr (27), 'Y'); {32 * 90 Modo de pantalla}
+  DE_Address: = Dir (Pb [1]);
+  Pb [1]: = Dir (labores de control [1]);
+  Pb [2]: = Dir (intin [1]);
+  Pb [3]: = Dir (ptsin [1]);
+  PB [4]: ​​= Dir (intout [1]);
+  Pb [5]: = Dir (ptsout [1]);
+  Contrl [1]: = 1;
+  Contrl [2]: = 0;
+  Contrl [4]: ​​= 10;
+  CASO DE Dev.
+    Monitor: intin [1]: = Monitor_ID;
+    Printer_LR: intin [1]: = Printer_LR_ID;
+    Printer_HR: intin [1]: = Printer_HR_ID;
+    Plotter: intin [1]: = Plotter_ID;
+  END;
+  PARA I: = 2 a 10 no
+    Intin [I]: = 1;
+  BDOS (Gsx, DE_Address);
+  Contrl [1]: = 5;
+  Contrl [6]: = 2;
+  Contrl [2]: = 0;
+  BDOS (Gsx, DE_Address);
+  X_Resolution: = intout [1];
+  Y_Resolution: = intout [2];
+END;
+
+PROCEDIMIENTO Grafic_Off;
+COMENZAR
+  Contrl [1]: = 4;
+  Contrl [2]: = 0;
+  BDOS (Gsx, DE_Address);
+  Gotoxy (0,0);
+  Contrl [1]: = 5;
+  Contrl [6] = 3;
+  Contrl [2]: = 0;
+  BDOS (Gsx, DE_Address);
+  Contrl [1]: = 2;
+  Contrl [2]: = 0;
+  BDOS (Gsx, DE_Address);
+  Escriba (Chr (27), '1 ');
+  Write (Chr (27), 's'); {Cursor visible}
+END;
+
+PROCEDIMIENTO Clr_Grafic;
+COMENZAR
+  Contrl [1] = 3;
+  Contrl [2]: = 0;
+  BDOS (Gsx, DE_Address);
+END;
+
+DIRECCIÓN DE PROCEDIMIENTO (I: INTEGER);
+COMENZAR
+  Contrl [1]: = 13;
+  Contrl [2]: = 0;
+  Intin [1]: = I * 900;
+  Intin [2]: = REDONDEAR (100 * cos (I * pi / 2));
+  Intin [3]: = Ronda (100 * sin (I * pi / 2));
+  BDOS (Gsx, DE_Address);
+END;
+
+PROCEDIMIENTO Color (Tipo: Entero);
+COMENZAR
+ Contrl [1]: = 17;
+ Contrl [2]: = 0;
+ Intin [1]: = tipo;
+ BDOS (Gsx, DE_Address);
+END;
+
+Set_CharHeight PROCEDIMIENTO (Altura: Entero);
+COMENZAR
+  Contrl [1]: = 12;
+  Contrl [2]: = 1;
+  Contrl [3]: = 2;
+  Ptsin [1]: = 0;
+  Ptsin [2]: = Altura * 192;
+  BDOS (Gsx, DE_Address);
+END;
+
+LINE_TYPE PROCEDIMIENTO (tipo: integer);
+COMENZAR
+  Contrl [1]: = 15;
+  Contrl [2]: = 0;
+  Intin [1]: = tipo;
+  BDOS (Gsx, DE_Address);
+END;
+
+PROCEDIMIENTO Fill_Type (opción Ordenar: Entero);
+COMENZAR
+  Contrl [1]: = 23;
+  Contrl [2]: = 0;
+  Intin [1]: = Ordenar;
+  BDOS (Gsx, DE_Address);
+  Contrl [1]: = 24;
+  Contrl [2]: = 0;
+  Intin [1]: = opción;
+  BDOS (Gsx, DE_Address);
+END;
+
+Line PROCEDIMIENTO (X1, Y1, X2, Y2: Entero);
+COMENZAR
+  Contrl [1]: = 6;
+  Contrl [2]: = 2;
+  Ptsin [1]: = X1;
+  Ptsin [2]: = Y1;
+  Ptsin [3]: = X2;
+  Ptsin [4]: ​​= Y2;
+  BDOS (Gsx, DE_Address);
+END;
+
+PROCEDIMIENTO parcela (X1, Y1: Entero);
+COMENZAR
+  Contrl [1]: = 6;
+  Contrl [2]: = 2;
+  Ptsin [1]: = X1;
+  Ptsin [2]: = Y1;
+  Ptsin [3]: = X1;
+  Ptsin [4]: ​​= Y1;
+  BDOS (Gsx, DE_Address);
+END;
+
+PROCEDIMIENTO Printxy (x_pos, y_pos: Integer; Texto: String_10);
+VAR I: Integer;
+COMENZAR
+  Contrl [1]: = 8;
+  Contrl [2]: = 1;
+  Contrl [4]: ​​= Length (texto);
+  PARA I: = 1 TO Longitud (Texto) HACER
+    Intin [I]: = Ord (Texto [I]);
+  Ptsin [1]: = x_pos;
+  Ptsin [2]: = y_pos;
+  BDOS (Gsx, DE_Address);
+END;
+
+PROCEDIMIENTO Box (X1, Y1, X2, Y2: Entero);
+COMENZAR
+  Contrl [1]: = 11;
+  Contrl [2]: = 2;
+  Contrl [6]: = 1;
+  Ptsin [1]: = X1;
+  Ptsin [2]: = Y1;
+  Ptsin [3]: = X2;
+  Ptsin [4]: ​​= Y2;
+  BDOS (Gsx, DE_Address);
+END;
+

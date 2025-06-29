@@ -1,0 +1,4813 @@
+	.Z80
+	.SFCOND
+	.SALL
+
+	PAGE	60
+	TITLE	RMF - Remote Micro Facility.  Version 1.34
+;	RMF - Remote Micro Facility
+;
+;	CP/M Version 1.34
+; 
+;	Control Data Corporation - September 1982
+;	University of Washington - June 1983
+ 
+
+	INCLUDE	RMF.DEF		;rmf hardware-version switches 
+
+IOCNF	EQU	STD OR CPI4 OR MWBIO	;I/O config patching allowed
+
+	.XLIST
+	IF1
+	.PRINTX	'Assembling CP/M RMF version 1.34		'
+	.PRINTX	'						'
+	IF PWBIOS
+	.PRINTX	'Custom BIOS 					'
+	ENDIF
+	IF EIGHT
+	.PRINTX	'8080 code sequences				'
+	ELSE
+	.PRINTX	'Z80 code sequences				'
+	ENDIF
+	IF STD
+	.PRINTX	'Standard port drivers				'
+	ENDIF
+	IF CPI4
+	.PRINTX	'Compupro Interfacer 4 drivers			'
+	ENDIF
+	IF MWBIO
+	.PRINTX	'Morrow serial board drivers			'
+	ENDIF
+	IF OS1
+	.PRINTX	'Osborne I drivers				'
+	ENDIF
+	IF TVI803A
+	.PRINTX 'TeleVideo 803 polled drivers                   '
+	ENDIF
+	IF TVI803B
+	.PRINTX 'TeleVideo 803 interrupt drivers                '
+	ENDIF
+	IF B108
+	.PRINTX 'Basis 108 drivers                              '
+	ENDIF
+	IF A_MSC
+	.PRINTX 'Apple/Microsoft Softcard			'
+	ENDIF
+	IF A_APC
+	.PRINTX 'Apple/Applicard				'
+	ENDIF
+	IF A_SSC
+	.PRINTX	'Super serial drivers				'
+	ENDIF
+	IF A_NOV
+	.PRINTX	'Novation AppleCat drivers			'
+	ENDIF
+	IF A_PVC
+	.PRINTX	'Prometheus Versacard drivers			'
+	ENDIF
+	.PRINTX	'						'
+	.PRINTX	'Pass 1 in progress...				'
+	ELSE
+	.PRINTX	'Pass 2 in progress...				'
+	ENDIF
+	.LIST
+
+;	symbol definitions
+; 
+ 
+;	ascii characters
+;
+	IRPC	CH,ABCDEFGHIJKLMNOPQRSTUVWXYZ
+CTRL&CH	EQU	'&CH'-40H
+	ENDM
+ 
+ESC	EQU	1BH 
+GS	EQU	1DH
+FS	EQU	1CH
+RS	EQU	1EH
+HT	EQU	09H
+BELL	EQU	07H
+BS	EQU	08H
+FF	EQU	0CH
+SI	EQU	0FH
+SO	EQU	0EH
+CR	EQU	0DH
+LF	EQU	0AH
+ETB	EQU	17H 
+ETX	EQU	03H 
+BL	EQU	20H
+DEL	EQU	7FH 
+ASUB	EQU	1AH
+CPMEOF	EQU	1AH
+XON	EQU	11H
+XOFF	EQU	13H
+
+ 
+;	hardware-dependant symbols
+;
+	IF STD
+
+;	NorthStar right serial port (INTEL 8251 UART)
+MDM$D	EQU	4		;UART data port
+MDM$S	EQU	5 		;UART status port
+MDM$TM	EQU	1		;UART txrdy mask
+MDM$RM	EQU	2		;UART rxrdy mask
+
+	IF	PWBIOS
+BIOS$O	EQU	0FH		;bios option flags
+	ENDIF
+
+	ENDIF
+	IF CPI4
+
+;	CompuPro Interfacer 4 serial board (NS 2651 USART)
+MDM$BSE	EQU	10H		;board base address
+MDM$D	EQU	MDM$BSE+0	;UART data port
+MDM$S	EQU	MDM$BSE+1	;UART status port
+MDM$MD	EQU	MDM$BSE+2	;UART mode port
+MDM$CNT	EQU	MDM$BSE+3	;UART control port
+MDM$SEL	EQU	MDM$BSE+7	;channel select port
+
+MDM$TM	EQU	1		;TxRdy mask
+MDM$RM	EQU	2		;RxRdy mask
+
+MDM$B3	EQU	01110101B	;300 baud
+MDM$B12	EQU	01110111B	;1200 baud
+MDM$B96	EQU	01111110B	;9600 baud
+
+MDM$M1	EQU	01101110B	;async, 16x, 8bits, no par, even, 1 stop
+MDM$M2	EQU	MDM$B12		;baud rate
+MDM$C1	EQU	00100111B	;Tx on, DTR on
+
+USR$CA	EQU	7		;serial channel A (left)
+USR$CB	EQU	6		;serial channel B (middle)
+USR$CC	EQU	5		;serial channel C (right)
+
+MDM$USR	EQU	USR$CC		;serial channel used for modem
+
+	ENDIF
+	IF MWBIO
+
+;	Morrow "Wunderbuss" serial board (8250 UART)
+MDM$BSE	EQU	48H		;board base address
+MDM$D	EQU	MDM$BSE+0	;UART data port
+MDM$IE	EQU	MDM$BSE+1	;UART interrupt enable
+MDM$II	EQU	MDM$BSE+2	;UART interrupt identify
+MDM$LC	EQU	MDM$BSE+3	;UART line control
+MDM$MC	EQU	MDM$BSE+4	;UART modem control
+MDM$S	EQU	MDM$BSE+5	;UART line status
+MDM$MS	EQU	MDM$BSE+6	;UART modem status
+MDM$SEL	EQU	MDM$BSE+7	;channel select port
+
+MDM$TM	EQU	20H		;TxRdy mask
+MDM$RM	EQU	01H		;RxRdy mask
+
+USR$C1	EQU	1		;serial channel 1 (right)
+USR$C2	EQU	2		;serial channel 2 (middle)
+USR$C3	EQU	3		;serial channel 3 (left)
+
+MDM$USR	EQU	USR$C2		;serial channel used for modem
+
+	ENDIF
+	IF TVI803A OR TVI803B
+
+;	TeleVideo 803 (Mostek 3801 UART)
+MDM$D	EQU	2FH		;UART data port
+MDM$SR	EQU	2DH 		;UART receiver status port
+MDM$ST	EQU	2EH		;UART transmitter status port
+MDM$TM	EQU	80H		;UART txrdy mask
+MDM$RM	EQU	80H		;UART rxrdy mask
+
+MDM$FST	EQU	18		;interrupt CBIOS status function
+MDM$FIN	EQU	19		;interrupt CBIOS input function
+MDM$INI	EQU	20		;interrupt CBIOS initialize function
+MDM$BV	EQU	30H		;interrupt CBIOS function vector
+
+	ENDIF
+	IF B108
+
+;	Basis 108
+MDM$CT	EQU	0F280H		;modem control register
+MDM$CD	EQU	0F282H		;modem command register
+
+MDM$S1	EQU	00010110B	;300 baud
+MDM$S2	EQU	00000011B	;no parity - no interrupts - DTR on
+
+	ENDIF
+	IF A_APC
+
+;	Apple/Applicard Z80 board
+RD_BYTE	EQU	0FFE0H		;read a byte from the Apple's memory
+WR_BYTE	EQU	0FFE3H		;write a byte to the Apple's memory
+RD_WORD	EQU	0FFE6H		;read a word from the Apple's memory
+WR_WORD	EQU	0FFE9H		;write a word to the Apple's memory
+
+	ENDIF
+	IF A_SSC
+
+;	Apple/super serial board
+MDM$DI	EQU	0E088H+(SLOT*16)	;modem data-in location
+MDM$DO	EQU	0E088H+(SLOT*16)	;modem data-out location
+MDM$S	EQU	0E089H+(SLOT*16)	;modem status location
+MDM$CMD	EQU	0E08AH+(SLOT*16)	;modem command port
+MDM$CNT	EQU	0E08BH+(SLOT*16)	;modem control port
+MDM$TM	EQU	10H			;modem txrdy mask
+MDM$RM	EQU	08H			;modem rxrdy mask
+MDM$BL	EQU	18H			;1200 baud 
+MDM$BH	EQU	00H			;not used
+
+	ENDIF
+	IF A_NOV
+
+;	Apple/novation apple-cat
+MDM$DI	EQU	0E08BH+(SLOT*16)	;modem data-in location
+MDM$DO	EQU	0E08EH+(SLOT*16)	;modem data-out location
+MDM$S	EQU	0E08FH+(SLOT*16)	;modem status location
+MDM$XB	EQU	0E08DH+(SLOT*16)	;
+MDM$TM	EQU	10H			;modem txrdy mask
+MDM$RM	EQU	08H			;modem rxrdy mask
+MDM$BL	EQU	18H			;1200 baud 
+MDM$BH	EQU	00H			;not used
+
+	ENDIF
+	IF A_PVC
+
+;	Apple/Versacard  (6850 UART)
+MDM$DI	EQU	0E085H+(SLOT*16)	;modem data-in location
+MDM$DO	EQU	0E085H+(SLOT*16)	;modem data-out location
+MDM$S	EQU	0E084H+(SLOT*16)	;modem status location
+MDM$CNT	EQU	0E084H+(SLOT*16)	;modem control port
+MDM$TM	EQU	02H			;modem txrdy mask
+MDM$RM	EQU	01H			;modem rxrdy mask
+MDM$BL	EQU	00H			;not used
+MDM$BH	EQU	00H			;not used
+
+	ENDIF
+	IF OS1
+
+;	Osborne I serial port (6850 UART)
+OS$FLAG	EQU	0EF08H		;bank 2 flag address
+OS$BR	EQU	0EFC1H		;baud rate storage
+DR$BASE	EQU	4000H		;base address for osborne drivers
+
+MDM$D	EQU	2A01H 		;ACIA data port
+MDM$S	EQU	2A00H 		;ACIA status port
+MDM$TM	EQU	02H		;modem txrdy mask
+MDM$RM	EQU	01H		;modem rxrdy mask
+MDM$B3	EQU	56H		;300 baud - 8 bits
+MDM$B12	EQU	55H		;1200 baud - 8 bits
+MDM$I1	EQU	57H		;6250 ACIA reset
+MDM$I2	EQU	MDM$B12		;6250 ACIA baud rate
+
+	ENDIF
+
+ 
+;	cp/m symbols
+;
+BOOT	EQU	0		;warm boot address
+BDOS	EQU	5		;bdos entry point
+FCBLEN	EQU	35		;number of bytes in a fcb
+
+ 
+;	message types
+;
+SOH	EQU	01H		;data message
+ACK	EQU	06H		;acknowledge response message
+ENQ	EQU	05H		;enquire message 
+NAK	EQU	15H		;negative acknowledge message
+EOT	EQU	04H		;end of transmission message 
+
+
+;	protocol parameters
+;
+MAXTRY	EQU	10		;max number of retries
+MAXMBL	EQU	2000		;max MBL allowed by host UCOPY
+MAXIBL	EQU	160 		;max IBL allowed by host UCOPY
+MBL	EQU	MAXMBL		;max logical block length for input and output
+IBL	EQU	MBL		;max physical block length for input
+
+ 
+;	time delay counts
+;
+TC$I1	EQU	1500H		;1mhz i/o count
+TC$I2	EQU	2*TC$I1		;2mhz
+TC$I4	EQU	4*TC$I1		;4mhz
+TC$I5	EQU	5*TC$I1		;5mhz
+TC$I6	EQU	6*TC$I1		;6mhz
+
+TC$W1	EQU	1000H		;1mhz 100ms count
+TC$W2	EQU	2*TC$W1		;2mhz 
+TC$W4	EQU	4*TC$W1		;4mhz 
+TC$W5	EQU	5*TC$W1		;5mhz 
+TC$W6	EQU	6*TC$W1		;6mhz 
+ 
+
+;	misc symbols
+;
+NORMACK	EQU	41H		;normal ack mode
+LASTACK	EQU	50H		;terminate rmf ack mode
+MAXCMCT EQU	62H		;maximum compression count
+CMPBIAS EQU	1CH		;compression count bias 
+SUBBIAS EQU	40H		;sub sequence bias
+BINBIAS EQU	20H		;binary character bias
+
+
+	SUBTTL	Macros
+	PAGE
+;	macros
+;
+ 
+;	close - close a file
+;
+CLOSE	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,10H
+	CALL	BDOS
+	ENDM
+
+;	delay - wait a number of 100ms ticks
+;
+DELAY	MACRO	TICKS
+	IFNB	<TICKS>
+	LD	B,TICKS
+	ENDIF
+	CALL	WAIT
+	ENDM
+
+;	delete - delete a file
+;
+DELETE	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,13H
+	CALL	BDOS
+	ENDM
+
+	IF EIGHT
+;	sbc - z80 sbc hl,xx instruction 
+;
+SBC	MACRO	R1,R2
+	LD	A,L
+	SBC	A,R2+1
+	LD	L,A
+	LD	A,H
+	SBC	A,R2
+	LD	H,A
+	ENDM
+	ENDIF
+
+;	dsz - reserve zeroed space
+;
+DSZ	MACRO	LEN
+	REPT	LEN
+	DB	0
+	ENDM
+	ENDM
+
+;	initfcb - initialiaze a fcb
+;
+INITFCB	MACRO	FCB,LFN
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	IFNB	<LFN>
+	LD	HL,LFN
+	ENDIF
+	CALL	FILLFCB
+	ENDM
+ 
+;	fill - fill a block of memory with a value
+;
+FILL	MACRO	ADDR,CHAR,NCH
+	IFNB	<CHAR>
+	LD	A,CHAR
+	ENDIF
+	IFNB	<NCH>
+	LD	B,NCH
+	ENDIF
+	IFNB	<ADDR>
+	LD	HL,ADDR
+	ENDIF
+	CALL	FIL
+	ENDM
+
+;	flush - flush the input buffer
+;
+FLUSH	MACRO
+	LOCAL	L1
+L1:	CALL	RECEIVE
+	JP	NZ,L1
+	ENDM
+ 
+	IF EIGHT
+;	ldir - z80 ldir instruction
+;
+LDIR	MACRO
+	LOCAL	L1
+	PUSH	AF
+L1:	LD	A,(HL)
+	EX	DE,HL
+	LD	(HL),A
+	EX	DE,HL
+	INC	DE
+	INC	HL
+	DEC	BC
+	LD	A,B
+	OR	C
+	JP	NZ,L1
+	POP	AF
+	ENDM
+	ENDIF
+ 
+;	ldmsg - copy a message into the status text buffer
+;
+LDMSG	MACRO	ADDR
+	IFNB	<ADDR>
+	LD	HL,ADDR
+	ENDIF
+	LD	DE,SL$TXT
+	LD	BC,SL$TXTL
+	LDIR
+	ENDM
+ 
+;	make - make a file
+;
+MAKE	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,16H
+	CALL	BDOS
+	ENDM
+
+;	move - move a string
+;
+MOVE	MACRO	FROM,TO,NB
+	IFNB	<NB>
+	LD	BC,NB
+	ENDIF
+	IFNB	<FROM>
+	LD	HL,FROM
+	ENDIF
+	IFNB	<TO>
+	LD	DE,TO
+	ENDIF
+	LDIR
+	ENDM
+ 
+;	open - open a file
+;
+OPEN	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,0FH
+	CALL	BDOS
+	ENDM
+
+;	peek - Apple/Applicard: read a byte from the Apple's memory
+;
+PEEK	MACRO	ADDR
+	PUSH	DE
+	IFNB	<ADDR>
+	LD	DE,ADDR
+	ENDIF
+	CALL	PEEK
+	POP	DE
+	ENDM
+
+;	poke - Apple/Applicard: write a byte to the Apple's memory
+;
+POKE	MACRO	ADDR
+	PUSH	DE
+	IFNB	<ADDR>
+	LD	DE,ADDR
+	ENDIF
+	CALL	POKE
+	POP	DE
+	ENDM
+
+;	print - send a line of text to the console
+;
+PRINT	MACRO	ADDR
+	IFNB	<ADDR>
+	LD	DE,ADDR
+	ENDIF
+	LD	C,09H
+	CALL	BDOS
+	ENDM
+ 
+;	read - read a file
+;
+READ	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,14H
+	CALL	BDOS
+	ENDM
+ 
+;	rename - rename a file
+;
+RENAME	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,17H
+	CALL	BDOS
+	ENDM
+ 
+;	setdma - set the dma address
+;
+SETDMA	MACRO	ADDR
+	IFNB	<ADDR>
+	LD	DE,ADDR
+	ENDIF
+	LD	C,1AH
+	CALL	BDOS
+	ENDM
+ 
+;	sltext - generate a status line message
+;
+SMTEXT	MACRO	STRING
+SMFWA	DEFL	$
+	DB	STRING
+SMLEN	DEFL	$-SMFWA
+	REPT	SL$TXTL-SMLEN
+	DB	' '
+	ENDM
+	ENDM
+
+;	sendmsg - send a protocol message to the host
+;
+SENDMSG	MACRO	TYPE,BUFFER
+	LD	A,TYPE
+	LD	HL,BUFFER
+	CALL	SNDBLK
+	ENDM
+
+;	space - display a number of blanks
+;
+SPACE	MACRO	NCH
+	IFNB	<NCH>
+	LD	A,NCH
+	ENDIF
+	CALL	DSP
+	ENDM
+
+;	sprint - display a blank-terminated string
+;
+SPRINT	MACRO	ADDR
+	IFNB	<ADDR>
+	LD	HL,ADDR
+	ENDIF
+	CALL	SPR
+	ENDM
+
+;	srhfst - search for first matching file
+;
+SRHFST	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,11H
+	CALL	BDOS
+	ENDM
+ 
+;	srhnxt - search for next matching file
+;
+SRHNXT	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,12H
+	CALL	BDOS
+	ENDM
+ 
+;	write - write a file
+;
+WRITE	MACRO	FCB
+	IFNB	<FCB>
+	LD	DE,FCB
+	ENDIF
+	LD	C,15H
+	CALL	BDOS
+	ENDM
+
+;	zprint - display a zero-terminated string
+;
+ZPRINT	MACRO	ADDR
+	IFNB	<ADDR>
+	LD	HL,ADDR
+	ENDIF
+	CALL	ZPR
+	ENDM
+ 
+
+	SUBTTL	PINIT - Initialization routine
+	PAGE
+;	code/data segment
+;
+	ASEG
+	ORG	100H
+FWA::	JP	INIT 
+
+;	pinit - initialization patch area
+;
+;	space is provided to patch in an initialization
+;	routine.
+
+PINIT:	
+	IF PWBIOS
+	LD	A,(BIOS$O)	;set bios to pass xoff/xon
+	OR	1
+	LD	(BIOS$O),A
+	ENDIF
+
+	IF CPI4
+	LD	A,MDM$USR	;select modem port
+	OUT	(MDM$SEL),A
+	LD	A,MDM$M1	;set mode byte 1
+	OUT	(MDM$MD),A
+	LD	A,MDM$M2	;set mode byte 2
+	OUT	(MDM$MD),A
+	LD	A,MDM$C1	;set control byte
+	OUT	(MDM$CNT),A
+	ENDIF
+
+	IF A_SSC
+	LD	A,(BAUDLSB)	;baud divisor
+	IF A_MSC
+	LD	(MDM$CNT),A
+	ENDIF
+	IF A_APC
+	POKE	MDM$CNT
+	ENDIF
+	LD	A,CTRLA		;reset control character
+	CALL	MDMOUT
+	LD	A,CTRLY
+	CALL	MDMOUT
+	ENDIF
+
+	IF OS1
+	MOVE	DR$FWA,DR$BASE,DR$LEN	;relocate drivers
+	LD	A,MDM$I1	;(A) = reset byte
+	CALL	OS$WS		;send to status port
+	LD	B,1		;wait 100ms
+	CALL	WAIT
+	LD	A,MDM$I2	;(A) = baud rate byte
+	LD	(OS$BR),A	;save in baud rate location
+	CALL	OS$WS		;send to status port
+	ENDIF
+
+	IF TVI803B
+	LD	C,MDM$INI	;use bios interrupt routine
+	LD	HL,0
+	RST	MDM$BV
+	ENDIF
+
+	IF B108
+	LD	A,MDM$S1	;set up serial port
+	LD	(MDM$CT),A
+	LD	A,MDM$S2
+	LD	(MDM$CD),A
+	ENDIF
+
+	RET
+
+PINA	EQU	$
+	DSZ	PINIT+128-PINA	;patch space
+
+
+	SUBTTL	PTERM - termination routine
+	PAGE
+
+;	pterm - termination patch area
+;
+;	space is provided to patch in a termination routine.
+
+PTERM:
+	IF PWBIOS
+	LD	A,(BIOS$O)	;set bios to use xoff/xon
+	XOR	1
+	LD	(BIOS$O),A
+	ENDIF
+
+	RET
+
+PTRA	EQU	$
+	DSZ	PTERM+128-PTRA	;patch space
+
+
+	SUBTTL	Timer values
+	PAGE
+;	timer values
+;
+	IF STD OR CPI4 OR MWBIO OR OS1 OR TVI803A OR TVI803B OR B108
+
+TM$CHC:	DB	15	 	;receive loop count
+TM$IC:	DW	TC$I4		;i/o timeout count
+TM$WC:	DW	TC$W4		;100ms time delay count
+TM$SYM:	DB	'4'		;speed symbol
+
+	ENDIF
+ 	IF APPLE
+
+TM$CHC:	DB	15	 	;receive loop count
+TM$IC:	DW	TC$I4		;i/o timeout count
+TM$WC:	DW	TC$W4		;100ms time delay count
+TM$SYM:	DB	'4'		;speed symbol
+
+	ENDIF 
+
+
+	SUBTTL	Message texts and common memory
+	PAGE 
+;	program title
+M$TITLE:
+	DB	CR,LF,LF
+	DB	'Remote Micro Facility (RMF)',CR,LF
+	DB	'UW CP/M version 1.34',CR,LF
+
+	IF STD OR CPI4 OR MWBIO
+	IF EIGHT
+	DB	'8080 '
+	ELSE
+	DB	'Z80 '
+	ENDIF
+	IF STD
+	DB	'port I/O'
+	ENDIF
+	IF CPI4
+	DB	'/ Compupro Interfacer 4 serial board'
+	ENDIF
+	IF MWBIO
+	DB	'/ Morrow serial board'
+	ENDIF
+	ENDIF
+
+	IF APPLE
+	IF A_MSC
+	DB	'Apple/Microsoft Softcard',CR,LF
+	ENDIF
+	IF A_APC
+	DB	'Apple/Applicard',CR,LF
+	ENDIF
+	IF A_SSC
+	DB	'Super serial board  (slot '
+	ENDIF
+	IF A_NOV
+	DB	'Novation Apple-Cat (slot '
+	ENDIF
+	IF A_PVC
+	DB	'Prometheus Versacard (slot '
+	ENDIF
+	DB	'0'+SLOT
+	DB	')'
+	ENDIF
+
+	IF OS1
+	DB	'Osborne I serial port'
+	ENDIF
+
+	IF TVI803A
+	DB	'TeleVideo 803 (old CBIOS)'
+	ENDIF
+
+	IF TVI803B
+	DB	'TeleVideo 803 (new CBIOS)'
+	ENDIF
+
+	IF B108
+	DB	'Basis 108'
+	ENDIF
+
+	DB	CR,LF,LF,'$'
+ 
+ 
+;	command prompt
+M$CMDPR:
+	DB	CR,LF
+	DB	'RMF> '
+M$CMD1:	DB	'    (Press ? for a list of commands)'
+M$CMD1L	EQU	$-M$CMD1
+	REPT	M$CMD1L
+	DB	BS
+	ENDM
+	DB	'$'
+ 
+ 
+;	main menu
+M$MENU:	DB	CR,LF,LF
+	DB	'Commands:',						CR,LF
+	DB	'   C  -  Configure this program',			CR,LF
+	DB	'   F  -  directory of Files on local disk',		CR,LF
+	DB	'   R  -  Receive a file from the connected system',	CR,LF
+	DB	'   S  -  Send a file to the connected system',		CR,LF
+	DB	'   T  -  Terminal mode',				CR,LF
+	DB	'   Q  -  Quit - return to CP/M',CR,LF,LF
+	DB	'Press CTRL '
+M$RCH1:	DB	'\ to return to the main menu or to',CR,LF
+	DB	'abort any prompt.',				  CR,LF,'$'
+ 
+ 
+;	program configuration displays
+M$CNF0:	DB	CR,LF,LF
+	DB	'Configure RMF for a new type of computer.'
+	DB	CR,LF
+	DB	CR,LF,' Enter a file name for the modified version of RMF -> $'
+
+M$CNFA:	DB	CR,LF,LF
+	DB	' RMF can be run in either  full duplex (host echo),  or half'
+	DB	CR,LF
+	DB	' duplex (local echo).  Enter F to select full duplex or H to'
+	DB	CR,LF
+	DB	' select half duplex.   To leave the current value unchanged,'
+	DB	CR,LF
+	DB	' press the carriage return key.'
+	DB	CR,LF,LF
+	DB	' Duplex mode.  Current = $'
+
+M$CNF1:	DB	CR,LF,LF
+	DB	' A  single  control character is used to  return to the main'
+	DB	CR,LF
+	DB	' menu from terminal mode, to abort any prompt, or to abort a'
+	DB	CR,LF
+	DB	' file transfer. You should select a control character in the'
+	DB	CR,LF
+	DB	' range  CTRL A  to  CTRL _  which will not be needed for any'
+	DB	CR,LF
+	DB	' other purpose.  CTRL \ and  CTRL V  are two likely  values.'
+	DB	CR,LF
+	DB	' To enter a new character,  hold down the CTRL key and press'
+	DB	CR,LF
+	DB	' the desired letter.   To leave the current value unchanged,'
+	DB	CR,LF
+	DB	' press the carriage return key.'
+	DB	CR,LF,LF
+	DB	' Return-to-menu character.  Current = CTRL $' 
+
+	IF IOCNF
+
+M$CNF2:	DB	CR,LF,LF
+	DB	' The next number  is the clock frequency of the  CPU in MHz,'
+	DB	CR,LF
+	DB	' and is used to compute time delays.   Acceptable values are'
+	DB	CR,LF
+	DB	' 2, 4, 5, or 6.  To leave the current value unchanged, press'
+	DB	CR,LF
+	DB	' the carriage return key instead of entering a number.'
+	DB	CR,LF,LF
+	DB	' Clock speed (MHz).  Current = $'
+ 
+M$CNF3:	DB	CR,LF,LF
+	DB	' The following port values should  be entered  as one or two'
+	DB	CR,LF
+	DB	' digit  hexadecimal  numbers.   To leave a value  unchanged,'
+	DB	CR,LF
+	DB	' press the carriage return key instead of entering a number.'
+	DB	CR,LF,LF
+	DB	' Modem data port.      Current = $'
+	IF STD
+M$CNF4:	DB	CR,LF,' Modem status port.    Current = $'
+	ELSE
+M$CNF4:	DB	CR,LF,' Modem select byte.    Current = $'
+	ENDIF
+ 
+M$CNF5:	DB	CR,LF,LF
+	DB	' The following values are bit positions within the eight bit'
+	DB	CR,LF
+	DB	' status word.   The least significant  ("rightmost")  bit is'
+	DB	CR,LF
+	DB	' numbered 0, and the most significant is 7.'
+	DB	CR,LF
+	DB	CR,LF,' Transmit ready bit.  Current = $'
+M$CNF6:	DB	CR,LF,' Receive ready bit.   Current = $'
+
+	ELSE
+	
+M$CNF2:	DB	CR,LF,LF
+	DB	' Select the baud rate.  Enter "A" for 300 baud, "B" for 1200'
+	DB	CR,LF
+	DB	' baud, or press the carriage return key to leave the current'
+	DB	CR,LF
+	DB	' value unchanged.'
+	DB	CR,LF
+	DB	CR,LF,' Baud rate.  Current = '
+M$CNF3:	DB	'1200$'
+
+	ENDIF
+ 
+M$CNF7:	DB	CR,LF,LF,' Disk directory full.  Configuration aborted.'
+	DB	CR,LF,'$'
+ 
+M$CNF8:	DB	CR,LF,LF,' Disk full.  Configuration aborted.'
+	DB	CR,LF,'$'
+ 
+M$CNF9:	DB	CR,LF,LF,' Configuration complete.'
+	DB	CR,LF,'$'
+ 
+M$CNF10:	DB	'  New = $'
+M$CNF11:	DB	'CTRL $'
+M$CNF12:	DB	'300 $'
+M$CNF13:	DB	'1200$'
+M$CNF14:	DB	'Full$'
+M$CNF15:	DB	'Half$'
+ 
+
+;	receive-file displays
+M$RCV2:	DB	CR,LF,LF
+	DB	'Receive files from the host.',CR,LF,LF
+	DB	'Host file name     Micro file name    Type (B/T/P)',CR,LF
+	DB	'---------------    ---------------    ------------$'
+
+M$RCV3:	DB	CR,LF,LF,'Copying $'
+M$RCV4:	DB	' to $'
+
+ 
+;	send-file displays
+M$SND5:	DB	CR,LF,LF
+	DB	'Send files to the host.',CR,LF,LF
+	DB	'Micro file name    Host file name     Type (B/T/P)    Expand tabs (Y/N)'
+	DB	CR,LF
+	DB	'---------------    ---------------    ------------    -----------------$'
+ 
+;	terminal mode menu 
+M$TRM1:	DB	CR,LF,LF
+	DB	'Terminal mode.  Press CTRL '
+M$RCH2:	DB	'\ to exit.',CR,LF,LF,'$'
+ 
+ 
+;	directory menu
+M$DIR1:	DB	CR,LF,LF
+	DB	'Disk directory.',CR,LF
+	DB	'Enter the disk drive letter -> $'
+M$DIR2:	DB	'No files',CR,LF,'$'
+ 
+ 
+;	status line
+SL$HDR:	DB	CR,LF,'Block/Sectors/Errors:  00/00000/00    $'
+SL$MSG:	DB	BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS
+SL$BLK:	DB	'00/'
+SL$SEC:	DB	'00000/'
+SL$ERR:	DB	'00    '
+SL$TXT:	DB	'$                             '
+SL$TXTL	EQU	$-SL$TXT
+	REPT	SL$TXTL
+	DB	BS
+	ENDM
+	DB	'$'
+ 
+ 
+;	status messages
+SM$BOF:	SMTEXT	'Buffer overflow'
+SM$CRC:	SMTEXT	'CRC error'
+SM$DF1:	SMTEXT	'Disk full - deleting .BAK file'
+SM$DF2:	SMTEXT	'Disk full'
+SM$EFR:	SMTEXT	'Empty file received'
+SM$ERF:	SMTEXT	'Error recovery failed'
+SM$HAB:	SMTEXT	'Host abort'
+SM$HRT:	SMTEXT	'Host response timeout'
+SM$IMT:	SMTEXT	'Illegal message type received'
+SM$NRE:	SMTEXT	'NAK received'
+SM$RDT:	SMTEXT	'Receive data timeout'
+SM$RSE:	SMTEXT	'Received sequence error'
+SM$NDS:	SMTEXT	'Disk directory full'
+SM$FNF:	SMTEXT	'File not found'
+ 
+
+;	termination messages
+M$TEND:	DB	CR,LF,LF,'File transfer complete',CR,LF,BELL,'$'
+M$TABT:	DB	BELL
+M$TABTQ:	DB	CR,LF,LF,'File transfer aborted',CR,LF,'$' 
+ 
+ 
+;	misc messages
+M$2NL:	DB	CR,LF
+M$1NL:	DB	CR,LF,'$'
+M$RUB:	DB	BS,' ',BS,'$'
+M$BIN:	DB	'Binary$'
+M$TEXT:	DB	'Text  $'
+M$PRN:	DB	'Print $'
+M$NO:	DB	'No$'
+M$YES:	DB	'Yes$'
+ 
+ 
+;	counters 
+SCCHCT:	DB	0		;sector character count
+CRCHCT:	DW	0		;physical block character count
+BINPCT:	DB	0		;binary position counter 
+CMCHCT:	DB	0		;compression character counter 
+SNAKCT:	DB	0		;maximum send nak count
+EXSQNR:	DB	0		;expected sequence number
+RNAKCT:	DB	0		;receive nak count 
+TBCHCT:	DB	0		;tab character count 
+RCVFCR:	DB	0	 	;first character wait loop count
+
+ 
+;	pointers 
+SECTPT:	DW	SECBUF		;sector buffer pointer
+TBUFPT:	DW	0		;transmission buffer pointer
+RBUFPT:	DW	RSPBUF		;receive reply buffer pointer 
+RBUFLB:	DW	0		;receive buffer last byte address
+SBUFPT:	DW	0		;save transmit buffer address
+NTPT:	DW	0		;file name table pointer
+ 
+ 
+;	flags
+	IF UWMODS
+FDX:	DB	1		;duplex flag  full=1, half=0
+	ELSE
+FDX:	DB	0		;duplex flag  full=1, half=0
+	ENDIF
+EOFFG:	DB	0		;end of file flag 
+ENQAFG:	DB	0		;enquire acknowledge flag
+ENQEFG:	DB	0		;enq expected flag 
+EOTEFG:	DB	0		;end of transmission expected flag 
+TRTYFG:	DB	0		;transfer type flag
+FTCMFG:	DB	0		;file transfer complete flag 
+RSFLG:	DB	0		;start of line flag
+TBSLFG:	DB	0		;tab option select flag
+
+
+;	common memory
+CURCHR:	DB	0		;current character (sndmsg)
+LSTCHR:	DB	0		;last character (sndmsg) 
+HIBL:	DW	MAXIBL		;host input block length
+LSTRMG:	DB	0		;last received message type
+LSTSMG:	DB	0		;last sent message type
+CRCU8:	DB	0		;accumulated crc msb
+CRCL8:	DB	0		;accumulated crc lsb
+CRC1:	DB	0		;unpacked crc
+CRC2:	DB	0 
+CRC3:	DB	0 
+RCRC1:	DB	0		;received crc 
+RCRC2:	DB	0
+RCRC3:	DB	0
+CH$RTM:	DB	FS		;return to menu character
+	IF APPLE
+BAUDLSB:	DB	MDM$BL		;lsb of baud rate divisor 
+BAUDMSB:	DB	MDM$BH		;msb of baud rate divisor
+	ENDIF
+M$NBUF:	DS	20		;micro file name buffer
+ 
+
+;	stack
+;
+	DS	2*64		;64 levels
+STACK:	DW	0		;cp/m stack pointer
+
+
+	SUBTTL	Main loop
+	PAGE
+;	init - program initialization
+;
+;	this section is entered when the program starts up.
+ 
+ 
+INIT:	LD	HL,0		;store cp/m's stack pointer
+	ADD	HL,SP
+	LD	(STACK),HL
+	LD	SP,STACK	;use our own stack
+	CALL	PINIT		;initialize modem port
+	PRINT	M$TITLE		;display program title
+ 
+ 
+;	main - main menu control loop
+;
+;	control returns to this loop at the start of execution and
+;	whenever the main menu is called up.
+ 
+ 
+MAIN:	PRINT	M$CMDPR		;display main menu
+
+MAI1:	CALL	CONINW 		;wait for console entry
+	CALL	UPPER		;fold to upper case
+ 
+;	c - configure program
+	CP	'C'
+	JP	NZ,MAI2		;if not 'C' 
+	CALL	CONOUT
+	CALL	CONFIG
+	JP	MAIN 
+ 
+;	t - terminal mode operation
+MAI2:	CP	'T'
+	JP	Z,MAI3		;if 'T' 
+	CP	CR
+	JP	NZ,MAI4		;if not 'T' or CR
+	LD	A,'T'
+MAI3:	CALL	CONOUT
+	CALL	TRMODE
+	JP	MAIN 
+ 
+;	s - send a file
+MAI4:	CP	'S'
+	JP	NZ,MAI5		;if not 'S' 
+	CALL	CONOUT
+	CALL	WRITEF
+	JP	MAIN 
+ 
+;	r - receive a file
+MAI5:	CP	'R'
+	JP	NZ,MAI6		;if not 'R' 
+	CALL	CONOUT
+	CALL	READF
+	JP	MAIN 
+ 
+;	f - display a disk directory
+MAI6:	CP	'F'
+	JP	NZ,MAI7		;if not 'F' 
+	CALL	CONOUT
+	CALL	DIR
+	JP	MAIN 
+ 
+;	q - return to cp/m
+MAI7:	CP	'Q'
+	JP	NZ,MAI8		;if not 'Q' 
+	CALL	CONOUT
+	JP	FINIS
+
+;	? - display a list of commands
+MAI8:	CP	'?'
+	JP	NZ,MAI9		;if not '?'
+	CALL	CONOUT
+	PRINT	M$MENU
+	JP	MAIN
+ 
+;	invalid key
+MAI9:	LD	A,BELL		;complain
+	CALL	CONOUT
+	JP	MAI1 
+ 
+ 
+ 
+;	finis - termination processing
+;
+;	control transfers to this section when the program is
+;	terminated.
+ 
+ 
+FINIS:	PRINT	M$1NL		;single space
+	CALL	PTERM		;call user termination routine
+
+	IF STD OR CPI4 OR MWBIO OR TVI803A OR TVI803B
+
+	LD	HL,(STACK)		;return to ccp
+	LD	SP,HL
+	RET
+
+	ELSE
+
+	JP	BOOT		;warm boot
+
+	ENDIF
+ 
+
+	SUBTTL	TRMODE
+	PAGE
+;	trmode - terminal mode
+;
+;	terminal emulation mode.  characters are passed through
+;	with no alterations.
+ 
+ 
+TRMODE:	PRINT	M$TRM1 		;identify display
+ 
+TRM1:	CALL	MDMIN		;check for modem character
+	JP	Z,TRM2		;if no modem character available
+	CALL	CONOUT		;send character to console
+ 
+TRM2:	CALL	CONIN		;check for keyboard character
+	JP	Z,TRM1	 	;if no keyboard character available
+	LD	HL,CH$RTM
+	CP	(HL)
+	RET	Z		;if return-to-menu character
+	CALL	MDMOUT
+
+	LD	B,A		;save character
+	LD	A,(FDX)		;(A) = full/half duplex switch
+	AND	A
+	LD	A,B		;restore character
+	CALL	Z,CONOUT	;echo the character if half duplex
+	JP	TRM1
+ 
+
+	SUBTTL	READF
+	PAGE
+;	readf - receive file menu and prompts
+;
+ 
+READF:	LD	A,'R'		;set ucopy command for receive
+	LD	(UCYDIR),A
+	PRINT	M$RCV2		;display header
+	LD	HL,NFTAB	;reset name table pointer
+	LD	(NTPT),HL
+	XOR	A		;clear file count
+	LD	(RDFA),A
+
+;	name entry loop
+RDF1:	PRINT	M$1NL
+	LD	HL,(NTPT)	;read the host file name into the table
+	CALL	RDCFN		;(B) = characters entered
+	JP	C,RDF6		;if abort entered
+	JP	Z,RDF2		;if list ended
+	LD	A,19
+	SUB	B
+	SPACE			;tab out
+	LD	HL,(NTPT)	;advance pointer
+	LD	DE,FNLEN+1
+	ADD	HL,DE
+	LD	(NTPT),HL
+
+	CALL	RDCFN		;read the micro file name into the table
+	JP	C,RDF6		;if abort entered
+	JP	Z,RDF2		;if list ended
+	LD	A,19
+	SUB	B
+	SPACE			;tab out
+	LD	HL,(NTPT)	;advance pointer
+	LD	DE,FNLEN+1
+	ADD	HL,DE
+	LD	(NTPT),HL
+
+	CALL	TRANTYP 	;read the transfer type
+	JP	C,RDF6		;if abort entered
+	LD	HL,(NTPT)	;copy into table
+	LD	(HL),A
+	INC	HL		;advance pointer
+	LD	(NTPT),HL
+
+	LD	HL,RDFA		;increment file count
+	INC	(HL)
+	JP	RDF1 
+
+
+RDF2:	LD	HL,NFTAB	;reset name table pointer
+	LD	(NTPT),HL
+
+;	file copy loop
+RDF3:	LD	A,(RDFA)	;(A) = file count
+	DEC	A
+	JP	M,RDF5		;if done
+	LD	(RDFA),A
+	LD	HL,(NTPT)
+	MOVE	,H$NBUF,FNLEN+1	;copy host file name
+	MOVE	,M$NBUF,FNLEN+1	;copy CP/M file name
+	LD	A,(HL)		;copy transfer type
+	LD	(TRTYFG),A
+	INC	HL
+	LD	(NTPT),HL
+	CP	SI		;copy UCOPY type
+	LD	A,'T'
+	JP	NZ,RDF4		;if text
+	LD	A,'B'
+RDF4:	LD	(UCYTYP),A	
+	PRINT	M$RCV3		;announce this file
+	SPRINT	H$NBUF
+	PRINT	M$RCV4
+	SPRINT	M$NBUF
+	CALL	READFL		;read file
+	PUSH	AF
+	FLUSH			;flush input buffer
+	POP	AF
+	JP	C,RDF6		;if transfer sequence aborted
+	JP	RDF3
+
+RDF5:	PRINT	M$2NL
+	LD	A,BELL
+	CALL	CONOUT
+	RET
+
+
+;	here for a user abort
+RDF6:	PRINT	M$TABTQ		;display abort message
+	RET
+
+
+RDFA:	DB	0		;file counter
+
+	SUBTTL	WRITEF
+	PAGE
+;	writef - send file menu and prompts
+;
+;
+ 
+WRITEF:	LD	A,'S'		;set the ucopy command for send
+	LD	(UCYDIR),A
+	PRINT	M$SND5		;display header
+	LD	HL,NFTAB	;reset name table pointer
+	LD	(NTPT),HL
+	XOR	A		;clear file count
+	LD	(WTFA),A
+
+;	name entry loop
+WTF1:	PRINT	M$1NL
+	LD	HL,(NTPT)	;read the micro file name into the table
+	CALL	RDCFN		;(B) = characters entered
+	JP	C,WTF7		;if abort entered
+	JP	Z,WTF3		;if list ended
+	LD	A,19
+	SUB	B
+	SPACE			;tab out
+	LD	HL,(NTPT)	;advance pointer
+	LD	DE,FNLEN+1
+	ADD	HL,DE
+	LD	(NTPT),HL
+
+	CALL	RDCFN		;read the host file name into the table
+	JP	C,WTF7		;if abort entered
+	JP	Z,WTF3		;if list ended
+	LD	A,19
+	SUB	B
+	SPACE			;tab out
+	LD	HL,(NTPT)	;advance pointer
+	LD	DE,FNLEN+1
+	ADD	HL,DE
+	LD	(NTPT),HL
+
+	LD	HL,WTFA		;increment file count
+	INC	(HL)
+
+	CALL	TRANTYP 	;read the transfer type
+	JP	C,WTF7		;if abort entered
+	LD	HL,(NTPT)	;copy into table
+	LD	(HL),A
+	INC	HL		;advance pointer
+	LD	(NTPT),HL
+	LD	(HL),1		;preset expand-tabs value
+	CP	SI
+	JP	Z,WTF2		;if binary
+	CP	SO+80H
+	JP	Z,WTF2		;if formatted text
+	SPACE	10
+
+	LD	A,'N'		;set default
+	CALL	YESNO		;read response
+	JP	C,WTF7		;if abort entered
+	LD	HL,(NTPT)	;copy tab selection into table
+	LD	(HL),A
+WTF2:	INC	HL		;advance pointer
+	LD	(NTPT),HL
+	JP	WTF1 
+
+
+WTF3:	LD	HL,NFTAB	;reset name table pointer
+	LD	(NTPT),HL
+
+;	file copy loop
+WTF4:	LD	A,(WTFA)	;(A) = file count
+	DEC	A
+	JP	M,WTF6		;if done
+	LD	(WTFA),A
+	LD	HL,(NTPT)	
+	MOVE	,M$NBUF,FNLEN+1	;copy host file name
+	MOVE	,H$NBUF,FNLEN+1	;copy NOS file name
+	LD	A,(HL)		;copy transfer type
+	LD	(TRTYFG),A
+	INC	HL
+	CP	SI		;copy UCOPY type
+	LD	A,'T'
+	JP	NZ,WTF5	;if text
+	LD	A,'B'
+WTF5:	LD	(UCYTYP),A
+	LD	A,(HL)		;copy tab flag
+	LD	(TBSLFG),A
+	INC	HL
+	LD	(NTPT),HL
+	PRINT	M$RCV3		;announce this file
+	SPRINT	M$NBUF
+	PRINT	M$RCV4
+	SPRINT	H$NBUF
+	CALL	WRITFL		;write file
+	PUSH	AF
+	FLUSH
+	POP	AF
+	JP	C,WTF7		;if transfer sequence aborted
+	JP	WTF4
+
+WTF6:	PRINT	M$2NL
+	LD	A,BELL
+	CALL	CONOUT
+	RET
+
+
+;	here for a user abort
+WTF7:	PRINT	M$TABTQ		;display abort message
+	RET
+
+
+WTFA:	DB	0		;file counter
+
+	SUBTTL	CONFIG
+	PAGE
+;	config - configure this program
+;
+;	modify this program for a particular hardware environment.
+
+
+CONFIG:	PRINT	M$CNF0		;read the file name
+	LD	HL,M$NBUF
+	CALL	RDCFN
+	JP	C,CNF27		;if abort entered
+	INITFCB	FCB1,M$NBUF
+
+
+;	change the duplex setting
+	PRINT 	M$CNFA		;display prompt
+	LD	DE,M$CNF14	;preset full duplex message
+	LD	A,(FDX)
+	AND	A
+	JP	NZ,CNF1		;if full duplex
+	LD	DE,M$CNF15
+CNF1:	LD	(CNFB),DE	;save message address
+	PRINT
+	PRINT	M$CNF10
+
+CNF2:	CALL	CONINW		;read reply
+	LD	DE,(CNFB)	;preset default
+	CP	CR
+	JP	Z,CNF4		;if default selected
+	CALL	UPPER
+	LD	B,1		;preset full duplex
+	LD	DE,M$CNF14
+	CP	'F'
+	JP	Z,CNF3		;if full
+	LD	B,0		;preset half duplex
+	LD	DE,M$CNF15
+	CP	'H'
+	JP	Z,CNF3		;if half
+	LD	A,BELL		;if invalid key
+	CALL	CONOUT
+	JP	CNF2	
+
+CNF3:	LD	A,B
+	LD	(FDX),A		;store duplex flag
+CNF4:	PRINT			;echo input
+
+
+;	change the return-to-menu character
+	PRINT	M$CNF1		;display prompt
+	LD	A,(M$RCH1)
+	CALL	CONOUT		;display current value
+	PRINT	M$CNF10
+
+CNF5:	CALL	CONINW
+	CP	CR
+	JP	Z,CNF7		;if default selected
+	AND	1FH		;mask to control character
+	AND	A
+	JP	NZ,CNF6		;if okay (not NUL)
+	LD	A,BELL		;invalid character - complain
+	CALL	CONOUT
+	JP	CNF5
+
+CNF6:	LD	(CH$RTM),A	;store
+	ADD	A,40H		;modify menu display
+	LD	(M$RCH1),A
+	LD	(M$RCH2),A
+CNF7:	PRINT	M$CNF11		;echo new character
+	LD	A,(M$RCH1)
+	CALL	CONOUT
+
+ 
+	IF IOCNF
+
+;	patch the time delay counts
+	PRINT	M$CNF2		;prompt
+	LD	A,(TM$SYM)
+	CALL	CONOUT
+	PRINT	M$CNF10
+ 
+CNF8:	CALL	CONINW
+	JP	C,CNF27		;if abort entered
+	CP	'2'
+	LD	DE,TC$W2
+	LD	HL,TC$I2
+	JP	Z,CNF11		;if 2
+	CP	'4'
+	LD	DE,TC$W4
+	LD	HL,TC$I4
+	JP	Z,CNF11		;if 4
+	CP	'5'
+	LD	DE,TC$W5
+	LD	HL,TC$I5
+	JP	Z,CNF11		;if 5
+	CP	'6'
+	LD	DE,TC$W6
+	LD	HL,TC$I6
+	JP	Z,CNF11		;if 6
+	CP	CR
+	JP	Z,CNF10		;if default
+	LD	A,BELL		;complain
+	CALL	CONOUT
+	JP	CNF8
+ 
+CNF10:	LD	A,(TM$SYM)	;use default speed
+	LD	HL,(TM$WC)
+	EX	DE,HL
+	LD	HL,(TM$IC)
+	
+CNF11:	LD	(TM$SYM),A	;store speed symbol
+	LD	(TM$IC),HL	;store i/o count
+	EX	DE,HL
+	LD	(TM$WC),HL	;store wait count
+	CALL	CONOUT		;echo character
+	
+
+	IF STD
+;	patch the data port
+	PRINT	M$CNF3		;prompt
+	LD	A,(CF$D1)
+	CALL	PRTHEX
+	PRINT	M$CNF10
+ 
+	LD	A,(CF$D1)	;(A) = current data port
+	CALL	RDHEX		;(A) = input value
+	JP	C,CNF27		;if abort entered
+	LD	(CF$D1),A
+	LD	(CF$D2),A
+	ENDIF
+
+
+;	patch the status port
+	PRINT	M$CNF4		;prompt
+	LD	A,(CF$S1)
+	CALL	PRTHEX
+	PRINT	M$CNF10
+ 
+	LD	A,(CF$S1)
+	CALL	RDHEX
+	JP	C,CNF27		;if abort entered
+	LD	(CF$S1),A
+	LD	(CF$S2),A
+ 
+ 
+;	patch the txrdy mask
+	PRINT	M$CNF5		;prompt
+	LD	A,(CF$TM)
+	CALL	MSK2BN		;(A) = current bit number
+	LD	(CNFA),A	;save
+	CALL	CONOUT
+	PRINT	M$CNF10
+
+CNF12:	CALL	CONINW
+	JP	C,CNF27		;if abort entered
+	CP	CR
+	JP	Z,CNF14		;if default selected
+	CP	'0'
+	JP	M,CNF13		;if out of range
+	CP	'7'+1
+	JP	M,CNF15		;if okay
+CNF13:	LD	A,BELL		;complain
+	CALL	CONOUT
+	JP	CNF12		;re-read
+
+CNF14:	LD	A,(CNFA)	;(A) = current value
+CNF15:	CALL	CONOUT		;echo value
+	CALL	BN2MSK		;(A) = transmit mask
+	LD	(CF$TM),A
+ 
+ 
+;	patch the rxrdy mask
+	PRINT	M$CNF6		;prompt
+	LD	A,(CF$RM)
+	CALL	MSK2BN		;(A) = current bit number
+	LD	(CNFA),A	;save
+	CALL	CONOUT
+	PRINT	M$CNF10
+
+CNF16:	CALL	CONINW
+	JP	C,CNF27		;if abort entered
+	CP	CR
+	JP	Z,CNF18		;if default selected
+	CP	'0'
+	JP	M,CNF17		;if out of range
+	CP	'7'+1
+	JP	M,CNF19		;if okay
+CNF17:	LD	A,BELL		;complain
+	CALL	CONOUT
+	JP	CNF16		;re-read
+
+CNF18:	LD	A,(CNFA)	;(A) = current value
+CNF19:	CALL	CONOUT		;echo value
+	CALL	BN2MSK		;(A) = transmit mask
+	LD	(CF$RM),A
+
+	ENDIF
+	IF APPLE
+	IF A_SSC
+
+;	patch the baud rate
+	PRINT	M$CNF2		;prompt
+	PRINT	M$CNF10
+CNF20:	CALL	CONINW
+	JP	C,CNF27		;if abort entered
+	CP	CR
+	JP	Z,CNF21		;if default selected
+	CALL	UPPER
+	CP	'A'
+	JP	Z,CNF22		;if 300 baud
+	CP	'B'
+	JP	Z,CNF23		;if 1200 baud
+	LD	A,BELL		;invalid - complain
+	CALL	CONOUT
+	JP	CNF20
+
+;	default
+CNF21:	PRINT	M$CNF3		;display default
+	JP	CNF25
+
+;	300 baud
+CNF22:	PRINT	M$CNF12
+	MOVE	M$CNF12,M$CNF3,4  ;reset the default message
+	LD	HL,0016H	;Apple/A_SSC divisor
+	JP	CNF24
+
+;	1200 BAUD
+CNF23:	PRINT	M$CNF13
+	MOVE	M$CNF13,M$CNF3,4  ;reset the default message
+	LD	HL,0018H	;Apple/A_SSC divisor
+
+CNF24:	LD	(BAUDLSB),HL
+	CALL	PINIT
+
+	ENDIF
+	ENDIF 
+ 
+;	copy the field length to disk
+CNF25:	LD	A,(FCB1+1)
+	CP	' '
+	JP	Z,CNF27		;if no file name was specified
+	DELETE	FCB1
+	MAKE	FCB1
+	CP	0FFH
+	JP	Z,CNF28		;if directory full
+	LD	BC,NRECS	;(BC) = number of records to write
+	LD	DE,FWA		;(DE) = fwa of program
+CNF26:	PUSH	BC
+	PUSH	DE
+	SETDMA
+	WRITE	FCB1
+	POP	HL		;(HL) = start of this record
+	POP	BC		;(BC) = record counter
+	AND	A
+	JP	NZ,CNF29	;if disk full
+	LD	DE,128
+	ADD	HL,DE
+	EX	DE,HL		;(DE) = start of next record
+	DEC	BC
+	LD	A,B
+	OR	C
+	JP	NZ,CNF26	;if more records left
+ 
+	CLOSE	FCB1
+	PRINT	M$CNF9
+	RET
+ 
+ 
+;	here if configuration aborted by user
+CNF27:	PRINT	M$1NL		;space down
+ 	RET
+ 
+ 
+;	here for a directory-full error
+CNF28:	PRINT	M$CNF7
+	RET
+ 
+ 
+;	here for a disk-full error
+CNF29:	DELETE	FCB1
+	PRINT	M$CNF8
+	RET
+
+CNFA:	DB	0		;storage for bit count
+CNFB:	DW	0		;storage for default duplex message address
+
+	SUBTTL	DIR
+	PAGE
+;	dir - display disk directory
+;
+ 
+DIR:	PRINT	M$DIR1 		;drive prompt
+DIR1:	CALL	CONINW		;read drive code
+	RET	C		;if abort
+	CALL	UPPER
+	CP	'A'		;range check
+	JP	M,DIR2
+	CP	'P'+1
+	JP	M,DIR3
+DIR2:	LD	A,BELL		;if invalid character
+	CALL	CONOUT
+	JP	DIR1
+ 
+DIR3:	LD	(DIRLIN),A	;put into the line buffer
+	CALL	CONOUT		;echo character
+	SUB	40H		;bias
+	LD	(DIRFCB),A	;store drive code
+	XOR	A		;clear file count
+	LD	(DIRA),A
+	PRINT	M$2NL		;double space
+	SETDMA	80H
+	SRHFST	DIRFCB		;read directory sector
+	LD	DE,DIRLIN+3	;set pointer to start of display buffer
+
+DIR4:	CP	0FFH 
+	JP	Z,DIR6		;if no more files
+	ADD	A,A
+	ADD	A,A
+	ADD	A,A
+	ADD	A,A
+	ADD	A,A		;(A) = offset from start of buffer
+	ADD	A,80H+1
+	LD	L,A
+	LD	H,0		;(HL) = pointer to start of file name
+	LD	BC,8
+	LDIR			;copy file name
+	INC	DE		;(HL) = pointer to start of extension
+	LD	BC,3
+	LDIR			;copy file suffix
+	INC	DE
+	INC	DE
+	INC	DE		;(DE) = pointer to next file slot
+	LD	A,(DIRA)	;(A) = file count
+	INC	A
+	LD	(DIRA),A
+	AND	3		;(A) = count mod 4
+	JP	NZ,DIR5		;if not at end of buffer
+ 
+;	write the display buffer to the console
+	ZPRINT	DIRLIN
+ 
+;	refill the buffer
+	LD	DE,DIRLIN+3
+DIR5:	PUSH	DE
+	SRHNXT	DIRFCB
+	POP	DE
+	JP	DIR4
+ 
+;	here when no more files
+DIR6:	LD	A,(DIRA)
+	AND	A
+	JP	NZ,DIR7		;if at least one file
+	PRINT	M$DIR2
+	RET
+ 
+DIR7:	LD	A,(DIRA)	;(A) = file count
+	AND	3
+	RET	Z		;if buffer empty
+	MOVE	DIRLEND,,3	;move cr,lf,0 to end of display buffer
+	ZPRINT	DIRLIN
+	RET 
+ 
+ 
+DIRA:	DB	0		;file count
+DIRLIN: DB	' : '		;directory line buffer
+	DS	8
+	DB	' ' 
+	DS	3 
+	DB	' : '
+	DS	8 
+	DB	' ' 
+	DS	3 
+	DB	' : '
+	DS	8 
+	DB	' ' 
+	DS	3 
+	DB	' : '
+	DS	8 
+	DB	' ' 
+	DS	3 
+DIRLEND: DB	 CR,LF,0
+ 
+DIRFCB: DB	 0		 ;fcb used to get directory records
+	DB	'???????????'
+	DB	0,0,0,0,0,0,0,0,0,0,0,0 
+	DB	0,0,0,0,0,0,0,0,0,0,0,0 
+ 
+
+	SUBTTL	ACUMCRC
+	PAGE
+;	acumcrc - accumulate the crc
+;
+;	entry	(A) = character to be added to the crc value.
+ 
+ACUMCRC: LD	 HL,CONES	;table base
+	LD	C,A		;add character
+	LD	B,0
+	ADD	HL,BC
+	LD	D,M		;save substituted value 
+	LD	A,(CRCL8)	;accumulated crc lsb
+	LD	C,A		;set it as table address lsb
+	LD	B,0
+	LD	HL,CONES
+	ADD	HL,BC
+	LD	A,(HL)
+	XOR	D		;or both table values 
+	LD	D,A		;save the result
+	LD	A,(CRCU8)	;accumulated crc msb
+	RLCA 
+	RLCA
+	AND	3
+	LD	E,A		;save masked and positioned result
+	LD	A,D		;get result of or'D TABLE VALUES
+	RLCA
+	RLCA
+	AND	0FCH 
+	OR	E		;combine previous result
+	XOR	D
+	LD	E,A		;save this result 
+	AND	3
+	RRCA
+	RRCA
+	LD	C,A		;save save masked and positioned result 
+	LD	A,(CRCU8)	;accumulated crc msb
+	AND	3FH
+	OR	C
+	LD	(CRCL8),A
+	LD	A,D		;result of or'd table values
+	AND	0C0H 
+	LD	C,A		;save it
+	LD	A,E
+	RRCA
+	RRCA
+	AND	3FH
+	OR	C
+	LD	(CRCU8),A
+	LD	A,D
+	AND	80H
+	RLCA
+	LD	B,A
+	LD	A,(CRCL8)
+	XOR	B
+	LD	(CRCL8),A
+	RET 
+ 
+ 
+;	crc complemented ones table
+;
+ 
+CONES:	DB	00,0FFH,0FEH,01,0FCH,03,02,0FDH
+	DB	0F8H,07,06,0F9H,04,0FBH,0FAH,05 
+	DB	0F0H,0FH,0EH,0F1H,0CH,0F3H,0F2H,0DH 
+	DB	08,0F7H,0F6H,9H,0F4H,0BH,0AH,0F5H 
+	DB	0E0H,1FH,1EH,0E1H,1CH,0E3H,0E2H,1DH 
+	DB	18H,0E7H,0E6H,19H,0E4H,1BH,1AH,0E5H 
+	DB	10H,0EFH,0EEH,11H,0ECH,13H,12H,0EDH 
+	DB	0E8H,17H,16H,0E9H,14H,0EBH,0EAH,15H 
+	DB	0C0H,3FH,3EH,0C1H,3CH,0C3H,0C2H,3DH 
+	DB	38H,0C7H,0C6H,39H,0C4H,3BH,3AH,0C5H 
+	DB	30H,0CFH,0CEH,31H,0CCH,33H,32H,0CDH 
+	DB	0C8H,37H,36H,0C9H,34H,0CBH,0CAH,35H 
+	DB	20H,0DFH,0DEH,21H,0DCH,23H,22H,0DDH 
+	DB	0D8H,27H,26H,0D9H,24H,0DBH,0DAH,25H 
+	DB	0D0H,2FH,2EH,0D1H,2CH,0D3H,0D2H,2DH 
+	DB	28H,0D7H,0D6H,29H,0D4H,2BH,2AH,0D5H 
+ 
+	DB	80H,7FH,7EH,81H,7CH,83H,82H,7DH 
+	DB	78H,87H,86H,79H,84H,7BH,7AH,85H 
+	DB	70H,8FH,8EH,71H,8CH,73H,72H,8DH 
+	DB	88H,77H,76H,89H,74H,8BH,8AH,75H 
+	DB	60H,9FH,9EH,61H,9CH,63H,62H,9DH 
+	DB	98H,67H,66H,99H,64H,9BH,9AH,65H 
+	DB	90H,6FH,6EH,91H,6CH,93H,92H,6DH 
+	DB	68H,97H,96H,69H,94H,6BH,6AH,95H 
+	DB	40H,0BFH,0BEH,41H,0BCH,43H,42H,0BDH 
+	DB	0B8H,47H,46H,0B9H,44H,0BBH,0BAH,45H 
+	DB	0B0H,4FH,4EH,0B1H,4CH,0B3H,0B2H,4DH 
+	DB	48H,0B7H,0B6H,49H,0B4H,4BH,4AH,0B5H 
+	DB	0A0H,5FH,5EH,0A1H,5CH,0A3H,0A2H,5DH 
+	DB	58H,0A7H,0A6H,59H,0A4H,5BH,5AH,0A5H 
+	DB	50H,0AFH,0AEH,51H,0ACH,53H,52H,0ADH 
+	DB	0A8H,57H,56H,0A9H,54H,0ABH,0AAH,55H 
+ 
+
+	SUBTTL	BLDMSG
+	PAGE
+;	bldmsg
+;
+;	bldmsg transfers characters from disk to the transmission
+;	buffer with the following changes:
+;
+;	1. Substitutes a GS or FS character for the
+;	#eor or #eof sequence.
+;
+;	2. Substitutes a RS character for an eol sequence.
+;
+;	3. Stores a compression sequence of ht,count,char
+;	for 4 to 98 like characters.
+;
+;	4. Stores a sub sequence of sub,char for characters
+;	within the range of 0-20h. The sub sequence may
+;	be included within a compression sequence.
+;
+;	5. Optionally adds carriage control characters.
+
+BLDMSG:	XOR	A
+	LD	(BLMB),A	;clear end file/record seq ctr 
+	LD	A,1		;preset compression count 
+	LD	(CMCHCT),A
+
+BLM1:	LD	A,(CURCHR)	;(A) = current character
+	LD	(LSTCHR),A	;copy current character -> previous character
+	LD	A,(TRTYFG)	;(A) = transfer type 
+	CP	SI
+	LD	A,(LSTCHR)	;(A) = character to send
+	JP	NZ,BLM2		;if text transfer
+	LD	A,(EOFFG)	;(A) = binary end of file flag
+
+BLM2:	CP	CPMEOF
+	JP	NZ,BLM3		;if not last character of transfer
+	LD	A,ETX
+	LD	(LSTCHR),A	;substitute an ETX
+	CALL	STORCHR		;add to buffer
+	JP	BLM25
+
+BLM3:	CALL	GETSCHR 	;(curchr) = next character
+	LD	A,(TRTYFG)	;check for binary transfer
+	CP	SI 
+	JP	Z,BLM20 	;if binary transfer skip string checking
+	LD	A,(RSFLG)	;(A) = start of line flag
+	AND	A
+	JP	Z,BLM15 	;if not first character of a line
+
+
+;	--- check for a #eor or #eof sequence ---
+	LD	A,(BLMB)
+	CP	0
+	JP	Z,BLM4		;if looking for the #
+	CP	1
+	JP	Z,BLM5		;if looking for the E
+	CP	2
+	JP	Z,BLM6 		;if looking for the O
+	CP	3
+	JP	Z,BLM7 		;if looking for R or F
+	JP	BLM10 		;if looking for cr
+
+BLM4:	LD	A,(LSTCHR)
+	CP	'#'
+	JP	Z,BLM11		;if 1st character of sequence
+	JP	BLM12		;if sequence broken
+
+BLM5:	LD	A,(LSTCHR)	;check for e
+	CP	'E'
+	JP	Z,BLM11 	;if 2nd character of sequence
+	JP	BLM12		;if sequence broken
+
+BLM6:	LD	A,(LSTCHR)	;check for o
+	CP	'O'
+	JP	Z,BLM11		;if 3rd character of sequence
+	JP	BLM12 		;if sequence broken
+
+BLM7:	LD	A,(LSTCHR)	;check for r
+	CP	'R'
+	JP	NZ,BLM8	 	;if not # e o r 
+	LD	A,GS		;substitute a gs(group seperator)
+	JP	BLM9
+
+BLM8:	LD	A,(LSTCHR)	;check for f
+	CP	'F'
+	JP	NZ,BLM12 	;if sequence broken 
+	LD	A,FS		;substitute a fs(file seperator) 
+BLM9:	LD	(BLMA),A	;save the possible substitute character
+	LD	A,(LSTCHR)
+	JP	BLM11
+
+BLM10:	LD	A,(LSTCHR)
+	CP	CR 
+	JP	NZ,BLM12 	;if sequence broken 
+	LD	A,(CURCHR) 
+	CP	LF		;check for the line feed 
+	JP	NZ,BLM12	;if sequence broken 
+	XOR	A		;flag possible start of another sequence
+	LD	(BLMB),A	;start at top 
+	LD	(TBCHCT),A	;tab character count 
+	CALL	GETSCHR 
+	LD	A,(BLMA)	;get the substitute character
+	LD	(LSTCHR),A 
+	LD	HL,(TBUFPT)	;decrement buffer pointer by 4 
+	DEC	HL
+	DEC	HL
+	DEC	HL
+	DEC	HL
+	LD	(TBUFPT),HL
+	LD	A,(LSTCHR)
+	CALL	STORCHR 
+	JP	BLM26
+
+;	here to add a character to the #eor or #eof sequence
+BLM11:	LD	HL,BLMB		;move to next character of the sequence
+	INC	(HL)
+	CALL	STORCHR 
+	JP	BLM1 
+
+
+;	--- start of line - add carriage control ---
+BLM12:	LD	A,(RSFLG)	;save space count
+	LD	B,A
+	XOR	A
+	LD	(BLMB),A	;clear eof sequence count
+	LD	(RSFLG),A	;clear start of line flag
+	LD	A,(TRTYFG)	;(A) = transfer type code
+	CP	SO+80H
+	JP	NZ,BLM15	;if not formatted text
+	LD	A,(LSTCHR)
+	CP	FF
+	JP	NZ,BLM13	;if first character is not form feed
+	LD	A,'1'		;replace FF with page eject carriage control
+	CALL	STORCHR
+	JP	BLM25
+
+BLM13:	LD	A,B		;(A) = space count
+	CP	2
+	LD	A,' '		;preset single space carriage control
+	JP	Z,BLM14		;if not overprint
+	LD	A,'+'		;use overprint carriage control instead
+BLM14:	CALL	STORCHR		;add carriage control
+
+
+;	--- check for a CR or CR/LF ---
+BLM15:	LD	A,(LSTCHR)
+	CP	CR
+	JP	NZ,BLM17	;if not carriage return
+	XOR	A		;clear tab count
+	LD	(TBCHCT),A
+	LD	B,1		;preset overprint value for start of line flag
+	LD	A,(CURCHR)	;(A) = next character in the sequence
+	CP	LF
+	JP	NZ,BLM16	;if CR without LF
+	CALL	GETSCHR		;get next character to replace LF
+	LD	B,2		;set single space value for start of line flag
+BLM16:	LD	A,B
+	LD	(RSFLG),A	;flag start of new line
+	LD	A,RS		;replace the CR with a RS
+	CALL	STORCHR		;store the RS
+	JP	BLM25
+
+
+;	--- check for a LF or LF/CR ---
+BLM17:	CP	LF
+	JP	NZ,BLM18	;if not linefeed
+	XOR	A		;clear tab count
+	LD	(TBCHCT),A
+	LD	A,2		;flag start of new line
+	LD	(RSFLG),A
+	LD	A,(CURCHR)	;(A) = next character in the sequence
+	CP	CR
+	CALL	Z,GETSCHR	;if CR - replace with next character
+	LD	A,RS		;replace the LF with a RS
+	CALL	STORCHR		;store the RS
+	JP	BLM25
+ 
+
+;	--- check for a tab character ---
+BLM18:	CP	HT		;check for tab character
+	JP	NZ,BLM20 	;if not tab character 
+	LD	A,(TBSLFG)	;tab select flag 
+	CP	1		;tbslfg=0 if binary transfer or no select 
+	JP	NZ,BLM20 	;if no tab expansion
+	LD	A,' '
+	LD	(LSTCHR),A	;replace tab with ascii blank
+BLM19:	LD	A,(TBCHCT)	;2**3 = 1 tab position
+	AND	0FH
+	CP	9
+	JP	Z,BLM20 	;if at  a tab position 
+	CP	1
+	JP	Z,BLM20 	;if at a tab position
+	LD	HL,CMCHCT	;count number of blanks
+	INC	(HL)
+	LD	HL,TBCHCT	;increment to next character position
+	INC	(HL)
+	JP	BLM19
+ 
+
+;	--- check for a compressable sequence ---
+BLM20:	LD	HL,CURCHR	;current character
+	LD	A,(LSTCHR)	;last character
+	CP	(HL)		;compare them 
+	JP	NZ,BLM21 	;if not the same
+	LD	HL,CMCHCT 
+	INC	(HL)		;count contiguous like characters 
+	LD	A,(HL)
+	CP	MAXCMCT 	;max count allowed 
+	JP	NZ,BLM1		;if not at max
+	CALL	GETSCHR 	;get new current character
+	JP	BLM23 		;form a max sequence
+
+
+;	--- check if this character terminated a compressable string ---
+BLM21:	LD	A,(CMCHCT)	;check if compressed characters
+	CP	1
+	JP	Z,BLM24 	;if no compression 
+	LD	A,(CMCHCT)	;check if 4 or more
+	CP	4
+	JP	P,BLM23	 	;if true 
+BLM22:	LD	HL,MEMBUF	;store 2 or 3 like characters
+	CALL	BLM_SC		;store and sub sequence if necessary 
+	LD	A,(CMCHCT)	;decrement the compression count 
+	DEC	A
+	LD	(CMCHCT),A 
+	AND	A
+	JP	NZ,BLM22 	;if more compressed characters
+	LD	A,1		;re-initialize the compression count
+	LD	(CMCHCT),A
+	JP	BLM25
+ 
+;	store the compression sequence 
+BLM23:	LD	A,HT		;start the sequence
+	CALL	STORCHR 	;store the ht character 
+	LD	A,(CMCHCT)	;current compression count 
+	ADD	A,CMPBIAS 	;add the bias
+	CALL	STORCHR 	;store the count
+	LD	A,1
+	LD	(CMCHCT),A	;reset count to initial value
+ 
+
+;	--- add a single character to the buffer ---
+BLM24:	CALL	BLM_SC		;store and check for sub sequence
+
+
+;	--- check for a full buffer ---
+BLM25:	LD	HL,(TBUFPT)	;insure enough room for trailer+max sequence
+	LD	DE,MAXMEM-10
+	CALL	CPW
+	JP	P,BLM26 	;if buffer full
+	LD	A,(LSTCHR)
+	CP	ETX
+	JP	NZ,BLM1		;if not end of transfer 
+
+
+;	--- complete the message ---
+BLM26:	LD	A,ETB		;(A) = end of block character
+	CALL	STORCHR		;add to buffer
+	RET
+
+
+BLMA:	DB	0		;end of file/record character
+BLMB:	DB	0		;end of file/record string position
+
+ 
+;	BLM_SC - local routine
+; 
+;	store sub sequence for characters 
+;	in range of 0-19h and 7fh. 
+
+BLM_SC:	LD	A,(LSTCHR)
+	CP	7FH
+	JP	Z,BLMC1		;if sub sequence needed
+	CP	20H
+	JP	P,BLMC2		;if no sub-sequence needed
+BLMC1:	LD	A,ASUB		;store a sub sequence for this character
+	CALL	STORCHR 
+	LD	A,(LSTCHR)
+	XOR	SUBBIAS 	;include the bias
+BLMC2:	CALL	STORCHR
+	RET 
+
+
+	SUBTTL	BN2MSK
+	PAGE
+;	bn2msk - generate a mask given an ascii bit number
+;
+;	Form an eight bit mask with a single bit set.  The bit
+;	to set is indicated by an ascii digit in the range 
+;	'0' to '7', with '0' indicating the least significant bit.
+;
+;	entry	(A) = ascii digit indicating bit to set.
+;
+;	exit	(A) = single-bit mask.
+
+BN2MSK: SUB	'0'		;convert ascii to integer
+	LD	B,A
+	LD	A,1		;start mask
+BNM1:	DEC	B
+	RET	M		;when position correct
+	RLCA			;rotate left
+	JP	BNM1
+
+
+	SUBTTL	CHROUT
+	PAGE
+;	chrout - output a character to the modem
+;
+;	Send a character to the modem.  A carriage return is sent
+;	when the character count reaches the host's input block length.
+;
+;	entry	(A) = character to send.
+;
+;	exit	none.
+
+ 
+CHROUT: LD	(CHOA),A	;save character
+
+	IF	XONOFF
+;	check for garbage on input line - honor xoff flow control
+CHO1:	CALL	MDMIN		;listen on input line
+	JP	Z,CHO4		;if no character
+	CP	XOFF
+	JP	NZ,CHO1		;if garbage
+CHO2:	CALL	CONIN		;flush the typeahead buffer
+	JP	NZ,CHO2
+CHO3:	CALL	MDMIN		;xoff seen - wait for xon
+	CP	XON
+	JP	Z,CHO4		;if xon
+	CALL	CONIN
+	JP	Z,CHO3		;if no user entry
+	ENDIF
+
+;	check if host's IBL reached
+CHO4:	LD	HL,(CRCHCT)	;(HL) = character count
+	LD	DE,(HIBL)	;(DE) = maximum physical block length
+	CALL	CPW
+	JP	NZ,CHO5		;if cr not needed
+	LD	HL,0		;clear character count
+	LD	(CRCHCT),HL
+	LD	A,CR 		;send a carriage return
+	CALL	MDMOUT
+
+;	output the data character
+CHO5:	LD	A,(CHOA)	;(A) = input character
+	CALL	MDMOUT		;send 
+	LD	HL,(CRCHCT)	;increment character count
+	INC	HL
+	LD	(CRCHCT),HL
+	AND	A		;clear carry flag
+	RET
+
+ 
+CHOA:	DB	0		;character storage
+ 
+
+	SUBTTL	CLRSM
+	PAGE
+;	clrsm - clear the status message text
+;
+;	clear the current status text from the screen and the buffer.
+ 
+CLRSM:	LD	A,(SL$TXT)	;check for message
+	CP	'$'
+	RET	Z		;if no message
+	FILL	SL$TXT,' ',SL$TXTL
+	PRINT	SL$TXT
+	LD	A,'$'		;insert null message
+	LD	(SL$TXT),A
+	RET
+
+
+	SUBTTL	CPW
+	PAGE
+;	cpw - 16 bit compare instruction
+;
+;	This routine performs the function of a CP HL,DE instruction.
+;
+;	entry	(HL) = 16 bit number.
+;		(DE) = 16 bit number to be subtracted from (HL).
+;
+;	exit	(HL) and (DE) unchanged.
+;		carry and zero flags set.
+
+CPW:	LD	A,H
+	CP	D
+	RET	NZ
+	LD	A,L
+	CP	E
+	RET
+
+	
+	SUBTTL	DSP
+	PAGE
+;	dsp - display a number of spaces
+;
+;	entry	(A) = number of spaces.
+
+DSP:	LD	B,A
+	LD	A,' '
+DSP1:	PUSH	BC
+	CALL	CONOUT
+	POP	BC
+	DEC	B
+	JP	NZ,DSP1
+	RET
+ 
+
+	SUBTTL	FIL
+	PAGE
+;	fil - fill a block of memory with a value
+;
+;	entry	(A)  = value to fill with.
+;		(B)  = number of bytes to fill.
+;		(HL) = fwa of block.
+ 
+FIL:	LD	(HL),A
+	INC	HL
+	DEC	B
+	JP	NZ,FIL
+	RET
+
+
+	SUBTTL	FILLFCB
+	PAGE
+;	fillfcb - initialiaze the fcb
+;
+;	entry	(HL) = fwa of buffer containing file name.
+;		(DE) = fwa of fcb.
+ 
+ 
+FILLFCB:
+	PUSH	HL		;(HL) = fwa of file name
+	PUSH	DE		;(DE) = fwa of fcb
+ 
+ 
+;	clear the fcb
+	EX	DE,HL
+	LD	(HL),0		;clear drive code
+ 
+	LD	B,11		;clear file name
+FFC1:	INC	HL
+	LD	(HL),' '
+	DEC	B
+	JP	NZ,FFC1
+ 
+	LD	B,FCBLEN-11-1	;clear rest of fcb
+FFC2:	INC	HL
+	LD	(HL),0
+	DEC	B
+	JP	NZ,FFC2
+ 
+ 
+;	copy the file name into the fcb
+	POP	DE		;(DE) = fwa of fcb
+	POP	HL		;(HL) = fwa of file name
+	INC	HL
+	LD	A,(HL)		;set drive code
+	DEC	HL
+	CP	':'
+	JP	NZ,FFC3		;if drive not specified
+	LD	A,(HL)
+	CALL	UPPER
+	SUB	40H
+	LD	(DE),A
+	INC	HL
+	INC	HL
+ 
+FFC3:	INC	DE		;transfer file name
+	LD	C,8
+FFC4:	LD	A,(HL)		;get next character
+	INC	HL
+	CP	'.'
+	JP	Z,FFC5		;if end of file name
+	CP	' '
+	RET	Z		;if no more characters
+	LD	B,A		;save character
+	LD	A,C		;(A) = remaining character count
+	AND	A
+	JP	Z,FFC4		;ignore excess characters
+	LD	A,B		;restore character
+	CALL	UPPER
+	LD	(DE),A
+	INC	DE
+	DEC	C
+	JP	FFC4
+ 
+FFC5:	LD	B,0		;transfer file type
+	EX	DE,HL
+	ADD	HL,BC
+	EX	DE,HL		;(DE) = fwa of type field
+	LD	C,3
+FFC6:	LD	A,(HL)		;get next character
+	INC	HL
+	CALL	UPPER
+	LD	(DE),A
+	INC	DE
+	DEC	C
+	JP	NZ,FFC6
+ 
+	RET
+
+
+	SUBTTL	GETCHAR
+	PAGE
+;	getchar - get character from receive buffer
+;
+;	exit	(A) = character from buffer.
+;		    = 0 if buffer empty.
+ 
+GETCHAR: LD	HL,(RBUFPT)	;(HL) = buffer pointer
+	LD	A,(RBUFLB+1)	;(A) = msb of buffer end
+	CP	H
+	JP	NZ,GCH1
+	LD	A,(RBUFLB)	;(A) = lsb of buffer end
+	SUB	L
+	RET	Z		;if buffer empty
+ 
+GCH1:	LD	A,(HL)		;get character from buffer
+	INC	HL		;increment pointer
+	LD	(RBUFPT),HL
+	RET
+
+
+	SUBTTL	GETSCHR
+	PAGE
+;	getschr
+;
+;	Get a character from the file being transferred.
+;	This routine does the necessary buffering to read
+;	the file a character at a time.  It also does the
+;	8 to 6 bit formatting required for binary transfers.
+;
+;	exit	(curchr) = character from file.
+;			 = etx if actual end of file encountered.
+ 
+GETSCHR:
+	LD	A,(SCCHCT)	;sector character count
+	AND	A
+	JP	NZ,GSC1		;if not empty
+
+;	fill the buffer from disk
+	READ	FCB1	 	;read the next sector 
+	AND	A
+	JP	NZ,GSC10	;if end of file 
+	CALL	UPDSEC		;increment sector count
+	LD	A,128		;reset the character count
+	LD	(SCCHCT),A
+	LD	HL,SECBUF	;reset the buffer pointer
+	LD	(SECTPT),HL
+
+;	get a character from the buffer
+GSC1:	LD	A,(TRTYFG)	;(A) = transfer type
+	CP	SI
+	JP	Z,GSC2		;if binary mode
+
+
+;	text mode
+	LD	HL,(SECTPT)	;(HL) = buffer pointer
+	LD	A,(HL)		;(A) = character from file
+	INC	HL		;advance pointer
+	LD	(SECTPT),HL
+	AND	7FH		;remove high bit
+	LD	(CURCHR),A	;store
+	LD	HL,SCCHCT	;decrement character count 
+	DEC	(HL)
+	LD	HL,TBCHCT	;count characters per line for tabs
+	INC	(HL)
+	RET
+
+
+;	binary mode
+GSC2:	LD	HL,(SECTPT)
+	LD	A,(HL)		;(A) = character from file
+	LD	(CURCHR),A	;store
+	LD	A,(BINPCT)	;(A) = binary position count 
+	CP	5		;do the 8 to 6 bit formatting 
+	JP	NZ,GSC3
+	LD	A,(CURCHR)	;(A) = character read from file
+	RRCA			;upper 6 bits on first byte
+	RRCA			;right justify 
+	AND	3FH		;save 6 bits
+	JP	GSC8
+
+GSC3:	CP	4
+	JP	NZ,GSC4		;if not lower 2 bits first byte
+	LD	A,(CURCHR)
+	RLCA 
+	RLCA 
+	RLCA 
+	RLCA 
+	AND	30H		;save lower two bits of first byte
+	JP	GSC9		;save result
+
+GSC4:	CP	3
+	JP	NZ,GSC5		;if not upper four bits of second byte 
+	LD	A,(GSCA)	;get saved byte
+	LD	D,A
+	LD	A,(CURCHR)
+	RRCA 
+	RRCA 
+	RRCA
+	RRCA
+	AND	0FH		;save upper 4 bits
+	OR	D		;combine with lower 2 of 1st byte 
+	JP	GSC8
+
+GSC5:	CP	2
+	JP	NZ,GSC6		;if not lower 4 of 2nd byte
+	LD	A,(CURCHR)
+	RLCA 
+	RLCA 
+	AND	3CH
+	JP	GSC9
+
+GSC6:	AND	A
+	JP	Z,GSC7		;if lower 6 bits of 3rd byte
+	LD	A,(GSCA)	;get saved byte
+	LD	D,A
+	LD	A,(CURCHR)
+	RLCA 
+	RLCA
+	AND	3		;save upper 2 bits 3rd byte 
+	OR	D		;combine with lower 4 of 2nd byte 
+	JP	GSC8
+
+GSC7:	LD	A,(CURCHR)
+	AND	3FH
+	LD	(CURCHR),A
+	LD	A,6		;reset binpct=5+1 
+	LD	(BINPCT),A
+	LD	HL,(SECTPT)	;next character 
+	INC	HL
+	LD	(SECTPT),HL
+	LD	HL,SCCHCT	;decrement sector character count
+	DEC	(HL)
+	LD	A,(CURCHR)
+
+GSC8:	ADD	A,BINBIAS 	;add the binary bias
+	LD	(CURCHR),A
+	LD	HL,BINPCT	;next binary position same character 
+	DEC	(HL)
+	RET 
+
+GSC9:	LD	(GSCA),A	;save next binary position
+	LD	HL,BINPCT 
+	DEC	(HL)
+	LD	HL,(SECTPT)	;next character 
+	INC	HL
+	LD	(SECTPT),HL
+	LD	HL,SCCHCT
+	DEC	(HL)
+	JP	GETSCHR
+
+GSC10:	LD	A,(BINPCT)	;sector empty, complete binary unpack
+	CP	3
+	JP	Z,GSC11		;if 2 bits of last byte left 
+	CP	1
+	JP	NZ,GSC12	;if done
+GSC11:	LD	A,(GSCA)	;get saved and positioned byte
+	JP	GSC8
+
+GSC12:	LD	A,CPMEOF	;end of file
+	LD	(CURCHR),A 
+	LD	(EOFFG),A	;flag end of file 
+	RET
+
+
+GSCA:	DB	0		;storage for binary byte
+ 
+
+	SUBTTL	HEX2I
+	PAGE
+;	hex2i - convert a hex digit to integer
+;
+;	entry	(A) = hex digit to be converted.
+;
+;	exit	(A) = 4 bit integer.
+;		    = 0ffh if illegal character.
+
+HEX2I:	CALL	UPPER		;fold letters to upper case
+	CP	'0'
+	JP	M,H2I2		;if illegal
+	CP	'9'+1
+	JP	M,H2I1		;if 0-9
+	CP	'A'
+	JP	M,H2I2		;if illegal
+	CP	'F'+1
+	JP	P,H2I2		;if illegal
+ 
+	SUB	'A'-10		;convert a-f to 10-15
+	RET
+ 
+H2I1:	SUB	'0'		;convert 0-9
+	RET
+ 
+H2I2:	LD	A,0FFH		;return error code
+	RET
+
+
+	SUBTTL	I2HEX
+	PAGE
+;	i2hex - convert a 4 bit integer to hex
+;
+;	entry	(A) = 4 bit number to be converted.
+;
+;	exit	(A) = hex digit.
+ 
+I2HEX:	AND	0FH		;insure upper 4 bits clear
+	ADD	A,90H
+	DAA
+	ADC	A,40H
+	DAA
+	RET
+ 
+
+	SUBTTL	MEMTD
+	PAGE
+;	memtd - transfer incoming data from buffer to disk
+;
+;	Memtd copies characters from the transmission buffer to
+;	disk with the following transformations:
+;
+;	1. Compression sequences are expanded.
+;	2. Carriage control characters are converted.
+;	3. RS characters are changed to CR/LF.
+;	4. GS characters are changed to #EOR.
+;	5. FS characters are changed to #EOF.
+;
+;
+;	entry - memory buffer pointer and sector buffer pointer must be reset.
+;
+;	exit  - carry flag set if disk full.
+
+
+MEMTD:	CALL	GETCHAR		;(A) = character from transmission buffer
+	RET	Z		;if memory buffer is empty 
+	CP	ETX		;check for end of transfer
+	JP	NZ,MTD1		;if not end of transfer 
+
+
+;	--- end of transfer ---
+	LD	A,1
+	LD	(FTCMFG),A	;set file transfer complete flag 
+	CALL	STORSEC 	;flush the buffer to disk 
+	RET
+
+ 
+;	--- compression sequence ---
+MTD1:	CP	HT
+	JP	NZ,MTD5		;if not compression sequence
+	CALL	GETCHAR 	;get compression count
+	SUB	CMPBIAS 	;subtract bias 
+	LD	(MTDB),A	;store decompression count 
+	CALL	GETCHAR 	;get next character 
+	LD	B,A		;save
+	LD	A,(TRTYFG)
+	CP	SI 
+	LD	A,B		;restore character
+	JP	NZ,MTD2		;if text transfer
+	SUB	BINBIAS 	;subtract binary bias
+	JP	MTD3
+ 
+;	process compression sub sequence 
+MTD2:	CP	ASUB		;check for biased character
+	JP	NZ,MTD3		;if no sub
+	CALL	GETCHAR 	;get sub character
+	XOR	SUBBIAS 	;remove bias 
+MTD3:	LD	(MTDA),A 	;store character to store in sector buffer
+MTD4:	CALL	MTD_CC	 	;convert carriage control and write char
+	RET	C		;return if disk full
+	LD	HL,MTDB		;decrement decompresion count
+	DEC	(HL)
+	JP	Z,MEMTD		;if last decompressed character written
+	LD	A,(MTDA) 	;(A) = character to be written
+	JP	MTD4 
+
+MTD5:	LD	B,A
+	LD	A,(TRTYFG)	;check transfer type flag
+	CP	SI		;check for binary transfer 
+	LD	A,B
+	JP	NZ,MTD6		;if text transfer 
+	SUB	BINBIAS 	;remove the binary bias
+	CALL	STORSEC		;write character to disk
+	RET	C
+	JP	MEMTD
+ 
+
+;	--- sub sequence for non-compressed char ---
+MTD6:	CP	ASUB		;check character for sub
+	JP	NZ,MTD7		;if not sub sequence
+	CALL	GETCHAR 	;get character
+	XOR	SUBBIAS 	;remove bias 
+	CALL	STORSEC		;write character to disk
+	RET	C
+	JP	MEMTD
+ 
+
+;	--- eof (FS) ---
+MTD7:	CP	FS		;check for eof character
+	JP	NZ,MTD8 
+	LD	HL,MTDC
+	CALL	MTD_SS
+	RET	C
+	JP	MEMTD
+ 
+
+;	--- eor (GS) ---
+MTD8:	CP	GS		;check for eor character
+	JP	NZ,MTD9
+	LD	HL,MTDD
+	CALL	MTD_SS
+	RET	C
+	JP	MEMTD
+ 
+
+;	--- newline (RS) ---
+MTD9:	CP	RS		;check newline character
+	JP	NZ,MTD10
+	LD	A,1		;flag start of new line
+	LD	(RSFLG),A
+	LD	HL,MTDF
+	CALL	MTD_SS
+	RET	C
+	JP	MEMTD
+
+
+;	--- non-special character ---
+MTD10:	CALL	MTD_CC		;convert carriage control and write char
+	RET	C		;if disk full
+	JP	MEMTD
+ 
+
+MTDA:	DB	0		;character to store
+MTDB:	DB	0		;compression count
+MTDC:	DB	'#EOF',CR,LF,0	;end of file string
+MTDD:	DB	'#EOR',CR,LF,0	;end of record string
+MTDE:	DB	CR,LF		;triple space
+MTDF:	DB	CR,LF,0		;double space
+
+
+;	local routine - convert carriage control and write character
+;
+;	entry	(A) = character to write to disk.
+;		(RSFLG) = start of line flag.
+;
+;	exit	carry flag set if disk full.
+
+MTD_CC:	LD	B,A		;save character
+	LD	A,(TRTYFG)	;(A) = transfer type code
+	CP	SO+80H
+	LD	A,B
+	JP	NZ,STORSEC	;if not formatted text
+	LD	A,(RSFLG)	;(A) = start of line flag
+	AND	A
+	LD	A,B
+	JP	Z,STORSEC	;if not first character of line
+	XOR	A
+	LD	(RSFLG),A	;clear start of line flag
+	LD	A,B		;(A) = carriage control character
+	CP	'1'
+	JP	NZ,MTDC1	;if not page eject
+	LD	A,FF		;replace 1 with form feed
+	JP	STORSEC
+
+MTDC1:	LD	HL,MTDE		;preset triple space sequence
+	CP	'-'
+	JP	Z,MTD_SS	;triple space
+	LD	HL,MTDF		;preset double space sequence
+	CP	'0'
+	JP	Z,MTD_SS	;double space
+	AND	A		;clear carry flag
+	RET			;ignore other carriage control characters
+
+
+;	local routine - write a null terminated string to disk
+;
+;	entry	(HL) = fwa of string.
+;
+;	exit	carry flag set if disk full.
+
+MTD_SS:	LD	A,(HL)		;(A) = character to write
+	AND	A
+	RET	Z		;if at end of string
+	INC	HL
+	PUSH	HL
+	CALL	STORSEC		;write character to disk
+	POP	HL
+	JP	NC,MTD_SS	;if disk not full
+	RET
+
+
+	IF A_APC
+	SUBTTL	PEEK
+	PAGE
+;	peek - Apple/Applicard: read one byte from the Apple's memory
+;
+;	entry	(DE) = address to read.
+;
+;	exit	(A)  = byte from memory.
+
+PEEK:	PUSH	BC
+	LD	C,6
+	CALL	WR_BYTE
+	CALL	WR_WORD
+	CALL	RD_BYTE
+	POP	BC
+	RET
+
+	SUBTTL	POKE
+	PAGE
+;	poke - Apple/Applicard: write one byte to the Apple's memory
+;
+;	entry	(DE) = address to write.
+;		(A)  = byte to write.
+;
+;	exit	none.
+
+POKE:	PUSH	BC
+	LD	B,A
+	LD	C,7
+	CALL	WR_BYTE
+	CALL	WR_WORD
+	LD	C,B
+	CALL	WR_BYTE
+	POP	BC
+	RET
+
+	ENDIF
+	SUBTTL	MSK2BN
+ 	PAGE
+;	msk2bn - return the ascii bit number of the lowest one bit
+;
+;	Given an eight bit mask, return an ascii digit cooresponding
+;	to the position of the least significant high bit.  Bits are
+;	numbered '0' to '7', with '0' indicating the least significant
+;	bit.
+;
+;	entry	(A) = mask.
+;
+;	exit	(A) = ascii digit indicating bit that is set.
+
+MSK2BN: LD	B,8		;initialiaze bit counter
+MBN1:	DEC	B		;decrement
+	RRCA			;rotate low bit to carry
+	JP	C,MBN2		;if high bit found
+	JP	NZ,MBN1		;if more to try
+	LD	A,'*'		;return error code (no bits set)
+	RET
+
+MBN2:	LD	A,'7'
+	SUB	B		;retrun position from lsb
+	RET
+
+
+	SUBTTL	PRTHEX
+	PAGE
+;	prthex
+;
+;	display an 8 bit integer as two hex digits.
+;
+;	entry	(A) = value to be displayed at console.
+ 
+PRTHEX: PUSH	AF
+	RRCA			;move high nibble to low bits
+	RRCA
+	RRCA
+	RRCA
+	AND	0FH
+	CALL	I2HEX
+	CALL	CONOUT		;display high nibble
+	POP	AF
+	AND	0FH
+	CALL	I2HEX
+	CALL	CONOUT		;display low nibble
+	RET
+
+
+	SUBTTL	RCVMSG
+	PAGE
+;	rcvmsg
+;
+;	rcvmsg performs the following functions:
+;
+;	1. transfers characters received on the communications 
+;	   line to the data buffer.
+;	2. accumulates a crc on received characters.
+;	3. compares received and accumulated crc'S.
+;
+;	entry	(HL) = receive buffer address.
+;	exit	(A)  = reply code.
+;		     = 0 if no error.
+;		     = 1 if CRC error.
+;		     = 2 if timeout.
+;		     = 3 if buffer overflow.
+
+ 
+RCVMSG: LD	(RBUFPT),HL	;save buffer address
+	XOR	A
+	LD	(CRCU8),A	;initialize crc
+	LD	(CRCL8),A
+ 
+RCM1:	LD	A,(TM$CHC)	;wait for the start of the block
+	LD	(RCMA),A
+RCM2:	CALL	RECEIVE
+	JP	NZ,RCM3		;if character received
+	LD	HL,RCMA		;decrement timeout count
+	DEC	(HL)
+	JP	NZ,RCM2		;if timeout not expired
+	JP	RCM10		;host response timeout
+ 
+RCM3:	CP	LF		;ignore crs and lfs
+	JP	Z,RCM1
+	CP	CR 
+	JP	Z,RCM1
+ 
+RCM5:	PUSH	AF
+	CALL	ACUMCRC 	;accumulate crc 
+	POP	AF
+	CP	ETB		;end of data character
+	JP	Z,RCM6		;if start of crc
+	CALL	STOREM		;store received character
+	JP	Z,RCM13		;if receive buffer full
+	CALL	RECEIVE 	;get a character
+	JP	NZ,RCM5		;if data character received
+	JP	RCM11		;if timeout
+ 
+;	process accumulated crc
+RCM6:	CALL	UPCKCRC
+	LD	HL,(RBUFPT)	;(HL) = current buffer address 
+	LD	(RBUFLB),HL	;save as last address 
+ 
+;	process received crc 
+	CALL	RECEIVE		;get high byte of crc
+	JP	Z,RCM11		;if timeout
+	SUB	BINBIAS 	;remove bias 
+	LD	(RCRC1),A	;save msb 
+
+	CALL	RECEIVE		;get middle byte of crc
+	JP	Z,RCM11		;if timeout 
+	SUB	BINBIAS 	;remove bias 
+	LD	(RCRC2),A
+ 
+	CALL	RECEIVE		;get low byte of crc
+	JP	Z,RCM11		;if timeout 
+	SUB	BINBIAS
+	LD	(RCRC3),A
+	LD	HL,RCRC1
+	LD	A,(CRC1)
+	CP	(HL)
+	JP	NZ,RCM12	;if error in msb of crc
+	INC	HL
+	LD	A,(CRC2)
+	CP	(HL)
+	JP	NZ,RCM12	;if error in middle byte of crc
+	INC	HL
+	LD	A,(CRC3)
+	CP	(HL)
+	JP	NZ,RCM12	;if error in lsb of crc
+	XOR	A	 	;clear error flag
+	RET
+ 
+ 
+;	error handlers
+ 
+;	host response timeout
+RCM10:	LDMSG	SM$HRT		;load host response timeout message
+	LD	A,2		;return error code
+	RET
+ 
+;	received data timeout
+RCM11:	LDMSG	SM$RDT		;load received data timeout message
+	LD	A,2		;return error code
+	RET
+ 
+;	crc error
+RCM12:	LDMSG	SM$CRC		;load crc error message
+	LD	A,1		;return error code
+	RET
+ 
+;	receive buffer overflow
+RCM13:	LDMSG	SM$BOF		;load buffer overflow message
+	LD	A,3		;return error code
+	RET
+ 
+ 
+RCMA:	DB	0		;timeout counter
+
+
+	SUBTTL	RDCFN
+	PAGE
+;	rdcfn - read a file name from the console
+;
+;	read a file name from the console, ignoring blanks and illegal
+;	characters.
+;
+;	entry	(HL) = fwa of buffer.
+;
+;	exit	(B)  = number of characters entered.
+;		carry flag set if aborted.
+
+
+NCHDV	EQU	1		;max characters in drive name
+NCHFN	EQU	8		;max characters in file name
+NCHFT	EQU	3		;max characters in file type
+FNLEN	EQU	NCHDV+1+NCHFN+1+NCHFT
+
+
+RDCFN:	LD	(RDCA),HL	;save buffer pointer
+	XOR	A
+	LD	(RDCB),A	;set state
+	LD	(RDCC),A	;set position
+	LD	A,NCHFN		;set characters remaining
+	LD	(RDCD),A
+	FILL	,' ',14+1	;blank fill buffer
+
+RDC1:	CALL	CONINW		;(A) = input character
+	RET	C		;if abort entered
+	CP	CR
+	JP	Z,RDC8		;if end of input
+	CP	HT
+	JP	Z,RDC8		;if end of input
+	CP	BS
+	JP	Z,RDC4		;if delete-character
+	CP	DEL
+	JP	Z,RDC4		;if delete-character
+	CP	CTRLX
+	JP	Z,RDC5		;if delete-line
+	CP	':'
+	JP	Z,RDC2		;if drive name terminator
+	CP	'.'
+	JP	Z,RDC3		;if file name terminator
+	CP	','
+	JP	Z,RDC1		;if illegal character
+	CP	'#'
+	JP	C,RDC1		;if illegal character
+	CP	'?'
+	JP	Z,RDC1		;if wildcard
+	CP	'*'
+	JP	Z,RDC1		;if wildcard
+	CALL	UPPER
+	CP	'Z'+1
+	JP	NC,RDC1		;if illegal character
+
+
+;	process normal characters
+	LD	B,A		;save input character
+	LD	A,(RDCD)	;(A) = characters remaining
+	DEC	A
+	JP	M,RDC1		;if full
+	LD	(RDCD),A	;store decremented value
+	LD	A,B		;echo
+	CALL	CONOUT
+	LD	HL,(RDCA)	;add character to buffer
+	LD	(HL),A
+	INC	HL		;advance pointer
+	LD	(RDCA),HL
+	LD	HL,RDCC		;increment position count
+	INC	(HL)
+	JP	RDC1
+	
+
+;	process drive name terminator
+RDC2:	LD	A,(RDCC)	;(A) = position
+	CP	1
+	JP	NZ,RDC1		;if not at position 1
+	INC	A		;increment position
+	LD	(RDCC),A
+	LD	A,NCHFN		;reset characters remaining
+	LD	(RDCD),A
+	LD	A,':'		;echo
+	CALL	CONOUT
+	LD	HL,(RDCA)	;add character to buffer
+	LD	(HL),A
+	INC	HL		;advance pointer
+	LD	(RDCA),HL
+	JP	RDC1
+	
+
+;	process file name terminator
+RDC3:	LD	A,(RDCD)	;(A) = characters remaining
+	CP	NCHFN
+	JP	Z,RDC1		;if at first position
+	LD	A,(RDCB)	;(A) = state
+	AND	A
+	JP	NZ,RDC1		;if not in state 0
+	INC	A		;advance state
+	LD	(RDCB),A
+	LD	HL,RDCC		;advance position
+	INC	(HL)
+	LD	A,(RDCD)	;filerem = chrem
+	LD	(RDCE),A
+	LD	A,NCHFT		;reset characters remaining
+	LD	(RDCD),A
+	LD	A,'.'		;echo
+	CALL	CONOUT
+	LD	HL,(RDCA)	;add character to buffer
+	LD	(HL),A
+	INC	HL		;advance pointer
+	LD	(RDCA),HL
+	JP	RDC1
+
+
+;	process del/backspace
+RDC4:	CALL	RDC6
+	JP	RDC1
+
+
+;	process delete-line
+RDC5:	CALL	RDC6
+	CP	0FFH
+	JP	NZ,RDC5
+	JP	RDC1
+
+
+;	delete a single character from the buffer
+RDC6:	LD	A,(RDCC)	;(A) = position counter
+	DEC	A
+	RET	M		;if at start of line
+	LD	(RDCC),A	;store decremented value
+	PRINT	M$RUB		;rubout console display
+	LD	HL,(RDCA)	;(HL) = buffer pointer
+	DEC	HL		;move back
+	LD	(RDCA),HL
+	LD	A,(HL)		;(A) = character being deleted
+	LD	(HL),' '		;blank out character
+	LD	HL,RDCD		;(M) = characters remaining count
+	INC	(HL)		;increment it
+	CP	'.'
+	JP	Z,RDC7		;if deleting file name terminator
+	CP	':'
+	RET	NZ			;if not deleting drive name terminator
+
+;	deleting drive name terminator
+	LD	(HL),NCHFN-1	;set characters remaining count
+	RET
+
+;	deleting file name terminator
+RDC7:	LD	A,(RDCE)	;(A) = filerem
+	LD	(HL),A		;chrem = filerem
+	XOR	A		;set state to 0
+	LD	(RDCB),A
+	RET
+
+;	process carriage return
+RDC8:	LD	A,(RDCC)	;(A) = number of characters entered
+	LD	B,A
+	AND	A		;clear carry flag
+	RET
+ 
+RDCA:	DW	0		;bufRDCfer pointer
+RDCB:	DB	0		;state value
+RDCC:	DB	0		;position counter
+RDCD:	DB	0		;nuMber of character positions left in buffer
+RDCE:	DB	0		;number of unused positions in file name
+
+
+	SUBTTL	RDHEX
+	PAGE
+;	rdhex - read a two digit hex number from the console
+;
+;	read a two digit hex number from the console, ignoring
+;	illegal characters.
+;
+;	entry	(A) = default value.
+;
+;	exit	(A) = number read from console.
+;
+;		carry flag set if abort entered.
+ 
+ 
+RDHEX:	LD	(RDHA),A	;save default value
+RDH1:	CALL	CONINW		;(A) = first character
+	RET	C
+	LD	(RDHB),A	;save
+	CP	CR
+	JP	Z,RDH8		;if default value selected
+	CP	BS		;ignore backspace in first position
+	JP	Z,RDH1
+	CP	DEL		;ignore del in first position
+	JP	Z,RDH1
+	CALL	HEX2I		;(A) = integer value
+	LD	(RDHC),A	;save
+	CP	0FFH
+	JP	NZ,RDH2		;if character ok
+	LD	A,BELL		;complain
+	CALL	CONOUT
+	JP	RDH1		;re-read
+ 
+RDH2:	LD	A,(RDHB)	;echo character
+	CALL	CONOUT
+ 
+RDH3:	CALL	CONINW		;(A) = second character
+	RET	C		;if abort entered
+	LD	(RDHB),A	;save
+	CP	CR
+	JP	Z,RDH7		;if a one digit number
+	CP	BS
+	JP	Z,RDH4		;if a backspace
+	CP	DEL
+	JP	NZ,RDH5		;if not a delete
+RDH4:	PRINT	M$RUB		;rubout display
+	JP	RDH1		;re-read first digit
+ 
+RDH5:	CALL	HEX2I		;(A) = integer value
+	CP	0FFH
+	JP	NZ,RDH6		;if character okay
+	LD	A,BELL		;complain
+	CALL	CONOUT
+	JP	RDH3		;re-read
+ 
+RDH6:	PUSH	AF		;echo character
+	LD	A,(RDHB)
+	CALL	CONOUT
+	POP	AF
+ 
+	LD	B,A		;(B) = low nibble
+	LD	A,(RDHC)	;(A) = high nibble
+	RLCA
+	RLCA
+	RLCA
+	RLCA
+	OR	B		;combine
+	AND	A		;clear abort (carry) flag
+	RET
+ 
+ 
+;	here for one digit numbers
+RDH7:	LD	A,(RDHC)	;(A) = integer value
+	AND	A		;clear abort (carry) flag
+	RET
+ 
+ 
+;	here if the default was selected
+RDH8:	LD	A,(RDHA)	;echo it
+	CALL	PRTHEX
+	LD	A,(RDHA)	;(A) = integer value
+	AND	A		;clear abort (carry) flag
+	RET
+ 
+ 
+RDHA:	DB	0		;storage for default value
+RDHB:	DB	0		;storage for input character
+RDHC:	DB	0		;storage for high nibble
+
+
+	SUBTTL	READFL
+	PAGE
+;	readfl
+;
+;	readfl receives control when a host to micro file transfer
+;	is selected.  it's primary functions are:
+;
+;		1. send the ucopy command to the host.
+;		2  send the initial enq block.
+;		3. receive soh (data) blocks from the host.
+;		4. process received nak and eot messages.
+;		5. send ack or nak responses for received data
+;		6. send the terminating eot message in response
+;		   to a received eot.
+;
+;	exit	carry flag.
+;		clear if normal exit.
+;		set if transfer aborted.
+
+READFL:
+
+;	start the screen display 
+	XOR	A		;clear expected sequence number
+	LD	(EXSQNR),A
+	PRINT	SL$HDR		;start status line
+	CALL	UPDBLK		;zero out block number
+	FILL	SL$SEC,'0',5	;zero out sector number
+	FILL	SL$ERR,'0',2	;zero out error number
+	CALL	CLRSM		;clear any existing error message
+ 
+
+;	create the file 
+	INITFCB	FCB1,M$NBUF 	;initialize the fcb
+	MOVE	FCB1+9,RFLA,3	;save file extension
+	MOVE	RFLC,FCB1+9,3	;replace with temporary extension
+	DELETE	FCB1		;remove any existing .$$$ file
+	MAKE	FCB1		;create file
+	CP	0FFH
+	JP	NZ,RFL1		;if no error 
+	LDMSG	SM$NDS		;no room in directory
+	PRINT	SL$TXT
+	SCF			;set abort (carry) flag
+	RET
+
+
+;	start the host
+RFL1:	CALL	SNDUCY		;send the ucopy command
+
+
+;	wait a while to allow UCOPY to get echoplex turned off
+	LD	B,40		;4 seconds
+	LD	A,(FDX)		;(A) = full/half duplex flag
+	AND	A
+	CALL	NZ,WAIT		;wait if full duplex
+
+
+;	initialize flags, counters, pointers
+	LD	A,1		;flag start of line
+	LD	(RSFLG),A
+	LD	A,MAXTRY+1
+	LD	(RNAKCT),A	;initialize received nak count
+	LD	(SNAKCT),A	;initialize sent nak count
+	LD	A,NORMACK	;flag normal ACK
+	LD	(ACKMODE),A
+	LD	HL,SECBUF	;reset sector buffer pointer 
+	LD	(SECTPT),HL
+	SETDMA	SECBUF		;set dma address to sector buffer
+RFL2:	XOR	A
+	LD	(EXSQNR),A	;clear expected sequence number
+	LD	(FTCMFG),A	;flag file transfer not complete
+ 
+ 
+;	send the initial enq message to start transmission
+	SENDMSG	ENQ,ENQMSG	send the initial ENQ block
+	LD	HL,EXSQNR	;increment the expected sequence number
+	INC	(HL)
+	CALL	UPDBLK		;update the sequence number display
+	PRINT	SL$MSG
+	LD	A,1
+	LD	(ENQAFG),A	;flag enq just sent
+ 
+ 
+;	--- receive a message block from the host ---
+RFL3:	LD	HL,MAXMEM	;set up receive buffer lwa+1
+	LD	(RBUFLB),HL
+	LD	HL,MEMBUF 
+	CALL	RCVMSG		;read a block from the host
+	LD	(RFLD),A	;save reply code
+	CALL	CONIN		;check for user abort
+	LD	HL,CH$RTM
+	CP	(HL)
+	JP	Z,RFL19		;if abort entered
+	LD	HL,MEMBUF	;reset buffer pointers
+	LD	(RBUFPT),HL
+	LD	A,(RFLD)	;(A) = reply code from rcvmsg
+	AND	A
+	JP	Z,RFL5		;if no transmission errors
+
+;	handle a transmission error
+	CALL	UPDERR		;notify the user of an error
+	LD	HL,SNAKCT
+	DEC	(HL)
+	JP	Z,RFL4
+	PRINT	SL$MSG
+	DELAY	10
+	FLUSH			;wait for host to stop sending
+	SENDMSG	NAK,NAKMSG	;request retransmission
+	JP	RFL3
+
+RFL4:	LDMSG	SM$ERF		;display error recovery failed message
+	PRINT	SL$MSG
+	JP	RFL18
+
+
+;	decode the received message type
+RFL5:	CALL	GETCHAR 	;(A) = message type character
+	LD	(LSTRMG),A	;save it
+	CP	NAK
+	JP	Z,RFL11		;if NAK
+	LD	A,MAXTRY+1
+	LD	(RNAKCT),A	;reset nak counts if not nak 
+	LD	(SNAKCT),A
+	CALL	CLRSM		;clear possible error message
+	LD	A,(LSTRMG)	;(A) = received message type
+	CP	SOH
+	JP	Z,RFL6		;if SOH
+	CP	EOT
+	JP	Z,RFL17		;if EOT
+	LDMSG	SM$IMT		;display illegal message type message
+	PRINT	SL$MSG
+	JP	RFL18		;end with an abort message
+ 
+ 
+;	--- SOH (data) message received ---
+RFL6:	CALL	GETCHAR 	;(A) = message sequence numbe	RDC6
+	SUB	BINBIAS		;remove bias
+	LD	B,A		;(B) = received sequence number
+	LD	A,(EXSQNR)	;(A) = expected sequence number
+	AND	3FH
+	CP	B
+	JP	Z,RFL7		;if expected and received are the same
+	DEC	A		;decrement expected sequence number
+	CP	B		;check if already received (lost ack)
+	JP	Z,RFL3		;if 1 less than expected ignore it
+	LDMSG	SM$RSE		;display received sequence error message
+	PRINT	SL$MSG
+	JP	RFL18		;end with abort message
+
+RFL7:	LD	A,(ENQAFG)	;(A) = enquire-sent message
+	AND	A
+	JP	Z,RFL9		;if not first data block
+	XOR	A
+	LD	(ENQAFG),A	;clear enquire-sent message
+	LD	A,4
+	LD	(BINPCT),A	;initialize binary-position count
+	LD	HL,(RBUFPT)
+	LD	A,(HL)		;(A) = data-type character
+	CP	SI
+	JP	Z,RFL8		;if SI (binary transfer)
+	CP	SO
+	JP	NZ,RFL9		;if not SO
+RFL8:	INC	HL		;move pointer past data-type character
+	LD	(RBUFPT),HL
+
+RFL9:	CALL	MEMTD		;transfer data from receive buffer to disk
+	JP	C,RFL18		;if disk full or user abort
+	PRINT	SL$MSG		;display new sector count
+	LD	A,(FTCMFG)	;(A) = transfer-complete flag
+	AND	A
+	JP	Z,RFL10		;if not complete reply with a mode 41 ack
+	LD	A,LASTACK	;else reply with a mode 50 ack
+	LD	(ACKMODE),A
+RFL10:	SENDMSG	ACK,ACKMSG	;send the ACK message
+	LD	HL,EXSQNR	;increment sequence number
+	INC	(HL)
+	CALL	UPDBLK
+	PRINT	SL$MSG
+	JP	RFL3
+
+
+
+;	--- NAK message received ---
+RFL11:	LD	HL,RNAKCT	;decrement received nak count
+	DEC	(HL)
+	JP	NZ,RFL12	;if not expired 
+	LDMSG	SM$ERF		;display recovery-failed message
+	PRINT	SL$TXT
+	JP	RFL18		;end with an abort message
+
+RFL12:	CALL	UPDERR		;increment error count
+	LDMSG	SM$NRE		;display nak-received message
+	PRINT	SL$MSG
+	LD	A,(LSTSMG)	;(A) = type of last message sent
+	CP	ENQ
+	JP	Z,RFL2		;if enq
+	CP	ACK
+	JP	Z,RFL13	;if ack
+	CP	NAK
+	JP	Z,RFL14	;if nak
+
+;	last message sent was an EOT
+	SENDMSG	EOT,EOTMSG
+	JP	RFL3
+
+;	last message sent was an ACK
+RFL13:	SENDMSG	ACK,ACKMSG
+	JP	RFL3
+
+;	last message sent was a NAK
+RFL14:	LD	A,(ENQAFG)	;(A) = enquire-sent flag
+	AND	A
+	JP	NZ,RFL2		;if just sent an enquire message
+	LD	A,(EXSQNR)	;(A) = expected sequence number
+	DEC	A
+	AND	3FH
+	LD	B,A		;(B) = expected sequence number - 1
+	CALL	GETCHAR 	;(A) = received sequence number
+	SUB	BINBIAS		;remove bias
+	CP	B
+	JP	NZ,RFL15	;if received not 1 less than expected 
+	LD	(EXSQNR),A	;save decremented number as expected
+	SENDMSG	ACK,ACKMSG	;reply with ACK
+	JP	RFL3 
+
+RFL15:	LD	HL,SNAKCT	;reply with a NAK
+	DEC	(HL)
+	JP	Z,RFL16		;if expired
+	LDMSG	SM$RSE		;notify user of problem
+	PRINT	SL$MSG
+	FLUSH			;wait for host to stop sending
+	SENDMSG	NAK,NAKMSG
+	JP	RFL3
+
+RFL16:	LDMSG	SM$ERF
+	PRINT	SL$MSG
+	JP	RFL18
+ 
+
+
+;	--- EOT message received ---
+RFL17:	LD	A,(FTCMFG)	;(A) = file transfer complete flag
+	AND	A
+	JP	NZ,RFL20	;expecting eot - normal termination
+	LDMSG	SM$HAB		;display host-abort message
+	PRINT	SL$TXT
+	JP	RFL18 		;end with an abort message
+ 
+ 
+
+;	--- terminate the transfer ---
+RFL18:	SENDMSG	EOT,EOTMSG	;terminate file transfer protocol
+	CLOSE	FCB1		;close file
+	XOR	A		;clear abort (carry) flag
+	RET 
+ 
+ 
+;	end this transfer with an abort message and skip following files
+RFL19:	SENDMSG	EOT,EOTMSG	;terminate file transfer protocol
+	CLOSE	FCB1		;close file
+	SCF			;set abort (carry) flag
+	RET 
+ 
+ 
+;	end with a normal-termination message and go on to following files
+RFL20:	SENDMSG	EOT,EOTMSG	;terminate file transfer protocol
+	CLOSE	FCB1		;close file
+
+;	delete any existing .BAK file
+	MOVE	RFLB,FCB1+9,3	;F1 = name.BAK
+	DELETE	FCB1
+
+;	rename any existing file to .BAK
+	MOVE	FCB1+0,FCB1+16,12  ;F2 = name.BAK
+	MOVE	RFLA,FCB1+9,3	   ;F1 = name.OLD
+	RENAME	FCB1
+
+;	rename the .$$$ file to the old extension
+	MOVE	RFLC,FCB1+9,3	;F1 = name.$$$
+	MOVE	RFLA,FCB1+25,3	;F2 = name.OLD
+	RENAME	FCB1
+
+	XOR	A		;clear abort (carry) flag
+	RET 
+
+  
+RFLA:	DB	'   '		;initial file extension storage
+RFLB:	DB	'BAK'		;backup file extension
+RFLC:	DB	'$$$'		;temporary file extension
+RFLD:	DB	0		;character storage
+
+
+	SUBTTL	RECEIVE
+	PAGE
+;	receive - read a character from the modem
+;
+;	exit	(A) = character from modem.
+;		    = 0 if timeout expired.
+ 
+RECEIVE:
+	LD	HL,(TM$IC)	;(HL) = initial timeout count
+	LD	(RCVA),HL	;save it
+ 
+RCV1:	CALL	MDMIN		;get character from modem
+	RET	NZ		;if one available
+	LD	HL,(RCVA)	;decrement timeout count
+	DEC	HL
+	LD	(RCVA),HL
+	LD	A,H
+	OR	L
+	JP	NZ,RCV1		;if timeout expired
+	RET
+ 
+RCVA:	DW	0		;timeout count storage
+
+
+	SUBTTL	SNDBLK
+	PAGE
+;	SNDBLK - send a message to the host
+;
+;	entry	(A)  = message type.
+;		(HL) = fwa of message.
+ 
+SNDBLK: LD	(LSTSMG),A	;save message type for retransmission
+	LD	(HL),A		;store the message type 
+	LD	(SBUFPT),HL	;save buffer base for retransmission
+	LD	(SBLB),HL	;initialize buffer pointer
+	XOR	A
+	LD	(CRCU8),A	;clear crc
+	LD	(CRCL8),A
+	LD	(CRCHCT),A	;clear cr count 
+	LD	(CRCHCT+1),A
+	LD	A,(EXSQNR)	;(A) = send sequence number
+	AND	3FH
+	ADD	A,BINBIAS 	;bias it
+	INC	HL		;point to sequence number 
+	LD	(HL),A		;store sequence number in message
+
+;	transmit loop
+SBL1:	LD	HL,(SBLB)	;(HL) = buffer pointer
+	LD	A,(HL)		;(A)  = character to send
+	INC	HL		;advance pointer
+	LD	(SBLB),HL
+	LD	(SBLA),A	;save character
+	CALL	ACUMCRC 	;accumulate the crc 
+	LD	A,(SBLA)	;restore character 
+	CALL	CHROUT		;send it
+	LD	A,(SBLA)	;restore character 
+	CP	ETB
+	JP	NZ,SBL1		;if all characters not sent
+ 
+;	send accumulated crc 
+	CALL	UPCKCRC 	;format accumulated crc 
+	LD	A,(CRC1)	;get result
+	ADD	A,BINBIAS 	;add bias
+	CALL	CHROUT
+	LD	A,(CRC2)
+	ADD	A,BINBIAS 	;add bias
+	CALL	CHROUT
+	LD	A,(CRC3)
+	ADD	A,BINBIAS
+	CALL	CHROUT
+	LD	A,CR		;send trailing carriage return
+	CALL	MDMOUT
+	RET
+
+
+SBLA:	DB	0		;character storage
+SBLB:	DW	0		;buffer pointer storage
+
+
+	SUBTTL	SNDUCY 
+	PAGE
+;	snducy - send a ucopy command to the host
+;
+;	send a NOS command of the form:
+;
+;		ucopy,lfn,d,x,nnnn.
+;
+;	where	lfn	is the host file name.
+;		d	is s for send or r for receive.
+;		x	is b for binary or t for text.
+;		nnnn	is the block size in characters.
+ 
+SNDUCY: LD	HL,UCYCMD	;(HL) = fwa of command
+	LD	A,(HL)		;(A) = command character
+SCY1:	PUSH	HL
+	CALL	MDMOUT		;send the character to the modem
+ 	POP	HL
+	INC	HL
+	LD	A,(HL)		;(A) = command character
+	AND	A
+	JP	NZ,SCY1
+
+	LD	A,(FDX)		;(A) = full/half duplex flag
+	AND	A
+	JP	Z,SCY2		;if half duplex
+	FLUSH			;read and ignore the echo
+SCY2:	LD	A,CR
+	CALL	MDMOUT
+
+	RET 
+ 
+
+	SUBTTL	SPR
+	PAGE
+;	spr - display a blank-terminated string
+;
+;	entry	(HL) = fwa of string.
+
+SPR:	LD	A,(HL)
+	CP	' '
+	RET	Z			;if end of string
+	PUSH	HL
+	CALL	CONOUT
+	POP	HL
+	INC	HL
+	JP	SPR
+
+
+	SUBTTL	STORCHR
+	PAGE
+;	storchr - add a character to the transmit buffer
+;
+;	entry	(A)  = character to be added to buffer.
+ 
+STORCHR: LD	HL,(TBUFPT)
+	LD	(HL),A
+	INC	HL
+	LD	(TBUFPT),HL
+	RET
+
+
+	SUBTTL	STOREM
+	PAGE
+;	storem - store a character in the receive buffer
+;
+;	entry	(A) = character to store.
+;
+;	exit	z flag set if buffer full.
+ 
+STOREM: LD	HL,(RBUFPT)
+	LD	(HL),A		;character to buffer
+	INC	HL
+	LD	(RBUFPT),HL
+	LD	DE,(RBUFLB)	;(DE) = buffer lwa+1
+	CALL	CPW		;16 bit compare
+	RET
+ 
+
+	SUBTTL	STORSEC
+	PAGE
+;	storsec
+;
+;	Storsec performs single character writes to disk.  For
+;	binary files it also packs four 6 bit nibbles into three
+;	8 bit bytes.
+;
+;	entry 	(A) = character to write to disk.
+;
+;	exit	carry flag is set if disk full error exists.
+ 
+STORSEC:
+	LD	B,A		;save character
+	LD	A,(FTCMFG)	;(A) = file transfer complete flag
+	AND	A
+	JP	NZ,SSC10	;if transfer complete flag is set
+	LD	A,(TRTYFG)	;(A) = transfer type
+	CP	SI
+	LD	A,B
+	JP	NZ,SSC5		;if text transfer
+ 
+;	process binary character 
+	LD	A,(BINPCT)	;(A) = binary position count
+	DEC	A
+	LD	(BINPCT),A	;decrement binary position count 
+	CP	3
+	JP	NZ,SSC1
+ 
+;	binary position count = 3
+	LD	A,B
+	RLCA 
+	RLCA 
+	AND	0FCH 
+	LD	(SSCC),A
+	AND	A		;make sure c flag is 0
+	RET			;return
+
+SSC1:	CP	2
+	JP	NZ,SSC2
+ 
+;	binary position count = 2
+	LD	A,(SSCC)
+	LD	C,A
+	LD	A,B
+	RLCA 
+	RLCA 
+	RLCA 
+	RLCA 
+	AND	0F0H 
+	LD	(SSCC),A
+	LD	A,B
+	RRCA 
+	RRCA 
+	RRCA 
+	RRCA 
+	AND	03H
+	OR	C
+	JP	SSC5		;store 8 bit character 
+
+SSC2:	CP	1
+	JP	NZ,SSC3
+ 
+;	binary position count = 1
+	LD	A,(SSCC)
+	LD	C,A
+	LD	A,B
+	RRCA
+	RRCA
+	AND	0C0H 
+	LD	(SSCC),A
+	LD	A,B
+	RRCA
+	RRCA
+	AND	0FH
+	OR	C
+	JP	SSC5		;store 8 bit character 
+ 
+;	binary position count = 0
+SSC3:	LD	A,4
+	LD	(BINPCT),A	;reset binary position count 
+	LD	A,B
+	AND	03FH 
+	LD	B,A
+	LD	A,(SSCC)
+	OR	B
+
+
+;	store character in sector buffer 
+SSC5:	LD	HL,(SECTPT)	;(HL) = sector pointer
+	LD	(HL),A		;move character to buffer 
+	INC	HL		;increment sector pointer 
+	LD	(SECTPT),HL
+	LD	DE,ESECBF	;(DE) = sector buffer lwa+1
+	CALL	CPW		;16 bit compare
+	CCF			;clear carry flag
+	RET	NZ		;if buffer not full
+ 
+;	process full sector buffer 
+SSC6:	CALL	UPDSEC		;increment sector count
+	LD	HL,SECBUF 	;reset sector buffer pointer
+	LD	(SECTPT),HL
+SSC7:	WRITE	FCB1		;write sector to disk
+	AND	A		;set flags
+	RET	Z		;if disk not full
+ 
+;	process disk full error
+SSC8:	MOVE	FCB1,FCB2,9	;delete the existing .BAK file
+	MOVE	SSCB,,3
+	DELETE	FCB2
+	CP	0FFH
+	JP	NZ,SSC7		;space found - try writing now
+	MOVE	RFLA,FCB2+9,3	;delete the existing .OLD file
+	DELETE	FCB2
+	CP	0FFH
+	JP	Z,SSC9		;if no space found
+	LDMSG	SM$DF1		;display disk-full deleteing message
+	PRINT	SL$TXT
+	JP	SSC7		;try the write now
+
+SSC9:	LDMSG	SM$DF2		;display disk-full message
+	PRINT	SL$TXT
+	SCF			;set c flag for disk full error
+	RET
+ 
+;	process file transfer complete - write last sector to disk 
+SSC10:	LD	HL,(SECTPT)	;(HL) = next location in sector buffer
+	LD	DE,ESECBF	;(DE) = sector buffer lwa+1
+	CALL	CPW		;16 bit compare
+	JP	Z,SSC6		;if sector is completely full
+	LD	A,(TRTYFG)	;(A) = transfer type
+	CP	SI
+	LD	B,0		;preset binary file fill
+	JP	Z,SSC15		;if binary transfer
+	LD	B,CTRLZ		;set text file fill
+ 
+;	fill remaining bytes of sector
+SSC15:	LD	(HL),B
+	INC	HL
+	CALL	CPW
+	JP	NZ,SSC15	;if not done
+	JP	SSC6
+
+
+SSCB:	DB	'BAK'		;extension of file to delete for space
+SSCC:	DB	0		;stored character
+
+
+	SUBTTL	TRANTYP
+	PAGE
+;	trantyp - read the type of file transfer
+;
+;	prompt for and read the type of file transfer. 
+;
+;	exit	(A) = transfer type code.
+;		    = SI for binary.
+;		    = SO for text.
+;		    = SO+128 for formatted text.
+;
+;		carry flag set if abort entered.
+
+ 
+TRANTYP: CALL	 CONINW
+	RET	C		;if abort
+	CALL	UPPER 
+	CP	CR
+	JP	Z,TRN3		;if default (text)
+	CP	'B'
+	JP	Z,TRN2		;if binary
+	CP	'T'
+	JP	Z,TRN3		;if text
+	CP	'P'
+	JP	Z,TRN4		;if print
+	LD	A,BELL		;invalid response - complain
+	CALL	CONOUT
+	JP	TRANTYP
+
+;	binary
+TRN2:	PRINT	M$BIN		;echo response
+	LD	A,SI
+	AND	A		;clear carry flag
+	RET
+
+;	text 
+TRN3:	PRINT	M$TEXT		;echo response
+	LD	A,SO
+	AND	A		;clear carry flag
+	RET
+ 
+;	print 
+TRN4:	PRINT	M$PRN		;echo response
+	LD	A,SO+80H
+	AND	A		;clear carry flag
+	RET
+
+
+	SUBTTL	UPCKCRC
+ 	PAGE
+;	upckcrc - unpack a crc string
+;
+;	entry	(crcu8) = upper 8 bits of packed crc.
+;		(crcl8) = lower 8 bits of packed crc.
+;
+;	exit	(crc1)  = upper 6 bits of crcu8.
+;		(crc2)  = lower 2 bits of crcu8 and upper 4 of crcl8.
+;		(crc3)  = lower 4 bits of crcl8.
+ 
+UPCKCRC: LD	A,(CRCU8)	;msb of crc
+	RRCA 
+	RRCA 
+	AND	3FH		;save upper 6 bits of msb 
+	LD	(CRC1),A 
+	LD	A,(CRCU8)
+	RLCA
+	RLCA 
+	RLCA 
+	RLCA 
+	AND	030H		;position and save lower 2 bits of msb 
+	LD	(CRC2),A 
+	LD	HL,CRC2		;point at destination
+	LD	A,(CRCL8)	;lsb of crc 
+	RRCA 
+	RRCA 
+	RRCA 
+	RRCA 
+	AND	0FH
+	OR	(HL)		;combine lower 2 of msb and upper 4 of lsb
+	LD	(CRC2),A
+	LD	A,(CRCL8)
+	AND	0FH		;save lower 4 of msb
+	LD	(CRC3),A 
+	RET 
+
+
+	SUBTTL	UPDBLK
+	PAGE
+;	updblk - convert and store block number
+;
+;	convert the 6 bit block number into two ascii hex
+;	digits and store them in the status line.
+ 
+UPDBLK: LD	A,(EXSQNR)	;(A) = expected sequence number
+	AND	3FH		;clear unused bits
+	PUSH	AF
+	AND	0FH
+	CALL	I2HEX 		;convert hex digit to ascii 
+	LD	(SL$BLK+1),A	;store
+	POP	AF
+	RRCA
+	RRCA
+	RRCA
+	RRCA
+	AND	0FH
+	CALL	I2HEX 		;convert hex digit to ascii 
+	LD	(SL$BLK+0),A	;store
+	RET 
+
+
+	SUBTTL	UPDERR
+	PAGE
+;	upderr - increment and store the error count
+;
+ 
+UPDERR: LD	HL,SL$ERR+1	;(HL) = pointer to least significant digit
+UDE1:	LD	A,(HL)
+	CP	' '
+	JP	NZ,UDE2	 	;if not a blank
+	LD	A,'0'		;change a blank to '0'
+UDE2:	INC	A		;increment digit
+	CP	':'		;check for overflow
+	LD	(HL),A
+	RET	NZ			;if no overflow
+	LD	A,'0'
+	LD	(HL),A
+	DEC	HL		;begin carry
+	JP	UDE1
+
+
+	SUBTTL	UPDSEC
+	PAGE
+;	updsec - increment and store the sector count
+;
+ 
+UPDSEC: LD	HL,SL$SEC+4	;(HL) = pointer to least significant digit
+UDS1:	LD	A,(HL)
+	CP	' '
+	JP	NZ,UDS2	 	;if not a blank
+	LD	A,'0'		;change a blank to '0'
+UDS2:	INC	A		;increment digit
+	CP	':'		;check for overflow
+	LD	(HL),A
+	RET	NZ			;if no overflow
+	LD	A,'0'
+	LD	(HL),A
+	DEC	HL		;begin carry
+	JP	UDS1
+
+
+	SUBTTL	UPPER 
+	PAGE
+;	upper
+;
+;	convert characters to upper case.
+;
+;	entry	(A) = ascii character.
+;
+;	exit	(A) = character folded to upper case.
+ 
+UPPER:	CP	'a'
+	RET	C
+	CP	'z'+1
+	RET	NC
+	SUB	'a'-'A'
+	RET 
+
+
+	SUBTTL	WAIT
+	PAGE
+;	wait
+;
+;	100ms time delay routine.
+;
+;	entry	(B) = number of 100ms periods to wait.
+
+
+WAIT:	LD	HL,(TM$WC)	;(HL) = inner count
+WAI1:	DEC	HL
+	LD	A,H
+	OR	L
+	JP	NZ,WAI1
+	DEC	B
+	JP	NZ,WAIT
+	RET
+
+
+	SUBTTL	WRITFL
+	PAGE
+;	writfl
+;
+;	Writfl receives control when a micro to host file transfer
+;	is selected(s). the primary functions of writfl are:
+;
+;	1. send ucopy command to host.
+;	2. send message blocks.
+;	3. process response messages.
+;
+;	exit	carry flag.
+;		clear if normal exit.
+;		set if user aborted transfer.
+
+
+WRITFL:
+
+;	start the screen display
+	XOR	A		;clear expected sequence number
+	LD	(EXSQNR),A
+	PRINT	SL$HDR		;start status line
+	CALL	UPDBLK		;zero out block number
+	FILL	SL$SEC,'0',5	;zero out sector number
+	FILL	SL$ERR,'0',2	;zero out error number
+	CALL	CLRSM		;clear any old error messages
+ 
+
+;	open the file
+	SETDMA	SECBUF		;set dma address to sector buffer
+	INITFCB	FCB1,M$NBUF 	;initialize fcb
+	OPEN	FCB1
+	CP	0FFH
+	JP	NZ,WFL0		;if file exists
+	LDMSG	SM$FNF
+	PRINT	SL$TXT
+	AND	A		;clear abort flag
+	RET
+
+
+;	initialize flags, counters, pointers 
+WFL0:	LD	A,5		;set binary position state (for getschr)
+	LD	(BINPCT),A
+	LD	HL,SECBUF	;initialiaze sector buffer pointer
+	LD	(SECTPT),HL
+	XOR	A
+	LD	(TBCHCT),A	;reset tab character count
+	LD	(SCCHCT),A	;reset sector character count 
+	LD	(EOTEFG),A	;flag eot not expected 
+	LD	(EOFFG),A	;reset the end of file flag 
+	LD	A,1
+	LD	(ENQEFG),A	;set enquire expected flag
+	LD	A,2
+	LD	(RSFLG),A	;set start of line flag
+	LD	A,MAXTRY+1
+	LD	(SNAKCT),A	;initialize send nak count 
+	LD	(RNAKCT),A	;initialize receive nak count
+
+
+;	get the first character from the file
+	CALL	GETSCHR		;(curchr) = first character
+
+
+;	start the host
+	CALL	SNDUCY		;send the ucopy command 
+
+
+;	reset pointer to top of transmit buffer
+WFL1:	LD	HL,MEMBUF+2	;initialize transmit buffer pointer
+	LD	(TBUFPT),HL
+
+ 
+;	receive a message block from the host
+	LD	HL,ERSPBF	;(HL) = lwa+1 of input buffer
+	LD	(RBUFLB),HL
+	LD	HL,RSPBUF	;(HL) = fwa of input buffer
+	CALL	RCVMSG		;read the host reply
+	LD	(WFLA),A	;save reply code
+	CALL	CONIN		;check for user abort
+	LD	HL,CH$RTM
+	CP	(HL)
+	JP	Z,WFL145	;if abort entered
+	LD	A,(WFLA)	;(A) = reply code from rcvmsg
+	AND	A	
+	JP	Z,WFL2		;if no error
+
+;	handle a transmission error
+	LD	HL,SNAKCT
+	DEC	(HL)
+	JP	Z,WFL13		;if expired
+	DELAY	10
+	FLUSH
+	SENDMSG	NAK,NAKMSG
+	JP	WFL1		;read the reply
+
+;	here if message crc is valid
+WFL2:	LD	HL,RSPBUF	;(HL) = fwa of input buffer
+	LD	(RBUFPT),HL
+	LD	A,(HL)		;(A) = message type 
+	LD	(LSTRMG),A	;save 
+	CP	NAK
+	JP	Z,WFL7		;if nak 
+	LD	A,MAXTRY+1
+	LD	(RNAKCT),A	;reset received nak count
+	LD	(SNAKCT),A	;reset sent nak count
+	CALL	CLRSM		;clear possible error message
+	LD	HL,RSPBUF	;(HL) = fwa of input buffer
+	LD	A,(HL)		;(A) = message type 
+	CP	ACK
+	JP	Z,WFL3		;if ack
+	CP	ENQ
+	JP	Z,WFL4		;if enq
+	CP	EOT
+	JP	Z,WFL6		;if eot
+	LDMSG	SM$IMT		;display illegal message type message
+	PRINT	SL$MSG
+	JP	WFL14		;illegal message type
+ 
+
+;	--- ACK message received ---
+WFL3:	LD	A,(EOTEFG)	;eot expected flag
+	AND	A
+	RET	NZ		;if expecting eot (implied eot)
+	LD	A,(ENQEFG)	;(A) = enquire expected flag 
+	AND	A
+	JP	NZ,WFL15	;if expecting enquire 
+	INC	HL		;(HL) = pointer to received sequence number
+	LD	A,(EXSQNR)	;(A) = expected sequence number
+	AND	3FH
+	ADD	A,BINBIAS 	;add bias
+	CP	(HL)
+	JP	NZ,WFL10	;if received  not equal to expected
+	INC	HL
+	LD	A,(HL)		;(A) = acknowledge mode 
+	CP	LASTACK
+	JP	NZ,WFL5		;if not termination indicator send next SOH
+	LD	HL,EXSQNR	;increment the expected sequence number
+	INC	(HL)
+	CALL	UPDBLK		;update the block number
+	PRINT	SL$MSG
+	JP	WFL16 		;send an eot message
+ 
+
+;	--- ENQ message received ---
+WFL4:	LD	A,(ENQEFG)	;(A) = enquire-expected flag
+	AND	A
+	JP	Z,WFL11		;if not expected 
+	XOR	A
+	LD	(ENQEFG),A	;flag enq received 
+	INC	HL		;point at received sequence number
+	LD	A,(HL)
+	SUB	BINBIAS		;remove bias
+	JP	NZ,WFL11	;if received sequence number in error 
+	INC	HL
+	INC	HL		;point at hosts input block length
+	LD	A,(HL)		;(A) = most significant bits (received)
+	SUB	BINBIAS		;remove bias
+	RRCA 
+	RRCA
+	LD	B,A		;save
+	AND	0FH
+	LD	D,A		;(D) = msb of ibl
+	LD	A,B
+	AND	0C0H 
+	LD	E,A		;(E) = high two bits of lsb
+	INC	HL
+	LD	A,(HL)		;get received lsb 
+	SUB	BINBIAS
+	OR	E		;combine to get lsb
+	LD	E,A		;(DE) = ibl
+	LD	(HIBL),DE	;save
+	LD	A,(TRTYFG)	;(A) = transfer type flag (SI or SO) 
+	AND	7FH		;clear the high bit
+	CALL	STORCHR 	;store the transfer type
+ 
+;	send the next SOH (data) block 
+WFL5:	LD	HL,EXSQNR
+	INC	(HL)		;increment expected sequence number 
+	CALL	UPDBLK		;update the block number
+	PRINT	SL$MSG		;display it
+	CALL	BLDMSG		;format the data block
+	SENDMSG	SOH,MEMBUF 	;send the block to the host
+	JP	WFL1		;get the reply 
+ 
+
+;	--- EOT message received ---
+WFL6:	LD	A,(EOTEFG)
+	AND	A
+	RET	NZ		;if expecting it
+	LDMSG	SM$HAB		;display host-abort message
+	PRINT	SL$MSG
+	SENDMSG	EOT,EOTMSG	;reply with an EOT
+	AND	A		;clear abort flag
+	RET
+
+
+;	--- NAK message received ---
+WFL7:	LD	HL,RNAKCT	;decrement received nak counter
+	DEC	(HL)
+	JP	Z,WFL13		;if expired
+	CALL	UPDERR		;increment error display
+	LDMSG	SM$NRE		;display nak received message
+	PRINT	SL$MSG
+	LD	HL,(RBUFPT)	;(HL) = fwa of input buffer
+	INC	HL		;point at received sequence number
+	LD	A,(EXSQNR)	;(A) = expected seq number 
+	AND	3FH
+	ADD	A,BINBIAS 	;add bias
+	CP	(HL)
+	JP	NZ,WFL9		;if received not expected 
+	LD	A,(LSTSMG)	;(A) = last sent message type
+	CP	NAK
+	JP	NZ,WFL8		;if nak not last sent 
+	LD	A,(EOTEFG)
+	AND	A
+	JP	NZ,WFL16	;if eot last good send
+	SENDMSG	SOH,MEMBUF	;resend the SOH message
+	JP	WFL1		;read the reply 
+
+;	resend the previous message
+WFL8:	LD	HL,(SBUFPT)	;saved buffer address
+	CALL	SNDBLK		;retransmit the previous message 
+	JP	WFL1		;read the reply
+ 
+;	process unexpected nak 
+WFL9:	LD	A,(ENQEFG)	;(A) = enquire-expected flag
+	AND	A
+	JP	NZ,WFL15	;if expecting enquire 
+	LD	A,(EXSQNR)	;expected sequence number
+	INC	A		;expected+1 
+	AND	3FH
+	ADD	A,BINBIAS 	;add bias
+	CP	(HL)
+	JP	Z,WFL5		;if rcvd. one .gt. expected(implied ack) 
+	DEC	A		;back to expected 
+
+;	process unexpected ack/nak 
+WFL10:	DEC	A		;(A) = expected sequence number-1
+	AND	3FH
+	CP	(HL)		;compare to received
+	JP	Z,WFL1		;ignore it if received is one less
+ 
+;	here for received sequence error
+WFL11:	CALL	UPDERR		;increment error count
+	LDMSG	SM$RSE		;display failure message
+	PRINT	SL$MSG
+	JP	WFL14		;send eot and abort
+
+
+;	here if retry count expired
+WFL13:	LDMSG	SM$ERF		;display failure message
+	PRINT	SL$TXT
+
+;	send an EOT and give up
+WFL14:	LD	A,(EOTEFG)	;check if eot already sent
+	AND	A
+	RET	NZ		;if eot already sent
+	SENDMSG	EOT,EOTMSG
+	AND	A
+	RET
+
+
+;	send an EOT and abort the transfer sequence
+WFL145:	LD	A,(EOTEFG)	;check if eot already sent
+	AND	A
+	SCF			;set abort (carry) flag
+	RET	NZ		;if eot already sent
+	SENDMSG	EOT,EOTMSG
+	SCF			;set abort (carry) flag
+	RET
+
+
+;	send a nak message
+WFL15:	CALL	UPDERR
+	PRINT	SL$MSG
+	LD	HL,SNAKCT	;decrement sent nak counter
+	DEC	(HL)
+	JP	Z,WFL13		;if expired
+	FLUSH			;clear any pending input
+	SENDMSG	NAK,NAKMSG
+	JP	WFL1		;read the reply
+
+ 
+;	send an eot message
+WFL16:	LD	A,1
+	LD	(EOTEFG),A	;flag eot expected 
+	SENDMSG	EOT,EOTMSG
+	JP	WFL1		;read the reply
+
+
+WFLA:	DB	0		;storage for rcvmsg reply
+
+	SUBTTL	YESNO
+	PAGE
+;	yesno - read a yes or no response from the console
+;
+;	entry  -  (A) = 'Y' if the default is YES.
+;		      = 'N' if the default is NO.
+;		      = 0   if no default is allowed.
+;
+;	exit   -  (A) = 1 if the answer was YES.
+;		      = 0 if the answer was NO.
+;
+;		  carry flag set if command was aborted.
+
+
+YESNO:	LD	(YESA),A	;save default
+YES1:	CALL	CONINW		;(A) = response
+	RET	C		;if abort entered
+	CP	CR
+	JP	Z,YES4		;if default
+	CALL	UPPER
+YES2:	CP	'N'
+	JP	Z,YES5 		;if 'NO'
+	CP	'Y'
+	JP	Z,YES6		;if 'YES'
+
+;	invalid response - complain
+	LD	A,BELL
+	CALL	CONOUT
+	JP	YES1		;reread
+
+;	default
+YES4:	LD	A,(YESA)	;(A) = default
+	JP 	YES2		;decode it
+
+;	no
+YES5:	PRINT	M$NO		;echo answer
+	XOR	A		;return code
+	RET
+ 
+;	yes
+YES6:	PRINT	M$YES		;echo answer
+	LD	A,1		;return code
+	AND	A		;set z and c flags
+	RET
+
+
+YESA:	DB	0		;storage for default
+
+
+	SUBTTL	ZPR
+	PAGE
+;	zpr - display a zero-terminated string
+;
+;	entry	(HL) = fwa of string.
+
+ZPR:	LD	A,(HL)
+	AND	7FH
+	RET	Z			;if end of string
+	PUSH	HL
+	CALL	CONOUT
+	POP	HL
+	INC	HL
+	JP	ZPR
+
+
+	SUBTTL	Modem drivers
+	PAGE 
+;	modem i/o
+;
+
+;	mdmout - send a character to the modem
+;
+;	entry	(A) = character to send.
+;
+;	exit	(A) = unchanged.
+
+	IF STD
+
+;	standard CP/M port driver
+MDMOUT: PUSH	AF
+MDM1:	IN	A,(MDM$S)	;(A) = status byte
+MDM2:	AND	MDM$TM
+	JP	Z,MDM1		;if transmit not ready
+	POP	AF
+MDM3:	OUT	(MDM$D),A
+	RET
+
+	ENDIF
+	IF CPI4 OR MWBIO
+
+;	multi-user serial board driver
+MDMOUT: PUSH	AF
+MDM1:	LD	A,MDM$USR
+	OUT	(MDM$SEL),A
+	IN	A,(MDM$S)	;(A) = status byte
+MDM2:	AND	MDM$TM
+	JP	Z,MDM1		;if transmit not ready
+	POP	AF
+MDM3:	OUT	(MDM$D),A
+	RET
+
+	ENDIF
+	IF TVI803A OR TVI803B
+
+;	TeleVideo 803 driver
+MDMOUT: PUSH	AF
+MDM1:	IN	A,(MDM$ST)	;(A) = status byte
+	AND	MDM$TM
+	JP	Z,MDM1		;if transmit not ready
+	POP	AF
+	OUT	(MDM$D),A
+	RET
+
+	ENDIF
+	IF B108
+
+;	Basis 108 driver
+MDMOUT:	PUSH	AF
+	LD	E,A		;output to punch
+	LD	C,4
+	CALL	BDOS
+	POP	AF
+	RET
+
+;	dummy patch addresses
+MDM1:
+MDM2:
+MDM3:
+MDM4:
+MDM5:	DB	0
+
+	ENDIF
+	IF APPLE
+
+;	apple driver
+MDMOUT: PUSH	AF
+MDM1:
+	IF A_MSC
+	LD	A,(MDM$S)	;(A) = status byte
+	ENDIF
+	IF A_APC
+	PEEK	MDM$S		;(A) = status byte
+	ENDIF
+MDM2:	AND	MDM$TM
+	JP	Z,MDM1		;if transmit not ready
+	POP	AF
+MDM3:
+	IF A_MSC
+	LD	(MDM$DO),A
+	ENDIF
+	IF A_APC
+	POKE	MDM$DO
+	ENDIF
+	RET
+
+	ENDIF
+	IF OS1
+
+;	Osborne I driver
+MDMOUT: PUSH	AF
+MDM1:	CALL	OS$RS		;(A) = status byte
+	AND	MDM$TM
+	JP	Z,MDM1		;if transmit not ready
+	POP	AF
+	CALL	OS$WD
+	RET
+
+	ENDIF
+
+	PAGE 
+;	mdmin - read a character from the modem
+;
+;	exit	(A) = 0 if no character available.
+;		    = ascii character if available.
+
+	IF STD
+
+;	standard CP/M port driver	
+MDMIN:	IN	A,(MDM$S)	;(A) = status byte
+MDM4:	AND	MDM$RM
+	RET	Z		;if no character available
+MDM5:	IN	A,(MDM$D)	;(A) = data byte
+	AND	7FH		;remove parity bit
+	RET 
+
+	ENDIF
+	IF CPI4 OR MWBIO
+
+;	multi-user serial board driver
+MDMIN:	LD	A,MDM$USR	;select modem port
+	OUT	(MDM$SEL),A
+	IN	A,(MDM$S)	;(A) = status byte
+MDM4:	AND	MDM$RM
+	RET	Z		;if no character available
+MDM5:	IN	A,(MDM$D)	;(A) = data byte
+	AND	7FH		;remove parity bit
+	RET 
+
+	ENDIF
+	IF TVI803A
+
+;	TeleVideo 803 polled driver
+MDMIN:	IN	A,(MDM$SR)	;(A) = status byte
+	AND	MDM$RM
+	RET	Z		;if no character available
+	IN	A,(MDM$D)	;(A) = data byte
+	AND	7FH		;remove parity bit
+	RET 
+
+	ENDIF
+	IF TVI803B
+
+;	TeleVideo 803 interrupt driver
+MDMIN:	LD	C,MDM$FST
+	RST	MDM$BV
+	AND	A
+	RET	Z		;if no character available
+	LD	C,MDM$FIN
+	RST	MDM$BV		;(A) = data byte
+	AND	7FH		;remove parity bit
+	RET 
+
+	ENDIF
+	IF B108
+
+;	Basis 108 driver
+IB1	EQU	11101010B	;I/O byte to use UR1: as console
+IB2	EQU	11101000B	;I/O byte to use TTY: as console
+
+MDMIN:	LD	E,IB1		;set CON: to UR1:
+	LD	C,8
+	CALL	BDOS
+	LD	E,0FFH		;direct console input
+	LD	C,6
+	CALL	BDOS
+	AND	7FH
+	PUSH	AF
+	LD	E,IB2		;reset CON: to TTY:
+	LD	C,8
+	CALL	BDOS
+	POP	AF
+	RET
+	
+	ENDIF
+	IF APPLE
+
+;	apple driver
+MDMIN:
+	IF A_MSC
+	LD	A,(MDM$S)	;(A) = status byte
+	ENDIF
+	IF A_APC
+	PEEK	MDM$S		;(A) = status byte
+	ENDIF
+MDM4:	AND	MDM$RM
+	RET	Z		;if no character available
+	IF A_NOV
+	LD	A,1BH		;clear status port
+	IF A_MSC
+	LD	(MDM$XB),A
+	ENDIF
+	IF A_APC
+	POKE	MDM$XB
+	ENDIF
+	ENDIF
+MDM5:
+	IF A_MSC
+	LD	A,(MDM$DI)	;(A) = data byte
+	ENDIF
+	IF A_APC
+	PEEK	MDM$DI		;(A) = data byte
+	ENDIF
+	AND	7FH		;remove parity bit
+	RET 
+ 
+	ENDIF
+	IF OS1
+
+;	Osborne I driver
+MDMIN:	CALL	OS$RS		;(A) = status byte
+	AND	MDM$RM
+	RET	Z		;if no character available
+	CALL	OS$RD		;(A) = data byte
+	AND	7FH		;remove parity bit
+	RET
+
+	ENDIF
+
+	PAGE 
+;	addresses for the config routine to patch
+;
+	IF IOCNF
+
+CF$S1	EQU	MDM1+1
+CF$S2	EQU	MDMIN+1
+ 
+CF$D1	EQU	MDM3+1
+CF$D2	EQU	MDM5+1
+ 
+CF$TM	EQU	MDM2+1
+CF$RM	EQU	MDM4+1
+
+	ENDIF
+
+
+	SUBTTL	Console drivers
+	PAGE
+;	console i/o
+;
+
+;	conin - get a character from the keyboard
+;
+;	exit	(A) = 0 if no character available.
+;		    = ascii character if one available.
+	
+CONIN:	LD	E,0FFH		;direct console input
+	LD	C,6
+	CALL	BDOS
+	AND	7FH		;remove parity bit
+	RET 
+ 
+ 
+;	coninw - wait for a keyboard character
+;
+;	exit	(A) = character read from keyboard.
+ 
+CONINW: CALL	CONIN		;direct console input
+	JP	Z,CONINW 	;if no character available
+	LD	HL,CH$RTM
+	CP	(HL)
+	SCF			;set abort flag
+	RET	Z
+	CCF			;clear abort flag
+	RET 
+ 
+ 
+;	conout - send a character to the console
+;
+;	entry	(A) = character to be sent.
+;
+;	exit	(A) = unchanged.
+ 
+CONOUT: PUSH	AF
+	LD	E,A
+	LD	C,6
+	CALL	BDOS
+	POP	AF
+	RET
+
+	PAGE
+
+	IF OS1
+
+;	osborne I serial port routines
+;
+
+DR$FWA	EQU	$
+
+;	OS$RS - read the serial port status byte
+;
+;	exit	(A) = status byte.
+
+OS$RS	EQU	DR$BASE-DR$FWA+$
+	DI
+	OUT	(0),A
+	LD	A,(MDM$S)
+	OUT	(1),A
+	EI
+	RET
+
+;	OS$WS - write the serial port status byte
+;
+;	entry	(A) = byte to output.
+
+OS$WS	EQU	DR$BASE-DR$FWA+$
+	DI
+	OUT	(0),A
+	LD	(MDM$S),A
+	OUT	(1),A
+	LD	A,1
+	LD	(OS$FLAG),A
+	EI
+	RET
+
+;	OS$RD - read the serial port data byte
+;
+;	exit	(A) = data byte.
+
+OS$RD	EQU	DR$BASE-DR$FWA+$
+	DI
+	OUT	(0),A
+	LD	A,(MDM$D)
+	OUT	(1),A
+	EI
+	RET
+
+;	OS$WD - write the serial port data byte
+;
+;	entry	(A) = byte to output.
+
+OS$WD	EQU	DR$BASE-DR$FWA+$
+	DI
+	OUT	(0),A
+	LD	(MDM$D),A
+	OUT	(1),A
+	LD	A,1
+	LD	(OS$FLAG),A
+	EI
+	RET
+
+DR$LWA	EQU	$
+DR$LEN	EQU	DR$LWA-DR$FWA
+
+	ENDIF
+
+
+	SUBTTL	Message blocks
+	PAGE
+;	message blocks
+;
+ 
+;	acknowledge reply message
+ACKMSG: DB	ACK			;type
+	DB	0			;sequence number 
+ACKMODE: DB	 41H			 ;mode
+	DB	ETB 
+ 
+;	negative acknowledge reply message 
+NAKMSG: DB	NAK			;type
+	DB	0			;sequence number 
+	DB	ETB 
+ 
+;	enquire message
+ENQMSG: DB	ENQ			;type
+	DB	0			;sequence number 
+	DB	41H			;mode
+	DB	(IBL SHR 6)   + 20H	;ibl (msb)
+	DB	(IBL AND 3FH) + 20H	;ibl (lsb)
+	DB	ETB 
+ 
+;	eot message
+EOTMSG: DB	EOT			;type
+	DB	0			;sequence number 
+	DB	ETB 
+ 
+;	ucopy command message
+	IF UWMODS
+UCYCMD: DB	'UCOPY /FILE='		;host program name
+H$NBUF: DS	FNLEN+1 		;host local file name
+	DB	' /DIR=' 
+UCYDIR: DB	0			;r=host to micro, s=micro to host
+	DB	' /MODE=' 
+UCYTYP: DB	0			;b=binary, t=character
+	DB	' /MBL='		;set small block for testing purposes
+	DB	MBL/1000 MOD 10 + '0'
+	DB	MBL/100  MOD 10 + '0'
+	DB	MBL/10   MOD 10 + '0'
+	DB	MBL/1    MOD 10 + '0'
+	DB	0
+	ELSE
+UCYCMD: DB	'UCOPY ,'		;host program name
+H$NBUF: DS	FNLEN+1 		;host local file name
+	DB	',' 
+UCYDIR: DB	0			;r=host to micro, s=micro to host
+	DB	',' 
+UCYTYP: DB	0			;b=binary, t=character
+	DB	','			;set small block for testing purposes
+	DB	MBL/1000 MOD 10 + '0'
+	DB	MBL/100  MOD 10 + '0'
+	DB	MBL/10   MOD 10 + '0'
+	DB	MBL/1    MOD 10 + '0'
+	DB	0
+	ENDIF
+
+;	file control blocks
+FCB1:	DSZ	FCBLEN
+FCB2:	DSZ	FCBLEN
+ 
+;	fill last sector for configuration write
+LWA	EQU	$
+NRECS	EQU	(LWA-FWA+1+127)/128
+ENDREC	EQU	FWA+(NRECS*128)
+	REPT	ENDREC-LWA
+	DB	CTRLZ
+	ENDM
+
+
+	SUBTTL	Buffers
+	PAGE
+;	buffers
+;
+ 
+SECBUF  EQU	LWA		;disk sector i/o buffer
+ESECBF	EQU	SECBUF+128	;last byte+1
+ 
+RSPBUF	EQU	ESECBF		;response buffer (receive responses in write)
+ERSPBF	EQU	RSPBUF+100	;last byte+1
+ 
+MEMBUF	EQU	ERSPBF		;data i/o buffer
+MAXMEM	EQU	MEMBUF+MBL	;last byte+1
+
+NFTAB	EQU	MAXMEM		;file name table
+
+	END	FWA
+

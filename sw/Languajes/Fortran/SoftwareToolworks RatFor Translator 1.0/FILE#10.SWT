@@ -1,0 +1,814 @@
+# FILE 10 OF SOFTWARE TOOLS FROM LBL
+
+#-h- FINDSYM 479 asc  7-JUN-79 15:09:26
+ ## definitions for the FIND tool
+ # put on a file named 'findsym'
+ # Used by the find, ch, and tr tools
+
+  define(ANY,QMARK)
+  define(BOL,PERCENT)
+  define(CCL,LBRACK)
+  define(CCLEND,RBRACK)
+  define(CHAR,LETA)
+  define(CLOSIZE,4)
+  define(CLOSURE,STAR)
+  define(COUNT,1)
+  define(EOL,DOLLAR)
+  define(MAXARG,128)
+  define(MAXPAT,128)
+  define(NCCL,LETN)
+  define(PREVCL,2)
+  define(START,3)
+  define(NEXPR,10)      # maximum number of expressions allowed on cmd line
+#-h- CHSYM 120 asc  7-JUN-79 15:09:43
+ ## symbol definitions for ch tool
+ # put on a file named 'chsym'
+ # Used only by the 'ch' tool
+
+ define(DITTO,(-3))
+  ## definitions for TR tool
+  # put on a file named 'trsym'
+ # used only by tr
+
+  define(MAXSET,100)
+ ###############################################################
+ #             Source code for find tool                       #
+ ###############################################################
+#-h- FIND.R 13148 asc  7-JUN-79 15:09:28
+#-h- MAIN 592 13-JAN-79 22:02:01
+ #---------------------------------------------------------------------
+ # include symbol definitions
+ #        include symbols
+          include findsym
+ #---------------------------------------------------------------------
+##      find -- main program
+
+
+#BKY    subroutine driver
+        call initr4
+        call find
+        call endr4
+        end
+
+#BKY   #assembly code main program (used to avoid loading fortran I/O)
+#BKY %
+#BKY         ident main
+#BKY         entry main
+#BKY         vfd   42/0lmain,18/main
+#BKY         ext   driver
+
+#BKY         rj    uzero00
+#BKY         rj    driver
+#BKY         end   main
+#BKY%
+#-h- FINDS 1357 asc  7-JUN-79 14:49:04
+ subroutine find
+
+ character exp(MAXARG,NEXPR), pat(MAXPAT,NEXPR), lin(MAXLINE),
+           arg(MAXARG)
+ integer i, getarg, except, andpat, count, elevel, itoc, getpat,
+         mcount, getlin, matchd, status, gmatch, index
+
+ data except/NO/
+ data andpat/NO/
+ data count /NO/
+ data elevel/0/
+
+ for (i=1; getarg(i, arg, MAXARG) ^= EOF; i=i+1)
+    if (arg(1) == QMARK & arg(2) == EOS)
+        call finerr
+    else if (arg(1) == MINUS)
+        {
+        call scopy(arg, 1, lin, 1)
+        call fold(lin)
+        if (index(lin, LETA) > 0)
+            andpat = YES
+        if (index(lin, LETC) > 0)
+            count = YES
+        if (index(lin, LETX) > 0)
+            except = YES
+        }
+    else if (elevel < NEXPR)
+        {
+        elevel = elevel + 1
+        call scopy(arg, 1, exp(1, elevel), 1)
+        }
+    else
+        {
+        call putlin("Maximum number of expressions permitted is ", ERROUT)
+        status = itoc(NEXPR, arg, MAXARG)
+        call error(arg)
+        }
+ if (elevel == 0)
+    call finerr
+ for (i=1; i <= elevel; i=i+1)
+    if (getpat(exp(1,i), pat(1,i)) == ERR)
+        {
+        call putlin("illegal pattern: ", ERROUT)
+        call error(exp(1,i))
+        }
+ mcount = 0
+ while (getlin(lin, STDIN) ^= EOF)
+    {
+    matchd = gmatch(lin, pat, elevel, andpat)
+    if ((matchd == YES & except == NO) | (matchd == NO & except == YES))
+        if (count == YES)
+
+            mcount = mcount + 1
+        else
+            call putlin(lin, STDOUT)
+    }
+ if (count == YES)
+    {
+    call putdec(mcount, 1)
+    call putc(NEWLINE)
+    }
+
+ return
+ end
+#-h- AMATCH 1345 31-OCT-78 19:47:00
+ ## amatch  (non-recursive) - look for match starting at lin(from)
+    integer function amatch(lin, from, pat)
+    character lin(MAXLINE), pat(MAXPAT)
+    integer omatch, patsiz
+    integer from, i, j, offset, stack
+
+    stack = 0
+    offset = from      # next unexamined input character
+    for (j = 1; pat(j) ^= EOS; j = j + patsiz(pat, j))
+       if (pat(j) == CLOSURE) {      # a closure entry
+          stack = j
+          j = j + CLOSIZE      # step over CLOSURE
+          for (i = offset; lin(i) ^= EOS; )   # match as many as
+             if (omatch(lin, i, pat, j) == NO)   # possible
+                break
+          pat(stack+COUNT) = i - offset
+          pat(stack+START) = offset
+          offset = i      # character that made us fail
+          }
+       else if (omatch(lin, offset, pat, j) == NO) {   # non-closure
+          for ( ; stack > 0; stack = pat(stack+PREVCL))
+             if (pat(stack+COUNT) > 0)
+                break
+          if (stack <= 0) {      # stack is empty
+             amatch = 0      # return failure
+             return
+             }
+          pat(stack+COUNT) = pat(stack+COUNT) - 1
+          j = stack + CLOSIZE
+          offset = pat(stack+START) + pat(stack+COUNT)
+          }
+       # else omatch succeeded
+    amatch = offset
+    return      # success
+    end
+#-h- DODASH 466 31-OCT-78 19:47:02
+ ## dodash - expand array(i-1)-array(i+1) into set(j)... from valid
+    subroutine dodash(valid, array, i, set, j, maxset)
+    character esc
+    integer addset, index
+    integer i, j, junk, k, limit, maxset
+    character array(ARB), set(maxset), valid(ARB)
+
+
+    i = i + 1
+    j = j - 1
+    limit = index(valid, esc(array, i))
+    for (k = index(valid, set(j)); k <= limit; k = k + 1)
+       junk = addset(valid(k), set, j, maxset)
+    return
+    end
+#-h- ESC 505 31-OCT-78 19:47:04
+## esc - map  array(i)  into escaped character if appropriate
+   character function esc(array, i)
+   character array(ARB)
+   integer i
+
+   if (array(i) ^= ESCAPE)
+      esc = array(i)
+   else if (array(i+1) == EOS)   #  *a not special at end
+      esc = ESCAPE
+   else {
+      i = i + 1
+     if (array(i) == LETN | array(i) == BIGN)
+         esc = NEWLINE
+      else if (array(i) == LETT | array(i) == BIGT)
+         esc = TAB
+      else
+         esc = array(i)
+      }
+   return
+   end
+#-h- FILSET 2780 31-OCT-78 19:47:29
+## filset - expand set at  array(i)  into  set(j),  stop at  delim
+   subroutine filset(delim, array, i, set, j, maxset)
+   character esc
+   integer addset, index
+   integer i, j, junk, maxset
+   character array(ARB), delim, set(maxset)
+#   string digits '0123456789'
+   character digits(11)
+#   string lowalf 'abcdefghijklmnopqrstuvwxyz'
+   character lowalf(27)
+#   string upalf 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+   character upalf(27)
+   data digits(1)/DIG0/, digits(2)/DIG1/, digits(3)/DIG2/
+   data digits(4)/DIG3/, digits(5)/DIG4/, digits(6)/DIG5/
+   data digits(7)/DIG6/, digits(8)/DIG7/, digits(9)/DIG8/
+   data digits(10)/DIG9/, digits(11)/EOS/
+   data lowalf(01)/LETA/
+   data lowalf(02)/LETB/
+   data lowalf(03)/LETC/
+   data lowalf(04)/LETD/
+   data lowalf(05)/LETE/
+   data lowalf(06)/LETF/
+   data lowalf(07)/LETG/
+   data lowalf(08)/LETH/
+   data lowalf(09)/LETI/
+   data lowalf(10)/LETJ/
+   data lowalf(11)/LETK/
+
+   data lowalf(12)/LETL/
+   data lowalf(13)/LETM/
+   data lowalf(14)/LETN/
+   data lowalf(15)/LETO/
+   data lowalf(16)/LETP/
+   data lowalf(17)/LETQ/
+   data lowalf(18)/LETR/
+   data lowalf(19)/LETS/
+   data lowalf(20)/LETT/
+   data lowalf(21)/LETU/
+   data lowalf(22)/LETV/
+   data lowalf(23)/LETW/
+   data lowalf(24)/LETX/
+   data lowalf(25)/LETY/
+   data lowalf(26)/LETZ/
+   data lowalf(27)/EOS/
+   data upalf(01) /BIGA/
+   data upalf(02) /BIGB/
+   data upalf(03) /BIGC/
+   data upalf(04) /BIGD/
+   data upalf(05) /BIGE/
+   data upalf(06) /BIGF/
+   data upalf(07) /BIGG/
+   data upalf(08) /BIGH/
+   data upalf(09) /BIGI/
+   data upalf(10) /BIGJ/
+   data upalf(11) /BIGK/
+   data upalf(12) /BIGL/
+   data upalf(13) /BIGM/
+   data upalf(14) /BIGN/
+   data upalf(15) /BIGO/
+   data upalf(16) /BIGP/
+   data upalf(17) /BIGQ/
+   data upalf(18) /BIGR/
+   data upalf(19) /BIGS/
+   data upalf(20) /BIGT/
+   data upalf(21) /BIGU/
+   data upalf(22) /BIGV/
+   data upalf(23) /BIGW/
+   data upalf(24) /BIGX/
+   data upalf(25) /BIGY/
+   data upalf(26) /BIGZ/
+   data upalf(27) /EOS/
+
+   for ( ; array(i) ^= delim & array(i) ^= EOS; i = i + 1)
+      if (array(i) == ESCAPE)
+         junk = addset(esc(array, i), set, j, maxset)
+      else if (array(i) ^= DASH)
+         junk = addset(array(i), set, j, maxset)
+      else if (j <= 1 | array(i+1) == EOS)   # literal -
+         junk = addset(DASH, set, j, maxset)
+      else if (index(digits, smt(j-1)) > 0)
+         call dodash(digits, array, i, set, j, maxset)
+      else if (index(lowalf, set(j-1)) > 0)
+         call dodash(lowalf, array, i, set, j, maxset)
+      else if (index(upalf, set(j-1)) > 0)
+
+         call dodash(upalf, array, i, set, j, maxset)
+      else
+         junk = addset(DASH, set, j, maxset)
+   return
+   end
+#-h- GETCCL 643 31-OCT-78 19:47:32
+ ## getccl - expand char class at arg(i) into pat(j)
+    integer function getccl(arg, i, pat, j)
+    character arg(MAXARG), pat(MAXPAT)
+    integer addset
+    integer i, j, jstart, junk
+
+    i = i + 1      # skip over  
+    if (arg(i) == NOT) {
+       junk = addset(NCCL, pat, j, MAXPAT)
+       i = i + 1
+       }
+    else
+       junk = addset(CCL, pat, j, MAXPAT)
+    jstart = j
+    junk = addset(0, pat, j, MAXPAT)      # leave room for count
+    call filset(CCLEND, arg, i, pat, j, MAXPAT)
+    pat(jstart) = j - jstart - 1
+    if (arg(i) == CCLEND)
+       getccl = OK
+    else
+       getccl = ERR
+    return
+    end
+#-h- GETPAT 204 31-OCT-78 19:47:33
+ ## getpat - convert argument into pattern
+    integer function getpat(arg, pat)
+    integer arg(MAXARG), pat(MAXPAT)
+    integer makpat
+
+    getpat = makpat(arg, 1, EOS, pat)
+    return
+    end
+#-h- LOCATE 392 31-OCT-78 19:47:35
+ ## locate - look for c in char class at pat(offset)
+    integer function locate(c, pat, offset)
+    character c, pat(MAXPAT)
+    integer i, offset
+    # size of class is at pat(offset), characters follow
+
+    for (i = offset + pat(offset); i > offset; i = i - 1)
+       if (c == pat(i)) {
+          locate = YES
+          return
+          }
+    locate = NO
+    return
+    end
+#-h- MAKPAT 1359 31-OCT-78 19:47:36
+ ## makpat - make pattern from arg(from), terminate at delim
+    integer function makpat(arg, from, delim, pat)
+
+    character esc
+    character arg(MAXARG), delim, pat(MAXPAT)
+    integer addset, getccl, stclos
+    integer from, i, j, junk, lastcl, lastj, lj
+
+    j = 1      # pat index
+    lastj = 1
+    lastcl = 0
+    for (i = from; arg(i) ^= delim & arg(i) ^= EOS; i = i + 1) {
+       lj = j
+       if (arg(i) == ANY)
+          junk = addset(ANY, pat, j, MAXPAT)
+       else if (arg(i) == BOL & i == from)
+          junk = addset(BOL, pat, j, MAXPAT)
+       else if (arg(i) == EOL & arg(i + 1) == delim)
+          junk = addset(EOL, pat, j, MAXPAT)
+       else if (arg(i) == CCL) {
+          if (getccl(arg, i, pat, j) == ERR)
+             break
+          }
+       else if (arg(i) == CLOSURE & i > from) {
+          lj = lastj
+          if (pat(lj)==BOL | pat(lj)==EOL | pat(lj)==CLOSURE)
+             break
+          lastcl = stclos(pat, j, lastj, lastcl)
+          }
+       else {
+          junk = addset(CHAR, pat, j, MAXPAT)
+          junk = addset(esc(arg, i), pat, j, MAXPAT)
+          }
+       lastj = lj
+       }
+    if (arg(i) ^= delim)   # terminated early
+       makpat = ERR
+    else if (addset(EOS, pat, j, MAXPAT) == NO)   # no room
+       makpat = ERR
+    else
+       makpat = i
+    return
+    end
+#-h- MATCH 331 31-OCT-78 19:48:04
+ ## match - find match anywhere on line
+    integer function match(lin, pat)
+    character lin(MAXLINE), pat(MAXPAT)
+    integer amatch
+    integer i
+
+    for (i = 1; lin(i) ^= EOS; i = i + 1)
+       if (amatch(lin, i, pat) > 0) {
+          match = YES
+          return
+          }
+    match = NO
+    return
+    end
+#-h- OMATCH 1001 31-OCT-78 19:48:06
+
+ ## omatch - try to match a single pattern at pat(j)
+    integer function omatch(lin, i, pat, j)
+    character lin(MAXLINE), pat(MAXPAT)
+    integer locate
+    integer bump, i, j
+
+    omatch = NO
+    if (lin(i) == EOS)
+       return
+    bump = -1
+    if (pat(j) == CHAR) {
+       if (lin(i) == pat(j + 1))
+          bump = 1
+       }
+    else if (pat(j) == BOL) {
+       if (i == 1)
+          bump = 0
+       }
+    else if (pat(j) == ANY) {
+       if (lin(i) ^= NEWLINE)
+          bump = 1
+       }
+    else if (pat(j) == EOL) {
+       if (lin(i) == NEWLINE)
+          bump = 0
+       }
+    else if (pat(j) == CCL) {
+       if (locate(lin(i), pat, j + 1) == YES)
+          bump = 1
+       }
+    else if (pat(j) == NCCL) {
+       if (lin(i) ^= NEWLINE & locate(lin(i), pat, j + 1) == NO)
+          bump = 1
+       }
+    else
+       call error('in omatch: cant happen.')
+    if (bump >= 0) {
+       i = i + bump
+       omatch = YES
+       }
+    return
+    end
+#-h- PATSIZ 489 31-OCT-78 19:48:07
+ ## patsiz - returns size of pattern entry at pat(n)
+    integer function patsiz(pat, n)
+    character pat(MAXPAT)
+    integer n
+
+    if (pat(n) == CHAR)
+       patsiz = 2
+    else if (pat(n) == BOL | pat(n) == EOL | pat(n) == ANY)
+       patsiz = 1
+    else if (pat(n) == CCL | pat(n) == NCCL)
+       patsiz = pat(n + 1) + 2
+    else if (pat(n) == CLOSURE)      # optional
+       patsiz = CLOSIZE
+
+    else
+       call error('in patsiz: cant happen.')
+    return
+    end
+#-h- STCLOS 641 31-OCT-78 19:48:09
+ ## stclos - insert closure entry at pat(j)
+    integer function stclos(pat, j, lastj, lastcl)
+    character pat(MAXPAT)
+    integer addset
+    integer j, jp, jt, junk, lastcl, lastj
+
+    for (jp = j - 1; jp >= lastj; jp = jp - 1) {   # make a hole
+       jt = jp + CLOSIZE
+       junk = addset(pat(jp), pat, jt, MAXPAT)
+       }
+    j = j + CLOSIZE
+    stclos = lastj
+    junk = addset(CLOSURE, pat, lastj, MAXPAT)   # put closure in it
+    junk = addset(0, pat, lastj, MAXPAT)      # COUNT
+    junk = addset(lastcl, pat, lastj, MAXPAT)   # PREVCL
+    junk = addset(0, pat, lastj, MAXPAT)      # START
+    return
+    end
+#-h- GMATCH 377 asc  9-MAR-79 16:13:23
+ integer function gmatch(lin, pat, elevel, andpat)
+
+ integer elevel, andpat, match, i, status
+ character lin(ARB), pat(MAXPAT, NEXPR)
+
+ gmatch = andpat
+ for (i=1; i <= elevel; i=i+1)
+    {
+    status = match(lin, pat(1,i))
+    if (andpat == NO & status == YES)
+        {
+        gmatch = YES
+        break
+        }
+    else if (andpat == YES & status == NO)
+        {
+        gmatch = NO
+        break
+        }
+    }
+
+ return
+ end
+#-h- FINERR 97 asc  7-JUN-79 14:49:06
+ subroutine finerr
+
+ call error("usage:  find  -acx! expression  expression ...!")
+
+ return
+ end
+ ###############################################################
+ #             Source code for ch tool                         #
+
+ ###############################################################
+#-h- CH.R 4744 asc  7-JUN-79 15:09:45
+#-h- MAIN 599 13-JAN-79 22:51:53
+ #---------------------------------------------------------------------
+ # include symbol definitions
+ #        include symbols
+          include findsym
+          include chsym
+ #---------------------------------------------------------------------
+##      ch -- main program
+
+
+#BKY    subroutine driver
+        call initr4
+        call ch
+        call endr4
+        end
+
+#BKY   #assembly code main program (used to avoid loading fortran I/O)
+#BKY %
+#BKY         ident main
+#BKY         entry main
+#BKY         vfd   42/0lmain,18/main
+#BKY         ext   driver
+#BKY         rj    uzero00
+#BKY         rj    driver
+#BKY         end   main
+#BKY%
+#-h- CHS 2486 asc  7-JUN-79 15:04:51
+ ## ch - change 'string1'  into  'string2'
+  subroutine ch
+    character lin(MAXLINE), new(MAXLINE), pat(MAXPAT,NEXPR)
+    character arg(MAXARG), from(MAXPAT), to(MAXPAT)
+    integer addset, amatch, getarg, getlin, getpat, getsub
+    integer i, junk, k, lastm, m , index
+    integer except, andpat, narg, frarg, toarg, npat, itoc, status, gmatch
+
+ except = NO
+ andpat = NO
+ narg = 0
+ for (i=1; getarg(i, arg, MAXARG) ^= EOF; i=i+1)
+    if (arg(1) == QMARK & arg(2) == EOS)
+        call cherr
+    else if (arg(1) == MINUS)
+        {
+        call scopy(arg, 1, lin, 1)
+        call fold(lin)
+        if (index(lin, LETA) > 0)
+            andpat = YES
+        if (index(lin, LETX) > 0)
+            except = YES
+        call delarg(i)
+        i = i - 1
+        }
+    else
+        narg = narg + 1
+
+ if (narg == 0)
+    call cherr
+ else if (narg == 1 | narg == 2)
+    {
+    frarg = 1
+    toarg = 2
+    npat = 1
+    }
+ else
+    {
+    toarg = narg
+    frarg = narg - 1
+    npat = narg - 2
+    }
+ if (npat > NEXPR)
+    {
+    call putlin("Maximum number of expressions permitted is ", ERROUT)
+    i = itoc(NEXPR, arg, MAXARG)
+    call error(arg)
+    }
+ junk = getarg(frarg, arg, MAXARG)
+ if (getpat(arg, from) == ERR)
+    call error("illegal fromexpr pattern.")
+ if (getarg(toarg, arg, MAXARG) == EOF)
+    arg(1) = EOS
+ if (getsub(arg, to) == ERR)
+    call error("illegal toexpr.")
+ for (i=1; i <= npat; i=i+1)
+    {
+    junk = getarg(i, arg, MAXARG)
+    if (getpat(arg, pat(1,i)) == ERR)
+        {
+        call putlin("illegal pattern: ", ERROUT)
+        call error(arg)
+        }
+    }
+ while (getlin(lin, STDIN) ^= EOF)
+    {
+    status = gmatch(lin, pat, npat, andpat)
+    if ((status == YES & except == NO) | (status == NO & except == YES))
+        {
+       k = 1
+       lastm = 0
+       for ( i =1; lin(i) ^= EOS; ) {
+          m = amatch(lin, i, from)
+          if (m > 0 & lastm ^= m) {   # replace matched text
+             call catsub(lin, i, m, to, new, k, MAXLINE)
+             lastm = m
+             }
+          if (m == 0 | m == i) {   # no match or null match
+             junk = addset(lin(i), new, k, MAXLINE)
+             i = i + 1
+             }
+          else            # skip matched text
+             i = m
+          }
+
+       if (addset(EOS, new, k, MAXLINE) == NO) {
+          k = MAXLINE
+          junk = addset(EOS, new, k, MAXLINE)
+          call remark('line truncated:.')
+          call putlin(new, ERROUT)
+          call putch(NEWLINE, ERROUT)
+          }
+       call putlin(new, STDOUT)
+       }
+    else
+        call putlin(lin, STDOUT)
+    }
+  return
+    end
+#-h- CATSUB 484 31-OCT-78 17:12:06
+ ## catsub - add replacement text to end of  new.
+    subroutine catsub(lin, from, to, sub, new, k, maxnew)
+    integer addset
+    integer from, i, j, junk, k, maxnew, to
+    character lin(MAXLINE), new(maxnew), sub(MAXPAT)
+
+    for (i = 1; sub(i) ^= EOS; i = i + 1)
+       if (sub(i) == DITTO)
+          for (j = from; j < to; j = j + 1)
+             junk = addset(lin(j), new, k, maxnew)
+       else
+          junk = addset(sub(i), new, k, maxnew)
+    return
+    end
+#-h- GETSUB 223 31-OCT-78 17:12:10
+ ## getsub - get substitution pattern into sub (/*/sor/chr)
+    integer function getsub(arg, sub)
+    character arg(MAXARG), sub(MAXPAT)
+    integer maksub
+
+    getsub = maksub(arg, 1, EOS, sub)
+    return
+    end
+#-h- MAKSUB 648 31-OCT-78 17:12:14
+ ## maksub - make substitution string in sub (/*/sor/chr)
+    integer function maksub(arg, from, delim, sub)
+    character esc
+    character arg(MAXARG), delim, sub(MAXPAT)
+    integer addset
+    integer from, i, j, junk
+
+    j = 1
+    for (i = from; arg(i) ^= delim & arg(i) ^= EOS; i = i + 1)
+       if (arg(i) == AND)
+          junk = addset(DITTO, sub, j, MAXPAT)
+       else
+          junk = addset(esc(arg, i), sub, j, MAXPAT)
+    if (arg(i) ^= delim)   # missing delimiter
+       maksub = ERR
+    else if (addset(EOS, sub, j, MAXPAT) == NO)   # no room
+       maksub = ERR
+
+    else
+       maksub = i
+    return
+    end
+#-h- CHERR 92 asc  7-JUN-79 15:04:52
+ subroutine cherr
+
+ call error("usage:  ch  -ax!  expression ...! from  to!")
+
+ return
+ end
+ ###############################################################
+ #             Source code for tr tool                         #
+ ###############################################################
+#-h- TR.R 2813 asc 23-MAY-79 22:57:46
+#-h- MAIN 598 13-JAN-79 22:43:04
+ #---------------------------------------------------------------------
+ # include symbol definitions
+ #        include symbols
+          include findsym
+          include trsym
+ #---------------------------------------------------------------------
+##      tr -- main program
+
+
+#BKY    subroutine driver
+        call initr4
+        call tr
+        call endr4
+        end
+
+#BKY   #assembly code main program (used to avoid loading fortran I/O)
+#BKY %
+#BKY         ident main
+#BKY         entry main
+#BKY         vfd   42/0lmain,18/main
+#BKY         ext   driver
+#BKY         rj    uzero00
+#BKY         rj    driver
+#BKY         end   main
+#BKY%
+#-h- TRS 1399 13-JAN-79 22:46:15
+ ## tr - transliterate characters on a file
+
+ subroutine tr
+
+    character getc
+    character arg(MAXLINE), c, from(MAXSET), to(MAXSET)
+    integer getarg, length, makset, xindex
+    integer allbut, collap, i, lastto
+
+    if (getarg(1, arg, MAXLINE) == EOF |
+        (arg(1) == QMARK & arg(2) == EOS))
+       call error('usage: tr from to.')
+    else if (arg(1) == NOT) {
+       allbut = YES
+
+       if (makset(arg, 2, from, MAXSET) == NO)
+          call error('from: too large.')
+       }
+    else {
+       allbut = NO
+       if (makset(arg, 1, from, MAXSET) == NO)
+          call error('from: too large.')
+       }
+    if (getarg(2, arg, MAXLINE) == EOF)
+       to(1) = EOS
+    else if (makset(arg, 1, to, MAXSET) == NO)
+          call error('to: too large.')
+
+    lastto = length(to)
+    if (length(from) > lastto | allbut == YES)
+       collap = YES
+    else
+       collap = NO
+    repeat {
+       i = xindex(from, getc(c), allbut, lastto)
+       if (collap == YES & i >= lastto & lastto > 0) {  # collapse
+          call putc(to(lastto))
+          repeat
+             i = xindex(from, getc(c), allbut, lastto)
+             until (i < lastto)
+          }
+       if (c == EOF)
+          break
+       if (i > 0 & lastto > 0)   # translate
+          call putc(to(i))
+       else if (i == 0)      # copy
+          call putc(c)
+                   # else delete
+       }
+
+    return
+    end
+#-h- MAKSET 301 31-OCT-78 20:01:49
+ ## makset - make set from  array(k)  in  set
+    integer function makset(array, k, set, size)
+    integer addset
+    integer i, j, k, size
+    character array(ARB), set(size)
+
+    i = k
+    j = 1
+    call filset(EOS, array, i, set, j, size)
+    makset = addset(EOS, set, j, size)
+    return
+    end
+#-h- XINDEX 379 31-OCT-78 20:01:50
+ ## xindex - invert condition returned by index
+    integer function xindex(array, c, allbut, lastto)
+    character array(ARB), c
+    integer index
+    integer allbut, lastto
+
+
+    if (c == EOF)
+       xindex = 0
+    else if (allbut == NO)
+       xindex = index(array, c)
+    else if (index(array, c) > 0)
+       xindex = 0
+    else
+       xindex = lastto + 1
+    return
+    end
+
+
+
