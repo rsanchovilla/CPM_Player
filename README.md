@@ -1,6 +1,6 @@
 # CPM_Player
 
-CP/M player allows to run CP/M `.COM` programs. 
+CP/M player allows to run CP/M `.COM` programs on Windows. 
 
 It does not simulates the whole HW. It just simulates CP/M at BIOS/BDOS call level, using native Windows files. A CP/M disk maps to a windows folder.
 
